@@ -1,0 +1,14 @@
+{
+  "extends": ["stylelint-config-standard-scss"],
+  "rules": {
+    "selector-class-pattern": null,
+    "scss/at-import-partial-extension": null,
+    "scss/load-no-partial-leading-underscore": null,
+    "property-no-vendor-prefix": null,
+    "value-no-vendor-prefix": null,
+    "selector-no-vendor-prefix": null,
+    "media-feature-name-no-vendor-prefix": null,
+    "at-rule-no-vendor-prefix": null
+  },
+  "ignoreFiles": ["public/css/**/*.css", "node_modules/**/*.scss"]
+}
