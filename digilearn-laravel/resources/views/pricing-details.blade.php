@@ -323,7 +323,7 @@
 <section class="pricing-content">
     <div class="container">
         <div class="pricing-header">
-            <h2>choose your Learning plan!</h2>
+            <h2>Dhoose Your Learning Plan</h2>
             <p>Select your membership plan tailored to your needs. Customize your subscription for a seamless fit.</p>
         </div>
 

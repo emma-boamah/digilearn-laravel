@@ -11,12 +11,15 @@ class AuthController extends Controller
 {
     public function showLogin()
     {
+        if (Auth::check()) {
+            // If user is already logged in, check if they have selected a grade
+            if (session('selected_level')) {
+                return redirect()->route('dashboard.main');
+            } else {
+                return redirect()->route('dashboard.level-selection');
+            }
+        }
         return view('auth.login');
-    }
-
-    public function showSignup()
-    {
-        return view('auth.signup');
     }
 
     public function login(Request $request)
@@ -28,12 +31,26 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-            return redirect()->intended('/');
+            
+            // After login, always redirect to level selection first
+            return redirect()->route('dashboard.level-selection');
         }
 
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
-        ])->onlyInput('email');
+        ]);
+    }
+
+    public function showSignup()
+    {
+        if (Auth::check()) {
+            if (session('selected_level')) {
+                return redirect()->route('dashboard.main');
+            } else {
+                return redirect()->route('dashboard.level-selection');
+            }
+        }
+        return view('auth.signup');
     }
 
     public function signup(Request $request)
@@ -41,20 +58,19 @@ class AuthController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'country' => 'required|string|max:255',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'country' => $validated['country'],
             'password' => Hash::make($validated['password']),
         ]);
 
         Auth::login($user);
 
-        return redirect('/');
+        // After signup, redirect to level selection
+        return redirect()->route('dashboard.level-selection');
     }
 
     public function logout(Request $request)
@@ -62,6 +78,6 @@ class AuthController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect('/');
+        return redirect()->route('home');
     }
 }

@@ -235,7 +235,7 @@
                             24/7 service support
                         </li>
                     </ul>
-                    <a href="#" class="pricing-btn">Get Started</a>
+                    <a href="{{ route('pricing-details') }}" class="pricing-btn">Get Started</a>
                 </div>
             </div>
 
@@ -284,7 +284,7 @@
                             24/7 service support
                         </li>
                     </ul>
-                    <a href="#" class="pricing-btn">Get Started</a>
+                    <a href="{{ route('pricing-details') }}" class="pricing-btn">Get Started</a>
                 </div>
             </div>
 
@@ -333,7 +333,7 @@
                             24/7 service support
                         </li>
                     </ul>
-                    <a href="#" class="pricing-btn">Get Started</a>
+                    <a href="{{ route('pricing-details') }}" class="pricing-btn">Get Started</a>
                 </div>
             </div>
         </div>
