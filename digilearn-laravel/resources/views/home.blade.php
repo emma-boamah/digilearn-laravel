@@ -136,11 +136,71 @@
 
         @media (max-width: 768px) {
             .hero-title {
-                font-size: 9vw;
+                font-size: 2.5rem; /* Adjusted for smaller screens */
+            }
+
+            .hero-title-emphasis {
+                font-size: 3rem; /* Adjusted for smaller screens */
+            }
+
+            .hero-btn {
+                padding: 1rem 1.5rem;
+                font-size: 1.25rem; /* Adjusted for smaller screens */
             }
 
             .hero-content {
                 padding: 0 2rem;
+            }
+
+            /* Why Choose Section */
+            .why-choose {
+                flex-direction: column;
+            }
+
+            .why-choose-videos {
+                order: -1; /* Move videos below text on smaller screens */
+                margin-bottom: 2rem;
+            }
+
+            .feature-list li {
+                font-size: 1rem; /* Adjusted for smaller screens */
+            }
+
+            /* Study Journey Section */
+            .study-journey-text h2 {
+                font-size: 2.5rem; /* Adjusted for smaller screens */
+                line-height: 1.2;
+            }
+
+            /* Pricing Section */
+            .pricing-header-content-new {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .pricing-image-right {
+                margin: 2rem auto 0;
+            }
+
+            .pricing-grid {
+                grid-template-columns: 1fr; /* Single column on smaller screens */
+            }
+
+            /* Learning Resources Section */
+
+            .resources-main-title {
+                font-size: 2.5rem; /* Adjusted for smaller screens */
+                width: 100%;
+            }
+
+            .resources-content-layout {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .resources-buttons-grid {
+                flex-direction: column;
+                align-items: center;
             }
         }
 

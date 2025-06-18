@@ -227,6 +227,20 @@
         .footer-bottom {
             flex-direction: column;
             text-align: center;
+            align-items: center;
+        }
+
+        .footer-links {
+            grid-template-columns: 1fr; /* Stack links on small screens */
+        }
+
+        .footer-brand {
+            margin: 1rem auto 0;
+            align-items: center; /* Center logo and text */
+        }
+
+        .copyright {
+            margin-bottom: 1rem;
         }
     }
 </style>

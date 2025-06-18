@@ -301,6 +301,130 @@
         .btn-white:hover {
             background-color: var(--gray-50);
         }
+
+        /* Modern Mobile Menu Styles */
+        #mobile-menu-button {
+            display: none;
+            position: fixed;
+            top: 0.50rem;
+            right: 1.25rem;
+            z-index: 100;
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 50%;
+            background: var(--primary-red);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(225, 30, 45, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #mobile-menu-button:hover {
+            transform: scale(1.05);
+            background: var(--primary-red-hover);
+        }
+
+        #mobile-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 99;
+            padding: 2rem;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        #mobile-menu.open {
+            display: flex;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .mobile-menu-item {
+            width: 100%;
+            max-width: 300px;
+            padding: 1.2rem;
+            margin: 0.5rem 0;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            transform: translateY(0);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .mobile-menu-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+            color: var(--primary-red);
+        }
+
+        .mobile-menu-item.signup {
+            background: var(--primary-red);
+            color: white;
+            margin-top: 1.5rem;
+        }
+
+        .mobile-menu-item.signup:hover {
+            background: var(--primary-red-hover);
+        }
+
+        .hamburger-icon, .close-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 24px;
+            height: 24px;
+            transition: opacity 0.3s ease;
+        }
+
+        .close-icon {
+            opacity: 0;
+        }
+
+        #mobile-menu-button.active .hamburger-icon {
+            opacity: 0;
+        }
+
+        #mobile-menu-button.active .close-icon {
+            opacity: 1;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            #mobile-menu-button {
+                display: block;
+            }
+            
+            .nav-links, .nav-buttons {
+                display: none;
+            }
+            
+            body {
+                padding-top: 70px;
+            }
+            
+            .nav-content {
+                min-height: 70px;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -324,6 +448,26 @@
                         <a href="{{ route('login') }}" class="btn btn-outline">Login</a>
                         <a href="{{ route('signup') }}" class="btn btn-primary">Sign Up Free</a>
                     </div>
+                </div>
+
+                <!-- Modern Mobile Menu -->
+                <button id="mobile-menu-button">
+                    <svg class="hamburger-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                    <svg class="close-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+
+                <!-- Mobile menu -->
+                <div id="mobile-menu">
+                    <a href="{{ route('home') }}" class="mobile-menu-item">Home</a>
+                    <a href="{{ route('about') }}" class="mobile-menu-item">About Us</a>
+                    <a href="{{ route('pricing') }}" class="mobile-menu-item">Pricing</a>
+                    <a href="{{ route('contact') }}" class="mobile-menu-item">Contact</a>
+                    <a href="{{ route('login') }}" class="mobile-menu-item">Login</a>
+                    <a href="{{ route('signup') }}" class="mobile-menu-item signup">Sign Up Free</a>
                 </div>
             </div>
         </header>
@@ -374,6 +518,36 @@
                 } else {
                     video.pause();
                 }
+            });
+        });
+
+        // Mobile Menu Functionality
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        mobileMenuButton.addEventListener('click', function() {
+            mobileMenuButton.classList.toggle('active');
+            mobileMenu.classList.toggle('open');
+            document.body.classList.toggle('no-scroll');
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', function(event) {
+            if (mobileMenu.classList.contains('open') && 
+                !mobileMenu.contains(event.target) && 
+                !mobileMenuButton.contains(event.target)) {
+                mobileMenuButton.classList.remove('active');
+                mobileMenu.classList.remove('open');
+                document.body.classList.remove('no-scroll');
+            }
+        });
+
+        // Close menu when clicking links
+        document.querySelectorAll('.mobile-menu-item').forEach(item => {
+            item.addEventListener('click', () => {
+                mobileMenuButton.classList.remove('active');
+                mobileMenu.classList.remove('open');
+                document.body.classList.remove('no-scroll');
             });
         });
     });
