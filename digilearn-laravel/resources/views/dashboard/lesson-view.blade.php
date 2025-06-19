@@ -1308,7 +1308,6 @@
         <div class="sidebar-header">
             <div class="sidebar-logo">
                 <img src="{{ asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
-                <span class="sidebar-brand">ShoutOutGh</span>
             </div>
             <button class="sidebar-close" id="sidebarClose">
                 <svg class="hamburger-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
