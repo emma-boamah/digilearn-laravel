@@ -876,7 +876,8 @@
         }
 
         .notes-action-btn.save:hover {
-            background-color: var(--secondary-blue-hover);
+            background-color: var(--gray-200);
+            color: var(--secondary-blue);
         }
 
         .notes-action-btn.delete {
@@ -885,7 +886,8 @@
         }
 
         .notes-action-btn.delete:hover {
-            background-color: var(--primary-red-hover);
+            background-color: var(--gray-200);
+            color: var(--primary-red);
         }
 
         .notes-action-btn.export {
@@ -894,7 +896,8 @@
         }
 
         .notes-action-btn.export:hover {
-            background-color: #059669;
+            background-color:var(--gray-200);
+            color: #10b981;
         }
 
         /* Quill Editor Customization */
