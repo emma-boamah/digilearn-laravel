@@ -46,16 +46,56 @@
         }
 
         /* Sidebar Styles */
+        
+        /* Add this new style for the sidebar toggle */
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            color: var(--gray-600);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+        }
+
+        .sidebar-toggle:hover {
+            background-color: var(--gray-100);
+        }
         .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
             width: 280px;
+            height: 100vh;
             background-color: var(--white);
             border-right: 1px solid var(--gray-200);
             padding: 1.5rem 0;
-            position: fixed;
-            height: 100vh;
             overflow-y: auto;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
         }
 
+        .sidebar.sidebar-open {
+            transform: translateX(0);
+        }
+
+
+        @media (min-width: 769px) {
+            .sidebar.sidebar-open ~ .main-content {
+                padding-left: 280px;
+            }
+
+            .sidebar {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 280px;
+            }
+        }
         .sidebar-header {
             padding: 0 1.5rem 2rem;
             border-bottom: 1px solid var(--gray-200);
@@ -472,6 +512,10 @@
             .sidebar.open {
                 transform: translateX(0);
             }
+
+            .sidebar.sidebar-open {
+                transform: translateX(0);
+            }
             
             .main-content {
                 margin-left: 0;
@@ -617,5 +661,32 @@
             @yield('content')
         </main>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.querySelector('.sidebar');
+            const sidebarToggle = document.querySelector('.sidebar-toggle');
+
+            // Function to handle sidebar toggle
+            function toggleSidebar() {
+                sidebar.classList.toggle('sidebar-open');
+            }
+
+            // Add event listener to all toggle buttons
+            document.addEventListener('click', function(event) {
+                if (event.target.closest('.sidebar-toggle')) {
+                    event.stopPropagation();
+                    toggleSidebar();
+                }
+                
+                // Close sidebar when clicking outside on mobile
+                if (window.innerWidth < 769 && sidebar.classList.contains('sidebar-open')) {
+                    if (!sidebar.contains(event.target) && !event.target.closest('.sidebar-toggle')) {
+                        sidebar.classList.remove('sidebar-open');
+                    }
+                }
+            });
+        });
+    </script>
 </body>
 </html>
