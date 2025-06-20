@@ -7,6 +7,8 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PricingController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\NotesController;
 
 /*
 |--------------------------------------------------------------------------
@@ -57,4 +59,34 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/lesson/{lessonId}', [DashboardController::class, 'viewLesson'])->name('dashboard.lesson.view');
     Route::post('/dashboard/lesson/{lessonId}/notes', [DashboardController::class, 'saveNotes'])->name('dashboard.lesson.notes');
     Route::post('/dashboard/lesson/{lessonId}/comment', [DashboardController::class, 'postComment'])->name('dashboard.lesson.comment');
+    
+    // Document viewing routes
+    // Step 1: Document preview page (shows PDF/PPT icon with open/View button)
+    Route::get('/dashboard/lesson/{lessonId}/document/{type}', [DocumentController::class, 'viewDocument'])
+        ->name('dashboard.lesson.document')
+        ->where('type', 'pdf|ppt');
+    
+    // Step 2: Document content viewer (shows actual PDF pages or PPT slides)
+    Route::get('/dashboard/lesson/{lessonId}/document/{type}/content', [DocumentController::class, 'viewDocumentContent'])
+        ->name('dashboard.lesson.document.content')
+        ->where('type', 'pdf|ppt');
+
+    Route::post('/dashboard/lesson/{lessonId}/document/{type}/save', [DocumentController::class, 'saveDocumentChanges'])
+    ->name('dashboard.lesson.document.save')
+    ->where('type', 'pdf|ppt');
+
+    Route::get('/dashboard/lesson/{lessonId}/ppt/create', [DocumentController::class, 'createPpt'])
+    ->name('dashboard.lesson.ppt.create');
+
+    Route::post('/dashboard/lesson/{lessonId}/ppt/store', [DocumentController::class, 'storePpt'])
+        ->name('dashboard.lesson.ppt.store');
+
+    Route::post('/dashboard/lesson/{lessonId}/ppt/{pptId}/update', [DocumentController::class, 'updatePpt'])
+        ->name('dashboard.lesson.ppt.update');
+
+    Route::get('/dashboard/notes', [NotesController::class, 'index'])->name('dashboard.notes');
+    Route::get('/dashboard/notes/{id}', [NotesController::class, 'view'])->name('dashboard.notes.view');
+    Route::post('/dashboard/notes', [NotesController::class, 'store'])->name('dashboard.notes.store');
+    Route::put('/dashboard/notes/{id}', [NotesController::class, 'update'])->name('dashboard.notes.update');
+    Route::delete('/dashboard/notes/{id}', [NotesController::class, 'destroy'])->name('dashboard.notes.destroy');
 });

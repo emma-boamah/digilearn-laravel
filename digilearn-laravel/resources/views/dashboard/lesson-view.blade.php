@@ -61,7 +61,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.75rem 1.5rem;
+            padding: 0.75rem 0.5rem;
             background-color: var(--white);
             border-bottom: 1px solid var(--gray-200);
             position: sticky;
@@ -289,7 +289,7 @@
             display: flex;
             align-items: center;
             gap: 1rem;
-            padding: 1rem 1.5rem;
+            padding: 1rem 0.5rem;
             background-color: var(--white);
             border-bottom: 1px solid var(--gray-200);
             flex-wrap: wrap;
@@ -406,9 +406,9 @@
             display: grid;
             grid-template-columns: 1fr 400px;
             gap: 2rem;
-            padding: 2rem 1.5rem;
-            max-width: 1600px;
-            margin: 0 auto;
+            padding: 2rem 0.5rem;
+            max-width: none;
+            margin: 0;
         }
 
         /* Enhanced Left Content */
@@ -1348,7 +1348,7 @@
 
         @media (max-width: 768px) {
             .top-header {
-                padding: 0.75rem 1rem;
+                padding: 0.75rem 0.25rem;
             }
 
             .filter-bar {
@@ -1364,7 +1364,7 @@
             }
             
             .main-layout {
-                padding: 1rem;
+                padding: 0.25rem;
                 gap: 1rem;
             }
             
@@ -1499,7 +1499,7 @@
                     </svg>
                     <span class="sidebar-menu-text">Saved Lessons</span>
                 </a>
-                <a href="/notes" class="sidebar-menu-item">
+                <a href="{{ route('dashboard.notes') }}" class="sidebar-menu-item">
                     <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                     </svg>
@@ -1716,14 +1716,15 @@
                     </svg>
                     Test
                 </button>
-                <button class="action-btn">
+                <button class="action-btn" onclick="window.location.href='{{ route('dashboard.lesson.document', ['lessonId' => $lesson['id'], 'type' => 'pdf']) }}'">
                     <svg fill="currentColor" viewBox="0 0 24 24">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                         <polyline points="14,2 14,8 20,8"/>
                     </svg>
                     Document
                 </button>
-                <button class="action-btn">
+                <!-- Update the PPT button to link to PPT viewer -->
+                <button class="action-btn" onclick="window.location.href='{{ route('dashboard.lesson.document', ['lessonId' => $lesson['id'], 'type' => 'ppt']) }}'">
                     <svg fill="currentColor" viewBox="0 0 24 24">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                         <line x1="9" y1="9" x2="15" y2="9"/>
