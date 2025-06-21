@@ -97,7 +97,7 @@
         </div>
     </main>
 
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         // Debug function to test route
         function testDigiLearnRoute() {
             console.log('DigiLearn route:', '{{ route('dashboard.digilearn') }}');
