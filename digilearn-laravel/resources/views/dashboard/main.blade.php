@@ -61,9 +61,9 @@
                     <p class="card-description">
                         Practical, Demonstrative, Educative, Informative and Edutainment lessons which aids students to understand topics and with ease 21st Century tutoring approach
                     </p>
-                    <button class="card-button" onclick="window.location.href='{{ route('dashboard.digilearn') }}'">
+                    <a href="{{ route('dashboard.digilearn') }}" class="card-button" style="display: inline-block; text-decoration: none; text-align: center;">
                         Start Lessons
-                    </button>
+                    </a>
                 </div>
 
                 <!-- Personalized Learning Section -->
@@ -75,9 +75,9 @@
                     <p class="card-description">
                         Learn at your own pace with our tutors and explore more educative videos on personalized learning. Get the chance to schedule time with tutors.
                     </p>
-                    <button class="card-button" onclick="window.location.href='{{ route('dashboard.personalized') }}'">
+                    <a href="{{ route('dashboard.personalized') }}" class="card-button" style="display: inline-block; text-decoration: none; text-align: center;">
                         Start
-                    </button>
+                    </a>
                 </div>
 
                 <!-- Shop Section -->
@@ -89,11 +89,22 @@
                     <p class="card-description">
                         Purchase all your student needs here. Items are affordable and drastically reduced to suit your financial equilibrium.
                     </p>
-                    <button class="card-button" onclick="window.location.href='{{ route('dashboard.shop') }}'">
+                    <a href="{{ route('dashboard.shop') }}" class="card-button" style="display: inline-block; text-decoration: none; text-align: center;">
                         Shop now
-                    </button>
+                    </a>
                 </div>
             </div>
         </div>
     </main>
+
+    <script>
+        // Debug function to test route
+        function testDigiLearnRoute() {
+            console.log('DigiLearn route:', '{{ route('dashboard.digilearn') }}');
+            console.log('Current URL:', window.location.href);
+        }
+        
+        // Call debug function
+        testDigiLearnRoute();
+    </script>
 @endsection
