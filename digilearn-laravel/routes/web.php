@@ -9,6 +9,7 @@ use App\Http\Controllers\PricingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\NotesController;
+use Illuminate\Support\Facades\Log;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,28 +17,35 @@ use App\Http\Controllers\NotesController;
 |--------------------------------------------------------------------------
 */
 
+// Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', [AboutController::class, 'index'])->name('about');
 Route::get('/contact', [ContactController::class, 'index'])->name('contact');
-
-// Authentication routes
-Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
-Route::get('/signup', [AuthController::class, 'showSignup'])->name('signup');
-Route::post('/signup', [AuthController::class, 'signup'])->name('signup.submit');
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
-// Pricing route
 Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
 Route::get('/pricing/pricing-details', [PricingController::class, 'show'])->name('pricing-details');
 
-// Form submissions
-Route::post('/contact/submit', [ContactController::class, 'submit'])->name('contact.submit');
-Route::post('/feedback/submit', [ContactController::class, 'submitFeedback'])->name('feedback.submit');
-Route::post('/newsletter/subscribe', [HomeController::class, 'subscribe'])->name('newsletter.subscribe');
+// Authentication routes with rate limiting
+Route::middleware(['throttle:login'])->group(function () {
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
+});
+
+Route::middleware(['throttle:signup'])->group(function () {
+    Route::get('/signup', [AuthController::class, 'showSignup'])->name('signup');
+    Route::post('/signup', [AuthController::class, 'signup'])->name('signup.submit');
+});
+
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Form submissions with rate limiting
+Route::middleware(['throttle:forms'])->group(function () {
+    Route::post('/contact/submit', [ContactController::class, 'submit'])->name('contact.submit');
+    Route::post('/feedback/submit', [ContactController::class, 'submitFeedback'])->name('feedback.submit');
+    Route::post('/newsletter/subscribe', [HomeController::class, 'subscribe'])->name('newsletter.subscribe');
+});
 
 // Dashboard routes (protected by auth middleware)
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     // Level selection (first page after login)
     Route::get('/dashboard/level-selection', [DashboardController::class, 'levelSelection'])->name('dashboard.level-selection');
     Route::post('/dashboard/select-level/{levelId}', [DashboardController::class, 'selectLevel'])->name('dashboard.select-level');
@@ -61,22 +69,20 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/dashboard/lesson/{lessonId}/comment', [DashboardController::class, 'postComment'])->name('dashboard.lesson.comment');
     
     // Document viewing routes
-    // Step 1: Document preview page (shows PDF/PPT icon with open/View button)
     Route::get('/dashboard/lesson/{lessonId}/document/{type}', [DocumentController::class, 'viewDocument'])
         ->name('dashboard.lesson.document')
         ->where('type', 'pdf|ppt');
     
-    // Step 2: Document content viewer (shows actual PDF pages or PPT slides)
     Route::get('/dashboard/lesson/{lessonId}/document/{type}/content', [DocumentController::class, 'viewDocumentContent'])
         ->name('dashboard.lesson.document.content')
         ->where('type', 'pdf|ppt');
 
     Route::post('/dashboard/lesson/{lessonId}/document/{type}/save', [DocumentController::class, 'saveDocumentChanges'])
-    ->name('dashboard.lesson.document.save')
-    ->where('type', 'pdf|ppt');
+        ->name('dashboard.lesson.document.save')
+        ->where('type', 'pdf|ppt');
 
     Route::get('/dashboard/lesson/{lessonId}/ppt/create', [DocumentController::class, 'createPpt'])
-    ->name('dashboard.lesson.ppt.create');
+        ->name('dashboard.lesson.ppt.create');
 
     Route::post('/dashboard/lesson/{lessonId}/ppt/store', [DocumentController::class, 'storePpt'])
         ->name('dashboard.lesson.ppt.store');
@@ -84,9 +90,17 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/dashboard/lesson/{lessonId}/ppt/{pptId}/update', [DocumentController::class, 'updatePpt'])
         ->name('dashboard.lesson.ppt.update');
 
+    // Notes routes
     Route::get('/dashboard/notes', [NotesController::class, 'index'])->name('dashboard.notes');
     Route::get('/dashboard/notes/{id}', [NotesController::class, 'view'])->name('dashboard.notes.view');
     Route::post('/dashboard/notes', [NotesController::class, 'store'])->name('dashboard.notes.store');
     Route::put('/dashboard/notes/{id}', [NotesController::class, 'update'])->name('dashboard.notes.update');
     Route::delete('/dashboard/notes/{id}', [NotesController::class, 'destroy'])->name('dashboard.notes.destroy');
+});
+
+// CSP Report endpoint
+Route::post('/csp-report', function () {
+    // Log CSP violations
+    Log::channel('security')->warning('CSP Violation', request()->all());
+    return response('', 204);
 });
