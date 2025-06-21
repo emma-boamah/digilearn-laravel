@@ -13,6 +13,10 @@ class SecurityHeaders
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // Generate the nonce ONCE per request
+        $nonce = base64_encode(random_bytes(16));
+        $request->attributes->set('csp_nonce', $nonce);
+
         $response = $next($request);
 
         // Security headers
@@ -36,7 +40,7 @@ class SecurityHeaders
 
         // Content Security Policy
         if (config('security.headers.csp_enabled', true)) {
-            $csp = $this->buildContentSecurityPolicy($request);
+            $csp = $this->buildContentSecurityPolicy($request, $nonce);
             $response->headers->set('Content-Security-Policy', $csp);
         }
 
@@ -46,17 +50,15 @@ class SecurityHeaders
     /**
      * Build Content Security Policy header
      */
-    private function buildContentSecurityPolicy(Request $request): string
+    private function buildContentSecurityPolicy(Request $request, string $nonce): string
     {
-        $nonce = base64_encode(random_bytes(16));
-        $request->attributes->set('csp_nonce', $nonce);
-
         $policies = [
             "default-src 'self'",
-            "script-src 'self' 'nonce-{$nonce}' https://apis.google.com https://connect.facebook.net https://www.google.com https://www.gstatic.com",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net",
-            "font-src 'self' https://fonts.gstatic.com https://fonts.bunny.net",
+            "script-src 'self' 'nonce-{$nonce}' https://apis.google.com https://connect.facebook.net https://www.google.com https://www.gstatic.com https://cdn.quilljs.com",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net https://cdn.quilljs.com",
+            "font-src 'self' https://fonts.gstatic.com https://fonts.bunny.net https://cdnjs.cloudflare.com",
             "img-src 'self' data: https: blob:",
+            "media-src 'self' https: data: blob:", // Allow media from self and external sources
             "connect-src 'self' https://api." . parse_url(config('app.url'), PHP_URL_HOST),
             "frame-src 'self' https://www.google.com https://www.facebook.com",
             "frame-ancestors 'none'",

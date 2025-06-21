@@ -2345,7 +2345,7 @@
         </div>
     </section>
 
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         let currentlyPlaying = null;
 
         function toggleVideo(videoId) {

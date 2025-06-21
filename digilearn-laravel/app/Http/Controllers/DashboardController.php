@@ -192,6 +192,16 @@ class DashboardController extends Controller
                 ->withErrors(['lesson' => 'Lesson not found.']);
         }
 
+        // Get related lessons (exclude current lesson)
+        $allLessons = $this->getLessonsForLevel($selectedLevel);
+        $relatedLessons = array_filter($allLessons, function($l) use ($lessonId) {
+            return $l['id'] != $lessonId;
+        });
+        $relatedLessons = array_slice($relatedLessons, 0, 8);
+
+        // Sample comments for the lesson
+        $comments = $this->getCommentsForLesson($lessonId);
+
         Log::channel('security')->info('lesson_viewed', [
             'user_id' => Auth::id(),
             'lesson_id' => $lessonId,
@@ -200,7 +210,7 @@ class DashboardController extends Controller
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
-        return view('dashboard.lesson', compact('lesson', 'selectedLevel'));
+        return view('dashboard.lesson-view', compact('lesson', 'selectedLevel'));
     }
 
     /**
@@ -415,5 +425,32 @@ class DashboardController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Get comments for a lesson
+     */
+    private function getCommentsForLesson($lessonId)
+    {
+        return [
+            [
+                'id' => 1,
+                'author' => 'einana kojo',
+                'avatar' => 'E',
+                'time' => '3 hours ago',
+                'text' => 'very interesting and helpful lesson please add more to it. this time make it more easy.',
+                'likes' => 22,
+                'dislikes' => 1
+            ],
+            [
+                'id' => 2,
+                'author' => 'kwame asante',
+                'avatar' => 'K',
+                'time' => '5 hours ago',
+                'text' => 'Great explanation! This helped me understand the concept better.',
+                'likes' => 15,
+                'dislikes' => 0
+            ],
+        ];
     }
 }

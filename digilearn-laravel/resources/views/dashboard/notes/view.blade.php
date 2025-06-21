@@ -563,7 +563,7 @@ Lorem ipsum dolor sit amet consectetur. Vivamus arcu neque morbi magna est egest
         </button>
     </div>
 
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         let quillEditor = null;
         let isEditing = false;
         let originalContent = '';

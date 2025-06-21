@@ -628,7 +628,7 @@
     </div>
 </section> -->
 
-<script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
     // Pricing tab functionality
     document.addEventListener('DOMContentLoaded', function() {
         const tabs = document.querySelectorAll('.pricing-tab');

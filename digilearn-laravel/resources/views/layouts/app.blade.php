@@ -479,7 +479,7 @@
         @include('layouts.footer')
     </div>
 
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
     // YouTube-style hover-to-play video functionality
     document.addEventListener('DOMContentLoaded', function() {
         const videoCards = document.querySelectorAll('.hover-video-card');
