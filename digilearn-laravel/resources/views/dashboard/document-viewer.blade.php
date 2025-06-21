@@ -741,7 +741,7 @@
         @endif
     </div>
 
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         document.addEventListener('DOMContentLoaded', function() {
             // Add click handlers for action buttons
             const actionButtons = document.querySelectorAll('.action-button, .action-button-small');

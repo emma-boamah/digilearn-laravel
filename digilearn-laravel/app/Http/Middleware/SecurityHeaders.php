@@ -54,8 +54,8 @@ class SecurityHeaders
     {
         $policies = [
             "default-src 'self'",
-            "script-src 'self' 'nonce-{$nonce}' https://apis.google.com https://connect.facebook.net https://www.google.com https://www.gstatic.com https://cdn.quilljs.com",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net https://cdn.quilljs.com",
+            "script-src 'self' 'nonce-{$nonce}' https://apis.google.com https://connect.facebook.net https://www.google.com https://www.gstatic.com https://cdn.quilljs.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net https://cdn.quilljs.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
             "font-src 'self' https://fonts.gstatic.com https://fonts.bunny.net https://cdnjs.cloudflare.com",
             "img-src 'self' data: https: blob:",
             "media-src 'self' https: data: blob:", // Allow media from self and external sources

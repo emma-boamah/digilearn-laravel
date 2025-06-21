@@ -1897,7 +1897,7 @@
         </div>
     </div>
 
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         // Global variables for the rich text editor
         let quillEditor = null;
         let notesData = {
