@@ -7,14 +7,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Events\Failed;
-use Illuminate\Auth\Events\PasswordReset;
 use App\Models\User;
 use Carbon\Carbon;
 
@@ -149,11 +147,7 @@ class AuthController extends Controller
             // Fire login event
             event(new Login('web', $user, false));
 
-            // Check if email is verified (if email verification is enabled)
-            if (!$user->hasVerifiedEmail() && config('security.authentication.email_verification_required', false)) {
-                return redirect()->route('verification.notice');
-            }
-
+            // REMOVED: Email verification check - go directly to dashboard
             return redirect()->route('dashboard.level-selection');
         }
 
@@ -262,7 +256,7 @@ class AuthController extends Controller
                 'email' => $validated['email'],
                 'country' => $validated['country'],
                 'password' => Hash::make($validated['password']),
-                'email_verified_at' => config('security.authentication.email_verification_required', false) ? null : now(),
+                'email_verified_at' => now(), // CHANGED: Auto-verify email for now
                 'registration_ip' => $request->ip(),
                 'last_login_ip' => $request->ip(),
                 'last_login_at' => Carbon::now(),
@@ -282,12 +276,7 @@ class AuthController extends Controller
 
             Auth::login($user);
 
-            // Send email verification if required
-            if (config('security.authentication.email_verification_required', false)) {
-                $user->sendEmailVerificationNotification();
-                return redirect()->route('verification.notice');
-            }
-
+            // REMOVED: Email verification - go directly to dashboard
             return redirect()->route('dashboard.level-selection');
 
         } catch (\Exception $e) {
@@ -323,86 +312,6 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
         
         return redirect()->route('home');
-    }
-
-    /**
-     * Show forgot password form
-     */
-    public function showForgotPassword()
-    {
-        return view('auth.forgot-password');
-    }
-
-    /**
-     * Send password reset link
-     */
-    public function sendResetLink(Request $request)
-    {
-        $request->validate(['email' => 'required|email']);
-
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
-
-        $this->logSecurityEvent('password_reset_requested', $request, [
-            'email' => $request->email,
-            'status' => $status
-        ]);
-
-        return $status === Password::RESET_LINK_SENT
-                    ? back()->with(['status' => __($status)])
-                    : back()->withErrors(['email' => __($status)]);
-    }
-
-    /**
-     * Show password reset form
-     */
-    public function showResetPassword(Request $request, $token)
-    {
-        return view('auth.reset-password', ['token' => $token, 'email' => $request->email]);
-    }
-
-    /**
-     * Reset password
-     */
-    public function resetPassword(Request $request)
-    {
-        $request->validate([
-            'token' => 'required',
-            'email' => 'required|email',
-            'password' => [
-                'required',
-                'confirmed',
-                PasswordRule::min(8)
-                    ->letters()
-                    ->mixedCase()
-                    ->numbers()
-                    ->symbols()
-                    ->uncompromised()
-            ],
-        ]);
-
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user, string $password) {
-                $user->forceFill([
-                    'password' => Hash::make($password)
-                ])->setRememberToken(Str::random(60));
-
-                $user->save();
-
-                event(new PasswordReset($user));
-            }
-        );
-
-        $this->logSecurityEvent('password_reset_completed', $request, [
-            'email' => $request->email,
-            'status' => $status
-        ]);
-
-        return $status === Password::PASSWORD_RESET
-                    ? redirect()->route('login')->with('status', __($status))
-                    : back()->withErrors(['email' => [__($status)]]);
     }
 
     /**

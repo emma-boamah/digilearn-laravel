@@ -9,7 +9,6 @@ use App\Http\Controllers\PricingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\NotesController;
-use App\Http\Controllers\EmailVerificationController;
 use Illuminate\Support\Facades\Log;
 
 /*
@@ -38,37 +37,6 @@ Route::middleware(['throttle:signup'])->group(function () {
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Email Verification Routes
-Route::middleware(['auth'])->group(function () {
-    Route::get('/email/verify', [EmailVerificationController::class, 'show'])
-        ->name('verification.notice');
-    
-    Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
-        ->middleware(['signed', 'throttle:6,1'])
-        ->name('verification.verify');
-    
-    Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])
-        ->middleware('throttle:6,1')
-        ->name('verification.send');
-});
-
-// Password Reset Routes
-Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])
-    ->middleware('guest')
-    ->name('password.request');
-
-Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])
-    ->middleware(['guest', 'throttle:5,1'])
-    ->name('password.email');
-
-Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])
-    ->middleware('guest')
-    ->name('password.reset');
-
-Route::post('/reset-password', [AuthController::class, 'resetPassword'])
-    ->middleware(['guest', 'throttle:5,1'])
-    ->name('password.update');
-
 // Form submissions with rate limiting
 Route::middleware(['throttle:forms'])->group(function () {
     Route::post('/contact/submit', [ContactController::class, 'submit'])->name('contact.submit');
@@ -76,8 +44,8 @@ Route::middleware(['throttle:forms'])->group(function () {
     Route::post('/newsletter/subscribe', [HomeController::class, 'subscribe'])->name('newsletter.subscribe');
 });
 
-// Dashboard routes (protected by auth middleware)
-Route::middleware(['auth', 'verified'])->group(function () {
+// Dashboard routes (protected by auth middleware only - no 'verified' middleware)
+Route::middleware(['auth'])->group(function () {
     // Level selection (first page after login)
     Route::get('/dashboard/level-selection', [DashboardController::class, 'levelSelection'])->name('dashboard.level-selection');
     Route::post('/dashboard/select-level/{levelId}', [DashboardController::class, 'selectLevel'])->name('dashboard.select-level');
