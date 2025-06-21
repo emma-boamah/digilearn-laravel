@@ -811,7 +811,7 @@
                     </svg>
                 </button>
                 <div class="sidebar-logo">
-                    <img src="{{ asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
+                    <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
                 </div>
             </div>
             
@@ -994,7 +994,7 @@
             <div class="hero-section">
                 <div class="hero-background">
                     <video autoplay muted loop playsinline>
-                        <source src="{{ asset('videos/hero-video.mp4') }}" type="video/mp4">
+                        <source src="{{ secure_asset('videos/hero-video.mp4') }}" type="video/mp4">
                     </video>
                 </div>
                 <div class="hero-overlay">
@@ -1019,15 +1019,15 @@
                                 muted 
                                 loop 
                                 preload="metadata"
-                                poster="{{ asset($lesson['thumbnail']) }}"
+                                poster="{{ secure_asset($lesson['thumbnail']) }}"
                             >
-                                <source src="{{ asset($lesson['video_url']) }}" type="video/mp4">
+                                <source src="{{ secure_asset($lesson['video_url']) }}" type="video/mp4">
                                 Your browser does not support the video tag.
                             </video>
                             
                             <!-- Fallback image if video fails to load -->
                             <img 
-                                src="{{ asset($lesson['thumbnail']) }}" 
+                                src="{{ secure_asset($lesson['thumbnail']) }}" 
                                 alt="{{ $lesson['title'] }}" 
                                 class="lesson-fallback-image"
                                 style="display: none;"

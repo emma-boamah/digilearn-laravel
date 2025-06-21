@@ -435,7 +435,7 @@
                 <div class="nav-content" id="nav-content">
                     <div class="flex items-center">
                         <a href="{{ route('home') }}" class="logo">
-                            <img src="{{ asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image">
+                            <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image">
                         </a>
                         <nav class="nav-links">
                             <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">Home</a>

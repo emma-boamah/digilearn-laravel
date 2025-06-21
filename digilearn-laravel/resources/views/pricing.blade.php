@@ -20,7 +20,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background-image: url('{{ asset("images/hero-image.png") }}');
+        background-image: url('{{ secure_asset("images/hero-image.png") }}');
         background-size: cover;
         background-position: center;
         z-index: -1;

@@ -1452,7 +1452,7 @@
     <div class="collapsible-sidebar" id="collapsibleSidebar">
         <div class="sidebar-header">
             <div class="sidebar-logo">
-                <img src="{{ asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
+                <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
             </div>
             <button class="sidebar-close" id="sidebarClose">
                 <svg class="hamburger-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1545,7 +1545,7 @@
             </button>
             
             <div class="sidebar-logo">
-                <img src="{{ asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
+                <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
             </div>
         </div>
         
@@ -1605,8 +1605,8 @@
         <div class="left-content">
             <!-- Enhanced Video Player -->
             <div class="video-container">
-                <video controls class="video-player" poster="{{ asset($lesson['thumbnail'] ?? '') }}">
-                    <source src="{{ asset($lesson['video_url'] ?? '') }}" type="video/mp4">
+                <video controls class="video-player" poster="{{ secure_asset($lesson['thumbnail'] ?? '') }}">
+                    <source src="{{ secure_asset($lesson['video_url'] ?? '') }}" type="video/mp4">
                     Your browser does not support the video tag.
                 </video>
             </div>
@@ -1780,7 +1780,7 @@
                     @foreach($relatedLessons as $relatedLesson)
                     <div class="video-item" onclick="window.location.href='/dashboard/lesson/{{ $relatedLesson['id'] ?? '#' }}'">
                         <div class="video-thumbnail">
-                            <img src="{{ asset($relatedLesson['thumbnail'] ?? '') }}" alt="{{ $relatedLesson['title'] ?? 'Lesson' }}" 
+                            <img src="{{ secure_asset($relatedLesson['thumbnail'] ?? '') }}" alt="{{ $relatedLesson['title'] ?? 'Lesson' }}" 
                                  onerror="this.src='/placeholder.svg?height=78&width=140'">
                             <div class="play-overlay">
                                 <svg class="play-icon" fill="currentColor" viewBox="0 0 24 24">

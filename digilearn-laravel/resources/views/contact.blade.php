@@ -223,7 +223,7 @@
 
     <!-- Hero Section -->
     <section class="contact-hero">
-        <img src="{{ asset('images/contact-hero.jpg') }}" alt="Contact us" class="hero-image">
+        <img src="{{ secure_asset('images/contact-hero.jpg') }}" alt="Contact us" class="hero-image">
         <div class="hero-content">
             <h1>Contact us</h1>
         </div>
@@ -353,7 +353,7 @@
     <!-- Map Section -->
     <section class="map-section">
         <div class="map-container">
-            <img src="{{ asset('images/map.jpg') }}" alt="Office location map">
+            <img src="{{ secure_asset('images/map.jpg') }}" alt="Office location map">
         </div>
     </section>
 @endsection

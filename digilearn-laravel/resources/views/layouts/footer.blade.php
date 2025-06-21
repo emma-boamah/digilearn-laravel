@@ -311,7 +311,7 @@
             <div class="copyright">© {{ date('Y') }} ShoutoutGh All rights reserved.</div>
             <div class="footer-brand">
                 <a href="{{ route('home') }}" class="brand-link">
-                    <img src="{{ asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image" style="height: 40px;">
+                    <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image" style="height: 40px;">
                 </a>
                 <p>Educating through Entertainment</p>
             </div>

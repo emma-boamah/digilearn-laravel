@@ -14,7 +14,7 @@
                     
                     <div class="shoutout-logo">
                         <div class="brand-section sidebar-logo">
-                            <img src="{{ asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
+                            <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
                         </div>
                     </div>
                 </div>

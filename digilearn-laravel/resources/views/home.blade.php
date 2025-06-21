@@ -1944,8 +1944,8 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="hero-background">
-            <video autoplay muted loop playsinline poster="{{ asset('images/hero-image.png') }}">
-                <source src="{{ asset('videos/hero-video.mp4') }}" type="video/mp4">
+            <video autoplay muted loop playsinline poster="{{ secure_asset('images/hero-image.png') }}">
+                <source src="{{ secure_asset('videos/hero-video.mp4') }}" type="video/mp4">
             </video>
             <div class="hero-overlay"></div>
         </div>
@@ -2019,9 +2019,9 @@
                             loop 
                             playsinline 
                             preload="metadata"
-                            poster="{{ asset('images/student-focus.png') }}"
+                            poster="{{ secure_asset('images/student-focus.png') }}"
                         >
-                            <source src="{{ asset('videos/personalized-study.mp4') }}" type="video/mp4">
+                            <source src="{{ secure_asset('videos/personalized-study.mp4') }}" type="video/mp4">
                             Your browser does not support the video tag.
                         </video>
                     </div>
@@ -2050,7 +2050,7 @@
         <div class="container">
             <div class="learning-goals-content">
                 <div class="learning-goals-image">
-                    <img src="{{ asset('images/team-learning.png') }}" alt="Team learning together">
+                    <img src="{{ secure_asset('images/team-learning.png') }}" alt="Team learning together">
                 </div>
                 <div class="learning-goals-text">
                     <h3>We have quizzes that questions and answer choice on all levels, from grade one to tertiary level.</h3>
@@ -2073,10 +2073,10 @@
                         class="hover-video" 
                         muted 
                         loop 
-                        poster="{{ asset($category['img']) }}"
+                        poster="{{ secure_asset($category['img']) }}"
                         preload="metadata"
                     >
-                        <source src="{{ asset($category['preview_video']) }}" type="video/mp4">
+                        <source src="{{ secure_asset($category['preview_video']) }}" type="video/mp4">
                         Your browser does not support the video tag.
                     </video>
                     <div class="hover-video-overlay">
@@ -2097,7 +2097,7 @@
     <!-- All Learning Resources -->
     <section class="resources-section">
         <div class="resources-background">
-            <img src="{{ asset('images/resources-bg.png') }}" alt="Learning resources" class="resources-image">
+            <img src="{{ secure_asset('images/resources-bg.png') }}" alt="Learning resources" class="resources-image">
             <div class="resources-overlay">
                 <div class="resources-custom-container">
                     <div class="resources-content-layout">
@@ -2150,7 +2150,7 @@
                         </div>
                     </div>
                     <div class="pricing-image-right">
-                        <img src="{{ asset('images/student-laptop.png') }}" alt="Student with laptop">
+                        <img src="{{ secure_asset('images/student-laptop.png') }}" alt="Student with laptop">
                     </div>
                 </div>
             </div>
@@ -2315,7 +2315,7 @@
                         <p>"{{ $testimonial['quote'] }}"</p>
                     </div>
                     <div class="testimonial-author">
-                        <img src="{{ asset($testimonial['image']) }}" alt="{{ $testimonial['name'] }}">
+                        <img src="{{ secure_asset($testimonial['image']) }}" alt="{{ $testimonial['name'] }}">
                         <div class="author-info">
                             <h4>{{ $testimonial['name'] }}</h4>
                             <span>{{ $testimonial['role'] }}</span>

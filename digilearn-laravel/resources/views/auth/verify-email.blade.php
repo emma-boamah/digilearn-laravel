@@ -139,7 +139,7 @@
 <body>
     <div class="verification-container">
         <a href="{{ route('home') }}" class="logo">
-            <img src="{{ asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image">
+            <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image">
         </a>
 
         <div class="verification-icon">

@@ -75,7 +75,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-image: url('{{ asset("images/auth-hero.png") }}');
+            background-image: url('{{ secure_asset("images/auth-hero.png") }}');
             background-size: cover;
             background-position: center;
             opacity: 0.3;
@@ -292,7 +292,7 @@
         <div class="auth-form-container">
             <div class="auth-header">
                 <a href="{{ route('home') }}" class="logo">
-                    <img src="{{ asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image">
+                    <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image">
                 </a>
                 <div class="auth-tabs">
                     <a href="{{ route('login') }}" class="tab active">Log In</a>

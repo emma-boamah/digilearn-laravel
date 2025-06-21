@@ -233,7 +233,7 @@
 
     <!-- Image Section -->
     <section class="image-section">
-        <img src="{{ asset('images/student-laptop-about.jpg') }}" alt="Student with laptop" class="student-image">
+        <img src="{{ secure_asset('images/student-laptop-about.jpg') }}" alt="Student with laptop" class="student-image">
     </section>
 
     <!-- Main Content Section -->

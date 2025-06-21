@@ -27,7 +27,7 @@
                             <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/>
                         </svg>
                         <div class="brand-section sidebar-logo">
-                            <img src="{{ asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
+                            <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
                         </div>
                     </div>
                 </div>
