@@ -36,23 +36,15 @@
             align-items: center;
             justify-content: center;
             padding: 1rem;
+            overflow-x: auto;
         }
 
         .auth-container {
-            background-color: var(--white);
-            border-radius: 1rem;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            overflow: hidden;
-            width: 100%;
-            max-width: 900px;
             display: grid;
-            grid-template-columns: 1fr;
-        }
-
-        @media (min-width: 768px) {
-            .auth-container {
-                grid-template-columns: 1fr 1fr;
-            }
+            grid-template-columns: 1fr 1fr;
+            width: 100vw;
+            max-width: none;
+            overflow-x: auto;
         }
 
         .auth-hero {
@@ -271,6 +263,22 @@
         .social-btn.google svg,
         .social-btn.facebook svg {
             color: var(--white);
+        }
+
+        .auth-hero {
+            order: 2;
+        }
+        .auth-form-container {
+            order: 1;
+        }
+
+        @media (min-width: 768px) {
+            .auth-hero {
+                order: 1;
+            }
+            .auth-form-container {
+                order: 2;
+            }
         }
     </style>
 </head>

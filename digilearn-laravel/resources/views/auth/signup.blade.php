@@ -37,6 +37,7 @@
             align-items: center;
             justify-content: center;
             padding: 1rem;
+            overflow-x: auto;
         }
 
         .auth-container {
@@ -44,16 +45,12 @@
             border-radius: 1rem;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
             overflow: hidden;
-            width: 100%;
+            width: 100vw;
             max-width: 900px;
             display: grid;
-            grid-template-columns: 1fr;
-        }
-
-        @media (min-width: 768px) {
-            .auth-container {
-                grid-template-columns: 1fr 1fr;
-            }
+            grid-template-columns: 1fr 1fr;
+            min-height: 400px;
+            overflow-x: auto;
         }
 
         .auth-form-container {
