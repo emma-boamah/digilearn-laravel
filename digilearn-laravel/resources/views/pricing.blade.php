@@ -2,6 +2,11 @@
 
 @section('content')
 <style>
+    html, body {
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
+    }
     /* Hero Section */
     .pricing-hero {
         position: relative;
@@ -44,10 +49,16 @@
     }
 
     .pricing-header h2 {
-        font-size: 3rem;
-        font-weight: 700;
-        margin-bottom: 1rem;
-        color: var(--gray-900);
+        white-space: nowrap;
+        font-size: clamp(1rem, 6vw, 2.5rem);
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    @media (min-width: 48rem) {
+        .pricing-header h2 {
+            font-size: 3rem;         /* Your existing desktop size */
+        }
     }
 
     .pricing-header p {
@@ -171,6 +182,19 @@
     .pricing-btn:hover {
         background-color: var(--primary-red);
         color: var(--white);
+    }
+
+    @media (max-width: 600px) {
+        .container {
+            margin: 0 0.5rem;
+            padding: 0 0.5rem;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .pricing-header h2 {
+            font-size: clamp(0.9rem, 5vw, 1.5rem);
+        }
     }
 </style>
 
