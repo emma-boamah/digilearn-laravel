@@ -66,6 +66,11 @@ class SecurityHeaders
         ];
         $scriptSrcString = implode(' ', $scriptSources);
 
+        // Get base domain for form-action
+        $appUrl = config('app.url');
+        $host = parse_url($appUrl, PHP_URL_HOST);
+        $domain = preg_replace('/^www\./', '', $host);
+
         $policies = [
             "default-src 'self'",
             // Script policies: 
@@ -84,7 +89,7 @@ class SecurityHeaders
             "frame-ancestors 'none'",
             "object-src 'none'",
             "base-uri 'self'",
-            "form-action 'self'",
+            "form-action 'self' https://{$domain} https://*.{$domain}",
             "upgrade-insecure-requests",
         ];
 
