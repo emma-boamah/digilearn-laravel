@@ -51,7 +51,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/dashboard/select-level/{levelId}', [DashboardController::class, 'selectLevel'])->name('dashboard.select-level');
     
     // Main dashboard (after level selection)
-    Route::get('/dashboard', [DashboardController::class, 'main'])->name('dashboard.main');
+    Route::get('/dashboard/main', [DashboardController::class, 'main'])->name('dashboard.main');
     
     // DigiLearn video grid (after clicking DigiLearn)
     Route::get('/dashboard/digilearn', [DashboardController::class, 'digilearn'])->name('dashboard.digilearn');
