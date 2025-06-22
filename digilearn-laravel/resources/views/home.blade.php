@@ -2,6 +2,11 @@
 
 @section('content')
     <style>
+    html, body {
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
+    }
     /* Mobile-first responsive typography */
     .journey-title {
         font-size: 2.5rem;
@@ -1274,7 +1279,7 @@
 
         .course-videos-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: 1fr; /* Single column by default on Mobile */
             gap: 1.5rem;
         }
 
@@ -1285,12 +1290,14 @@
         }
 
         .hover-video-card {
-            position: relative;
-            height: 200px;
+            width: 100%;
+            aspect-ratio: 16/9;
             border-radius: var(--border-radius-lg);
             overflow: hidden;
             cursor: pointer;
             transition: transform var(--transition-duration) ease;
+            background: #000;
+            position: relative;
         }
 
         .hover-video-card:hover {
@@ -1976,6 +1983,55 @@
         }
         
         .feature-list li:active {
+            transform: scale(0.98);
+        }
+
+        /* Modern pulse + shimmer animation for resource buttons */
+        @keyframes pulseGlow {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(220,38,38, 0.25), 0 2px 10px rgba(0,0,0,0.08);
+            }
+            50% {
+                box-shadow: 0 0 16px 6px rgba(220,38,38, 0.35), 0 2px 20px rgba(0,0,0,0.12);
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        .resources-btn {
+            position: relative;
+            overflow: hidden;
+            animation: pulseGlow 2.5s infinite;
+            background: linear-gradient(90deg, #fff 0%, #ffe5e5 50%, #fff 100%);
+            background-size: 200% 100%;
+            transition: transform 0.2s cubic-bezier(.4,2,.6,1), box-shadow 0.2s;
+        }
+
+        .resources-btn::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(120deg, transparent 30%, rgba(220,38,38,0.12) 50%, transparent 70%);
+            background-size: 200% 100%;
+            animation: shimmer 2.2s infinite linear;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .resources-btn:hover, .resources-btn:focus {
+            transform: scale(1.06) rotate(-1deg);
+            box-shadow: 0 0 24px 6px rgba(220,38,38,0.25), 0 4px 20px rgba(0,0,0,0.12);
+            background: linear-gradient(90deg, #fff 0%, #ffd6d6 50%, #fff 100%);
+        }
+
+        .resources-btn:active {
             transform: scale(0.98);
         }
     </style>
