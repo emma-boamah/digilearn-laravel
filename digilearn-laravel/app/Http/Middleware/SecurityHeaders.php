@@ -89,7 +89,7 @@ class SecurityHeaders
             "frame-ancestors 'none'",
             "object-src 'none'",
             "base-uri 'self'",
-            "form-action 'self' https:",
+            "form-action *;",  // Allow form submissions to any URL
             "upgrade-insecure-requests",
         ];
 
