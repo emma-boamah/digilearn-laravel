@@ -2,6 +2,45 @@
 
 @section('content')
     <style>
+    /* Mobile-first responsive typography */
+    .journey-title {
+        font-size: 2.5rem;
+        font-weight: 400;
+        line-height: 1.2;
+        color: var(--white);
+        margin-bottom: 1rem;
+    }
+
+    .journey-subtitle {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1rem;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Tablet sizes */
+    @media (min-width: 768px) {
+        .journey-title {
+            font-size: 3.5rem;
+        }
+        .journey-subtitle {
+            font-size: 1.25rem;
+        }
+    }
+
+    /* Desktop sizes */
+    @media (min-width: 1024px) {
+    .study-journey-text .journey-title {
+        font-size: 90px;
+    }
+}
+
+    /* Large desktop */
+    @media (min-width: 1280px) {
+        .journey-title {
+            font-size: 5.625rem; /* 90px */
+        }
+    }
         /* Hero Section */
         .hero {
             position: relative;
@@ -2035,8 +2074,8 @@
         <div class="container">
             <div class="study-journey-content">
                 <div class="study-journey-text">
-                    <h2 style="font-size: 90px">Start Your Study<br>Journey Today</h2>
-                    <p>Join thousands of students who are achieving their goals with DigiLearn.<br>Signup now and unlock your potentials</p>
+                    <h2 class="journey-title">Start Your Study<br>Journey Today</h2>
+                    <p class="journey-subtitle">Join thousands of students who are achieving their goals with DigiLearn.<br>Signup now and unlock your potentials</p>
                 </div>
                 <div class="study-journey-button">
                     <a href="#" class="btn btn-white">Sign up now</a>
