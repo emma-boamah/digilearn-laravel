@@ -1564,7 +1564,7 @@
 
     <!-- Enhanced Filter Bar -->
     <div class="filter-bar">
-        <button class="back-button" onclick="history.back()">
+        <button class="back-button" id="backButton">
             <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
@@ -1716,7 +1716,7 @@
                     </svg>
                     Test
                 </button>
-                <button class="action-btn" onclick="window.location.href='{{ route('dashboard.lesson.document', ['lessonId' => $lesson['id'], 'type' => 'pdf']) }}'">
+                <button class="action-btn action-navigate-btn" data-href="{{ route('dashboard.lesson.document', ['lessonId' => $lesson['id'], 'type' => 'pdf']) }}">
                     <svg fill="currentColor" viewBox="0 0 24 24">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                         <polyline points="14,2 14,8 20,8"/>
@@ -1724,7 +1724,7 @@
                     Document
                 </button>
                 <!-- Update the PPT button to link to PPT viewer -->
-                <button class="action-btn" onclick="window.location.href='{{ route('dashboard.lesson.document', ['lessonId' => $lesson['id'], 'type' => 'ppt']) }}'">
+                <button class="action-btn action-navigate-btn" data-href="{{ route('dashboard.lesson.document', ['lessonId' => $lesson['id'], 'type' => 'ppt']) }}">
                     <svg fill="currentColor" viewBox="0 0 24 24">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                         <line x1="9" y1="9" x2="15" y2="9"/>
@@ -1778,7 +1778,7 @@
                 
                 @if(isset($relatedLessons))
                     @foreach($relatedLessons as $relatedLesson)
-                    <div class="video-item" onclick="window.location.href='/dashboard/lesson/{{ $relatedLesson['id'] ?? '#' }}'">
+                    <div class="video-item related-video-item" data-href="/dashboard/lesson/{{ $relatedLesson['id'] ?? '#' }}">
                         <div class="video-thumbnail">
                             <img src="{{ secure_asset($relatedLesson['thumbnail'] ?? '') }}" alt="{{ $relatedLesson['title'] ?? 'Lesson' }}" 
                                  onerror="this.src='/placeholder.svg?height=78&width=140'">
@@ -1917,6 +1917,7 @@
             initializeSearch();
             initializeVideoItems();
             initializeKeyboardShortcuts();
+            initializeNavigation();
         });
 
         // Enhanced sidebar functionality
@@ -2010,6 +2011,36 @@
                     }
                 });
             });
+
+            // Navigation buttons
+            document.querySelectorAll('.action-navigate-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                window.location.href = this.dataset.href;
+                });
+            });
+        }
+
+
+        // Add to initializeVideoItems()
+        function initializeVideoItems() {
+        // Related video items
+        document.querySelectorAll('.related-video-item').forEach(item => {
+            item.addEventListener('click', function() {
+            const url = this.dataset.href;
+            // Visual feedback
+            this.style.opacity = '0.7';
+            this.style.transform = 'scale(0.98)';
+            // Navigation
+            setTimeout(() => window.location.href = url, 200);
+            });
+        });
+        }
+
+        // Add new function for back button
+        function initializeNavigation() {
+        document.getElementById('backButton').addEventListener('click', () => {
+            history.back();
+        });
         }
 
         // Enhanced Rich Text Editor with Quill.js
