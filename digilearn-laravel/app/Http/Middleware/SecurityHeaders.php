@@ -89,7 +89,7 @@ class SecurityHeaders
             "frame-ancestors 'none'",
             "object-src 'none'",
             "base-uri 'self'",
-            "form-action 'self' https://{$domain} https://*.{$domain}",
+            "form-action 'self' https://{$domain} https://www.{$domain} https://*.{$domain} https://*.google.com",
             "upgrade-insecure-requests",
         ];
 
