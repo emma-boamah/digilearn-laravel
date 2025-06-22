@@ -7,14 +7,14 @@
             <div class="header-content">
                 <div class="header-left">
                     @if(isset($isChanging) && $isChanging)
-                        <button class="back-button" onclick="window.location.href='{{ route('dashboard.main') }}'">
+                        <button class="back-button" id="backToDashboard">
                             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                             </svg>
                             Back to Dashboard
                         </button>
                     @else
-                        <button class="back-button" onclick="window.history.back()">
+                        <button class="back-button" id="backButton">
                             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                             </svg>
@@ -106,10 +106,7 @@
                     <p class="card-description">{{ $level['description'] }}</p>
                     <form action="{{ route('dashboard.select-level', $level['id']) }}" method="POST">
                         @csrf
-                        <button type="submit" class="card-button" 
-                                style="transition: background-color 0.2s ease;"
-                                onmouseover="this.style.backgroundColor='var(--primary-red-hover)'"
-                                onmouseout="this.style.backgroundColor='var(--primary-red)'">
+                        <button type="submit" class="card-button">
                             @if(session('selected_level') === $level['id'])
                                 Current Level
                             @else
@@ -124,6 +121,16 @@
     </main>
 
     <style>
+        /* Added CSS for button hover effect */
+        .card-button {
+            background-color: var(--primary-red);
+            transition: background-color 0.2s ease;
+        }
+        
+        .card-button:hover {
+            background-color: var(--primary-red-hover);
+        }
+        
         .level-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
@@ -152,3 +159,42 @@
         }
     </style>
 @endsection
+
+@push('scripts')
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle back button navigation
+        const backButton = document.getElementById('backButton');
+        if (backButton) {
+            backButton.addEventListener('click', function() {
+                window.history.back();
+            });
+        }
+
+        // Handle dashboard back navigation
+        const backToDashboard = document.getElementById('backToDashboard');
+        if (backToDashboard) {
+            backToDashboard.addEventListener('click', function() {
+                window.location.href = '{{ route("dashboard.main") }}';
+            });
+        }
+
+        // Add visual feedback to level cards
+        const levelCards = document.querySelectorAll('.level-card');
+        levelCards.forEach(card => {
+            card.addEventListener('click', function(e) {
+                // Only add effect if clicking the card itself (not the button)
+                if (!e.target.closest('.card-button')) {
+                    this.style.transform = 'scale(0.98)';
+                    this.style.opacity = '0.9';
+                    
+                    setTimeout(() => {
+                        this.style.transform = '';
+                        this.style.opacity = '';
+                    }, 200);
+                }
+            });
+        });
+    });
+</script>
+@endpush
