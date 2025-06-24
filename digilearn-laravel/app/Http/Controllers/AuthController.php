@@ -202,7 +202,7 @@ class AuthController extends Controller
         $rateLimitKey = 'signup:' . strtolower($request->input('email', '')) . '|' . $request->ip();
 
         // Allow 10 attempts per 10 minutes (adjust as needed)
-        $maxAttempts = 10;
+        $maxAttempts = 700;
         $decaySeconds = 600; // 10 minutes
 
         if (RateLimiter::tooManyAttempts($rateLimitKey, $maxAttempts)) {
