@@ -31,6 +31,8 @@
             --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --sidebar-width-expanded: 280px;
+            --sidebar-width-collapsed: 72px;
         }
 
         * {
@@ -45,6 +47,24 @@
             color: var(--gray-900);
             line-height: 1.6;
             min-height: 100vh;
+        }
+
+        /* NEW: YouTube-Style Sidebar */
+        .youtube-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width-expanded);
+            height: 100vh;
+            background-color: var(--white);
+            border-right: 1px solid var(--gray-200);
+            z-index: 1000;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        .youtube-sidebar.collapsed {
+            width: var(--sidebar-width-collapsed);
         }
 
         /* Header */
@@ -162,12 +182,59 @@
             z-index: 50;
         }
 
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+            height: 60px;
+            min-height: 60px;
+        }
+
+        .sidebar-toggle-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-toggle-btn:hover {
+            background-color: var(--gray-100);
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: opacity 0.3s ease;
+        }
+
+        .youtube-sidebar.collapsed .sidebar-logo {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .sidebar-brand {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--primary-red);
+            letter-spacing: -0.025em;
+            white-space: nowrap;
+        }
+
         .sidebar-content {
-            padding: 1.5rem 0;
+            padding: 1rem 0;
+            overflow-y: auto;
+            height: calc(100vh - 60px);
         }
 
         .sidebar-section {
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
 
         .sidebar-section-title {
@@ -178,18 +245,28 @@
             margin-bottom: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.1em;
+            transition: opacity 0.3s ease;
+        }
+
+        .youtube-sidebar.collapsed .sidebar-section-title {
+            opacity: 0;
+            height: 0;
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
         }
 
         .sidebar-menu-item {
             display: flex;
             align-items: center;
             gap: 1rem;
-            padding: 0.875rem 1.5rem;
+            padding: 0.75rem 1.5rem;
             color: var(--gray-700);
             text-decoration: none;
             transition: all 0.2s ease;
             cursor: pointer;
             border-left: 3px solid transparent;
+            position: relative;
         }
 
         .sidebar-menu-item:hover {
@@ -214,13 +291,108 @@
         .sidebar-menu-text {
             font-size: 0.875rem;
             font-weight: 500;
+            white-space: nowrap;
+            transition: opacity 0.3s ease;
+        }
+
+        .youtube-sidebar.collapsed .sidebar-menu-text {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+        }
+
+        .youtube-sidebar.collapsed .sidebar-menu-item {
+            padding: 0.75rem;
+            justify-content: center;
+            gap: 0;
+            margin: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+            border-left: none;
+        }
+
+        .youtube-sidebar.collapsed .sidebar-menu-item:hover {
+            border-left-color: transparent;
+        }
+
+        .youtube-sidebar.collapsed .sidebar-menu-item.active {
+            border-left-color: transparent;
+            background-color: var(--primary-red);
+            color: var(--white);
+        }
+
+        /* Tooltip for collapsed state */
+        .sidebar-menu-item .tooltip {
+            position: absolute;
+            left: calc(100% + 10px);
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: var(--gray-800);
+            color: var(--white);
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 1001;
+            pointer-events: none;
+        }
+
+        .youtube-sidebar.collapsed .sidebar-menu-item:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
         }
 
         /* Main Content */
         .main-content {
-            margin-left: 280px;
+            margin-left: var(--sidebar-width-expanded);
             min-height: calc(100vh - 60px);
             background-color: var(--gray-25);
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .youtube-sidebar.collapsed ~ .main-content {
+            margin-left: var(--sidebar-width-collapsed);
+        }
+
+        /* Mobile overlay */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .youtube-sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease, width 0.3s ease;
+            }
+
+            .youtube-sidebar.mobile-open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .youtube-sidebar.collapsed ~ .main-content {
+                margin-left: 0;
+            }
         }
 
         .content-header {
@@ -446,171 +618,154 @@
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <div class="header">
-        <div class="header-content">
-            <div class="header-left">
-                <button class="hamburger-menu" id="hamburgerMenu">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="main-container">
+        <!-- YouTube-style Sidebar -->
+        <aside class="youtube-sidebar" id="youtubeSidebar">
+            <div class="sidebar-header">
+                <button class="sidebar-toggle-btn" id="sidebarToggle">
+                    <svg class="hamburger-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                     </svg>
                 </button>
-                
-                <a href="{{ route('dashboard.main') }}" class="logo">
-                    <span class="logo-text">DigiLearn</span>
-                </a>
+                <div class="sidebar-logo">
+                    <span class="sidebar-brand">DigiLearn</span>
+                </div>
             </div>
             
-            <div class="header-right">
-                <div class="shoutout-logo">
-                    <div>
-                        <div class="shoutout-text">ShoutOutGh</div>
-                        <div class="shoutout-tagline">Educating through Entertainment</div>
-                    </div>
-                </div>
-                
-                <div class="user-menu">
-                    <div class="user-avatar">
-                        {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-content">
-            <div class="sidebar-section">
-                <a href="{{ route('dashboard.main') }}" class="sidebar-menu-item">
-                    <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                    </svg>
-                    <span class="sidebar-menu-text">Home</span>
-                </a>
-                
-                <a href="{{ route('dashboard.digilearn') }}" class="sidebar-menu-item">
-                    <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                    </svg>
-                    <span class="sidebar-menu-text">Lessons</span>
-                </a>
-                
-                <a href="{{ route('dashboard.notes') }}" class="sidebar-menu-item active">
-                    <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                    </svg>
-                    <span class="sidebar-menu-text">Notes</span>
-                </a>
-                
-                <a href="#" class="sidebar-menu-item">
-                    <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                    </svg>
-                    <span class="sidebar-menu-text">Projects</span>
-                </a>
-                
-                <a href="#" class="sidebar-menu-item">
-                    <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                    </svg>
-                    <span class="sidebar-menu-text">Personalized</span>
-                </a>
-                
-                <a href="#" class="sidebar-menu-item">
-                    <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M8 11v6a2 2 0 002 2h4a2 2 0 002-2v-6M8 11h8"/>
-                    </svg>
-                    <span class="sidebar-menu-text">Shop</span>
-                </a>
-            </div>
-
-            <div class="sidebar-section">
-                <div class="sidebar-section-title">Account</div>
-                <a href="#" class="sidebar-menu-item">
-                    <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <span class="sidebar-menu-text">Help & Information</span>
-                </a>
-                
-                <a href="#" class="sidebar-menu-item">
-                    <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
-                    <span class="sidebar-menu-text">Settings</span>
-                </a>
-                
-                <form action="{{ route('logout') }}" method="POST" style="margin-top: 1rem;">
-                    @csrf
-                    <button type="submit" class="sidebar-menu-item" style="border: none; background: none; width: 100%; text-align: left;">
+            <div class="sidebar-content">
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Main</div>
+                    <a href="{{ route('dashboard.main') }}" class="sidebar-menu-item">
                         <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                         </svg>
-                        <span class="sidebar-menu-text">Log out</span>
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
+                        <span class="sidebar-menu-text">Home</span>
+                        <div class="tooltip">Home</div>
+                    </a>
+                    <a href="{{ route('dashboard.digilearn') }}" class="sidebar-menu-item">
+                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                        <span class="sidebar-menu-text">Lessons</span>
+                        <div class="tooltip">Lessons</div>
+                    </a>
+                    <a href="{{ route('dashboard.notes') }}" class="sidebar-menu-item active">
+                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                        <span class="sidebar-menu-text">Notes</span>
+                        <div class="tooltip">Notes</div>
+                    </a>
+                    <a href="/subjects" class="sidebar-menu-item">
+                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                        <span class="sidebar-menu-text">Subjects</span>
+                        <div class="tooltip">Subjects</div>
+                    </a>
+                    <!-- ... other menu items ... -->
+                </div>
 
-    <!-- Main Content -->
-    <div class="main-content">
-        <div class="content-header">
-            <h1 class="page-title">Notes</h1>
-            <p class="page-subtitle">Manage your saved lesson notes</p>
-            
-            <div class="filter-tabs">
-                <button class="filter-tab active" data-filter="all">All</button>
-                <button class="filter-tab" data-filter="dates">Dates</button>
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Account</div>
+                    <!-- ... account menu items ... -->
+                    <form action="{{ route('logout') }}" method="POST">
+                        @csrf
+                        <button type="submit" class="sidebar-menu-item" style="border: none; background: none; width: 100%; text-align: left;">
+                            <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                            </svg>
+                            <span class="sidebar-menu-text">Log out</span>
+                            <div class="tooltip">Log out</div>
+                        </button>
+                    </form>
+                </div>
             </div>
-        </div>
+        </aside>
 
-        <div class="notes-container">
-            @if(isset($notes) && count($notes) > 0)
-                <div class="notes-grid">
-                    @foreach($notes as $note)
-                    <div class="note-card" data-note-id="{{ $note['id'] }}">
-                        <h3 class="note-title">{{ $note['title'] }}</h3>
-                        <p class="note-subject">{{ $note['subject'] }}</p>
-                        <p class="note-date">{{ $note['created_at'] }}</p>
-                        
-                        <div class="note-actions">
-                            <button class="note-action-btn open" onclick="window.location.href='{{ route('dashboard.notes.view', $note['id']) }}'">
-                                <i class="fas fa-eye"></i>
-                                Open
-                            </button>
-                            <button class="note-action-btn delete" onclick="deleteNote({{ $note['id'] }})">
-                                <i class="fas fa-trash"></i>
-                            </button>
+        <!-- Sidebar Overlay for Mobile -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Header -->
+            <div class="top-header">
+                <div class="header-left">
+                    <!-- Empty for now -->
+                </div>
+                
+                <div class="header-right">
+                    <div class="shoutout-logo">
+                        <div>
+                            <div class="shoutout-text">ShoutOutGh</div>
+                            <div class="shoutout-tagline">Educating through Entertainment</div>
                         </div>
                     </div>
-                    @endforeach
-                </div>
-            @else
-                <!-- Sample notes for demo -->
-                <div class="notes-grid">
-                    @for($i = 1; $i <= 12; $i++)
-                    <div class="note-card" data-note-id="{{ $i }}">
-                        <h3 class="note-title">Living and Non Living organism</h3>
-                        <p class="note-subject">(Science -Note G1-3)</p>
-                        <p class="note-date">April 2025</p>
-                        
-                        <div class="note-actions">
-                            <button class="note-action-btn open" onclick="window.location.href='{{ route('dashboard.notes.view', $i) }}'">
-                                <i class="fas fa-eye"></i>
-                                Open
-                            </button>
-                            <button class="note-action-btn delete" onclick="deleteNote({{ $i }})">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                    
+                    <div class="user-menu">
+                        <div class="user-avatar">
+                            {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
                         </div>
                     </div>
-                    @endfor
                 </div>
-            @endif
-        </div>
+            </div>
+
+            <!-- Original Notes Content -->
+            <div class="content-header">
+                <h1 class="page-title">Notes</h1>
+                <p class="page-subtitle">Manage your saved lesson notes</p>
+                
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-filter="all">All</button>
+                    <button class="filter-tab" data-filter="dates">Dates</button>
+                </div>
+            </div>
+
+            <div class="notes-container">
+                @if(isset($notes) && count($notes) > 0)
+                    <div class="notes-grid">
+                        @foreach($notes as $note)
+                        <div class="note-card" data-note-id="{{ $note['id'] }}">
+                            <h3 class="note-title">{{ $note['title'] }}</h3>
+                            <p class="note-subject">{{ $note['subject'] }}</p>
+                            <p class="note-date">{{ $note['created_at'] }}</p>
+                            
+                            <div class="note-actions">
+                                <button class="note-action-btn open" onclick="window.location.href='{{ route('dashboard.notes.view', $note['id']) }}'">
+                                    <i class="fas fa-eye"></i>
+                                    Open
+                                </button>
+                                <button class="note-action-btn delete" onclick="deleteNote({{ $note['id'] }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                @else
+                    <!-- Sample notes for demo -->
+                    <div class="notes-grid">
+                        @for($i = 1; $i <= 12; $i++)
+                        <div class="note-card" data-note-id="{{ $i }}">
+                            <h3 class="note-title">Living and Non Living organism</h3>
+                            <p class="note-subject">(Science -Note G1-3)</p>
+                            <p class="note-date">April 2025</p>
+                            
+                            <div class="note-actions">
+                                <button class="note-action-btn open" onclick="window.location.href='{{ route('dashboard.notes.view', $i) }}'">
+                                    <i class="fas fa-eye"></i>
+                                    Open
+                                </button>
+                                <button class="note-action-btn delete" onclick="deleteNote({{ $i }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        @endfor
+                    </div>
+                @endif
+            </div>
+        </main>
     </div>
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
@@ -623,6 +778,47 @@
         function initializeSidebar() {
             const hamburgerMenu = document.getElementById('hamburgerMenu');
             const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const youtubeSidebar = document.getElementById('youtubeSidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+            // Toggle sidebar collapse/expand
+            sidebarToggle.addEventListener('click', function() {
+                if (window.innerWidth <= 768) {
+                    // Mobile behavior
+                    youtubeSidebar.classList.toggle('mobile-open');
+                    sidebarOverlay.classList.toggle('active');
+                    document.body.style.overflow = youtubeSidebar.classList.contains('mobile-open') ? 'hidden' : '';
+                } else {
+                    // Desktop behavior
+                    youtubeSidebar.classList.toggle('collapsed');
+                }
+            });
+
+            // Close mobile sidebar when clicking overlay
+            sidebarOverlay.addEventListener('click', function() {
+                youtubeSidebar.classList.remove('mobile-open');
+                sidebarOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    youtubeSidebar.classList.remove('mobile-open');
+                    sidebarOverlay.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            });
+
+            // Close sidebar with ESC key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && youtubeSidebar.classList.contains('mobile-open')) {
+                    youtubeSidebar.classList.remove('mobile-open');
+                    sidebarOverlay.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            });
 
             hamburgerMenu.addEventListener('click', function() {
                 sidebar.classList.toggle('active');
