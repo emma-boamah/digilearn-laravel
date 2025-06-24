@@ -195,15 +195,21 @@ class AuthController extends Controller
         return view('auth.signup');
     }
 
+    
     public function signup(Request $request)
     {
-        // Rate limiting for signup
-        $key = 'signup:' . $request->ip();
-        if (RateLimiter::tooManyAttempts($key, 7)) {
-            $seconds = RateLimiter::availableIn($key);
+        // Use email+IP for rate limiting if email is present, else just IP
+        $rateLimitKey = 'signup:' . strtolower($request->input('email', '')) . '|' . $request->ip();
+
+        // Allow 10 attempts per 10 minutes (adjust as needed)
+        $maxAttempts = 10;
+        $decaySeconds = 600; // 10 minutes
+
+        if (RateLimiter::tooManyAttempts($rateLimitKey, $maxAttempts)) {
+            $seconds = RateLimiter::availableIn($rateLimitKey);
             return back()->withErrors([
                 'email' => "Too many signup attempts. Please try again in " . ceil($seconds / 60) . " minutes.",
-            ]);
+            ])->withInput($request->except('password', 'password_confirmation'));
         }
 
         $validated = $request->validate([
@@ -256,34 +262,30 @@ class AuthController extends Controller
                 'email' => $validated['email'],
                 'country' => $validated['country'],
                 'password' => Hash::make($validated['password']),
-                'email_verified_at' => now(), // CHANGED: Auto-verify email for now
+                'email_verified_at' => now(),
                 'registration_ip' => $request->ip(),
                 'last_login_ip' => $request->ip(),
-                'last_login_at' => Carbon::now(),
+                'last_login_at' => now(),
             ]);
 
-            // Clear signup rate limiting on success
-            RateLimiter::clear($key);
+            // Clear rate limit on success
+            RateLimiter::clear($rateLimitKey);
 
-            // Log successful registration
             $this->logSecurityEvent('successful_registration', $request, [
                 'user_id' => $user->id,
                 'email' => $user->email
             ]);
 
-            // Fire registered event
             event(new Registered($user));
-
             Auth::login($user);
 
-            // REMOVED: Email verification - go directly to dashboard
             return redirect()->route('dashboard.level-selection');
 
         } catch (\Exception $e) {
-            RateLimiter::hit($key, 300); // 5 minutes lockout on error
-            
+            RateLimiter::hit($rateLimitKey, 300); // 5 min lockout on error
+
             $this->logSecurityEvent('registration_error', $request, [
-                'email' => $validated['email'],
+                'email' => $validated['email'] ?? null,
                 'error' => $e->getMessage()
             ]);
 
@@ -291,6 +293,8 @@ class AuthController extends Controller
                 'email' => 'Registration failed. Please try again.',
             ])->withInput($request->except('password', 'password_confirmation'));
         }
+
+        // Always increment attempts if validation fails or exception occurs
     }
 
     public function logout(Request $request)
