@@ -818,7 +818,7 @@
             <div class="sidebar-content">
                 <div class="sidebar-section">
                     <div class="sidebar-section-title">Main</div>
-                    <a href="/dashboard" class="sidebar-menu-item active">
+                    <a href="/dashboard/main" class="sidebar-menu-item active">
                         <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h2a2 2 0 012 2v2M8 5a2 2 0 000 4h8a2 2 0 000-4M8 5v0"/>

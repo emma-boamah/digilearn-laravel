@@ -6,22 +6,6 @@
         <div class="container">
             <div class="header-content">
                 <div class="header-left">
-                    @if(isset($isChanging) && $isChanging)
-                        <button class="back-button" id="backToDashboard">
-                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                            </svg>
-                            Back to Dashboard
-                        </button>
-                    @else
-                        <button class="back-button" id="backButton">
-                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                            </svg>
-                            Back
-                        </button>
-                    @endif
-                    
                     <div class="shoutout-logo">
                         <svg width="26" height="26" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/>
@@ -70,6 +54,21 @@
 
     <!-- Main Content -->
     <main class="main-content">
+        @if(isset($isChanging) && $isChanging)
+            <button class="back-button" id="backToDashboard">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Back to Dashboard
+            </button>
+        @else
+            <button class="back-button" id="backButton">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Back
+            </button>
+        @endif
         <div class="container">
             @if(!isset($isChanging) || !$isChanging)
                 <div style="text-align: center; margin-bottom: 2rem;">
