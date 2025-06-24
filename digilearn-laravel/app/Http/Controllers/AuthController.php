@@ -199,7 +199,7 @@ class AuthController extends Controller
     {
         // Rate limiting for signup
         $key = 'signup:' . $request->ip();
-        if (RateLimiter::tooManyAttempts($key, 3)) {
+        if (RateLimiter::tooManyAttempts($key, 7)) {
             $seconds = RateLimiter::availableIn($key);
             return back()->withErrors([
                 'email' => "Too many signup attempts. Please try again in " . ceil($seconds / 60) . " minutes.",
