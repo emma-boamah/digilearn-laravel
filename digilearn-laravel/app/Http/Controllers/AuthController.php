@@ -198,11 +198,10 @@ class AuthController extends Controller
     
     public function signup(Request $request)
     {
-        // Use email+IP for rate limiting if email is present, else just IP
-        $rateLimitKey = 'signup:' . strtolower($request->input('email', '')) . '|' . $request->ip();
+        // Rate limit by email only
+        $rateLimitKey = 'signup:' . strtolower($request->input('email', ''));
 
-        // Allow 10 attempts per 10 minutes (adjust as needed)
-        $maxAttempts = 700;
+        $maxAttempts = 5;
         $decaySeconds = 600; // 10 minutes
 
         if (RateLimiter::tooManyAttempts($rateLimitKey, $maxAttempts)) {
