@@ -196,29 +196,11 @@ class AuthController extends Controller
     }
 
     
+    
     public function signup(Request $request)
     {
-        // Rate limit by email only
-        $rateLimitKey = 'signup:' . strtolower($request->input('email', ''));
-
-        $maxAttempts = 5;
-        $decaySeconds = 600; // 10 minutes
-
-        if (RateLimiter::tooManyAttempts($rateLimitKey, $maxAttempts)) {
-            $seconds = RateLimiter::availableIn($rateLimitKey);
-            return back()->withErrors([
-                'email' => "Too many signup attempts. Please try again in " . ceil($seconds / 60) . " minutes.",
-            ])->withInput($request->except('password', 'password_confirmation'));
-        }
-
-        $validated = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-                'min:2',
-                'regex:/^[a-zA-Z\s\-\'\.]+$/'
-            ],
+        // Validating email first to avoid empty email rate limiting
+        $request->validate([
             'email' => [
                 'required',
                 'string',
@@ -226,6 +208,32 @@ class AuthController extends Controller
                 'max:255',
                 'unique:users',
                 'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/'
+            ],
+        ]);
+        // Rate limit by email only (safe for public/shared IPs)
+        $rateLimitKey = 'signup:' . strtolower($request->input('email', ''));
+
+        $maxAttempts = 5;
+        $decaySeconds = 600; // 10 minutes
+
+        // Check rate limiting before validation
+        if (RateLimiter::tooManyAttempts($rateLimitKey, $maxAttempts)) {
+            $seconds = RateLimiter::availableIn($rateLimitKey);
+            return back()->withErrors([
+                'email' => "Too many signup attempts. Please try again in " . ceil($seconds / 60) . " minutes.",
+            ])->withInput($request->except('password', 'password_confirmation'));
+        }
+
+        // (Optional) Validate CAPTCHA here if you add one
+
+        // Validate input
+        $validated = $request->validate([
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                'min:2',
+                'regex:/^[a-zA-Z\s\-\'\.]+$/'
             ],
             'country' => [
                 'required',
@@ -281,7 +289,8 @@ class AuthController extends Controller
             return redirect()->route('dashboard.level-selection');
 
         } catch (\Exception $e) {
-            RateLimiter::hit($rateLimitKey, 300); // 5 min lockout on error
+            // Increment rate limiter on error
+            RateLimiter::hit($rateLimitKey, $decaySeconds);
 
             $this->logSecurityEvent('registration_error', $request, [
                 'email' => $validated['email'] ?? null,
@@ -293,7 +302,8 @@ class AuthController extends Controller
             ])->withInput($request->except('password', 'password_confirmation'));
         }
 
-        // Always increment attempts if validation fails or exception occurs
+        // If validation fails, increment rate limiter
+        RateLimiter::hit($rateLimitKey, $decaySeconds);
     }
 
     public function logout(Request $request)
