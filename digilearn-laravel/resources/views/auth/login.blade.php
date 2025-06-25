@@ -187,6 +187,50 @@
             margin-top: 0.25rem;
         }
 
+        /* Rate limit error styling */
+        .rate-limit-error {
+            background-color: #fef2f2;
+            border: 1px solid #fee2e2;
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .rate-limit-icon {
+            flex-shrink: 0;
+            width: 1.75rem;
+            height: 1.75rem;
+            color: #dc2626;
+        }
+
+        .rate-limit-message {
+            flex: 1;
+            color: #7f1d1d;
+        }
+
+        .rate-limit-message strong {
+            font-weight: 600;
+        }
+
+        .rate-limit-timer {
+            margin-top: 0.75rem;
+            height: 0.5rem;
+            width: 100%;
+            background-color: #e5e7eb;
+            border-radius: 0.25rem;
+            overflow: hidden;
+        }
+
+        .timer-progress {
+            height: 100%;
+            background-color: #dc2626;
+            width: 100%;
+            transition: width 1s linear;
+        }
+
         .forgot-password {
             text-align: right;
             margin-bottom: 1.5rem;
@@ -298,6 +342,18 @@
 
         <!-- Form Section -->
         <div class="auth-form-container">
+            @error('rate_limit')
+                <div class="rate-limit-error">
+                    <div class="rate-limit-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <div class="rate-limit-message">
+                        <strong>Slow down!</strong> {{ $message }}
+                    </div>
+                </div>
+            @enderror
             <div class="auth-header">
                 <a href="{{ route('home') }}" class="logo">
                     <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image">
@@ -365,5 +421,24 @@
             </div>
         </div>
     </div>
+
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        // Initialize rate limit timers
+        document.querySelectorAll('.timer-progress').forEach(timer => {
+            const seconds = parseInt(timer.dataset.seconds);
+            let remaining = seconds;
+
+            const interval = setInterval(() => {
+                remaining--;
+                const percentage = (remaining / seconds) * 100;
+                timer.style.width = `${percentage}%`;
+
+                if (remaining <= 0) {
+                    clearInterval(interval);
+                    timer.closest('.rate-limit-error').remove();
+                }
+            }, 1000);
+        });
+    </script>
 </body>
 </html>
