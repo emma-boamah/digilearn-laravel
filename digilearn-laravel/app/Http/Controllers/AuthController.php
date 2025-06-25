@@ -210,19 +210,19 @@ class AuthController extends Controller
                 'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/'
             ],
         ]);
-        // // Rate limit by email only (safe for public/shared IPs)
-        // $rateLimitKey = 'signup:' . $request->ip() . '|' . strtolower($request->input('email', ''));
+        // Rate limit by email only (safe for public/shared IPs)
+        $rateLimitKey = 'signup:' . $request->ip() . '|' . strtolower($request->input('email', ''));
 
-        // $maxAttempts = 5;
-        // $decaySeconds = 600; // 10 minutes
+        $maxAttempts = 5;
+        $decaySeconds = 600; // 10 minutes
 
-        // // Check rate limiting before validation
-        // if (RateLimiter::tooManyAttempts($rateLimitKey, $maxAttempts)) {
-        //     $seconds = RateLimiter::availableIn($rateLimitKey);
-        //     return back()->withErrors([
-        //         'email' => "Too many signup attempts. Please try again in " . ceil($seconds / 60) . " minutes.",
-        //     ])->withInput($request->except('password', 'password_confirmation'));
-        // }
+        // Check rate limiting before validation
+        if (RateLimiter::tooManyAttempts($rateLimitKey, $maxAttempts)) {
+            $seconds = RateLimiter::availableIn($rateLimitKey);
+            return back()->withErrors([
+                'email' => "Too many signup attempts. Please try again in " . ceil($seconds / 60) . " minutes.",
+            ])->withInput($request->except('password', 'password_confirmation'));
+        }
 
         // (Optional) Validate CAPTCHA here if you add one
 
@@ -275,8 +275,8 @@ class AuthController extends Controller
                 'last_login_at' => now(),
             ]);
 
-            // // Clear rate limit on success
-            // RateLimiter::clear($rateLimitKey);
+            // Clear rate limit on success
+            RateLimiter::clear($rateLimitKey);
 
             $this->logSecurityEvent('successful_registration', $request, [
                 'user_id' => $user->id,
@@ -289,8 +289,8 @@ class AuthController extends Controller
             return redirect()->route('dashboard.level-selection');
 
         } catch (\Exception $e) {
-            // // Increment rate limiter on error
-            // RateLimiter::hit($rateLimitKey, $decaySeconds);
+            // Increment rate limiter on error
+            RateLimiter::hit($rateLimitKey, $decaySeconds);
 
             $this->logSecurityEvent('registration_error', $request, [
                 'email' => $validated['email'] ?? null,
