@@ -25,15 +25,15 @@ Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
 Route::get('/pricing/pricing-details', [PricingController::class, 'show'])->name('pricing-details');
 
 // Authentication routes with rate limiting
-Route::middleware(['throttle:login'])->group(function () {
-    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
-});
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'login'])
+    ->name('login.submit')
+    ->middleware('throttle:login');  // Only throttle login submission
 
-Route::middleware(['throttle:signup'])->group(function () {
-    Route::get('/signup', [AuthController::class, 'showSignup'])->name('signup');
-    Route::post('/signup', [AuthController::class, 'signup'])->name('signup.submit');
-});
+Route::get('/signup', [AuthController::class, 'showSignup'])->name('signup');
+Route::post('/signup', [AuthController::class, 'signup'])
+    ->name('signup.submit')
+    ->middleware('throttle:signup');  // Only throttle signup submission
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
