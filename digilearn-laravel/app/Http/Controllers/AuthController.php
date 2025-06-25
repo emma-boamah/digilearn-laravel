@@ -235,6 +235,14 @@ class AuthController extends Controller
                 'min:2',
                 'regex:/^[a-zA-Z\s\-\'\.]+$/'
             ],
+            'email' => [
+                'required',
+                'string',
+                'email:rfc,dns',
+                'max:255',
+                'unique:users',
+                'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/'
+            ],
             'country' => [
                 'required',
                 'string',
