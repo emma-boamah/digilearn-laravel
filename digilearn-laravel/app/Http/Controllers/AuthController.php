@@ -211,7 +211,7 @@ class AuthController extends Controller
             ],
         ]);
         // Rate limit by email only (safe for public/shared IPs)
-        $rateLimitKey = 'signup:' . strtolower($request->input('email', ''));
+        $rateLimitKey = 'signup:' . $request->ip() . '|' . strtolower($request->input('email', ''));
 
         $maxAttempts = 5;
         $decaySeconds = 600; // 10 minutes
