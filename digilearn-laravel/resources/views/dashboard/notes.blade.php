@@ -108,6 +108,13 @@
             background-color: var(--gray-100);
         }
 
+        .hamburger-icon {
+            color: var(--primary-red);
+            width: 28px;
+            height: 28px;
+            display: block;
+        }
+
         .logo {
             display: flex;
             align-items: center;
