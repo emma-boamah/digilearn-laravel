@@ -109,9 +109,9 @@
         }
 
         .hamburger-icon {
-            color: var(--primary-red);
-            width: 28px;
-            height: 28px;
+            color: var(--gray-700);
+            width: 20px;
+            height: 20px;
             display: block;
         }
 
@@ -646,8 +646,8 @@
                         <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                         </svg>
-                        <span class="sidebar-menu-text">Home</span>
-                        <div class="tooltip">Home</div>
+                        <span class="sidebar-menu-text">Dashboard</span>
+                        <div class="tooltip">Dashboard</div>
                     </a>
                     <a href="{{ route('dashboard.digilearn') }}" class="sidebar-menu-item">
                         <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -655,13 +655,6 @@
                         </svg>
                         <span class="sidebar-menu-text">Lessons</span>
                         <div class="tooltip">Lessons</div>
-                    </a>
-                    <a href="{{ route('dashboard.notes') }}" class="sidebar-menu-item active">
-                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                        </svg>
-                        <span class="sidebar-menu-text">Notes</span>
-                        <div class="tooltip">Notes</div>
                     </a>
                     <a href="/subjects" class="sidebar-menu-item">
                         <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -671,6 +664,31 @@
                         <div class="tooltip">Subjects</div>
                     </a>
                     <!-- ... other menu items ... -->
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Learning</div>
+                    <a href="/my-progress" class="sidebar-menu-item">
+                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                        <span class="sidebar-menu-text">My Progress</span>
+                        <div class="tooltip">My Progress</div>
+                    </a>
+                    <a href="/saved-lessons" class="sidebar-menu-item">
+                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                        </svg>
+                        <span class="sidebar-menu-text">Saved Lessons</span>
+                        <div class="tooltip">Saved Lessons</div>
+                    </a>
+                    <a href="{{ route('dashboard.notes') }}" class="sidebar-menu-item active">
+                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                        <span class="sidebar-menu-text">My Notes</span>
+                        <div class="tooltip">My Notes</div>
+                    </a>
                 </div>
 
                 <div class="sidebar-section">
