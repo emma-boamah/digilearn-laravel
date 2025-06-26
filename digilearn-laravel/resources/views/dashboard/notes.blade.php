@@ -144,16 +144,24 @@
             gap: 0.5rem;
         }
 
-        .shoutout-text {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--secondary-blue);
+        .notification-btn {
+            position: relative;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
         }
 
-        .shoutout-tagline {
-            font-size: 0.75rem;
-            color: var(--gray-500);
-            font-weight: 500;
+        .notification-btn:hover {
+            background-color: var(--gray-100);
+        }
+
+        .notification-icon {
+            width: 20px;
+            height: 20px;
+            color: var(--gray-600);
         }
 
         .user-menu {
@@ -219,6 +227,11 @@
             align-items: center;
             gap: 0.75rem;
             transition: opacity 0.3s ease;
+        }
+
+        .sidebar-logo img {
+            height: 32px;
+            width: auto;
         }
 
         .youtube-sidebar.collapsed .sidebar-logo {
@@ -635,7 +648,7 @@
                     </svg>
                 </button>
                 <div class="sidebar-logo">
-                    <span class="sidebar-brand">DigiLearn</span>
+                    <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
                 </div>
             </div>
             
@@ -720,12 +733,11 @@
                 </div>
                 
                 <div class="header-right">
-                    <div class="shoutout-logo">
-                        <div>
-                            <div class="shoutout-text">ShoutOutGh</div>
-                            <div class="shoutout-tagline">Educating through Entertainment</div>
-                        </div>
-                    </div>
+                    <button class="notification-btn">
+                        <svg class="notification-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v0.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                    </button>
                     
                     <div class="user-menu">
                         <div class="user-avatar">

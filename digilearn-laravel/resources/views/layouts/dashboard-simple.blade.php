@@ -118,11 +118,24 @@
             gap: 1rem;
         }
 
-        .notification-icon {
-            width: 24px;
-            height: 24px;
-            color: var(--gray-600);
+        .notification-btn {
+            position: relative;
+            background: none;
+            border: none;
             cursor: pointer;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .notification-btn:hover {
+            background-color: var(--gray-100);
+        }
+
+        .notification-icon {
+            width: 20px;
+            height: 20px;
+            color: var(--gray-600);
         }
 
         .header-divider {
