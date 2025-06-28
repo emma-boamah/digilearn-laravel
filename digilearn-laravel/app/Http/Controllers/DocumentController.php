@@ -22,16 +22,26 @@ class DocumentController extends Controller
         $lesson = collect($lessons)->firstWhere('id', (int)$lessonId);
         
         if (!$lesson) {
-            return redirect()->route('dashboard.digilearn')
-                ->with('error', 'Lesson not found.');
+            return view('dashboard.document-viewer', [
+                'lesson' => null,
+                'document' => null,
+                'selectedLevel' => $selectedLevel,
+                'type' => $type,
+                'error' => 'Lesson not found.'
+            ]);
         }
 
         // Get basic document info for preview
         $document = $this->getDocumentForLesson($lessonId, $type);
         
         if (!$document) {
-            return redirect()->route('dashboard.lesson.view', $lessonId)
-                ->with('error', 'Document not found.');
+            // Pass a flag or empty document to the view
+            return view('dashboard.document-viewer', [
+                'lesson' => $lesson,
+                'document' => null,
+                'selectedLevel' => $selectedLevel,
+                'type' => $type
+            ]);
         }
 
         // Return the simple preview page
@@ -267,7 +277,8 @@ class DocumentController extends Controller
             ]
         ];
 
-        return $documents[$lessonId][$type] ?? [];
+        $docs = $documents[$lessonId][$type] ?? [];
+        return is_array($docs) && isset($docs[0]) ? $docs[0] : $docs;
     }
 
     // Full document content for content viewer page
@@ -286,7 +297,10 @@ class DocumentController extends Controller
         $documents = [
             1 => [
                 'pdf' => [
+                    'id' => 1,
                     'title' => 'Basic Numbers and Counting Study Guide',
+                    'file_path' => 'documents/lessons/basic-numbers-counting.pdf',
+                    'file_size' => '2.5 MB',
                     'pages' => [
                         [
                             'number' => 1,
@@ -338,7 +352,10 @@ Understanding these patterns helps students recognize mathematical relationships
                     ]
                 ],
                 'ppt' => [
+                    'id' => 1,
                     'title' => 'Basic Numbers and Counting',
+                    'file_path' => 'documents/lessons/basic-numbers-counting.pptx',
+                    'file_size' => '4.2 MB',
                     'subject' => 'Mathematics Gr-1',
                     'slides' => [
                         [
@@ -526,7 +543,7 @@ Key concepts include:
             ]
         ];
 
-        return $documents[$lessonId][$type] ?? null;
+        return $documents[$lessonId][$type] ?? [];
     }
 
     // Create new PPT
