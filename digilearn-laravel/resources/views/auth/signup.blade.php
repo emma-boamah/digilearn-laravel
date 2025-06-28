@@ -7,20 +7,23 @@
     <title>Sign Up - {{ config('app.name', 'DigiLearn') }}</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         :root {
             --primary-red: #dc2626;
             --primary-red-hover: #b91c1c;
             --primary-blue: #2563eb;
+            --primary-blue-hover: #1d4ed8;
             --white: #ffffff;
             --gray-50: #f9fafb;
             --gray-100: #f3f4f6;
             --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
             --gray-500: #6b7280;
             --gray-600: #4b5563;
             --gray-900: #111827;
-            --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --font-family-sans: 'Figtree', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
         * {
@@ -73,6 +76,7 @@
             flex-shrink: 0;
             min-width: 180px;
             margin-bottom: 1.5rem;
+            justify-content: center;
         }
 
         .logo-image {
@@ -85,6 +89,7 @@
         .auth-tabs {
             display: flex;
             margin-bottom: 2rem;
+            border-bottom: 1px solid var(--gray-300);
         }
 
         .tab {
@@ -95,6 +100,8 @@
             color: var(--gray-500);
             border-bottom: 2px solid transparent;
             transition: all 0.2s ease;
+            font-weight: 500;
+            font-size: 1.1rem;
         }
 
         .tab.active {
@@ -105,6 +112,7 @@
 
         .form-group {
             margin-bottom: 1.5rem;
+            position: relative;
         }
 
         .form-label {
@@ -112,6 +120,7 @@
             font-size: 0.875rem;
             color: var(--gray-600);
             margin-bottom: 0.5rem;
+            font-weight: 500;
         }
 
         .form-input {
@@ -121,6 +130,7 @@
             border-radius: 0.5rem;
             font-size: 1rem;
             transition: all 0.2s ease;
+            background-color: var(--gray-50);
         }
 
         .form-input:focus {
@@ -140,48 +150,42 @@
             margin-top: 0.25rem;
         }
 
-        /* Rate limit error styling */
-        .rate-limit-error {
-            background-color: #fef2f2;
-            border: 1px solid #fee2e2;
-            border-radius: 0.75rem;
-            padding: 1.25rem;
-            margin-bottom: 1.5rem;
+        /* Password toggle */
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 42px;
+            cursor: pointer;
+            color: var(--gray-500);
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+        }
+
+        .checkbox-group {
             display: flex;
-            align-items: flex-start;
-            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1.5rem;
         }
 
-        .rate-limit-icon {
-            flex-shrink: 0;
-            width: 1.75rem;
-            height: 1.75rem;
-            color: #dc2626;
+        .checkbox-group input {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
         }
 
-        .rate-limit-message {
-            flex: 1;
-            color: #7f1d1d;
+        .checkbox-group label {
+            font-size: 0.9rem;
+            color: var(--gray-600);
         }
 
-        .rate-limit-message strong {
-            font-weight: 600;
+        .terms-link {
+            color: var(--primary-blue);
+            text-decoration: none;
         }
 
-        .rate-limit-timer {
-            margin-top: 0.75rem;
-            height: 0.5rem;
-            width: 100%;
-            background-color: #e5e7eb;
-            border-radius: 0.25rem;
-            overflow: hidden;
-        }
-
-        .timer-progress {
-            height: 100%;
-            background-color: #dc2626;
-            width: 100%;
-            transition: width 1s linear;
+        .terms-link:hover {
+            text-decoration: underline;
         }
 
         .submit-btn {
@@ -189,17 +193,42 @@
             background-color: var(--primary-blue);
             color: var(--white);
             border: none;
-            padding: 0.75rem 1rem;
+            padding: 1rem;
             border-radius: 0.5rem;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
             margin-bottom: 1.5rem;
+            letter-spacing: 0.5px;
         }
 
         .submit-btn:hover {
-            background-color: #1e40af;
+            background-color: var(--primary-blue-hover);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 1.5rem 0;
+            color: var(--gray-500);
+            font-size: 0.9rem;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--gray-300);
+        }
+
+        .divider::before {
+            margin-right: 1rem;
+        }
+
+        .divider::after {
+            margin-left: 1rem;
         }
 
         .social-login {
@@ -210,16 +239,20 @@
         }
 
         .social-btn {
-            width: 2.5rem;
-            height: 2.5rem;
-            border-radius: 50%;
-            border: 1px solid var(--gray-300);
-            background-color: var(--white);
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 10px;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 500;
             cursor: pointer;
             transition: all 0.2s ease;
+            border: 1px solid var(--gray-300);
+            background-color: var(--white);
+            width: 100%;
+            max-width: 200px;
         }
 
         .social-btn:hover {
@@ -227,24 +260,19 @@
         }
 
         .social-btn.google {
-            background-color: #4285f4;
-            border-color: #4285f4;
+            background-color: #fff;
+            color: var(--gray-900);
         }
 
-        .social-btn.facebook {
-            background-color: #1877f2;
-            border-color: #1877f2;
+        .social-btn.apple {
+            background-color: #000;
+            color: var(--white);
+            border-color: #000;
         }
 
         .social-btn svg {
             width: 1.25rem;
             height: 1.25rem;
-            color: var(--gray-600);
-        }
-
-        .social-btn.google svg,
-        .social-btn.facebook svg {
-            color: var(--white);
         }
 
         .auth-hero {
@@ -283,12 +311,15 @@
             font-weight: 600;
             margin-bottom: 1rem;
             line-height: 1.2;
+            letter-spacing: -0.5px;
         }
 
         .hero-subtitle {
             font-size: 1.125rem;
             opacity: 0.9;
             margin-bottom: 2rem;
+            max-width: 400px;
+            line-height: 1.6;
         }
 
         .hero-accent {
@@ -298,6 +329,29 @@
             right: 0;
             height: 4rem;
             background-color: var(--primary-blue);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .auth-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .auth-hero {
+                display: none;
+            }
+            
+            .auth-form-container {
+                padding: 2rem 1.5rem;
+            }
+            
+            .social-login {
+                flex-direction: column;
+            }
+            
+            .social-btn {
+                max-width: none;
+            }
         }
     </style>
 </head>
@@ -391,6 +445,9 @@
                         placeholder="Enter your password"
                         required
                     >
+                    <button type="button" class="password-toggle" id="togglePassword">
+                        <i class="far fa-eye"></i>
+                    </button>
                     @error('password')
                         <div class="error-message">{{ $message }}</div>
                     @enderror
@@ -406,24 +463,46 @@
                         placeholder="Confirm your password"
                         required
                     >
+                    <button type="button" class="password-toggle" id="toggleConfirmPassword">
+                        <i class="far fa-eye"></i>
+                    </button>
                 </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="remember" name="remember">
+                    <label for="remember">Remember me</label>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="terms" name="terms" required>
+                    <label for="terms">agree to <a href="#" class="terms-link">terms & conditions</a></label>
+                </div>
+                @error('terms')
+                    <div class="error-message">{{ $message }}</div>
+                @enderror
 
-                <button type="submit" class="submit-btn">Sign Up</button>
+                <button type="submit" class="submit-btn">SIGN UP</button>
             </form>
+
+            <div class="divider">or register with</div>
 
             <div class="social-login">
                 <button class="social-btn google">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                     </svg>
+                    <span>Google</span>
                 </button>
-                <button class="social-btn facebook">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                
+                <button class="social-btn apple">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                        <path d="M17.05 12.04C17.02 8.97 19.62 7.45 19.71 7.39C18.41 5.57 16.37 5.33 15.72 5.31C14.1 5.12 12.63 6.4 11.76 6.4C10.88 6.4 9.69 5.34 8.3 5.38C6.52 5.43 4.92 6.51 4.04 8.2C2.06 11.69 3.5 16.45 5.28 19C6.16 20.32 7.2 21.79 8.58 21.75C9.92 21.71 10.41 20.85 12.07 20.85C13.72 20.85 14.17 21.75 15.58 21.72C17.02 21.69 17.92 20.37 18.79 19.04C19.8 17.56 20.25 16.11 20.27 16.04C20.23 16.02 17.08 14.79 17.05 12.04Z" fill="white"/>
+                        <path d="M14.74 3.78C15.44 2.9 15.95 1.64 15.79 0.39C14.69 0.44 13.36 1.13 12.63 2.01C11.98 2.79 11.37 4.1 11.56 5.31C12.78 5.41 13.99 4.69 14.74 3.78Z" fill="white"/>
                     </svg>
+                    <span>Apple</span>
                 </button>
             </div>
         </div>
@@ -433,8 +512,7 @@
             <div class="hero-content">
                 <h1 class="hero-title">welcome<br>back</h1>
                 <p class="hero-subtitle">
-                    We're so excited to see you again!<br>
-                    Let's pick up where we left off.
+                    We have millions of teachers around the world who love to share knowledge.
                 </p>
             </div>
             <div class="hero-accent"></div>
@@ -442,6 +520,31 @@
     </div>
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        // Password toggle functionality
+        const togglePassword = document.querySelector('#togglePassword');
+        const password = document.querySelector('#password');
+        
+        const toggleConfirmPassword = document.querySelector('#toggleConfirmPassword');
+        const confirmPassword = document.querySelector('#password_confirmation');
+        
+        function togglePasswordVisibility(input, button) {
+            const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+            input.setAttribute('type', type);
+            
+            // Toggle eye icon
+            const icon = button.querySelector('i');
+            icon.classList.toggle('fa-eye');
+            icon.classList.toggle('fa-eye-slash');
+        }
+        
+        togglePassword.addEventListener('click', function() {
+            togglePasswordVisibility(password, this);
+        });
+        
+        toggleConfirmPassword.addEventListener('click', function() {
+            togglePasswordVisibility(confirmPassword, this);
+        });
+        
         // Initialize rate limit timers
         document.querySelectorAll('.timer-progress').forEach(timer => {
             const seconds = parseInt(timer.dataset.seconds);
