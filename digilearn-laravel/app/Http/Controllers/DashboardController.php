@@ -255,89 +255,42 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get available education levels
+     * Get available education levels (grouped)
      */
     private function getAvailableLevels()
     {
         return [
             [
-                'id' => 'primary-1',
-                'title' => 'Primary 1',
-                'description' => 'Foundation learning for young minds. Basic literacy, numeracy, and creative exploration.',
-                'has_illustration' => true
+                'id' => 'primary-lower',
+                'title' => 'Grade/Primary 1-3',
+                'description' => 'Lower primary or Elementary school',
+                'has_illustration' => false,
+                'levels' => ['primary-1', 'primary-2', 'primary-3']
             ],
             [
-                'id' => 'primary-2',
-                'title' => 'Primary 2',
-                'description' => 'Building on fundamentals with enhanced reading, writing, and mathematical concepts.',
-                'has_illustration' => true
+                'id' => 'primary-upper', 
+                'title' => 'Grade/Primary 4-6',
+                'description' => 'Upper primary or elementary school',
+                'has_illustration' => false,
+                'levels' => ['primary-4', 'primary-5', 'primary-6']
             ],
             [
-                'id' => 'primary-3',
-                'title' => 'Primary 3',
-                'description' => 'Developing critical thinking skills and expanding knowledge across core subjects.',
-                'has_illustration' => true
+                'id' => 'jhs',
+                'title' => 'Grade/JHS 7-9', 
+                'description' => 'Junior High School or Middle school',
+                'has_illustration' => true,
+                'levels' => ['jhs-1', 'jhs-2', 'jhs-3']
             ],
             [
-                'id' => 'primary-4',
-                'title' => 'Primary 4',
-                'description' => 'Advanced primary education with focus on problem-solving and analytical skills.',
-                'has_illustration' => true
-            ],
-            [
-                'id' => 'primary-5',
-                'title' => 'Primary 5',
-                'description' => 'Preparing for transition to junior high with comprehensive subject coverage.',
-                'has_illustration' => true
-            ],
-            [
-                'id' => 'primary-6',
-                'title' => 'Primary 6',
-                'description' => 'Final primary year focusing on BECE preparation and academic excellence.',
-                'has_illustration' => true
-            ],
-            [
-                'id' => 'jhs-1',
-                'title' => 'JHS 1',
-                'description' => 'Introduction to junior high school curriculum with diverse subject options.',
-                'has_illustration' => true
-            ],
-            [
-                'id' => 'jhs-2',
-                'title' => 'JHS 2',
-                'description' => 'Intermediate junior high studies with focus on skill development and exploration.',
-                'has_illustration' => true
-            ],
-            [
-                'id' => 'jhs-3',
-                'title' => 'JHS 3',
-                'description' => 'Final JHS year with intensive BECE preparation and career guidance.',
-                'has_illustration' => true
-            ],
-            [
-                'id' => 'shs-1',
-                'title' => 'SHS 1',
-                'description' => 'Senior high school foundation with specialized program tracks and electives.',
-                'has_illustration' => true
-            ],
-            [
-                'id' => 'shs-2',
-                'title' => 'SHS 2',
-                'description' => 'Advanced senior high studies with focus on specialization and university preparation.',
-                'has_illustration' => true
-            ],
-            [
-                'id' => 'shs-3',
-                'title' => 'SHS 3',
-                'description' => 'Final SHS year with WASSCE preparation and tertiary education readiness.',
-                'has_illustration' => true
+                'id' => 'shs',
+                'title' => 'Grade/SHS 1-3',
+                'description' => 'High school or Senior High School', 
+                'has_illustration' => false,
+                'levels' => ['shs-1', 'shs-2', 'shs-3']
             ]
         ];
     }
 
-    /**
-     * Get lessons for a specific level
-     */
     /**
      * Get lessons for a specific level
      */
