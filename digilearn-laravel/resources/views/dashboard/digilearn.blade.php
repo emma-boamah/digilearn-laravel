@@ -331,11 +331,12 @@
         .filter-bar {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            padding: 1rem;
+            gap: 0.75rem; /* Reduced gap for mobile */
+            padding: 0.75rem; /* Reduced padding */
             background-color: var(--white);
             border-bottom: 1px solid var(--gray-200);
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
+            overflow-x: auto; /* Allow horizontal scrolling on small screens */
         }
 
         .search-box {
@@ -432,7 +433,7 @@
             visibility: hidden;
             transform: translateY(-10px);
             transition: all 0.3s ease;
-            max-height: 300px;
+            max-height: 60vh; /* Limit height for long dropdowns */
             overflow-y: auto;
         }
 
@@ -590,6 +591,7 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             transition: all 0.2s ease;
             cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
         .lesson-card:hover {
@@ -672,6 +674,29 @@
             transform: scale(1.1);
         }
 
+        /* Update the lesson card hover effect to show level badge more prominently */
+        .lesson-card:hover .lesson-level-badge {
+            background-color: var(--primary-red);
+            transform: scale(1.05);
+            transition: all 0.2s ease;
+        }
+
+        .lesson-level-badge {
+            position: absolute;
+            top: 0.5rem;
+            left: 0.5rem;
+            background-color: var(--secondary-blue);
+            color: var(--white);
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+
         .video-loading {
             position: absolute;
             inset: 0;
@@ -733,6 +758,7 @@
             .youtube-sidebar {
                 transform: translateX(-100%);
                 transition: transform 0.3s ease, width 0.3s ease;
+                width: 280px; /* Adjusted width for mobile */
             }
 
             .youtube-sidebar.mobile-open {
@@ -747,40 +773,93 @@
                 margin-left: 0;
             }
 
+            /* Hide desktop header on mobile */
             .top-header {
-                padding: 0.75rem 0.5rem;
+                display: none;
             }
 
-            .filter-bar {
-                padding: 1rem 0.5rem;
-                flex-direction: column;
-                align-items: stretch;
-                gap: 1rem;
+            /* Show mobile header */
+            .mobile-header {
+                display: block;
+                z-index: 1001; /* Ensure it appears above sidebar */
             }
-            
-            .search-box {
+
+            /* Filter bar layout */
+            .filter-bar {
+                flex-direction: column;
+                gap: 12px;
+                padding: 16px;
+                position: relative;
+            }
+
+            /* Dropdowns row */
+            .dropdowns-row {
+                display: flex;
+                gap: 12px;
+                width: 100%;
+            }
+
+            .dropdowns-row .custom-dropdown {
+                flex: 1;
                 min-width: auto;
-                max-width: none;
+            }
+
+            /* Hide sidebar toggle in sidebar on mobile */
+            .sidebar-toggle-btn {
+                display: none;
+            }
+            .sidebar-logo {
+                justify-content: center;
+            }
+
+            /* Search box initially hidden on mobile */
+            .search-box {
+                display: none;
+                order: 0;
+                min-width: 100%;
+                margin-bottom: 12px;
+            }
+
+            .search-box.mobile-visible {
+                display: flex;
             }
             
             .content-section {
                 padding: 1rem 0.5rem;
             }
 
+            /* Adjust hero section for mobile */
+            .hero-section {
+                height: 200px;
+            }
+
             .hero-content h1 {
-                font-size: 2rem;
+                font-size: 24px;
+                margin-bottom: 8px;
             }
             
             .hero-content p {
-                font-size: 1.25rem;
+                font-size: 16px;
+                margin-bottom: 16px;
+            }
+
+            .hero-view-button {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
             }
             
             .content-grid {
                 grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .header-left {
+                gap: 0.5rem;
             }
 
             /* Mobile overlay */
             .sidebar-overlay {
+                display: none;
                 position: fixed;
                 top: 0;
                 left: 0;
@@ -789,14 +868,145 @@
                 background-color: rgba(0, 0, 0, 0.6);
                 z-index: 999;
                 opacity: 0;
-                visibility: hidden;
                 transition: all 0.3s ease;
             }
 
             .sidebar-overlay.active {
                 opacity: 1;
-                visibility: visible;
+                display: block;
             }
+
+            .sidebar-logo img {
+                height: 28px;
+            }
+
+            .custom-dropdown {
+                min-width: calc(50% - 0.25rem);
+            }
+
+            /* Buttons row */
+            .filter-buttons {
+                display: flex;
+                gap: 12px;
+                width: 100%;
+            }
+
+            .filter-button {
+                flex: 1;
+                padding: 0.75rem;
+                font-size: 0.8rem;
+            }
+
+            .hero-overlay {
+                padding: 0 20px;
+                flex-direction: column;
+                justify-content: center;
+                text-align: center;
+            }
+
+            .lesson-card {
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            }
+        }
+
+        /* Mobile Header */
+        .mobile-header {
+            display: none;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: var(--white);
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--gray-200);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            color: var(--gray-900); /* Ensure text color contrast */
+        }
+
+        .mobile-header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .mobile-header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .mobile-header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mobile-hamburger {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+
+        .mobile-hamburger:hover {
+            background-color: var(--gray-100);
+        }
+
+        /* Mobile hamburger styling */
+        .mobile-hamburger svg {
+            stroke: var(--gray-700);
+            width: 24px;
+            height: 24px;
+        }
+
+        .mobile-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .mobile-logo img {
+            height: 28px;
+        }
+
+        .mobile-logo .sidebar-brand {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-red);
+        }
+
+        /* Adjust user avatar for mobile */
+        .mobile-header .user-avatar {
+            width: 32px;
+            height: 32px;
+            font-size: 0.75rem;
+        }
+
+        /* Notification icon sizing for mobile */
+        .mobile-header .notification-btn {
+            padding: 0.5rem;
+        }
+
+        .mobile-header .notification-icon {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Mobile Search Toggle */
+        .mobile-search-toggle {
+            display: block;
+        }
+
+        /* Better tap targets for mobile */
+        .sidebar-menu-item, .dropdown-option, .filter-button {
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
         }
     </style>
 </head>
@@ -903,10 +1113,52 @@
 
         <!-- Main Content -->
         <main class="main-content">
+            <!-- Mobile Header -->
+            <div class="mobile-header">
+                <div class="mobile-header-content">
+                    <div class="mobile-header-left">
+                        <button class="mobile-hamburger" id="mobileSidebarToggle">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" stroke-width="2" 
+                                      stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <div class="mobile-logo">
+                            <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
+                            <span class="sidebar-brand">DigiLearn</span>
+                        </div>
+                    </div>
+                    <div class="mobile-header-right">
+                        <button class="mobile-search-toggle" id="mobileSearchToggle">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </button>
+                        <button class="notification-btn">
+                            <svg class="notification-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v0.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                            </svg>
+                        </button>
+                        <div class="user-avatar">
+                            {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
+                        </div>
+                    </div>
+                </div>
+            </div>
             <!-- Top Header -->
             <div class="top-header">
                 <div class="header-left">
-                    <!-- Empty for now, hamburger is in sidebar -->
+                    <!-- Hamburger for sidebar toggle (always visible) -->
+                    <button class="sidebar-toggle-btn" id="desktopSidebarToggle">
+                        <svg class="hamburger-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+                    <div class="sidebar-logo">
+                        <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
+                    </div>
                 </div>
                 
                 <div class="header-right">
@@ -924,7 +1176,7 @@
             
             <!-- Search/Filter Bar -->
             <div class="filter-bar">
-                <div class="search-box">
+                <div class="search-box" id="mobileSearchBox">
                     <input type="text" class="search-input" placeholder="Search">
                     <button class="search-button">
                         <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -936,7 +1188,7 @@
                 <!-- Custom levels dropdown -->
                 <div class="custom-dropdown">
                     <button class="dropdown-toggle">
-                        <span>{{ ucwords(str_replace('-', ' ', $selectedLevel)) }}</span>
+                        <span>{{ ucwords(str_replace('-', ' ', $selectedLevelGroup)) }}</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="dropdown-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
@@ -1010,7 +1262,7 @@
             <div class="content-section">
                 <div class="content-grid">
                     @forelse($lessons as $lesson)
-                    <div class="lesson-card hover-video-card" data-video-id="lesson-video-{{ $lesson['id'] }}">
+                    <div class="lesson-card hover-video-card" data-lesson-id="{{ $lesson['id'] }}">
                         <div class="lesson-thumbnail">
                             <!-- Video element for hover-to-play functionality -->
                             <video 
@@ -1035,6 +1287,9 @@
                             >
                             
                             <div class="lesson-duration">{{ $lesson['duration'] }}</div>
+                            
+                            <!-- Level badge -->
+                            <div class="lesson-level-badge">{{ $lesson['level_display'] ?? 'Level' }}</div>
                             
                             <!-- Play overlay that appears on hover -->
                             <div class="play-overlay">
@@ -1061,7 +1316,7 @@
                     @empty
                     <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
                         <h3 style="color: var(--gray-600); margin-bottom: 1rem;">No lessons available</h3>
-                        <p style="color: var(--gray-500);">Lessons for {{ ucwords(str_replace('-', ' ', $selectedLevel)) }} are coming soon!</p>
+                        <p style="color: var(--gray-500);">Lessons for {{ ucwords(str_replace('-', ' ', $selectedLevelGroup)) }} are coming soon!</p>
                     </div>
                     @endforelse
                 </div>
@@ -1072,29 +1327,69 @@
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize all functionality
+            initializeMobileUI();
             initializeSidebar();
             initializeDropdowns();
             initializeVideoCards();
         });
 
+        // Mobile UI enhancements
+        function initializeMobileUI() {
+            const mobileSearchToggle = document.getElementById('mobileSearchToggle');
+            const mobileSearchBox = document.getElementById('mobileSearchBox');
+            
+            if (mobileSearchToggle && mobileSearchBox) {
+                mobileSearchToggle.addEventListener('click', function() {
+                    mobileSearchBox.classList.toggle('mobile-visible');
+                    
+                    // Focus search input when visible
+                    if (mobileSearchBox.classList.contains('mobile-visible')) {
+                        setTimeout(() => {
+                            const searchInput = mobileSearchBox.querySelector('.search-input');
+                            if (searchInput) searchInput.focus();
+                        }, 100);
+                    }
+                });
+            }
+
+            // Close search when clicking outside
+            document.addEventListener('click', function(e) {
+                if (window.innerWidth > 768) return;
+                
+                if (mobileSearchBox && mobileSearchBox.classList.contains('mobile-visible')) {
+                    const isSearchBox = mobileSearchBox.contains(e.target);
+                    const isSearchToggle = mobileSearchToggle.contains(e.target);
+                    
+                    if (!isSearchBox && !isSearchToggle) {
+                        mobileSearchBox.classList.remove('mobile-visible');
+                    }
+                }
+            });
+        }
+
         // YouTube-style sidebar functionality
         function initializeSidebar() {
             const sidebarToggle = document.getElementById('sidebarToggle');
+            const desktopSidebarToggle = document.getElementById('desktopSidebarToggle');
+            const mobileHamburger = document.getElementById('mobileHamburger');
             const youtubeSidebar = document.getElementById('youtubeSidebar');
             const sidebarOverlay = document.getElementById('sidebarOverlay');
 
-            // Toggle sidebar collapse/expand
-            sidebarToggle.addEventListener('click', function() {
-                if (window.innerWidth <= 768) {
-                    // Mobile behavior - show/hide sidebar
+            // Desktop header toggle
+            if (desktopSidebarToggle) {
+                desktopSidebarToggle.addEventListener('click', function() {
+                    youtubeSidebar.classList.toggle('collapsed');
+                });
+            }
+
+            // Mobile sidebar toggle
+            if (mobileHamburger) {
+                mobileHamburger.addEventListener('click', function() {
                     youtubeSidebar.classList.toggle('mobile-open');
                     sidebarOverlay.classList.toggle('active');
                     document.body.style.overflow = youtubeSidebar.classList.contains('mobile-open') ? 'hidden' : '';
-                } else {
-                    // Desktop behavior - collapse/expand sidebar
-                    youtubeSidebar.classList.toggle('collapsed');
-                }
-            });
+                });
+            }
 
             // Close mobile sidebar when clicking overlay
             sidebarOverlay.addEventListener('click', function() {
@@ -1156,13 +1451,13 @@
             });
         }
 
-        // YouTube-style hover-to-play video functionality
+        // Updated the playLesson function and video card click handling
         function initializeVideoCards() {
             const videoCards = document.querySelectorAll('.hover-video-card');
             let currentlyPlaying = null;
             
             videoCards.forEach(card => {
-                const videoId = card.getAttribute('data-video-id');
+                const videoId = card.getAttribute('data-video-id') || `lesson-video-${card.getAttribute('data-lesson-id')}`;
                 const video = document.getElementById(videoId);
                 const loadingIndicator = card.querySelector('.video-loading');
                 
@@ -1170,18 +1465,18 @@
                 
                 // Handle video loading
                 video.addEventListener('loadstart', function() {
-                    loadingIndicator.style.display = 'flex';
+                    if (loadingIndicator) loadingIndicator.style.display = 'flex';
                 });
                 
                 video.addEventListener('canplay', function() {
-                    loadingIndicator.style.display = 'none';
+                    if (loadingIndicator) loadingIndicator.style.display = 'none';
                 });
                 
                 // Handle video errors
                 video.addEventListener('error', function() {
                     console.log('Video failed to load:', videoId);
                     card.classList.add('video-error');
-                    loadingIndicator.style.display = 'none';
+                    if (loadingIndicator) loadingIndicator.style.display = 'none';
                 });
                 
                 // Play video on hover
@@ -1236,15 +1531,24 @@
                 
                 // Handle click to play full lesson
                 card.addEventListener('click', function(e) {
-                    const lessonId = videoId.replace('lesson-video-', '');
-                    playLesson(lessonId);
+                    const lessonId = this.getAttribute('data-lesson-id');
+                    if (lessonId) {
+                        playLesson(lessonId);
+                    }
                 });
             });
         }
         
         function playLesson(lessonId) {
             console.log('Playing full lesson:', lessonId);
-            // Redirect to the lesson view page
+            // Add visual feedback
+            const card = document.querySelector(`[data-lesson-id="${lessonId}"]`);
+            if (card) {
+                card.style.opacity = '0.7';
+                card.style.transform = 'scale(0.98)';
+            }
+            
+            // Navigate to the lesson view page
             window.location.href = `/dashboard/lesson/${lessonId}`;
         }
     </script>

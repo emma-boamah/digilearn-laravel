@@ -48,12 +48,17 @@ Route::middleware(['throttle:forms'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     // Level selection (first page after login)
     Route::get('/dashboard/level-selection', [DashboardController::class, 'levelSelection'])->name('dashboard.level-selection');
-    Route::post('/dashboard/select-level/{levelId}', [DashboardController::class, 'selectLevel'])->name('dashboard.select-level');
     
+    // Show specific level group (Primary 1-3, JHS 1-3, etc.)
+    Route::get('/dashboard/level-group/{groupId}', [DashboardController::class, 'showLevelGroup'])->name('dashboard.level-group');
+
+    // Select level group and go to digilearn
+    Route::post('/dashboard/select-level-group/{groupId}', [DashboardController::class, 'selectLevelGroup'])->name('dashboard.select-level-group');
+
     // Main dashboard (after level selection)
     Route::get('/dashboard/main', [DashboardController::class, 'main'])->name('dashboard.main');
-    
-    // DigiLearn video grid (after clicking DigiLearn)
+
+    // DigiLearn video grid (shows videos for selected level group)
     Route::get('/dashboard/digilearn', [DashboardController::class, 'digilearn'])->name('dashboard.digilearn');
     
     // Other sections

@@ -191,6 +191,7 @@
         
         .form-group {
             margin-bottom: 1.8rem;
+            position: relative;
         }
         
         label {
@@ -203,25 +204,73 @@
         
         .input-group {
             position: relative;
+            display: flex;
+            align-items: center;
         }
         
-        .input-group i {
+        .input-group i.input-icon {
             position: absolute;
             left: 18px;
             top: 50%;
             transform: translateY(-50%);
             color: var(--gray);
             font-size: 1.1rem;
+            z-index: 2;
+            pointer-events: none;
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--gray);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+        }
+        
+        .password-toggle:hover {
+            color: var(--primary);
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+        
+        .password-toggle:focus {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+            color: var(--primary);
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+        
+        .password-toggle i {
+            font-size: 1rem;
+            pointer-events: none;
         }
         
         input {
             width: 100%;
-            padding: 16px 16px 16px 52px;
+            padding: 16px 52px 16px 52px;
             border: 1px solid var(--border);
             border-radius: 12px;
             font-size: 1.05rem;
             transition: all 0.3s ease;
             background-color: var(--light);
+            position: relative;
+            z-index: 1;
+        }
+        
+        input.error {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
         }
         
         input:focus {
@@ -248,6 +297,7 @@
             width: 20px;
             height: 20px;
             accent-color: var(--primary);
+            padding: 0;
         }
         
         .forgot-password {
@@ -278,9 +328,15 @@
             box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
         }
         
-        .btn:hover {
+        .btn:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
         }
         
         .divider {
@@ -374,6 +430,33 @@
             font-size: 1rem;
         }
         
+        .rate-limit-error {
+            background-color: #fef2f2;
+            border: 1px solid #fee2e2;
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        
+        .rate-limit-icon {
+            flex-shrink: 0;
+            width: 1.75rem;
+            height: 1.75rem;
+            color: #dc2626;
+        }
+        
+        .rate-limit-message {
+            flex: 1;
+            color: #7f1d1d;
+        }
+        
+        .rate-limit-message strong {
+            font-weight: 600;
+        }
+        
         @media (max-width: 900px) {
             .container {
                 flex-direction: column;
@@ -456,9 +539,12 @@
         <!-- Form Section -->
         <div class="form-section">
             <div class="form-container">
-                <a href="{{ route('home') }}" class="logo">
-                    <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image">
-                </a>
+                <div class="form-header">
+                    <a href="{{ route('home') }}" class="logo">
+                        <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image">
+                    </a>
+                    <p>Enter your email and password to continue</p>
+                </div>
                 
                 <div class="auth-tabs">
                     <a href="{{ route('login') }}" class="tab active">Log In</a>
@@ -467,65 +553,74 @@
                 
                 <form method="POST" action="{{ route('login.submit') }}">
                     @csrf
+                    
                     <div class="form-group">
-                        <label for="email">Username or email</label>
+                        <label for="email">Email</label>
                         <div class="input-group">
-                            <i class="fas fa-user"></i>
+                            <i class="fas fa-envelope input-icon"></i>
                             <input 
                                 type="email" 
                                 id="email" 
                                 name="email" 
-                                placeholder="Enter your username or email"
+                                placeholder="Enter your email address"
+                                value="{{ old('email') }}"
                                 required
+                                class="{{ $errors->has('email') ? 'error' : '' }}"
                             >
                         </div>
-                        <!-- Error message placeholder -->
-                        <div class="error-message" style="display: none;">
+                        @error('email')
+                        <div class="error-message">
                             <i class="fas fa-exclamation-circle"></i>
-                            <span>Please enter a valid email address</span>
+                            <span>{{ $message }}</span>
                         </div>
+                        @enderror
                     </div>
                     
                     <div class="form-group">
                         <label for="password">Password</label>
                         <div class="input-group">
-                            <i class="fas fa-lock"></i>
+                            <i class="fas fa-lock input-icon"></i>
                             <input 
                                 type="password" 
                                 id="password" 
                                 name="password" 
                                 placeholder="Enter your password"
                                 required
+                                class="{{ $errors->has('password') ? 'error' : '' }}"
                             >
+                            <button type="button" class="password-toggle" id="togglePassword" aria-label="Toggle password visibility">
+                                <i class="far fa-eye" id="toggleIcon"></i>
+                            </button>
                         </div>
-                        <!-- Error message placeholder -->
-                        <div class="error-message" style="display: none;">
+                        @error('password')
+                        <div class="error-message">
                             <i class="fas fa-exclamation-circle"></i>
-                            <span>Password must be at least 8 characters</span>
+                            <span>{{ $message }}</span>
                         </div>
+                        @enderror
                     </div>
                     
                     <div class="options">
                         <div class="remember">
-                            <input type="checkbox" id="remember" name="remember">
+                            <input type="checkbox" id="remember" name="remember" {{ old('remember') ? 'checked' : '' }}>
                             <label for="remember">Remember me</label>
                         </div>
                         <a href="#" class="forgot-password">Forgot password?</a>
                     </div>
                     
-                    <button type="submit" class="btn">Log In</button>
+                    <button type="submit" class="btn" id="loginBtn">Log In</button>
                     
                     <div class="divider">
                         <span>or continue with</span>
                     </div>
                     
                     <div class="social-login">
-                        <div class="social-btn google">
+                        <button type="button" class="social-btn google">
                             <i class="fab fa-google"></i>
-                        </div>
-                        <div class="social-btn apple">
+                        </button>
+                        <button type="button" class="social-btn apple">
                             <i class="fab fa-apple"></i>
-                        </div>
+                        </button>
                     </div>
                     
                     <div class="signup-link">
@@ -536,85 +631,58 @@
         </div>
     </div>
     
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         document.addEventListener('DOMContentLoaded', function() {
-            // Form validation
-            const form = document.querySelector('form');
-            const emailInput = document.getElementById('email');
+            // Password toggle functionality
+            const togglePassword = document.getElementById('togglePassword');
             const passwordInput = document.getElementById('password');
-            const errorMessages = document.querySelectorAll('.error-message');
+            const toggleIcon = document.getElementById('toggleIcon');
             
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
+            if (togglePassword && passwordInput && toggleIcon) {
+                togglePassword.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Toggle password visibility
+                    const isPassword = passwordInput.type === 'password';
+                    passwordInput.type = isPassword ? 'text' : 'password';
+                    
+                    // Update icon
+                    if (isPassword) {
+                        toggleIcon.classList.remove('fa-eye');
+                        toggleIcon.classList.add('fa-eye-slash');
+                    } else {
+                        toggleIcon.classList.remove('fa-eye-slash');
+                        toggleIcon.classList.add('fa-eye');
+                    }
+                    
+                    // Keep focus on password input
+                    passwordInput.focus();
+                });
                 
-                let isValid = true;
-                
-                // Clear previous errors
-                errorMessages.forEach(el => el.style.display = 'none');
-                emailInput.style.borderColor = '';
-                passwordInput.style.borderColor = '';
-                
-                // Validate email
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailInput.value.trim()) {
-                    showError(emailInput, 0, 'Email is required');
-                    isValid = false;
-                } else if (!emailRegex.test(emailInput.value)) {
-                    showError(emailInput, 0, 'Please enter a valid email address');
-                    isValid = false;
-                }
-                
-                // Validate password
-                if (!passwordInput.value) {
-                    showError(passwordInput, 1, 'Password is required');
-                    isValid = false;
-                } else if (passwordInput.value.length < 8) {
-                    showError(passwordInput, 1, 'Password must be at least 8 characters');
-                    isValid = false;
-                }
-                
-                if (isValid) {
-                    // Simulate form submission
-                    showLoading();
+                // Prevent form submission when clicking toggle
+                togglePassword.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                });
+            }
+            
+            // Form submission loading state
+            const form = document.querySelector('form');
+            const loginBtn = document.getElementById('loginBtn');
+            
+            if (form && loginBtn) {
+                form.addEventListener('submit', function() {
+                    const originalText = loginBtn.innerHTML;
+                    loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+                    loginBtn.disabled = true;
+                    
+                    // Revert after 10 seconds in case of slow response
                     setTimeout(() => {
-                        alert('Login successful! Redirecting to dashboard...');
-                        form.submit();
-                    }, 1500);
-                }
-            });
-            
-            function showError(input, index, message) {
-                input.style.borderColor = '#ef4444';
-                errorMessages[index].style.display = 'flex';
-                errorMessages[index].querySelector('span').textContent = message;
-                input.focus();
+                        loginBtn.innerHTML = originalText;
+                        loginBtn.disabled = false;
+                    }, 10000);
+                });
             }
-            
-            function showLoading() {
-                const btn = document.querySelector('.btn');
-                const originalText = btn.textContent;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
-                btn.disabled = true;
-                
-                // Revert after 3 seconds for demo
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                }, 3000);
-            }
-            
-            // Simulate rate limit error for demo
-            setTimeout(() => {
-                const rateLimitError = document.createElement('div');
-                rateLimitError.className = 'error-message';
-                rateLimitError.style.marginBottom = '20px';
-                rateLimitError.style.display = 'flex';
-                rateLimitError.innerHTML = `
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span>Too many login attempts. Please try again in 2 minutes.</span>
-                `;
-                form.prepend(rateLimitError);
-            }, 2000);
         });
     </script>
 </body>

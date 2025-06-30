@@ -41,7 +41,7 @@
         <div class="container">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span style="color: var(--gray-600); font-size: 0.875rem;">
-                    Selected Level: <strong style="color: var(--primary-red);">{{ ucwords(str_replace('-', ' ', $selectedLevel)) }}</strong>
+                    Selected Level: <strong style="color: var(--primary-red);">{{ ucwords(str_replace('-', ' ', $selectedLevelGroup)) }}</strong>
                 </span>
                 <a href="{{ route('dashboard.change-level') }}" style="color: var(--secondary-blue); font-size: 0.875rem; text-decoration: none;">
                     Change Level

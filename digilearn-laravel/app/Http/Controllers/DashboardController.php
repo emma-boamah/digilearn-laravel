@@ -37,7 +37,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Handle level selection
+     * Handle level selection (updated to work with the new flow)
      */
     public function selectLevel(Request $request, $levelId)
     {
@@ -63,56 +63,138 @@ class DashboardController extends Controller
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
-        return redirect()->route('dashboard.main');
+        return redirect()->route('dashboard.main')
+            ->with('success', 'Level selected successfully!');
     }
 
     /**
-     * Show main dashboard
+     * Handle level group selection and redirect to digilearn
+     */
+    public function selectLevelGroup(Request $request, $groupId)
+    {
+        $validGroups = ['primary-lower', 'primary-upper', 'jhs', 'shs'];
+
+        if (!in_array($groupId, $validGroups)) {
+            return redirect()->route('dashboard.level-selection')
+                ->withErrors(['group' => 'Invalid level group selected.']);
+        }
+
+        // Store selected level group in session
+        session(['selected_level_group' => $groupId]);
+
+        // Log level group selection
+        Log::channel('security')->info('level_group_selected', [
+            'user_id' => Auth::id(),
+            'level_group' => $groupId,
+            'ip' => request()->ip(),
+            'timestamp' => Carbon::now()->toISOString()
+        ]);
+
+        // Redirect directly to digilearn
+        return redirect()->route('dashboard.digilearn')
+            ->with('success', 'Level selected successfully!');
+    }
+
+    /**
+     * Update main dashboard to work with level groups
      */
     public function main()
     {
-        // Check if user has selected a level
-        if (!session('selected_level')) {
+        // Check if user has selected a level group
+        if (!session('selected_level_group')) {
             return redirect()->route('dashboard.level-selection');
         }
 
-        $selectedLevel = session('selected_level');
+        $selectedLevelGroup = session('selected_level_group');
 
         // Log dashboard access
         Log::channel('security')->info('dashboard_main_accessed', [
             'user_id' => Auth::id(),
-            'selected_level' => $selectedLevel,
+            'selected_level_group' => $selectedLevelGroup,
             'ip' => request()->ip(),
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
-        return view('dashboard.main', compact('selectedLevel'));
+        return view('dashboard.main', compact('selectedLevelGroup'));
     }
 
     /**
-     * Show DigiLearn page
+     * Show DigiLearn page (updated to work with level groups)
      */
     public function digilearn()
     {
-        // Check if user has selected a level
-        if (!session('selected_level')) {
+        // Check if user has selected a level group
+        if (!session('selected_level_group')) {
             return redirect()->route('dashboard.level-selection');
         }
 
-        $selectedLevel = session('selected_level');
+        $selectedLevelGroup = session('selected_level_group');
 
         // Log DigiLearn access
         Log::channel('security')->info('digilearn_accessed', [
             'user_id' => Auth::id(),
-            'selected_level' => $selectedLevel,
+            'selected_level_group' => $selectedLevelGroup,
             'ip' => request()->ip(),
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
-        // Sample lessons data based on level
-        $lessons = $this->getLessonsForLevel($selectedLevel);
+        // Get lessons for the entire level group
+        $lessons = $this->getLessonsForLevelGroup($selectedLevelGroup);
 
-        return view('dashboard.digilearn', compact('selectedLevel', 'lessons'));
+        return view('dashboard.digilearn', compact('selectedLevelGroup', 'lessons'));
+    }
+
+    /**
+     * Get lessons for a level group (combines all levels in the group)
+     */
+    private function getLessonsForLevelGroup($groupId)
+    {
+        $levelGroups = $this->getLevelGroups();
+        
+        if (!isset($levelGroups[$groupId])) {
+            return [];
+        }
+
+        $allLessons = [];
+        $individualLevels = array_keys($levelGroups[$groupId]['levels']);
+
+        // Get lessons from all individual levels in the group
+        foreach ($individualLevels as $level) {
+            $levelLessons = $this->getLessonsForLevel($level);
+            
+            // Add level information to each lesson
+            foreach ($levelLessons as &$lesson) {
+                $lesson['level'] = $level;
+                $lesson['level_display'] = $this->getLevelDisplayName($level);
+            }
+            
+            $allLessons = array_merge($allLessons, $levelLessons);
+        }
+
+        return $allLessons;
+    }
+
+    /**
+     * Get display name for level
+     */
+    private function getLevelDisplayName($level)
+    {
+        $displayNames = [
+            'primary-1' => 'Primary 1',
+            'primary-2' => 'Primary 2', 
+            'primary-3' => 'Primary 3',
+            'primary-4' => 'Primary 4',
+            'primary-5' => 'Primary 5',
+            'primary-6' => 'Primary 6',
+            'jhs-1' => 'JHS 1',
+            'jhs-2' => 'JHS 2',
+            'jhs-3' => 'JHS 3',
+            'shs-1' => 'SHS 1',
+            'shs-2' => 'SHS 2',
+            'shs-3' => 'SHS 3',
+        ];
+
+        return $displayNames[$level] ?? ucwords(str_replace('-', ' ', $level));
     }
 
     /**
@@ -176,16 +258,26 @@ class DashboardController extends Controller
     }
 
     /**
-     * View specific lesson
+     * View specific lesson (updated to work with level groups)
      */
     public function viewLesson($lessonId)
     {
-        if (!session('selected_level')) {
+        if (!session('selected_level_group')) {
             return redirect()->route('dashboard.level-selection');
         }
 
-        $selectedLevel = session('selected_level');
-        $lesson = $this->getLessonById($lessonId, $selectedLevel);
+        $selectedLevelGroup = session('selected_level_group');
+        
+        // Get all lessons from the level group to find the specific lesson
+        $allLessons = $this->getLessonsForLevelGroup($selectedLevelGroup);
+        $lesson = null;
+        
+        foreach ($allLessons as $l) {
+            if ($l['id'] == $lessonId) {
+                $lesson = $l;
+                break;
+            }
+        }
 
         if (!$lesson) {
             return redirect()->route('dashboard.digilearn')
@@ -193,24 +285,21 @@ class DashboardController extends Controller
         }
 
         // Get related lessons (exclude current lesson)
-        $allLessons = $this->getLessonsForLevel($selectedLevel);
         $relatedLessons = array_filter($allLessons, function($l) use ($lessonId) {
             return $l['id'] != $lessonId;
         });
         $relatedLessons = array_slice($relatedLessons, 0, 8);
 
-        // Sample comments for the lesson
-        $comments = $this->getCommentsForLesson($lessonId);
-
         Log::channel('security')->info('lesson_viewed', [
             'user_id' => Auth::id(),
             'lesson_id' => $lessonId,
-            'selected_level' => $selectedLevel,
+            'selected_level_group' => $selectedLevelGroup,
+            'lesson_level' => $lesson['level'] ?? null,
             'ip' => request()->ip(),
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
-        return view('dashboard.lesson-view', compact('lesson', 'selectedLevel'));
+        return view('dashboard.lesson-view', compact('lesson', 'selectedLevelGroup', 'relatedLessons'));
     }
 
     /**
@@ -255,38 +344,128 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get available education levels (grouped)
+     * Update getAvailableLevels to use the new structure
      */
     private function getAvailableLevels()
     {
+        $levelGroups = $this->getLevelGroups();
+        $availableLevels = [];
+
+        foreach ($levelGroups as $groupId => $group) {
+            $availableLevels[] = [
+                'id' => $groupId,
+                'title' => $group['title'],
+                'description' => $group['description'],
+                'has_illustration' => $group['has_illustration']
+            ];
+        }
+
+        return $availableLevels;
+    }
+
+    public function showLevelGroup($groupId)
+    {
+        $levelGroups = $this->getLevelGroups();
+        
+        if (!isset($levelGroups[$groupId])) {
+            return redirect()->route('dashboard.level-selection')
+                ->withErrors(['group' => 'Invalid level group selected.']);
+        }
+
+        $group = $levelGroups[$groupId];
+        
+        // Log group selection access
+        Log::channel('security')->info('level_group_accessed', [
+            'user_id' => Auth::id(),
+            'group_id' => $groupId,
+            'ip' => request()->ip(),
+            'timestamp' => Carbon::now()->toISOString()
+        ]);
+
+        return view('dashboard.level-group-selection', compact('group', 'groupId'));
+    }
+
+    /**
+     * Get level groups for the two-step selection process
+     */
+    private function getLevelGroups()
+    {
         return [
-            [
-                'id' => 'primary-lower',
+            'primary-lower' => [
                 'title' => 'Grade/Primary 1-3',
                 'description' => 'Lower primary or Elementary school',
                 'has_illustration' => false,
-                'levels' => ['primary-1', 'primary-2', 'primary-3']
+                'levels' => [
+                    'primary-1' => [
+                        'title' => 'Primary 1',
+                        'description' => 'Foundation learning for young minds'
+                    ],
+                    'primary-2' => [
+                        'title' => 'Primary 2', 
+                        'description' => 'Building on fundamentals'
+                    ],
+                    'primary-3' => [
+                        'title' => 'Primary 3',
+                        'description' => 'Developing critical thinking skills'
+                    ]
+                ]
             ],
-            [
-                'id' => 'primary-upper', 
+            'primary-upper' => [
                 'title' => 'Grade/Primary 4-6',
                 'description' => 'Upper primary or elementary school',
                 'has_illustration' => false,
-                'levels' => ['primary-4', 'primary-5', 'primary-6']
+                'levels' => [
+                    'primary-4' => [
+                        'title' => 'Primary 4',
+                        'description' => 'Advanced primary education'
+                    ],
+                    'primary-5' => [
+                        'title' => 'Primary 5',
+                        'description' => 'Preparing for junior high transition'
+                    ],
+                    'primary-6' => [
+                        'title' => 'Primary 6',
+                        'description' => 'BECE preparation focus'
+                    ]
+                ]
             ],
-            [
-                'id' => 'jhs',
-                'title' => 'Grade/JHS 7-9', 
+            'jhs' => [
+                'title' => 'Grade/JHS 7-9',
                 'description' => 'Junior High School or Middle school',
                 'has_illustration' => true,
-                'levels' => ['jhs-1', 'jhs-2', 'jhs-3']
+                'levels' => [
+                    'jhs-1' => [
+                        'title' => 'JHS 1',
+                        'description' => 'Introduction to junior high curriculum'
+                    ],
+                    'jhs-2' => [
+                        'title' => 'JHS 2',
+                        'description' => 'Intermediate junior high studies'
+                    ],
+                    'jhs-3' => [
+                        'title' => 'JHS 3',
+                        'description' => 'Final JHS year with BECE preparation'
+                    ]
+                ]
             ],
-            [
-                'id' => 'shs',
+            'shs' => [
                 'title' => 'Grade/SHS 1-3',
-                'description' => 'High school or Senior High School', 
+                'description' => 'High school or Senior High School',
                 'has_illustration' => false,
-                'levels' => ['shs-1', 'shs-2', 'shs-3']
+                'levels' => [
+                    'shs-1' => [
+                        'title' => 'SHS 1',
+                        'description' => 'Senior high foundation with specialized tracks'
+                    ],
+                    'shs-2' => [
+                        'title' => 'SHS 2',
+                        'description' => 'Advanced senior high studies'
+                    ],
+                    'shs-3' => [
+                        'title' => 'SHS 3',
+                        'description' => 'Final SHS year with WASSCE preparation'
+                    ]
+                ]
             ]
         ];
     }
