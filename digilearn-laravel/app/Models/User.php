@@ -31,6 +31,15 @@ class User extends Authenticatable implements MustVerifyEmail
         'two_factor_secret',
         'two_factor_recovery_codes',
         'two_factor_confirmed_at',
+        'avatar',
+        'phone',
+        'date_of_birth',
+        'city',
+        'education_level',
+        'grade',
+        'preferred_language',
+        'learning_style',
+        'bio',
     ];
 
     /**
@@ -57,6 +66,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'two_factor_confirmed_at' => 'datetime',
         'two_factor_recovery_codes' => 'encrypted:array',
         'password' => 'hashed',
+        'date_of_birth' => 'date',
+        'failed_login_attempts' => 'integer',
     ];
 
     /**
@@ -73,5 +84,42 @@ class User extends Authenticatable implements MustVerifyEmail
     public function hasTwoFactorEnabled(): bool
     {
         return !is_null($this->two_factor_secret) && !is_null($this->two_factor_confirmed_at);
+    }
+
+    /**
+     * Get the user's full name parts
+     */
+    public function getFirstNameAttribute()
+    {
+        return explode(' ', $this->name)[0] ?? '';
+    }
+
+    public function getLastNameAttribute()
+    {
+        return explode(' ', $this->name, 2)[1] ?? '';
+    }
+
+    /**
+     * Get the user's avatar URL
+     */
+    public function getAvatarUrlAttribute()
+    {
+        if ($this->avatar) {
+            return secure_asset('storage/' . $this->avatar);
+        }
+        return null;
+    }
+
+    /**
+     * Get the user's initials for avatar fallback
+     */
+    public function getInitialsAttribute()
+    {
+        $names = explode(' ', $this->name);
+        $initials = '';
+        foreach ($names as $name) {
+            $initials .= strtoupper(substr($name, 0, 1));
+        }
+        return substr($initials, 0, 2);
     }
 }

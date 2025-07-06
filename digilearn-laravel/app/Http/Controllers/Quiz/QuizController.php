@@ -101,8 +101,9 @@ class QuizController extends Controller
         $quizId = $request->input('quiz');
         
         $quiz = $this->getQuizById($quizId);
+        $duration = $quiz['duration'] ?? '3 min';
         
-        return view('dashboard.quiz.results', compact('score', 'total', 'percentage', 'quiz'));
+        return view('dashboard.quiz.results', compact('score', 'total', 'percentage', 'quiz', 'duration'));
     }
 
     /**

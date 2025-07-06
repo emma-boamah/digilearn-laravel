@@ -249,6 +249,19 @@ class AuthController extends Controller
                 'max:100',
                 'regex:/^[a-zA-Z\s\-]+$/'
             ],
+            'phone' => [
+                'nullable',
+                'string',
+                'max:20',
+                'regex:/^\+?[0-9\s\-\(\)]{7,20}$/',
+                'unique:users'
+            ],
+            'country_code' => [
+                'nullable',
+                'string',
+                'max:5',
+                'regex:/^\+[0-9]{1,4}$/'
+            ],
             'password' => [
                 'required',
                 'confirmed',
@@ -261,8 +274,12 @@ class AuthController extends Controller
             ],
         ], [
             'name.regex' => 'Name can only contain letters, spaces, hyphens, apostrophes, and periods.',
+            'email.unique' => 'An account with this email already exists.',
             'email.regex' => 'Please enter a valid email address.',
+            'phone.unique' => 'This phone number is already registered.',
+            'phone.regex' => 'Please enter a valid phone number.',
             'country.regex' => 'Country name can only contain letters, spaces, and hyphens.',
+            'country_code.regex' => 'Please select a valid country code.',
             'password.uncompromised' => 'The given password has appeared in a data breach. Please choose a different password.',
         ]);
 
@@ -270,12 +287,17 @@ class AuthController extends Controller
         $validated['name'] = trim($validated['name']);
         $validated['email'] = strtolower(trim($validated['email']));
         $validated['country'] = trim($validated['country']);
+        if (isset($validated['phone']) && isset($validated['country_code'])) {
+            // Combine country code and phone, ensure phone starts with '+'
+            $validated['phone'] = trim($validated['country_code'] . preg_replace('/^\+/', '', trim($validated['phone'])));
+        }
 
         try {
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'country' => $validated['country'],
+                'phone' => $validated['phone'] ?? null,
                 'password' => Hash::make($validated['password']),
                 'email_verified_at' => now(),
                 'registration_ip' => $request->ip(),

@@ -678,7 +678,7 @@
             <!-- Header -->
             <div class="results-header animate-fade-in-up">
                 <h1 class="quiz-title">{{ $quiz['title'] ?? 'Quiz Results' }}</h1>
-                <p class="quiz-subtitle">{{ $quiz['subject'] ?? 'General Knowledge' }} • {{ $quiz['difficulty'] ?? 'Medium' }} Level</p>
+                <p class="quiz-subtitle">{{ $quiz['subject'] ?? 'General Knowledge' }} • {{ $duration }} • {{ $quiz['difficulty'] ?? 'Medium' }} Level</p>
                 
                 <div class="score-section">
                     <div class="score-circle">
@@ -726,8 +726,8 @@
                                 <i class="fas fa-clock"></i>
                             </div>
                             <div class="score-info">
-                                <h3>{{ $timeSpent ?? '5:30' }}</h3>
-                                <p>Time spent</p>
+                                <h3>{{ $duration }}</h3> {{-- Changed this line --}}
+                                <p>Time allocated</p> {{-- Changed text --}}
                             </div>
                         </div>
                     </div>
@@ -797,8 +797,8 @@
                         <div class="stat-label">Accuracy</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-value">{{ $timeSpent ?? '5:30' }}</div>
-                        <div class="stat-label">Time</div>
+                        <div class="stat-value">{{ $duration }}</div> {{-- Changed this line --}}
+                        <div class="stat-label">Duration</div> {{-- Changed text --}}
                     </div>
                     <div class="stat-item">
                         <div class="stat-value">{{ $rank ?? '12th' }}</div>

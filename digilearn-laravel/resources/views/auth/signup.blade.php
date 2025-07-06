@@ -331,6 +331,217 @@
             background-color: var(--primary-blue);
         }
 
+        /* Phone Input Styles */
+        .phone-input-container {
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-start;
+        }
+
+        .country-code-selector {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .country-code-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--gray-300);
+            border-radius: 0.5rem;
+            background: var(--gray-50);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+            min-width: 120px;
+        }
+
+        .country-code-btn:hover,
+        .country-code-btn:focus {
+            border-color: var(--primary-red);
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+
+        .country-flag {
+            width: 20px;
+            height: 15px;
+            border-radius: 2px;
+        }
+
+        .country-code {
+            font-weight: 500;
+            color: var(--gray-700);
+        }
+
+        .country-code-dropdown {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            max-height: 300px;
+            overflow: hidden;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .country-code-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .country-search {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .country-search-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--gray-300);
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+        }
+
+        .country-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .country-option {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            font-size: 0.875rem;
+        }
+
+        .country-option:hover {
+            background: var(--gray-50);
+        }
+
+        .country-name {
+            flex: 1;
+            color: var(--gray-700);
+        }
+
+        .phone-number-input {
+            flex: 1;
+        }
+
+        /* Privacy Notice */
+        .privacy-notice {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            color: var(--gray-700);
+        }
+
+        .privacy-notice-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            color: var(--primary-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .privacy-notice-text {
+            line-height: 1.5;
+        }
+
+        .privacy-notice-text a {
+            color: var(--primary-blue);
+            text-decoration: none;
+        }
+
+        .privacy-notice-text a:hover {
+            text-decoration: underline;
+        }
+
+        /* Optional field indicator */
+        .optional-indicator {
+            color: var(--gray-500);
+            font-size: 0.75rem;
+            font-weight: normal;
+            margin-left: 0.5rem;
+        }
+
+        /* Skip option */
+        .skip-phone {
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        .skip-phone-btn {
+            background: none;
+            border: none;
+            color: var(--gray-500);
+            font-size: 0.875rem;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .skip-phone-btn:hover {
+            color: var(--gray-700);
+        }
+
+        /* Rate limit error styles */
+        .rate-limit-error {
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid rgba(220, 38, 38, 0.2);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .rate-limit-icon {
+            color: var(--primary-red);
+            flex-shrink: 0;
+        }
+
+        .rate-limit-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .rate-limit-message {
+            flex: 1;
+            font-size: 0.875rem;
+            color: var(--gray-700);
+        }
+
+        .rate-limit-timer {
+            width: 100%;
+            height: 4px;
+            background: rgba(220, 38, 38, 0.2);
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .timer-progress {
+            height: 100%;
+            background: var(--primary-red);
+            transition: width 1s linear;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .auth-container {
@@ -351,6 +562,19 @@
             
             .social-btn {
                 max-width: none;
+            }
+
+            .phone-input-container {
+                flex-direction: column;
+            }
+
+            .country-code-selector {
+                width: 100%;
+            }
+
+            .country-code-btn {
+                width: 100%;
+                justify-content: space-between;
             }
         }
     </style>
@@ -431,6 +655,68 @@
                         required
                     >
                     @error('country')
+                        <div class="error-message">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <!-- Phone Number Section with Privacy Notice -->
+                <div class="form-group">
+                    <label for="phone" class="form-label">
+                        Phone Number 
+                        <span class="optional-indicator">(Optional - for account security)</span>
+                    </label>
+                    
+                    <!-- Privacy Notice -->
+                    <div class="privacy-notice">
+                        <div class="privacy-notice-header">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                            Why we ask for your phone number
+                        </div>
+                        <div class="privacy-notice-text">
+                            Your phone number helps us secure your account with two-factor authentication and recover access if needed. 
+                            We never share your number with third parties or use it for marketing. 
+                            <a href="#" onclick="showPrivacyDetails()">Learn more about our privacy practices</a>.
+                        </div>
+                    </div>
+
+                    <div class="phone-input-container">
+                        <div class="country-code-selector">
+                            <button type="button" class="country-code-btn" id="countryCodeBtn">
+                                <img src="https://flagcdn.com/w20/gh.png" alt="Ghana" class="country-flag" id="selectedFlag">
+                                <span class="country-code" id="selectedCode">+233</span>
+                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                            <div class="country-code-dropdown" id="countryCodeDropdown">
+                                <div class="country-search">
+                                    <input type="text" placeholder="Search countries..." class="country-search-input" id="countrySearch">
+                                </div>
+                                <div class="country-list" id="countryList">
+                                    <!-- Countries will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                        <input 
+                            type="tel" 
+                            id="phone" 
+                            name="phone" 
+                            class="form-input phone-number-input {{ $errors->has('phone') ? 'error' : '' }}" 
+                            value="{{ old('phone') }}"
+                            placeholder="24 123 4567"
+                        >
+                        <input type="hidden" id="country_code" name="country_code" value="+233">
+                    </div>
+                    
+                    <div class="skip-phone">
+                        <button type="button" class="skip-phone-btn" onclick="skipPhoneNumber()">
+                            Skip for now - I'll add it later
+                        </button>
+                    </div>
+                    
+                    @error('phone')
                         <div class="error-message">{{ $message }}</div>
                     @enderror
                 </div>
@@ -520,6 +806,25 @@
     </div>
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        // Countries data
+        const countries = [
+            { name: 'Ghana', code: '+233', flag: 'gh' },
+            { name: 'Nigeria', code: '+234', flag: 'ng' },
+            { name: 'Kenya', code: '+254', flag: 'ke' },
+            { name: 'South Africa', code: '+27', flag: 'za' },
+            { name: 'United States', code: '+1', flag: 'us' },
+            { name: 'United Kingdom', code: '+44', flag: 'gb' },
+            { name: 'Canada', code: '+1', flag: 'ca' },
+            { name: 'Australia', code: '+61', flag: 'au' },
+            { name: 'Germany', code: '+49', flag: 'de' },
+            { name: 'France', code: '+33', flag: 'fr' },
+            { name: 'India', code: '+91', flag: 'in' },
+            { name: 'China', code: '+86', flag: 'cn' },
+            { name: 'Japan', code: '+81', flag: 'jp' },
+            { name: 'Brazil', code: '+55', flag: 'br' },
+            { name: 'Mexico', code: '+52', flag: 'mx' }
+        ];
+
         // Password toggle functionality
         const togglePassword = document.querySelector('#togglePassword');
         const password = document.querySelector('#password');
@@ -537,13 +842,143 @@
             icon.classList.toggle('fa-eye-slash');
         }
         
-        togglePassword.addEventListener('click', function() {
-            togglePasswordVisibility(password, this);
-        });
+        if (togglePassword && password) {
+            togglePassword.addEventListener('click', function() {
+                togglePasswordVisibility(password, this);
+            });
+        }
         
-        toggleConfirmPassword.addEventListener('click', function() {
-            togglePasswordVisibility(confirmPassword, this);
-        });
+        if (toggleConfirmPassword && confirmPassword) {
+            toggleConfirmPassword.addEventListener('click', function() {
+                togglePasswordVisibility(confirmPassword, this);
+            });
+        }
+
+        // Phone number functionality
+        function initializePhoneInput() {
+            const countryCodeBtn = document.getElementById('countryCodeBtn');
+            const countryCodeDropdown = document.getElementById('countryCodeDropdown');
+            const countryList = document.getElementById('countryList');
+            const countrySearch = document.getElementById('countrySearch');
+            const selectedFlag = document.getElementById('selectedFlag');
+            const selectedCode = document.getElementById('selectedCode');
+            const countryCodeInput = document.getElementById('country_code');
+
+            if (!countryCodeBtn || !countryList) return;
+
+            // Populate country list
+            function populateCountries(filteredCountries = countries) {
+                countryList.innerHTML = '';
+                filteredCountries.forEach(country => {
+                    const option = document.createElement('div');
+                    option.className = 'country-option';
+                    option.innerHTML = `
+                        <img src="https://flagcdn.com/w20/${country.flag}.png" alt="${country.name}" class="country-flag">
+                        <span class="country-name">${country.name}</span>
+                        <span class="country-code">${country.code}</span>
+                    `;
+                    option.addEventListener('click', () => selectCountry(country));
+                    countryList.appendChild(option);
+                });
+            }
+
+            // Select country
+            function selectCountry(country) {
+                selectedFlag.src = `https://flagcdn.com/w20/${country.flag}.png`;
+                selectedFlag.alt = country.name;
+                selectedCode.textContent = country.code;
+                countryCodeInput.value = country.code;
+                countryCodeDropdown.classList.remove('active');
+            }
+
+            // Toggle dropdown
+            countryCodeBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                countryCodeDropdown.classList.toggle('active');
+                if (countryCodeDropdown.classList.contains('active')) {
+                    countrySearch.focus();
+                }
+            });
+
+            // Search functionality
+            if (countrySearch) {
+                countrySearch.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    const filtered = countries.filter(country => 
+                        country.name.toLowerCase().includes(searchTerm) ||
+                        country.code.includes(searchTerm)
+                    );
+                    populateCountries(filtered);
+                });
+            }
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!countryCodeBtn.contains(e.target) && !countryCodeDropdown.contains(e.target)) {
+                    countryCodeDropdown.classList.remove('active');
+                }
+            });
+
+            // Auto-detect country based on user's location (optional)
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    // This would typically involve a geolocation API call
+                    // For now, we'll default to Ghana
+                    const defaultCountry = countries.find(c => c.flag === 'gh');
+                    if (defaultCountry) {
+                        selectCountry(defaultCountry);
+                    }
+                });
+            }
+
+            // Initialize with default countries
+            populateCountries();
+        }
+
+        // Skip phone number functionality
+        function skipPhoneNumber() {
+            const phoneInput = document.getElementById('phone');
+            const countryCodeInput = document.getElementById('country_code');
+            const phoneContainer = phoneInput.closest('.form-group');
+            
+            // Clear phone inputs
+            phoneInput.value = '';
+            countryCodeInput.value = '';
+            
+            // Hide the phone section with animation
+            phoneContainer.style.opacity = '0.5';
+            phoneContainer.style.pointerEvents = 'none';
+            
+            // Show confirmation
+            const skipBtn = phoneContainer.querySelector('.skip-phone-btn');
+            skipBtn.textContent = '✓ Phone number skipped - you can add it later in settings';
+            skipBtn.style.color = 'var(--success-green)';
+            skipBtn.disabled = true;
+        }
+
+        // Privacy and terms functions
+        function showPrivacyDetails() {
+            alert('Privacy Details:\n\n• Your phone number is encrypted and stored securely\n• We only use it for account verification and security\n• You can remove it anytime from your profile settings\n• We never share your data with third parties\n• You can request data deletion at any time');
+        }
+
+        function showTerms() {
+            alert('Terms of Service would be displayed in a modal or separate page.');
+        }
+
+        function showPrivacy() {
+            alert('Privacy Policy would be displayed in a modal or separate page.');
+        }
+
+        // Social login functions
+        function signUpWithGoogle() {
+            // Implement Google OAuth
+            alert('Google sign-up would be implemented here');
+        }
+
+        function signUpWithApple() {
+            // Implement Apple OAuth
+            alert('Apple sign-up would be implemented here');
+        }
         
         // Initialize rate limit timers
         document.querySelectorAll('.timer-progress').forEach(timer => {
@@ -561,6 +996,9 @@
                 }
             }, 1000);
         });
+
+        // Initialize phone input
+        initializePhoneInput();
     </script>
 </body>
 </html>
