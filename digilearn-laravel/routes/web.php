@@ -9,6 +9,7 @@ use App\Http\Controllers\PricingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\NotesController;
+use App\Http\Controllers\Quiz\QuizController;
 use Illuminate\Support\Facades\Log;
 
 /*
@@ -101,6 +102,15 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/dashboard/notes', [NotesController::class, 'store'])->name('dashboard.notes.store');
     Route::put('/dashboard/notes/{id}', [NotesController::class, 'update'])->name('dashboard.notes.update');
     Route::delete('/dashboard/notes/{id}', [NotesController::class, 'destroy'])->name('dashboard.notes.destroy');
+
+    // Quiz routes
+    Route::prefix('quiz')->name('quiz.')->group(function () {
+        Route::get('/', [QuizController::class, 'index'])->name('index');
+        Route::get('/{quizId}/instructions', [QuizController::class, 'instructions'])->name('instructions');
+        Route::get('/{quizId}/take', [QuizController::class, 'take'])->name('take');
+        Route::post('/{quizId}/submit', [QuizController::class, 'submit'])->name('submit');
+        Route::get('/results', [QuizController::class, 'results'])->name('results');
+    });
 });
 
 // CSP Report endpoint

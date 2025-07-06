@@ -998,11 +998,6 @@
             height: 18px;
         }
 
-        /* Mobile Search Toggle */
-        .mobile-search-toggle {
-            display: block;
-        }
-
         /* Better tap targets for mobile */
         .sidebar-menu-item, .dropdown-option, .filter-button {
             cursor: pointer;
@@ -1028,7 +1023,7 @@
             <div class="sidebar-content">
                 <div class="sidebar-section">
                     <div class="sidebar-section-title">Main</div>
-                    <a href="/dashboard/main" class="sidebar-menu-item active">
+                    <a href="{{ route('dashboard.main') }}" class="sidebar-menu-item active">
                         <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h2a2 2 0 012 2v2M8 5a2 2 0 000 4h8a2 2 0 000-4M8 5v0"/>
@@ -1036,19 +1031,19 @@
                         <span class="sidebar-menu-text">Dashboard</span>
                         <div class="tooltip">Dashboard</div>
                     </a>
-                    <a href="/dashboard/digilearn" class="sidebar-menu-item">
+                    <a href="{{ route('dashboard.digilearn') }}" class="sidebar-menu-item">
                         <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                         </svg>
                         <span class="sidebar-menu-text">Lessons</span>
                         <div class="tooltip">Lessons</div>
                     </a>
-                    <a href="/subjects" class="sidebar-menu-item">
+                    <a href="{{ route('quiz.index') }}" class="sidebar-menu-item">
                         <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
-                        <span class="sidebar-menu-text">Subjects</span>
-                        <div class="tooltip">Subjects</div>
+                        <span class="sidebar-menu-text">Quiz</span>
+                        <div class="tooltip">Quiz</div>
                     </a>
                 </div>
 
@@ -1129,12 +1124,6 @@
                         </div>
                     </div>
                     <div class="mobile-header-right">
-                        <button class="mobile-search-toggle" id="mobileSearchToggle">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                            </svg>
-                        </button>
                         <button class="notification-btn">
                             <svg class="notification-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
@@ -1188,7 +1177,7 @@
                 <!-- Custom levels dropdown -->
                 <div class="custom-dropdown">
                     <button class="dropdown-toggle">
-                        <span>{{ ucwords(str_replace('-', ' ', $selectedLevelGroup)) }}</span>
+                        <span>{{ ucwords(str_replace('-', ' ', $selectedLevelGroup ?? 'Grade 1-3')) }}</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="dropdown-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
@@ -1239,7 +1228,7 @@
                 </div>
                 
                 <button class="filter-button question">Question</button>
-                <button class="filter-button quiz">Quiz</button>
+                <a href="{{ route('quiz.index') }}" class="filter-button quiz">Quiz</a>
             </div>
             
             <!-- Hero Section with Video Background -->
@@ -1261,7 +1250,7 @@
             <!-- Content Section with Lessons Grid -->
             <div class="content-section">
                 <div class="content-grid">
-                    @forelse($lessons as $lesson)
+                    @forelse($lessons ?? [] as $lesson)
                     <div class="lesson-card hover-video-card" data-lesson-id="{{ $lesson['id'] }}">
                         <div class="lesson-thumbnail">
                             <!-- Video element for hover-to-play functionality -->
@@ -1299,17 +1288,26 @@
                                     </svg>
                                 </div>
                             </div>
-                            
-                            <!-- Loading indicator -->
-                            <div class="video-loading" style="display: none;">
-                                <div class="loading-spinner"></div>
-                            </div>
                         </div>
                         <div class="lesson-info">
                             <h3 class="lesson-title">{{ $lesson['title'] }}</h3>
                             <div class="lesson-meta">
                                 <span class="lesson-subject">({{ $lesson['subject'] }})</span>
                                 <span>{{ $lesson['instructor'] }} | {{ $lesson['year'] }}</span>
+                            </div>
+                            <div class="lesson-actions">
+                                <a href="{{ route('dashboard.lesson.view', ['lessonId' => $lesson['id']]) }}" class="lesson-action-btn primary">
+                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                    Watch
+                                </a>
+                                <a href="{{ route('quiz.index') }}" class="lesson-action-btn secondary">
+                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    Quiz
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -1528,28 +1526,7 @@
                         currentlyPlaying = null;
                     }
                 });
-                
-                // Handle click to play full lesson
-                card.addEventListener('click', function(e) {
-                    const lessonId = this.getAttribute('data-lesson-id');
-                    if (lessonId) {
-                        playLesson(lessonId);
-                    }
-                });
             });
-        }
-        
-        function playLesson(lessonId) {
-            console.log('Playing full lesson:', lessonId);
-            // Add visual feedback
-            const card = document.querySelector(`[data-lesson-id="${lessonId}"]`);
-            if (card) {
-                card.style.opacity = '0.7';
-                card.style.transform = 'scale(0.98)';
-            }
-            
-            // Navigate to the lesson view page
-            window.location.href = `/dashboard/lesson/${lessonId}`;
         }
     </script>
 </body>
