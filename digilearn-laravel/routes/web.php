@@ -79,6 +79,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Phone number management routes
+    Route::post('/profile/phone', [ProfileController::class, 'updatePhone'])->name('profile.phone.update');
+    Route::put('/profile/phone', [ProfileController::class, 'updatePhone'])->name('profile.phone.update');
+    Route::delete('/profile/phone', [ProfileController::class, 'removePhone'])->name('profile.phone.remove');
+    Route::post('/profile/phone/verify', [ProfileController::class, 'verifyPhone'])->name('profile.phone.verify');
     
     // Document viewing routes
     Route::get('/dashboard/lesson/{lessonId}/document/{type}', [DocumentController::class, 'viewDocument'])

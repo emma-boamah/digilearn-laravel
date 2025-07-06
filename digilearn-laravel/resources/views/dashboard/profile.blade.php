@@ -743,6 +743,65 @@
         .verify-phone-btn:hover {
             background: #059669;
         }
+
+        .verified-badge {
+            color: var(--success-green);
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .unverified-badge {
+            color: var(--warning-yellow);
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8125rem;
+        }
+
+        .btn-outline {
+            background: var(--white);
+            color: var(--gray-700);
+            border: 1px solid var(--gray-300);
+        }
+
+        .btn-outline:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+        }
+
+        .privacy-notice {
+            background-color: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .privacy-notice-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 0.5rem;
+        }
+
+        .privacy-notice-text {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+        }
+
+        .optional-indicator {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+            font-style: italic;
+            margin-left: 0.25rem;
+        }
     </style>
 </head>
 <body>
@@ -933,7 +992,32 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="phone" class="form-label">Phone Number</label>
+                            <label for="phone" class="form-label">
+                                Phone Number 
+                                <span class="optional-indicator">(Optional - for account security)</span>
+                                @if(auth()->user()->phone_verified_at)
+                                    <span class="verified-badge">✓ Verified</span>
+                                @elseif(auth()->user()->phone)
+                                    <span class="unverified-badge">⚠ Unverified</span>
+                                @endif
+                            </label>
+                            
+                            @if(!auth()->user()->phone)
+                                <!-- Privacy Notice for new phone number -->
+                                <div class="privacy-notice">
+                                    <div class="privacy-notice-header">
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                        </svg>
+                                        Why add your phone number?
+                                    </div>
+                                    <div class="privacy-notice-text">
+                                        Adding your phone number enhances your account security with two-factor authentication and helps with account recovery. 
+                                        We never share your number with third parties or use it for marketing.
+                                    </div>
+                                </div>
+                            @endif
+
                             <div class="phone-input-container">
                                 <div class="country-code-selector">
                                     <button type="button" class="country-code-btn" id="countryCodeBtn">
@@ -952,18 +1036,47 @@
                                         </div>
                                     </div>
                                 </div>
-                                <input type="tel" id="phone" name="phone" class="form-input phone-number-input" 
-                                       value="{{ ltrim(auth()->user()->phone ?? '24 123 4567', '+233 ') }}" 
-                                       placeholder="24 123 4567">
+                                <input 
+                                    type="tel" 
+                                    id="phone" 
+                                    name="phone" 
+                                    class="form-input phone-number-input" 
+                                    value="{{ auth()->user()->phone ? ltrim(auth()->user()->phone, auth()->user()->phone ? substr(auth()->user()->phone, 0, strpos(auth()->user()->phone, ' ') + 1) : '') : '' }}" 
+                                    placeholder="24 123 4567"
+                                >
                                 <input type="hidden" id="country_code" name="country_code" value="+233">
                             </div>
-                            <div class="phone-verification" id="phoneVerification" style="display: none;">
-                                <button type="button" class="verify-phone-btn" id="verifyPhoneBtn">
-                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                    Verify Phone Number
-                                </button>
+                            
+                            <div class="phone-actions" style="margin-top: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                                @if(auth()->user()->phone)
+                                    @if(!auth()->user()->phone_verified_at)
+                                        <button type="button" class="btn btn-primary btn-sm" onclick="verifyCurrentPhone()">
+                                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            Verify Current Number
+                                        </button>
+                                    @endif
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="updatePhoneNumber()">
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                        Update Number
+                                    </button>
+                                    <button type="button" class="btn btn-outline btn-sm" onclick="removePhoneNumber()">
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                        Remove
+                                    </button>
+                                @else
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="addPhoneNumber()">
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                        </svg>
+                                        Add Phone Number
+                                    </button>
+                                @endif
                             </div>
                         </div>
                         
@@ -1208,7 +1321,6 @@
             const selectedCode = document.getElementById('selectedCode');
             const countryCodeInput = document.getElementById('country_code');
             const phoneInput = document.getElementById('phone');
-            const phoneVerification = document.getElementById('phoneVerification');
 
             if (!countryCodeBtn || !countryList) return;
 
@@ -1235,11 +1347,6 @@
                 selectedCode.textContent = country.code;
                 countryCodeInput.value = country.code;
                 countryCodeDropdown.classList.remove('active');
-                
-                // Show phone verification if phone number exists
-                if (phoneInput.value.trim()) {
-                    phoneVerification.style.display = 'block';
-                }
             }
 
             // Toggle dropdown
@@ -1269,17 +1376,6 @@
                     countryCodeDropdown.classList.remove('active');
                 }
             });
-
-            // Show verification when phone number changes
-            if (phoneInput) {
-                phoneInput.addEventListener('input', function() {
-                    if (this.value.trim()) {
-                        phoneVerification.style.display = 'block';
-                    } else {
-                        phoneVerification.style.display = 'none';
-                    }
-                });
-            }
 
             // Auto-detect country based on user's location (optional)
             if (navigator.geolocation) {
@@ -1320,6 +1416,152 @@
                 `;
                 this.style.background = '#10b981';
                 this.disabled = true;
+            });
+        }
+
+        // Phone number management functions
+        function addPhoneNumber() {
+            const phone = document.getElementById('phone').value.trim();
+            const countryCode = document.getElementById('country_code').value;
+            
+            if (!phone) {
+                alert('Please enter a phone number');
+                return;
+            }
+            
+            const password = prompt('Please enter your current password to confirm this change:');
+            if (!password) return;
+            
+            fetch('{{ route("profile.phone.update") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    phone: phone,
+                    country_code: countryCode,
+                    current_password: password
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        }
+
+        function updatePhoneNumber() {
+            const phone = document.getElementById('phone').value.trim();
+            const countryCode = document.getElementById('country_code').value;
+            
+            if (!phone) {
+                alert('Please enter a phone number');
+                return;
+            }
+            
+            const password = prompt('Please enter your current password to confirm this change:');
+            if (!password) return;
+            
+            fetch('{{ route("profile.phone.update") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-HTTP-Method-Override': 'PUT'
+                },
+                body: JSON.stringify({
+                    phone: phone,
+                    country_code: countryCode,
+                    current_password: password
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        }
+
+        function verifyCurrentPhone() {
+            const code = prompt('Please enter the 6-digit verification code sent to your phone:');
+            if (!code || code.length !== 6) {
+                alert('Please enter a valid 6-digit code');
+                return;
+            }
+            
+            fetch('{{ route("profile.phone.verify") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    verification_code: code
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        }
+
+        function removePhoneNumber() {
+            if (!confirm('Are you sure you want to remove your phone number? This will disable phone-based security features.')) {
+                return;
+            }
+            
+            const password = prompt('Please enter your current password to confirm this change:');
+            if (!password) return;
+            
+            fetch('{{ route("profile.phone.remove") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-HTTP-Method-Override': 'DELETE'
+                },
+                body: JSON.stringify({
+                    current_password: password
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
             });
         }
     </script>
