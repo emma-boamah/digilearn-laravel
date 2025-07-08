@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use App\Models\SavedLesson;
 
 class DashboardController extends Controller
 {
@@ -341,6 +342,137 @@ class DashboardController extends Controller
         ]);
 
         return response()->json(['success' => true, 'message' => 'Comment posted successfully']);
+    }
+
+    /**
+     * Show saved lessons page
+     */
+    public function savedLessons()
+    {
+        $savedLessons = SavedLesson::getSavedLessons(Auth::id());
+        
+        return view('dashboard.saved-lessons', compact('savedLessons'));
+    }
+
+    /**
+     * Save a lesson
+     */
+    public function saveLesson(Request $request, $lessonId)
+    {
+        $request->validate([
+            'lesson_title' => 'required|string|max:255',
+            'lesson_subject' => 'required|string|max:100',
+            'lesson_instructor' => 'required|string|max:100',
+            'lesson_year' => 'required|string|max:4',
+            'lesson_duration' => 'required|string|max:20',
+            'lesson_thumbnail' => 'required|string|max:500',
+            'lesson_video_url' => 'required|string|max:500',
+            'selected_level' => 'required|string|max:50',
+        ]);
+
+        try {
+            SavedLesson::create([
+                'user_id' => Auth::id(),
+                'lesson_id' => $lessonId,
+                'lesson_title' => $request->lesson_title,
+                'lesson_subject' => $request->lesson_subject,
+                'lesson_instructor' => $request->lesson_instructor,
+                'lesson_year' => $request->lesson_year,
+                'lesson_duration' => $request->lesson_duration,
+                'lesson_thumbnail' => $request->lesson_thumbnail,
+                'lesson_video_url' => $request->lesson_video_url,
+                'selected_level' => $request->selected_level,
+                'saved_at' => now(),
+            ]);
+
+            Log::info('lesson_saved', [
+                'user_id' => Auth::id(),
+                'lesson_id' => $lessonId,
+                'timestamp' => now()->toISOString()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Lesson saved successfully!',
+                'saved' => true
+            ]);
+        } catch (\Exception $e) {
+            if ($e->getCode() === '23000') { // Duplicate entry
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Lesson is already saved!',
+                    'saved' => true
+                ]);
+            }
+
+            Log::error('lesson_save_error', [
+                'user_id' => Auth::id(),
+                'lesson_id' => $lessonId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save lesson. Please try again.',
+                'saved' => false
+            ], 500);
+        }
+    }
+
+    /**
+     * Unsave a lesson
+     */
+    public function unsaveLesson($lessonId)
+    {
+        try {
+            $deleted = SavedLesson::where('user_id', Auth::id())
+                                 ->where('lesson_id', $lessonId)
+                                 ->delete();
+
+            if ($deleted) {
+                Log::info('lesson_unsaved', [
+                    'user_id' => Auth::id(),
+                    'lesson_id' => $lessonId,
+                    'timestamp' => now()->toISOString()
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Lesson removed from saved lessons!',
+                    'saved' => false
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Lesson was not found in saved lessons.',
+                    'saved' => false
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('lesson_unsave_error', [
+                'user_id' => Auth::id(),
+                'lesson_id' => $lessonId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to remove lesson. Please try again.',
+                'saved' => true
+            ], 500);
+        }
+    }
+
+    /**
+     * Check if lesson is saved
+     */
+    public function checkLessonSaved($lessonId)
+    {
+        $isSaved = SavedLesson::isSaved(Auth::id(), $lessonId);
+        
+        return response()->json([
+            'saved' => $isSaved
+        ]);
     }
 
     /**

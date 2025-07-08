@@ -63,7 +63,9 @@ class SecurityHeaders
             'https://cdn.quilljs.com',
             'https://cdnjs.cloudflare.com',
             'https://cdn.jsdelivr.net',
-            'https://flagcdn.com'
+            'https://flagcdn.com',
+            'https://cdn.tailwindcss.com',
+            'https://unpkg.com',
         ];
         $scriptSrcString = implode(' ', $scriptSources);
 

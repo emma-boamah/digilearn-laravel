@@ -20,7 +20,11 @@ class ProfileController extends Controller
     public function show()
     {
         $user = Auth::user();
-        return view('dashboard.profile', compact('user'));
+
+        // Mask phone number for display
+        $maskedPhone = $user->phone ? $this->maskPhoneNumber($user->phone) : null;
+
+        return view('dashboard.profile', compact('user', 'maskedPhone'));
     }
 
     /**

@@ -1493,7 +1493,7 @@
                     </svg>
                     <span class="sidebar-menu-text">My Progress</span>
                 </a>
-                <a href="/saved-lessons" class="sidebar-menu-item">
+                <a href="/dashboard/saved-lessons" class="sidebar-menu-item">
                     <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
                     </svg>
@@ -1914,6 +1914,7 @@
             initializeActionButtons();
             initializeNotesEditor();
             initializeShareModal();
+            initializeSaveLesson();
             initializeSearch();
             initializeVideoItems();
             initializeKeyboardShortcuts();
@@ -2374,6 +2375,101 @@
                     }
                 });
             });
+        }
+
+        // Enhanced save lesson functionality
+        function initializeSaveLesson() {
+            const saveButton = document.querySelector('.action-btn-primary');
+            
+            if (saveButton && saveButton.textContent.trim().includes('Save Lesson')) {
+                // Check if lesson is already saved
+                const lessonId = '{{ $lesson["id"] ?? "" }}';
+                
+                // Check saved status on page load
+                fetch(`/dashboard/lesson/${lessonId}/check-saved`)
+                    .then(response => response.json())
+                    .then(data => {
+                        updateSaveButton(saveButton, data.saved);
+                    })
+                    .catch(error => console.error('Error checking save status:', error));
+                
+                saveButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const isSaved = this.dataset.saved === 'true';
+                    const originalContent = this.innerHTML;
+                    
+                    // Show loading state
+                    this.innerHTML = '<div class="loading-spinner"></div> ' + (isSaved ? 'Removing...' : 'Saving...');
+                    this.disabled = true;
+                    
+                    const url = isSaved ? 
+                        `/dashboard/lesson/${lessonId}/unsave` : 
+                        `/dashboard/lesson/${lessonId}/save`;
+                    
+                    const method = isSaved ? 'DELETE' : 'POST';
+                    
+                    const requestData = isSaved ? {} : {
+                        lesson_title: '{{ $lesson["title"] ?? "" }}',
+                        lesson_subject: '{{ $lesson["subject"] ?? "" }}',
+                        lesson_instructor: '{{ $lesson["instructor"] ?? "" }}',
+                        lesson_year: '{{ $lesson["year"] ?? "" }}',
+                        lesson_duration: '{{ $lesson["duration"] ?? "" }}',
+                        lesson_thumbnail: '{{ $lesson["thumbnail"] ?? "" }}',
+                        lesson_video_url: '{{ $lesson["video_url"] ?? "" }}',
+                        selected_level: '{{ $selectedLevel ?? "" }}'
+                    };
+                    
+                    fetch(url, {
+                        method: method,
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(requestData)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            updateSaveButton(this, data.saved);
+                            showSuccessMessage(data.message);
+                        } else {
+                            this.innerHTML = originalContent;
+                            this.disabled = false;
+                            alert(data.message || 'An error occurred');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        this.innerHTML = originalContent;
+                        this.disabled = false;
+                        alert('Failed to save lesson. Please try again.');
+                    });
+                });
+            }
+        }
+
+        function updateSaveButton(button, isSaved) {
+            if (isSaved) {
+                button.innerHTML = `
+                    <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Saved
+                `;
+                button.style.backgroundColor = '#10b981';
+                button.dataset.saved = 'true';
+            } else {
+                button.innerHTML = `
+                    <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Save Lesson
+                `;
+                button.style.backgroundColor = 'var(--primary-red)';
+                button.dataset.saved = 'false';
+            }
+            button.disabled = false;
         }
 
         // Enhanced search functionality

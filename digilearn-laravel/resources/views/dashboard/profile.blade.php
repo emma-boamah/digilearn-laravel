@@ -85,28 +85,16 @@
             color: var(--gray-900);
         }
 
-        .logo-section {
+        .sidebar-logo {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 0.75rem;
+            transition: opacity 0.3s ease;
         }
 
-        .digilearn-logo {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--primary-red);
-            font-weight: 700;
-            font-size: 1.125rem;
-        }
-
-        .shoutout-logo {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--secondary-blue);
-            font-weight: 600;
-            font-size: 1rem;
+        .sidebar-logo img {
+            height: 32px;
+            width: auto;
         }
 
         .header-right {
@@ -814,20 +802,8 @@
                 </svg>
             </button>
             
-            <div class="logo-section">
-                <div class="digilearn-logo">
-                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                    DigiLearn
-                </div>
-                
-                <div class="shoutout-logo">
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                    </svg>
-                    ShoutOutGh
-                </div>
+            <div class="sidebar-logo">
+                <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
             </div>
         </div>
         
