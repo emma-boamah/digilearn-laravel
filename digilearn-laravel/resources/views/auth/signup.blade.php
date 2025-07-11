@@ -241,6 +241,7 @@
         .strength-2 { width: 60%; background: var(--yellow-500); }
         .strength-3 { width: 80%; background: var(--green-400); }
         .strength-4 { width: 100%; background: var(--green-600); }
+        .strength-5 { width: 100%; background: var(--green-600); }
 
         /* Password toggle */
         .password-toggle {
@@ -957,7 +958,7 @@
         ];
 
         // Focus on phone input if there's a phone error
-        @if($errors->has('phone'))
+        <?php if($errors->has('phone')): ?>
             document.addEventListener('DOMContentLoaded', function() {
                 const phoneInput = document.getElementById('phone');
                 if (phoneInput) {
@@ -978,7 +979,7 @@
                     }
                 }
             });
-        @endif
+        <?php endif; ?>
 
         // Password toggle functionality
         const togglePassword = document.querySelector('#togglePassword');
@@ -1073,7 +1074,8 @@
             if (/[0-9]/.test(password)) strength++;
             if (/[@$!%*?&]/.test(password)) strength++;
             
-            return strength;
+            // Return 4 if strength is 5 to maintain compatibility
+            return strength === 5 ? 4 : strength;
         }
 
         // Phone number functionality
