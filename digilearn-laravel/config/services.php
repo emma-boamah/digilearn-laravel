@@ -60,4 +60,9 @@ return [
         'whitelist_signup_decay_minutes' => env('WHITELIST_SIGNUP_DECAY_MINUTES', 1),
     ],
 
+    'mailboxlayer' => [
+        'key' => env('MAILBOXLAYER_API_KEY'),
+        'enabled' => env('MAILBOXLAYER_ENABLED', false),
+    ],
+
 ];

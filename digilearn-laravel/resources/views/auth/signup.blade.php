@@ -23,6 +23,11 @@
             --gray-500: #6b7280;
             --gray-600: #4b5563;
             --gray-900: #111827;
+            --green-400: #4ade80;
+            --green-600: #059669;
+            --red-500: #ef4444;
+            --orange-500: #f97316;
+            --yellow-500: #eab308;
             --font-family-sans: 'Figtree', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
@@ -149,6 +154,93 @@
             font-size: 0.875rem;
             margin-top: 0.25rem;
         }
+
+        .rules-toggle-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 0.5rem;
+        }
+
+        .rules-toggle-btn {
+            background: none;
+            border: none;
+            color: var(--primary-blue);
+            font-size: 0.875rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+        }
+
+        .rules-toggle-btn:hover {
+            background-color: var(--gray-100);
+            text-decoration: none;
+        }
+
+        .password-rules.hidden {
+            display: none;
+        }
+
+        .password-rules {
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--gray-500);
+        }
+
+        .password-rule {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.3rem;
+        }
+
+        .rule-icon {
+            margin-right: 0.5rem;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: var(--gray-300);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            transition: all 0.3s ease;
+        }
+
+        .rule-icon.valid {
+            background-color: var(--green-600);
+            color: white;
+        }
+
+        .rule-text {
+            transition: all 0.3s ease;
+        }
+
+        .rule-text.valid {
+            color: var(--green-600);
+            font-weight: 500;
+        }
+
+        .password-strength {
+            height: 4px;
+            margin-top: 0.5rem;
+            border-radius: 2px;
+            background: var(--gray-300);
+            overflow: hidden;
+        }
+
+        .strength-meter {
+            height: 100%;
+            width: 0;
+            transition: width 0.3s ease;
+        }
+
+        .strength-0 { width: 20%; background: var(--red-500); }
+        .strength-1 { width: 40%; background: var(--orange-500); }
+        .strength-2 { width: 60%; background: var(--yellow-500); }
+        .strength-3 { width: 80%; background: var(--green-400); }
+        .strength-4 { width: 100%; background: var(--green-600); }
 
         /* Password toggle */
         .password-toggle {
@@ -641,6 +733,10 @@
                     @error('email')
                         <div class="error-message">{{ $message }}</div>
                     @enderror
+
+                    @error('email_verification')
+                        <div class="error-message">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="form-group">
@@ -734,6 +830,41 @@
                     <button type="button" class="password-toggle" id="togglePassword">
                         <i class="far fa-eye"></i>
                     </button>
+
+                    <!-- Show password rules-toggle-btn -->
+                    <div class="rules-toggle-container">
+                        <button type="button" class="rules-toggle-btn" id="toggleRulesBtn">
+                            <span>Show Password Rules</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+
+                    <div class="password-rules hidden" id="passwordRules">
+                        <div class="password-rule" id="rule-length">
+                            <span class="rule-icon">!</span>
+                            <span class="rule-text">At least 8 characters</span>
+                        </div>
+                        <div class="password-rule" id="rule-uppercase">
+                            <span class="rule-icon">!</span>
+                            <span class="rule-text">One uppercase letter</span>
+                        </div>
+                        <div class="password-rule" id="rule-lowercase">
+                            <span class="rule-icon">!</span>
+                            <span class="rule-text">One lowercase letter</span>
+                        </div>
+                        <div class="password-rule" id="rule-number">
+                            <span class="rule-icon">!</span>
+                            <span class="rule-text">One number</span>
+                        </div>
+                        <div class="password-rule" id="rule-symbol">
+                            <span class="rule-icon">!</span>
+                            <span class="rule-text">One symbol (@$!%*?&)</span>
+                        </div>
+                    </div>
+
+                    <div class="password-strength">
+                        <div class="strength-meter" id="strength-meter"></div>
+                    </div>
                     @error('password')
                         <div class="error-message">{{ $message }}</div>
                     @enderror
@@ -852,6 +983,73 @@
             toggleConfirmPassword.addEventListener('click', function() {
                 togglePasswordVisibility(confirmPassword, this);
             });
+        }
+
+        // Toggle password rules visibility
+        const toggleRulesBtn = document.getElementById('toggleRulesBtn');
+        const passwordRules = document.getElementById('passwordRules');
+
+        if (toggleRulesBtn && passwordRules) {
+            toggleRulesBtn.addEventListener('click', function() {
+                passwordRules.classList.toggle('hidden');
+                const isHidden = passwordRules.classList.contains('hidden');
+                const span = this.querySelector('span');
+                span.textContent = isHidden ? 'Show Password Rules' : 'Hide Password Rules';
+                const icon = this.querySelector('i');
+                icon.className = isHidden ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
+            });
+        }
+
+        // Password strength validation
+        const passwordInput = document.getElementById('password');
+        if (passwordInput) {
+            passwordInput.addEventListener('input', function() {
+                const password = this.value;
+                
+                // Define validation checks
+                const rules = {
+                    length: password.length >= 8,
+                    uppercase: /[A-Z]/.test(password),
+                    lowercase: /[a-z]/.test(password),
+                    number: /[0-9]/.test(password),
+                    symbol: /[@$!%*?&]/.test(password)
+                };
+                
+                // Update UI for each rule
+                Object.keys(rules).forEach(rule => {
+                    const ruleElement = document.getElementById(`rule-${rule}`);
+                    const icon = ruleElement.querySelector('.rule-icon');
+                    const text = ruleElement.querySelector('.rule-text');
+                    
+                    if (rules[rule]) {
+                        icon.textContent = '✓';
+                        icon.classList.add('valid');
+                        text.classList.add('valid');
+                    } else {
+                        icon.textContent = '!';
+                        icon.classList.remove('valid');
+                        text.classList.remove('valid');
+                    }
+                });
+
+                const strength = calculateStrength(password);
+                const meter = document.getElementById('strength-meter');
+                meter.className = 'strength-meter';
+                meter.classList.add(`strength-${strength}`);
+            });
+        }
+
+        // Calculate password strength
+        function calculateStrength(password) {
+            let strength = 0;
+            
+            if (password.length >= 8) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[a-z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[@$!%*?&]/.test(password)) strength++;
+            
+            return strength;
         }
 
         // Phone number functionality

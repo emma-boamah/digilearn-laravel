@@ -127,6 +127,13 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'email_verification' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/email_verification.log'),
+            'level' => 'info',
+            'days' => 14,
+        ],
+
     ],
 
 ];
