@@ -15,9 +15,16 @@ use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Events\Failed;
 use App\Models\User;
 use Carbon\Carbon;
+use App\Services\EmailVerificationService;
 
 class AuthController extends Controller
 {
+    protected $emailVerifier;
+
+    public function __construct()
+    {
+        $this->emailVerifier = new EmailVerificationService();
+    }
     /**
      * Maximum login attempts before lockout
      */
@@ -292,6 +299,12 @@ class AuthController extends Controller
             $validated['phone'] = trim($validated['country_code'] . preg_replace('/^\+/', '', trim($validated['phone'])));
         }
 
+        if (!$this->emailVerifier->verify($validated['email'])) {
+            return back()->withErrors([
+                'email' => 'Please provide a valid email address. This email appears to be invalid or disposable.',
+            ])->withInput($request->except('password', 'password_confirmation'));
+        }
+
         try {
             $user = User::create([
                 'name' => $validated['name'],
@@ -326,6 +339,13 @@ class AuthController extends Controller
                 'email' => $validated['email'] ?? null,
                 'error' => $e->getMessage()
             ]);
+
+            // Handle duplicate phone number specifically
+            if (str_contains($e->getMessage(), 'users_phone_unique')) {
+                return back()->withErrors([
+                    'phone' => 'This phone number is already registered. Please use a different number or skip phone verification.'
+                ])->withInput($request->except('password', 'password_confirmation'));
+            }
 
             return back()->withErrors([
                 'email' => 'Registration failed. Please try again.',

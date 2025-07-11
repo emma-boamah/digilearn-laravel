@@ -62,7 +62,7 @@ return [
 
     'mailboxlayer' => [
         'key' => env('MAILBOXLAYER_API_KEY'),
-        'enabled' => env('MAILBOXLAYER_ENABLED', false),
+        'enabled' => env('MAILBOXLAYER_ENABLED', true),
     ],
 
 ];

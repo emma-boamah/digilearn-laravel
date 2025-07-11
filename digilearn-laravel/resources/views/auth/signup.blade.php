@@ -956,6 +956,30 @@
             { name: 'Mexico', code: '+52', flag: 'mx' }
         ];
 
+        // Focus on phone input if there's a phone error
+        @if($errors->has('phone'))
+            document.addEventListener('DOMContentLoaded', function() {
+                const phoneInput = document.getElementById('phone');
+                if (phoneInput) {
+                    phoneInput.focus();
+                    
+                    // Expand the privacy notice for visibility
+                    const privacyNotice = document.querySelector('.privacy-notice');
+                    if (privacyNotice) {
+                        privacyNotice.style.borderColor = 'var(--primary-red)';
+                        privacyNotice.style.backgroundColor = 'rgba(220, 38, 38, 0.05)';
+                    }
+                    
+                    // Highlight the skip button
+                    const skipBtn = document.querySelector('.skip-phone-btn');
+                    if (skipBtn) {
+                        skipBtn.style.color = 'var(--primary-blue)';
+                        skipBtn.style.fontWeight = '600';
+                    }
+                }
+            });
+        @endif
+
         // Password toggle functionality
         const togglePassword = document.querySelector('#togglePassword');
         const password = document.querySelector('#password');
