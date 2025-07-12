@@ -54,6 +54,7 @@ services:
             retries: 3
             timeout: 5s
         restart: unless-stopped
+        command: --skip-grant-tables
 
     redis:
         image: 'redis:alpine'
