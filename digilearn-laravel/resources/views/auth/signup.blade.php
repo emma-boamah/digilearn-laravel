@@ -714,6 +714,7 @@
                         value="{{ old('name') }}"
                         placeholder="Enter your full name"
                         required
+                        autocomplete="name"
                     >
                     @error('name')
                         <div class="error-message">{{ $message }}</div>
@@ -730,6 +731,7 @@
                         value="{{ old('email') }}"
                         placeholder="Enter your email address"
                         required
+                        autocomplete="email"
                     >
                     @error('email')
                         <div class="error-message">{{ $message }}</div>
@@ -803,6 +805,7 @@
                             class="form-input phone-number-input {{ $errors->has('phone') ? 'error' : '' }}" 
                             value="{{ old('phone') }}"
                             placeholder="24 123 4567"
+                            autocomplete="tel"
                         >
                         <input type="hidden" id="country_code" name="country_code" value="+233">
                     </div>

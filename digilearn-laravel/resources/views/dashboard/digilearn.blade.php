@@ -911,6 +911,12 @@
             }
         }
 
+        @media (min-width: 1024px) {
+            .content-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
         /* Mobile Header */
         .mobile-header {
             display: none;

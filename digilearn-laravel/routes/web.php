@@ -22,6 +22,16 @@ use Illuminate\Support\Facades\Log;
 |--------------------------------------------------------------------------
 */
 
+// Add to web.php
+Route::get('/test-redis', function() {
+    try {
+        \Illuminate\Support\Facades\Redis::connection()->ping();
+        return "Redis connected successfully!";
+    } catch (\Exception $e) {
+        return "Redis error: " . $e->getMessage();
+    }
+});
+
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', [AboutController::class, 'index'])->name('about');
