@@ -82,13 +82,9 @@ class AppServiceProvider extends ServiceProvider
             // Standard rate limits
             return [
                 Limit::perMinutes(
-                    config('security.throttle_signup_decay_minutes', 60),
-                    config('security.throttle_signup_ip_attempts', 10)
-                )->by($request->ip())->response(function() use ($request) {
-                    $retryAfter = $this->getRetryAfter($request, 'signup');
-                    return response('', 429)
-                        ->header('Retry-After', $retryAfter);
-                }),
+                config('security.throttle_signup_decay_minutes', 60),
+                config('security.throttle_signup_ip_attempts', 10)
+            )->by($request->ip()),
                 Limit::perMinutes($decayMinutes, $ipAttempts)->by($ip . '|login'),
                 Limit::perMinutes($decayMinutes, $emailAttempts)->by($email . '|login')
             ];
@@ -130,13 +126,9 @@ class AppServiceProvider extends ServiceProvider
             // Standard rate limits
             return [
                 Limit::perMinutes(
-                    config('security.throttle_signup_decay_minutes', 60),
-                    config('security.throttle_signup_ip_attempts', 10)
-                )->by($request->ip())->response(function() use ($request) {
-                    $retryAfter = $this->getRetryAfter($request, 'signup');
-                    return response('', 429)
-                        ->header('Retry-After', $retryAfter);
-                }),
+                config('security.throttle_signup_decay_minutes', 60),
+                config('security.throttle_signup_ip_attempts', 10)
+            )->by($request->ip()),
                 Limit::perMinutes($decayMinutes, $ipAttempts)->by($ip . '|signup'),
                 Limit::perMinutes($decayMinutes, $emailAttempts)->by($email . '|signup')
             ];
@@ -149,13 +141,5 @@ class AppServiceProvider extends ServiceProvider
     protected function getFailedAttempts(Request $request, string $type): int
     {
         return $request->session()->get("{$type}_failed_attempts", 0);
-    }
-
-    // Helper method to get retry time
-    protected function getRetryAfter(Request $request, string $type): int
-    {
-        $limiter = app(RateLimiter::class);
-        $key = $request->ip() . '|' . $type;
-        return $limiter->availableIn($key);
     }
 }
