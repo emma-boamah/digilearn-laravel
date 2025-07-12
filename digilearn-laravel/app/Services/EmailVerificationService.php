@@ -21,7 +21,7 @@ class EmailVerificationService
         $this->client = new Client([
             'timeout' => 5, // Seconds
         ]);
-        $this->cacheTtl = env('EMAIL_VERIFICATION_CACHE_TTL', 86400);
+        $this->cacheTtl = (int) env('EMAIL_VERIFICATION_CACHE_TTL', 86400);
     }
 
     public function verify($email)

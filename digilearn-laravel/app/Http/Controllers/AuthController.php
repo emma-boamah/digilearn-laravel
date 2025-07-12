@@ -351,9 +351,6 @@ class AuthController extends Controller
                 'email' => 'Registration failed. Please try again.',
             ])->withInput($request->except('password', 'password_confirmation'));
         }
-
-        // If validation fails, increment rate limiter
-        RateLimiter::hit($rateLimitKey, $decaySeconds);
     }
 
     public function logout(Request $request)
