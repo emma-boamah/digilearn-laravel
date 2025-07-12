@@ -11,14 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasColumn('users', 'phone_verified_at')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->timestamp('phone_verified_at')->nullable()->after('email_verified_at');
+            });
+        }
+
         Schema::table('users', function (Blueprint $table) {
-            // Add phone verification timestamp
-            $table->timestamp('phone_verified_at')->nullable()->after('email_verified_at');
-            
-            // Make phone unique but nullable
             $table->unique('phone');
         });
     }
+
 
     /**
      * Reverse the migrations.

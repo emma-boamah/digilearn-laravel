@@ -54,12 +54,11 @@ services:
             retries: 3
             timeout: 5s
         restart: unless-stopped
-        command: --skip-grant-tables
 
     redis:
         image: 'redis:alpine'
         ports:
-            - '${FORWARD_REDIS_PORT:-6379}:6379'
+            - '${FORWARD_REDIS_PORT:-6380}:6379'
         volumes:
             - 'sail-redis:/data'
             - './docker/redis/redis.conf:/usr/local/etc/redis/redis.conf'
