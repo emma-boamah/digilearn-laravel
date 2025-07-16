@@ -10,6 +10,8 @@ use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use App\Models\User;
+use App\Models\PricingPlan;
+use App\Models\UserSubscription; // Added for subscription methods
 use Illuminate\Support\Facades\Cache;
 
 class ProfileController extends Controller
@@ -20,11 +22,17 @@ class ProfileController extends Controller
     public function show()
     {
         $user = Auth::user();
+        
+        // Load user with current subscription
+        $user->load(['currentSubscription.pricingPlan']);
 
         // Mask phone number for display
         $maskedPhone = $user->phone ? $this->maskPhoneNumber($user->phone) : null;
 
-        return view('dashboard.profile', compact('user', 'maskedPhone'));
+        // Get all available pricing plans for potential upgrades
+        $availablePlans = PricingPlan::active()->ordered()->get();
+
+        return view('dashboard.profile', compact('user', 'maskedPhone', 'availablePlans'));
     }
 
     /**
@@ -38,7 +46,7 @@ class ProfileController extends Controller
             'first_name' => 'required|string|max:255|min:2|regex:/^[a-zA-Z\s\-\'\.]+$/',
             'last_name' => 'required|string|max:255|min:2|regex:/^[a-zA-Z\s\-\'\.]+$/',
             'email' => 'required|email|unique:users,email,' . $user->id . '|max:255',
-            'phone' => 'nullable|string|max:20|regex:/^[\+]?[0-9\s\-$$$$]+$/',
+            'phone' => 'nullable|string|max:20|regex:/^[\+]?[0-9\s\-()]+$/',
             'date_of_birth' => 'nullable|date|before:today',
             'country' => 'required|string|max:100|regex:/^[a-zA-Z\s\-]+$/',
             'city' => 'nullable|string|max:255|regex:/^[a-zA-Z\s\-\'\.]+$/',
@@ -444,6 +452,51 @@ class ProfileController extends Controller
     }
 
     /**
+     * Resend phone verification SMS
+     */
+    public function resendPhoneVerification(Request $request)
+    {
+        $user = Auth::user();
+
+        // Rate limiting for resend attempts
+        $key = 'phone-resend:' . $user->id;
+        if (RateLimiter::tooManyAttempts($key, 3)) {
+            $seconds = RateLimiter::availableIn($key);
+            return response()->json([
+                'success' => false,
+                'message' => "Too many resend attempts. Please try again in " . ceil($seconds / 60) . " minutes."
+            ], 429);
+        }
+
+        try {
+            $this->sendPhoneVerification($user);
+            RateLimiter::hit($key, 60); // 1 minute cooldown for resend
+            Log::info('phone_verification_resent', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'phone_masked' => $this->maskPhoneNumber($user->phone),
+                'ip' => $request->ip(),
+                'timestamp' => now()->toISOString()
+            ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Verification code resent successfully!'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('phone_resend_error', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+                'timestamp' => now()->toISOString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to resend verification code. Please try again.'
+            ], 500);
+        }
+    }
+
+    /**
      * Remove phone number from account
      */
     public function removePhone(Request $request)
@@ -566,5 +619,162 @@ class ProfileController extends Controller
         }
         
         return substr($cleaned, 0, 3) . str_repeat('*', $length - 6) . substr($cleaned, -3);
+    }
+
+    /**
+     * API: Get all available pricing plans.
+     */
+    public function getPricingPlans(Request $request)
+    {
+        // In a real application, fetch active pricing plans from your database
+        // For now, return dummy data
+        $plans = [
+            [
+                'id' => 1,
+                'name' => 'ESSENTIAL',
+                'price' => 0,
+                'formatted_price' => 'Free',
+                'period' => 'month',
+                'description' => 'Access to essential lessons and features.',
+                'features' => [
+                    'Limited lessons',
+                    'Basic quizzes',
+                    'Community support',
+                ],
+            ],
+            [
+                'id' => 2,
+                'name' => 'EXTRA TUTION',
+                'price' => 9.99,
+                'formatted_price' => 'Ghc 200.00',
+                'period' => 'month',
+                'description' => 'Unlock all lessons and advanced features.',
+                'features' => [
+                    'Unlimited lessons',
+                    'Advanced quizzes',
+                    'Priority support',
+                    'Offline access',
+                    'Ad-free experience',
+                ],
+            ],
+            [
+                'id' => 3,
+                'name' => 'HOME SCHOOL',
+                'price' => 99.99,
+                'formatted_price' => 'Ghc 200.00',
+                'period' => 'year',
+                'description' => 'Best value for serious learners.',
+                'features' => [
+                    'All Premium features',
+                    'Personalized learning path',
+                    '1-on-1 tutoring sessions',
+                    'Early access to new content',
+                ],
+            ],
+        ];
+
+        return response()->json(['success' => true, 'plans' => $plans]);
+    }
+
+    /**
+     * API: Get current user subscription details.
+     */
+    public function getCurrentSubscription(Request $request)
+    {
+        $user = Auth::user();
+        // In a real application, fetch the user's current subscription from the database
+        // For now, return dummy data based on whether the user has a subscription
+        $subscription = null;
+        if ($user->currentSubscription) { // Assuming user has a currentSubscription relationship
+            $sub = $user->currentSubscription;
+            $plan = $sub->pricingPlan; // Assuming subscription has a pricingPlan relationship
+
+            $subscription = [
+                'id' => $sub->id,
+                'status' => $sub->status, // e.g., 'active', 'cancelled', 'trialing'
+                'is_in_trial' => $sub->is_in_trial,
+                'trial_days_remaining' => $sub->is_in_trial ? now()->diffInDays($sub->trial_ends_at) : 0,
+                'trial_ends_at_formatted' => $sub->is_in_trial ? $sub->trial_ends_at->format('M d, Y') : null,
+                'expires_at_formatted' => $sub->expires_at ? $sub->expires_at->format('M d, Y') : null,
+                'days_remaining' => $sub->expires_at ? now()->diffInDays($sub->expires_at) : 0,
+                'pricing_plan' => [
+                    'id' => $plan->id,
+                    'name' => $plan->name,
+                    'formatted_price' => $plan->formatted_price,
+                    'period' => $plan->period,
+                ],
+                'billing_history' => [
+                    // Dummy billing history
+                    ['date' => 'Jul 1, 2024', 'description' => 'Premium Plan', 'amount' => '9.99', 'currency' => '$', 'status' => 'Paid'],
+                    ['date' => 'Jun 1, 2024', 'description' => 'Premium Plan', 'amount' => '9.99', 'currency' => '$', 'status' => 'Paid'],
+                ],
+            ];
+        }
+
+        return response()->json(['success' => true, 'subscription' => $subscription]);
+    }
+
+    /**
+     * API: Subscribe or upgrade to a plan.
+     */
+    public function subscribeToPlan(Request $request)
+    {
+        $validated = $request->validate([
+            'plan_id' => 'required|exists:pricing_plans,id',
+        ]);
+
+        $user = Auth::user();
+        $plan = PricingPlan::find($validated['plan_id']);
+
+        // In a real application, integrate with a payment gateway here
+        // For demo, simulate success
+        try {
+            // Logic to create or update user subscription
+            // Example: $user->newSubscription('default', $plan->stripe_price_id)->create($paymentMethod);
+            Log::info('user_subscribed', [
+                'user_id' => $user->id,
+                'plan_id' => $plan->id,
+                'plan_name' => $plan->name,
+                'ip' => $request->ip(),
+                'timestamp' => now()->toISOString()
+            ]);
+            return response()->json(['success' => true, 'message' => "Successfully subscribed to {$plan->name} plan!"]);
+        } catch (\Exception $e) {
+            Log::error('subscription_error', [
+                'user_id' => $user->id,
+                'plan_id' => $plan->id,
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+                'timestamp' => now()->toISOString()
+            ]);
+            return response()->json(['success' => false, 'message' => 'Failed to subscribe. Please try again.'], 500);
+        }
+    }
+
+    /**
+     * API: Cancel user subscription.
+     */
+    public function cancelSubscription(Request $request)
+    {
+        $user = Auth::user();
+
+        // In a real application, integrate with your payment gateway to cancel the subscription
+        try {
+            // Example: $user->subscription('default')->cancel();
+            Log::info('user_cancelled_subscription', [
+                'user_id' => $user->id,
+                'ip' => $request->ip(),
+                'timestamp' => now()->toISOString()
+            ]);
+            return response()->json(['success' => true, 'message' => 'Subscription cancelled successfully! Your access will continue until the end of the current billing period.']);
+        } catch (\Exception $e) {
+            Log::error('subscription_cancellation_error', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+                'timestamp' => now()->toISOString()
+            ]);
+            return response()->json(['success' => false, 'message' => 'Failed to cancel subscription. Please try again.'], 500);
+        }
     }
 }

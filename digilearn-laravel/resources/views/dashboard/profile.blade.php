@@ -790,6 +790,548 @@
             font-style: italic;
             margin-left: 0.25rem;
         }
+
+        /* Modal Base Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            padding: 1rem;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-container {
+            background: var(--white);
+            border-radius: 1rem;
+            box-shadow: var(--shadow-xl);
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+            transform: scale(0.95) translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-container {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-container.modal-sm {
+            max-width: 400px;
+        }
+
+        .modal-container.modal-lg {
+            max-width: 800px;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--gray-200);
+            background: var(--gray-50);
+        }
+
+        .modal-header.danger-header {
+            background: #fef2f2;
+            border-bottom-color: #fecaca;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            color: var(--gray-500);
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        .modal-body {
+            padding: 2rem;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            padding: 1.5rem 2rem;
+            border-top: 1px solid var(--gray-200);
+            background: var(--gray-50);
+        }
+
+        /* Security Notice */
+        .security-notice {
+            display: flex;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: #eff6ff;
+            border: 1px solid #3b82f6;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .security-notice .notice-icon {
+            color: #3b82f6;
+            flex-shrink: 0;
+        }
+
+        .security-notice p {
+            margin: 0;
+            font-size: 0.875rem;
+            color: #1e40af;
+        }
+
+        /* Verification Info */
+        .verification-info {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .verification-icon {
+            color: var(--secondary-blue);
+            margin-bottom: 1rem;
+        }
+
+        .verification-info h4 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin: 0 0 0.5rem 0;
+        }
+
+        .verification-info p {
+            color: var(--gray-600);
+            margin: 0;
+        }
+
+        .verification-code-input {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: 0.5rem;
+            font-family: "Courier New", monospace;
+        }
+
+        .resend-section {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .resend-section p {
+            color: var(--gray-600);
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        .resend-btn {
+            background: none;
+            border: none;
+            color: var(--primary-red);
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+
+        .resend-btn:hover {
+            color: var(--primary-red-hover);
+        }
+
+        /* Danger Warning */
+        .danger-warning {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .warning-icon {
+            color: var(--primary-red);
+            margin-bottom: 1rem;
+        }
+
+        .danger-warning h4 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary-red);
+            margin: 0 0 0.75rem 0;
+        }
+
+        .danger-warning p {
+            color: var(--gray-600);
+            margin: 0 0 1rem 0;
+        }
+
+        .deletion-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+        }
+
+        .deletion-list li {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--gray-600);
+        }
+
+        .deletion-list li::before {
+            content: "•";
+            color: var(--primary-red);
+            font-weight: bold;
+        }
+
+        .btn-danger {
+            background: var(--primary-red);
+            color: var(--white);
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: var(--primary-red-hover);
+        }
+
+        .btn-danger:disabled {
+            background: var(--gray-300);
+            color: var(--gray-500);
+            cursor: not-allowed;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Notification Toast */
+        .notification-toast {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: var(--white);
+            border-radius: 0.75rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--gray-200);
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            z-index: 1100;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            min-width: 300px;
+            max-width: 400px;
+        }
+
+        .notification-toast.show {
+            transform: translateX(0);
+        }
+
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1;
+        }
+
+        .toast-icon {
+            flex-shrink: 0;
+        }
+
+        .toast-message {
+            font-size: 0.875rem;
+            color: var(--gray-700);
+            font-weight: 500;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            color: var(--gray-400);
+            transition: all 0.2s ease;
+        }
+
+        .toast-close:hover {
+            background: var(--gray-100);
+            color: var(--gray-600);
+        }
+
+        .toast-success .toast-icon {
+            color: var(--success-green);
+        }
+
+        .toast-error .toast-icon {
+            color: var(--primary-red);
+        }
+
+        .toast-info .toast-icon {
+            color: var(--secondary-blue);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .modal-container {
+                margin: 1rem;
+                max-height: calc(100vh - 2rem);
+            }
+
+            .modal-header,
+            .modal-footer {
+                padding: 1rem 1.5rem;
+            }
+
+            .modal-body {
+                padding: 1.5rem;
+            }
+
+            .modal-footer {
+                flex-direction: column-reverse;
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+            }
+
+            .notification-toast {
+                left: 1rem;
+                right: 1rem;
+                min-width: auto;
+            }
+        }
+
+        /* Subscription Modals Specific Styles */
+        .plan-selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .plan-card-modal {
+            border: 1px solid var(--gray-200);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .plan-card-modal:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .plan-card-modal.selected {
+            border-color: var(--primary-red);
+            box-shadow: 0 0 0 2px var(--primary-red);
+        }
+
+        .plan-card-modal .plan-name {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 0.5rem;
+        }
+
+        .plan-card-modal .plan-price {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: var(--primary-red);
+            margin-bottom: 0.5rem;
+        }
+
+        .plan-card-modal .plan-period {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+        }
+
+        .plan-card-modal .plan-description {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            margin-top: 1rem;
+            min-height: 40px; /* Ensure consistent height */
+        }
+
+        .plan-card-modal .plan-features-list {
+            list-style: none;
+            padding: 0;
+            margin: 1.5rem 0;
+            text-align: left;
+        }
+
+        .plan-card-modal .plan-features-list li {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--gray-700);
+            margin-bottom: 0.5rem;
+        }
+
+        .plan-card-modal .plan-features-list li svg {
+            color: var(--success-green);
+            flex-shrink: 0;
+        }
+
+        .plan-card-modal .selected-indicator {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            color: var(--primary-red);
+            font-size: 1.25rem;
+            display: none;
+        }
+
+        .plan-card-modal.selected .selected-indicator {
+            display: block;
+        }
+
+        .current-plan-details {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .current-plan-details h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 0.75rem;
+        }
+
+        .current-plan-details p {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            margin-bottom: 0.5rem;
+        }
+
+        .current-plan-details .status-badge {
+            margin-top: 0.5rem;
+        }
+
+        .cancel-subscription-section {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .cancel-subscription-section h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--primary-red);
+            margin-bottom: 0.75rem;
+        }
+
+        .cancel-subscription-section p {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            margin-bottom: 1rem;
+        }
+
+        .billing-history-section {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .billing-history-section h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 1rem;
+        }
+
+        .billing-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .billing-table th, .billing-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--gray-200);
+            text-align: left;
+        }
+
+        .billing-table th {
+            background: var(--gray-100);
+            color: var(--gray-700);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .billing-table td {
+            color: var(--gray-800);
+        }
+
+        .billing-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .billing-table .text-right {
+            text-align: right;
+        }
+
+        .billing-table .text-green {
+            color: var(--success-green);
+            font-weight: 600;
+        }
+
+        .billing-table .text-red {
+            color: var(--primary-red);
+            font-weight: 600;
+        }
+
+        .no-history-message {
+            text-align: center;
+            color: var(--gray-500);
+            padding: 2rem;
+        }
     </style>
 </head>
 <body>
@@ -889,6 +1431,13 @@
                     </svg>
                     Language
                 </a>
+
+                <button class="nav-item" onclick="showPasswordChangeModal()">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2v5a2 2 0 01-2 2H9a2 2 0 01-2-2V9a2 2 0 012-2h6zM12 14a2 2 0 100-4 2 2 0 000 4z"/>
+                    </svg>
+                    Change Password
+                </button>
                 
                 <a href="#" class="nav-item" data-section="questions">
                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -899,12 +1448,12 @@
                 
                 <a href="#" class="nav-item" data-section="help">
                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 2.25a9.75 9.75 0 109.75 9.75A9.75 9.75 0 0012 2.25z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 2.25a9.75 9.75 0 109.75 9.75A9.75 0 0012 2.25z"/>
                     </svg>
                     Help
                 </a>
                 
-                <button class="nav-item danger" onclick="confirmDeleteAccount()">
+                <button class="nav-item danger" onclick="showDeleteAccountModal()">
                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                     </svg>
@@ -917,10 +1466,6 @@
         <main class="main-content">
             <div class="content-header">
                 <h1 class="page-title">Account</h1>
-                <div class="header-actions">
-                    <button type="button" class="btn btn-secondary" onclick="cancelChanges()">Cancel</button>
-                    <button type="submit" form="profileForm" class="btn btn-primary">Update</button>
-                </div>
             </div>
 
             <div class="success-message" id="successMessage">
@@ -1026,14 +1571,14 @@
                             <div class="phone-actions" style="margin-top: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
                                 @if(auth()->user()->phone)
                                     @if(!auth()->user()->phone_verified_at)
-                                        <button type="button" class="btn btn-primary btn-sm" onclick="verifyCurrentPhone()">
+                                        <button type="button" class="btn btn-primary btn-sm" onclick="showPhoneVerificationModal()">
                                             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                             </svg>
                                             Verify Current Number
                                         </button>
                                     @endif
-                                    <button type="button" class="btn btn-secondary btn-sm" onclick="updatePhoneNumber()">
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="showPhoneUpdateModal()">
                                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                         </svg>
@@ -1046,7 +1591,7 @@
                                         Remove
                                     </button>
                                 @else
-                                    <button type="button" class="btn btn-primary btn-sm" onclick="addPhoneNumber()">
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="showPhoneUpdateModal()">
                                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                                         </svg>
@@ -1145,17 +1690,394 @@
                             <label for="bio" class="form-label">Bio (Optional)</label>
                             <textarea id="bio" name="bio" class="form-input" rows="3" placeholder="Tell us a bit about yourself...">{{ auth()->user()->bio ?? 'Passionate student from Ghana, currently in JHS 2. I love learning new things and exploring different subjects!' }}</textarea>
                         </div>
+                        <div class="header-actions">
+                            <button type="button" class="btn btn-secondary" onclick="cancelChanges()">Cancel</button>
+                            <button type="submit" form="profileForm" class="btn btn-primary">Update</button>
+                        </div>
                     </div>
+                </div>
+
+                <!-- Subscription Plan Section -->
+                <div class="form-section">
+                    <h2 class="section-title">Subscription Plan</h2>
+                    @if($user->currentSubscription)
+                        <div class="current-plan-details">
+                            <h4>Current Plan: <span id="currentPlanNameDisplay">{{ $user->currentSubscription->pricingPlan->name }}</span></h4>
+                            <p>Price: <span id="currentPlanPriceDisplay">{{ $user->currentSubscription->pricingPlan->formatted_price }}/{{ $user->currentSubscription->pricingPlan->period }}</span></p>
+                            <p>Status: 
+                                <span id="currentPlanStatusDisplay" class="status-badge status-{{ strtolower($user->currentSubscription->status) }}">
+                                    {{ ucfirst($user->currentSubscription->status) }}
+                                </span>
+                            </p>
+                            @if($user->currentSubscription->is_in_trial)
+                                <p id="currentPlanTrialInfoDisplay">Your trial expires in {{ now()->diffInDays($user->currentSubscription->trial_ends_at) }} days on {{ $user->currentSubscription->trial_ends_at->format('M d, Y') }}</p>
+                            @elseif($user->currentSubscription->expires_at)
+                                <p id="currentPlanExpiryDisplay">Next Billing Date: {{ $user->currentSubscription->expires_at->format('M d, Y') }} ({{ now()->diffInDays($user->currentSubscription->expires_at) }} days)</p>
+                            @endif
+                            <button type="button" class="btn btn-primary btn-sm" style="margin-top: 1rem;" onclick="showManageSubscriptionModal()">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                                </svg>
+                                Manage Subscription
+                            </button>
+                        </div>
+                    @else
+                        <div class="current-plan-details">
+                            <h4>You are currently on the Free Plan.</h4>
+                            <p>Upgrade to unlock premium features and content.</p>
+                            <button type="button" class="btn btn-primary" style="margin-top: 1rem;" onclick="showSubscriptionPlans()">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                </svg>
+                                Subscribe Now
+                            </button>
+                        </div>
+                    @endif
                 </div>
             </form>
         </main>
+    </div>
+
+    <!-- Phone Number Update Modal -->
+    <div id="phoneUpdateModal" class="modal-overlay">
+        <div class="modal-container modal-sm">
+            <div class="modal-header">
+                <h3 class="modal-title">Update Phone Number</h3>
+                <button class="modal-close" onclick="closeModal('phoneUpdateModal')">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="security-notice">
+                    <div class="notice-icon">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <p>We'll send a verification code to your new number to confirm the change.</p>
+                </div>
+                
+                <form id="phoneUpdateForm">
+                    <div class="form-group">
+                        <label for="modal_phone" class="form-label">New Phone Number</label>
+                        <div class="phone-input-container">
+                            <div class="country-code-selector">
+                                <button type="button" class="country-code-btn" id="modalCountryCodeBtn">
+                                    <img src="https://flagcdn.com/w20/gh.png" alt="Ghana" class="country-flag" id="modalSelectedFlag">
+                                    <span class="country-code" id="modalSelectedCode">+233</span>
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </button>
+                                <div class="country-code-dropdown" id="modalCountryCodeDropdown">
+                                    <div class="country-search">
+                                        <input type="text" placeholder="Search countries..." class="country-search-input" id="modalCountrySearch">
+                                    </div>
+                                    <div class="country-list" id="modalCountryList">
+                                        <!-- Countries will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="tel" id="modal_phone" name="phone" class="form-input phone-number-input" 
+                                   placeholder="24 123 4567" required>
+                            <input type="hidden" id="modal_country_code" name="country_code" value="+233">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modal_current_password" class="form-label">Current Password *</label>
+                        <input type="password" id="modal_current_password" name="current_password" class="form-input" 
+                               placeholder="Enter your current password" required>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('phoneUpdateModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitPhoneUpdate(event)">
+                    <span class="btn-text">Update Phone</span>
+                    <span class="btn-loading" style="display: none;">
+                        <svg class="spinner" width="16" height="16" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"/>
+                            <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" opacity="0.75"/>
+                        </svg>
+                        Updating...
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phone Verification Modal -->
+    <div id="phoneVerificationModal" class="modal-overlay">
+        <div class="modal-container modal-sm">
+            <div class="modal-header">
+                <h3 class="modal-title">Verify Phone Number</h3>
+                <button class="modal-close" onclick="closeModal('phoneVerificationModal')">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="verification-info">
+                    <div class="verification-icon">
+                        <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <h4>Verification Code Sent</h4>
+                    <p>We've sent a 6-digit verification code to <span id="verificationPhoneNumber"></span></p>
+                </div>
+                
+                <form id="phoneVerificationForm">
+                    <div class="form-group">
+                        <label for="verification_code" class="form-label">Verification Code</label>
+                        <input type="text" id="verification_code" name="verification_code" class="form-input verification-code-input" 
+                               placeholder="Enter 6-digit code" maxlength="6" required>
+                    </div>
+                    
+                    <div class="resend-section">
+                        <p>Didn't receive the code? <button type="button" class="resend-btn" onclick="resendVerificationCode()">Resend</button></p>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('phoneVerificationModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitPhoneVerification(event)">
+                    <span class="btn-text">Verify</span>
+                    <span class="btn-loading" style="display: none;">
+                        <svg class="spinner" width="16" height="16" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"/>
+                            <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" opacity="0.75"/>
+                        </svg>
+                        Verifying...
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Change Modal -->
+    <div id="passwordChangeModal" class="modal-overlay">
+        <div class="modal-container modal-sm">
+            <div class="modal-header">
+                <h3 class="modal-title">Change Password</h3>
+                <button class="modal-close" onclick="closeModal('passwordChangeModal')">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="passwordChangeForm">
+                    <div class="form-group">
+                        <label for="current_password_change" class="form-label">Current Password *</label>
+                        <input type="password" id="current_password_change" name="current_password" class="form-input" 
+                               placeholder="Enter your current password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new_password" class="form-label">New Password *</label>
+                        <input type="password" id="new_password" name="password" class="form-input" 
+                               placeholder="Enter new password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new_password_confirmation" class="form-label">Confirm New Password *</label>
+                        <input type="password" id="new_password_confirmation" name="password_confirmation" class="form-input" 
+                               placeholder="Confirm new password" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('passwordChangeModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitPasswordChange(event)">
+                    <span class="btn-text">Change Password</span>
+                    <span class="btn-loading" style="display: none;">
+                        <svg class="spinner" width="16" height="16" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"/>
+                            <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" opacity="0.75"/>
+                        </svg>
+                        Changing...
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Account Confirmation Modal -->
+    <div id="deleteAccountModal" class="modal-overlay">
+        <div class="modal-container modal-sm">
+            <div class="modal-header danger-header">
+                <h3 class="modal-title">Delete Account</h3>
+                <button class="modal-close" onclick="closeModal('deleteAccountModal')">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="danger-warning">
+                    <div class="warning-icon">
+                        <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                        </svg>
+                    </div>
+                    <h4>This action cannot be undone</h4>
+                    <p>Deleting your account will permanently remove all your data, including:</p>
+                    <ul class="deletion-list">
+                        <li>Your profile and personal information</li>
+                        <li>Learning progress and achievements</li>
+                        <li>All saved content and preferences</li>
+                        <li>Access to your account and lessons</li>
+                    </ul>
+                </div>
+                
+                <form id="deleteAccountForm">
+                    <div class="form-group">
+                        <label for="delete_confirmation" class="form-label">
+                            Type "DELETE" to confirm:
+                        </label>
+                        <input type="text" id="delete_confirmation" class="form-input" 
+                               placeholder="Type DELETE here" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="delete_password" class="form-label">Current Password *</label>
+                        <input type="password" id="delete_password" name="current_password" class="form-input" 
+                               placeholder="Enter your current password" required>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('deleteAccountModal')">Cancel</button>
+                <button class="btn btn-danger" id="confirmDeleteBtn" onclick="submitDeleteAccount(event)" disabled>
+                    <span class="btn-text">Delete Account</span>
+                    <span class="btn-loading" style="display: none;">
+                        <svg class="spinner" width="16" height="16" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"/>
+                            <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" opacity="0.75"/>
+                        </svg>
+                        Deleting...
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subscribe/Upgrade Plan Modal -->
+    <div id="subscribeUpgradeModal" class="modal-overlay">
+        <div class="modal-container modal-lg">
+            <div class="modal-header">
+                <h3 class="modal-title" id="subscribeUpgradeModalTitle">Choose Your Plan</h3>
+                <button class="modal-close" onclick="closeModal('subscribeUpgradeModal')">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="text-center text-gray-600 mb-6" id="subscribeUpgradeModalDescription">
+                    Unlock premium features and content with a subscription plan.
+                </p>
+                <div class="plan-selection-grid" id="planSelectionGrid">
+                    <!-- Plans will be dynamically loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('subscribeUpgradeModal')">Cancel</button>
+                <button class="btn btn-primary" id="confirmPlanSelectionBtn" onclick="confirmPlanSelection(event)" disabled>
+                    <span class="btn-text">Confirm Plan</span>
+                    <span class="btn-loading" style="display: none;">
+                        <svg class="spinner" width="16" height="16" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"/>
+                            <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" opacity="0.75"/>
+                        </svg>
+                        Processing...
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Subscription Modal -->
+    <div id="manageSubscriptionModal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Manage Your Subscription</h3>
+                <button class="modal-close" onclick="closeModal('manageSubscriptionModal')">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="current-plan-details">
+                    <h4>Current Plan: <span id="currentPlanName"></span></h4>
+                    <p>Price: <span id="currentPlanPrice"></span></p>
+                    <p>Status: <span id="currentPlanStatus" class="status-badge"></span></p>
+                    <p id="currentPlanExpiry"></p>
+                    <p id="currentPlanTrialInfo"></p>
+                </div>
+
+                <div class="billing-history-section">
+                    <h4>Billing History</h4>
+                    <div id="billingHistoryContent">
+                        <!-- Billing history will be dynamically loaded here -->
+                    </div>
+                </div>
+
+                <div class="cancel-subscription-section">
+                    <h4>Cancel Subscription</h4>
+                    <p>If you cancel, your subscription will remain active until the end of your current billing period.</p>
+                    <button class="btn btn-danger" onclick="confirmCancelSubscription()">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Cancel Subscription
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('manageSubscriptionModal')">Close</button>
+                <button class="btn btn-primary" onclick="showChangePlanModal()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                    </svg>
+                    Change Plan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success/Error Notification -->
+    <div id="notificationToast" class="notification-toast">
+        <div class="toast-content">
+            <div class="toast-icon" id="toastIcon">
+                <!-- Icon will be populated by JavaScript -->
+            </div>
+            <div class="toast-message" id="toastMessage">
+                <!-- Message will be populated by JavaScript -->
+            </div>
+        </div>
+        <button class="toast-close" onclick="hideNotification()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
     </div>
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         // Navigation functionality
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', function(e) {
-                if (!this.classList.contains('danger')) {
+                if (!this.classList.contains('danger') && this.getAttribute('onclick') === null) { // Added condition to not prevent default for buttons with onclick
                     e.preventDefault();
                     
                     // Remove active class from all items
@@ -1194,7 +2116,7 @@
         }
 
         // Form submission
-        document.getElementById('profileForm').addEventListener('submit', function(e) {
+        document.getElementById('profileForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             // Show loading state
@@ -1203,39 +2125,39 @@
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
             submitBtn.disabled = true;
             
-            // Simulate API call
-            setTimeout(() => {
-                // Show success message
-                document.getElementById('successMessage').classList.add('show');
+            try {
+                const formData = new FormData(this);
+                const response = await fetch('{{ route("profile.update") }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    }
+                });
                 
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('Profile updated successfully!', 'success');
+                    // Optionally reload the page to show updated data
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showNotification(data.message || 'Failed to update profile', 'error');
+                }
+            } catch (error) {
+                showNotification('An error occurred. Please try again.', 'error');
+            } finally {
                 // Reset button
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
-                
-                // Hide success message after 3 seconds
-                setTimeout(() => {
-                    document.getElementById('successMessage').classList.remove('show');
-                }, 3000);
-                
-                // In a real app, you would submit the form data here
-                console.log('Profile updated successfully');
-            }, 2000);
+            }
         });
 
         // Cancel changes
         function cancelChanges() {
             if (confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
                 location.reload();
-            }
-        }
-
-        // Delete account confirmation
-        function confirmDeleteAccount() {
-            if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-                if (confirm('This will permanently delete all your data. Are you absolutely sure?')) {
-                    // In a real app, you would handle account deletion here
-                    alert('Account deletion functionality would be implemented here.');
-                }
             }
         }
 
@@ -1372,141 +2294,6 @@
         // Initialize phone input
         initializePhoneInput();
 
-        // Phone verification functionality
-        const verifyPhoneBtn = document.getElementById('verifyPhoneBtn');
-        if (verifyPhoneBtn) {
-            verifyPhoneBtn.addEventListener('click', function() {
-                const phoneNumber = document.getElementById('phone').value;
-                const countryCode = document.getElementById('country_code').value;
-                const fullNumber = countryCode + phoneNumber;
-                
-                // Here you would typically send a verification SMS
-                alert(`Verification SMS would be sent to: ${fullNumber}`);
-                
-                // Update button state
-                this.innerHTML = `
-                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    Verified
-                `;
-                this.style.background = '#10b981';
-                this.disabled = true;
-            });
-        }
-
-        // Phone number management functions
-        function addPhoneNumber() {
-            const phone = document.getElementById('phone').value.trim();
-            const countryCode = document.getElementById('country_code').value;
-            
-            if (!phone) {
-                alert('Please enter a phone number');
-                return;
-            }
-            
-            const password = prompt('Please enter your current password to confirm this change:');
-            if (!password) return;
-            
-            fetch('{{ route("profile.phone.update") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify({
-                    phone: phone,
-                    country_code: countryCode,
-                    current_password: password
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message);
-                    location.reload();
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again.');
-            });
-        }
-
-        function updatePhoneNumber() {
-            const phone = document.getElementById('phone').value.trim();
-            const countryCode = document.getElementById('country_code').value;
-            
-            if (!phone) {
-                alert('Please enter a phone number');
-                return;
-            }
-            
-            const password = prompt('Please enter your current password to confirm this change:');
-            if (!password) return;
-            
-            fetch('{{ route("profile.phone.update") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'X-HTTP-Method-Override': 'PUT'
-                },
-                body: JSON.stringify({
-                    phone: phone,
-                    country_code: countryCode,
-                    current_password: password
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message);
-                    location.reload();
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again.');
-            });
-        }
-
-        function verifyCurrentPhone() {
-            const code = prompt('Please enter the 6-digit verification code sent to your phone:');
-            if (!code || code.length !== 6) {
-                alert('Please enter a valid 6-digit code');
-                return;
-            }
-            
-            fetch('{{ route("profile.phone.verify") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify({
-                    verification_code: code
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message);
-                    location.reload();
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again.');
-            });
-        }
-
         function removePhoneNumber() {
             if (!confirm('Are you sure you want to remove your phone number? This will disable phone-based security features.')) {
                 return;
@@ -1529,17 +2316,691 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert(data.message);
+                    showNotification(data.message, 'success');
                     location.reload();
                 } else {
-                    alert(data.message);
+                    showNotification(data.message, 'error');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred. Please try again.');
+                showNotification('An error occurred. Please try again.', 'error');
             });
         }
+
+        // Modal Management Functions
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+
+                // Reset modal forms
+                if (modalId === 'phoneUpdateModal') {
+                    document.getElementById('phoneUpdateForm').reset();
+                } else if (modalId === 'phoneVerificationModal') {
+                    document.getElementById('phoneVerificationForm').reset();
+                } else if (modalId === 'deleteAccountModal') {
+                    document.getElementById('deleteAccountForm').reset();
+                    document.getElementById('confirmDeleteBtn').disabled = true;
+                } else if (modalId === 'passwordChangeModal') { // Reset password change form
+                    document.getElementById('passwordChangeForm').reset();
+                } else if (modalId === 'subscribeUpgradeModal') {
+                    // Reset selected plan
+                    const selectedPlanCard = document.querySelector('.plan-card-modal.selected');
+                    if (selectedPlanCard) {
+                        selectedPlanCard.classList.remove('selected');
+                    }
+                    document.getElementById('confirmPlanSelectionBtn').disabled = true;
+                    selectedPlanId = null; // Reset global selected plan ID
+                }
+            }
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-overlay')) {
+                const modalId = e.target.id;
+                closeModal(modalId);
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const activeModal = document.querySelector('.modal-overlay.active');
+                if (activeModal) {
+                    closeModal(activeModal.id);
+                }
+            }
+        });
+
+        // Initialize modal phone input
+        function initializeModalPhoneInput() {
+            const modalCountryCodeBtn = document.getElementById('modalCountryCodeBtn');
+            const modalCountryCodeDropdown = document.getElementById('modalCountryCodeDropdown');
+            const modalCountryList = document.getElementById('modalCountryList');
+            const modalCountrySearch = document.getElementById('modalCountrySearch');
+            const modalSelectedFlag = document.getElementById('modalSelectedFlag');
+            const modalSelectedCode = document.getElementById('modalSelectedCode');
+            const modalCountryCodeInput = document.getElementById('modal_country_code');
+
+            if (!modalCountryCodeBtn || !modalCountryList) return;
+
+            // Populate country list for modal
+            function populateModalCountries(filteredCountries = countries) {
+                modalCountryList.innerHTML = '';
+                filteredCountries.forEach(country => {
+                    const option = document.createElement('div');
+                    option.className = 'country-option';
+                    option.innerHTML = `
+                        <img src="https://flagcdn.com/w20/${country.flag}.png" alt="${country.name}" class="country-flag">
+                        <span class="country-name">${country.name}</span>
+                        <span class="country-code">${country.code}</span>
+                    `;
+                    option.addEventListener('click', () => selectModalCountry(country));
+                    modalCountryList.appendChild(option);
+                });
+            }
+
+            // Select country for modal
+            function selectModalCountry(country) {
+                modalSelectedFlag.src = `https://flagcdn.com/w20/${country.flag}.png`;
+                modalSelectedFlag.alt = country.name;
+                modalSelectedCode.textContent = country.code;
+                modalCountryCodeInput.value = country.code;
+                modalCountryCodeDropdown.classList.remove('active');
+            }
+
+            // Toggle dropdown for modal
+            modalCountryCodeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                modalCountryCodeDropdown.classList.toggle('active');
+                if (modalCountryCodeDropdown.classList.contains('active')) {
+                    modalCountrySearch.focus();
+                }
+            });
+
+            // Search functionality for modal
+            if (modalCountrySearch) {
+                modalCountrySearch.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    const filtered = countries.filter(country => 
+                        country.name.toLowerCase().includes(searchTerm) || 
+                        country.code.includes(searchTerm)
+                    );
+                    populateModalCountries(filtered);
+                });
+            }
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!modalCountryCodeBtn.contains(e.target) && !modalCountryCodeDropdown.contains(e.target)) {
+                    modalCountryCodeDropdown.classList.remove('active');
+                }
+            });
+
+            // Initialize with default countries
+            populateModalCountries();
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const toast = document.getElementById('notificationToast');
+            const icon = document.getElementById('toastIcon');
+            const messageEl = document.getElementById('toastMessage');
+
+            // Set message
+            messageEl.textContent = message;
+
+            // Set icon based on type
+            let iconSvg = '';
+            toast.className = `notification-toast toast-${type}`;
+
+            switch (type) {
+                case 'success':
+                    iconSvg = `<svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    </svg>`;
+                    break;
+                case 'error':
+                    iconSvg = `<svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                    </svg>`;
+                    break;
+                default:
+                    iconSvg = `<svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>`;
+            }
+
+            icon.innerHTML = iconSvg;
+
+            // Show toast
+            toast.classList.add('show');
+
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                hideNotification();
+            }, 5000);
+        }
+
+        function hideNotification() {
+            const toast = document.getElementById('notificationToast');
+            toast.classList.remove('show');
+        }
+
+        // Phone Update Modal Functions
+        function showPhoneUpdateModal() {
+            openModal('phoneUpdateModal');
+            initializeModalPhoneInput();
+        }
+
+        async function submitPhoneUpdate(event) {
+            event.preventDefault();
+            const form = document.getElementById('phoneUpdateForm');
+            const phone = document.getElementById('modal_phone').value.trim();
+            const countryCode = document.getElementById('modal_country_code').value;
+            const password = document.getElementById('modal_current_password').value;
+
+            if (!phone || !password) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+
+            const submitBtn = event.target;
+            const btnText = submitBtn.querySelector('.btn-text');
+            const btnLoading = submitBtn.querySelector('.btn-loading');
+
+            // Show loading state
+            submitBtn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'inline-flex';
+
+            try {
+                const response = await fetch('{{ route("profile.phone.update") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        phone: phone,
+                        country_code: countryCode,
+                        current_password: password
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    closeModal('phoneUpdateModal');
+                    showNotification('Phone number updated successfully!', 'success');
+
+                    // Show verification modal
+                    document.getElementById('verificationPhoneNumber').textContent = countryCode + phone;
+                    openModal('phoneVerificationModal');
+                } else {
+                    showNotification(data.message || 'Failed to update phone number', 'error');
+                }
+            } catch (error) {
+                showNotification('An error occurred. Please try again.', 'error');
+            } finally {
+                // Reset button state
+                submitBtn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoading.style.display = 'none';
+            }
+        }
+
+        // Phone Verification Modal Functions
+        async function submitPhoneVerification(event) {
+            event.preventDefault();
+            const code = document.getElementById('verification_code').value.trim();
+
+            if (!code || code.length !== 6) {
+                showNotification('Please enter a valid 6-digit verification code', 'error');
+                return;
+            }
+
+            const submitBtn = event.target;
+            const btnText = submitBtn.querySelector('.btn-text');
+            const btnLoading = submitBtn.querySelector('.btn-loading');
+
+            // Show loading state
+            submitBtn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'inline-flex';
+
+            try {
+                const response = await fetch('{{ route("profile.phone.verify") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        verification_code: code
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    closeModal('phoneVerificationModal');
+                    showNotification('Phone number verified successfully!', 'success');
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    showNotification(data.message || 'Invalid verification code', 'error');
+                }
+            } catch (error) {
+                showNotification('An error occurred. Please try again.', 'error');
+            } finally {
+                // Reset button state
+                submitBtn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoading.style.display = 'none';
+            }
+        }
+
+        async function resendVerificationCode() {
+            try {
+                const response = await fetch('{{ route("profile.phone.resend-verification") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification('Verification code resent successfully!', 'success');
+                } else {
+                    showNotification(data.message || 'Failed to resend verification code', 'error');
+                }
+            } catch (error) {
+                showNotification('An error occurred. Please try again.', 'error');
+            }
+        }
+
+        // Password Change Modal Functions
+        function showPasswordChangeModal() {
+            openModal('passwordChangeModal');
+        }
+
+        async function submitPasswordChange(event) {
+            event.preventDefault();
+            const form = document.getElementById('passwordChangeForm');
+            const currentPassword = document.getElementById('current_password_change').value;
+            const newPassword = document.getElementById('new_password').value;
+            const newPasswordConfirmation = document.getElementById('new_password_confirmation').value;
+
+            if (!currentPassword || !newPassword || !newPasswordConfirmation) {
+                showNotification('Please fill in all password fields.', 'error');
+                return;
+            }
+
+            if (newPassword !== newPasswordConfirmation) {
+                showNotification('New password and confirmation do not match.', 'error');
+                return;
+            }
+
+            const submitBtn = event.target;
+            const btnText = submitBtn.querySelector('.btn-text');
+            const btnLoading = submitBtn.querySelector('.btn-loading');
+
+            submitBtn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'inline-flex';
+
+            try {
+                const response = await fetch('{{ route("profile.password.update") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        password: newPassword,
+                        password_confirmation: newPasswordConfirmation
+                    })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    closeModal('passwordChangeModal');
+                    showNotification(data.message, 'success');
+                    form.reset(); // Clear the form
+                } else {
+                    showNotification(data.message || 'Failed to change password.', 'error');
+                }
+            } catch (error) {
+                console.error('Error during password change:', error);
+                showNotification('An error occurred. Please try again.', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoading.style.display = 'none';
+            }
+        }
+
+        // Delete Account Modal Functions
+        function showDeleteAccountModal() {
+            openModal('deleteAccountModal');
+        }
+
+        // Enable delete button when "DELETE" is typed correctly
+        document.addEventListener('DOMContentLoaded', () => {
+            const deleteConfirmation = document.getElementById('delete_confirmation');
+            const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+            if (deleteConfirmation && confirmDeleteBtn) {
+                deleteConfirmation.addEventListener('input', function() {
+                    confirmDeleteBtn.disabled = this.value !== 'DELETE';
+                });
+            }
+        });
+
+        async function submitDeleteAccount(event) {
+            event.preventDefault();
+            const password = document.getElementById('delete_password').value;
+            const confirmation = document.getElementById('delete_confirmation').value;
+
+            if (confirmation !== 'DELETE') {
+                showNotification('Please type "DELETE" to confirm', 'error');
+                return;
+            }
+
+            if (!password) {
+                showNotification('Please enter your current password', 'error');
+                return;
+            }
+
+            const submitBtn = document.getElementById('confirmDeleteBtn');
+            const btnText = submitBtn.querySelector('.btn-text');
+            const btnLoading = submitBtn.querySelector('.btn-loading');
+
+            // Show loading state
+            submitBtn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'inline-flex';
+
+            try {
+                const response = await fetch('{{ route("profile.destroy") }}', { // Corrected route name
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        password: password // Changed to 'password' as per destroy method validation
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    closeModal('deleteAccountModal');
+                    showNotification('Account deleted successfully. Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = data.redirect || '/'; // Redirect to home or login page
+                    }, 2000);
+                } else {
+                    showNotification(data.message || 'Failed to delete account', 'error');
+                }
+            } catch (error) {
+                showNotification('An error occurred. Please try again.', 'error');
+            } finally {
+                // Reset button state
+                submitBtn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoading.style.display = 'none';
+            }
+        }
+
+        // Global variable to store selected plan ID for subscription/upgrade
+        let selectedPlanId = null;
+
+        // Subscription/Upgrade Plan Modal Functions
+        async function showSubscriptionPlans() {
+            // Fetch available plans from the server
+            try {
+                const response = await fetch('{{ route("api.pricing-plans") }}'); // API route for plans
+                const plans = await response.json();
+
+                const planSelectionGrid = document.getElementById('planSelectionGrid');
+                planSelectionGrid.innerHTML = ''; // Clear previous plans
+
+                if (plans.success && plans.plans.length > 0) {
+                    plans.plans.forEach(plan => {
+                        const planCard = document.createElement('div');
+                        planCard.className = 'plan-card-modal';
+                        planCard.dataset.planId = plan.id;
+                        planCard.innerHTML = `
+                            <div class="plan-name">${plan.name}</div>
+                            <div class="plan-price">${plan.formatted_price}</div>
+                            <div class="plan-period">/${plan.period}</div>
+                            <p class="plan-description">${plan.description}</p>
+                            <ul class="plan-features-list">
+                                ${plan.features.map(feature => `
+                                    <li>
+                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                        ${feature}
+                                    </li>
+                                `).join('')}
+                            </ul>
+                            <div class="selected-indicator">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                        `;
+                        planCard.addEventListener('click', () => selectPlan(plan.id, planCard));
+                        planSelectionGrid.appendChild(planCard);
+                    });
+                } else {
+                    planSelectionGrid.innerHTML = '<p class="text-center text-gray-500">No pricing plans available.</p>';
+                }
+
+                document.getElementById('subscribeUpgradeModalTitle').textContent = 'Choose Your Plan';
+                document.getElementById('subscribeUpgradeModalDescription').textContent = 'Unlock premium features and content with a subscription plan.';
+                openModal('subscribeUpgradeModal');
+            } catch (error) {
+                console.error('Error fetching plans:', error);
+                showNotification('Failed to load pricing plans. Please try again.', 'error');
+            }
+        }
+
+        function showUpgradeModal() {
+            // This function is called when a user on a trial wants to upgrade.
+            // It should behave similarly to showSubscriptionPlans but might highlight upgrade options.
+            // For simplicity, we'll reuse showSubscriptionPlans for now.
+            showSubscriptionPlans();
+            document.getElementById('subscribeUpgradeModalTitle').textContent = 'Upgrade Your Plan';
+            document.getElementById('subscribeUpgradeModalDescription').textContent = 'Select a new plan to upgrade your subscription.';
+        }
+
+        function showChangePlanModal() {
+            // This function is called when a user with an active subscription wants to change plans.
+            // It should filter out the current plan and allow selection of others.
+            showSubscriptionPlans(); // Reusing for now, but could be more specific
+            document.getElementById('subscribeUpgradeModalTitle').textContent = 'Change Your Plan';
+            document.getElementById('subscribeUpgradeModalDescription').textContent = 'Switch to a different plan that better suits your needs.';
+        }
+
+        function selectPlan(planId, planCard) {
+            const currentSelected = document.querySelector('.plan-card-modal.selected');
+            if (currentSelected) {
+                currentSelected.classList.remove('selected');
+            }
+            planCard.classList.add('selected');
+            selectedPlanId = planId;
+            document.getElementById('confirmPlanSelectionBtn').disabled = false;
+        }
+
+        async function confirmPlanSelection(event) {
+            if (!selectedPlanId) {
+                showNotification('Please select a plan first.', 'error');
+                return;
+            }
+
+            const submitBtn = event.target;
+            const btnText = submitBtn.querySelector('.btn-text');
+            const btnLoading = submitBtn.querySelector('.btn-loading');
+
+            submitBtn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'inline-flex';
+
+            try {
+                const response = await fetch('{{ route("api.subscribe") }}', { // API route for subscription
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ plan_id: selectedPlanId })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    closeModal('subscribeUpgradeModal');
+                    showNotification(data.message || 'Subscription successful!', 'success');
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    showNotification(data.message || 'Failed to process subscription.', 'error');
+                }
+            } catch (error) {
+                console.error('Error during plan selection:', error);
+                showNotification('An error occurred during subscription. Please try again.', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoading.style.display = 'none';
+            }
+        }
+
+        // Manage Subscription Modal Functions
+        async function showManageSubscriptionModal() {
+            try {
+                const response = await fetch('{{ route("api.current-subscription") }}'); // API to get current subscription details
+                const subscriptionData = await response.json();
+
+                if (subscriptionData.success && subscriptionData.subscription) {
+                    const sub = subscriptionData.subscription;
+                    const plan = sub.pricing_plan;
+
+                    document.getElementById('currentPlanName').textContent = plan.name;
+                    document.getElementById('currentPlanPrice').textContent = `${plan.formatted_price}/${plan.period}`;
+                    
+                    const statusBadge = document.getElementById('currentPlanStatus');
+                    statusBadge.textContent = sub.status.charAt(0).toUpperCase() + sub.status.slice(1);
+                    statusBadge.className = `status-badge status-${sub.status}`;
+
+                    if (sub.is_in_trial) {
+                        document.getElementById('currentPlanTrialInfo').textContent = `Your trial expires in ${sub.trial_days_remaining} days on ${sub.trial_ends_at_formatted}`;
+                        document.getElementById('currentPlanExpiry').textContent = ''; // Clear expiry if trial
+                    } else if (sub.expires_at_formatted) {
+                        document.getElementById('currentPlanExpiry').textContent = `Next Billing Date: ${sub.expires_at_formatted} (${sub.days_remaining} days)`;
+                        document.getElementById('currentPlanTrialInfo').textContent = ''; // Clear trial if not trial
+                    } else {
+                        document.getElementById('currentPlanExpiry').textContent = '';
+                        document.getElementById('currentPlanTrialInfo').textContent = '';
+                    }
+
+                    // Populate billing history
+                    const billingHistoryContent = document.getElementById('billingHistoryContent');
+                    if (sub.billing_history && sub.billing_history.length > 0) {
+                        let tableHtml = `
+                            <table class="billing-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Description</th>
+                                        <th class="text-right">Amount</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+                        sub.billing_history.forEach(item => {
+                            tableHtml += `
+                                <tr>
+                                    <td>${item.date}</td>
+                                    <td>${item.description}</td>
+                                    <td class="text-right">${item.currency} ${item.amount}</td>
+                                    <td><span class="status-badge status-${item.status.toLowerCase()}">${item.status}</span></td>
+                                </tr>
+                            `;
+                        });
+                        tableHtml += `</tbody></table>`;
+                        billingHistoryContent.innerHTML = tableHtml;
+                    } else {
+                        billingHistoryContent.innerHTML = '<p class="no-history-message">No billing history available.</p>';
+                    }
+
+                    openModal('manageSubscriptionModal');
+                } else {
+                    showNotification(subscriptionData.message || 'Failed to load subscription details.', 'error');
+                }
+            } catch (error) {
+                console.error('Error fetching subscription details:', error);
+                showNotification('An error occurred while loading subscription details. Please try again.', 'error');
+            }
+        }
+
+        async function confirmCancelSubscription() {
+            if (!confirm('Are you sure you want to cancel your subscription? Your access will continue until the end of the current billing period.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('{{ route("api.cancel-subscription") }}', { // API to cancel subscription
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({}) // No specific data needed for cancellation
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    closeModal('manageSubscriptionModal');
+                    showNotification(data.message || 'Subscription cancelled successfully!', 'success');
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    showNotification(data.message || 'Failed to cancel subscription.', 'error');
+                }
+            } catch (error) {
+                console.error('Error during subscription cancellation:', error);
+                showNotification('An error occurred during cancellation. Please try again.', 'error');
+            }
+        }
+
+        // Initialize modal functionality when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize the phone input in the modal
+            initializeModalPhoneInput();
+        });
     </script>
 </body>
 </html>

@@ -33,6 +33,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'two_factor_confirmed_at',
         'avatar',
         'phone',
+        'phone_verified_at',
         'date_of_birth',
         'city',
         'education_level',
@@ -61,6 +62,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'phone_verified_at' => 'datetime',
         'locked_until' => 'datetime',
         'last_login_at' => 'datetime',
         'two_factor_confirmed_at' => 'datetime',
@@ -69,6 +71,40 @@ class User extends Authenticatable implements MustVerifyEmail
         'date_of_birth' => 'date',
         'failed_login_attempts' => 'integer',
     ];
+
+    /**
+     * Get user's subscriptions
+     */
+    public function subscriptions()
+    {
+        return $this->hasMany(UserSubscription::class);
+    }
+
+    /**
+     * Get user's active subscription
+     */
+    public function activeSubscription()
+    {
+        return $this->hasOne(UserSubscription::class)
+                    ->active()
+                    ->with('pricingPlan')
+                    ->latest();
+    }
+
+    /**
+     * Get user's current subscription (active or trial)
+     */
+    public function currentSubscription()
+    {
+        return $this->hasOne(UserSubscription::class)
+                    ->whereIn('status', ['active', 'trial'])
+                    ->where(function ($query) {
+                        $query->whereNull('expires_at')
+                              ->orWhere('expires_at', '>', now());
+                    })
+                    ->with('pricingPlan')
+                    ->latest();
+    }
 
     /**
      * Check if user account is locked
@@ -84,6 +120,32 @@ class User extends Authenticatable implements MustVerifyEmail
     public function hasTwoFactorEnabled(): bool
     {
         return !is_null($this->two_factor_secret) && !is_null($this->two_factor_confirmed_at);
+    }
+
+    /**
+     * Check if user has an active subscription
+     */
+    public function hasActiveSubscription(): bool
+    {
+        return $this->activeSubscription()->exists();
+    }
+
+    /**
+     * Check if user is in trial period
+     */
+    public function isInTrial(): bool
+    {
+        $subscription = $this->currentSubscription;
+        return $subscription && $subscription->isInTrial();
+    }
+
+    /**
+     * Get user's current plan name
+     */
+    public function getCurrentPlanAttribute()
+    {
+        $subscription = $this->currentSubscription;
+        return $subscription ? $subscription->pricingPlan->name : 'Free';
     }
 
     /**

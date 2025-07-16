@@ -15,6 +15,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ProgressController;
 use App\Http\Controllers\ProjectController;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis; // Added for test-redis route
 
 /*
 |--------------------------------------------------------------------------
@@ -25,7 +26,7 @@ use Illuminate\Support\Facades\Log;
 // Add to web.php
 Route::get('/test-redis', function() {
     try {
-        \Illuminate\Support\Facades\Redis::connection()->ping();
+        Redis::connection()->ping();
         return "Redis connected successfully!";
     } catch (\Exception $e) {
         return "Redis error: " . $e->getMessage();
@@ -116,14 +117,22 @@ Route::middleware(['auth'])->group(function () {
     // Profile routes
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy'); // This is the correct route name
 
     // Phone number management routes
     Route::post('/profile/phone', [ProfileController::class, 'updatePhone'])->name('profile.phone.update');
     Route::put('/profile/phone', [ProfileController::class, 'updatePhone'])->name('profile.phone.update');
     Route::delete('/profile/phone', [ProfileController::class, 'removePhone'])->name('profile.phone.remove');
     Route::post('/profile/phone/verify', [ProfileController::class, 'verifyPhone'])->name('profile.phone.verify');
+    Route::post('/profile/phone/resend-verification', [ProfileController::class, 'resendPhoneVerification'])->name('profile.phone.resend-verification');
+    Route::post('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update'); // Added password update route
     
+    // API routes for subscriptions
+    Route::get('/api/pricing-plans', [ProfileController::class, 'getPricingPlans'])->name('api.pricing-plans');
+    Route::get('/api/current-subscription', [ProfileController::class, 'getCurrentSubscription'])->name('api.current-subscription');
+    Route::post('/api/subscribe', [ProfileController::class, 'subscribeToPlan'])->name('api.subscribe');
+    Route::post('/api/cancel-subscription', [ProfileController::class, 'cancelSubscription'])->name('api.cancel-subscription');
+
     // Document viewing routes
     Route::get('/dashboard/lesson/{lessonId}/document/{type}', [DocumentController::class, 'viewDocument'])
         ->name('dashboard.lesson.document')

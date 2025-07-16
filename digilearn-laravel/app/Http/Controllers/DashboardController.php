@@ -10,7 +10,6 @@ use App\Models\SavedLesson;
 
 class DashboardController extends Controller
 {
-
     public function index()
     {
         $user = Auth::user();
@@ -19,14 +18,22 @@ class DashboardController extends Controller
 
         return view('dashboard', compact('lessons', 'level'));
     }
+
     /**
      * Show level selection page
      */
     public function levelSelection()
     {
+        // Check subscription status (optional)
+        $user = Auth::user();
+        $hasActiveSubscription = $user->hasActiveSubscription();
+        $isInTrial = $user->isInTrial();
+
         // Log access to level selection
         Log::channel('security')->info('level_selection_accessed', [
             'user_id' => Auth::id(),
+            'has_subscription' => $hasActiveSubscription,
+            'is_trial' => $isInTrial,
             'ip' => request()->ip(),
             'timestamp' => Carbon::now()->toISOString()
         ]);
@@ -34,7 +41,7 @@ class DashboardController extends Controller
         // Get available levels
         $levels = $this->getAvailableLevels();
 
-        return view('dashboard.level-selection', compact('levels'));
+        return view('dashboard.level-selection', compact('levels', 'hasActiveSubscription', 'isInTrial'));
     }
 
     /**
@@ -60,6 +67,7 @@ class DashboardController extends Controller
         Log::channel('security')->info('level_selected', [
             'user_id' => Auth::id(),
             'level' => $levelId,
+            'subscription_status' => Auth::user()->currentSubscription?->status ?? 'none',
             'ip' => request()->ip(),
             'timestamp' => Carbon::now()->toISOString()
         ]);
@@ -80,6 +88,13 @@ class DashboardController extends Controller
                 ->withErrors(['group' => 'Invalid level group selected.']);
         }
 
+        // Check subscription access for premium content (optional)
+        $user = Auth::user();
+        if (!$this->hasAccessToLevelGroup($user, $groupId)) {
+            return redirect()->route('pricing')
+                ->with('warning', 'Please upgrade your subscription to access this content.');
+        }
+
         // Store selected level group in session
         session(['selected_level_group' => $groupId]);
 
@@ -87,6 +102,7 @@ class DashboardController extends Controller
         Log::channel('security')->info('level_group_selected', [
             'user_id' => Auth::id(),
             'level_group' => $groupId,
+            'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
             'ip' => request()->ip(),
             'timestamp' => Carbon::now()->toISOString()
         ]);
@@ -107,16 +123,33 @@ class DashboardController extends Controller
         }
 
         $selectedLevelGroup = session('selected_level_group');
+        $user = Auth::user();
+
+        // Get subscription info for dashboard display
+        $currentSubscription = $user->currentSubscription;
+        $subscriptionInfo = null;
+        
+        if ($currentSubscription) {
+            $subscriptionInfo = [
+                'plan_name' => $currentSubscription->pricingPlan->name,
+                'status' => $currentSubscription->status,
+                'days_remaining' => $currentSubscription->days_remaining,
+                'trial_days_remaining' => $currentSubscription->trial_days_remaining,
+                'is_trial' => $currentSubscription->isInTrial(),
+                'is_active' => $currentSubscription->isActive(),
+            ];
+        }
 
         // Log dashboard access
         Log::channel('security')->info('dashboard_main_accessed', [
             'user_id' => Auth::id(),
             'selected_level_group' => $selectedLevelGroup,
+            'subscription_plan' => $currentSubscription?->pricingPlan?->name ?? 'Free',
             'ip' => request()->ip(),
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
-        return view('dashboard.main', compact('selectedLevelGroup'));
+        return view('dashboard.main', compact('selectedLevelGroup', 'subscriptionInfo'));
     }
 
     /**
@@ -130,72 +163,67 @@ class DashboardController extends Controller
         }
 
         $selectedLevelGroup = session('selected_level_group');
+        $user = Auth::user();
+
+        // Check subscription access
+        if (!$this->hasAccessToLevelGroup($user, $selectedLevelGroup)) {
+            return redirect()->route('pricing')
+                ->with('warning', 'Please upgrade your subscription to access this content.');
+        }
 
         // Log DigiLearn access
         Log::channel('security')->info('digilearn_accessed', [
             'user_id' => Auth::id(),
             'selected_level_group' => $selectedLevelGroup,
+            'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
             'ip' => request()->ip(),
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
         // Get lessons for the entire level group
         $lessons = $this->getLessonsForLevelGroup($selectedLevelGroup);
+        
+        // Filter lessons based on subscription (optional)
+        $lessons = $this->filterLessonsBySubscription($user, $lessons);
 
         return view('dashboard.digilearn', compact('selectedLevelGroup', 'lessons'));
     }
 
     /**
-     * Get lessons for a level group (combines all levels in the group)
+     * Check if user has access to a level group based on subscription
      */
-    private function getLessonsForLevelGroup($groupId)
+    private function hasAccessToLevelGroup($user, $groupId)
     {
-        $levelGroups = $this->getLevelGroups();
+        // Free access to primary-lower for all users
+        if ($groupId === 'primary-lower') {
+            return true;
+        }
+
+        // Check if user has active subscription or trial
+        $currentSubscription = $user->currentSubscription;
         
-        if (!isset($levelGroups[$groupId])) {
-            return [];
+        if (!$currentSubscription) {
+            return false;
         }
 
-        $allLessons = [];
-        $individualLevels = array_keys($levelGroups[$groupId]['levels']);
-
-        // Get lessons from all individual levels in the group
-        foreach ($individualLevels as $level) {
-            $levelLessons = $this->getLessonsForLevel($level);
-            
-            // Add level information to each lesson
-            foreach ($levelLessons as &$lesson) {
-                $lesson['level'] = $level;
-                $lesson['level_display'] = $this->getLevelDisplayName($level);
-            }
-            
-            $allLessons = array_merge($allLessons, $levelLessons);
-        }
-
-        return $allLessons;
+        // All plans have access to all content during active subscription or trial
+        return $currentSubscription->isActive() || $currentSubscription->isInTrial();
     }
 
     /**
-     * Get display name for level
+     * Filter lessons based on user's subscription
      */
-    private function getLevelDisplayName($level)
+    private function filterLessonsBySubscription($user, $lessons)
     {
-        $displayNames = [
-            'primary-1' => 'Primary 1',
-            'primary-2' => 'Primary 2', 
-            'primary-3' => 'Primary 3',
-            'primary-4' => 'Primary 4',
-            'primary-5' => 'Primary 5',
-            'primary-6' => 'Primary 6',
-            'jhs-1' => 'JHS 1',
-            'jhs-2' => 'JHS 2',
-            'jhs-3' => 'JHS 3',
-            'shs-1' => 'SHS 1',
-            'shs-2' => 'SHS 2',
-            'shs-3' => 'SHS 3',
-        ];
+        $currentSubscription = $user->currentSubscription;
+        
+        // If no subscription, limit to first 2 lessons per level
+        if (!$currentSubscription || (!$currentSubscription->isActive() && !$currentSubscription->isInTrial())) {
+            return array_slice($lessons, 0, 2);
+        }
 
-        return $displayNames[$level] ?? ucwords(str_replace('-', ' ', $level));
+        // Full access for subscribed users
+        return $lessons;
     }
 
     /**
@@ -208,15 +236,21 @@ class DashboardController extends Controller
         }
 
         $selectedLevel = session('selected_level');
+        $user = Auth::user();
+
+        // Check if personalized learning is available in user's plan
+        $hasPersonalizedAccess = $this->hasPersonalizedAccess($user);
 
         Log::channel('security')->info('personalized_learning_accessed', [
             'user_id' => Auth::id(),
             'selected_level' => $selectedLevel,
+            'has_personalized_access' => $hasPersonalizedAccess,
+            'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
             'ip' => request()->ip(),
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
-        return view('dashboard.personalized', compact('selectedLevel'));
+        return view('dashboard.personalized', compact('selectedLevel', 'hasPersonalizedAccess'));
     }
 
     /**
@@ -229,10 +263,12 @@ class DashboardController extends Controller
         }
 
         $selectedLevel = session('selected_level');
+        $user = Auth::user();
 
         Log::channel('security')->info('shop_accessed', [
             'user_id' => Auth::id(),
             'selected_level' => $selectedLevel,
+            'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
             'ip' => request()->ip(),
             'timestamp' => Carbon::now()->toISOString()
         ]);
@@ -245,9 +281,12 @@ class DashboardController extends Controller
      */
     public function changeLevelSelection()
     {
+        $user = Auth::user();
+        
         Log::channel('security')->info('change_level_accessed', [
             'user_id' => Auth::id(),
             'current_level' => session('selected_level'),
+            'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
             'ip' => request()->ip(),
             'timestamp' => Carbon::now()->toISOString()
         ]);
@@ -268,6 +307,7 @@ class DashboardController extends Controller
         }
 
         $selectedLevelGroup = session('selected_level_group');
+        $user = Auth::user();
         
         // Get all lessons from the level group to find the specific lesson
         $allLessons = $this->getLessonsForLevelGroup($selectedLevelGroup);
@@ -285,6 +325,12 @@ class DashboardController extends Controller
                 ->withErrors(['lesson' => 'Lesson not found.']);
         }
 
+        // Check if user has access to this specific lesson
+        if (!$this->hasLessonAccess($user, $lesson)) {
+            return redirect()->route('pricing')
+                ->with('warning', 'Please upgrade your subscription to access this lesson.');
+        }
+
         // Get related lessons (exclude current lesson)
         $relatedLessons = array_filter($allLessons, function($l) use ($lessonId) {
             return $l['id'] != $lessonId;
@@ -296,11 +342,28 @@ class DashboardController extends Controller
             'lesson_id' => $lessonId,
             'selected_level_group' => $selectedLevelGroup,
             'lesson_level' => $lesson['level'] ?? null,
+            'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
             'ip' => request()->ip(),
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
         return view('dashboard.lesson-view', compact('lesson', 'selectedLevelGroup', 'relatedLessons'));
+    }
+
+    /**
+     * Check if user has access to a specific lesson
+     */
+    private function hasLessonAccess($user, $lesson)
+    {
+        $currentSubscription = $user->currentSubscription;
+        
+        // Free users get access to first few lessons
+        if (!$currentSubscription) {
+            return in_array($lesson['id'], [1, 2, 5, 13]); // Sample free lesson IDs
+        }
+
+        // Subscribed users get full access
+        return $currentSubscription->isActive() || $currentSubscription->isInTrial();
     }
 
     /**
@@ -318,6 +381,7 @@ class DashboardController extends Controller
             'user_id' => Auth::id(),
             'lesson_id' => $lessonId,
             'notes_length' => strlen($request->notes),
+            'subscription_plan' => Auth::user()->currentSubscription?->pricingPlan?->name ?? 'Free',
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
@@ -338,6 +402,7 @@ class DashboardController extends Controller
             'user_id' => Auth::id(),
             'lesson_id' => $lessonId,
             'comment_length' => strlen($request->comment),
+            'subscription_plan' => Auth::user()->currentSubscription?->pricingPlan?->name ?? 'Free',
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
@@ -388,6 +453,7 @@ class DashboardController extends Controller
             Log::info('lesson_saved', [
                 'user_id' => Auth::id(),
                 'lesson_id' => $lessonId,
+                'subscription_plan' => Auth::user()->currentSubscription?->pricingPlan?->name ?? 'Free',
                 'timestamp' => now()->toISOString()
             ]);
 
@@ -433,6 +499,7 @@ class DashboardController extends Controller
                 Log::info('lesson_unsaved', [
                     'user_id' => Auth::id(),
                     'lesson_id' => $lessonId,
+                    'subscription_plan' => Auth::user()->currentSubscription?->pricingPlan?->name ?? 'Free',
                     'timestamp' => now()->toISOString()
                 ]);
 
@@ -510,11 +577,65 @@ class DashboardController extends Controller
         Log::channel('security')->info('level_group_accessed', [
             'user_id' => Auth::id(),
             'group_id' => $groupId,
+            'subscription_plan' => Auth::user()->currentSubscription?->pricingPlan?->name ?? 'Free',
             'ip' => request()->ip(),
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
         return view('dashboard.level-group-selection', compact('group', 'groupId'));
+    }
+
+    /**
+     * Get lessons for a level group (combines all levels in the group)
+     */
+    private function getLessonsForLevelGroup($groupId)
+    {
+        $levelGroups = $this->getLevelGroups();
+        
+        if (!isset($levelGroups[$groupId])) {
+            return [];
+        }
+
+        $allLessons = [];
+        $individualLevels = array_keys($levelGroups[$groupId]['levels']);
+
+        // Get lessons from all individual levels in the group
+        foreach ($individualLevels as $level) {
+            $levelLessons = $this->getLessonsForLevel($level);
+            
+            // Add level information to each lesson
+            foreach ($levelLessons as &$lesson) {
+                $lesson['level'] = $level;
+                $lesson['level_display'] = $this->getLevelDisplayName($level);
+            }
+            
+            $allLessons = array_merge($allLessons, $levelLessons);
+        }
+
+        return $allLessons;
+    }
+
+    /**
+     * Get display name for level
+     */
+    private function getLevelDisplayName($level)
+    {
+        $displayNames = [
+            'primary-1' => 'Primary 1',
+            'primary-2' => 'Primary 2', 
+            'primary-3' => 'Primary 3',
+            'primary-4' => 'Primary 4',
+            'primary-5' => 'Primary 5',
+            'primary-6' => 'Primary 6',
+            'jhs-1' => 'JHS 1',
+            'jhs-2' => 'JHS 2',
+            'jhs-3' => 'JHS 3',
+            'shs-1' => 'SHS 1',
+            'shs-2' => 'SHS 2',
+            'shs-3' => 'SHS 3',
+        ];
+
+        return $displayNames[$level] ?? ucwords(str_replace('-', ' ', $level));
     }
 
     /**
