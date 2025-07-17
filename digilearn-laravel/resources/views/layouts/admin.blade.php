@@ -12,9 +12,6 @@
     <!-- Chart.js for analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- Alpine.js for interactivity -->
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    
     <!-- Custom styles -->
     <style>
         [x-cloak] { display: none !important; }
@@ -119,7 +116,16 @@
                                     <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400"></span>
                                 </button>
                                 
-                                <div x-show="open" @click.away="open = false" x-cloak class="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-50">
+                                <div x-show="open" 
+                                     x-transition:enter="transition ease-out duration-200"
+                                     x-transition:enter-start="opacity-0 scale-95"
+                                     x-transition:enter-end="opacity-100 scale-100"
+                                     x-transition:leave="transition ease-in duration-75"
+                                     x-transition:leave-start="opacity-100 scale-100"
+                                     x-transition:leave-end="opacity-0 scale-95"
+                                     @click.away="open = false" 
+                                     x-cloak
+                                     class="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-50">
                                     <div class="px-4 py-2 text-sm text-gray-700 border-b">
                                         <strong>Recent Notifications</strong>
                                     </div>
@@ -143,7 +149,16 @@
                                     <span class="ml-2 text-gray-700">{{ Auth::user()->name }}</span>
                                 </button>
                                 
-                                <div x-show="open" @click.away="open = false" x-cloak class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                                <div x-show="open"
+                                     x-transition:enter="transition ease-out duration-200"
+                                     x-transition:enter-start="opacity-0 scale-95"
+                                     x-transition:enter-end="opacity-100 scale-100"
+                                     x-transition:leave="transition ease-in duration-75"
+                                     x-transition:leave-start="opacity-100 scale-100"
+                                     x-transition:leave-end="opacity-0 scale-95"
+                                     @click.away="open = false" 
+                                     x-cloak
+                                     class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
                                     <a href="{{ route('profile.show') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</a>
                                     <form method="POST" action="{{ route('logout') }}">
                                         @csrf
@@ -190,5 +205,7 @@
     
     <!-- Scripts -->
     @stack('scripts')
+    <!-- Alpine.js for interactivity -->
+    <script type="module" src="https://unpkg.com/alpinejs@3.x.x/dist/module.esm.js"></script>
 </body>
 </html>

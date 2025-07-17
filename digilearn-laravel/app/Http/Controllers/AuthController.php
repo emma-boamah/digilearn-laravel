@@ -14,6 +14,8 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Events\Failed;
 use App\Models\User;
+use App\Models\WebsiteLockSetting;
+use App\Models\SuperuserRecoveryCode;
 use Carbon\Carbon;
 use App\Services\EmailVerificationService;
 
@@ -34,6 +36,82 @@ class AuthController extends Controller
      * Lockout duration in minutes
      */
     const LOCKOUT_DURATION = 15;
+
+    public function showUnlock()
+    {
+        return view('auth.unlock');
+    }
+
+    public function unlock(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+            'recovery_code' => 'nullable|string'
+        ]);
+
+        $user = User::where('email', $request->email)
+                    ->where('is_superuser', true)
+                    ->first();
+
+        // Check if user exists and is a superuser
+        if (!$user || !$user->is_superuser) {
+            return back()->withErrors([
+                'email' => 'Access denied. This user is not allowed to unlock the website.',
+            ])->withInput($request->except('password', 'recovery_code'));
+        }
+
+        if (!$user) {
+            return back()->withErrors([
+                'email' => 'No superuser found with this email address.',
+            ]);
+        }
+        
+        // Check recovery code first if provided
+        if ($request->filled('recovery_code')) {
+            // Get the recovery code instance instead of just checking existence
+            $recoveryCode = SuperuserRecoveryCode::where('code', $request->recovery_code)
+                ->where('user_id', $user->id)
+                ->first();
+                
+            if ($recoveryCode) {
+                // Log the recovery code usage
+                Log::channel('security')->info('recovery_code_used', [
+                    'user_id' => $user->id,
+                    'code' => $request->recovery_code,
+                    'ip' => $request->ip()
+                ]);
+                // Delete the recovery code after successful use
+                $recoveryCode->delete();
+                
+                Auth::login($user);
+                $request->session()->regenerate();
+
+                return redirect()->intended('/');
+            }
+            
+            return back()->withErrors([
+                'recovery_code' => 'Invalid recovery code',
+            ]);
+        }
+
+        // Regular password check
+        if ($user && Hash::check($request->password, $user->password)) {
+            Auth::login($user);
+            $request->session()->regenerate();
+
+            
+            Log::channel('security')->info('Session regenerated', [
+                'session_id' => session()->getId()
+            ]);
+
+            return redirect()->intended('/');
+        }
+
+        return back()->withErrors([
+            'email' => 'Invalid superuser credentials',
+        ]);
+    }
 
     public function showLogin(Request $request)
     {

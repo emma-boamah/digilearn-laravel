@@ -5,6 +5,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\CheckWebsiteLock;
 use App\Console\Commands\ClearEmailVerificationCache;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -14,13 +15,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Global middleware (applies to all requests)
-        $middleware->append(SecurityHeaders::class);
 
         // Web middleware group
         $middleware->web(append: [
             // Add web-specific middleware here if needed
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
         ]);
+        // Global middleware (applies to all requests)
+        $middleware->append(\Illuminate\Session\Middleware\StartSession::class);
+        $middleware->append(SecurityHeaders::class);
+        $middleware->append(CheckWebsiteLock::class);
         
         // API middleware group
         $middleware->api(append: [
@@ -31,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'security.headers' => SecurityHeaders::class,
             'admin' => AdminMiddleware::class,
+            'check.lock' => CheckWebsiteLock::class,
         ]);
 
         // Rate limiting configuration

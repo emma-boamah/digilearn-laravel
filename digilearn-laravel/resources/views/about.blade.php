@@ -254,11 +254,11 @@
                     <p class="stats-intro">We are currently having over</p>
                     <div class="stats-container">
                         <div class="stat-item">
-                            <div class="stat-number">206K+</div>
+                            <div class="stat-number">206K</div>
                             <div class="stat-label">Students</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-number">100K+</div>
+                            <div class="stat-number">2M</div>
                             <div class="stat-label">Tutors</div>
                         </div>
                     </div>

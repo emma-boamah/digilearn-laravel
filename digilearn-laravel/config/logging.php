@@ -134,6 +134,11 @@ return [
             'days' => 14,
         ],
 
+        'security' => [
+            'driver' => 'stack',
+            'channels' => ['single'],
+            'ignore_exceptions' => false,
+        ],
     ],
 
 ];

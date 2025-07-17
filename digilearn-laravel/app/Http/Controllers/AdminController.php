@@ -7,11 +7,28 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use App\Models\SuperuserRecoveryCode;
 use App\Models\User;
+use App\Models\WebsiteLockSetting;
+use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
+    public function toggleLock(Request $request)
+    {
+        $lockSetting = WebsiteLockSetting::firstOrCreate();
+        $lockSetting->is_locked = !$lockSetting->is_locked;
+        $lockSetting->save();
+
+        return response()->json([
+            'locked' => $lockSetting->is_locked,
+            'message' => $lockSetting->is_locked 
+                ? 'Website locked successfully' 
+                : 'Website unlocked successfully'
+        ]);
+    }
 
     /**
      * Show the admin dashboard
@@ -30,13 +47,16 @@ class AdminController extends Controller
         // Get popular lessons
         $popularLessons = $this->getPopularLessons();
 
+        // Check if website is locked
+        $websiteLocked = WebsiteLockSetting::first()->is_locked ?? false;
+
         Log::channel('security')->info('admin_dashboard_accessed', [
             'admin_id' => Auth::id(),
             'ip' => request()->ip(),
             'timestamp' => now()->toISOString()
         ]);
 
-        return view('admin.dashboard', compact('stats', 'recentActivities', 'systemHealth', 'popularLessons'));
+        return view('admin.dashboard', compact('stats', 'recentActivities', 'systemHealth', 'popularLessons', 'websiteLocked'));
     }
 
     /**
@@ -721,5 +741,73 @@ class AdminController extends Controller
             }
         }
         return 'No backup found';
+    }
+
+    public function showCredentials()
+    {
+        $recoveryCodes = SuperuserRecoveryCode::where('user_id', Auth::id())
+            ->get()
+            ->pluck('code');
+        
+        return view('admin.credentials', [
+            'recoveryCodes' => $recoveryCodes
+        ]);
+    }
+
+    public function updateCredentials(Request $request)
+    {
+        $user = User::find(Auth::id());
+        $data = $request->validate([
+            'email' => 'nullable|email|unique:users,email,'.$user->id,
+            'current_password' => 'required_with:new_password',
+            'new_password' => 'nullable|min:8|confirmed'
+        ]);
+
+        // Validate current password
+        if ($request->has('current_password') && 
+            !Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Current password is incorrect'
+            ]);
+        }
+
+        // Update email if provided
+        if ($request->filled('email')) {
+            $user->email = $request->email;
+        }
+
+        // Update password if provided
+        if ($request->filled('new_password')) {
+            $user->password = Hash::make($request->new_password);
+        }
+
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'new_email' => $user->email
+        ]);
+    }
+
+    public function generateRecoveryCodes()
+    {
+        $user = Auth::user();
+        
+        // Delete old codes
+        SuperuserRecoveryCode::where('user_id', $user->id)->delete();
+        
+        // Generate new codes
+        $codes = [];
+        for ($i = 0; $i < 8; $i++) {
+            $code = Str::random(8).'-'.Str::random(8);
+            SuperuserRecoveryCode::create([
+                'user_id' => $user->id,
+                'code' => $code
+            ]);
+            $codes[] = $code;
+        }
+        
+        return response()->json(['success' => true]);
     }
 }

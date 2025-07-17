@@ -2052,7 +2052,7 @@
                     <span class="hero-title-emphasis">DigiLearn</span>
                 </h1>
                 <div class="hero-description">
-                    <a href="#" class="hero-btn">
+                    <a href="{{ route('login') }}" class="hero-btn">
                         Start now
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -2134,7 +2134,7 @@
                     <p class="journey-subtitle">Join thousands of students who are achieving their goals with DigiLearn.<br>Signup now and unlock your potentials</p>
                 </div>
                 <div class="study-journey-button">
-                    <a href="#" class="btn btn-white">Sign up now</a>
+                    <a href="{{ route('signup') }}" class="btn btn-white">Sign up now</a>
                 </div>
             </div>
         </div>
@@ -2201,7 +2201,7 @@
                             <p class="resources-subtitle">At your own comfort with just a click >>>>>></p>
                         </div>
                         <div class="resources-cta-section">
-                            <a href="#" class="resources-cta-btn-new">Join us now</a>
+                            <a href="{{ route('login') }}" class="resources-cta-btn-new">Join us now</a>
                         </div>
                     </div>
                 </div>

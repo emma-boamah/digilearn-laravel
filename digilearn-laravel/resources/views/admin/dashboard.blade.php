@@ -21,6 +21,10 @@
                     <button onclick="location.reload()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
                         <i class="fas fa-sync-alt mr-2"></i>Refresh
                     </button>
+                    <button id="toggleLockButton" class="@if($websiteLocked) bg-green-600 @else bg-red-600 @endif text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
+                        <i class="fas @if($websiteLocked) fa-unlock @else fa-lock @endif mr-2"></i>
+                        @if($websiteLocked) Unlock Website @else Lock Website @endif
+                    </button>
                 </div>
             </div>
         </div>
@@ -218,6 +222,15 @@
                                             <div class="bg-green-500 h-2 rounded-full" style="width: {{ $systemHealth['cpu_usage'] }}"></div>
                                         </div>
                                     </div>
+                                    <a href="{{ route('admin.credentials') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                                        <div class="bg-indigo-100 p-2 rounded-lg mr-3">
+                                            <i class="fas fa-key text-indigo-600"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900">Superuser Credentials</p>
+                                            <p class="text-xs text-gray-500">Manage website lock credentials</p>
+                                        </div>
+                                    </a>
                                 </div>
                             </div>
                             <div class="pt-4 border-t border-gray-200 text-xs text-gray-500">
@@ -280,6 +293,31 @@
 </div>
 
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    document.getElementById('toggleLockButton').addEventListener('click', function() {
+        fetch('{{ route("admin.toggle-lock") }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.locked) {
+                this.innerHTML = '<i class="fas fa-unlock mr-2"></i> Unlock Website';
+                this.classList.remove('bg-red-600');
+                this.classList.add('bg-green-600');
+            } else {
+                this.innerHTML = '<i class="fas fa-lock mr-2"></i> Lock Website';
+                this.classList.remove('bg-green-600');
+                this.classList.add('bg-red-600');
+            }
+            
+            alert(data.message);
+        });
+    });
+
     // Auto-refresh dashboard every 5 minutes
     setInterval(function() {
         location.reload();

@@ -23,15 +23,24 @@ use Illuminate\Support\Facades\Redis; // Added for test-redis route
 |--------------------------------------------------------------------------
 */
 
-// Add to web.php
-Route::get('/test-redis', function() {
-    try {
-        Redis::connection()->ping();
-        return "Redis connected successfully!";
-    } catch (\Exception $e) {
-        return "Redis error: " . $e->getMessage();
-    }
-});
+// // Add to web.php
+// Route::get('/test-redis', function() {
+//     try {
+//         Redis::connection()->ping();
+//         return "Redis connected successfully!";
+//     } catch (\Exception $e) {
+//         return "Redis error: " . $e->getMessage();
+//     }
+// });
+
+// Unlock routes
+Route::get('/unlock', [AuthController::class, 'showUnlock'])->name('unlock');
+Route::post('/unlock', [AuthController::class, 'unlock'])->name('unlock.submit');
+
+// Admin lock toggle
+Route::post('/admin/toggle-lock', [AdminController::class, 'toggleLock'])
+    ->name('admin.toggle-lock')
+    ->middleware(['auth', 'admin']);
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -198,6 +207,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     
     // Export functionality
     Route::get('/export', [AdminController::class, 'export'])->name('export');
+
+    // Credentials management
+    Route::get('/credentials', [AdminController::class, 'showCredentials'])->name('credentials');
+    Route::post('/credentials/update', [AdminController::class, 'updateCredentials'])->name('credentials.update');
+    Route::post('/credentials/recovery', [AdminController::class, 'generateRecoveryCodes'])->name('credentials.recovery');
 });
 
 // CSP Report endpoint

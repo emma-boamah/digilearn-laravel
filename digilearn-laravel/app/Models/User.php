@@ -41,6 +41,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'preferred_language',
         'learning_style',
         'bio',
+        'is_superuser',
     ];
 
     /**
@@ -70,6 +71,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password' => 'hashed',
         'date_of_birth' => 'date',
         'failed_login_attempts' => 'integer',
+        'is_superuser' => 'boolean',
     ];
 
     /**
@@ -146,6 +148,15 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $subscription = $this->currentSubscription;
         return $subscription ? $subscription->pricingPlan->name : 'Free';
+    }
+
+    /**
+     * Check if user has the 'Extra Tuition' plan
+     */
+    public function hasExtraTuitionPlan(): bool
+    {
+        $subscription = $this->currentSubscription;
+        return $subscription && $subscription->isActive() && $subscription->pricingPlan->name === 'Extra Tuition';
     }
 
     /**

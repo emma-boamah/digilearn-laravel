@@ -26,8 +26,8 @@ class DashboardController extends Controller
     {
         // Check subscription status (optional)
         $user = Auth::user();
-        $hasActiveSubscription = $user->hasActiveSubscription();
-        $isInTrial = $user->isInTrial();
+        $hasActiveSubscription = $user->currentSubscription && $user->currentSubscription->isActive();
+        $isInTrial = $user->currentSubscription && $user->currentSubscription->isInTrial();
 
         // Log access to level selection
         Log::channel('security')->info('level_selection_accessed', [
@@ -251,6 +251,16 @@ class DashboardController extends Controller
         ]);
 
         return view('dashboard.personalized', compact('selectedLevel', 'hasPersonalizedAccess'));
+    }
+
+    /**
+     * Check if user has access to personalized learning
+     */
+    private function hasPersonalizedAccess($user)
+    {
+        $currentSubscription = $user->currentSubscription;
+        // Example: Only users with active subscription or trial have access
+        return $currentSubscription && ($currentSubscription->isActive() || $currentSubscription->isInTrial());
     }
 
     /**
