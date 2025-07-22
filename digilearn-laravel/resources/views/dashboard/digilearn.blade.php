@@ -1083,6 +1083,18 @@
                         <span class="sidebar-menu-text">My Notes</span>
                         <div class="tooltip">My Notes</div>
                     </a>
+                    <a href="{{ route('dashboard.join-class') }}" class="sidebar-menu-item">
+                        <!-- Classroom SVG Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="sidebar-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <rect x="3" y="5" width="18" height="12" rx="2" stroke-width="2" stroke="currentColor" fill="none"/>
+                            <circle cx="8" cy="15" r="1.5" stroke-width="2" stroke="currentColor" fill="none"/>
+                            <circle cx="12" cy="15" r="1.5" stroke-width="2" stroke="currentColor" fill="none"/>
+                            <circle cx="16" cy="15" r="1.5" stroke-width="2" stroke="currentColor" fill="none"/>
+                            <path d="M8 11v-2a2 2 0 1 1 4 0v2" stroke-width="2" stroke="currentColor" fill="none"/>
+                        </svg>
+                        <span>Join Your Class</span>
+                        <span class="badge bg-red-500" id="classAlertBadge"></span>
+                    </a>
                 </div>
 
                 <div class="sidebar-section">

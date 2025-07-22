@@ -59,7 +59,7 @@
     <!-- Footer -->
     <footer class="mt-auto py-6 text-center text-gray-600 text-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            &copy; {{ date('Y') }} {{ config('app.name', 'Laravel') }}. All rights reserved.
+            &copy; {{ date('Y') }} {{ config('app.name', 'Shoutoutgh') }}. All rights reserved.
         </div>
     </footer>
 

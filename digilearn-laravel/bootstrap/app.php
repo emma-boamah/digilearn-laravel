@@ -7,6 +7,7 @@ use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CheckWebsiteLock;
 use App\Console\Commands\ClearEmailVerificationCache;
+use App\Http\Middleware\SuperuserMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -36,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'security.headers' => SecurityHeaders::class,
             'admin' => AdminMiddleware::class,
             'check.lock' => CheckWebsiteLock::class,
+            'superuser' => SuperuserMiddleware::class,
         ]);
 
         // Rate limiting configuration

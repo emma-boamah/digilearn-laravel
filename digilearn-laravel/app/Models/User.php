@@ -41,6 +41,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'preferred_language',
         'learning_style',
         'bio',
+        'current_room_id',
+        'is_online',
         'is_superuser',
     ];
 
@@ -71,6 +73,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password' => 'hashed',
         'date_of_birth' => 'date',
         'failed_login_attempts' => 'integer',
+        'is_online' => 'boolean',
         'is_superuser' => 'boolean',
     ];
 
@@ -155,6 +158,9 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function hasExtraTuitionPlan(): bool
     {
+        if ($this->is_superuser) {
+            return true; // Superusers always have access to all plans
+        }
         $subscription = $this->currentSubscription;
         return $subscription && $subscription->isActive() && $subscription->pricingPlan->name === 'Extra Tuition';
     }
@@ -194,5 +200,13 @@ class User extends Authenticatable implements MustVerifyEmail
             $initials .= strtoupper(substr($name, 0, 1));
         }
         return substr($initials, 0, 2);
+    }
+
+    /**
+     * Get the virtual class the user is currently in.
+     */
+    public function virtualClass()
+    {
+        return $this->belongsTo(VirtualClass::class, 'current_room_id', 'room_id');
     }
 }

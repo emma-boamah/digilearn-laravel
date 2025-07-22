@@ -13,6 +13,9 @@ use App\Models\User;
 use App\Models\PricingPlan;
 use App\Models\UserSubscription; // Added for subscription methods
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class ProfileController extends Controller
 {
@@ -33,6 +36,41 @@ class ProfileController extends Controller
         $availablePlans = PricingPlan::active()->ordered()->get();
 
         return view('dashboard.profile', compact('user', 'maskedPhone', 'availablePlans'));
+    }
+
+    /**
+     * Show the user profile page.
+     */
+    public function showProfile()
+    {
+        $user = Auth::user();
+        $currentSubscription = $user->currentSubscription;
+        $pricingPlans = PricingPlan::all();
+
+        // Prepare subscription info for the view
+        $subscriptionInfo = null;
+        if ($currentSubscription) {
+            $subscriptionInfo = [
+                'plan_name' => $currentSubscription->pricingPlan->name,
+                'status' => $currentSubscription->status,
+                'start_date' => $currentSubscription->start_date->format('M d, Y'),
+                'end_date' => $currentSubscription->end_date ? $currentSubscription->end_date->format('M d, Y') : 'N/A',
+                'days_remaining' => $currentSubscription->days_remaining,
+                'trial_days_remaining' => $currentSubscription->trial_days_remaining,
+                'is_trial' => $currentSubscription->isInTrial(),
+                'is_active' => $currentSubscription->isActive(),
+                'is_cancelled' => $currentSubscription->isCancelled(),
+            ];
+        }
+
+        Log::channel('security')->info('profile_page_accessed', [
+            'user_id' => Auth::id(),
+            'subscription_plan' => $currentSubscription?->pricingPlan?->name ?? 'Free',
+            'ip' => request()->ip(),
+            'timestamp' => Carbon::now()->toISOString()
+        ]);
+
+        return view('dashboard.profile', compact('user', 'subscriptionInfo', 'pricingPlans'));
     }
 
     /**
@@ -128,6 +166,42 @@ class ProfileController extends Controller
 
             return redirect()->back()->with('error', 'Failed to update profile. Please try again.');
         }
+    }
+
+    /**
+     * Update user profile information.
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'grade' => 'nullable|string|max:50',
+            'country' => 'nullable|string|max:100',
+            'phone' => [
+                'nullable',
+                'string',
+                'max:20',
+                Validator::make(['phone' => $user->phone], ['phone' => Rule::unique('users')->ignore($user->id)])->passes() ? '' : Rule::unique('users')->ignore($user->id),
+                'regex:/^\+?[0-9\s\-$$$$]{7,20}$/'
+            ],
+        ]);
+
+        $user->name = $validated['name'];
+        $user->grade = $validated['grade'];
+        $user->country = $validated['country'];
+        $user->phone = $validated['phone'];
+        $user->save();
+
+        Log::channel('security')->info('profile_updated', [
+            'user_id' => Auth::id(),
+            'updated_fields' => array_keys($validated),
+            'ip' => request()->ip(),
+            'timestamp' => Carbon::now()->toISOString()
+        ]);
+
+        return redirect()->back()->with('success', 'Profile updated successfully!');
     }
 
     /**
@@ -476,7 +550,7 @@ class ProfileController extends Controller
                 'email' => $user->email,
                 'phone_masked' => $this->maskPhoneNumber($user->phone),
                 'ip' => $request->ip(),
-                'timestamp' => now()->toISOString()
+                'timestamp' => Carbon::now()->toISOString()
             ]);
             return response()->json([
                 'success' => true,
@@ -558,6 +632,49 @@ class ProfileController extends Controller
     }
 
     /**
+     * Update user email.
+     */
+    public function updateEmail(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users')->ignore($user->id),
+            ],
+            'password_confirm_email' => 'required|string', // Password confirmation for email change
+        ]);
+
+        if (!Hash::check($request->password_confirm_email, $user->password)) {
+            Log::channel('security')->warning('email_update_failed_incorrect_password', [
+                'user_id' => Auth::id(),
+                'ip' => request()->ip(),
+                'timestamp' => Carbon::now()->toISOString()
+            ]);
+            return back()->withErrors(['password_confirm_email' => 'Incorrect password.']);
+        }
+
+        $user->email = $request->email;
+        $user->email_verified_at = null; // Mark email as unverified until re-verified
+        $user->save();
+
+        // TODO: Send email verification notification
+
+        Log::channel('security')->info('email_updated', [
+            'user_id' => Auth::id(),
+            'new_email' => $user->email,
+            'ip' => $request->ip(),
+            'timestamp' => Carbon::now()->toISOString()
+        ]);
+
+        return redirect()->back()->with('success', 'Email updated successfully! Please verify your new email address.');
+    }
+
+    /**
      * Send phone verification SMS
      */
     private function sendPhoneVerification(User $user)
@@ -626,53 +743,7 @@ class ProfileController extends Controller
      */
     public function getPricingPlans(Request $request)
     {
-        // In a real application, fetch active pricing plans from your database
-        // For now, return dummy data
-        $plans = [
-            [
-                'id' => 1,
-                'name' => 'ESSENTIAL',
-                'price' => 0,
-                'formatted_price' => 'Free',
-                'period' => 'month',
-                'description' => 'Access to essential lessons and features.',
-                'features' => [
-                    'Limited lessons',
-                    'Basic quizzes',
-                    'Community support',
-                ],
-            ],
-            [
-                'id' => 2,
-                'name' => 'EXTRA TUTION',
-                'price' => 9.99,
-                'formatted_price' => 'Ghc 200.00',
-                'period' => 'month',
-                'description' => 'Unlock all lessons and advanced features.',
-                'features' => [
-                    'Unlimited lessons',
-                    'Advanced quizzes',
-                    'Priority support',
-                    'Offline access',
-                    'Ad-free experience',
-                ],
-            ],
-            [
-                'id' => 3,
-                'name' => 'HOME SCHOOL',
-                'price' => 99.99,
-                'formatted_price' => 'Ghc 200.00',
-                'period' => 'year',
-                'description' => 'Best value for serious learners.',
-                'features' => [
-                    'All Premium features',
-                    'Personalized learning path',
-                    '1-on-1 tutoring sessions',
-                    'Early access to new content',
-                ],
-            ],
-        ];
-
+        $plans = PricingPlan::active()->ordered()->get();
         return response()->json(['success' => true, 'plans' => $plans]);
     }
 
@@ -682,31 +753,31 @@ class ProfileController extends Controller
     public function getCurrentSubscription(Request $request)
     {
         $user = Auth::user();
-        // In a real application, fetch the user's current subscription from the database
-        // For now, return dummy data based on whether the user has a subscription
         $subscription = null;
-        if ($user->currentSubscription) { // Assuming user has a currentSubscription relationship
+
+        if ($user->currentSubscription) {
             $sub = $user->currentSubscription;
-            $plan = $sub->pricingPlan; // Assuming subscription has a pricingPlan relationship
+            $plan = $sub->pricingPlan;
 
             $subscription = [
                 'id' => $sub->id,
-                'status' => $sub->status, // e.g., 'active', 'cancelled', 'trialing'
-                'is_in_trial' => $sub->is_in_trial,
-                'trial_days_remaining' => $sub->is_in_trial ? now()->diffInDays($sub->trial_ends_at) : 0,
-                'trial_ends_at_formatted' => $sub->is_in_trial ? $sub->trial_ends_at->format('M d, Y') : null,
+                'status' => $sub->status,
+                'is_in_trial' => $sub->isInTrial(),
+                'trial_days_remaining' => $sub->isInTrial() ? $sub->trial_days_remaining : 0,
+                'trial_ends_at_formatted' => $sub->isInTrial() ? $sub->trial_ends_at->format('M d, Y') : null,
                 'expires_at_formatted' => $sub->expires_at ? $sub->expires_at->format('M d, Y') : null,
-                'days_remaining' => $sub->expires_at ? now()->diffInDays($sub->expires_at) : 0,
+                'days_remaining' => $sub->expires_at ? $sub->days_remaining : 0,
                 'pricing_plan' => [
                     'id' => $plan->id,
                     'name' => $plan->name,
                     'formatted_price' => $plan->formatted_price,
                     'period' => $plan->period,
+                    'features' => $plan->features, // Include all features
                 ],
+                // Dummy billing history - integrate with actual payment history if available
                 'billing_history' => [
-                    // Dummy billing history
-                    ['date' => 'Jul 1, 2024', 'description' => 'Premium Plan', 'amount' => '9.99', 'currency' => '$', 'status' => 'Paid'],
-                    ['date' => 'Jun 1, 2024', 'description' => 'Premium Plan', 'amount' => '9.99', 'currency' => '$', 'status' => 'Paid'],
+                    ['date' => 'Jul 1, 2024', 'description' => $plan->name . ' Plan', 'amount' => $plan->price, 'currency' => $plan->currency, 'status' => 'Paid'],
+                    ['date' => 'Jun 1, 2024', 'description' => $plan->name . ' Plan', 'amount' => $plan->price, 'currency' => $plan->currency, 'status' => 'Paid'],
                 ],
             ];
         }
@@ -724,25 +795,76 @@ class ProfileController extends Controller
         ]);
 
         $user = Auth::user();
-        $plan = PricingPlan::find($validated['plan_id']);
+        $newPlan = PricingPlan::find($validated['plan_id']);
 
-        // In a real application, integrate with a payment gateway here
-        // For demo, simulate success
+        // Check if user already has an active or trial subscription
+        $currentSubscription = $user->currentSubscription;
+
+        // Simple payment simulation for MVP (replace with actual payment gateway integration)
+        $paymentSuccess = true; // Assume payment is successful for demo purposes
+
+        if (!$paymentSuccess) {
+            return response()->json(['success' => false, 'message' => 'Payment failed. Please try again.'], 400);
+        }
+
         try {
-            // Logic to create or update user subscription
-            // Example: $user->newSubscription('default', $plan->stripe_price_id)->create($paymentMethod);
+            if ($currentSubscription) {
+                // Handle upgrade/change plan
+                // For simplicity, we'll cancel the old one and create a new one.
+                // In a real system, you might prorate, handle refunds, etc.
+                $currentSubscription->update(['status' => 'cancelled', 'expires_at' => now()]);
+            }
+
+            $startedAt = now();
+            $expiresAt = null;
+            $trialEndsAt = null;
+            $status = 'active';
+
+            // If the plan is "Essential" and no previous subscription, offer a trial
+            if ($newPlan->slug === 'essential' && !$currentSubscription) {
+                $status = 'trial';
+                $trialEndsAt = $startedAt->copy()->addDays(7); // 7-day trial
+                $expiresAt = $startedAt->copy()->addMonth(); // First month after trial
+            } elseif ($newPlan->period === 'monthly') {
+                $expiresAt = $startedAt->copy()->addMonth();
+            } elseif ($newPlan->period === 'yearly') {
+                $expiresAt = $startedAt->copy()->addYear();
+            }
+
+            $userSubscription = UserSubscription::create([
+                'user_id' => $user->id,
+                'pricing_plan_id' => $newPlan->id,
+                'status' => $status,
+                'started_at' => $startedAt,
+                'expires_at' => $expiresAt,
+                'trial_ends_at' => $trialEndsAt,
+                'amount_paid' => $newPlan->price,
+                'payment_method' => 'simulated',
+                'transaction_id' => Str::random(16),
+                'metadata' => [
+                    'previous_plan_id' => $currentSubscription ? $currentSubscription->pricing_plan_id : null,
+                    'change_type' => $currentSubscription ? ($newPlan->price > $currentSubscription->pricingPlan->price ? 'upgrade' : 'downgrade') : 'new',
+                ],
+            ]);
+
+            // Update user's has_active_subscription flag or cache if you have one
+            $user->load('currentSubscription'); // Refresh user's relationship
+            
             Log::info('user_subscribed', [
                 'user_id' => $user->id,
-                'plan_id' => $plan->id,
-                'plan_name' => $plan->name,
+                'plan_id' => $newPlan->id,
+                'plan_name' => $newPlan->name,
+                'new_subscription_status' => $userSubscription->status,
                 'ip' => $request->ip(),
                 'timestamp' => now()->toISOString()
             ]);
-            return response()->json(['success' => true, 'message' => "Successfully subscribed to {$plan->name} plan!"]);
+
+            return response()->json(['success' => true, 'message' => "Successfully subscribed to {$newPlan->name} plan!", 'subscription' => $userSubscription->load('pricingPlan')]);
+
         } catch (\Exception $e) {
             Log::error('subscription_error', [
                 'user_id' => $user->id,
-                'plan_id' => $plan->id,
+                'plan_id' => $newPlan->id,
                 'error' => $e->getMessage(),
                 'ip' => $request->ip(),
                 'timestamp' => now()->toISOString()
@@ -757,12 +879,26 @@ class ProfileController extends Controller
     public function cancelSubscription(Request $request)
     {
         $user = Auth::user();
+        $currentSubscription = $user->currentSubscription;
 
-        // In a real application, integrate with your payment gateway to cancel the subscription
+        if (!$currentSubscription || !($currentSubscription->isActive() || $currentSubscription->isInTrial())) {
+            return response()->json(['success' => false, 'message' => 'No active subscription to cancel.'], 400);
+        }
+
         try {
-            // Example: $user->subscription('default')->cancel();
+            // In a real application, integrate with your payment gateway to cancel the subscription.
+            // This will usually involve setting the subscription to cancel at the end of the current billing period.
+            $currentSubscription->update([
+                'status' => 'cancelled',
+                // 'expires_at' will remain the same until the end of the period, or set to now() if immediate cancellation is preferred
+            ]);
+
+            // Optionally update user's has_active_subscription flag or cache
+            $user->load('currentSubscription');
+
             Log::info('user_cancelled_subscription', [
                 'user_id' => $user->id,
+                'plan_name' => $currentSubscription->pricingPlan->name,
                 'ip' => $request->ip(),
                 'timestamp' => now()->toISOString()
             ]);
@@ -776,5 +912,108 @@ class ProfileController extends Controller
             ]);
             return response()->json(['success' => false, 'message' => 'Failed to cancel subscription. Please try again.'], 500);
         }
+    }
+
+    /**
+     * Handle subscription to a new plan.
+     */
+    public function subscribe(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'plan_id' => 'required|exists:pricing_plans,id',
+        ]);
+
+        $plan = PricingPlan::findOrFail($request->plan_id);
+
+        // Check if user already has an active subscription
+        if ($user->currentSubscription && $user->currentSubscription->isActive()) {
+            return redirect()->back()->with('error', 'You already have an active subscription. Consider upgrading instead.');
+        }
+
+        // For simplicity, we'll assume immediate payment success.
+        // In a real app, this would involve payment gateway integration.
+
+        $startDate = Carbon::now();
+        $endDate = $startDate->copy()->addDays($plan->duration_days);
+
+        UserSubscription::create([
+            'user_id' => $user->id,
+            'pricing_plan_id' => $plan->id,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'status' => 'active',
+            'payment_status' => 'paid',
+            'trial_ends_at' => null, // No trial for direct subscription
+        ]);
+
+        Log::channel('security')->info('user_subscribed', [
+            'user_id' => Auth::id(),
+            'plan_id' => $plan->id,
+            'plan_name' => $plan->name,
+            'ip' => request()->ip(),
+            'timestamp' => Carbon::now()->toISOString()
+        ]);
+
+        return redirect()->back()->with('success', 'Successfully subscribed to ' . $plan->name . '!');
+    }
+
+    /**
+     * Handle upgrading an existing subscription.
+     */
+    public function upgradeSubscription(Request $request)
+    {
+        $user = Auth::user();
+        $currentSubscription = $user->currentSubscription;
+
+        if (!$currentSubscription || !$currentSubscription->isActive()) {
+            return redirect()->back()->with('error', 'You do not have an active subscription to upgrade.');
+        }
+
+        $request->validate([
+            'new_plan_id' => 'required|exists:pricing_plans,id',
+        ]);
+
+        $newPlan = PricingPlan::findOrFail($request->new_plan_id);
+
+        if ($newPlan->price <= $currentSubscription->pricingPlan->price) {
+            return redirect()->back()->with('error', 'You can only upgrade to a higher-priced plan.');
+        }
+
+        // For simplicity, we'll assume immediate payment success.
+        // In a real app, this would involve payment gateway integration and prorating.
+
+        // End current subscription immediately
+        $currentSubscription->update([
+            'end_date' => Carbon::now(),
+            'status' => 'upgraded',
+        ]);
+
+        // Create new subscription
+        $startDate = Carbon::now();
+        $endDate = $startDate->copy()->addDays($newPlan->duration_days);
+
+        UserSubscription::create([
+            'user_id' => $user->id,
+            'pricing_plan_id' => $newPlan->id,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'status' => 'active',
+            'payment_status' => 'paid',
+            'trial_ends_at' => null,
+        ]);
+
+        Log::channel('security')->info('user_upgraded_subscription', [
+            'user_id' => Auth::id(),
+            'old_plan_id' => $currentSubscription->pricingPlan->id,
+            'old_plan_name' => $currentSubscription->pricingPlan->name,
+            'new_plan_id' => $newPlan->id,
+            'new_plan_name' => $newPlan->name,
+            'ip' => request()->ip(),
+            'timestamp' => Carbon::now()->toISOString()
+        ]);
+
+        return redirect()->back()->with('success', 'Successfully upgraded to ' . $newPlan->name . '!');
     }
 }

@@ -10,9 +10,15 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\SuperuserRecoveryCode;
 use App\Models\User;
 use App\Models\WebsiteLockSetting;
+use App\Models\VirtualClass; // Import VirtualClass model
+use App\Notifications\ClassStartedNotification; // Import notification
+use Illuminate\Support\Facades\Notification; // Import Notification facade
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use App\Http\Controllers\DashboardController; // Import DashboardController to access getLevelGroups
+use App\Models\Video;
+use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
@@ -24,8 +30,8 @@ class AdminController extends Controller
 
         return response()->json([
             'locked' => $lockSetting->is_locked,
-            'message' => $lockSetting->is_locked 
-                ? 'Website locked successfully' 
+            'message' => $lockSetting->is_locked
+                ? 'Website locked successfully'
                 : 'Website unlocked successfully'
         ]);
     }
@@ -37,13 +43,13 @@ class AdminController extends Controller
     {
         // Get dashboard statistics
         $stats = $this->getDashboardStats();
-        
+
         // Get recent activities
         $recentActivities = $this->getRecentActivities();
-        
+
         // Get system health
         $systemHealth = $this->getSystemHealth();
-        
+
         // Get popular lessons
         $popularLessons = $this->getPopularLessons();
 
@@ -103,7 +109,7 @@ class AdminController extends Controller
         }
 
         $users = $query->orderBy('created_at', 'desc')->paginate(20);
-        
+
         // Get user statistics
         $userStats = [
             'total' => User::count(),
@@ -123,10 +129,10 @@ class AdminController extends Controller
     public function showUser($id)
     {
         $user = User::findOrFail($id);
-        
+
         // Get user activity logs (you might need to create this table)
         $activities = $this->getUserActivities($user->id);
-        
+
         // Get user lesson progress
         $lessonProgress = $this->getUserLessonProgress($user->id);
 
@@ -140,7 +146,7 @@ class AdminController extends Controller
     {
         $user = User::findOrFail($id);
         $reason = $request->input('reason', 'No reason provided');
-        
+
         $user->update([
             'suspended_at' => now(),
             'suspension_reason' => $reason
@@ -164,7 +170,7 @@ class AdminController extends Controller
     public function unsuspendUser($id)
     {
         $user = User::findOrFail($id);
-        
+
         $user->update([
             'suspended_at' => null,
             'suspension_reason' => null
@@ -203,20 +209,20 @@ class AdminController extends Controller
                     'suspension_reason' => 'Bulk suspension by admin'
                 ]);
                 break;
-                
+
             case 'unsuspend':
                 $affectedCount = User::whereIn('id', $userIds)->update([
                     'suspended_at' => null,
                     'suspension_reason' => null
                 ]);
                 break;
-                
+
             case 'verify':
                 $affectedCount = User::whereIn('id', $userIds)->update([
                     'email_verified_at' => now()
                 ]);
                 break;
-                
+
             case 'delete':
                 $affectedCount = User::whereIn('id', $userIds)->delete();
                 break;
@@ -241,7 +247,7 @@ class AdminController extends Controller
     {
         // Get lesson statistics
         $contentStats = $this->getContentStats();
-        
+
         // Get recent content activities
         $recentContent = $this->getRecentContentActivities();
 
@@ -255,7 +261,7 @@ class AdminController extends Controller
     {
         // Get analytics data
         $analyticsData = $this->getAnalyticsData();
-        
+
         return view('admin.analytics.index', compact('analyticsData'));
     }
 
@@ -266,10 +272,10 @@ class AdminController extends Controller
     {
         // Get security logs
         $securityLogs = $this->getSecurityLogs();
-        
+
         // Get failed login attempts
         $failedLogins = $this->getFailedLoginAttempts();
-        
+
         // Get suspicious activities
         $suspiciousActivities = $this->getSuspiciousActivities();
 
@@ -283,7 +289,7 @@ class AdminController extends Controller
     {
         // Get current system settings
         $settings = $this->getSystemSettings();
-        
+
         return view('admin.settings.index', compact('settings'));
     }
 
@@ -301,7 +307,7 @@ class AdminController extends Controller
 
         // Update settings (you might want to store these in a settings table or config)
         $settings = $request->only(['site_name', 'maintenance_mode', 'registration_enabled', 'max_login_attempts']);
-        
+
         foreach ($settings as $key => $value) {
             Cache::put("setting.{$key}", $value, now()->addDays(30));
         }
@@ -322,7 +328,7 @@ class AdminController extends Controller
     public function exportUsers(Request $request)
     {
         $format = $request->input('format', 'csv');
-        
+
         $users = User::select('id', 'name', 'email', 'phone', 'created_at', 'email_verified_at', 'suspended_at')
                     ->get();
 
@@ -337,8 +343,82 @@ class AdminController extends Controller
         if ($format === 'csv') {
             return $this->exportToCsv($users, 'users');
         }
-        
+
         return $this->exportToJson($users, 'users');
+    }
+
+    /**
+     * Show the form for creating a new virtual class.
+     */
+    public function showCreateClassForm()
+    {
+        // Get available grade levels from DashboardController's private method
+        $dashboardController = new DashboardController();
+        $levelGroups = $dashboardController->getLevelGroups();
+        $gradeLevels = [];
+        foreach ($levelGroups as $group) {
+            foreach ($group['levels'] as $key => $level) {
+                $gradeLevels[$key] = $level['title'];
+            }
+        }
+
+        return view('admin.classes.create', compact('gradeLevels'));
+    }
+
+    /**
+     * Store a newly created virtual class in storage.
+     */
+    public function createClass(Request $request)
+    {
+        $request->validate([
+            'grade_level' => 'required|string|max:50',
+            'topic' => 'nullable|string|max:255',
+            'start_time' => 'required|date_format:Y-m-d\TH:i|after_or_equal:now', // Make start_time mandatory and in future/now
+            'duration_minutes' => 'required|integer|min:10|max:240', // Make duration mandatory
+        ]);
+
+        $roomId = Str::random(10); // Generate unique room ID
+        $startTime = Carbon::parse($request->start_time);
+        $endTime = $startTime->copy()->addMinutes($request->duration_minutes);
+
+        try {
+            $virtualClass = VirtualClass::create([
+                'tutor_id' => Auth::id(),
+                'grade_level' => $request->grade_level,
+                'room_id' => $roomId,
+                'topic' => $request->topic,
+                'start_time' => $startTime,
+                'end_time' => $endTime,
+                'is_active' => true, // Set to true, status will be managed by start/end times
+                'status' => 'scheduled', // Default status
+            ]);
+
+            // Notify students in the specified grade level
+            $students = User::where('grade', $request->grade_level)->get();
+            Notification::send($students, new ClassStartedNotification($virtualClass));
+
+            Log::channel('security')->info('virtual_class_created', [
+                'admin_id' => Auth::id(),
+                'room_id' => $roomId,
+                'grade_level' => $request->grade_level,
+                'topic' => $request->topic,
+                'start_time' => $startTime->toDateTimeString(),
+                'end_time' => $endTime->toDateTimeString(),
+                'ip' => request()->ip(),
+                'timestamp' => now()->toISOString()
+            ]);
+
+            return redirect()->route('admin.dashboard')->with('success', 'Virtual class created successfully! Students have been notified.');
+
+        } catch (\Exception $e) {
+            Log::error('virtual_class_creation_error', [
+                'admin_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'request_data' => $request->all(),
+                'ip' => request()->ip(),
+            ]);
+            return back()->with('error', 'Failed to create virtual class. Please try again.')->withInput();
+        }
     }
 
     /**
@@ -614,10 +694,10 @@ class AdminController extends Controller
         $totalSpace = disk_total_space(storage_path());
         $usedPercentage = (($totalSpace - $freeSpace) / $totalSpace) * 100;
         $usedPercentage = round($usedPercentage, 2);
-        
+
         return [
             'status' => $usedPercentage < 90 ? 'healthy' : 'warning',
-            'used_percentage' => $usedPercentage, // Now returns just the number
+            'used_percentage' => $usedPercentage . '%', // Now returns with percentage sign
             'message' => "Storage {$usedPercentage}% used"
         ];
     }
@@ -643,17 +723,17 @@ class AdminController extends Controller
 
         $callback = function() use ($data) {
             $file = fopen('php://output', 'w');
-            
+
             // Add CSV headers
             if ($data->isNotEmpty()) {
                 fputcsv($file, array_keys($data->first()->toArray()));
             }
-            
+
             // Add data rows
             foreach ($data as $row) {
                 fputcsv($file, $row->toArray());
             }
-            
+
             fclose($file);
         };
 
@@ -748,7 +828,7 @@ class AdminController extends Controller
         $recoveryCodes = SuperuserRecoveryCode::where('user_id', Auth::id())
             ->get()
             ->pluck('code');
-        
+
         return view('admin.credentials', [
             'recoveryCodes' => $recoveryCodes
         ]);
@@ -764,7 +844,7 @@ class AdminController extends Controller
         ]);
 
         // Validate current password
-        if ($request->has('current_password') && 
+        if ($request->has('current_password') &&
             !Hash::check($request->current_password, $user->password)) {
             return response()->json([
                 'success' => false,
@@ -793,10 +873,10 @@ class AdminController extends Controller
     public function generateRecoveryCodes()
     {
         $user = Auth::user();
-        
+
         // Delete old codes
         SuperuserRecoveryCode::where('user_id', $user->id)->delete();
-        
+
         // Generate new codes
         $codes = [];
         for ($i = 0; $i < 8; $i++) {
@@ -807,7 +887,128 @@ class AdminController extends Controller
             ]);
             $codes[] = $code;
         }
-        
+
         return response()->json(['success' => true]);
+    }
+
+    // Content Management - Videos
+    public function indexVideos(Request $request)
+    {
+        $query = Video::query();
+
+        if ($request->has('search')) {
+            $query->where('title', 'like', '%' . $request->search . '%')
+                  ->orWhere('description', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->has('grade_level') && $request->grade_level != '') {
+            $query->where('grade_level', $request->grade_level);
+        }
+
+        if ($request->has('is_featured') && $request->is_featured != '') {
+            $query->where('is_featured', filter_var($request->is_featured, FILTER_VALIDATE_BOOLEAN));
+        }
+
+        if ($request->has('upload_date') && $request->upload_date != '') {
+            $query->whereDate('created_at', $request->upload_date);
+        }
+
+        $videos = $query->orderBy('created_at', 'desc')->paginate(10);
+
+        $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3']; // Example grades
+
+        return view('admin.content.videos.index', compact('videos', 'gradeLevels'));
+    }
+
+    public function storeVideo(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'video_file' => 'required|file|mimes:mp4,mov,avi,wmv|max:500000', // Max 500MB
+            'thumbnail_file' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB
+            'grade_level' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'is_featured' => 'boolean',
+        ]);
+
+        $videoPath = $request->file('video_file')->store('videos', 'public');
+        $thumbnailPath = null;
+        if ($request->hasFile('thumbnail_file')) {
+            $thumbnailPath = $request->file('thumbnail_file')->store('thumbnails', 'public');
+        }
+
+        // Simulate duration calculation (in a real app, you'd use a video processing library)
+        $durationSeconds = rand(60, 3600); // Placeholder duration
+
+        Video::create([
+            'title' => $request->title,
+            'video_path' => $videoPath,
+            'thumbnail_path' => $thumbnailPath,
+            'grade_level' => $request->grade_level,
+            'duration_seconds' => $durationSeconds,
+            'description' => $request->description,
+            'is_featured' => $request->has('is_featured'),
+            'uploaded_by' => Auth::id(),
+        ]);
+
+        return redirect()->route('admin.content.videos.index')->with('success', 'Video uploaded successfully!');
+    }
+
+    public function editVideo(Video $video)
+    {
+        $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3'];
+        return view('admin.content.videos.edit', compact('video', 'gradeLevels'));
+    }
+
+    public function updateVideo(Request $request, Video $video)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'video_file' => 'nullable|file|mimes:mp4,mov,avi,wmv|max:500000',
+            'thumbnail_file' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'grade_level' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'is_featured' => 'boolean',
+        ]);
+
+        if ($request->hasFile('video_file')) {
+            Storage::disk('public')->delete($video->video_path);
+            $video->video_path = $request->file('video_file')->store('videos', 'public');
+        }
+
+        if ($request->hasFile('thumbnail_file')) {
+            if ($video->thumbnail_path) {
+                Storage::disk('public')->delete($video->thumbnail_path);
+            }
+            $video->thumbnail_path = $request->file('thumbnail_file')->store('thumbnails', 'public');
+        }
+
+        $video->update([
+            'title' => $request->title,
+            'grade_level' => $request->grade_level,
+            'description' => $request->description,
+            'is_featured' => $request->has('is_featured'),
+        ]);
+
+        return redirect()->route('admin.content.videos.index')->with('success', 'Video updated successfully!');
+    }
+
+    public function destroyVideo(Video $video)
+    {
+        Storage::disk('public')->delete($video->video_path);
+        if ($video->thumbnail_path) {
+            Storage::disk('public')->delete($video->thumbnail_path);
+        }
+        $video->delete();
+
+        return redirect()->route('admin.content.videos.index')->with('success', 'Video deleted successfully!');
+    }
+
+    public function toggleVideoFeature(Video $video)
+    {
+        $video->is_featured = !$video->is_featured;
+        $video->save();
+
+        return back()->with('success', 'Video feature status updated.');
     }
 }

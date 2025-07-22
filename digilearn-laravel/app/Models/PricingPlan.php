@@ -16,15 +16,17 @@ class PricingPlan extends Model
         'currency',
         'period',
         'description',
+        'duration_days',
         'features',
         'is_active',
         'sort_order',
+        'is_features',
     ];
 
     protected $casts = [
         'features' => 'array',
-        'price' => 'decimal:2',
         'is_active' => 'boolean',
+        'is_featured' => 'boolean',
     ];
 
     /**

@@ -4,97 +4,127 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Admin Dashboard') - DigiLearn</title>
-    
+    <title>@yield('title', 'Admin Dashboard') - ShoutoutGH</title>
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Chart.js for analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <!-- Custom styles -->
     <style>
         [x-cloak] { display: none !important; }
+        .sidebar-link-text {
+            display: block;
+        }
+        .sidebar.collapsed .sidebar-link-text {
+            display: none;
+        }
+        .sidebar.collapsed .sidebar-toggle-icon {
+            transform: rotate(180deg);
+        }
+        .sidebar-toggle-icon {
+            transition: transform 0.3s ease;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
     <div class="min-h-screen flex">
         <!-- Sidebar -->
-        <div class="bg-gray-900 text-white w-64 min-h-screen p-4">
-            <div class="flex items-center mb-8">
-                <div class="bg-blue-600 rounded-lg p-2 mr-3">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                    </svg>
+        <div id="sidebar" class="sidebar bg-gray-900 text-white w-64 min-h-screen p-4 flex flex-col relative transition-all duration-300 ease-in-out">
+            <div class="flex items-center mb-8 justify-between">
+                <div class="flex items-center">
+                    <div class="bg-blue-600 rounded-lg p-2 mr-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <h1 class="text-xl font-bold sidebar-link-text">ShoutoutGH Admin</h1>
                 </div>
-                <h1 class="text-xl font-bold">DigiLearn Admin</h1>
+                <button id="sidebar-toggle" class="text-white focus:outline-none absolute right-4 top-4">
+                    <i class="fas fa-chevron-left sidebar-toggle-icon"></i>
+                </button>
             </div>
-            
-            <nav class="space-y-2">
+
+            <nav class="flex-1 space-y-2">
                 <a href="{{ route('admin.dashboard') }}" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.dashboard') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2 2z"></path>
-                    </svg>
-                    Dashboard
+                    <i class="fas fa-tachometer-alt w-5 h-5 mr-3"></i>
+                    <span class="sidebar-link-text">Dashboard</span>
                 </a>
-                
-                <a href="{{ route('admin.users') }}" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.users*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                    </svg>
-                    Users
+
+                <a href="#" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.users*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
+                    <i class="fas fa-users w-5 h-5 mr-3"></i>
+                    <span class="sidebar-link-text">Users</span>
                 </a>
-                
-                <a href="{{ route('admin.content') }}" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.content*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 00-2-2v-6a2 2 0 002-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                    </svg>
-                    Content
+
+                <!-- Content Management Dropdown -->
+                <div x-data="{ open: {{ request()->routeIs('admin.content*') ? 'true' : 'false' }} }" class="relative">
+                    <button @click="open = !open" class="flex items-center justify-between w-full px-4 py-2 rounded-lg {{ request()->routeIs('admin.content*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
+                        <div class="flex items-center">
+                            <i class="fas fa-folder-open w-5 h-5 mr-3"></i>
+                            <span class="sidebar-link-text">Content Management</span>
+                        </div>
+                        <i class="fas fa-chevron-down sidebar-link-text transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+                    </button>
+                    <div x-show="open" x-cloak class="ml-6 mt-1 space-y-1 sidebar-link-text">
+                        <a href="{{ route('admin.content.videos.index') }}" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.content.videos*') ? 'bg-blue-700' : 'hover:bg-gray-700' }}">
+                            <i class="fas fa-video w-4 h-4 mr-3"></i>
+                            Manage Learning Videos
+                        </a>
+                        <a href="{{ route('admin.content.quizzes.index') }}" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.content.quizzes*') ? 'bg-blue-700' : 'hover:bg-gray-700' }}">
+                            <i class="fas fa-question-circle w-4 h-4 mr-3"></i>
+                            Manage Quizzes
+                        </a>
+                        <a href="{{ route('admin.content.documents.index') }}" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.content.documents*') ? 'bg-blue-700' : 'hover:bg-gray-700' }}">
+                            <i class="fas fa-file-alt w-4 h-4 mr-3"></i>
+                            Manage Documents
+                        </a>
+                    </div>
+                </div>
+
+                <a href="#" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.analytics*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
+                    <i class="fas fa-chart-line w-5 h-5 mr-3"></i>
+                    <span class="sidebar-link-text">Reports & Analytics</span>
                 </a>
-                
-                <a href="{{ route('admin.analytics') }}" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.analytics*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                    </svg>
-                    Analytics
+
+                <a href="#" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.security*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
+                    <i class="fas fa-shield-alt w-5 h-5 mr-3"></i>
+                    <span class="sidebar-link-text">Security</span>
                 </a>
-                
-                <a href="{{ route('admin.security') }}" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.security*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                    </svg>
-                    Security
+
+                <a href="#" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.settings*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
+                    <i class="fas fa-cog w-5 h-5 mr-3"></i>
+                    <span class="sidebar-link-text">Settings</span>
                 </a>
-                
-                <a href="{{ route('admin.settings') }}" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.settings*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                    Settings
+
+                @if(Auth::user()->is_superuser)
+                <a href="{{ route('admin.classes.create') }}" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.classes.create') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
+                    <i class="fas fa-chalkboard-teacher w-5 h-5 mr-3"></i>
+                    <span class="sidebar-link-text">Create Class</span>
                 </a>
+                @endif
             </nav>
-            
-            <div class="mt-8 pt-8 border-t border-gray-700">
+
+            <div class="mt-auto pt-4 border-t border-gray-700">
                 <a href="{{ route('dashboard.main') }}" class="flex items-center px-4 py-2 rounded-lg hover:bg-gray-800">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
-                    Back to Site
+                    <i class="fas fa-arrow-left w-5 h-5 mr-3"></i>
+                    <span class="sidebar-link-text">Back to Site</span>
                 </a>
-                
+
                 <form method="POST" action="{{ route('logout') }}" class="mt-2">
                     @csrf
                     <button type="submit" class="flex items-center px-4 py-2 rounded-lg hover:bg-gray-800 w-full text-left">
-                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                        </svg>
-                        Logout
+                        <i class="fas fa-sign-out-alt w-5 h-5 mr-3"></i>
+                        <span class="sidebar-link-text">Logout</span>
                     </button>
                 </form>
             </div>
         </div>
-        
+
         <!-- Main Content -->
         <div class="flex-1 flex flex-col overflow-hidden">
             <!-- Top Header -->
@@ -105,25 +135,23 @@
                             <h1 class="text-2xl font-semibold text-gray-900">@yield('page-title', 'Dashboard')</h1>
                             <p class="text-sm text-gray-600">@yield('page-description', 'Welcome to the admin dashboard')</p>
                         </div>
-                        
+
                         <div class="flex items-center space-x-4">
                             <!-- Notifications -->
                             <div class="relative" x-data="{ open: false }">
                                 <button @click="open = !open" class="p-2 text-gray-400 hover:text-gray-500">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM10.07 2.82l-.9.9a2 2 0 000 2.83L10.9 8.28a2 2 0 002.83 0l.9-.9a2 2 0 000-2.83L12.9 2.82a2 2 0 00-2.83 0z"></path>
-                                    </svg>
+                                    <i class="fas fa-bell w-6 h-6"></i>
                                     <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400"></span>
                                 </button>
-                                
-                                <div x-show="open" 
+
+                                <div x-show="open"
                                      x-transition:enter="transition ease-out duration-200"
                                      x-transition:enter-start="opacity-0 scale-95"
                                      x-transition:enter-end="opacity-100 scale-100"
                                      x-transition:leave="transition ease-in duration-75"
                                      x-transition:leave-start="opacity-100 scale-100"
                                      x-transition:leave-end="opacity-0 scale-95"
-                                     @click.away="open = false" 
+                                     @click.away="open = false"
                                      x-cloak
                                      class="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-50">
                                     <div class="px-4 py-2 text-sm text-gray-700 border-b">
@@ -139,16 +167,16 @@
                                     </a>
                                 </div>
                             </div>
-                            
+
                             <!-- User Menu -->
                             <div class="relative" x-data="{ open: false }">
-                                <button @click="open = !open" class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                <button @click="open = !open" class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                                     <div class="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
                                         <span class="text-sm font-medium text-gray-700">{{ substr(Auth::user()->name, 0, 1) }}</span>
                                     </div>
                                     <span class="ml-2 text-gray-700">{{ Auth::user()->name }}</span>
                                 </button>
-                                
+
                                 <div x-show="open"
                                      x-transition:enter="transition ease-out duration-200"
                                      x-transition:enter-start="opacity-0 scale-95"
@@ -156,7 +184,7 @@
                                      x-transition:leave="transition ease-in duration-75"
                                      x-transition:leave-start="opacity-100 scale-100"
                                      x-transition:leave-end="opacity-0 scale-95"
-                                     @click.away="open = false" 
+                                     @click.away="open = false"
                                      x-cloak
                                      class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
                                     <a href="{{ route('profile.show') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</a>
@@ -170,7 +198,7 @@
                     </div>
                 </div>
             </header>
-            
+
             <!-- Page Content -->
             <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
                 <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
@@ -180,13 +208,13 @@
                             <span class="block sm:inline">{{ session('success') }}</span>
                         </div>
                     @endif
-                    
+
                     @if(session('error'))
                         <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                             <span class="block sm:inline">{{ session('error') }}</span>
                         </div>
                     @endif
-                    
+
                     @if($errors->any())
                         <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                             <ul class="list-disc list-inside">
@@ -196,16 +224,27 @@
                             </ul>
                         </div>
                     @endif
-                    
+
                     @yield('content')
                 </div>
             </main>
         </div>
     </div>
-    
+
     <!-- Scripts -->
+    <script src="https://unpkg.com/alpinejs@3.13.5/dist/cdn.csp.min.js" defer></script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}" defer>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const sidebarToggleIcon = sidebarToggle.querySelector('.sidebar-toggle-icon');
+
+            sidebarToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('collapsed');
+                sidebarToggleIcon.classList.toggle('rotate-180');
+            });
+        });
+    </script>
     @stack('scripts')
-    <!-- Alpine.js for interactivity -->
-    <script type="module" src="https://unpkg.com/alpinejs@3.x.x/dist/module.esm.js"></script>
 </body>
 </html>

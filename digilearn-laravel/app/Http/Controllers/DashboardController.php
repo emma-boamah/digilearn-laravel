@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Models\SavedLesson;
+use App\Models\VirtualClass;
 
 class DashboardController extends Controller
 {
@@ -190,10 +191,162 @@ class DashboardController extends Controller
     }
 
     /**
+     * Handle joining a class
+     */
+    public function joinClass(Request $request)
+    {
+        $user = Auth::user();
+
+        // Superuser can join any class
+        if ($user->is_superuser) {
+            $userGrade = $user->grade;
+
+            // Find an active class for the user's grade level
+            $virtualClass = VirtualClass::active()->forGrade($userGrade)->first();
+
+            if (!$virtualClass) {
+                // If no active class, try to find a class where the user is currently assigned
+                if ($user->current_room_id && $user->virtualClass) {
+                    $virtualClass = $user->virtualClass;
+                } else {
+                    Log::info('superuser_join_class_no_active_class', [
+                        'user_id' => Auth::id(),
+                        'user_grade' => $userGrade,
+                        'ip' => request()->ip(),
+                    ]);
+                    return redirect()->route('dashboard.main')
+                        ->with('info', 'No active class for your grade level at the moment. Please check back later or contact support.');
+                }
+            }
+
+            try {
+                $user->update([
+                    'current_room_id' => $virtualClass->room_id,
+                    'is_online' => true,
+                ]);
+
+                Log::channel('security')->info('superuser_joined_class', [
+                    'user_id' => Auth::id(),
+                    'user_grade' => $userGrade,
+                    'room_id' => $virtualClass->room_id,
+                    'ip' => request()->ip(),
+                    'timestamp' => Carbon::now()->toISOString()
+                ]);
+
+                return redirect()->route('dashboard.classroom.show', $virtualClass->room_id);
+
+            } catch (\Exception $e) {
+                Log::error('superuser_join_class_error', [
+                    'user_id' => Auth::id(),
+                    'user_grade' => $userGrade,
+                    'error' => $e->getMessage(),
+                    'ip' => request()->ip(),
+                ]);
+                return redirect()->back()->with('error', 'Failed to join class. Please try again.');
+            }
+        }
+
+        // Regular users must have Extra Tuition plan
+        if (!$user->hasExtraTuitionPlan()) {
+            return redirect()->route('pricing')
+                ->with('warning', 'Please subscribe to the "Extra Tuition" plan to join a class.');
+        }
+
+        $userGrade = $user->grade;
+
+        // Find an active class for the user's grade level
+        $virtualClass = VirtualClass::active()->forGrade($userGrade)->first();
+
+        if (!$virtualClass) {
+            if ($user->current_room_id && $user->virtualClass) {
+                $virtualClass = $user->virtualClass;
+            } else {
+                Log::info('join_class_no_active_class', [
+                    'user_id' => Auth::id(),
+                    'user_grade' => $userGrade,
+                    'ip' => request()->ip(),
+                ]);
+                return redirect()->route('dashboard.main')
+                    ->with('info', 'No active class for your grade level at the moment. Please check back later or contact support.');
+            }
+        }
+
+        try {
+            $user->update([
+                'current_room_id' => $virtualClass->room_id,
+                'is_online' => true,
+            ]);
+
+            Log::channel('security')->info('user_joined_class', [
+                'user_id' => Auth::id(),
+                'user_grade' => $userGrade,
+                'room_id' => $virtualClass->room_id,
+                'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
+                'ip' => request()->ip(),
+                'timestamp' => Carbon::now()->toISOString()
+            ]);
+
+            return redirect()->route('dashboard.classroom.show', $virtualClass->room_id);
+
+        } catch (\Exception $e) {
+            Log::error('join_class_error', [
+                'user_id' => Auth::id(),
+                'user_grade' => $userGrade,
+                'error' => $e->getMessage(),
+                'ip' => request()->ip(),
+            ]);
+            return redirect()->back()->with('error', 'Failed to join class. Please try again.');
+        }
+    }
+
+    /**
+     * Show the virtual classroom page.
+     */
+    public function showClassroom($roomId)
+    {
+        $user = Auth::user();
+
+        // Ensure the user is authenticated and potentially in this room
+        if (!$user->current_room_id || $user->current_room_id !== $roomId) {
+            // If user is trying to access a room they are not assigned to, redirect
+            return redirect()->route('dashboard.main')
+                ->with('error', 'You are not authorized to access this classroom or the class has ended.');
+        }
+
+        $virtualClass = VirtualClass::where('room_id', $roomId)->first();
+
+        if (!$virtualClass) {
+            return redirect()->route('dashboard.main')
+                ->with('error', 'Classroom not found.');
+        }
+
+        Log::channel('security')->info('classroom_accessed', [
+            'user_id' => Auth::id(),
+            'room_id' => $roomId,
+            'grade_level' => $virtualClass->grade_level,
+            'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
+            'ip' => request()->ip(),
+            'timestamp' => Carbon::now()->toISOString()
+        ]);
+
+        // Mark user as online (if not already)
+        if (!$user->is_online) {
+            $user->update(['is_online' => true]);
+        }
+
+        return view('dashboard.classroom', compact('virtualClass', 'user'));
+    }
+
+    /**
      * Check if user has access to a level group based on subscription
      */
     private function hasAccessToLevelGroup($user, $groupId)
     {
+        // Superuser has access to all groups
+        if ($user->is_superuser) {
+            return true;
+        }
+
         // Free access to primary-lower for all users
         if ($groupId === 'primary-lower') {
             return true;
@@ -258,6 +411,11 @@ class DashboardController extends Controller
      */
     private function hasPersonalizedAccess($user)
     {
+        // Superuser has access to personalized learning
+        if ($user->is_superuser) {
+            return true;
+        }
+
         $currentSubscription = $user->currentSubscription;
         // Example: Only users with active subscription or trial have access
         return $currentSubscription && ($currentSubscription->isActive() || $currentSubscription->isInTrial());
@@ -365,6 +523,11 @@ class DashboardController extends Controller
      */
     private function hasLessonAccess($user, $lesson)
     {
+        // Superuser has access to all lessons
+        if ($user->is_superuser) {
+            return true;
+        }
+
         $currentSubscription = $user->currentSubscription;
         
         // Free users get access to first few lessons
@@ -651,7 +814,7 @@ class DashboardController extends Controller
     /**
      * Get level groups for the two-step selection process
      */
-    private function getLevelGroups()
+    public function getLevelGroups()
     {
         return [
             'primary-lower' => [
@@ -847,5 +1010,56 @@ class DashboardController extends Controller
                 'dislikes' => 0
             ],
         ];
+    }
+
+    /**
+     * Get class forum data based on user's grade.
+     * In a real application, this would fetch from a database.
+     */
+    private function getClassForumData($grade)
+    {
+        $forumTopics = [
+            '1' => [
+                ['id' => 1, 'title' => 'Welcome to Primary 1 Class!', 'author' => 'Admin', 'posts' => 5, 'last_post' => '2 hours ago'],
+                ['id' => 2, 'title' => 'Help with Basic Counting', 'author' => 'Student A', 'posts' => 3, 'last_post' => '1 day ago'],
+            ],
+            '2' => [
+                ['id' => 3, 'title' => 'Discussion: Simple Addition', 'author' => 'Teacher B', 'posts' => 8, 'last_post' => '4 hours ago'],
+            ],
+            '3' => [
+                ['id' => 4, 'title' => 'Understanding Multiplication', 'author' => 'Student C', 'posts' => 10, 'last_post' => '30 mins ago'],
+            ],
+            '4' => [
+                ['id' => 5, 'title' => 'Fractions Explained', 'author' => 'Teacher D', 'posts' => 12, 'last_post' => '1 hour ago'],
+            ],
+            '5' => [
+                ['id' => 6, 'title' => 'Preparing for Junior High', 'author' => 'Admin', 'posts' => 7, 'last_post' => '5 hours ago'],
+            ],
+            '6' => [
+                ['id' => 7, 'title' => 'BECE Math Strategies', 'author' => 'Teacher E', 'posts' => 15, 'last_post' => '10 mins ago'],
+            ],
+            '7' => [ // JHS 1
+                ['id' => 8, 'title' => 'Algebraic Expressions', 'author' => 'Teacher F', 'posts' => 20, 'last_post' => '1 hour ago'],
+                ['id' => 9, 'title' => 'English Grammar Challenges', 'author' => 'Student D', 'posts' => 18, 'last_post' => '2 hours ago'],
+            ],
+            '8' => [ // JHS 2
+                ['id' => 10, 'title' => 'Geometry Problems', 'author' => 'Teacher G', 'posts' => 25, 'last_post' => '3 hours ago'],
+                ['id' => 11, 'title' => 'Science Project Ideas', 'author' => 'Student E', 'posts' => 22, 'last_post' => '4 hours ago'],
+            ],
+            '9' => [ // JHS 3
+                ['id' => 12, 'title' => 'BECE Science Revision', 'author' => 'Teacher H', 'posts' => 30, 'last_post' => '15 mins ago'],
+            ],
+            'shs-1' => [
+                ['id' => 13, 'title' => 'Advanced Math Concepts', 'author' => 'Teacher I', 'posts' => 35, 'last_post' => '1 hour ago'],
+            ],
+            'shs-2' => [
+                ['id' => 14, 'title' => 'Literature Deep Dive', 'author' => 'Teacher J', 'posts' => 40, 'last_post' => '2 hours ago'],
+            ],
+            'shs-3' => [
+                ['id' => 15, 'title' => 'WASSCE Exam Tips', 'author' => 'Teacher K', 'posts' => 45, 'last_post' => '30 mins ago'],
+            ],
+        ];
+
+        return $forumTopics[$grade] ?? [];
     }
 }
