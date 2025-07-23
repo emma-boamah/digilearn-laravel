@@ -231,17 +231,23 @@
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://unpkg.com/alpinejs@3.13.5/dist/cdn.csp.min.js" defer></script>
-    <script nonce="{{ request()->attributes->get('csp_nonce') }}" defer>
+    <!-- Alpine.js for interactivity -->
+    <script type="module" nonce="{{ request()->attributes->get('csp_nonce') }}">
+        import Alpine from '/js/alpine.module.js';
+        window.Alpine = Alpine;
+        Alpine.start();
+    </script>
+
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}" defer crossorigin="anonymous">
         document.addEventListener('DOMContentLoaded', function() {
-            const sidebar = document.getElementById('sidebar');
-            const sidebarToggle = document.getElementById('sidebar-toggle');
-            const sidebarToggleIcon = sidebarToggle.querySelector('.sidebar-toggle-icon');
+            const sidebar = document.querySelector('.sidebar');
+            const sidebarToggle = document.querySelector('#sidebar-toggle');
 
             sidebarToggle.addEventListener('click', function() {
                 sidebar.classList.toggle('collapsed');
-                sidebarToggleIcon.classList.toggle('rotate-180');
+                const icon = this.querySelector('i');
+                icon.classList.toggle('fa-chevron-left');
+                icon.classList.toggle('fa-chevron-right');
             });
         });
     </script>

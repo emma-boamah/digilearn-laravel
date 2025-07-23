@@ -38,6 +38,15 @@ class SecurityHeaders
             $response->headers->set('Strict-Transport-Security', "max-age={$maxAge}{$includeSubdomains}{$preload}");
         }
 
+        // CORS Headers
+        if ($request->headers->get('Origin') === 'https://cdn.jsdelivr.net') {
+            $response->headers->set('Access-Control-Allow-Origin', 'https://cdn.jsdelivr.net');
+            $response->headers->set('Access-Control-Allow-Credentials', 'true');
+            $response->headers->set('Cross-Origin-Embedder-Policy', 'require-corp');
+            $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin');
+            $response->headers->set('Cross-Origin-Resource-Policy', 'same-origin');
+        }
+
         // Content Security Policy
         if (config('security.headers.csp_enabled', true)) {
             $csp = $this->buildContentSecurityPolicy($request, $nonce);
@@ -80,7 +89,7 @@ class SecurityHeaders
             // - script-src for older browsers (fallback)
             // - script-src-elem for modern browsers (script elements)
             // - script-src-attr for inline event handlers
-            "script-src {$scriptSrcString}",
+            "script-src {$scriptSrcString} 'unsafe-eval'",  // Allow inline Alpine scripts for compatibility
             "script-src-elem {$scriptSrcString}",
             "script-src-attr 'unsafe-inline'",  // Allow inline event handlers
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net https://cdn.quilljs.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://flagcdn.com",

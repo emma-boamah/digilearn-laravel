@@ -207,72 +207,72 @@
 </div>
 
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-function toggleSelectAll() {
-    const selectAll = document.getElementById('selectAll');
-    const checkboxes = document.querySelectorAll('.user-checkbox');
-    
-    checkboxes.forEach(checkbox => {
-        checkbox.checked = selectAll.checked;
-    });
-}
-
-function showBulkActions() {
-    const selectedUsers = document.querySelectorAll('.user-checkbox:checked');
-    
-    if (selectedUsers.length === 0) {
-        alert('Please select at least one user.');
-        return;
+    function toggleSelectAll() {
+        const selectAll = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.user-checkbox');
+        
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAll.checked;
+        });
     }
-    
-    const container = document.getElementById('selectedUsersContainer');
-    container.innerHTML = `<p class="text-sm text-gray-600 mb-4">${selectedUsers.length} users selected</p>`;
-    
-    selectedUsers.forEach(checkbox => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'user_ids[]';
-        input.value = checkbox.value;
-        container.appendChild(input);
-    });
-    
-    document.getElementById('bulkActionsModal').classList.remove('hidden');
-}
 
-function closeBulkActions() {
-    document.getElementById('bulkActionsModal').classList.add('hidden');
-}
-
-function toggleUserStatus(userId, action) {
-    if (!confirm(`Are you sure you want to ${action} this user?`)) {
-        return;
-    }
-    
-    const reason = action === 'suspend' ? prompt('Reason for suspension (optional):') : null;
-    
-    fetch(`/admin/users/${userId}/toggle-status`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify({ reason: reason })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('Error: ' + data.message);
+    function showBulkActions() {
+        const selectedUsers = document.querySelectorAll('.user-checkbox:checked');
+        
+        if (selectedUsers.length === 0) {
+            alert('Please select at least one user.');
+            return;
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred. Please try again.');
-    });
-}
+        
+        const container = document.getElementById('selectedUsersContainer');
+        container.innerHTML = `<p class="text-sm text-gray-600 mb-4">${selectedUsers.length} users selected</p>`;
+        
+        selectedUsers.forEach(checkbox => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'user_ids[]';
+            input.value = checkbox.value;
+            container.appendChild(input);
+        });
+        
+        document.getElementById('bulkActionsModal').classList.remove('hidden');
+    }
 
-function exportUsers() {
-    window.location.href = '{{ route("admin.export") }}?type=users&format=csv';
-}
+    function closeBulkActions() {
+        document.getElementById('bulkActionsModal').classList.add('hidden');
+    }
+
+    function toggleUserStatus(userId, action) {
+        if (!confirm(`Are you sure you want to ${action} this user?`)) {
+            return;
+        }
+        
+        const reason = action === 'suspend' ? prompt('Reason for suspension (optional):') : null;
+        
+        fetch(`/admin/users/${userId}/toggle-status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ reason: reason })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        });
+    }
+
+    function exportUsers() {
+        window.location.href = '{{ route("admin.export") }}?type=users&format=csv';
+    }
 </script>
 @endsection
