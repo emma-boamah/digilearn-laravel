@@ -89,7 +89,7 @@ class SecurityHeaders
             // - script-src for older browsers (fallback)
             // - script-src-elem for modern browsers (script elements)
             // - script-src-attr for inline event handlers
-            "script-src {$scriptSrcString} 'unsafe-eval'",  // Allow inline Alpine scripts for compatibility
+            "script-src {$scriptSrcString} 'strict-dynamic' https: 'unsafe-eval'",  // Allow inline Alpine scripts for compatibility
             "script-src-elem {$scriptSrcString}",
             "script-src-attr 'unsafe-inline'",  // Allow inline event handlers
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net https://cdn.quilljs.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://flagcdn.com",
