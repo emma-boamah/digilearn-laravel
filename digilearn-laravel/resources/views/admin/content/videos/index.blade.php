@@ -16,11 +16,11 @@
     <!-- Search and Filter Section -->
     <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
         <form action="{{ route('admin.content.videos.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
-            <div>
+            <div class="col-span-1">
                 <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search Title/Description</label>
                 <input type="text" name="search" id="search" value="{{ request('search') }}" placeholder="Search videos..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
             </div>
-            <div>
+            <div class="col-span-1">
                 <label for="grade_level" class="block text-sm font-medium text-gray-700 mb-1">Filter by Grade</label>
                 <select name="grade_level" id="grade_level" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                     <option value="">All Grades</option>
@@ -29,7 +29,7 @@
                     @endforeach
                 </select>
             </div>
-            <div>
+            <div class="col-span-1">
                 <label for="is_featured" class="block text-sm font-medium text-gray-700 mb-1">Featured Status</label>
                 <select name="is_featured" id="is_featured" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                     <option value="">All</option>
@@ -37,7 +37,7 @@
                     <option value="0" {{ request('is_featured') === '0' ? 'selected' : '' }}>Not Featured</option>
                 </select>
             </div>
-            <div>
+            <div class="col-span-1">
                 <label for="upload_date" class="block text-sm font-medium text-gray-700 mb-1">Upload Date</label>
                 <input type="date" name="upload_date" id="upload_date" value="{{ request('upload_date') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
             </div>
@@ -53,17 +53,17 @@
     </div>
 
     <!-- Videos Table -->
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto rounded-lg border border-gray-200">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thumbnail</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Featured</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Uploaded Date</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Grade</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Duration</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Featured</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Uploaded Date</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Actions</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -181,94 +181,52 @@
 </div>
 
 @push('scripts')
-<script src="https://unpkg.com/alpinejs@3.13.5/dist/cdn.csp.min.js" defer></script>
-<script nonce="{{ request()->attributes->get('csp_nonce') }}" defer>
-    let currentVideoId = null;
-
-    function openUploadModal() {
-        const modal = document.getElementById('videoModal');
-        const form = document.getElementById('videoForm');
-        const modalTitle = document.getElementById('modalTitle');
-        const formMethod = document.getElementById('formMethod');
-        const videoIdInput = document.getElementById('videoId');
-        const currentThumbnailDiv = document.getElementById('currentThumbnail');
-
-        modalTitle.textContent = 'Upload New Video';
-        form.action = "{{ route('admin.content.videos.store') }}";
-        formMethod.value = 'POST';
-        videoIdInput.value = '';
-        form.reset(); // Clear form fields
-        currentThumbnailDiv.classList.add('hidden');
-        currentThumbnailDiv.querySelector('img').src = '';
-        document.getElementById('video_file').required = true; // Video file is required for upload
-        modal.xdata.showModal = true; // Use Alpine.js to show modal
-        modal.classList.remove('hidden'); // Ensure modal is visible
-    }
-
-    function openEditModal(videoId) {
-        currentVideoId = videoId;
-        const modal = document.getElementById('videoModal');
-        const form = document.getElementById('videoForm');
-        const modalTitle = document.getElementById('modalTitle');
-        const formMethod = document.getElementById('formMethod');
-        const videoIdInput = document.getElementById('videoId');
-        const currentThumbnailDiv = document.getElementById('currentThumbnail');
-        const currentThumbnailImg = currentThumbnailDiv.querySelector('img');
-
-        modalTitle.textContent = 'Edit Video';
-        form.action = `/admin/content/videos/${videoId}`; // Will be updated by fetch
-        formMethod.value = 'POST'; // Will be overridden to PUT by fetch
-        videoIdInput.value = videoId;
-        form.reset(); // Clear form fields
-        document.getElementById('video_file').required = false; // Video file is optional for edit
-
-        // Fetch video data
-        fetch(`/admin/content/videos/${videoId}/edit`)
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('title').value = data.title;
-                document.getElementById('grade_level').value = data.grade_level || '';
-                document.getElementById('description').value = data.description || '';
-                document.getElementById('is_featured').checked = data.is_featured;
-
-                if (data.thumbnail_path) {
-                    currentThumbnailImg.src = `/storage/${data.thumbnail_path}`;
-                    currentThumbnailDiv.classList.remove('hidden');
-                } else {
-                    currentThumbnailDiv.classList.add('hidden');
-                    currentThumbnailImg.src = '';
-                }
-
-                // Set form action and method for update
-                form.action = `/admin/content/videos/${videoId}`;
-                formMethod.value = 'PUT'; // Laravel will interpret this as PUT
-            })
-            .catch(error => console.error('Error fetching video data:', error));
-
-        modal.xdata.showModal = true; // Use Alpine.js to show modal
-        modal.classList.remove('hidden'); // Ensure modal is visible
-    }
-
-    function closeVideoModal() {
-        const modal = document.getElementById('videoModal');
-        modal.xdata.showModal = false; // Use Alpine.js to hide modal
-        currentVideoId = null;
-    }
-
-    // Handle form submission for PUT method (Laravel's form method spoofing)
-    document.getElementById('videoForm').addEventListener('submit', function(event) {
-        const formMethod = document.getElementById('formMethod');
-        if (formMethod.value === 'PUT') {
-            // Create a hidden input for _method if it's not already there
-            let methodInput = this.querySelector('input[name="_method"]');
-            if (!methodInput) {
-                methodInput = document.createElement('input');
-                methodInput.setAttribute('type', 'hidden');
-                methodInput.setAttribute('name', '_method');
-                this.appendChild(methodInput);
-            }
-            methodInput.value = 'PUT';
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}" defer>
+        function openUploadModal() {
+            resetModal();
+            document.getElementById('modalTitle').textContent = 'Upload New Video';
+            document.getElementById('videoForm').action = "{{ route('admin.content.videos.store') }}";
+            document.getElementById('formMethod').value = 'POST';
+            document.getElementById('video_file').required = true;
+            document.getElementById('videoModal').classList.remove('hidden');
         }
-    });
-</script>
+
+        function openEditModal(videoId) {
+            resetModal();
+            document.getElementById('modalTitle').textContent = 'Edit Video';
+            document.getElementById('videoId').value = videoId;
+            document.getElementById('video_file').required = false;
+            
+            fetch(`/admin/content/videos/${videoId}/edit`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('title').value = data.title;
+                    document.getElementById('grade_level').value = data.grade_level || '';
+                    document.getElementById('description').value = data.description || '';
+                    document.getElementById('is_featured').checked = data.is_featured;
+                    
+                    if (data.thumbnail_path) {
+                        const img = document.querySelector('#currentThumbnail img');
+                        img.src = `/storage/${data.thumbnail_path}`;
+                        document.getElementById('currentThumbnail').classList.remove('hidden');
+                    }
+                    
+                    document.getElementById('videoForm').action = `/admin/content/videos/${videoId}`;
+                    document.getElementById('formMethod').value = 'PUT';
+                    document.getElementById('videoModal').classList.remove('hidden');
+                });
+        }
+
+        function closeVideoModal() {
+            document.getElementById('videoModal').classList.add('hidden');
+        }
+
+        function resetModal() {
+            document.getElementById('videoForm').reset();
+            document.getElementById('currentThumbnail').classList.add('hidden');
+            const img = document.querySelector('#currentThumbnail img');
+            if (img) img.src = '';
+        }
+    </script>
 @endpush
+@endsection

@@ -209,4 +209,20 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->belongsTo(VirtualClass::class, 'current_room_id', 'room_id');
     }
+
+    /**
+     * Get the quizzes uploaded by the user.
+     */
+    public function quizzes()
+    {
+        return $this->hasMany(Quiz::class, 'uploaded_by');
+    }
+
+    /**
+     * Get the videos uploaded by the user.
+     */
+    public function videos()
+    {
+        return $this->hasMany(Video::class, 'uploaded_by');
+    }
 }

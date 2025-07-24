@@ -5,23 +5,24 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Video extends Model
+class Quiz extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'title',
-        'video_path',
-        'thumbnail_path',
+        'subject',
+        'video_id',
         'grade_level',
-        'duration_seconds',
-        'description',
-        'is_featured',
         'uploaded_by',
+        'quiz_data',
+        'views_count',
+        'attempts_count',
+        'is_featured',
     ];
 
     /**
-     * Get the user who uploaded the video.
+     * Get the user who uploaded the quiz.
      */
     public function uploader()
     {
@@ -29,10 +30,10 @@ class Video extends Model
     }
 
     /**
-     * Get the quizzes associated with the video.
+     * Get the video associated with the quiz.
      */
-    public function quizzes()
+    public function video()
     {
-        return $this->hasMany(Quiz::class);
+        return $this->belongsTo(Video::class);
     }
 }

@@ -17,8 +17,9 @@ use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use App\Http\Controllers\DashboardController; // Import DashboardController to access getLevelGroups
-use App\Models\Video;
-use Illuminate\Support\Facades\Storage;
+use App\Models\Video; // Import the Video model
+use App\Models\Quiz; // Import the Quiz model
+use Illuminate\Support\Facades\Storage; // For file uploads
 
 class AdminController extends Controller
 {
@@ -1010,5 +1011,112 @@ class AdminController extends Controller
         $video->save();
 
         return back()->with('success', 'Video feature status updated.');
+    }
+
+    // Content Management - Quizzes
+    public function indexQuizzes(Request $request)
+    {
+        $query = Quiz::with('uploader', 'video');
+
+        if ($request->has('search')) {
+            $query->where('title', 'like', '%' . $request->search . '%')
+                  ->orWhere('subject', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->has('grade_level') && $request->grade_level != '') {
+            $query->where('grade_level', $request->grade_level);
+        }
+
+        if ($request->has('video_id') && $request->video_id != '') {
+            $query->where('video_id', $request->video_id);
+        }
+
+        if ($request->has('uploaded_by') && $request->uploaded_by != '') {
+            $query->where('uploaded_by', $request->uploaded_by);
+        }
+
+        if ($request->has('is_featured') && $request->is_featured != '') {
+            $query->where('is_featured', filter_var($request->is_featured, FILTER_VALIDATE_BOOLEAN));
+        }
+
+        if ($request->has('upload_date') && $request->upload_date != '') {
+            $query->whereDate('created_at', $request->upload_date);
+        }
+
+        $quizzes = $query->orderBy('created_at', 'desc')->paginate(10);
+
+        $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3'];
+        $videos = Video::select('id', 'title')->get(); // For video course filter
+        $uploaders = User::whereHas('quizzes')->select('id', 'name')->get(); // Users who have uploaded quizzes
+
+        return view('admin.content.quizzes.index', compact('quizzes', 'gradeLevels', 'videos', 'uploaders'));
+    }
+
+    public function storeQuiz(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'subject' => 'nullable|string|max:255',
+            'video_id' => 'nullable|exists:videos,id',
+            'grade_level' => 'nullable|string|max:255',
+            'quiz_data' => 'nullable|string', // Or 'json' if you enforce JSON structure
+            'is_featured' => 'boolean',
+        ]);
+
+        Quiz::create([
+            'title' => $request->title,
+            'subject' => $request->subject,
+            'video_id' => $request->video_id,
+            'grade_level' => $request->grade_level,
+            'uploaded_by' => Auth::id(),
+            'quiz_data' => $request->quiz_data,
+            'is_featured' => $request->has('is_featured'),
+        ]);
+
+        return redirect()->route('admin.content.quizzes.index')->with('success', 'Quiz uploaded successfully!');
+    }
+
+    public function editQuiz(Quiz $quiz)
+    {
+        $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3'];
+        $videos = Video::select('id', 'title')->get();
+        return view('admin.content.quizzes.edit', compact('quiz', 'gradeLevels', 'videos'));
+    }
+
+    public function updateQuiz(Request $request, Quiz $quiz)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'subject' => 'nullable|string|max:255',
+            'video_id' => 'nullable|exists:videos,id',
+            'grade_level' => 'nullable|string|max:255',
+            'quiz_data' => 'nullable|string',
+            'is_featured' => 'boolean',
+        ]);
+
+        $quiz->update([
+            'title' => $request->title,
+            'subject' => $request->subject,
+            'video_id' => $request->video_id,
+            'grade_level' => $request->grade_level,
+            'quiz_data' => $request->quiz_data,
+            'is_featured' => $request->has('is_featured'),
+        ]);
+
+        return redirect()->route('admin.content.quizzes.index')->with('success', 'Quiz updated successfully!');
+    }
+
+    public function destroyQuiz(Quiz $quiz)
+    {
+        $quiz->delete();
+        return redirect()->route('admin.content.quizzes.index')->with('success', 'Quiz deleted successfully!');
+    }
+
+    public function toggleQuizFeature(Quiz $quiz)
+    {
+        $quiz->is_featured = !$quiz->is_featured;
+        $quiz->save();
+
+        return back()->with('success', 'Quiz feature status updated.');
     }
 }

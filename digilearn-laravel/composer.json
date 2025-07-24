@@ -12,6 +12,8 @@
         "php": "^8.2",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
+        "mongodb/laravel-mongodb": "^5.4",
+        "pbmedia/laravel-ffmpeg": "^8.7",
         "predis/predis": "^3.0"
     },
     "require-dev": {
