@@ -225,4 +225,12 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Video::class, 'uploaded_by');
     }
+
+    /**
+     * Get the documents uploaded by the user.
+     */
+    public function documents()
+    {
+        return $this->hasMany(Document::class, 'uploaded_by');
+    }
 }

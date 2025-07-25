@@ -19,6 +19,7 @@ use Illuminate\Support\Str;
 use App\Http\Controllers\DashboardController; // Import DashboardController to access getLevelGroups
 use App\Models\Video; // Import the Video model
 use App\Models\Quiz; // Import the Quiz model
+use App\Models\Document; // Import the Document model
 use Illuminate\Support\Facades\Storage; // For file uploads
 
 class AdminController extends Controller
@@ -1118,5 +1119,110 @@ class AdminController extends Controller
         $quiz->save();
 
         return back()->with('success', 'Quiz feature status updated.');
+    }
+
+    // Content Management - Documents
+    public function indexDocuments(Request $request)
+    {
+        $query = Document::with('uploader');
+
+        if ($request->has('search')) {
+            $query->where('title', 'like', '%' . $request->search . '%')
+                  ->orWhere('description', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->has('grade_level') && $request->grade_level != '') {
+            $query->where('grade_level', $request->grade_level);
+        }
+
+        if ($request->has('uploaded_by') && $request->uploaded_by != '') {
+            $query->where('uploaded_by', $request->uploaded_by);
+        }
+
+        if ($request->has('is_featured') && $request->is_featured != '') {
+            $query->where('is_featured', filter_var($request->is_featured, FILTER_VALIDATE_BOOLEAN));
+        }
+
+        if ($request->has('upload_date') && $request->upload_date != '') {
+            $query->whereDate('created_at', $request->upload_date);
+        }
+
+        $documents = $query->orderBy('created_at', 'desc')->paginate(10);
+
+        $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3'];
+        $uploaders = User::whereHas('documents')->select('id', 'name')->get(); // Users who have uploaded documents
+
+        return view('admin.content.documents.index', compact('documents', 'gradeLevels', 'uploaders'));
+    }
+
+    public function storeDocument(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'document_file' => 'required|file|mimes:pdf,doc,docx,xls,xlsx|max:20480', // Max 20MB
+            'grade_level' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'is_featured' => 'boolean',
+        ]);
+
+        $filePath = $request->file('document_file')->store('documents', 'public');
+
+        Document::create([
+            'title' => $request->title,
+            'file_path' => $filePath,
+            'grade_level' => $request->grade_level,
+            'description' => $request->description,
+            'uploaded_by' => Auth::id(),
+            'is_featured' => $request->has('is_featured'),
+        ]);
+
+        return redirect()->route('admin.content.documents.index')->with('success', 'Document uploaded successfully!');
+    }
+
+    public function editDocument(Document $document)
+    {
+        $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3'];
+        return view('admin.content.documents.edit', compact('document', 'gradeLevels'));
+    }
+
+    public function updateDocument(Request $request, Document $document)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'document_file' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:20480',
+            'grade_level' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'is_featured' => 'boolean',
+        ]);
+
+        if ($request->hasFile('document_file')) {
+            Storage::disk('public')->delete($document->file_path);
+            $document->file_path = $request->file('document_file')->store('documents', 'public');
+        }
+
+        $document->update([
+            'title' => $request->title,
+            'grade_level' => $request->grade_level,
+            'description' => $request->description,
+            'is_featured' => $request->has('is_featured'),
+        ]);
+
+        return redirect()->route('admin.content.documents.index')->with('success', 'Document updated successfully!');
+    }
+
+    public function destroyDocument(Document $document)
+    {
+        Storage::disk('public')->delete($document->file_path);
+        $document->delete();
+
+        return redirect()->route('admin.content.documents.index')->with('success', 'Document deleted successfully!');
+    }
+
+    public function toggleDocumentFeature(Document $document)
+    {
+        $document->is_featured = !$document->is_featured;
+        $document->save();
+
+        return back()->with('success', 'Document feature status updated.');
     }
 }

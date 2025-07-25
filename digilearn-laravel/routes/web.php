@@ -192,10 +192,14 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/{quiz}/toggle-feature', [AdminController::class, 'toggleQuizFeature'])->name('toggle-feature');
     });
 
-    // Content Management - Documents (Placeholder)
+    // Content Management - Documents
     Route::prefix('content/documents')->name('content.documents.')->group(function () {
-        Route::get('/', function () { return view('admin.content.documents.index'); })->name('index');
-        // Add store, edit, update, destroy routes here
+        Route::get('/', [AdminController::class, 'indexDocuments'])->name('index');
+        Route::post('/', [AdminController::class, 'storeDocument'])->name('store');
+        Route::get('/{document}/edit', [AdminController::class, 'editDocument'])->name('edit');
+        Route::put('/{document}', [AdminController::class, 'updateDocument'])->name('update');
+        Route::delete('/{document}', [AdminController::class, 'destroyDocument'])->name('destroy');
+        Route::post('/{document}/toggle-feature', [AdminController::class, 'toggleDocumentFeature'])->name('toggle-feature');
     });
 });
 
