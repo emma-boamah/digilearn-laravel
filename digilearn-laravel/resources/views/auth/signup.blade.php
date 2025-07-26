@@ -658,7 +658,11 @@
             }
 
             .phone-input-container {
-                flex-direction: column;
+                flex-direction: row;
+            }
+
+            .country-code-selector {
+                flex: 1;
             }
 
             .country-code-selector {
@@ -668,6 +672,10 @@
             .country-code-btn {
                 width: 100%;
                 justify-content: space-between;
+            }
+
+            .phone-number-input {
+                flex: 3;
             }
         }
     </style>

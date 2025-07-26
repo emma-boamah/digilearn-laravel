@@ -489,13 +489,8 @@
                 gap: 15px;
             }
             
-            .hero-content h1 {
-                font-size: 2rem;
-            }
-            
-            .hero-stats {
-                flex-direction: column;
-                gap: 20px;
+            .hero-section {
+                display: none;
             }
             
             .tab {
