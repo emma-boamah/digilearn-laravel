@@ -896,7 +896,7 @@ class AdminController extends Controller
     // Content Management - Videos
     public function indexVideos(Request $request)
     {
-        $query = Video::query();
+        $query = Video::with('uploader');
 
         if ($request->has('search')) {
             $query->where('title', 'like', '%' . $request->search . '%')
@@ -919,7 +919,13 @@ class AdminController extends Controller
 
         $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3']; // Example grades
 
-        return view('admin.content.videos.index', compact('videos', 'gradeLevels'));
+        // Video statistics
+        $totalVideos = Video::count();
+        $mostWatchedVideo = Video::orderBy('views', 'desc')->first();
+        $averageDurationSeconds = Video::avg('duration_seconds');
+        $averageDuration = $averageDurationSeconds ? gmdate("H:i:s", $averageDurationSeconds) : '00:00:00';
+
+        return view('admin.content.videos.index', compact('videos', 'gradeLevels', 'totalVideos', 'mostWatchedVideo', 'averageDuration'));
     }
 
     public function storeVideo(Request $request)
@@ -951,6 +957,7 @@ class AdminController extends Controller
             'description' => $request->description,
             'is_featured' => $request->has('is_featured'),
             'uploaded_by' => Auth::id(),
+            'views' => 0, // Initialize views to 0
         ]);
 
         return redirect()->route('admin.content.videos.index')->with('success', 'Video uploaded successfully!');
@@ -959,7 +966,7 @@ class AdminController extends Controller
     public function editVideo(Video $video)
     {
         $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3'];
-        return view('admin.content.videos.edit', compact('video', 'gradeLevels'));
+        return response()->json($video); // Return JSON for modal
     }
 
     public function updateVideo(Request $request, Video $video)
@@ -1182,7 +1189,7 @@ class AdminController extends Controller
     public function editDocument(Document $document)
     {
         $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3'];
-        return view('admin.content.documents.edit', compact('document', 'gradeLevels'));
+        return response()->json($document); // Return JSON for modal
     }
 
     public function updateDocument(Request $request, Document $document)

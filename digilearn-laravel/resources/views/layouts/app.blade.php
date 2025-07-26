@@ -374,9 +374,17 @@
             color: var(--primary-red);
         }
 
+        .login {
+            border-color: var(--secondary-blue);
+            margin-top: 1.5rem;
+        }
+
+        .login:hover {
+            background: var(--secondary-blue-hover);
+        }
+
         .mobile-menu-item.signup {
-            background: var(--primary-red);
-            color: white;
+            border-color: var(--primary-red);
             margin-top: 1.5rem;
         }
 
@@ -466,7 +474,7 @@
                     <a href="{{ route('about') }}" class="mobile-menu-item">About Us</a>
                     <a href="{{ route('pricing') }}" class="mobile-menu-item">Pricing</a>
                     <a href="{{ route('contact') }}" class="mobile-menu-item">Contact</a>
-                    <a href="{{ route('login') }}" class="mobile-menu-item">Login</a>
+                    <a href="{{ route('login') }}" class="mobile-menu-item login">Login</a>
                     <a href="{{ route('signup') }}" class="mobile-menu-item signup">Sign Up Free</a>
                 </div>
             </div>

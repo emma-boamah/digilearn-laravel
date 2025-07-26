@@ -68,13 +68,16 @@
         .back-button {
             background: none;
             border: none;
-            color: var(--primary-red);
+            color: #DC2626;
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 0.5rem;
             font-size: 0.875rem;
             font-weight: 500;
+            padding: 1rem;
+            width: 100%;
+            justify-content: flex-start;
         }
 
         .back-button:hover {
