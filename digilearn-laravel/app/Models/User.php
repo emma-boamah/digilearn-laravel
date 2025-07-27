@@ -44,6 +44,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'current_room_id',
         'is_online',
         'is_superuser',
+        'last_activity_at',
+        'is_verified',
     ];
 
     /**
@@ -75,6 +77,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'failed_login_attempts' => 'integer',
         'is_online' => 'boolean',
         'is_superuser' => 'boolean',
+        'last_activity_at' => 'datetime',
+        'is_verified' => 'boolean',
     ];
 
     /**

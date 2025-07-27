@@ -1660,6 +1660,19 @@
                     }
                 });
             });
+
+            // Set periodic ping to keep session alive
+            setInterval(() => {
+                if (document.visibilityState === 'visible') {
+                    fetch('/ping', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        }
+                    });
+                }
+            }, 300000); // 5 minutes
         }
     </script>
 </body>

@@ -226,6 +226,7 @@ class DashboardController extends Controller
                 $user->update([
                     'current_room_id' => $virtualClass->room_id,
                     'is_online' => true,
+                    'last_activity_at' => now(),
                 ]);
 
                 Log::channel('security')->info('superuser_joined_class', [
@@ -278,6 +279,7 @@ class DashboardController extends Controller
             $user->update([
                 'current_room_id' => $virtualClass->room_id,
                 'is_online' => true,
+                'last_activity_at' => now(),
             ]);
 
             Log::channel('security')->info('user_joined_class', [
@@ -337,7 +339,17 @@ class DashboardController extends Controller
             $user->update(['is_online' => true]);
         }
 
-        return view('dashboard.classroom', compact('virtualClass', 'user'));
+        echo view('dashboard.classroom', compact('virtualClass', 'user'));
+        echo <<<EOT
+        <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+            setInterval(() => {
+                fetch('/api/ping')
+                    .then(response => response.json())
+                    .then(data => console.log('Status updated'));
+            }, 60000); // Ping every minute
+        </script>
+        EOT;
+        
     }
 
     /**

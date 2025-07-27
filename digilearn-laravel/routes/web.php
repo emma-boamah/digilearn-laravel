@@ -145,6 +145,12 @@ Route::middleware(['auth'])->group(function () {
     // Virtual classroom
     Route::get('/dashboard/join-class', [DashboardController::class, 'joinClass'])->name('dashboard.join-class');
     Route::get('/dashboard/classroom/{roomId}', [DashboardController::class, 'showClassroom'])->name('dashboard.classroom.show');
+
+    //
+    Route::post('/ping', function (\Illuminate\Http\Request $request) {
+        $request->user()->update(['last_activity_at' => now()]);
+        return response()->json(['status' => 'updated']);
+    })->name('ping');
 });
 
 /*

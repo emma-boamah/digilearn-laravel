@@ -283,7 +283,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
     // Basic JS for control buttons (for visual feedback, no actual functionality)
     document.getElementById('toggleMute')?.addEventListener('click', function() {
         this.classList.toggle('active');
@@ -316,5 +316,18 @@
             // fetch('/api/user/leave-class', { method: 'POST', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' } });
         }
     }
+    
+    // Ping server every minute to keep user status updated
+    setInterval(() => {
+        fetch('{{ route('ping') }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => console.log('Status updated'));
+    }, 60000); // Ping every minute
 </script>
 @endsection

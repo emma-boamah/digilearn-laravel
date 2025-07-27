@@ -53,10 +53,12 @@
             <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-600">Active Users</p>
-                        <p class="text-3xl font-bold text-gray-900">{{ number_format($stats['active_users']) }}</p>
+                        <p class="text-sm font-medium text-gray-600">Online Users</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ number_format($stats['online_users']) }}</p>
                         <p class="text-sm text-gray-500 mt-1">
-                            {{ number_format(($stats['active_users'] / $stats['total_users']) * 100, 1) }}% of total
+                            {{ number_format(($stats['online_users'] / $stats['total_users']) * 100, 1) }}% of total
+                            <i class="fas fa-wifi text-green-500 mr-1"></i>
+                            Active in last 5 minutes
                         </p>
                     </div>
                     <div class="bg-green-100 p-3 rounded-full">

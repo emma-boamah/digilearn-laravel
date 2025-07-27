@@ -8,6 +8,7 @@ use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CheckWebsiteLock;
 use App\Console\Commands\ClearEmailVerificationCache;
 use App\Http\Middleware\SuperuserMiddleware;
+use App\Http\Middleware\TrackUsersActivity;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -26,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(\Illuminate\Session\Middleware\StartSession::class);
         $middleware->append(SecurityHeaders::class);
         $middleware->append(CheckWebsiteLock::class);
+        $middleware->append(TrackUsersActivity::class);
         
         // API middleware group
         $middleware->api(append: [

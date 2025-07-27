@@ -434,6 +434,7 @@ class AdminController extends Controller
         return [
             'total_users' => User::count(),
             'active_users' => User::whereNull('suspended_at')->count(),
+            'online_users'=> User::where('last_activity_at', '>=', now()->subMinutes(5))->count(),
             'new_users_today' => User::whereDate('created_at', today())->count(),
             'new_users_this_week' => User::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
             'verified_users' => User::whereNotNull('email_verified_at')->count(),
