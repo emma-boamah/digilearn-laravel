@@ -56,7 +56,7 @@
                     <span class="sidebar-link-text">Dashboard</span>
                 </a>
 
-                <a href="#" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.users*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
+                <a href="{{ route('admin.users') }}" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.users*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
                     <i class="fas fa-users w-5 h-5 mr-3"></i>
                     <span class="sidebar-link-text">Users</span>
                 </a>

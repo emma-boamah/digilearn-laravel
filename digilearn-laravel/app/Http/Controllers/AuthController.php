@@ -186,7 +186,8 @@ class AuthController extends Controller
             
             $this->logSecurityEvent('login_attempt_nonexistent_user', $request, [
                 'email' => $credentials['email'],
-                'ip' => $request->ip()
+                'ip' => get_client_ip(), // Use helper function to get client IP
+                'registration_ip' => get_client_ip(), // In signup
             ]);
             
             // Generic error message to prevent user enumeration
@@ -220,7 +221,8 @@ class AuthController extends Controller
                 'failed_login_attempts' => 0,
                 'locked_until' => null,
                 'last_login_at' => Carbon::now(),
-                'last_login_ip' => $request->ip()
+                'last_login_ip' => get_client_ip(),
+                'registration_ip' => get_client_ip(), // From signup
             ]);
 
             // Log successful login
@@ -250,7 +252,8 @@ class AuthController extends Controller
         
         $user->update([
             'failed_login_attempts' => $failedAttempts,
-            'locked_until' => $lockUntil
+            'locked_until' => $lockUntil,
+            'last_login_ip' => get_client_ip(),
         ]);
 
         $this->logSecurityEvent('failed_login_attempt', $request, [
@@ -466,7 +469,7 @@ class AuthController extends Controller
     protected function logSecurityEvent(string $event, Request $request, array $context = []): void
     {
         Log::channel('security')->info($event, array_merge([
-            'ip' => $request->ip(),
+            'ip' => get_client_ip(),
             'user_agent' => $request->userAgent(),
             'url' => $request->fullUrl(),
             'timestamp' => Carbon::now()->toISOString(),
