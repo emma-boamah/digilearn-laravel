@@ -97,7 +97,7 @@ class DashboardController extends Controller
         }
 
         // Update user's grade
-        Auth::user()->update(['grade' => $groupId]);
+        $user->update(['grade' => $groupId]);
 
         // Store selected level group in session
         session(['selected_level_group' => $groupId]);
