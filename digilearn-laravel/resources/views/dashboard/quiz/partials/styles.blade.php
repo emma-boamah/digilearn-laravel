@@ -628,7 +628,7 @@
             }
 
             .top-header {
-                display: none;
+                display: flex;
             }
 
             .mobile-header {

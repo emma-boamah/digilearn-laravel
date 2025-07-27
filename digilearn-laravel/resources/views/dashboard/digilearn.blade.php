@@ -338,7 +338,7 @@
             padding: 0.75rem; /* Reduced padding */
             background-color: var(--white);
             border-bottom: 1px solid var(--gray-200);
-            flex-wrap: nowrap;
+            flex-wrap: wrap;
             overflow-x: hidden; /* Hide overflow for horizontal scrolling */
             overflow-y: hidden; /* Hide vertical overflow */
         }
@@ -446,7 +446,7 @@
             background-color: var(--white);
             border-radius: 0.5rem;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            z-index: 100;
+            z-index: 1100; 
             opacity: 0;
             visibility: hidden;
             transform: translateY(-10px);
@@ -459,6 +459,7 @@
             opacity: 1;
             visibility: visible;
             transform: translateY(0);
+            z-index: 1100; /* Ensure dropdown is above other content */
         }
 
         .custom-dropdown.open .dropdown-chevron {
@@ -846,7 +847,10 @@
 
             /* Hide desktop header on mobile */
             .top-header {
-                display: flex;
+                position: sticky;
+                top: 0;
+                z-index: 1000;
+                padding: 0.5rem 1rem;
             }
 
             /* Show mobile header */
@@ -857,7 +861,6 @@
 
             /* Filter bar layout */
             .filter-bar {
-                flex-direction: row;
                 gap: 12px;
                 padding: 16px;
                 position: relative;
@@ -868,7 +871,8 @@
             .dropdowns-row {
                 display: flex;
                 gap: 12px;
-                width: auto;
+                width: 100%;
+                flex-wrap: wrap;
             }
 
             .dropdowns-row .custom-dropdown {
@@ -961,6 +965,11 @@
                 display: block;
             }
 
+            /* Prevent body scrolling when sidebar is open */
+            .body.sidebar-open {
+                overflow: hidden;
+            }
+
             .sidebar-logo img {
                 height: 28px;
             }
@@ -977,9 +986,18 @@
             }
 
             .filter-button {
-                flex: 1;
+                min-width: calc(50% - 6px); /* Two columns with gap */
+                text-align: center;
                 padding: 0.75rem;
                 font-size: 0.8rem;
+            }
+
+            /* Make all filter elements flexible */
+            .search-box,
+            .custom-dropdown,
+            .filter-button {
+                flex: 1 1 auto;
+                min-width: calc(50% - 6px); /* Two columns with gap */
             }
 
             .hero-overlay {
@@ -1028,7 +1046,6 @@
         }
 
         .mobile-header-content {
-
             gap: 10px;
         }
 
@@ -1072,18 +1089,18 @@
         }
 
         /* Adjust user avatar for mobile */
-        .mobile-header .user-avatar {
+        .user-avatar {
             width: 32px;
             height: 32px;
             font-size: 0.75rem;
         }
 
         /* Notification icon sizing for mobile */
-        .mobile-header .notification-btn {
+        .notification-btn {
             padding: 0.5rem;
         }
 
-        .mobile-header .notification-icon {
+        .notification-icon {
             width: 18px;
             height: 18px;
         }
@@ -1099,7 +1116,7 @@
     <div class="main-container">
         <!-- YouTube-style Sidebar -->
         <aside class="youtube-sidebar" id="youtubeSidebar">
-            <div class="sidebar-header">
+            <!-- <div class="sidebar-header">
                 <button class="sidebar-toggle-btn" id="sidebarToggle">
                     <svg class="hamburger-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
@@ -1108,7 +1125,7 @@
                 <div class="sidebar-logo">
                     <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
                 </div>
-            </div>
+            </div> -->
             
             <div class="sidebar-content">
                 <div class="sidebar-section">
@@ -1217,38 +1234,11 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Mobile Header -->
-            <div class="mobile-header">
-                <div class="mobile-header-content">
-                    <div class="mobile-header-left">
-                        <button class="mobile-hamburger" id="mobileSidebarToggle">
-                            <svg viewBox="0 0 24 24" fill="none">
-                                <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" stroke-width="2" 
-                                      stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </button>
-                        <div class="mobile-logo">
-                            <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
-                        </div>
-                    </div>
-                    <div class="mobile-header-right">
-                        <button class="notification-btn">
-                            <svg class="notification-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v0.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                            </svg>
-                        </button>
-                        <div class="user-avatar">
-                            {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
-                        </div>
-                    </div>
-                </div>
-            </div>
             <!-- Top Header -->
             <div class="top-header">
                 <div class="header-left">
                     <!-- Hamburger for sidebar toggle (always visible) -->
-                    <button class="sidebar-toggle-btn" id="desktopSidebarToggle">
+                    <button class="sidebar-toggle-btn" id="sidebarToggle">
                         <svg class="hamburger-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                         </svg>
@@ -1518,59 +1508,44 @@
                     }
                 }
             });
-
-            // Close search when clicking outside
-            document.addEventListener('click', function(e) {
-                if (window.innerWidth > 768) return;
-                
-                if (mobileSearchBox && mobileSearchBox.classList.contains('mobile-visible')) {
-                    const isSearchBox = mobileSearchBox.contains(e.target);
-                    const isSearchToggle = mobileSearchToggle.contains(e.target);
-                    
-                    if (!isSearchBox && !isSearchToggle) {
-                        mobileSearchBox.classList.remove('mobile-visible');
-                    }
-                }
-            });
         }
 
         // YouTube-style sidebar functionality
         function initializeSidebar() {
             const sidebarToggle = document.getElementById('sidebarToggle');
-            const desktopSidebarToggle = document.getElementById('desktopSidebarToggle');
-            const mobileHamburger = document.getElementById('mobileHamburger');
             const youtubeSidebar = document.getElementById('youtubeSidebar');
             const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const body = document.body;
 
-            // Desktop header toggle
-            if (desktopSidebarToggle) {
-                desktopSidebarToggle.addEventListener('click', function() {
-                    youtubeSidebar.classList.toggle('collapsed');
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function() {
+                    if (window.innerWidth <= 768) {
+                        // Mobile behavior
+                        youtubeSidebar.classList.toggle('mobile-open');
+                        sidebarOverlay.classList.toggle('active');
+                        body.classList.toggle('sidebar-open');
+                    } else {
+                        // Desktop behavior
+                        youtubeSidebar.classList.toggle('collapsed');
+                    }
                 });
             }
 
-            // Mobile sidebar toggle
-            if (mobileHamburger) {
-                mobileHamburger.addEventListener('click', function() {
-                    youtubeSidebar.classList.toggle('mobile-open');
-                    sidebarOverlay.classList.toggle('active');
-                    document.body.style.overflow = youtubeSidebar.classList.contains('mobile-open') ? 'hidden' : '';
+            // Close sidebar when clicking overlay
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', function() {
+                    youtubeSidebar.classList.remove('mobile-open');
+                    sidebarOverlay.classList.remove('active');
+                    body.classList.remove('sidebar-open');
                 });
             }
-
-            // Close mobile sidebar when clicking overlay
-            sidebarOverlay.addEventListener('click', function() {
-                youtubeSidebar.classList.remove('mobile-open');
-                sidebarOverlay.classList.remove('active');
-                document.body.style.overflow = '';
-            });
 
             // Handle window resize
             window.addEventListener('resize', function() {
                 if (window.innerWidth > 768) {
                     youtubeSidebar.classList.remove('mobile-open');
                     sidebarOverlay.classList.remove('active');
-                    document.body.style.overflow = '';
+                    body.classList.remove('sidebar-open');
                 }
             });
 

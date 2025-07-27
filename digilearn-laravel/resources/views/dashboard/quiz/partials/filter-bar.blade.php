@@ -256,7 +256,7 @@
     /* Mobile Responsive */
     @media (max-width: 768px) {
         .filter-bar {
-            flex-direction: column;
+            flex-direction: row;
             gap: 12px;
             padding: 16px;
             position: relative;
@@ -274,7 +274,7 @@
         }
 
         .search-box {
-            display: none;
+            display: flex;
             order: 0;
             min-width: 100%;
             margin-bottom: 12px;
