@@ -133,8 +133,11 @@
 
         .sidebar-content {
             padding: 1rem 0;
-            overflow-y: auto;
-            height: calc(100vh - 64px);
+            scrollbar-width: none; /* Hide scrollbar for Firefox */
+        }
+
+        .sidebar-content::-webkit-scrollbar {
+            display: none; /* Hide scrollbar for WebKit browsers */
         }
 
         .sidebar-section {
@@ -201,8 +204,8 @@
 
         .youtube-sidebar.collapsed .sidebar-menu-item.active {
             border-left-color: transparent;
-            background-color: var(--primary-red);
-            color: var(--white);
+            background-color: rgba(225, 30, 45, 0.1);
+            color: var(--primary-red);
         }
 
         .sidebar-menu-icon {
@@ -336,7 +339,8 @@
             background-color: var(--white);
             border-bottom: 1px solid var(--gray-200);
             flex-wrap: nowrap;
-            overflow-x: auto; /* Allow horizontal scrolling on small screens */
+            overflow-x: hidden; /* Hide overflow for horizontal scrolling */
+            overflow-y: hidden; /* Hide vertical overflow */
         }
 
         .search-box {
@@ -344,6 +348,20 @@
             flex: 1;
             min-width: 300px;
             display: flex;
+            transition: all 0.3s ease;
+        }
+
+        .search-close {
+            display: flex;
+            position: absolute;
+            right: 45px; /* Position to the left of search button */
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            padding: 0.5rem;
+            cursor: pointer;
+            color: var(--gray-500);
         }
 
         .search-input {
@@ -367,7 +385,7 @@
             top: 0;
             height: 100%;
             width: 2.5rem;
-            background-color: var(--primary-red);
+            background-color: var(--secondary-blue);
             border: none;
             border-top-right-radius: 0.5rem;
             border-bottom-right-radius: 0.5rem;
@@ -400,7 +418,7 @@
             border: 1px solid var(--gray-300);
             border-radius: 0.5rem;
             background-color: var(--white);
-            color: var(--primary-red);
+            color: var(--grey-600);
             font-size: 0.875rem;
             cursor: pointer;
             width: 100%;
@@ -416,7 +434,7 @@
         .dropdown-chevron {
             width: 16px;
             height: 16px;
-            color: var(--primary-red);
+            color: var(--grey-600);
             transition: transform 0.2s ease;
         }
 
@@ -496,13 +514,25 @@
         }
 
         .filter-button.question {
-            background-color: var(--primary-red);
-            color: var(--white);
+            border: 2px solid var(--secondary-blue);
+            background-color: var(--white);
+            color: var(--grey-600);
+        }
+
+        .filter-button.question:hover {
+            background-color: rgba(38, 119, 184, 0.1);
+            color: var(--secondary-blue);
         }
 
         .filter-button.quiz {
-            background-color: var(--secondary-blue);
-            color: var(--white);
+            border: 2px solid var(--primary-red);
+            color: var(--grey-600);
+            text-decoration: none;
+        }
+
+        .filter-button.quiz:hover {
+            background-color: rgba(225, 30, 45, 0.1);
+            color: var(--primary-red);
         }
 
         .filter-button:hover {
@@ -753,8 +783,49 @@
             font-weight: 500;
         }
 
+        .mobile-search-toggle {
+            display: none; /* Hidden by default */
+            background: var(--secondary-blue);
+            border: none;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
+
+            .filter-bar.search-active {
+                flex-wrap: wrap;
+                padding: 0 1rem;
+            }
+
+            .filter-bar.search-active > *:not(.search-box) {
+                display: none;
+            }
+
+            .filter-bar.search-active .search-box {
+                display: flex;
+                flex: 1 0 100%;
+                order: -1;
+                position: static;
+                visibility: visible;
+                transform: none;
+                min-width: 100%;
+                padding: 0;
+            }
+
+            .filter-bar.search-active .search-close {
+                display: flex;
+            }
+            .mobile-search-toggle {
+                display: flex; /* Show on mobile */
+            }
+            .main-container {
+                flex-direction: column;
+                overflow: hidden;
+            }
             .youtube-sidebar {
                 transform: translateX(-100%);
                 transition: transform 0.3s ease, width 0.3s ease;
@@ -775,28 +846,29 @@
 
             /* Hide desktop header on mobile */
             .top-header {
-                display: none;
+                display: flex;
             }
 
             /* Show mobile header */
             .mobile-header {
-                display: block;
-                z-index: 1001; /* Ensure it appears above sidebar */
+                display: flex;
+                padding: 10px 15px;
             }
 
             /* Filter bar layout */
             .filter-bar {
-                flex-direction: column;
+                flex-direction: row;
                 gap: 12px;
                 padding: 16px;
                 position: relative;
+                overflow: hidden;
             }
 
             /* Dropdowns row */
             .dropdowns-row {
                 display: flex;
                 gap: 12px;
-                width: 100%;
+                width: auto;
             }
 
             .dropdowns-row .custom-dropdown {
@@ -806,7 +878,7 @@
 
             /* Hide sidebar toggle in sidebar on mobile */
             .sidebar-toggle-btn {
-                display: none;
+                display: flex;
             }
             .sidebar-logo {
                 justify-content: center;
@@ -814,10 +886,23 @@
 
             /* Search box initially hidden on mobile */
             .search-box {
-                display: none;
-                order: 0;
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 100;
                 min-width: 100%;
-                margin-bottom: 12px;
+                visibility: hidden;
+                transform: translateY(-10px);
+                background: var(--white);
+                padding: 0.75rem;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+
+            .search-box.active {
+                visibility: visible;
+                transform: translateY(0);
+                padding: 0;
             }
 
             .search-box.mobile-visible {
@@ -943,9 +1028,8 @@
         }
 
         .mobile-header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+
+            gap: 10px;
         }
 
         .mobile-hamburger {
@@ -978,7 +1062,7 @@
         }
 
         .mobile-logo img {
-            height: 28px;
+            height: 24px;
         }
 
         .mobile-logo .sidebar-brand {
@@ -1145,7 +1229,6 @@
                         </button>
                         <div class="mobile-logo">
                             <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
-                            <span class="sidebar-brand">DigiLearn</span>
                         </div>
                     </div>
                     <div class="mobile-header-right">
@@ -1190,11 +1273,23 @@
             
             <!-- Search/Filter Bar -->
             <div class="filter-bar">
+                <!-- Mobile Search Toggle Button (visible only on mobile) -->
+                <button class="mobile-search-toggle" id="mobileSearchToggle">
+                    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </button>
                 <div class="search-box" id="mobileSearchBox">
                     <input type="text" class="search-input" placeholder="Search">
                     <button class="search-button">
                         <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </button>
+                    <!-- Close button for mobile search -->
+                    <button class="search-close" id="searchClose">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
@@ -1356,24 +1451,73 @@
             initializeVideoCards();
         });
 
-        // Mobile UI enhancements
+        // Add this new function to prevent scrolling on body when sidebar is open
+        function preventBodyScroll() {
+        const youtubeSidebar = document.getElementById('youtubeSidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        
+        // Disable body scroll when mobile sidebar is open
+        if (youtubeSidebar && sidebarOverlay) {
+            youtubeSidebar.addEventListener('mouseenter', function() {
+            if (window.innerWidth <= 768 && this.classList.contains('mobile-open')) {
+                document.body.style.overflow = 'hidden';
+            }
+            });
+            
+            youtubeSidebar.addEventListener('mouseleave', function() {
+            document.body.style.overflow = '';
+            });
+            
+            sidebarOverlay.addEventListener('click', function() {
+            document.body.style.overflow = '';
+            });
+        }
+        }
+        
+        // Call the new function
+        preventBodyScroll();
+
+        // Enhanced Mobile UI with search functionality
         function initializeMobileUI() {
             const mobileSearchToggle = document.getElementById('mobileSearchToggle');
             const mobileSearchBox = document.getElementById('mobileSearchBox');
+            const searchInput = mobileSearchBox.querySelector('.search-input');
+            const searchClose = document.getElementById('searchClose');
+            const filterBar = document.querySelector('.filter-bar');
             
             if (mobileSearchToggle && mobileSearchBox) {
                 mobileSearchToggle.addEventListener('click', function() {
-                    mobileSearchBox.classList.toggle('mobile-visible');
-                    
-                    // Focus search input when visible
-                    if (mobileSearchBox.classList.contains('mobile-visible')) {
-                        setTimeout(() => {
-                            const searchInput = mobileSearchBox.querySelector('.search-input');
-                            if (searchInput) searchInput.focus();
-                        }, 100);
+                    filterBar.classList.toggle('search-active');
+                    setTimeout(() => {
+                        searchInput.focus();
+                    }, 100);
+                });
+            }
+
+            if (searchClose) {
+                searchClose.addEventListener('click', function() {
+                    if (searchInput.value) {
+                        // Clear input if it has content
+                        searchInput.value = '';
+                        searchInput.focus();
+                    } else {
+                        // Close search if input is empty
+                        filterBar.classList.remove('search-active');
                     }
                 });
             }
+
+            // Close search when pressing Escape
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && filterBar.classList.contains('search-active')) {
+                    if (searchInput.value) {
+                        searchInput.value = '';
+                        searchInput.focus();
+                    } else {
+                    filterBar.classList.remove('search-active');
+                    }
+                }
+            });
 
             // Close search when clicking outside
             document.addEventListener('click', function(e) {
