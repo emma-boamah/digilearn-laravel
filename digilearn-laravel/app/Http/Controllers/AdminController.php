@@ -122,7 +122,10 @@ class AdminController extends Controller
             'new_this_week' => User::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
         ];
 
-        return view('admin.users.index', compact('users', 'userStats'));
+        // Get distinct grades for filter
+        $levels = User::distinct('grade')->pluck('grade')->filter()->toArray();
+
+        return view('admin.users.index', compact('users', 'userStats', 'levels'));
     }
 
     /**

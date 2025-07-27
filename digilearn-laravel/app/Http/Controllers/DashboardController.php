@@ -96,6 +96,9 @@ class DashboardController extends Controller
                 ->with('warning', 'Please upgrade your subscription to access this content.');
         }
 
+        // Update user's grade
+        Auth::user()->update(['grade' => $groupId]);
+
         // Store selected level group in session
         session(['selected_level_group' => $groupId]);
 

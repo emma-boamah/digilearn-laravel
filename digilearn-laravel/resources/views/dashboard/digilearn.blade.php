@@ -375,8 +375,8 @@
 
         .search-input:focus {
             outline: none;
-            border-color: var(--primary-red);
-            box-shadow: 0 0 0 3px rgba(225, 30, 45, 0.1);
+            border-color: var(--secondary-blue);
+            box-shadow: 0 0 0 3px rgba(38, 119, 184, 0.1);
         }
 
         .search-button {
@@ -1116,17 +1116,6 @@
     <div class="main-container">
         <!-- YouTube-style Sidebar -->
         <aside class="youtube-sidebar" id="youtubeSidebar">
-            <!-- <div class="sidebar-header">
-                <button class="sidebar-toggle-btn" id="sidebarToggle">
-                    <svg class="hamburger-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                    </svg>
-                </button>
-                <div class="sidebar-logo">
-                    <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
-                </div>
-            </div> -->
-            
             <div class="sidebar-content">
                 <div class="sidebar-section">
                     <div class="sidebar-section-title">Main</div>
