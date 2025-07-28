@@ -1327,11 +1327,12 @@
             }
             
             .right-sidebar {
-                order: -1;
+                order: 0; /* Reset to natural order */
             }
 
+            /* Stack action buttons vertically */
             .action-buttons-grid {
-                grid-template-columns: repeat(6, 1fr);
+                grid-template-columns: repeat(3, 1fr);
             }
 
             .notes-editor-header {
@@ -1363,7 +1364,10 @@
                 max-width: none;
             }
             
+            /* Mobile-specific reorganization */
             .main-layout {
+                display: flex;
+                flex-direction: column;
                 padding: 0.25rem;
                 gap: 1rem;
             }
@@ -1372,13 +1376,43 @@
                 font-size: 1.5rem;
             }
 
-            .lesson-info-card,
-            .comments-card {
+            .lesson-info-card {
+                order: 2;
                 padding: 1.5rem;
             }
 
+            /* Adjust lesson actions */
+            .lesson-actions {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .action-btn-primary, 
+            .action-btn-secondary {
+                width: 100%;
+                justify-content: center;
+            }
+
             .action-buttons-grid {
-                grid-template-columns: repeat(3, 1fr);
+                order: 3;
+                margin: 0.5rem 0 1.5rem;
+            }
+
+            /* Comments section fourth */
+            .comments-card {
+                order: 4;
+            }
+
+            /* Related videos last */
+            .related-videos-card {
+                order: 5;
+            }
+
+            /* Hide the right sidebar container */
+            .right-sidebar {
+                display: contents; /* Children become direct grid children */
+                width: 100%;
+                min-width: unset;
             }
 
             .collapsible-sidebar {
@@ -1389,6 +1423,11 @@
             .video-thumbnail {
                 width: 120px;
                 height: 68px;
+            }
+
+            /* Video first */
+            .video-container {
+                order: 1;
             }
 
             .share-modal {
@@ -1440,6 +1479,19 @@
 
             .comment {
                 padding: 1rem;
+            }
+
+            /* Adjust video item layout */
+            .video-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .video-thumbnail {
+                width: 100%;
+                height: auto;
+                aspect-ratio: 16/9;
+                margin-bottom: 0.75rem;
             }
         }
     </style>
