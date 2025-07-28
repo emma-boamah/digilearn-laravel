@@ -71,6 +71,14 @@
             background-color: rgba(255, 255, 255, 0.95);
         }
 
+        /* New  sticky video styles */
+        .sticky-video-section {
+            position: sticky;
+            top: 112px; /* Height of top header + filter bar */
+            z-index: 100; /* Below sidebar but above content */
+            transition: all 0.3s ease;
+        }
+
         .header-left {
             display: flex;
             align-items: center;
@@ -420,7 +428,6 @@
 
         /* Enhanced Video Container - Much Larger */
         .video-container {
-            position: relative;
             aspect-ratio: 16/9;
             background-color: #000;
             border-radius: 1rem;
@@ -561,6 +568,14 @@
             cursor: pointer;
             color: var(--gray-600);
             padding: 0.25rem;
+        }
+
+        .comments-dropdown .dropdown-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .comments-dropdown.open .dropdown-icon {
+            transform: rotate(180deg);
         }
 
         .header-actions {
@@ -1325,6 +1340,10 @@
                 grid-template-columns: 1fr;
                 gap: 1.5rem;
             }
+
+            .sticky-video-section {
+                top: 112px; /* Same as desktop for tablet */
+            }
             
             .right-sidebar {
                 order: 0; /* Reset to natural order */
@@ -1348,28 +1367,22 @@
         }
 
         @media (max-width: 768px) {
-            .top-header {
-                padding: 0.75rem 0.25rem;
-            }
 
-            .filter-bar {
-                padding: 1rem;
-                flex-direction: column;
-                align-items: stretch;
-                gap: 1rem;
-            }
-            
-            .search-box {
-                min-width: auto;
-                max-width: none;
-            }
-            
-            /* Mobile-specific reorganization */
             .main-layout {
                 display: flex;
                 flex-direction: column;
-                padding: 0.25rem;
+                padding: 0;
+                margin: 0;
                 gap: 1rem;
+            }
+            .top-header, .filter-bar {
+                display: none;
+            }
+            
+            /* Mobile-specific reorganization */
+            .sticky-video-section {
+                top: 0;
+                z-index: 1000; /* Higher on mobile */
             }
             
             .lesson-title {
@@ -1383,14 +1396,16 @@
 
             /* Adjust lesson actions */
             .lesson-actions {
-                flex-direction: column;
+                flex-direction: row !important;
                 gap: 0.75rem;
             }
 
             .action-btn-primary, 
             .action-btn-secondary {
-                width: 100%;
+                flex: 1;
+                min-width: auto;
                 justify-content: center;
+                padding: 0.75rem 1rem;
             }
 
             .action-buttons-grid {
@@ -1427,7 +1442,7 @@
 
             /* Video first */
             .video-container {
-                order: 1;
+                border-radius: 0;
             }
 
             .share-modal {
@@ -1662,56 +1677,59 @@
     <div class="main-layout">
         <!-- Enhanced Left Content -->
         <div class="left-content">
-            <!-- Enhanced Video Player -->
-            <div class="video-container">
-                <video controls class="video-player" poster="{{ secure_asset($lesson['thumbnail'] ?? '') }}">
-                    <source src="{{ secure_asset($lesson['video_url'] ?? '') }}" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-            </div>
-            
-            <!-- Enhanced Lesson Info -->
-            <div class="lesson-info-card">
-                <h1 class="lesson-title">{{ $lesson['title'] ?? 'Living and Non Living organism' }}</h1>
-                
-                <div class="lesson-meta">
-                    <div class="lesson-meta-item">
-                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                        </svg>
-                        {{ $lesson['subject'] ?? 'Science' }}
-                    </div>
-                    <div class="lesson-meta-item">
-                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                        </svg>
-                        {{ $lesson['instructor'] ?? 'Prof. Aboagye' }}
-                    </div>
-                    <div class="lesson-meta-item">
-                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0h6m-6 0l-2 9a2 2 0 002 2h6a2 2 0 002-2l-2-9"/>
-                        </svg>
-                        {{ $lesson['year'] ?? '2022' }}
-                    </div>
+            <!-- Sticky Video Section -->
+            <div class="sticky-video-section">
+                <!-- Enhanced Video Player -->
+                <div class="video-container">
+                    <video controls class="video-player" poster="{{ secure_asset($lesson['thumbnail'] ?? '') }}">
+                        <source src="{{ secure_asset($lesson['video_url'] ?? '') }}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
                 </div>
                 
-                <div class="lesson-actions">
-                    <button class="action-btn-primary">
-                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                        </svg>
-                        Save Lesson
-                    </button>
-                    <button class="action-btn-secondary">
-                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-                            <circle cx="18" cy="5" r="3"/>
-                            <circle cx="6" cy="12" r="3"/>
-                            <circle cx="18" cy="19" r="3"/>
-                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                        </svg>
-                        Share
-                    </button>
+                <!-- Enhanced Lesson Info -->
+                <div class="lesson-info-card">
+                    <h1 class="lesson-title">{{ $lesson['title'] ?? 'Living and Non Living organism' }}</h1>
+                    
+                    <div class="lesson-meta">
+                        <div class="lesson-meta-item">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                            </svg>
+                            {{ $lesson['subject'] ?? 'Science' }}
+                        </div>
+                        <div class="lesson-meta-item">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                            {{ $lesson['instructor'] ?? 'Prof. Aboagye' }}
+                        </div>
+                        <div class="lesson-meta-item">
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0h6m-6 0l-2 9a2 2 0 002 2h6a2 2 0 002-2l-2-9"/>
+                            </svg>
+                            {{ $lesson['year'] ?? '2022' }}
+                        </div>
+                    </div>
+                    
+                    <div class="lesson-actions">
+                        <button class="action-btn-primary">
+                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                            </svg>
+                            Save Lesson
+                        </button>
+                        <button class="action-btn-secondary">
+                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                                <circle cx="18" cy="5" r="3"/>
+                                <circle cx="6" cy="12" r="3"/>
+                                <circle cx="18" cy="19" r="3"/>
+                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                            </svg>
+                            Share
+                        </button>
+                    </div>
                 </div>
             </div>
             
@@ -1721,8 +1739,8 @@
                     <div class="comments-header-left">
                         <span class="comments-count">
                             {{ count($comments ?? []) }} Comments
-                            <button class="comments-dropdown">
-                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                            <button class="comments-dropdown" id="commentsToggleBtn">
+                                <svg class="dropdown-icon" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M19 9l-7 7-7-7"/>
                                 </svg>
                             </button>
@@ -1735,7 +1753,7 @@
                     <input type="text" class="comment-input" placeholder="Add a comment..." />
                 </div>
                 
-                <div class="comments-list">
+                <div class="comments-list" id="commentsList">
                     <!-- Sample comments to match screenshot -->
                     @for($i = 1; $i <= 7; $i++)
                     <div class="comment">
@@ -1978,6 +1996,9 @@
             initializeVideoItems();
             initializeKeyboardShortcuts();
             initializeNavigation();
+            initializeCommentsToggle();
+            updateStickyTopOffset();
+            window.addEventListener('resize', updateStickyTopOffset);
         });
 
         // Enhanced sidebar functionality
@@ -2042,6 +2063,24 @@
             });
         }
 
+        function initializeCommentsToggle() {
+            const commentsToggleBtn = document.getElementById('commentsToggleBtn');
+            const commentsList = document.getElementById('commentsList');
+            
+            if (commentsToggleBtn && commentsList) {
+                // On mobile, collapse by default
+                if (window.innerWidth <= 768) {
+                    commentsList.classList.add('hidden');
+                    commentsToggleBtn.classList.add('open');
+                }
+
+                commentsToggleBtn.addEventListener('click', function() {
+                this.classList.toggle('open');
+                commentsList.classList.toggle('hidden');
+                });
+            }
+        }
+
         // Enhanced action button functionality
         function initializeActionButtons() {
             const actionButtons = document.querySelectorAll('.action-btn');
@@ -2083,24 +2122,43 @@
 
         // Add to initializeVideoItems()
         function initializeVideoItems() {
-        // Related video items
-        document.querySelectorAll('.related-video-item').forEach(item => {
-            item.addEventListener('click', function() {
-            const url = this.dataset.href;
-            // Visual feedback
-            this.style.opacity = '0.7';
-            this.style.transform = 'scale(0.98)';
-            // Navigation
-            setTimeout(() => window.location.href = url, 200);
+            // Related video items
+            document.querySelectorAll('.related-video-item').forEach(item => {
+                item.addEventListener('click', function() {
+                const url = this.dataset.href;
+                // Visual feedback
+                this.style.opacity = '0.7';
+                this.style.transform = 'scale(0.98)';
+                // Navigation
+                setTimeout(() => window.location.href = url, 200);
+                });
             });
-        });
+        }
+
+        //Function to handle dynamic top offset
+        function updateStickyTopOffset() {
+            const stickySection = document.querySelector('.sticky-video-section');
+            if (!stickySection) return;
+            
+            if (window.innerWidth > 768) {
+                const topHeader = document.querySelector('.top-header');
+                const filterBar = document.querySelector('.filter-bar');
+                
+                if (topHeader && filterBar) {
+                    const topHeaderHeight = topHeader.offsetHeight;
+                    const filterBarHeight = filterBar.offsetHeight;
+                    stickySection.style.top = `${topHeaderHeight + filterBarHeight}px`;
+                }
+            } else {
+                stickySection.style.top = '0';
+            }
         }
 
         // Add new function for back button
         function initializeNavigation() {
-        document.getElementById('backButton').addEventListener('click', () => {
-            history.back();
-        });
+            document.getElementById('backButton').addEventListener('click', () => {
+                history.back();
+            });
         }
 
         // Enhanced Rich Text Editor with Quill.js
