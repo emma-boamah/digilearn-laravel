@@ -73,9 +73,7 @@
 
         /* New  sticky video styles */
         .sticky-video-section {
-            position: sticky;
-            top: 112px; /* Height of top header + filter bar */
-            z-index: 100; /* Below sidebar but above content */
+            position: relative;
             transition: all 0.3s ease;
         }
 
@@ -533,6 +531,7 @@
 
         /* Enhanced Comments Section - Updated to match screenshot */
         .comments-card {
+            /* display: block; */
             background-color: var(--white);
             border-radius: 1rem;
             padding: 1.5rem;
@@ -750,9 +749,8 @@
             justify-content: center;
             gap: 0.5rem;
             padding: 1rem 1.5rem;
-            background-color: var(--primary-red);
-            color: var(--white);
-            border: none;
+            border: 2px solid var(--secondary-blue);
+            color: var(--gray-600);
             border-radius: 0.5rem;
             font-size: 0.875rem;
             font-weight: 600;
@@ -762,7 +760,7 @@
         }
 
         .action-btn:hover {
-            background-color: var(--primary-red-hover);
+            border-color: var(--secondary-blue-hover);
             transform: translateY(-1px);
             box-shadow: var(--shadow-md);
         }
@@ -1354,6 +1352,11 @@
                 grid-template-columns: repeat(3, 1fr);
             }
 
+            .comments-card{
+                display: block;
+                order: 2;
+            }
+
             .notes-editor-header {
                 flex-direction: column;
                 gap: 1rem;
@@ -1381,6 +1384,7 @@
             
             /* Mobile-specific reorganization */
             .sticky-video-section {
+                position: sticky;
                 top: 0;
                 z-index: 1000; /* Higher on mobile */
             }
@@ -1416,6 +1420,7 @@
             /* Comments section fourth */
             .comments-card {
                 order: 4;
+                display: block;
             }
 
             /* Related videos last */
@@ -2066,17 +2071,27 @@
         function initializeCommentsToggle() {
             const commentsToggleBtn = document.getElementById('commentsToggleBtn');
             const commentsList = document.getElementById('commentsList');
-            
-            if (commentsToggleBtn && commentsList) {
-                // On mobile, collapse by default
+
+            function updateCommentsVisibility() {
                 if (window.innerWidth <= 768) {
                     commentsList.classList.add('hidden');
                     commentsToggleBtn.classList.add('open');
+                } else {
+                    commentsList.classList.remove('hidden');
+                    commentsToggleBtn.classList.remove('open');
                 }
+            }
+            
+            if (commentsToggleBtn && commentsList) {
+                // Set initial state
+                updateCommentsVisibility();
+
+                // Update on resize
+                window.addEventListener('resize', updateCommentsVisibility);
 
                 commentsToggleBtn.addEventListener('click', function() {
-                this.classList.toggle('open');
-                commentsList.classList.toggle('hidden');
+                    this.classList.toggle('open');
+                    commentsList.classList.toggle('hidden');
                 });
             }
         }
@@ -2133,25 +2148,6 @@
                 setTimeout(() => window.location.href = url, 200);
                 });
             });
-        }
-
-        //Function to handle dynamic top offset
-        function updateStickyTopOffset() {
-            const stickySection = document.querySelector('.sticky-video-section');
-            if (!stickySection) return;
-            
-            if (window.innerWidth > 768) {
-                const topHeader = document.querySelector('.top-header');
-                const filterBar = document.querySelector('.filter-bar');
-                
-                if (topHeader && filterBar) {
-                    const topHeaderHeight = topHeader.offsetHeight;
-                    const filterBarHeight = filterBar.offsetHeight;
-                    stickySection.style.top = `${topHeaderHeight + filterBarHeight}px`;
-                }
-            } else {
-                stickySection.style.top = '0';
-            }
         }
 
         // Add new function for back button
