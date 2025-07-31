@@ -71,10 +71,10 @@
             background-color: rgba(255, 255, 255, 0.95);
         }
 
-        /* New  sticky video styles */
+        /* Enhanced sticky video styles with scroll-triggered transitions */
         .sticky-video-section {
             position: relative;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .header-left {
@@ -424,14 +424,14 @@
             gap: 1.5rem;
         }
 
-        /* Enhanced Video Container - Much Larger */
+        /* Enhanced Video Container with smooth transitions */
         .video-container {
             aspect-ratio: 16/9;
             background-color: #000;
             border-radius: 1rem;
             overflow: hidden;
             box-shadow: var(--shadow-lg);
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .video-container:hover {
@@ -444,13 +444,14 @@
             object-fit: cover;
         }
 
-        /* Enhanced Lesson Info Card */
+        /* Enhanced Lesson Info Card with smooth transitions */
         .lesson-info-card {
             background-color: var(--white);
             border-radius: 1rem;
             padding: 2rem;
             box-shadow: var(--shadow-sm);
             border: 1px solid var(--gray-200);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .lesson-title {
@@ -460,6 +461,7 @@
             margin-bottom: 0.75rem;
             line-height: 1.3;
             letter-spacing: -0.025em;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .lesson-meta {
@@ -470,6 +472,7 @@
             font-size: 0.875rem;
             margin-bottom: 1.5rem;
             flex-wrap: wrap;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .lesson-meta-item {
@@ -486,6 +489,7 @@
             display: flex;
             gap: 1rem;
             flex-wrap: wrap;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .action-btn-primary {
@@ -493,7 +497,7 @@
             align-items: center;
             gap: 0.75rem;
             padding: 0.875rem 1.5rem;
-            background: linear-gradient(135deg, var(--primary-red), var(--primary-red-hover));
+            background: linear-gradient(135deg, var(--secondary-blue), var(--secondary-blue-hover));
             color: var(--white);
             border: none;
             border-radius: 0.75rem;
@@ -529,9 +533,8 @@
             background-color: var(--gray-50);
         }
 
-        /* Enhanced Comments Section - Updated to match screenshot */
+        /* Enhanced Comments Section */
         .comments-card {
-            /* display: block; */
             background-color: var(--white);
             border-radius: 1rem;
             padding: 1.5rem;
@@ -785,7 +788,7 @@
             justify-content: center;
             gap: 0.5rem;
             padding: 0.75rem 1.5rem;
-            background-color: var(--primary-red);
+            background-color: var(--secondary-blue);
             color: var(--white);
             border: none;
             border-radius: 0.5rem;
@@ -797,7 +800,7 @@
         }
 
         .add-notes-btn:hover {
-            background-color: var(--primary-red-hover);
+            background-color: var(--secondary-blue-hover);
             transform: translateY(-1px);
             box-shadow: var(--shadow-md);
         }
@@ -1338,10 +1341,6 @@
                 grid-template-columns: 1fr;
                 gap: 1.5rem;
             }
-
-            .sticky-video-section {
-                top: 112px; /* Same as desktop for tablet */
-            }
             
             .right-sidebar {
                 order: 0; /* Reset to natural order */
@@ -1369,24 +1368,65 @@
             }
         }
 
+        /* Mobile responsive with enhanced scroll-triggered animations */
         @media (max-width: 768px) {
-
             .main-layout {
                 display: flex;
                 flex-direction: column;
                 padding: 0;
                 margin: 0;
                 gap: 1rem;
+                /* Enhanced spacing to prevent content hiding */
+                padding-top: 320px; /* Increased for better spacing */
             }
+            
             .top-header, .filter-bar {
                 display: none;
             }
             
-            /* Mobile-specific reorganization */
+            /* Enhanced mobile sticky video section with scroll animations */
             .sticky-video-section {
-                position: sticky;
+                position: fixed;
                 top: 0;
-                z-index: 1000; /* Higher on mobile */
+                left: 0;
+                right: 0;
+                z-index: 1000;
+                background-color: var(--white);
+                box-shadow: var(--shadow-lg);
+                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                overflow: hidden;
+            }
+
+            /* Compact state when scrolled */
+            .sticky-video-section.compact {
+                box-shadow: var(--shadow-xl);
+            }
+
+            .sticky-video-section.compact .video-container {
+                aspect-ratio: 16/9;
+                transform: scale(0.4);
+                transform-origin: top left;
+                border-radius: 0.5rem;
+                margin-bottom: -60%;
+            }
+
+            .sticky-video-section.compact .lesson-info-card {
+                padding: 1rem 1rem 1rem 45%;
+                margin-top: -10px;
+            }
+
+            .sticky-video-section.compact .lesson-title {
+                font-size: 1rem;
+                margin-bottom: 0.25rem;
+                line-height: 1.2;
+            }
+
+            .sticky-video-section.compact .lesson-meta {
+                display: none;
+            }
+
+            .sticky-video-section.compact .lesson-actions {
+                display: none;
             }
             
             .lesson-title {
@@ -1414,18 +1454,20 @@
 
             .action-buttons-grid {
                 order: 3;
-                margin: 0.5rem 0 1.5rem;
+                margin: 1rem 0 1.5rem;
             }
 
-            /* Comments section fourth */
+            /* Comments section with better spacing */
             .comments-card {
                 order: 4;
                 display: block;
+                margin-top: 1rem;
             }
 
             /* Related videos last */
             .related-videos-card {
                 order: 5;
+                margin-top: 1rem;
             }
 
             /* Hide the right sidebar container */
@@ -1488,6 +1530,11 @@
         }
 
         @media (max-width: 480px) {
+            .main-layout {
+                /* Enhanced spacing for smaller screens */
+                padding-top: 300px;
+            }
+            
             .lesson-actions {
                 flex-direction: column;
             }
@@ -1512,6 +1559,15 @@
                 height: auto;
                 aspect-ratio: 16/9;
                 margin-bottom: 0.75rem;
+            }
+
+            /* Compact state adjustments for smaller screens */
+            .sticky-video-section.compact .lesson-info-card {
+                padding: 0.75rem 0.75rem 0.75rem 42%;
+            }
+
+            .sticky-video-section.compact .lesson-title {
+                font-size: 0.875rem;
             }
         }
     </style>
@@ -1645,6 +1701,7 @@
     <div class="filter-bar">
         <button class="back-button" id="backButton">
             <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="roun  viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
         </button>
@@ -1682,8 +1739,8 @@
     <div class="main-layout">
         <!-- Enhanced Left Content -->
         <div class="left-content">
-            <!-- Sticky Video Section -->
-            <div class="sticky-video-section">
+            <!-- Sticky Video Section with scroll-triggered animations -->
+            <div class="sticky-video-section" id="stickyVideoSection">
                 <!-- Enhanced Video Player -->
                 <div class="video-container">
                     <video controls class="video-player" poster="{{ secure_asset($lesson['thumbnail'] ?? '') }}">
@@ -1805,7 +1862,6 @@
                     </svg>
                     Document
                 </button>
-                <!-- Update the PPT button to link to PPT viewer -->
                 <button class="action-btn action-navigate-btn" data-href="{{ route('dashboard.lesson.document', ['lessonId' => $lesson['id'], 'type' => 'ppt']) }}">
                     <svg fill="currentColor" viewBox="0 0 24 24">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
@@ -1988,6 +2044,11 @@
             lastSaved: null
         };
 
+        // Scroll tracking variables for mobile video section
+        let lastScrollY = 0;
+        let isScrollingDown = false;
+        let scrollThreshold = 100; // Pixels to scroll before triggering compact mode
+
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize all functionality
             initializeSidebar();
@@ -2002,9 +2063,39 @@
             initializeKeyboardShortcuts();
             initializeNavigation();
             initializeCommentsToggle();
-            updateStickyTopOffset();
-            window.addEventListener('resize', updateStickyTopOffset);
+            initializeMobileVideoScroll();
         });
+
+        // Enhanced mobile video scroll functionality
+        function initializeMobileVideoScroll() {
+            if (window.innerWidth <= 768) {
+                const stickyVideoSection = document.getElementById('stickyVideoSection');
+                
+                window.addEventListener('scroll', function() {
+                    const currentScrollY = window.scrollY;
+                    isScrollingDown = currentScrollY > lastScrollY;
+                    
+                    // Add compact class when scrolling down past threshold
+                    if (currentScrollY > scrollThreshold && isScrollingDown) {
+                        stickyVideoSection.classList.add('compact');
+                    } 
+                    // Remove compact class when scrolling back to top
+                    else if (currentScrollY <= scrollThreshold) {
+                        stickyVideoSection.classList.remove('compact');
+                    }
+                    
+                    lastScrollY = currentScrollY;
+                }, { passive: true });
+            }
+            
+            // Re-initialize on window resize
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    const stickyVideoSection = document.getElementById('stickyVideoSection');
+                    stickyVideoSection.classList.remove('compact');
+                }
+            });
+        }
 
         // Enhanced sidebar functionality
         function initializeSidebar() {
@@ -2133,7 +2224,6 @@
                 });
             });
         }
-
 
         // Add to initializeVideoItems()
         function initializeVideoItems() {
@@ -2601,23 +2691,6 @@
                     }, 300);
                 });
             }
-        }
-
-        // Enhanced video item interactions
-        function initializeVideoItems() {
-            const videoItems = document.querySelectorAll('.video-item');
-            videoItems.forEach(item => {
-                item.addEventListener('click', function() {
-                    // Add loading state for navigation
-                    this.style.opacity = '0.7';
-                    this.style.transform = 'scale(0.98)';
-                    
-                    setTimeout(() => {
-                        this.style.opacity = '';
-                        this.style.transform = '';
-                    }, 200);
-                });
-            });
         }
 
         // Keyboard shortcuts
