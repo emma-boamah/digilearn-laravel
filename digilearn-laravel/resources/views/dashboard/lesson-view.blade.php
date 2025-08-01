@@ -1376,7 +1376,7 @@
                 padding: 1rem 0.5rem;
                 margin: 0;
                 gap: 1.5rem;
-                /* REMOVED: No more padding-top needed! */
+                overflow: hidden;
             }
             
             .top-header, .filter-bar {
