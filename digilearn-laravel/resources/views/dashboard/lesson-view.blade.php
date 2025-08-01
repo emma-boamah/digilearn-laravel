@@ -790,7 +790,7 @@
             padding: 0.75rem 1.5rem;
             background-color: var(--secondary-blue);
             color: var(--white);
-            border: none;
+            border: 2px solid var(--secondary-blue);
             border-radius: 0.5rem;
             font-size: 0.875rem;
             font-weight: 600;
