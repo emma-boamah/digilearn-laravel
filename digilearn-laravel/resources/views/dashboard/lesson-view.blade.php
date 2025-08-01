@@ -1368,36 +1368,33 @@
             }
         }
 
-        /* Mobile responsive with enhanced scroll-triggered animations */
+        /* FIXED: Mobile responsive with NATURAL BLOCK FLOW - No overlapping! */
         @media (max-width: 768px) {
             .main-layout {
                 display: flex;
                 flex-direction: column;
-                padding: 0;
+                padding: 1rem 0.5rem;
                 margin: 0;
-                gap: 1rem;
-                /* Enhanced spacing to prevent content hiding */
-                padding-top: 320px; /* Increased for better spacing */
+                gap: 1.5rem;
+                /* REMOVED: No more padding-top needed! */
             }
             
             .top-header, .filter-bar {
                 display: none;
             }
             
-            /* Enhanced mobile sticky video section with scroll animations */
+            /* FIXED: Natural sticky positioning - no overlapping */
             .sticky-video-section {
-                position: fixed;
+                position: sticky;
                 top: 0;
-                left: 0;
-                right: 0;
-                z-index: 1000;
+                z-index: 100;
                 background-color: var(--white);
                 box-shadow: var(--shadow-lg);
                 transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-                overflow: hidden;
+                margin-bottom: 1rem;
             }
 
-            /* Compact state when scrolled */
+            /* FIXED: Simple compact state - video only */
             .sticky-video-section.compact {
                 box-shadow: var(--shadow-xl);
             }
@@ -1410,22 +1407,8 @@
                 margin-bottom: -60%;
             }
 
+            /* FIXED: Hide lesson info completely in compact mode */
             .sticky-video-section.compact .lesson-info-card {
-                padding: 1rem 1rem 1rem 45%;
-                margin-top: -10px;
-            }
-
-            .sticky-video-section.compact .lesson-title {
-                font-size: 1rem;
-                margin-bottom: 0.25rem;
-                line-height: 1.2;
-            }
-
-            .sticky-video-section.compact .lesson-meta {
-                display: none;
-            }
-
-            .sticky-video-section.compact .lesson-actions {
                 display: none;
             }
             
@@ -1434,7 +1417,6 @@
             }
 
             .lesson-info-card {
-                order: 2;
                 padding: 1.5rem;
             }
 
@@ -1453,20 +1435,17 @@
             }
 
             .action-buttons-grid {
-                order: 3;
                 margin: 1rem 0 1.5rem;
             }
 
-            /* Comments section with better spacing */
+            /* FIXED: Comments section follows naturally - no overlap! */
             .comments-card {
-                order: 4;
                 display: block;
-                margin-top: 1rem;
+                margin-top: 0; /* Natural spacing */
             }
 
-            /* Related videos last */
+            /* Related videos follow naturally */
             .related-videos-card {
-                order: 5;
                 margin-top: 1rem;
             }
 
@@ -1531,8 +1510,7 @@
 
         @media (max-width: 480px) {
             .main-layout {
-                /* Enhanced spacing for smaller screens */
-                padding-top: 300px;
+                padding: 1rem 0.25rem;
             }
             
             .lesson-actions {
@@ -1561,13 +1539,10 @@
                 margin-bottom: 0.75rem;
             }
 
-            /* Compact state adjustments for smaller screens */
-            .sticky-video-section.compact .lesson-info-card {
-                padding: 0.75rem 0.75rem 0.75rem 42%;
-            }
-
-            .sticky-video-section.compact .lesson-title {
-                font-size: 0.875rem;
+            /* FIXED: Smaller compact video for very small screens */
+            .sticky-video-section.compact .video-container {
+                transform: scale(0.35);
+                margin-bottom: -65%;
             }
         }
     </style>
@@ -1701,7 +1676,6 @@
     <div class="filter-bar">
         <button class="back-button" id="backButton">
             <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="roun  viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
         </button>
@@ -1713,6 +1687,8 @@
             <input type="text" class="search-input" placeholder="Search lessons, subjects, or topics...">
         </div>
         
+        <div
+
         <div class="filter-dropdown">
             <button class="dropdown-button">
                 <span>{{ ucwords(str_replace('-', ' ', $selectedLevel ?? 'Level')) }}</span>
