@@ -86,9 +86,14 @@
                     </div>
                 </div>
 
+                <a href="{{ route('admin.revenue') }}" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.revenue*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
+                    <i class="fas fa-dollar-sign w-5 h-5 mr-3"></i>
+                    <span class="sidebar-link-text">Revenue Analytics</span>
+                </a>
+
                 <a href="#" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.analytics*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
                     <i class="fas fa-chart-line w-5 h-5 mr-3"></i>
-                    <span class="sidebar-link-text">Reports & Analytics</span>
+                    <span class="sidebar-link-text">Reports & Web Analytics</span>
                 </a>
 
                 <a href="#" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.security*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">

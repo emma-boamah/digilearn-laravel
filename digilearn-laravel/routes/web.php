@@ -165,6 +165,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/users/{id}/toggle-status', [AdminController::class, 'toggleUserStatus'])->name('users.toggle-status');
     Route::post('/users/bulk-action', [AdminController::class, 'bulkAction'])->name('users.bulk-action');
     Route::get('/content', [AdminController::class, 'content'])->name('content');
+    Route::get('/revenue', [AdminController::class, 'revenue'])->name('revenue');
     Route::get('/analytics', [AdminController::class, 'analytics'])->name('analytics');
     Route::get('/security', [AdminController::class, 'security'])->name('security');
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
@@ -223,6 +224,7 @@ Route::middleware(['auth', 'superuser'])->prefix('admin')->name('admin.')->group
     Route::post('/users/{id}/unsuspend', [AdminController::class, 'unsuspendUser'])->name('users.unsuspend');
     Route::post('/users/bulk-action', [AdminController::class, 'bulkUserAction'])->name('users.bulk-action');
     Route::get('/content', [AdminController::class, 'content'])->name('content');
+    Route::get('/revenue', [AdminController::class, 'revenue'])->name('revenue');
     Route::get('/analytics', [AdminController::class, 'analytics'])->name('analytics');
     Route::get('/security', [AdminController::class, 'security'])->name('security');
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');

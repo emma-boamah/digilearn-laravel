@@ -1236,4 +1236,106 @@ class AdminController extends Controller
 
         return back()->with('success', 'Document feature status updated.');
     }
+
+    /**
+     * Show revenue analytics page
+     */
+    public function revenue()
+    {
+        // Get revenue data
+        $revenueData = $this->getRevenueData();
+        
+        // Get subscription analytics
+        $subscriptionAnalytics = $this->getSubscriptionAnalytics();
+        
+        // Get revenue trends
+        $revenueTrends = $this->getRevenueTrends();
+        
+        // Get top performing plans
+        $topPlans = $this->getTopPerformingPlans();
+
+        Log::channel('security')->info('revenue_analytics_accessed', [
+            'admin_id' => Auth::id(),
+            'ip' => request()->ip(),
+            'timestamp' => now()->toISOString()
+        ]);
+
+        return view('admin.revenue.index', compact('revenueData', 'subscriptionAnalytics', 'revenueTrends', 'topPlans'));
+    }
+
+    /**
+     * Get revenue data for analytics
+     */
+    private function getRevenueData()
+    {
+        // This would typically come from your subscriptions/payments table
+        return [
+            'total_revenue' => 125000.00,
+            'monthly_revenue' => 15000.00,
+            'weekly_revenue' => 3500.00,
+            'daily_revenue' => 500.00,
+            'revenue_growth' => 12.5,
+            'active_subscriptions' => 450,
+            'new_subscriptions_today' => 8,
+            'churn_rate' => 2.3,
+            'average_revenue_per_user' => 277.78
+        ];
+    }
+
+    /**
+     * Get subscription analytics
+     */
+    private function getSubscriptionAnalytics()
+    {
+        return [
+            'essential' => [
+                'name' => 'Essential',
+                'subscribers' => 180,
+                'revenue' => 9000.00,
+                'percentage' => 40.0
+            ],
+            'extra_tuition' => [
+                'name' => 'Extra Tuition',
+                'subscribers' => 200,
+                'revenue' => 40000.00,
+                'percentage' => 44.4
+            ],
+            'home_school' => [
+                'name' => 'Home Sch',
+                'subscribers' => 70,
+                'revenue' => 14000.00,
+                'percentage' => 15.6
+            ]
+        ];
+    }
+
+    /**
+     * Get revenue trends for charts
+     */
+    private function getRevenueTrends()
+    {
+        $data = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $revenue = rand(8000, 18000); // Sample data - replace with actual query
+            $data[] = [
+                'month' => $date->format('M Y'),
+                'revenue' => $revenue,
+                'subscriptions' => rand(30, 80)
+            ];
+        }
+        return $data;
+    }
+
+    /**
+     * Get top performing plans
+     */
+    private function getTopPerformingPlans()
+    {
+        return [
+            ['plan' => 'Extra Tuition', 'revenue' => 40000, 'growth' => 15.2],
+            ['plan' => 'Home School', 'revenue' => 14000, 'growth' => 8.7],
+            ['plan' => 'Essential', 'revenue' => 9000, 'growth' => 5.3]
+        ];
+    }
 }

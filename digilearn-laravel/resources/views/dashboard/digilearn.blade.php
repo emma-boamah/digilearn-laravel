@@ -54,6 +54,7 @@
         .main-container {
             display: flex;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
         /* YouTube-style Sidebar */
@@ -333,7 +334,7 @@
         /* Search/Filter Bar */
         .filter-bar {
             display: flex;
-            align-items: center;
+            align-items: stretch;
             gap: 0.75rem; /* Reduced gap for mobile */
             padding: 0.75rem; /* Reduced padding */
             background-color: var(--white);
@@ -341,12 +342,13 @@
             flex-wrap: wrap;
             overflow-x: hidden; /* Hide overflow for horizontal scrolling */
             overflow-y: hidden; /* Hide vertical overflow */
+            max-width: 100vw; /* Ensure it doesn't exceed viewport width */
         }
 
         .search-box {
             position: relative;
             flex: 1;
-            min-width: 300px;
+            min-width: 200px;
             display: flex;
             transition: all 0.3s ease;
         }
@@ -453,6 +455,65 @@
             transition: all 0.3s ease;
             max-height: 60vh; /* Limit height for long dropdowns */
             overflow-y: auto;
+        }
+
+        /* Horizontal Subjects Filter */
+        .subjects-filter-container {
+            width: 100%;
+            background-color: var(--white);
+            border-bottom: 1px solid var(--gray-200);
+            padding: 0.75rem 1rem;
+            overflow: hidden; /* Hide overflow on container */
+        }
+        .subjects-filter {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 0.5rem 0;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+            scroll-behavior: smooth;
+            width: 100%;
+        }
+
+        .subjects-filter::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+
+        .subject-chip {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background-color: var(--white);
+            border: 2px solid var(--gray-200);
+            border-radius: 2rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--gray-700);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .subject-chip:hover {
+            border-color: var(--secondary-blue);
+            background-color: rgba(38, 119, 184, 0.05);
+            color: var(--secondary-blue);
+        }
+
+        .subject-chip.active {
+            background-color: var(--secondary-blue);
+            border-color: var(--secondary-blue);
+            color: var(--white);
+        }
+
+        .subject-chip.active:hover {
+            background-color: var(--secondary-blue-hover);
+            border-color: var(--secondary-blue-hover);
         }
 
         .custom-dropdown.open .dropdown-menu {
@@ -1289,46 +1350,90 @@
                     </div>
                 </div>
                 
-                <!-- Custom subjects dropdown -->
-                <div class="custom-dropdown">
-                    <button class="dropdown-toggle">
-                        <span>Subjects</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="dropdown-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </button>
-                    <div class="dropdown-menu">
-                        <div class="dropdown-section">
-                            <h4 class="section-header">Core Subjects</h4>
-                            <div class="dropdown-option">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="subject-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                </svg>
-                                <span>Mathematics</span>
-                            </div>
-                            <div class="dropdown-option">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="subject-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                                </svg>
-                                <span>Science</span>
-                            </div>
-                        </div>
-                        
-                        <div class="dropdown-section">
-                            <h4 class="section-header">Electives</h4>
-                            <div class="dropdown-option">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="subject-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                                </svg>
-                                <span>English</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
                 <button class="filter-button question">Question</button>
                 <a href="{{ route('quiz.index') }}" class="filter-button quiz">Quiz</a>
             </div>
+
+            <!-- Sepaarate Horizontal Subjects Filter -->
+                <div class="subjects-filter-container">
+                    <div class="subjects-filter">
+                        <div class="subject-chip active" data-subject="all">
+                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                            </svg>
+                            All Subjects
+                        </div>
+
+                        <div class="subject-chip" data-subject="mathematics">
+                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                            </svg>
+
+                            Mathematics
+                        </div>
+                        <div class="subject-chip" data-subject="science">
+                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                            </svg>
+                            Science
+                        </div>
+                        <div class="subject-chip" data-subject="english">
+                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+                            </svg>
+                            English
+                        </div>
+                        <div class="subject-chip" data-subject="social-studies">
+                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            Social Studies
+                        </div>
+                        <div class="subject-chip" data-subject="history">
+                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            History
+                        </div>
+                        <div class="subject-chip" data-subject="chemistry">
+                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                            </svg>
+                            Chemistry
+                        </div>
+                        <div class="subject-chip" data-subject="physics">
+                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                            Physics
+                        </div>
+                        <div class="subject-chip" data-subject="biology">
+                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                            </svg>
+                            Biology
+                        </div>
+                        <div class="subject-chip" data-subject="geography">
+                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Geography
+                        </div>
+                        <div class="subject-chip" data-subject="art">
+                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4 4 4 0 004-4V5z"/>
+                            </svg>
+                            Art
+                        </div>
+                        <div class="subject-chip" data-subject="music">
+                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+                            </svg>
+                            Music
+                        </div>
+                    </div>
+                </div>
             
             <!-- Hero Section with Video Background -->
             <div class="hero-section">
@@ -1427,6 +1532,7 @@
             initializeMobileUI();
             initializeSidebar();
             initializeDropdowns();
+            initializeSubjectFilter();
             initializeVideoCards();
         });
 
@@ -1579,6 +1685,40 @@
                         dropdown.classList.remove('open');
                     });
                 }
+            });
+        }
+
+        // Subject filter functionality
+        function initializeSubjectFilter() {
+            const subjectChips = document.querySelectorAll('.subject-chip');
+            const lessonCards = document.querySelectorAll('.lesson-card');
+
+            subjectChips.forEach(chip => {
+                chip.addEventListener('click', function() {
+                    const selectedSubject = this.getAttribute('data-subject');
+                    
+                    // Update active state
+                    subjectChips.forEach(c => c.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Filter lessons
+                    lessonCards.forEach(card => {
+                        const cardSubject = card.getAttribute('data-subject');
+                        
+                        if (selectedSubject === 'all' || cardSubject === selectedSubject) {
+                            card.style.display = 'block';
+                            // Add fade-in animation
+                            card.style.opacity = '0';
+                            setTimeout(() => {
+                                card.style.opacity = '1';
+                            }, 100);
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                    
+                    console.log('Filtered by subject:', selectedSubject);
+                });
             });
         }
 
