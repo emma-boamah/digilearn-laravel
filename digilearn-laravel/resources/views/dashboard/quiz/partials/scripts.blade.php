@@ -2,6 +2,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         initializeSidebar();
         initializeSearch();
+        initializeDropdowns();
     });
 
     function initializeSidebar() {
@@ -29,11 +30,13 @@
         }
 
         // Close mobile sidebar when clicking overlay
-        sidebarOverlay.addEventListener('click', function() {
-            youtubeSidebar.classList.remove('mobile-open');
-            sidebarOverlay.classList.remove('active');
-            document.body.style.overflow = '';
-        });
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', function() {
+                youtubeSidebar.classList.remove('mobile-open');
+                sidebarOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+        }
 
         // Handle window resize
         window.addEventListener('resize', function() {
@@ -56,10 +59,62 @@
                     if (query.length > 2) {
                         console.log('Searching for quizzes:', query);
                         // Implement search functionality here
+                        filterQuizzes(query);
+                    } else if (query.length === 0) {
+                        showAllQuizzes();
                     }
                 }, 300);
             });
         }
+    }
+
+    function initializeDropdowns() {
+        const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+
+        dropdownToggles.forEach(toggle => {
+            toggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const dropdown = this.closest('.custom-dropdown');
+                
+                // Close other dropdowns
+                document.querySelectorAll('.custom-dropdown').forEach(d => {
+                    if (d !== dropdown) {
+                        d.classList.remove('open');
+                    }
+                });
+                
+                dropdown.classList.toggle('open');
+            });
+        });
+        
+        // Handle option selection
+        document.querySelectorAll('.dropdown-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const text = this.querySelector('span') ? this.querySelector('span').textContent : this.textContent;
+                const toggle = this.closest('.custom-dropdown').querySelector('.dropdown-toggle span');
+                toggle.textContent = text;
+                this.closest('.custom-dropdown').classList.remove('open');
+                
+                // Handle level or subject filtering
+                const level = this.getAttribute('data-level');
+                const subject = this.getAttribute('data-subject');
+                
+                if (level) {
+                    filterByLevel(level);
+                } else if (subject) {
+                    filterBySubject(subject);
+                }
+            });
+        });
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.custom-dropdown')) {
+                document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
+                    dropdown.classList.remove('open');
+                });
+            }
+        });
     }
 
     function openQuiz(quizId) {
@@ -68,9 +123,95 @@
         if (card) {
             card.style.opacity = '0.7';
             card.style.transform = 'scale(0.98)';
+            
+            // Add loading state
+            const startBtn = card.querySelector('.quiz-start-btn');
+            if (startBtn) {
+                startBtn.innerHTML = `
+                    <svg class="btn-icon animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Loading...
+                `;
+            }
         }
         
         // Navigate to quiz instructions page with proper route
-        window.location.href = `/dashboard/quiz/${quizId}/instructions`;
+        setTimeout(() => {
+            window.location.href = `/dashboard/quiz/${quizId}/instructions`;
+        }, 500);
     }
+
+    function previewQuiz(quizId) {
+        // Add visual feedback
+        const card = document.querySelector(`[data-quiz-id="${quizId}"]`);
+        if (card) {
+            const previewBtn = card.querySelector('.quiz-preview-btn');
+            if (previewBtn) {
+                previewBtn.innerHTML = `
+                    <svg class="btn-icon animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Loading...
+                `;
+            }
+        }
+        
+        // Navigate to quiz preview page
+        setTimeout(() => {
+            window.location.href = `/dashboard/quiz/${quizId}/preview`;
+        }, 300);
+    }
+
+    function filterQuizzes(query) {
+        const quizCards = document.querySelectorAll('.quiz-card');
+        quizCards.forEach(card => {
+            const title = card.querySelector('.quiz-title').textContent.toLowerCase();
+            const subject = card.querySelector('.quiz-subject').textContent.toLowerCase();
+            const description = card.querySelector('.quiz-description').textContent.toLowerCase();
+            
+            if (title.includes(query.toLowerCase()) || 
+                subject.includes(query.toLowerCase()) || 
+                description.includes(query.toLowerCase())) {
+                card.style.display = 'block';
+                card.style.opacity = '0';
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                }, 100);
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    function showAllQuizzes() {
+        const quizCards = document.querySelectorAll('.quiz-card');
+        quizCards.forEach(card => {
+            card.style.display = 'block';
+            card.style.opacity = '1';
+        });
+    }
+
+    function filterByLevel(level) {
+        console.log('Filtering by level:', level);
+        // Implement level filtering logic here
+    }
+
+    function filterBySubject(subject) {
+        console.log('Filtering by subject:', subject);
+        // Implement subject filtering logic here
+    }
+
+    // Add CSS animation for spinning
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+    `;
+    document.head.appendChild(style);
 </script>

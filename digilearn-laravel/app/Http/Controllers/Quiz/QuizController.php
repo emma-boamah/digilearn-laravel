@@ -119,7 +119,11 @@ class QuizController extends Controller
                 'level_display' => 'Grade 1-3',
                 'duration' => '3 min',
                 'questions_count' => 10,
-                'difficulty' => 'Easy',
+                'difficulty' => 'easy',
+                'description' => 'Learn about the differences between living and non-living things in our environment.',
+                'attempts_count' => 0,
+                'rating' => 0,
+                'user_progress' => 0,
                 'created_at' => now()
             ],
             [
@@ -129,7 +133,11 @@ class QuizController extends Controller
                 'level_display' => 'Grade 1-3',
                 'duration' => '5 min',
                 'questions_count' => 15,
-                'difficulty' => 'Easy',
+                'difficulty' => 'easy',
+                'description' => 'Practice fundamental math concepts including addition, subtraction, and number recognition.',
+                'attempts_count' => 2,
+                'rating' => 4,
+                'user_progress' => 75,
                 'created_at' => now()
             ],
             [
@@ -139,10 +147,55 @@ class QuizController extends Controller
                 'level_display' => 'Grade 1-3',
                 'duration' => '4 min',
                 'questions_count' => 12,
-                'difficulty' => 'Easy',
+                'difficulty' => 'easy',
+                'description' => 'Master basic grammar rules, sentence structure, and vocabulary building.',
+                'attempts_count' => 1,
+                'rating' => 5,
+                'user_progress' => 100,
                 'created_at' => now()
             ],
-            // Add more sample quizzes as needed
+            [
+                'id' => 4,
+                'title' => 'Colors and Shapes',
+                'subject' => 'Art Gr1-3',
+                'level_display' => 'Grade 1-3',
+                'duration' => '3 min',
+                'questions_count' => 8,
+                'difficulty' => 'easy',
+                'description' => 'Identify different colors, shapes, and their properties in everyday objects.',
+                'attempts_count' => 0,
+                'rating' => 0,
+                'user_progress' => 0,
+                'created_at' => now()
+            ],
+            [
+                'id' => 5,
+                'title' => 'Weather and Seasons',
+                'subject' => 'Science Gr1-3',
+                'level_display' => 'Grade 1-3',
+                'duration' => '4 min',
+                'questions_count' => 10,
+                'difficulty' => 'medium',
+                'description' => 'Explore different weather patterns and seasonal changes throughout the year.',
+                'attempts_count' => 3,
+                'rating' => 3,
+                'user_progress' => 50,
+                'created_at' => now()
+            ],
+            [
+                'id' => 6,
+                'title' => 'Simple Addition',
+                'subject' => 'Math Gr1-3',
+                'level_display' => 'Grade 1-3',
+                'duration' => '6 min',
+                'questions_count' => 20,
+                'difficulty' => 'easy',
+                'description' => 'Practice adding single-digit numbers with visual aids and step-by-step guidance.',
+                'attempts_count' => 1,
+                'rating' => 4,
+                'user_progress' => 25,
+                'created_at' => now()
+            ],
         ];
     }
 
