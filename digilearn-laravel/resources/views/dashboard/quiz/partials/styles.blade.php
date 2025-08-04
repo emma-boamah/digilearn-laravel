@@ -864,6 +864,7 @@
             transform: translateX(-100%);
             transition: transform 0.3s ease, width 0.3s ease;
             width: 280px;
+            z-index: 1002;
         }
 
         .youtube-sidebar.mobile-open {
@@ -881,7 +882,7 @@
         }
 
         .top-header {
-            display: none;
+            display: flex;
         }
 
         .mobile-header {
@@ -1026,7 +1027,8 @@
         }
 
         .sidebar-overlay {
-            display: none;
+            display: block;
+            pointer-events: none;
             position: fixed;
             top: 0;
             left: 0;
@@ -1035,12 +1037,12 @@
             background-color: rgba(0, 0, 0, 0.6);
             z-index: 999;
             opacity: 0;
-            transition: all 0.3s ease;
+            transition: opacity 0.3s ease;
         }
 
         .sidebar-overlay.active {
             opacity: 1;
-            display: block;
+            pointer-events: all;
         }
     }
 
