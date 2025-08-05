@@ -1,4 +1,4 @@
-<!-- Top Header -->
+<!-- Desktop Header -->
 <div class="top-header">
     <div class="header-left">
         <!-- Hamburger for sidebar toggle (always visible) -->
