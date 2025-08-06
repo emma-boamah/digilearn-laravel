@@ -255,11 +255,17 @@
         /* Main Content Area */
         .main-content {
             flex: 1;
+            width: calc(100vw - var(--sidebar-width-expanded));
+            max-width: calc(100vw - var(--sidebar-width-expanded));
             margin-left: var(--sidebar-width-expanded);
-            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-sizing: border-box;
+            overflow-x: hidden;
         }
 
         .youtube-sidebar.collapsed ~ .main-content {
+            width: calc(100vw - var(--sidebar-width-collapsed));
+            max-width: calc(100vw - var(--sidebar-width-collapsed));
             margin-left: var(--sidebar-width-collapsed);
         }
 
@@ -342,7 +348,9 @@
             flex-wrap: wrap;
             overflow-x: hidden; /* Hide overflow for horizontal scrolling */
             overflow-y: hidden; /* Hide vertical overflow */
-            max-width: 100vw; /* Ensure it doesn't exceed viewport width */
+            width: 100%;
+            max-width: 100%; /* Ensure it doesn't exceed viewport width */
+            box-sizing: border-box; /* Ensure padding is included in width */
         }
 
         .search-box {
@@ -460,10 +468,12 @@
         /* Horizontal Subjects Filter */
         .subjects-filter-container {
             width: 100%;
+            max-width: 100%;
             background-color: var(--white);
             border-bottom: 1px solid var(--gray-200);
             padding: 0.75rem 1rem;
             overflow: hidden; /* Hide overflow on container */
+            box-sizing: border-box; /* Ensure padding is included in width */
         }
         .subjects-filter {
             display: flex;
@@ -606,6 +616,9 @@
             position: relative;
             height: 300px;
             overflow: hidden;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
         }
 
         .hero-background {
@@ -668,6 +681,9 @@
         /* Content Section */
         .content-section {
             padding: 2rem 1rem;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
         }
 
         .content-grid {
@@ -900,10 +916,14 @@
 
             .main-content {
                 margin-left: 0;
+                width: 100vw;
+                max-width: 100vw;
             }
 
             .youtube-sidebar.collapsed ~ .main-content {
                 margin-left: 0;
+                width: 100vw;
+                max-width: 100vw;
             }
 
             /* Hide desktop header on mobile */
