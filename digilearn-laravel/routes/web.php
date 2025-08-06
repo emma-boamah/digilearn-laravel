@@ -15,6 +15,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ProgressController;
 use App\Http\Controllers\ProjectController;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Auth\GoogleController;
 use Illuminate\Support\Facades\Redis;
 
 /*
@@ -40,6 +41,8 @@ Route::post('/signup', [AuthController::class, 'signup'])->name('signup.submit')
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::get('/unlock', [AuthController::class, 'showUnlock'])->name('unlock');
 Route::post('/unlock', [AuthController::class, 'unlock'])->name('unlock.submit');
+Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('auth.google');
+Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
 
 /*
 |--------------------------------------------------------------------------
