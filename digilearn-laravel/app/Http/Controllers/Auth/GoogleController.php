@@ -102,31 +102,47 @@ class GoogleController extends Controller
     protected function findOrCreateUser($googleUser, $ip)
     {
         return User::withoutEvents(function () use ($googleUser, $ip) {
+            // Check if a user exists with this email
             $user = User::where('email', $googleUser->getEmail())->first();
 
             if ($user) {
-                // Preserve existing password when linking Google
+                // Update existing user with Google ID
                 $updateData = [
                     'google_id' => $googleUser->getId(),
                     'last_login_ip' => $ip,
                     'last_login_at' => now()
                 ];
 
-                // Only update name/avatar if missing
+                // Update name/avatar if missing
                 if (!$user->name) $updateData['name'] = $googleUser->getName();
                 if (!$user->avatar) $updateData['avatar'] = $googleUser->getAvatar();
-
+                
                 $user->update($updateData);
+                return $user;
+            }
+
+            // Check for existing Google ID
+            $user = User::where('google_id', $googleUser->getId())->first();
+
+            if ($user) {
+                // Update Google user profile
+                $user->update([
+                    'name' => $googleUser->getName(),
+                    'email' => $googleUser->getEmail(),
+                    'avatar' => $googleUser->getAvatar(),
+                    'last_login_ip' => $ip,
+                    'last_login_at' => now(),
+                ]);
                 return $user;
             }
 
             // Create new user
             return User::create([
-                'google_id' => $googleUser->getId(),
                 'name' => $googleUser->getName(),
                 'email' => $googleUser->getEmail(),
                 'avatar' => $googleUser->getAvatar(),
-                'password' => bcrypt(Str::random(64)), // new account, so generate password
+                'password' => bcrypt(Str::random(64)),
+                'google_id' => $googleUser->getId(),
                 'email_verified_at' => now(),
                 'registration_ip' => $ip,
                 'last_login_ip' => $ip,
