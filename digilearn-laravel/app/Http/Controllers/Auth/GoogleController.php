@@ -22,6 +22,7 @@ class GoogleController extends Controller
         // Verify state token to prevent CSRF
         $state = Str::random(40);
         $request->session()->put('oauth_state', $state);
+        $request->session()->save(); 
         
         // Validate recaptcha if enabled
         if (config('services.google.recaptcha_enabled')) {
@@ -81,7 +82,7 @@ class GoogleController extends Controller
             // Rotate session ID
             $request->session()->regenerate();
             
-            return redirect()->route('dashboard.level-selection');
+            return redirect()->intended(route('dashboard.main'));
 
         } catch (\Exception $e) {
             // Rate limit on errors
@@ -103,34 +104,39 @@ class GoogleController extends Controller
         return User::withoutEvents(function () use ($googleUser, $ip) {
             $user = User::where('email', $googleUser->getEmail())->first();
 
-            // Account exists with different provider
-            if ($user && !$user->google_id) {
-                $user->update([
+            if ($user) {
+                // Preserve existing password when linking Google
+                $updateData = [
                     'google_id' => $googleUser->getId(),
                     'last_login_ip' => $ip,
                     'last_login_at' => now()
-                ]);
+                ];
+
+                // Only update name/avatar if missing
+                if (!$user->name) $updateData['name'] = $googleUser->getName();
+                if (!$user->avatar) $updateData['avatar'] = $googleUser->getAvatar();
+
+                $user->update($updateData);
                 return $user;
             }
-            
+
             // Create new user
-            return User::updateOrCreate(
-                ['google_id' => $googleUser->getId()],
-                [
-                    'name' => $googleUser->getName(),
-                    'email' => $googleUser->getEmail(),
-                    'avatar' => $googleUser->getAvatar(),
-                    'password' => bcrypt(Str::random(64)),
-                    'email_verified_at' => now(),
-                    'registration_ip' => $ip,
-                    'last_login_ip' => $ip,
-                    'last_login_at' => now(),
-                    'google_metadata' => [ // Store minimal metadata
-                        'locale' => $googleUser->user['locale'] ?? null,
-                        'verified' => $googleUser->user['email_verified'] ?? false,
-                    ]
+            return User::create([
+                'google_id' => $googleUser->getId(),
+                'name' => $googleUser->getName(),
+                'email' => $googleUser->getEmail(),
+                'avatar' => $googleUser->getAvatar(),
+                'password' => bcrypt(Str::random(64)), // new account, so generate password
+                'email_verified_at' => now(),
+                'registration_ip' => $ip,
+                'last_login_ip' => $ip,
+                'last_login_at' => now(),
+                'google_metadata' => [
+                    'locale' => $googleUser->user['locale'] ?? null,
+                    'verified' => $googleUser->user['email_verified'] ?? false,
                 ]
-            );
+            ]);
         });
     }
+
 }
