@@ -18,6 +18,7 @@ use App\Models\WebsiteLockSetting;
 use App\Models\SuperuserRecoveryCode;
 use Carbon\Carbon;
 use App\Services\EmailVerificationService;
+use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
 {
@@ -79,7 +80,7 @@ class AuthController extends Controller
                 Log::channel('security')->info('recovery_code_used', [
                     'user_id' => $user->id,
                     'code' => $request->recovery_code,
-                    'ip' => $request->ip()
+                    'ip' => get_client_ip()
                 ]);
                 // Delete the recovery code after successful use
                 $recoveryCode->delete();
@@ -131,7 +132,7 @@ class AuthController extends Controller
         if (RateLimiter::tooManyAttempts($key, self::MAX_LOGIN_ATTEMPTS)) {
             $seconds = RateLimiter::availableIn($key);
             $this->logSecurityEvent('login_rate_limit_exceeded', $request, [
-                'ip' => $request->ip(),
+                'ip' => get_client_ip(),
                 'user_agent' => $request->userAgent(),
                 'lockout_seconds' => $seconds
             ]);
@@ -149,7 +150,7 @@ class AuthController extends Controller
             $seconds = RateLimiter::availableIn($key);
             
             $this->logSecurityEvent('blocked_login_attempt', $request, [
-                'ip' => $request->ip(),
+                'ip' => get_client_ip(),
                 'email' => $request->input('email'),
                 'lockout_seconds' => $seconds
             ]);
@@ -260,7 +261,7 @@ class AuthController extends Controller
             'user_id' => $user->id,
             'email' => $credentials['email'],
             'failed_attempts' => $failedAttempts,
-            'ip' => $request->ip()
+            'ip' => get_client_ip()
         ]);
 
         // Fire failed login event
@@ -299,7 +300,7 @@ class AuthController extends Controller
             ],
         ]);
         // Rate limit by email only (safe for public/shared IPs)
-        $rateLimitKey = 'signup:' . $request->ip() . '|' . strtolower($request->input('email', ''));
+        $rateLimitKey = 'signup:' . get_client_ip() . '|' . strtolower($request->input('email', ''));
 
         $maxAttempts = 5;
         $decaySeconds = 600; // 10 minutes
@@ -394,8 +395,8 @@ class AuthController extends Controller
                 'phone' => $validated['phone'] ?? null,
                 'password' => Hash::make($validated['password']),
                 'email_verified_at' => now(),
-                'registration_ip' => $request->ip(),
-                'last_login_ip' => $request->ip(),
+                'registration_ip' => get_client_ip(),
+                'last_login_ip' => get_client_ip(), // Use helper function to get client IP
                 'last_login_at' => now(),
             ]);
 
@@ -436,6 +437,18 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        if ($request->user()->google_id) {
+            try {
+                Http::post('https://oauth2.googleapis.com/revoke', [
+                    'token' => $request->user()->google_token,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Google token revocation failed', [
+                    'user_id' => $request->user()->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
         $user = Auth::user();
         
         $this->logSecurityEvent('user_logout', $request, [
@@ -460,7 +473,7 @@ class AuthController extends Controller
      */
     protected function throttleKey(Request $request): string
     {
-        return Str::lower($request->input('email', '')) . '|' . $request->ip();
+        return Str::lower($request->input('email', '')) . '|' . get_client_ip();
     }
 
     /**

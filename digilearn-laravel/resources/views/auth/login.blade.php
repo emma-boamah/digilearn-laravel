@@ -610,9 +610,9 @@
                     </div>
                     
                     <div class="social-login">
-                        <button type="button" class="social-btn google">
+                        <a href="{{ route('auth.google') }}" type="button" class="social-btn google">
                             <i class="fab fa-google"></i>
-                        </button>
+                        </a>
                         <button type="button" class="social-btn apple">
                             <i class="fab fa-apple"></i>
                         </button>

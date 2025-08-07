@@ -60,7 +60,8 @@ class AdminController extends Controller
 
         Log::channel('security')->info('admin_dashboard_accessed', [
             'admin_id' => Auth::id(),
-            'ip' => request()->ip(),
+            'ip' => get_client_ip(),
+            'user_agent' => request()->userAgent(),
             'timestamp' => now()->toISOString()
         ]);
 
@@ -162,7 +163,8 @@ class AdminController extends Controller
             'user_id' => $user->id,
             'user_email' => $user->email,
             'reason' => $reason,
-            'ip' => request()->ip(),
+            'ip' => get_client_ip(),
+            'user_agent' => $request->userAgent(),
             'timestamp' => now()->toISOString()
         ]);
 
@@ -185,7 +187,8 @@ class AdminController extends Controller
             'admin_id' => Auth::id(),
             'user_id' => $user->id,
             'user_email' => $user->email,
-            'ip' => request()->ip(),
+            'ip' => get_client_ip(),
+            'user_agent' => request()->userAgent(),
             'timestamp' => now()->toISOString()
         ]);
 
@@ -238,7 +241,8 @@ class AdminController extends Controller
             'action' => $action,
             'affected_users' => $userIds,
             'affected_count' => $affectedCount,
-            'ip' => request()->ip(),
+            'ip' => get_client_ip(),
+            'user_agent' => $request->userAgent(),
             'timestamp' => now()->toISOString()
         ]);
 
@@ -320,7 +324,8 @@ class AdminController extends Controller
         Log::channel('security')->info('system_settings_updated', [
             'admin_id' => Auth::id(),
             'updated_settings' => array_keys($settings),
-            'ip' => request()->ip(),
+            'ip' => get_client_ip(),
+            'user_agent' => $request->userAgent(),
             'timestamp' => now()->toISOString()
         ]);
 
@@ -341,7 +346,8 @@ class AdminController extends Controller
             'admin_id' => Auth::id(),
             'format' => $format,
             'user_count' => $users->count(),
-            'ip' => request()->ip(),
+            'ip' => get_client_ip(),
+            'user_agent' => $request->userAgent(),
             'timestamp' => now()->toISOString()
         ]);
 
@@ -409,7 +415,8 @@ class AdminController extends Controller
                 'topic' => $request->topic,
                 'start_time' => $startTime->toDateTimeString(),
                 'end_time' => $endTime->toDateTimeString(),
-                'ip' => request()->ip(),
+                'ip' => get_client_ip(),
+                'user_agent' => $request->userAgent(),
                 'timestamp' => now()->toISOString()
             ]);
 
@@ -420,7 +427,9 @@ class AdminController extends Controller
                 'admin_id' => Auth::id(),
                 'error' => $e->getMessage(),
                 'request_data' => $request->all(),
-                'ip' => request()->ip(),
+                'ip' => get_client_ip(),
+                'user_agent' => $request->userAgent(),
+                'timestamp' => now()->toISOString()
             ]);
             return back()->with('error', 'Failed to create virtual class. Please try again.')->withInput();
         }
@@ -1256,7 +1265,8 @@ class AdminController extends Controller
 
         Log::channel('security')->info('revenue_analytics_accessed', [
             'admin_id' => Auth::id(),
-            'ip' => request()->ip(),
+            'ip' => get_client_ip(),
+            'user_agent' => request()->header('User-Agent'),
             'timestamp' => now()->toISOString()
         ]);
 

@@ -17,6 +17,8 @@ use App\Http\Controllers\ProjectController;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Auth\GoogleController;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Http\Request;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 
 /*
 |--------------------------------------------------------------------------
@@ -41,8 +43,10 @@ Route::post('/signup', [AuthController::class, 'signup'])->name('signup.submit')
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::get('/unlock', [AuthController::class, 'showUnlock'])->name('unlock');
 Route::post('/unlock', [AuthController::class, 'unlock'])->name('unlock.submit');
-Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('auth.google');
-Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
+Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])
+    ->middleware('throttle.redirect:'.config('services.google.rate_limit', 5).',1')
+    ->name('auth.google');
+Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback'])->middleware('throttle.redirect:google_rate_limit');
 
 /*
 |--------------------------------------------------------------------------
@@ -246,7 +250,9 @@ Route::middleware(['auth', 'superuser'])->prefix('admin')->name('admin.')->group
 | CSP Report Endpoint
 |--------------------------------------------------------------------------
 */
-Route::post('/csp-report', function () {
-    Log::channel('security')->warning('CSP Violation', request()->all());
-    return response('', 204);
-});
+Route::post('/csp-report', function (Request $request) {
+    Log::channel('security')->warning('CSP violation', [
+        'data' => $request->getContent()
+    ]);
+    return response()->noContent();
+})->withoutMiddleware([VerifyCsrfToken::class]);

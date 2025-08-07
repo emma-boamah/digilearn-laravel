@@ -9,6 +9,10 @@ use App\Http\Middleware\CheckWebsiteLock;
 use App\Console\Commands\ClearEmailVerificationCache;
 use App\Http\Middleware\SuperuserMiddleware;
 use App\Http\Middleware\TrackUsersActivity;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -40,6 +44,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => AdminMiddleware::class,
             'check.lock' => CheckWebsiteLock::class,
             'superuser' => SuperuserMiddleware::class,
+            'throttle.redirect' => \App\Http\Middleware\ThrottleRequestsWithRedirect::class,
         ]);
 
         // Rate limiting configuration

@@ -81,10 +81,6 @@ class AppServiceProvider extends ServiceProvider
             
             // Standard rate limits
             return [
-                Limit::perMinutes(
-                config('security.throttle_signup_decay_minutes', 60),
-                config('security.throttle_signup_ip_attempts', 10)
-            )->by($request->ip()),
                 Limit::perMinutes($decayMinutes, $ipAttempts)->by($ip . '|login'),
                 Limit::perMinutes($decayMinutes, $emailAttempts)->by($email . '|login')
             ];
@@ -125,13 +121,15 @@ class AppServiceProvider extends ServiceProvider
             
             // Standard rate limits
             return [
-                Limit::perMinutes(
-                config('security.throttle_signup_decay_minutes', 60),
-                config('security.throttle_signup_ip_attempts', 10)
-            )->by($request->ip()),
                 Limit::perMinutes($decayMinutes, $ipAttempts)->by($ip . '|signup'),
                 Limit::perMinutes($decayMinutes, $emailAttempts)->by($email . '|signup')
             ];
+        });
+
+        // Google OAuth rate limiting
+        RateLimiter::for('google_rate_limit', function (Request $request) {
+            return Limit::perMinute(config('services.google.rate_limit', 5))
+                ->by($request->ip());
         });
     }
 

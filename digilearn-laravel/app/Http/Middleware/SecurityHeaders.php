@@ -5,111 +5,103 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Config;
 
 class SecurityHeaders
 {
-    /**
-     * Handle an incoming request.
-     */
     public function handle(Request $request, Closure $next): Response
     {
-        // Generate the nonce ONCE per request
+        // Generate nonce for CSP
         $nonce = base64_encode(random_bytes(16));
         $request->attributes->set('csp_nonce', $nonce);
 
         $response = $next($request);
 
-        // Security headers
-        $response->headers->set('X-Content-Type-Options', 'nosniff');
-        $response->headers->set('X-Frame-Options', 'DENY');
-        $response->headers->set('X-XSS-Protection', '1; mode=block');
-        $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        $response->headers->set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
-
-        // Remove server information
-        $response->headers->remove('Server');
-        $response->headers->remove('X-Powered-By');
-
-        // HSTS Header (only for HTTPS)
-        if ($request->isSecure() && config('security.headers.hsts_enabled', true)) {
-            $maxAge = config('security.headers.hsts_max_age', 31536000);
-            $includeSubdomains = config('security.headers.hsts_include_subdomains', true) ? '; includeSubDomains' : '';
-            $preload = '; preload';
-            $response->headers->set('Strict-Transport-Security', "max-age={$maxAge}{$includeSubdomains}{$preload}");
-        }
-
-        // CORS Headers
-        if ($request->headers->get('Origin') === 'https://cdn.jsdelivr.net') {
-            $response->headers->set('Access-Control-Allow-Origin', 'https://cdn.jsdelivr.net');
-            $response->headers->set('Access-Control-Allow-Credentials', 'true');
-            $response->headers->set('Cross-Origin-Embedder-Policy', 'require-corp');
-            $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin');
-            $response->headers->set('Cross-Origin-Resource-Policy', 'same-origin');
-        }
-
-        // Content Security Policy
-        if (config('security.headers.csp_enabled', true)) {
-            $csp = $this->buildContentSecurityPolicy($request, $nonce);
-            $response->headers->set('Content-Security-Policy', $csp);
+        // Apply security headers only to HTML responses
+        if ($this->isHtmlResponse($response)) {
+            $this->applySecurityHeaders($request, $response, $nonce);
         }
 
         return $response;
     }
 
-    /**
-     * Build Content Security Policy header
-     */
-    private function buildContentSecurityPolicy(Request $request, string $nonce): string
+    protected function isHtmlResponse(Response $response): bool
     {
-        // Define common script sources for reusability
-        $scriptSources = [
-            "'self'",
-            "'nonce-{$nonce}'",
-            'https://apis.google.com',
-            'https://connect.facebook.net',
-            'https://www.google.com',
-            'https://www.gstatic.com',
-            'https://cdn.quilljs.com',
-            'https://cdnjs.cloudflare.com',
-            'https://cdn.jsdelivr.net',
-            'https://flagcdn.com',
-            'https://cdn.tailwindcss.com',
-            'https://unpkg.com',
-        ];
-        $scriptSrcString = implode(' ', $scriptSources);
+        $contentType = $response->headers->get('Content-Type') ?? '';
+        return str_contains($contentType, 'text/html') || 
+               str_contains($contentType, 'application/xhtml+xml');
+    }
 
-        // Get base domain for form-action
-        $appUrl = config('app.url');
-        $host = parse_url($appUrl, PHP_URL_HOST);
-        $domain = preg_replace('/^www\./', '', $host);
+    protected function applySecurityHeaders(
+        Request $request, 
+        Response $response, 
+        string $nonce
+    ): void {
+        // Set standard security headers
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
+        $response->headers->set('X-Frame-Options', 'DENY');
+        $response->headers->set('X-XSS-Protection', '1; mode=block');
+        $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->headers->set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+        
+        // Remove server information
+        $response->headers->remove('Server');
+        $response->headers->remove('X-Powered-By');
 
-        $policies = [
-            "default-src 'self'",
-            // Script policies: 
-            // - script-src for older browsers (fallback)
-            // - script-src-elem for modern browsers (script elements)
-            // - script-src-attr for inline event handlers
-            "script-src {$scriptSrcString} 'strict-dynamic' https: 'unsafe-eval'",  // Allow inline Alpine scripts for compatibility
-            "script-src-elem {$scriptSrcString}",
-            "script-src-attr 'unsafe-inline'",  // Allow inline event handlers
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net https://cdn.quilljs.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://flagcdn.com",
-            "font-src 'self' https://fonts.gstatic.com https://fonts.bunny.net https://cdnjs.cloudflare.com",
-            "img-src 'self' data: https: blob:",
-            "media-src 'self' https: data: blob:",
-            "connect-src 'self' https://api." . parse_url(config('app.url'), PHP_URL_HOST),
-            "frame-src 'self' https://www.google.com https://www.facebook.com",
-            "frame-ancestors 'none'",
-            "object-src 'none'",
-            "base-uri 'self'",
-            "form-action *;",  // Allow form submissions to any URL
-            "upgrade-insecure-requests",
-        ];
-
-        // Add report-uri in production
-        if (app()->environment('production')) {
-            $policies[] = "report-uri /csp-report";
+        // HSTS Header
+        if ($request->isSecure() && Config::get('security.headers.hsts_enabled', true)) {
+            $this->applyHstsHeader($response);
         }
 
+        // Content Security Policy
+        if (Config::get('security.headers.csp_enabled', true)) {
+            $csp = $this->buildContentSecurityPolicy($request, $nonce);
+            $response->headers->set('Content-Security-Policy', $csp);
+            
+            // Report-Only mode for development
+            if (Config::get('security.headers.csp_report_only', false)) {
+                $response->headers->set('Content-Security-Policy-Report-Only', $csp);
+            }
+        }
+    }
+
+    protected function applyHstsHeader(Response $response): void
+    {
+        $maxAge = Config::get('security.headers.hsts_max_age', 31536000);
+        $includeSubdomains = Config::get('security.headers.hsts_include_subdomains', true) 
+            ? '; includeSubDomains' : '';
+        $preload = Config::get('security.headers.hsts_preload', false) 
+            ? '; preload' : '';
+        
+        $response->headers->set(
+            'Strict-Transport-Security', 
+            "max-age={$maxAge}{$includeSubdomains}{$preload}"
+        );
+    }
+
+    protected function buildContentSecurityPolicy(
+        Request $request, 
+        string $nonce
+    ): string {
+        $config = Config::get('csp', []);
+        $policies = [];
+        
+        // Build CSP directives from config
+        foreach ($config['directives'] ?? [] as $directive => $sources) {
+            // Handle nonce replacement
+            $processedSources = array_map(function ($source) use ($nonce) {
+                return str_replace('{nonce}', "'nonce-$nonce'", $source);
+            }, $sources);
+            
+            $policies[] = $directive . ' ' . implode(' ', $processedSources);
+        }
+        
+        // Add report URI if configured
+        if ($reportUri = $config['report_uri'] ?? null) {
+            $policies[] = "report-uri $reportUri";
+            $policies[] = "report-to default";
+        }
+        
         return implode('; ', $policies);
     }
 }

@@ -252,6 +252,15 @@ class ProfileController extends Controller
                 ]);
             }
 
+            if ($user->google_id) {
+                // Delete Google-related data
+                $user->update([
+                    'google_id' => null,
+                    'google_metadata' => null,
+                    'avatar' => null,
+                ]);
+            }
+
             return redirect()->route('home')->with('success', 'Account deleted successfully!');
 
         } catch (\Exception $e) {
