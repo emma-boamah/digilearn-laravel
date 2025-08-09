@@ -21,8 +21,9 @@ class GoogleController extends Controller
     {
         $state = Str::random(40);
         
-        // Use session()->put() instead of session()->save()
-        session(['oauth_state' => $state]);
+        // Store state in session with proper persistence
+        $request->session()->put('oauth_state', $state);
+        $request->session()->save();
         
         if (config('services.google.recaptcha_enabled')) {
             $validator = Validator::make($request->all(), [
@@ -44,7 +45,7 @@ class GoogleController extends Controller
     {
         try {
             // Get session state without removing it
-            $sessionState = session()->get('oauth_state');
+            $sessionState = $request->session()->get('oauth_state');
             
             if (!$sessionState || $request->state !== $sessionState) {
                 Log::warning('Google OAuth state mismatch', [
@@ -59,7 +60,7 @@ class GoogleController extends Controller
             }
             
             // Clear state after verification
-            session()->forget('oauth_state');
+            $request->session()->forget('oauth_state');
             
             // Remove stateless() for web sessions
             $googleUser = Socialite::driver('google')->user();
