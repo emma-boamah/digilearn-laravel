@@ -19,12 +19,11 @@ class GoogleController extends Controller
     // Add rate limiting to redirect
     public function redirectToGoogle(Request $request)
     {
-        // Verify state token to prevent CSRF
         $state = Str::random(40);
-        $request->session()->put('oauth_state', $state);
-        $request->session()->save(); 
         
-        // Validate recaptcha if enabled
+        // Use session()->put() instead of session()->save()
+        session(['oauth_state' => $state]);
+        
         if (config('services.google.recaptcha_enabled')) {
             $validator = Validator::make($request->all(), [
                 'g-recaptcha-response' => ['required', new Recaptcha]
@@ -38,67 +37,60 @@ class GoogleController extends Controller
         
         return Socialite::driver('google')
             ->with(['state' => $state])
-            ->scopes(['openid', 'profile', 'email'])
-            ->redirect();
+            ->redirect(); // Removed scopes() unless specifically needed
     }
 
     public function handleGoogleCallback(Request $request)
     {
         try {
-            // Verify state parameter
-            if ($request->state !== $request->session()->pull('oauth_state')) {
+            // Get session state without removing it
+            $sessionState = session()->get('oauth_state');
+            
+            if (!$sessionState || $request->state !== $sessionState) {
                 Log::warning('Google OAuth state mismatch', [
-                    'ip' =>get_client_ip(),
+                    'session_state' => $sessionState,
+                    'request_state' => $request->state,
+                    'session_id' => session()->getId(),
+                    'ip' => request()->ip(),
                     'user_agent' => $request->userAgent()
                 ]);
                 return redirect()->route('login')
                     ->withErrors(['error' => 'Invalid authentication state.']);
             }
-
-            // Check rate limiting
-            $rateLimitKey = 'google-auth:'.get_client_ip();
-            if (Cache::has($rateLimitKey)) {
-                Log::alert('Google OAuth rate limit exceeded', [
-                    'ip' => get_client_ip(),
-                    'user_agent' => $request->userAgent()
-                ]);
-                return redirect()->route('login')
-                    ->withErrors(['error' => 'Too many attempts. Please try again later.']);
-            }
-
-            $googleUser = Socialite::driver('google')->stateless()->user();
             
-            // Validate essential fields
+            // Clear state after verification
+            session()->forget('oauth_state');
+            
+            // Remove stateless() for web sessions
+            $googleUser = Socialite::driver('google')->user();
+            
             if (!$googleUser->getEmail() || !$googleUser->getId()) {
                 throw new \Exception('Incomplete user data from Google');
             }
             
-            // Prevent account enumeration
-            $user = $this->findOrCreateUser($googleUser, get_client_ip());
+            $user = $this->findOrCreateUser($googleUser, request()->ip());
             
-            // Log user in
             Auth::login($user, true);
             
-            // Rotate session ID
+            // Regenerate session ID after login
             $request->session()->regenerate();
             
             return redirect()->intended(route('dashboard.main'));
 
         } catch (\Exception $e) {
-            // Rate limit on errors
-            Cache::put($rateLimitKey, true, now()->addMinutes(5));
-            
             Log::error('Google Auth Error: ' . $e->getMessage(), [
-                'exception' => $e,
-                'ip' => get_client_ip(),
+                'exception' => $e->getTraceAsString(),
+                'params' => $request->all(),
+                'session' => session()->all(),
+                'ip' => request()->ip(),
+                'headers' => $request->headers->all()
             ]);
             
             return redirect()->route('login')->withErrors([
-                'error' => 'Authentication failed. Please try another method.'
+                'error' => 'Authentication failed. Please try again or use another method.'
             ]);
         }
     }
-
     protected function findOrCreateUser($googleUser, $ip)
     {
         return User::withoutEvents(function () use ($googleUser, $ip) {
