@@ -90,7 +90,7 @@ class SecurityHeaders
         foreach ($config['directives'] ?? [] as $directive => $sources) {
             // Handle nonce replacement
             $processedSources = array_map(function ($source) use ($nonce) {
-                return str_replace('{nonce}', "'nonce-$nonce'", $source);
+                return str_replace('{nonce}', $nonce, $source);
             }, $sources);
             
             $policies[] = $directive . ' ' . implode(' ', $processedSources);

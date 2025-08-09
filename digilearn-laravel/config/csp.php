@@ -9,7 +9,7 @@ return [
         'default-src' => ["'self'"],
         'script-src' => [
             "'self'",
-            "'{nonce}'", // Nonce placeholder
+            "'nonce-{nonce}'", // Nonce placeholder
             'https://www.google.com',
             'https://www.gstatic.com',
             'https://apis.google.com',
@@ -17,6 +17,7 @@ return [
             'https://cdn.jsdelivr.net',
             'https://cdn.quilljs.com',
             'https://cdn.tailwindcss.com',
+            'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
             "'unsafe-inline'",
         ],
         'style-src' => [
@@ -25,12 +26,17 @@ return [
             'https://fonts.googleapis.com',
             'https://fonts.bunny.net',
             'https://cdn.jsdelivr.net',
+            'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
+            'https://cdnjs.cloudflare.com',
+
         ],
         'font-src' => [
             "'self'",
             'data:',
             'https://fonts.gstatic.com',
             'https://fonts.bunny.net',
+            'https://cdnjs.cloudflare.com',
+            'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
         ],
         'img-src' => [
             "'self'",
@@ -39,10 +45,17 @@ return [
             'https://*.googleusercontent.com',
             'https://flagcdn.com',
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
+            
+        ],
+        'media-src' => [
+            "'self'",
+            'blob:',
+            'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
         ],
         'connect-src' => [
             "'self'",
             'https://api.' . parse_url(env('APP_URL'), PHP_URL_HOST),
+            'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
             'https://accounts.google.com',
             'https://oauth2.googleapis.com',
             'https://www.googleapis.com',

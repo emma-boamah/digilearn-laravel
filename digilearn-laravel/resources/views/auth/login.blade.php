@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - ShoutOutGh</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
+    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         :root {
             --primary: #3b82f6;
             --primary-dark: #2563eb;
@@ -555,7 +555,8 @@
                             <i class="fas fa-envelope input-icon"></i>
                             <input 
                                 type="email" 
-                                id="email" 
+                                id="email"
+                                autocomplete="email"
                                 name="email" 
                                 placeholder="Enter your email address"
                                 value="{{ old('email') }}"
@@ -577,7 +578,8 @@
                             <i class="fas fa-lock input-icon"></i>
                             <input 
                                 type="password" 
-                                id="password" 
+                                id="password"
+                                autocomplete="current-password"
                                 name="password" 
                                 placeholder="Enter your password"
                                 required

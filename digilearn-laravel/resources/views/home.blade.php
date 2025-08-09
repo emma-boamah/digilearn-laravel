@@ -2039,8 +2039,10 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="hero-background">
-            <video autoplay muted loop playsinline poster="{{ secure_asset('images/hero-image.png') }}">
+            <video preload="auto" loading="lazy" autoplay muted loop playsinline poster="{{ secure_asset('images/hero-image.png') }}">
                 <source src="{{ secure_asset('videos/hero-video.mp4') }}" type="video/mp4">
+                <source src="{{ secure_asset('videos/hero-video.webm') }}" type="video/webm">
+                Your browser does not support the video tag.
             </video>
             <div class="hero-overlay"></div>
         </div>
@@ -2108,7 +2110,10 @@
                 </div>
                 <div class="why-choose-videos">
                     <div class="youtube-style-video-container">
-                        <video 
+                        <video
+                            preload="auto"
+                            loading="lazy"
+                            autoplay
                             id="whyChooseVideo" 
                             muted 
                             loop 
