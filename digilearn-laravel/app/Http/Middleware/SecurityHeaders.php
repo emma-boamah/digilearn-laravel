@@ -101,6 +101,13 @@ class SecurityHeaders
             $policies[] = "report-uri $reportUri";
             $policies[] = "report-to default";
         }
+
+        // Return minimal safe CSP if no policies are defined
+        if (empty($policies)) {
+            return "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; 
+                    frame-src 'self' https://accounts.google.com; 
+                    connect-src 'self' https://accounts.google.com https://www.googleapis.com";
+        }
         
         return implode('; ', $policies);
     }
