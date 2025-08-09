@@ -11,6 +11,7 @@ return [
             "'self'",
             "'nonce-{nonce}'", // Nonce placeholder
             'https://www.google.com',
+            'https://accounts.google.com',
             'https://www.gstatic.com',
             'https://apis.google.com',
             'https://accounts.google.com',
