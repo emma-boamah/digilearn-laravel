@@ -43,6 +43,7 @@ return [
             'data:',
             'blob:',
             'https://*.googleusercontent.com',
+            'https://images.unsplash.com',
             'https://flagcdn.com',
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
             
