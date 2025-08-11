@@ -37,6 +37,7 @@ class GoogleController extends Controller
         }
         
         return Socialite::driver('google')
+            ->redirectUrl(route('auth.google.callback'))
             ->with(['state' => $state])
             ->redirect(); // Removed scopes() unless specifically needed
     }
@@ -63,7 +64,9 @@ class GoogleController extends Controller
             $request->session()->forget('oauth_state');
             
             // Remove stateless() for web sessions
-            $googleUser = Socialite::driver('google')->user();
+            $googleUser = Socialite::driver('google')
+                ->redirectUrl(route('auth.google.callback'))
+                ->user();
             
             if (!$googleUser->getEmail() || !$googleUser->getId()) {
                 throw new \Exception('Incomplete user data from Google');
