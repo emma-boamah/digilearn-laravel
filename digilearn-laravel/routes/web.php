@@ -47,7 +47,6 @@ Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])
     ->middleware('throttle.redirect:'.config('services.google.rate_limit', 5).',1')
     ->name('auth.google');
 Route::get('auth/google/callback/route', [GoogleController::class, 'handleGoogleCallback'])
-    ->middleware('throttle.redirect:'.config('services.google.rate_limit', 5).',1')
     ->name('auth.google.callback');
 
 /*
