@@ -68,7 +68,7 @@ class ThrottleRequestsWithRedirect extends ThrottleRequests
         // Convert to integer and calculate minutes
         $minutes = ceil((int)$retryAfter / 60);
         
-        return redirect()->back()
+        return redirect()->route('login')
             ->withInput()
             ->withErrors([
                 'rate_limit' => 'Too many attempts. Please try again in '.$minutes.' minutes.'
