@@ -16,6 +16,7 @@ return [
             'https://apis.google.com',
             'https://accounts.google.com',
             'https://cdn.jsdelivr.net',
+            'https://cdn.jsdelivr.net/npm/alpinejs',
             'https://cdn.quilljs.com',
             'https://cdn.tailwindcss.com',
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
