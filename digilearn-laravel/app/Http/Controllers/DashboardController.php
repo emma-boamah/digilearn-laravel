@@ -82,7 +82,7 @@ class DashboardController extends Controller
      */
     public function selectLevelGroup(Request $request, $groupId)
     {
-        $validGroups = ['primary-lower', 'primary-upper', 'jhs', 'shs'];
+        $validGroups = ['primary-lower', 'primary-upper', 'jhs', 'shs', 'university'];
 
         if (!in_array($groupId, $validGroups)) {
             return redirect()->route('dashboard.level-selection')
@@ -821,6 +821,10 @@ class DashboardController extends Controller
             'shs-1' => 'SHS 1',
             'shs-2' => 'SHS 2',
             'shs-3' => 'SHS 3',
+            'uni-1' => 'University Year 1',
+            'uni-2' => 'University Year 2',
+            'uni-3' => 'University Year 3',
+            'uni-4' => 'University Year 4',
         ];
 
         return $displayNames[$level] ?? ucwords(str_replace('-', ' ', $level));
@@ -905,6 +909,29 @@ class DashboardController extends Controller
                     'shs-3' => [
                         'title' => 'SHS 3',
                         'description' => 'Final SHS year with WASSCE preparation'
+                    ]
+                ]
+            ],
+            'university' => [
+                'title' => 'University Programs',
+                'description' => 'Undergraduate degree years',
+                'has_illustration' => true,
+                'levels' => [
+                    'uni-1' => [
+                        'title' => 'Year 1',
+                        'description' => 'Foundational courses'
+                    ],
+                    'uni-2' => [
+                        'title' => 'Year 2',
+                        'description' => 'Core program studies'
+                    ],
+                    'uni-3' => [
+                        'title' => 'Year 3',
+                        'description' => 'Advanced program studies'
+                    ],
+                    'uni-4' => [
+                        'title' => 'Year 4',
+                        'description' => 'Capstone and specialization'
                     ]
                 ]
             ]
