@@ -19,7 +19,6 @@ return [
             'https://cdn.quilljs.com',
             'https://cdn.tailwindcss.com',
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
-            "'unsafe-inline'",
         ],
         'style-src' => [
             "'self'",

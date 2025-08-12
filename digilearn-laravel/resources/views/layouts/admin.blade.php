@@ -7,7 +7,7 @@
     <title>@yield('title', 'Admin Dashboard') - ShoutoutGH</title>
 
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
 
     <!-- Chart.js for analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -237,7 +237,7 @@
     </div>
 
     <!-- Alpine.js for interactivity -->
-    <script src="/js/alpine.js" defer nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}" defer crossorigin="anonymous">
         document.addEventListener('DOMContentLoaded', function() {
