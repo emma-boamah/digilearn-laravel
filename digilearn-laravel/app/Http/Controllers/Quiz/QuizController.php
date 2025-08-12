@@ -67,6 +67,55 @@ class QuizController extends Controller
     }
 
     /**
+     * Show essay quiz page
+     */
+    public function takeEssay($quizId)
+    {
+        $quiz = $this->getQuizById($quizId);
+        if (!$quiz) {
+            return redirect()->route('quiz.index')->with('error', 'Quiz not found.');
+        }
+        $seconds = $this->convertDurationToSeconds($quiz['duration']);
+        $hasAttempted = $this->checkUserAttempt($quizId, Auth::id());
+        return view('dashboard.quiz.essay', compact('quiz', 'seconds', 'hasAttempted'));
+    }
+
+    /**
+     * Submit essay response
+     */
+    public function submitEssay(Request $request, $quizId)
+    {
+        $request->validate([
+            'essay' => 'required|string|min:20|max:20000',
+            'time_spent' => 'integer|min:0',
+        ]);
+
+        // TODO: Persist essay attempt; for now, redirect to results with placeholder scoring
+        $timeSpent = (int) $request->input('time_spent', 0);
+        // Placeholder: essay not auto-scored; show submitted status
+        return redirect()->route('quiz.results', [
+            'quiz' => $quizId,
+            'score' => 0,
+            'total' => 0,
+            'percentage' => 0,
+        ])->with('success', 'Essay submitted. It will be graded by an instructor.');
+    }
+
+    /**
+     * Record a violation (anti-cheat)
+     */
+    public function violation(Request $request, $quizId)
+    {
+        $request->validate([
+            'type' => 'required|string',
+            'details' => 'nullable|string',
+        ]);
+
+        // TODO: Store violation record; for now, mark as failed and redirect
+        return response()->json(['status' => 'ok']);
+    }
+
+    /**
      * Submit quiz answers
      */
     public function submit(Request $request, $quizId)

@@ -982,5 +982,6 @@
             }
         });
     </script>
+    @include('dashboard.quiz.partials.anti-cheat')
 </body>
 </html>

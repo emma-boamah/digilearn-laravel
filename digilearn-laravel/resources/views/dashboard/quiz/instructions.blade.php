@@ -398,7 +398,23 @@
                 </div>
             </div>
 
+            <div class="warning-card" style="margin-top:1rem; border-left:4px solid #ef4444; background:#fef2f2; padding:1rem; border-radius:.5rem;">
+                <div style="display:flex; align-items:center; gap:.5rem; color:#991b1b; font-weight:600;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Anti‑Cheat Rules
+                </div>
+                <ul style="margin:.5rem 0 0 1.25rem; color:#7f1d1d;">
+                    <li>No screenshots. Attempting to capture the screen will fail the quiz.</li>
+                    <li>No copying or cutting content. Copy/Cut is disabled and flagged as a violation.</li>
+                    <li>No switching tabs/windows. Leaving this tab will fail the quiz.</li>
+                </ul>
+            </div>
+
             <button class="start-button" onclick="startQuiz()">Start</button>
+            <a href="{{ route('quiz.essay', $quiz['id']) }}" class="action-button secondary">
+                <i class="fas fa-pen-nib"></i>
+                Essay Questions
+            </a>
         </div>
     </div>
 
