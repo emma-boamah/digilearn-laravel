@@ -82,7 +82,7 @@ class DashboardController extends Controller
      */
     public function selectLevelGroup(Request $request, $groupId)
     {
-        $validGroups = ['primary-lower', 'primary-upper', 'jhs', 'shs'];
+        $validGroups = ['primary-lower', 'primary-upper', 'jhs', 'shs', 'university'];
 
         if (!in_array($groupId, $validGroups)) {
             return redirect()->route('dashboard.level-selection')
