@@ -237,11 +237,7 @@
     </div>
 
     <!-- Alpine.js for interactivity -->
-    <script type="module" nonce="{{ request()->attributes->get('csp_nonce') }}">
-        import Alpine from '/js/alpine.module.js';
-        window.Alpine = Alpine;
-        Alpine.start();
-    </script>
+    <script src="/js/alpine.js" defer nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}" defer crossorigin="anonymous">
         document.addEventListener('DOMContentLoaded', function() {
