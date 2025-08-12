@@ -17,6 +17,29 @@ class QuizController extends Controller
         
         // Sample quiz data - replace with actual database queries
         $quizzes = $this->getSampleQuizzes();
+
+        // Personalize with user-specific progress/attempts
+        $userId = Auth::id();
+        foreach ($quizzes as &$quiz) {
+            $attempts = \App\Models\QuizAttempt::where('user_id', $userId)
+                ->where('quiz_id', $quiz['id'])
+                ->orderByDesc('completed_at')
+                ->get(['score_percentage', 'total_questions', 'correct_answers']);
+
+            $quiz['attempts_count'] = $attempts->count();
+            if ($attempts->isNotEmpty()) {
+                $last = $attempts->first();
+                $quiz['user_progress'] = (int) round($last->score_percentage);
+                $quiz['last_result'] = [
+                    'score' => (int) ($last->correct_answers ?? 0),
+                    'total' => (int) ($last->total_questions ?? 0),
+                    'percentage' => (int) round($last->score_percentage ?? 0),
+                ];
+            } else {
+                $quiz['user_progress'] = 0;
+                $quiz['last_result'] = null;
+            }
+        }
         
         return view('dashboard.quiz.index', compact('quizzes', 'selectedLevelGroup'));
     }
