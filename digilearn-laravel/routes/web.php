@@ -85,6 +85,31 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/dashboard/lesson/{lessonId}/save', [DashboardController::class, 'saveLesson'])->name('dashboard.lesson.save');
     Route::delete('/dashboard/lesson/{lessonId}/unsave', [DashboardController::class, 'unsaveLesson'])->name('dashboard.lesson.unsave');
 
+    // University programs
+    Route::get('/dashboard/university/programs', [DashboardController::class, 'universityPrograms'])
+        ->name('dashboard.university.programs');
+    
+    // Program courses
+    Route::get('/dashboard/university/program/{programId}/courses', [DashboardController::class, 'programCourses'])
+        ->name('dashboard.university.program.courses');
+    
+    // Course lessons
+    Route::get('/dashboard/university/course/{courseId}/lessons', [DashboardController::class, 'courseLessons'])
+        ->name('dashboard.university.course.lessons');
+    
+    // Existing routes...
+    Route::get('/dashboard/level-selection', [DashboardController::class, 'levelSelection'])
+        ->name('dashboard.level-selection');
+    
+    Route::post('/dashboard/select-level-group/{groupId}', [DashboardController::class, 'selectLevelGroup'])
+        ->name('dashboard.select-level-group');
+    
+    Route::get('/dashboard/digilearn', [DashboardController::class, 'digilearn'])
+        ->name('dashboard.digilearn');
+    
+    Route::get('/dashboard/lesson/{lessonId}', [DashboardController::class, 'viewLesson'])
+        ->name('dashboard.lesson.view');
+
     // Saved lessons
     Route::get('/dashboard/saved-lessons', [DashboardController::class, 'savedLessons'])->name('dashboard.saved-lessons');
 

@@ -169,6 +169,11 @@ class DashboardController extends Controller
         $selectedLevelGroup = session('selected_level_group');
         $user = Auth::user();
 
+        // For university, redirect to programs
+        if ($selectedLevelGroup === 'university') {
+            return redirect()->route('dashboard.university.programs');
+        }
+
         // Check subscription access
         if (!$this->hasAccessToLevelGroup($user, $selectedLevelGroup)) {
             return redirect()->route('pricing')
@@ -731,6 +736,330 @@ class DashboardController extends Controller
     }
 
     /**
+     * Show University Programs
+     */
+    public function universityPrograms()
+    {
+        if (session('selected_level_group') !== 'university') {
+            return redirect()->route('dashboard.level-selection');
+        }
+
+        $user = Auth::user();
+        $programs = $this->getUniversityPrograms();
+
+        Log::channel('security')->info('university_programs_accessed', [
+            'user_id' => Auth::id(),
+            'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
+            'ip' => request()->ip(),
+            'timestamp' => Carbon::now()->toISOString()
+        ]);
+
+        return view('dashboard.university.programs', compact('programs'));
+    }
+
+    /**
+     * Show Program Courses
+     */
+    public function programCourses($programId)
+    {
+        if (session('selected_level_group') !== 'university') {
+            return redirect()->route('dashboard.level-selection');
+        }
+
+        $user = Auth::user();
+        $program = $this->getProgramById($programId);
+        
+        if (!$program) {
+            return redirect()->route('dashboard.university.programs')
+                ->withErrors(['program' => 'Program not found.']);
+        }
+
+        $courses = $this->getCoursesForProgram($programId);
+        session(['selected_program' => $programId]);
+
+        Log::channel('security')->info('program_courses_accessed', [
+            'user_id' => Auth::id(),
+            'program_id' => $programId,
+            'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
+            'ip' => request()->ip(),
+            'timestamp' => Carbon::now()->toISOString()
+        ]);
+
+        return view('dashboard.university.courses', compact('program', 'courses'));
+    }
+
+    /**
+     * Show Course Lessons
+     */
+    public function courseLessons($courseId)
+    {
+        if (session('selected_level_group') !== 'university') {
+            return redirect()->route('dashboard.level-selection');
+        }
+
+        $user = Auth::user();
+        $course = $this->getCourseById($courseId);
+        
+        if (!$course) {
+            return redirect()->route('dashboard.university.programs')
+                ->withErrors(['course' => 'Course not found.']);
+        }
+
+        $lessons = $this->getLessonsForCourse($courseId);
+        session(['selected_course' => $courseId]);
+
+        Log::channel('security')->info('course_lessons_accessed', [
+            'user_id' => Auth::id(),
+            'course_id' => $courseId,
+            'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
+            'ip' => request()->ip(),
+            'timestamp' => Carbon::now()->toISOString()
+        ]);
+
+        return view('dashboard.university.lessons', compact('course', 'lessons'));
+    }
+
+    /**
+     * Get University Programs
+     */
+    private function getUniversityPrograms()
+    {
+        return [
+            [
+                'id' => 'computer-science',
+                'name' => 'Computer Science',
+                'description' => 'Learn programming, algorithms, data structures, and software engineering',
+                'duration' => '4 Years',
+                'courses_count' => 32,
+                'thumbnail' => 'images/programs/computer-science.jpg',
+                'level' => 'Undergraduate',
+                'department' => 'Engineering & Technology'
+            ],
+            [
+                'id' => 'business-administration',
+                'name' => 'Business Administration',
+                'description' => 'Master business fundamentals, management, and entrepreneurship',
+                'duration' => '4 Years',
+                'courses_count' => 28,
+                'thumbnail' => 'images/programs/business-admin.jpg',
+                'level' => 'Undergraduate',
+                'department' => 'Business & Economics'
+            ],
+            [
+                'id' => 'medicine',
+                'name' => 'Medicine',
+                'description' => 'Comprehensive medical education and clinical training',
+                'duration' => '6 Years',
+                'courses_count' => 45,
+                'thumbnail' => 'images/programs/medicine.jpg',
+                'level' => 'Undergraduate',
+                'department' => 'Health Sciences'
+            ],
+            [
+                'id' => 'engineering',
+                'name' => 'Engineering',
+                'description' => 'Civil, Mechanical, Electrical, and Chemical Engineering',
+                'duration' => '4 Years',
+                'courses_count' => 38,
+                'thumbnail' => 'images/programs/engineering.jpg',
+                'level' => 'Undergraduate',
+                'department' => 'Engineering & Technology'
+            ],
+            [
+                'id' => 'law',
+                'name' => 'Law',
+                'description' => 'Legal studies, jurisprudence, and legal practice',
+                'duration' => '4 Years',
+                'courses_count' => 24,
+                'thumbnail' => 'images/programs/law.jpg',
+                'level' => 'Undergraduate',
+                'department' => 'Law & Social Sciences'
+            ],
+            [
+                'id' => 'education',
+                'name' => 'Education',
+                'description' => 'Teacher training and educational methodology',
+                'duration' => '4 Years',
+                'courses_count' => 26,
+                'thumbnail' => 'images/programs/education.jpg',
+                'level' => 'Undergraduate',
+                'department' => 'Education & Humanities'
+            ]
+        ];
+    }
+
+    /**
+     * Get Program by ID
+     */
+    private function getProgramById($programId)
+    {
+        $programs = $this->getUniversityPrograms();
+        return collect($programs)->firstWhere('id', $programId);
+    }
+
+    /**
+     * Get Courses for Program
+     */
+    private function getCoursesForProgram($programId)
+    {
+        $coursesData = [
+            'computer-science' => [
+                [
+                    'id' => 'cs-101',
+                    'name' => 'Introduction to Programming',
+                    'code' => 'CS 101',
+                    'description' => 'Fundamentals of programming using Python',
+                    'credit_hours' => 3,
+                    'semester' => 1,
+                    'year' => 1,
+                    'lessons_count' => 24,
+                    'thumbnail' => 'images/courses/intro-programming.jpg',
+                    'instructor' => 'Dr. Kwame Asante'
+                ],
+                [
+                    'id' => 'cs-102',
+                    'name' => 'Data Structures',
+                    'code' => 'CS 102',
+                    'description' => 'Arrays, linked lists, stacks, queues, trees, and graphs',
+                    'credit_hours' => 4,
+                    'semester' => 2,
+                    'year' => 1,
+                    'lessons_count' => 28,
+                    'thumbnail' => 'images/courses/data-structures.jpg',
+                    'instructor' => 'Prof. Ama Osei'
+                ],
+                [
+                    'id' => 'cs-201',
+                    'name' => 'Algorithms',
+                    'code' => 'CS 201',
+                    'description' => 'Algorithm design and analysis techniques',
+                    'credit_hours' => 4,
+                    'semester' => 1,
+                    'year' => 2,
+                    'lessons_count' => 32,
+                    'thumbnail' => 'images/courses/algorithms.jpg',
+                    'instructor' => 'Dr. Kofi Mensah'
+                ],
+                [
+                    'id' => 'cs-202',
+                    'name' => 'Database Systems',
+                    'code' => 'CS 202',
+                    'description' => 'Database design, SQL, and database management',
+                    'credit_hours' => 3,
+                    'semester' => 2,
+                    'year' => 2,
+                    'lessons_count' => 26,
+                    'thumbnail' => 'images/courses/database-systems.jpg',
+                    'instructor' => 'Dr. Akosua Frimpong'
+                ]
+            ],
+            'business-administration' => [
+                [
+                    'id' => 'ba-101',
+                    'name' => 'Principles of Management',
+                    'code' => 'BA 101',
+                    'description' => 'Fundamentals of business management and organization',
+                    'credit_hours' => 3,
+                    'semester' => 1,
+                    'year' => 1,
+                    'lessons_count' => 20,
+                    'thumbnail' => 'images/courses/management.jpg',
+                    'instructor' => 'Prof. Yaw Boateng'
+                ],
+                [
+                    'id' => 'ba-102',
+                    'name' => 'Financial Accounting',
+                    'code' => 'BA 102',
+                    'description' => 'Basic accounting principles and financial statements',
+                    'credit_hours' => 4,
+                    'semester' => 2,
+                    'year' => 1,
+                    'lessons_count' => 24,
+                    'thumbnail' => 'images/courses/accounting.jpg',
+                    'instructor' => 'Dr. Efua Adjei'
+                ]
+            ]
+        ];
+
+        return $coursesData[$programId] ?? [];
+    }
+
+    /**
+     * Get Course by ID
+     */
+    private function getCourseById($courseId)
+    {
+        $allCourses = [];
+        $programs = $this->getUniversityPrograms();
+        
+        foreach ($programs as $program) {
+            $courses = $this->getCoursesForProgram($program['id']);
+            $allCourses = array_merge($allCourses, $courses);
+        }
+
+        return collect($allCourses)->firstWhere('id', $courseId);
+    }
+
+    /**
+     * Get Lessons for Course
+     */
+    private function getLessonsForCourse($courseId)
+    {
+        $lessonsData = [
+            'cs-101' => [
+                [
+                    'id' => 'cs101-001',
+                    'title' => 'Introduction to Python Programming',
+                    'description' => 'Getting started with Python syntax and basic concepts',
+                    'duration' => '45 min',
+                    'video_url' => 'videos/courses/cs101/lesson1.mp4',
+                    'thumbnail' => 'images/lessons/python-intro.jpg',
+                    'instructor' => 'Dr. Kwame Asante',
+                    'week' => 1,
+                    'order' => 1
+                ],
+                [
+                    'id' => 'cs101-002',
+                    'title' => 'Variables and Data Types',
+                    'description' => 'Understanding Python variables, strings, numbers, and booleans',
+                    'duration' => '38 min',
+                    'video_url' => 'videos/courses/cs101/lesson2.mp4',
+                    'thumbnail' => 'images/lessons/variables.jpg',
+                    'instructor' => 'Dr. Kwame Asante',
+                    'week' => 1,
+                    'order' => 2
+                ],
+                [
+                    'id' => 'cs101-003',
+                    'title' => 'Control Structures - If Statements',
+                    'description' => 'Conditional logic and decision making in Python',
+                    'duration' => '42 min',
+                    'video_url' => 'videos/courses/cs101/lesson3.mp4',
+                    'thumbnail' => 'images/lessons/control-structures.jpg',
+                    'instructor' => 'Dr. Kwame Asante',
+                    'week' => 2,
+                    'order' => 3
+                ]
+            ],
+            'cs-102' => [
+                [
+                    'id' => 'cs102-001',
+                    'title' => 'Introduction to Data Structures',
+                    'description' => 'Overview of data structures and their importance',
+                    'duration' => '40 min',
+                    'video_url' => 'videos/courses/cs102/lesson1.mp4',
+                    'thumbnail' => 'images/lessons/data-structures-intro.jpg',
+                    'instructor' => 'Prof. Ama Osei',
+                    'week' => 1,
+                    'order' => 1
+                ]
+            ]
+        ];
+
+        return $lessonsData[$courseId] ?? [];
+    }
+
+    /**
      * Update getAvailableLevels to use the new structure
      */
     private function getAvailableLevels()
@@ -907,6 +1236,12 @@ class DashboardController extends Controller
                         'description' => 'Final SHS year with WASSCE preparation'
                     ]
                 ]
+                    ],
+            'university' => [
+                'title' => 'University',
+                'description' => 'Higher education with specialized programs and courses',
+                'has_illustration' => true,
+                'programs' => $this->getUniversityPrograms()
             ]
         ];
     }
