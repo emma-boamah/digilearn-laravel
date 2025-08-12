@@ -97,6 +97,7 @@
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Duration</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Views</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Featured</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-64">Uploader</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Uploaded Date</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Actions</th>
                     </tr>
@@ -126,8 +127,25 @@
                                 </button>
                             </form>
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            @if($video->uploader)
+                                <div class="flex items-center space-x-3">
+                                    <img src="{{ $video->uploader->avatar ? Storage::url($video->uploader->avatar) : 'https://ui-avatars.com/api/?name='.urlencode($video->uploader->name).'&background=random' }}" class="h-8 w-8 rounded-full object-cover" alt="avatar"/>
+                                    <div class="text-sm">
+                                        <div class="text-gray-900 font-medium">{{ $video->uploader->name }}</div>
+                                        <div class="text-gray-500">{{ $video->uploader->email }}</div>
+                                        @if($video->uploader_ip)
+                                            <div class="text-xs text-gray-400">IP: {{ $video->uploader_ip }}</div>
+                                        @endif
+                                    </div>
+                                </div>
+                            @else
+                                <span class="text-sm text-gray-500">Unknown</span>
+                            @endif
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $video->created_at->format('M d, Y') }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="{{ Storage::url($video->video_path) }}" target="_blank" class="text-green-600 hover:text-green-800 mr-3">Watch</a>
                             <button onclick="openEditModal({{ $video->id }})" class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
                             <form action="{{ route('admin.content.videos.destroy', $video) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this video?');">
                                 @csrf

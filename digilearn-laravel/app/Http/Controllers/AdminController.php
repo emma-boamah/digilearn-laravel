@@ -909,7 +909,7 @@ class AdminController extends Controller
     // Content Management - Videos
     public function indexVideos(Request $request)
     {
-        $query = Video::with('uploader');
+        $query = Video::with(['uploader:id,name,email,avatar']);
 
         if ($request->has('search')) {
             $query->where('title', 'like', '%' . $request->search . '%')
@@ -970,6 +970,7 @@ class AdminController extends Controller
             'description' => $request->description,
             'is_featured' => $request->has('is_featured'),
             'uploaded_by' => Auth::id(),
+            'uploader_ip' => get_client_ip(),
             'views' => 0, // Initialize views to 0
         ]);
 

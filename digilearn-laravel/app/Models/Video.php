@@ -18,6 +18,7 @@ class Video extends Model
         'description',
         'is_featured',
         'uploaded_by',
+        'uploader_ip',
     ];
 
     /**
