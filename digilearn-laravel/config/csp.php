@@ -21,11 +21,7 @@ return [
             'https://cdn.tailwindcss.com',
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
             "'unsafe-inline'",
-            "'unsafe-eval'",
-        ],
-        'style-src-elem' => [
-            "'self'",
-            "'unsafe-inline"
+            "'unsafe-eval'", // Required for some inline scripts
         ],
         'style-src' => [
             "'self'",
