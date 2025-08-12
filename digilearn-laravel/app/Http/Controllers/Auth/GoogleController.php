@@ -63,9 +63,10 @@ class GoogleController extends Controller
             // Clear state after verification
             $request->session()->forget('oauth_state');
             
-            // Remove stateless() for web sessions
+            // Use stateless() because we already validate state ourselves
             $googleUser = Socialite::driver('google')
                 ->redirectUrl(route('auth.google.callback'))
+                ->stateless()
                 ->user();
             
             if (!$googleUser->getEmail() || !$googleUser->getId()) {
