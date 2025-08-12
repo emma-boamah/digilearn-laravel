@@ -1150,6 +1150,12 @@ class DashboardController extends Controller
             'shs-1' => 'SHS 1',
             'shs-2' => 'SHS 2',
             'shs-3' => 'SHS 3',
+            'uni-1' => 'University Year 1',
+            'uni-2' => 'University Year 2',
+            'uni-3' => 'University Year 3',
+            'uni-4' => 'University Year 4',
+            'uni-5' => 'University Year 5',
+            'uni-6' => 'University Year 6',
         ];
 
         return $displayNames[$level] ?? ucwords(str_replace('-', ' ', $level));
@@ -1238,10 +1244,35 @@ class DashboardController extends Controller
                 ]
                     ],
             'university' => [
-                'title' => 'University',
-                'description' => 'Higher education with specialized programs and courses',
+                'title' => 'University Programs',
+                'description' => 'Undergraduate degree years',
                 'has_illustration' => true,
-                'programs' => $this->getUniversityPrograms()
+                'levels' => [
+                    'uni-1' => [
+                        'title' => 'Year 1',
+                        'description' => 'Foundational courses'
+                    ],
+                    'uni-2' => [
+                        'title' => 'Year 2',
+                        'description' => 'Core program studies'
+                    ],
+                    'uni-3' => [
+                        'title' => 'Year 3',
+                        'description' => 'Advanced program studies'
+                    ],
+                    'uni-4' => [
+                        'title' => 'Year 4',
+                        'description' => 'Capstone and specialization'
+                    ],
+                    'uni-5' => [
+                        'title' => 'Year 5',
+                        'description' => 'Final year projects and thesis'
+                    ],
+                    'uni-6' => [
+                        'title' => 'Year 6',
+                        'description' => 'Postgraduate or professional studies'
+                    ]
+                ]
             ]
         ];
     }
