@@ -7,12 +7,7 @@
     <title>@yield('title', 'Admin Dashboard') - ShoutoutGH</title>
 
     <!-- Tailwind CSS -->
-    @if(app()->environment('production'))
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    @else
-        <!-- Development fallback: CDN (not for production) -->
-        <script src="https://cdn.tailwindcss.com"></script>
-    @endif
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 
     <!-- Chart.js for analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
