@@ -314,7 +314,7 @@
     <!-- Top Header -->
     <div class="top-header">
         <div class="header-left">
-            <button class="back-button" onclick="goBack()">
+            <button class="back-button" id="btnGoBack">
                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
@@ -410,7 +410,7 @@
                 </ul>
             </div>
 
-            <button class="start-button" onclick="startQuiz()">Start</button>
+            <button class="start-button" id="btnStartQuiz">Start</button>
             <a href="{{ route('quiz.essay', $quiz['id']) }}" class="action-button secondary">
                 <i class="fas fa-pen-nib"></i>
                 Essay Questions
@@ -419,23 +419,21 @@
     </div>
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-        function goBack() {
-            window.history.back();
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnBack = document.getElementById('btnGoBack');
+            if (btnBack) btnBack.addEventListener('click', () => window.history.back());
 
-        function startQuiz() {
-            // Add loading state
-            const button = document.querySelector('.start-button');
-            const originalText = button.textContent;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting Quiz...';
-            button.disabled = true;
-            
-            // Navigate to quiz page
-            setTimeout(() => {
-                const quizId = '{{ $quiz["id"] ?? "1" }}';
-                window.location.href = `/quiz/${quizId}/take`;
-            }, 1000);
-        }
+            const startBtn = document.getElementById('btnStartQuiz');
+            if (startBtn) {
+                startBtn.addEventListener('click', () => {
+                    startBtn.disabled = true;
+                    startBtn.textContent = 'Loading...';
+                    setTimeout(() => {
+                        window.location.href = `{{ route('quiz.take', $quiz['id']) }}`;
+                    }, 300);
+                });
+            }
+        });
     </script>
 </body>
 </html>

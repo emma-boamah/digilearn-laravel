@@ -1,4 +1,4 @@
-<div class="quiz-card" data-quiz-id="{{ $quiz['id'] }}" onclick="openQuiz('{{ $quiz['id'] }}')">
+<div class="quiz-card" data-quiz-id="{{ $quiz['id'] }}" data-open-quiz>
     <!-- Quiz Header with Icon and Badge -->
     <div class="quiz-header">
         <div class="quiz-icon-container">
@@ -64,14 +64,14 @@
 
         <!-- Quiz Actions -->
         <div class="quiz-actions">
-            <button class="quiz-start-btn" onclick="event.stopPropagation(); openQuiz('{{ $quiz['id'] }}')">
+            <button class="quiz-start-btn">
                 <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.01M15 10h1.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
                 {{ isset($quiz['user_progress']) && $quiz['user_progress'] > 0 ? 'Continue Quiz' : 'Start Quiz' }}
             </button>
             @if(($quiz['attempts_count'] ?? 0) > 0)
-                <button class="quiz-preview-btn" onclick="event.stopPropagation(); reviseNotes('{{ $quiz['id'] }}')">
+                <button class="quiz-preview-btn">
                     <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20h9"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>

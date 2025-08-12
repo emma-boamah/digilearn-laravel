@@ -12,6 +12,36 @@
         const youtubeSidebar = document.getElementById('youtubeSidebar');
         const sidebarOverlay = document.getElementById('sidebarOverlay');
 
+        // Delegate clicks for quiz cards and buttons
+        document.body.addEventListener('click', function(e) {
+            const card = e.target.closest('.quiz-card');
+            if (!card) return;
+
+            const quizId = card.getAttribute('data-quiz-id');
+            const startBtn = e.target.closest('.quiz-start-btn');
+            const reviseBtn = e.target.closest('.quiz-preview-btn');
+
+            if (startBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                openQuiz(quizId);
+                return;
+            }
+
+            if (reviseBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                reviseNotes(quizId);
+                return;
+            }
+
+            // Click on card anywhere opens quiz
+            if (card.hasAttribute('data-open-quiz')) {
+                e.preventDefault();
+                openQuiz(quizId);
+            }
+        });
+
         console.log('Sidebar elements:', {
             desktopSidebarToggle,
             mobileSidebarToggle,
@@ -179,7 +209,7 @@
         
         // Navigate to quiz instructions page with proper route
         setTimeout(() => {
-            window.location.href = `/dashboard/quiz/${quizId}/instructions`;
+            window.location.href = `/quiz/${quizId}/instructions`;
         }, 500);
     }
 
@@ -202,7 +232,7 @@
         setTimeout(() => {
             const params = new URLSearchParams(window.location.search);
             // Ideally, fetch the last attempt details via API; fallback to results route with quiz id only
-            window.location.href = `/dashboard/quiz/results?quiz=${quizId}`;
+            window.location.href = `/quiz/results?quiz=${quizId}`;
         }, 300);
     }
 
