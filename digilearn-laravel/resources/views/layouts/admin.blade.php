@@ -7,7 +7,7 @@
     <title>@yield('title', 'Admin Dashboard') - ShoutoutGH</title>
 
     <!-- Tailwind CSS -->
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Chart.js for analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
