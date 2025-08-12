@@ -3,6 +3,36 @@
         initializeSidebar();
         initializeSearch();
         initializeDropdowns();
+
+        // Delegate clicks for quiz cards and buttons
+        document.body.addEventListener('click', function(e) {
+            const card = e.target.closest('.quiz-card');
+            if (!card) return;
+
+            const quizId = card.getAttribute('data-quiz-id');
+            const startBtn = e.target.closest('.quiz-start-btn');
+            const reviseBtn = e.target.closest('.quiz-preview-btn');
+
+            if (startBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                openQuiz(quizId);
+                return;
+            }
+
+            if (reviseBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                reviseNotes(quizId);
+                return;
+            }
+
+            // Click on card anywhere opens quiz
+            if (card.hasAttribute('data-open-quiz')) {
+                e.preventDefault();
+                openQuiz(quizId);
+            }
+        });
     });
 
     function initializeSidebar() {

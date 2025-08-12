@@ -584,7 +584,7 @@
     <!-- Top Header -->
     <div class="top-header">
         <div class="header-left">
-            <button class="back-button" onclick="confirmExit()">
+            <button class="back-button" id="btnConfirmExit">
                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
@@ -626,7 +626,7 @@
             </div>
             
             <div class="quiz-actions">
-                <button class="submit-quiz-btn" id="submitQuizBtn" onclick="submitQuiz()">Submit Quiz</button>
+                <button class="submit-quiz-btn" id="submitQuizBtn">Submit Quiz</button>
             </div>
         </div>
 
@@ -646,13 +646,13 @@
             </div>
             
             <div class="navigation-buttons">
-                <button class="nav-btn" id="prevBtn" onclick="previousQuestion()" disabled>
+                <button class="nav-btn" id="prevBtn" disabled>
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                     </svg>
                     Previous
                 </button>
-                <button class="nav-btn primary" id="nextBtn" onclick="nextQuestion()">
+                <button class="nav-btn primary" id="nextBtn">
                     Next
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -670,8 +670,8 @@
                 <p class="modal-subtitle">Are you sure you want to submit your quiz? You cannot change your answers after submission.</p>
             </div>
             <div class="modal-actions">
-                <button class="modal-btn secondary" onclick="closeModal()">Cancel</button>
-                <button class="modal-btn primary" onclick="confirmSubmit()">Submit</button>
+                <button class="modal-btn secondary" id="btnCancelModal">Cancel</button>
+                <button class="modal-btn primary" id="btnConfirmSubmit">Submit</button>
             </div>
         </div>
     </div>
