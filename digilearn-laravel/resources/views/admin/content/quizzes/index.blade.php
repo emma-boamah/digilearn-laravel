@@ -14,6 +14,22 @@
             </button>
         </div>
 
+        @if(isset($subjects) && $subjects->count())
+        <div class="mb-6 grid grid-cols-1 lg:grid-cols-4 gap-4">
+            <div class="lg:col-span-1 bg-gray-50 rounded-lg border border-gray-200 p-4">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center"><i class="fas fa-book mr-2"></i> Subjects</h3>
+                <ul class="space-y-2 max-h-64 overflow-auto pr-1">
+                    @foreach($subjects as $s)
+                    <li class="flex items-center justify-between">
+                        <a href="?search={{ urlencode($s->subject) }}" class="text-sm text-gray-700 hover:text-blue-600">{{ $s->subject }}</a>
+                        <span class="text-xs text-gray-500">{{ $s->count }}</span>
+                    </li>
+                    @endforeach
+                </ul>
+            </div>
+            <div class="lg:col-span-3">
+        @endif
+
         <!-- Search and Filter Section -->
         <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <form action="{{ route('admin.content.quizzes.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -89,7 +105,8 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $quiz->title }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 @if($quiz->video)
-                                    Video: {{ $quiz->video->title }}
+                                    <div>Video: {{ $quiz->video->title }}</div>
+                                    <a href="{{ route('admin.content.videos.index') }}?search={{ urlencode($quiz->video->title) }}" class="text-xs text-blue-600 hover:text-blue-800">Open video</a>
                                 @elseif($quiz->subject)
                                     Subject: {{ $quiz->subject }}
                                 @else
@@ -135,6 +152,11 @@
         <div class="mt-6">
             {{ $quizzes->links() }}
         </div>
+
+        @if(isset($subjects) && $subjects->count())
+            </div>
+        </div>
+        @endif
     </div>
 </div>
 
@@ -152,8 +174,18 @@
                 <input type="text" name="title" id="add_title" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
             </div>
             <div class="mb-4">
-                <label for="add_subject" class="block text-sm font-medium text-gray-700">Subject (Optional)</label>
-                <input type="text" name="subject" id="add_subject" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <label for="add_subject" class="block text-sm font-medium text-gray-700">Subject</label>
+                <div class="flex gap-2">
+                    <input type="text" name="subject" id="add_subject" placeholder="e.g., Mathematics" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    @if(isset($subjects) && $subjects->count())
+                    <select id="subject_select" class="mt-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <option value="">Choose existing</option>
+                        @foreach($subjects as $s)
+                            <option value="{{ $s->subject }}">{{ $s->subject }}</option>
+                        @endforeach
+                    </select>
+                    @endif
+                </div>
             </div>
             <div class="mb-4">
                 <label for="add_video_id" class="block text-sm font-medium text-gray-700">Video Course (Optional)</label>
@@ -163,6 +195,7 @@
                         <option value="{{ $video->id }}">{{ $video->title }}</option>
                     @endforeach
                 </select>
+                <p class="text-xs text-gray-500 mt-1">Tip: Create a quiz with the same title as the video to link them.</p>
             </div>
             <div class="mb-4">
                 <label for="add_grade_level" class="block text-sm font-medium text-gray-700">Grade Level (Optional)</label>
@@ -267,6 +300,16 @@
         document.getElementById('edit_is_featured').checked = isFeatured;
 
         openModal('editQuizModal');
+    }
+
+    const subjectSelect = document.getElementById('subject_select');
+    if (subjectSelect) {
+        subjectSelect.addEventListener('change', function() {
+            const v = this.value;
+            if (v) {
+                document.getElementById('add_subject').value = v;
+            }
+        });
     }
 </script>
 @endpush

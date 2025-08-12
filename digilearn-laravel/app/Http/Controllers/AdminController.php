@@ -1071,7 +1071,13 @@ class AdminController extends Controller
         $videos = Video::select('id', 'title')->get(); // For video course filter
         $uploaders = User::whereHas('quizzes')->select('id', 'name')->get(); // Users who have uploaded quizzes
 
-        return view('admin.content.quizzes.index', compact('quizzes', 'gradeLevels', 'videos', 'uploaders'));
+        $subjects = Quiz::select('subject', DB::raw('COUNT(*) as count'))
+            ->whereNotNull('subject')
+            ->groupBy('subject')
+            ->orderBy('subject')
+            ->get();
+
+        return view('admin.content.quizzes.index', compact('quizzes', 'gradeLevels', 'videos', 'uploaders', 'subjects'));
     }
 
     public function storeQuiz(Request $request)
