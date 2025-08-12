@@ -49,8 +49,8 @@
             </div>
         </div>
 
-        <!-- Quiz Progress (if attempted before) -->
-        @if(isset($quiz['user_progress']) && $quiz['user_progress'] > 0)
+        <!-- Quiz Progress (only if user has attempted) -->
+        @if(($quiz['attempts_count'] ?? 0) > 0 && ($quiz['user_progress'] ?? 0) > 0)
         <div class="quiz-progress">
             <div class="progress-label">
                 <span>Your Progress</span>
@@ -70,13 +70,15 @@
                 </svg>
                 {{ isset($quiz['user_progress']) && $quiz['user_progress'] > 0 ? 'Continue Quiz' : 'Start Quiz' }}
             </button>
-            <button class="quiz-preview-btn" onclick="event.stopPropagation(); previewQuiz('{{ $quiz['id'] }}')">
-                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                </svg>
-                Preview
-            </button>
+            @if(($quiz['attempts_count'] ?? 0) > 0)
+                <button class="quiz-preview-btn" onclick="event.stopPropagation(); reviseNotes('{{ $quiz['id'] }}')">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20h9"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                    </svg>
+                    Revise Notes
+                </button>
+            @endif
         </div>
     </div>
 

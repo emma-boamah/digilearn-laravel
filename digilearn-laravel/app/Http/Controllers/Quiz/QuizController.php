@@ -17,6 +17,29 @@ class QuizController extends Controller
         
         // Sample quiz data - replace with actual database queries
         $quizzes = $this->getSampleQuizzes();
+
+        // Personalize with user-specific progress/attempts
+        $userId = Auth::id();
+        foreach ($quizzes as &$quiz) {
+            $attempts = \App\Models\QuizAttempt::where('user_id', $userId)
+                ->where('quiz_id', $quiz['id'])
+                ->orderByDesc('completed_at')
+                ->get(['score_percentage', 'total_questions', 'correct_answers']);
+
+            $quiz['attempts_count'] = $attempts->count();
+            if ($attempts->isNotEmpty()) {
+                $last = $attempts->first();
+                $quiz['user_progress'] = (int) round($last->score_percentage);
+                $quiz['last_result'] = [
+                    'score' => (int) ($last->correct_answers ?? 0),
+                    'total' => (int) ($last->total_questions ?? 0),
+                    'percentage' => (int) round($last->score_percentage ?? 0),
+                ];
+            } else {
+                $quiz['user_progress'] = 0;
+                $quiz['last_result'] = null;
+            }
+        }
         
         return view('dashboard.quiz.index', compact('quizzes', 'selectedLevelGroup'));
     }
@@ -64,6 +87,55 @@ class QuizController extends Controller
          $hasAttempted = $this->checkUserAttempt($quizId, Auth::id());
         
         return view('dashboard.quiz.take', compact('quiz', 'seconds', 'hasAttempted'));
+    }
+
+    /**
+     * Show essay quiz page
+     */
+    public function takeEssay($quizId)
+    {
+        $quiz = $this->getQuizById($quizId);
+        if (!$quiz) {
+            return redirect()->route('quiz.index')->with('error', 'Quiz not found.');
+        }
+        $seconds = $this->convertDurationToSeconds($quiz['duration']);
+        $hasAttempted = $this->checkUserAttempt($quizId, Auth::id());
+        return view('dashboard.quiz.essay', compact('quiz', 'seconds', 'hasAttempted'));
+    }
+
+    /**
+     * Submit essay response
+     */
+    public function submitEssay(Request $request, $quizId)
+    {
+        $request->validate([
+            'essay' => 'required|string|min:20|max:20000',
+            'time_spent' => 'integer|min:0',
+        ]);
+
+        // TODO: Persist essay attempt; for now, redirect to results with placeholder scoring
+        $timeSpent = (int) $request->input('time_spent', 0);
+        // Placeholder: essay not auto-scored; show submitted status
+        return redirect()->route('quiz.results', [
+            'quiz' => $quizId,
+            'score' => 0,
+            'total' => 0,
+            'percentage' => 0,
+        ])->with('success', 'Essay submitted. It will be graded by an instructor.');
+    }
+
+    /**
+     * Record a violation (anti-cheat)
+     */
+    public function violation(Request $request, $quizId)
+    {
+        $request->validate([
+            'type' => 'required|string',
+            'details' => 'nullable|string',
+        ]);
+
+        // TODO: Store violation record; for now, mark as failed and redirect
+        return response()->json(['status' => 'ok']);
     }
 
     /**

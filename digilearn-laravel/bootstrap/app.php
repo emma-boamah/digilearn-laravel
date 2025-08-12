@@ -9,9 +9,7 @@ use App\Http\Middleware\CheckWebsiteLock;
 use App\Console\Commands\ClearEmailVerificationCache;
 use App\Http\Middleware\SuperuserMiddleware;
 use App\Http\Middleware\TrackUsersActivity;
-use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Http\Request;
+use App\Http\Middleware\RealIpMiddleware;
 
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -28,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
         ]);
         // Global middleware (applies to all requests)
+        $middleware->append(RealIpMiddleware::class);
         $middleware->append(\Illuminate\Session\Middleware\StartSession::class);
         $middleware->append(SecurityHeaders::class);
         $middleware->append(CheckWebsiteLock::class);

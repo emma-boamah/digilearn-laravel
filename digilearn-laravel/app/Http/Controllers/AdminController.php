@@ -909,7 +909,7 @@ class AdminController extends Controller
     // Content Management - Videos
     public function indexVideos(Request $request)
     {
-        $query = Video::with('uploader');
+        $query = Video::with(['uploader:id,name,email,avatar']);
 
         if ($request->has('search')) {
             $query->where('title', 'like', '%' . $request->search . '%')
@@ -970,6 +970,8 @@ class AdminController extends Controller
             'description' => $request->description,
             'is_featured' => $request->has('is_featured'),
             'uploaded_by' => Auth::id(),
+            'uploader_ip' => get_client_ip(),
+            'uploader_user_agent' => $request->userAgent(),
             'views' => 0, // Initialize views to 0
         ]);
 
@@ -1069,8 +1071,13 @@ class AdminController extends Controller
         $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3'];
         $videos = Video::select('id', 'title')->get(); // For video course filter
         $uploaders = User::whereHas('quizzes')->select('id', 'name')->get(); // Users who have uploaded quizzes
+        $subjects = Quiz::select('subject', DB::raw('COUNT(*) as count'))
+            ->whereNotNull('subject')
+            ->groupBy('subject')
+            ->orderBy('subject')
+            ->get();
 
-        return view('admin.content.quizzes.index', compact('quizzes', 'gradeLevels', 'videos', 'uploaders'));
+        return view('admin.content.quizzes.index', compact('quizzes', 'gradeLevels', 'videos', 'uploaders', 'subjects'));
     }
 
     public function storeQuiz(Request $request)

@@ -183,24 +183,26 @@
         }, 500);
     }
 
-    function previewQuiz(quizId) {
+    function reviseNotes(quizId) {
         // Add visual feedback
         const card = document.querySelector(`[data-quiz-id="${quizId}"]`);
         if (card) {
-            const previewBtn = card.querySelector('.quiz-preview-btn');
-            if (previewBtn) {
-                previewBtn.innerHTML = `
+            const btn = card.querySelector('.quiz-preview-btn');
+            if (btn) {
+                btn.innerHTML = `
                     <svg class="btn-icon animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                     </svg>
-                    Loading...
+                    Opening...
                 `;
             }
         }
         
-        // Navigate to quiz preview page
+        // Navigate to last results page (revise notes)
         setTimeout(() => {
-            window.location.href = `/dashboard/quiz/${quizId}/preview`;
+            const params = new URLSearchParams(window.location.search);
+            // Ideally, fetch the last attempt details via API; fallback to results route with quiz id only
+            window.location.href = `/dashboard/quiz/results?quiz=${quizId}`;
         }, 300);
     }
 

@@ -147,7 +147,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [QuizController::class, 'index'])->name('index');
         Route::get('/{quizId}/instructions', [QuizController::class, 'instructions'])->name('instructions');
         Route::get('/{quizId}/take', [QuizController::class, 'take'])->name('take');
+        Route::get('/{quizId}/essay', [QuizController::class, 'takeEssay'])->name('essay');
         Route::post('/{quizId}/submit', [QuizController::class, 'submit'])->name('submit');
+        Route::post('/{quizId}/essay/submit', [QuizController::class, 'submitEssay'])->name('essay.submit');
+        Route::post('/{quizId}/violation', [QuizController::class, 'violation'])->name('violation');
         Route::get('/results', [QuizController::class, 'results'])->name('results');
     });
 
