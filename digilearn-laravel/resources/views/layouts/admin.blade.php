@@ -6,11 +6,10 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Admin Dashboard') - ShoutoutGH</title>
 
-    <!-- Tailwind CSS (production) -->
-    @if(app()->environment('production'))
+    <!-- Tailwind CSS -->
+    @if (file_exists(public_path('css/app.css')))
         <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     @else
-        <!-- Development fallback: CDN (not for production) -->
         <script src="https://cdn.tailwindcss.com"></script>
     @endif
 
