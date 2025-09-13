@@ -79,3 +79,74 @@ cd digilearn-laravel/digilearn-laravel
 ```sh
 composer install --optimize-autoloader --no-dev
 ```
+
+### 3. Install Node Dependencies & Buildings Assets
+
+```sh
+npm install
+npm run build
+```
+
+### 4. Configure Environment
+Copy `.env.example` to `.env` and set your environment variables:
+
+```sh
+cp .env.example .env
+php artisan key:generate
+```
+
+Set database, Redis, mail, and other credentials in `.env`.
+
+### 5. Run Migrations
+
+```sh
+php artisan migrate --force
+```
+
+### 6. Set Up Storage
+```sh
+php artisan storage:link
+```
+### 7. Set Up Queue Worker (Production)
+Install Supervisor and configure a worker for Laravel queues:
+
+```sh
+sudo apt install supervisor
+# Add a config file for laravel-worker
+```
+
+### 8. Set Up Web Server
+Configure Nginx or Apache to serve the `public` directory.
+
+### 9. Set Up SSL (Recommended)
+Use Certbot to enable HTTPS.
+
+---
+
+## Production Checklist
+
+- [ ] All required PHP extensions installed
+- [ ] Database and Redis running
+- [ ] Supervisor running for queue workers
+- [ ] Storage linked (`php artisan storage:link`) or `sail artisan storage:link` (For Docker Sail Users)
+- [ ] Proper file permissions (`storage`, `bootstrap/cache`)
+- [ ] Environment variables set
+- [ ] Assets built (`npm run build`)
+- [ ] Web server configured for `public` directory
+- [ ] SSL enabled
+
+---
+
+## Security
+- Uses strict Content Security Policy (CSP) headers
+- Rate limiting and throttling enabled
+- CSRF protection
+- Secure session and cookie settings
+
+## Contributing
+
+1. Fork the repo
+2. Create your feature branch (`git checkout -b feature/my-feature`)
+3. Commit your changes
+4. Push to the branch
+5. Create a pull request
