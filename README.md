@@ -37,3 +37,10 @@ Digilearn is an oline learning platform built with laravel. It supports user aut
 ---
 
 ## Installation
+
+### 1. Clone the Repository
+
+```sh
+git clone https://github.com/emma-boamah/digilearn-laravel-git
+cd digilearn-laravel/digilearn-laravel
+```
