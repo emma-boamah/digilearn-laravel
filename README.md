@@ -26,3 +26,14 @@ Digilearn is an oline learning platform built with laravel. It supports user aut
 ### PHP EXTENSIONS
 - `pdo_mysql`
 - `mbstring`
+- `openssl`
+- `tokenizer`
+- `xml`
+- `fileinfo`
+- `gd` or `imagick`
+- `redis`
+- `zip`
+
+---
+
+## Installation
