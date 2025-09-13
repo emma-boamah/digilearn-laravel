@@ -45,6 +45,14 @@ Digilearn is an oline learning platform built with laravel. It supports user aut
 - alpinejs (frontend interactivity)
 - concurrently, stylelint, autoprefixer, postcss (dev tools)
 
+### Environment Variables
+- **Database:** MySql and MongoDB credentials
+- **Cache/Queue:** Redis credentials
+- **Session:** Secure session settings
+- **Mail:** Mailer config (default: log)
+- **AWS:** For file storage (optional, not required unless using S3)
+- **Security:** CSP, HSTS, rate limiting, etc.
+
 ### PHP EXTENSIONS
 - `pdo_mysql`
 - `mbstring`
