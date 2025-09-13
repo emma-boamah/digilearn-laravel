@@ -19,3 +19,10 @@ Digilearn is an oline learning platform built with laravel. It supports user aut
 - **Composer**
 - **Node.js 18+** and **npm** (for asset compilation)
 - **Redis**  (for queues, throttling, and caching)
+- **Supervisor** (for queue workers)
+- **Nginx** or **Apache**
+- **Certbot** (for SSL, optional but recommended)
+
+### PHP EXTENSIONS
+- `pdo_mysql`
+- `mbstring`
