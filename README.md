@@ -32,12 +32,12 @@ Digilearn is an oline learning platform built with laravel. It supports user aut
 - Docker & Docker Compose (Use the provided docker-compose.yml for local/dev setup)
 
 ### Laravel Packages Used
-- laravel/framework (core)
-- laravel/socialite (OAuth login)
-- laravel/tinker (REPL)
-- mongodb/laravel-mongodb (MongoDB support)
-- pbmedia/laravel-ffmpeg (video processing)
-- predis/predis (Redis client)
+- `laravel/framework` (core)
+- `laravel/socialite` (OAuth login)
+- `laravel/tinker` (REPL)
+- `mongodb/laravel-mongodb` (MongoDB support)
+- `pbmedia/laravel-ffmpeg` (video processing)
+- `predis/predis` (Redis client)
 
 ### Node Packages Used
 - vite (asset bunding)
