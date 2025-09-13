@@ -1,6 +1,8 @@
 # Digilearn Laravel
 Digilearn is an oline learning platform built with laravel. It supports user authentication, lesson management,virtual classrooms, quizzes, documents, admin controls, and more.
 
+---
+
 ## Features
 - User registration, login, and unlock flow
 - Role-based access (admin, student)
@@ -11,7 +13,10 @@ Digilearn is an oline learning platform built with laravel. It supports user aut
 - Admin dashboard for content and user management
 - Security headers and CSP enforcement
 
+---
+
 ## Requirements
+
 ### Server
 - **Linux** (Ubuntu 22.04+ recommended)
 - **PHP 8.1+**
@@ -22,6 +27,23 @@ Digilearn is an oline learning platform built with laravel. It supports user aut
 - **Supervisor** (for queue workers)
 - **Nginx** or **Apache**
 - **Certbot** (for SSL, optional but recommended)
+
+### Docker
+- Docker & Docker Compose (Use the provided docker-compose.yml for local/dev setup)
+
+### Laravel Packages Used
+- laravel/framework (core)
+- laravel/socialite (OAuth login)
+- laravel/tinker (REPL)
+- mongodb/laravel-mongodb (MongoDB support)
+- pbmedia/laravel-ffmpeg (video processing)
+- predis/predis (Redis client)
+
+### Node Packages Used
+- vite (asset bunding)
+- sass (SCSS compilation)
+- alpinejs (frontend interactivity)
+- concurrently, stylelint, autoprefixer, postcss (dev tools)
 
 ### PHP EXTENSIONS
 - `pdo_mysql`
@@ -43,4 +65,9 @@ Digilearn is an oline learning platform built with laravel. It supports user aut
 ```sh
 git clone https://github.com/emma-boamah/digilearn-laravel-git
 cd digilearn-laravel/digilearn-laravel
+```
+
+### 2. Install PHP Dependencies
+```sh
+composer install --optimize-autoloader --no-dev
 ```
