@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CheckWebsiteLock;
@@ -10,6 +12,7 @@ use App\Console\Commands\ClearEmailVerificationCache;
 use App\Http\Middleware\SuperuserMiddleware;
 use App\Http\Middleware\TrackUsersActivity;
 use App\Http\Middleware\RealIpMiddleware;
+use App\Http\Middleware\ThrottleRequestsWithRedirect;
 
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -23,11 +26,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // Web middleware group
         $middleware->web(append: [
             // Add web-specific middleware here if needed
-            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            ShareErrorsFromSession::class,
         ]);
         // Global middleware (applies to all requests)
         $middleware->append(RealIpMiddleware::class);
-        $middleware->append(\Illuminate\Session\Middleware\StartSession::class);
+        $middleware->append(StartSession::class);
         $middleware->append(SecurityHeaders::class);
         $middleware->append(CheckWebsiteLock::class);
         $middleware->append(TrackUsersActivity::class);
@@ -43,7 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => AdminMiddleware::class,
             'check.lock' => CheckWebsiteLock::class,
             'superuser' => SuperuserMiddleware::class,
-            'throttle.redirect' => \App\Http\Middleware\ThrottleRequestsWithRedirect::class,
+            'throttle.redirect' => ThrottleRequestsWithRedirect::class,
         ]);
 
         // Rate limiting configuration

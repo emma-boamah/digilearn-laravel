@@ -1,4 +1,4 @@
-<style>
+<style nonce="{{ request()->attributes->get('csp_nonce') }}">
     /* Footer styles */
     .footer {
         background-color: var(--white);

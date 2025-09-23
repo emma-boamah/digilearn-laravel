@@ -861,6 +861,61 @@
             font-weight: 500;
         }
 
+        /* Course-specific styles */
+        .course-description {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            margin: 0.5rem 0;
+            line-height: 1.4;
+        }
+
+        .course-lessons-count {
+            font-size: 0.75rem;
+            color: var(--secondary-blue);
+            font-weight: 500;
+            margin: 0.25rem 0;
+        }
+
+        .lesson-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .lesson-action-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .lesson-action-btn.primary {
+            background-color: var(--primary-red);
+            color: var(--white);
+        }
+
+        .lesson-action-btn.primary:hover {
+            background-color: var(--primary-red-hover);
+        }
+
+        .lesson-action-btn.secondary {
+            background-color: var(--white);
+            color: var(--secondary-blue);
+            border: 1px solid var(--secondary-blue);
+        }
+
+        .lesson-action-btn.secondary:hover {
+            background-color: var(--secondary-blue);
+            color: var(--white);
+        }
+
         .mobile-search-toggle {
             display: none; /* Hidden by default */
             background: var(--secondary-blue);
@@ -1471,10 +1526,100 @@
                 </div>
             </div>
             
-            <!-- Content Section with Lessons Grid -->
+            <!-- Content Section with Lessons/Courses Grid -->
             <div class="content-section">
                 <div class="content-grid">
-                    @forelse($lessons ?? [] as $lesson)
+                    @if(isset($universityCourses))
+                        {{-- Display University Courses --}}
+                        @forelse($universityCourses as $course)
+                        <div class="lesson-card hover-video-card" data-lesson-id="{{ $course['id'] }}">
+                            <div class="lesson-thumbnail">
+                                <!-- Video element for hover-to-play functionality -->
+                                <video 
+                                    id="lesson-video-{{ $course['id'] }}" 
+                                    class="lesson-video" 
+                                    muted 
+                                    loop 
+                                    preload="metadata"
+                                    poster="{{ secure_asset($course['thumbnail']) }}"
+                                >
+                                    <source src="{{ secure_asset($course['video_url']) }}" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                                
+                                <!-- Fallback image if video fails to load -->
+                                <img 
+                                    src="{{ secure_asset($course['thumbnail']) }}" 
+                                    alt="{{ $course['title'] }}" 
+                                    class="lesson-fallback-image"
+                                    style="display: none;"
+                                    onerror="this.src='https://via.placeholder.com/400x225/E11E2D/ffffff?text=Course+Video'"
+                                >
+                                
+                                <div class="lesson-duration">{{ $course['duration'] }}</div>
+                                
+                                <!-- Level badge -->
+                                <div class="lesson-level-badge">{{ $course['level_display'] ?? 'Course' }}</div>
+                                
+                                <!-- Play overlay that appears on hover -->
+                                <div class="play-overlay">
+                                    <div class="play-button">
+                                        <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M8 5v14l11-7z"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="lesson-info">
+                                <h3 class="lesson-title">{{ $course['title'] }}</h3>
+                                <div class="lesson-meta">
+                                    <span class="lesson-subject">({{ $course['subject'] }})</span>
+                                    <span>{{ $course['instructor'] }} | {{ $course['year'] }}</span>
+                                </div>
+                                @if(isset($course['description']))
+                                <p class="course-description" style="font-size: 0.875rem; color: var(--gray-600); margin: 0.5rem 0;">
+                                    {{ $course['description'] }}
+                                </p>
+                                @endif
+                                @if(isset($course['lessons_count']))
+                                <p class="course-lessons-count" style="font-size: 0.75rem; color: var(--secondary-blue); font-weight: 500;">
+                                    {{ $course['lessons_count'] }} lessons • {{ $course['credit_hours'] ?? 3 }} credit hours
+                                </p>
+                                @endif
+                                <div class="lesson-actions">
+                                    @if(isset($course['first_lesson_id']))
+                                    <a href="{{ route('dashboard.lesson.view', ['lessonId' => $course['first_lesson_id']]) }}" class="lesson-action-btn primary">
+                                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M8 5v14l11-7z"/>
+                                        </svg>
+                                        Start Course
+                                    </a>
+                                    @else
+                                    <a href="{{ route('dashboard.university.course.lessons.by-id', ['courseId' => $course['id']]) }}" class="lesson-action-btn primary">
+                                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M8 5v14l11-7z"/>
+                                        </svg>
+                                        View Lessons
+                                    </a>
+                                    @endif
+                                    <a href="{{ route('quiz.index') }}" class="lesson-action-btn secondary">
+                                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        Quiz
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        @empty
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                            <h3 style="color: var(--gray-600); margin-bottom: 1rem;">No courses available</h3>
+                            <p style="color: var(--gray-500);">University courses are coming soon!</p>
+                        </div>
+                        @endforelse
+                    @else
+                        {{-- Display Regular Lessons --}}
+                        @forelse($lessons ?? [] as $lesson)
                     <div class="lesson-card hover-video-card" data-lesson-id="{{ $lesson['id'] }}">
                         <div class="lesson-thumbnail">
                             <!-- Video element for hover-to-play functionality -->
@@ -1541,6 +1686,7 @@
                         <p style="color: var(--gray-500);">Lessons for {{ ucwords(str_replace('-', ' ', $selectedLevelGroup)) }} are coming soon!</p>
                     </div>
                     @endforelse
+                    @endif
                 </div>
             </div>
         </main>

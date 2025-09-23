@@ -931,6 +931,7 @@ class AdminController extends Controller
         $videos = $query->orderBy('created_at', 'desc')->paginate(10);
 
         $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3']; // Example grades
+        $quizzes = Quiz::all(); // For associating quizzes
 
         // Video statistics
         $totalVideos = Video::count();
@@ -938,7 +939,7 @@ class AdminController extends Controller
         $averageDurationSeconds = Video::avg('duration_seconds');
         $averageDuration = $averageDurationSeconds ? gmdate("H:i:s", $averageDurationSeconds) : '00:00:00';
 
-        return view('admin.content.videos.index', compact('videos', 'gradeLevels', 'totalVideos', 'mostWatchedVideo', 'averageDuration'));
+        return view('admin.content.videos.index', compact('videos', 'gradeLevels', 'totalVideos', 'mostWatchedVideo', 'averageDuration', 'quizzes'));
     }
 
     public function storeVideo(Request $request)
@@ -961,7 +962,13 @@ class AdminController extends Controller
         // Simulate duration calculation (in a real app, you'd use a video processing library)
         $durationSeconds = rand(60, 3600); // Placeholder duration
 
-        Video::create([
+        // Handle document upload
+        $documentPath = null;
+        if ($request->hasFile('document_file')) {
+            $documentPath = $request->file('document_file')->store('documents', 'public');
+        }
+
+        $video = Video::create([
             'title' => $request->title,
             'video_path' => $videoPath,
             'thumbnail_path' => $thumbnailPath,
@@ -974,6 +981,18 @@ class AdminController extends Controller
             'uploader_user_agent' => $request->userAgent(),
             'views' => 0, // Initialize views to 0
         ]);
+
+        // Handle quiz association
+        if ($request->filled('quiz_id')) {
+            $video->quiz_id = $request->quiz_id;
+            $video->save();
+        }
+
+        // Save document path if uploaded
+        if ($documentPath) {
+            $video->document_path = $documentPath;
+            $video->save();
+        }
 
         return redirect()->route('admin.content.videos.index')->with('success', 'Video uploaded successfully!');
     }
@@ -1005,6 +1024,17 @@ class AdminController extends Controller
                 Storage::disk('public')->delete($video->thumbnail_path);
             }
             $video->thumbnail_path = $request->file('thumbnail_file')->store('thumbnails', 'public');
+        }
+
+        // Handle document upload
+        if ($request->hasFile('document_file')) {
+            $documentPath = $request->file('document_file')->store('documents', 'public');
+            $video->document_path = $documentPath;
+        }
+
+        // Handle quiz association
+        if ($request->filled('quiz_id')) {
+            $video->quiz_id = $request->quiz_id;
         }
 
         $video->update([

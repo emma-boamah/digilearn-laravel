@@ -370,6 +370,7 @@
             height: 55px;
             border-radius: 50%;
             border: 1px solid var(--border);
+            text-decoration-line: none;
             background: white;
             display: flex;
             align-items: center;

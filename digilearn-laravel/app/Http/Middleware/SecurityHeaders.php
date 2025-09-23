@@ -56,11 +56,12 @@ class SecurityHeaders
         // Content Security Policy
         if (Config::get('security.headers.csp_enabled', true)) {
             $csp = $this->buildContentSecurityPolicy($request, $nonce);
-            $response->headers->set('Content-Security-Policy', $csp);
             
-            // Report-Only mode for development
-            if (Config::get('security.headers.csp_report_only', false)) {
+            // Check if report-only mode is enabled
+            if (Config::get('csp.report_only', false)) {
                 $response->headers->set('Content-Security-Policy-Report-Only', $csp);
+            } else {
+                $response->headers->set('Content-Security-Policy', $csp);
             }
         }
     }

@@ -1338,7 +1338,7 @@
     <!-- Header -->
     <header class="header">
         <div class="header-left">
-            <button class="back-button" onclick="history.back()">
+            <button class="back-button" id="backButton">
                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
@@ -2074,6 +2074,16 @@
     </div>
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        // Back button functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const backButton = document.getElementById('backButton');
+            if (backButton) {
+                backButton.addEventListener('click', function() {
+                    history.back();
+                });
+            }
+        });
+
         // Navigation functionality
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', function(e) {

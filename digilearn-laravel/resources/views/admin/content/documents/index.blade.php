@@ -5,7 +5,7 @@
 @section('page-description', 'Upload, edit, and manage educational documents.')
 
 @section('content')
-<div class="container mx-auto px-4 py-6">
+<div class="container mx-auto px-4 py-6" x-data="{ showAddModal: false, showDeleteModal: false, deleteUrl: '' }">
     <div class="bg-white shadow-md rounded-lg p-6">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-semibold text-gray-800">All Documents</h2>
@@ -112,7 +112,7 @@
     </div>
 
     <!-- Add New Document Modal -->
-    <div x-data="{ showAddModal: false }" x-show="showAddModal" x-cloak class="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50">
+    <div x-show="showAddModal" x-cloak class="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50">
         <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 lg:w-1/3 shadow-lg rounded-md bg-white">
             <div class="flex justify-between items-center pb-3">
                 <h3 class="text-lg font-semibold text-gray-900">Add New Document</h3>
@@ -157,7 +157,7 @@
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div x-data="{ showDeleteModal: false, deleteUrl: '' }" x-show="showDeleteModal" x-cloak class="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50">
+    <div x-show="showDeleteModal" x-cloak class="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div class="mt-3 text-center">
                 <h3 class="text-lg leading-6 font-medium text-gray-900">Delete Document</h3>

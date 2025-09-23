@@ -9,7 +9,6 @@ use App\Models\UserProgress;
 use App\Models\LessonCompletion;
 use App\Models\QuizAttempt;
 use App\Models\LevelProgression;
-use Carbon\Carbon;
 
 class ProgressController extends Controller
 {

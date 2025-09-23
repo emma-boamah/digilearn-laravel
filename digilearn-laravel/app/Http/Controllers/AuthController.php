@@ -120,6 +120,20 @@ class AuthController extends Controller
         if (Auth::check()) {
             $this->logSecurityEvent('authenticated_user_accessed_login', $request);
             
+            $user = Auth::user();
+            
+            // Check if user is admin and redirect appropriately
+            if ($user->is_admin || $user->is_superuser) {
+                // For admin users, check if they were trying to access admin panel
+                $intendedUrl = session('url.intended');
+                if ($intendedUrl && str_contains($intendedUrl, '/admin')) {
+                    return redirect()->intended(route('admin.dashboard'));
+                }
+                // If no admin-specific intended URL, go to admin dashboard
+                return redirect()->route('admin.dashboard');
+            }
+            
+            // For regular users
             if (session('selected_level')) {
                 return redirect()->route('dashboard.main');
             } else {
@@ -235,7 +249,18 @@ class AuthController extends Controller
             // Fire login event
             event(new Login('web', $user, false));
 
-            // REMOVED: Email verification check - go directly to dashboard
+            // Check if user is admin and redirect appropriately
+            if ($user->is_admin || $user->is_superuser) {
+                // For admin users, check if they were trying to access admin panel
+                $intendedUrl = session('url.intended');
+                if ($intendedUrl && str_contains($intendedUrl, '/admin')) {
+                    return redirect()->intended(route('admin.dashboard'));
+                }
+                // If no admin-specific intended URL, go to admin dashboard
+                return redirect()->route('admin.dashboard');
+            }
+
+            // For regular users, go to dashboard
             return redirect()->route('dashboard.level-selection');
         }
 
@@ -275,6 +300,14 @@ class AuthController extends Controller
     public function showSignup(Request $request)
     {
         if (Auth::check()) {
+            $user = Auth::user();
+            
+            // Check if user is admin and redirect appropriately
+            if ($user->is_admin || $user->is_superuser) {
+                return redirect()->route('admin.dashboard');
+            }
+            
+            // For regular users
             if (session('selected_level')) {
                 return redirect()->route('dashboard.main');
             } else {
@@ -411,6 +444,12 @@ class AuthController extends Controller
             event(new Registered($user));
             Auth::login($user);
 
+            // Check if user is admin and redirect appropriately
+            if ($user->is_admin || $user->is_superuser) {
+                return redirect()->route('admin.dashboard');
+            }
+
+            // For regular users, go to level selection
             return redirect()->route('dashboard.level-selection');
 
         } catch (\Exception $e) {

@@ -25,7 +25,7 @@
             }
         }
     </script>
-    <style>
+    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         body {
             background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
             min-height: 100vh;

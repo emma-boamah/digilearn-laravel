@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $program['name'] }} Courses - {{ config('app.name', 'ShoutOutGh') }}</title>
+    <title>University Years - {{ config('app.name', 'ShoutOutGh') }}</title>
     
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
@@ -119,22 +119,14 @@
             padding: 2rem 0;
         }
 
-        .program-info {
-            background-color: var(--white);
-            border-radius: 1rem;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--gray-200);
-        }
-
-        .courses-grid {
+        .years-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
         }
 
-        .course-card {
+        .year-card {
             background-color: var(--white);
             border-radius: 1rem;
             overflow: hidden;
@@ -144,31 +136,40 @@
             cursor: pointer;
         }
 
-        .course-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
+        .year-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
         }
 
-        .course-thumbnail {
+        .year-thumbnail {
             width: 100%;
-            height: 160px;
+            height: 180px;
             background: linear-gradient(135deg, var(--secondary-blue), var(--primary-red));
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--white);
-            font-size: 2rem;
+            font-size: 2.5rem;
+            font-weight: 700;
+            position: relative;
         }
 
-        .course-info {
+        .year-info {
             padding: 1.5rem;
         }
 
-        .course-header {
+        .year-header {
             margin-bottom: 1rem;
         }
 
-        .course-code {
+        .year-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 0.25rem;
+        }
+
+        .year-level {
             font-size: 0.75rem;
             color: var(--secondary-blue);
             font-weight: 600;
@@ -176,21 +177,14 @@
             letter-spacing: 0.05em;
         }
 
-        .course-name {
-            font-size: 1.125rem;
-            font-weight: 700;
-            color: var(--gray-900);
-            margin: 0.25rem 0;
-        }
-
-        .course-description {
+        .year-description {
             color: var(--gray-600);
             font-size: 0.875rem;
             line-height: 1.5;
             margin-bottom: 1.5rem;
         }
 
-        .course-meta {
+        .year-meta {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -198,20 +192,20 @@
             border-top: 1px solid var(--gray-200);
         }
 
-        .course-stats {
+        .year-stats {
             display: flex;
             gap: 1rem;
             font-size: 0.875rem;
             color: var(--gray-500);
         }
 
-        .course-stat {
+        .year-stat {
             display: flex;
             align-items: center;
             gap: 0.25rem;
         }
 
-        .view-lessons-btn {
+        .view-programs-btn {
             background-color: var(--primary-red);
             color: var(--white);
             border: none;
@@ -223,17 +217,17 @@
             transition: all 0.2s ease;
         }
 
-        .view-lessons-btn:hover {
+        .view-programs-btn:hover {
             background-color: var(--primary-red-hover);
         }
 
         @media (max-width: 768px) {
-            .courses-grid {
+            .years-grid {
                 grid-template-columns: 1fr;
-                gap: 1rem;
+                gap: 1.5rem;
             }
             
-            .course-card {
+            .year-card {
                 margin: 0 0.5rem;
             }
         }
@@ -244,13 +238,13 @@
         <div class="container">
             <div class="header-content">
                 <div class="header-left">
-                    <button class="back-button" id="backToProgramsButton">
+                    <button class="back-button" id="backButton">
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                         </svg>
-                        Back to Programs
+                        Back
                     </button>
-                    <h1 class="page-title">{{ $program['name'] }} Courses</h1>
+                    <h1 class="page-title">University Years</h1>
                 </div>
                 
                 <div class="header-right">
@@ -264,35 +258,26 @@
 
     <div class="main-content">
         <div class="container">
-            <div class="program-info">
-                <h2>{{ $program['name'] }}</h2>
-                <p>{{ $program['description'] }}</p>
-            </div>
-
-            <div class="courses-grid">
-                @foreach($courses as $course)
-                <div class="course-card" data-course-id="{{ $course['id'] }}">
-                    <div class="course-thumbnail">
-                        <i class="fas fa-book-open"></i>
+            <div class="years-grid">
+                @foreach($universityYears as $year)
+                <div class="year-card" data-year-id="{{ $year['id'] }}">
+                    <div class="year-thumbnail">
+                        {{ $year['year_number'] }}
                     </div>
-                    <div class="course-info">
-                        <div class="course-header">
-                            <div class="course-code">{{ $course['code'] }}</div>
-                            <h3 class="course-name">{{ $course['name'] }}</h3>
+                    <div class="year-info">
+                        <div class="year-header">
+                            <h3 class="year-name">{{ $year['name'] }}</h3>
+                            <div class="year-level">{{ $year['level'] }}</div>
                         </div>
-                        <p class="course-description">{{ $course['description'] }}</p>
-                        <div class="course-meta">
-                            <div class="course-stats">
-                                <div class="course-stat">
-                                    <i class="fas fa-play-circle"></i>
-                                    {{ $course['lessons_count'] }} Lessons
-                                </div>
-                                <div class="course-stat">
-                                    <i class="fas fa-credit-card"></i>
-                                    {{ $course['credit_hours'] }} Credits
+                        <p class="year-description">{{ $year['description'] }}</p>
+                        <div class="year-meta">
+                            <div class="year-stats">
+                                <div class="year-stat">
+                                    <i class="fas fa-graduation-cap"></i>
+                                    {{ $year['programs_count'] }} Programs
                                 </div>
                             </div>
-                            <button class="view-lessons-btn" data-course-id="{{ $course['id'] }}">View Lessons</button>
+                            <button class="view-programs-btn" data-year-id="{{ $year['id'] }}">View Programs</button>
                         </div>
                     </div>
                 </div>
@@ -303,39 +288,39 @@
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         document.addEventListener('DOMContentLoaded', function() {
-            // Handle back to programs button
-            const backButton = document.getElementById('backToProgramsButton');
+            // Handle back button
+            const backButton = document.getElementById('backButton');
             if (backButton) {
                 backButton.addEventListener('click', function() {
-                    window.location.href = '{{ route("dashboard.university.programs") }}';
+                    history.back();
                 });
             }
 
-            // Handle course card clicks
-            const courseCards = document.querySelectorAll('.course-card');
-            courseCards.forEach(function(card) {
+            // Handle year card clicks
+            const yearCards = document.querySelectorAll('.year-card');
+            yearCards.forEach(function(card) {
                 card.addEventListener('click', function(e) {
                     // Don't trigger if clicking the button directly
-                    if (e.target.classList.contains('view-lessons-btn')) {
+                    if (e.target.classList.contains('view-programs-btn')) {
                         return;
                     }
                     
-                    const courseId = this.getAttribute('data-course-id');
-                    if (courseId) {
-                        window.location.href = '{{ route("dashboard.university.course.lessons", ":courseId") }}'.replace(':courseId', courseId);
+                    const yearId = this.getAttribute('data-year-id');
+                    if (yearId) {
+                        window.location.href = '{{ route("dashboard.university.programs", ":yearId") }}'.replace(':yearId', yearId);
                     }
                 });
             });
 
-            // Handle view lessons button clicks
-            const viewLessonsButtons = document.querySelectorAll('.view-lessons-btn');
-            viewLessonsButtons.forEach(function(button) {
+            // Handle view programs button clicks
+            const viewProgramsButtons = document.querySelectorAll('.view-programs-btn');
+            viewProgramsButtons.forEach(function(button) {
                 button.addEventListener('click', function(e) {
                     e.stopPropagation(); // Prevent card click
                     
-                    const courseId = this.getAttribute('data-course-id');
-                    if (courseId) {
-                        window.location.href = '{{ route("dashboard.university.course.lessons", ":courseId") }}'.replace(':courseId', courseId);
+                    const yearId = this.getAttribute('data-year-id');
+                    if (yearId) {
+                        window.location.href = '{{ route("dashboard.university.programs", ":yearId") }}'.replace(':yearId', yearId);
                     }
                 });
             });

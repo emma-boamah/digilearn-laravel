@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* Same base styles as digilearn.blade.php */
+        /* Same base styles as courses.blade.php */
         :root {
             --primary-red: #E11E2D;
             --primary-red-hover: #c41e2a;
@@ -218,7 +218,7 @@
         <div class="container">
             <div class="header-content">
                 <div class="header-left">
-                    <button class="back-button" onclick="history.back()">
+                    <button class="back-button" id="backToCoursesButton">
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                         </svg>
@@ -247,7 +247,7 @@
 
             <div class="lessons-grid">
                 @forelse($lessons as $lesson)
-                <div class="lesson-card" onclick="window.location.href='{{ route('dashboard.lesson.view', ['lessonId' => $lesson['id']]) }}'">
+                <div class="lesson-card" data-lesson-id="{{ $lesson['id'] }}">
                     <div class="lesson-thumbnail">
                         <i class="fas fa-play-circle"></i>
                         <div class="lesson-duration">{{ $lesson['duration'] }}</div>
@@ -270,5 +270,28 @@
             </div>
         </div>
     </div>
+
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle back to courses button
+            const backButton = document.getElementById('backToCoursesButton');
+            if (backButton) {
+                backButton.addEventListener('click', function() {
+                    history.back();
+                });
+            }
+
+            // Handle lesson card clicks
+            const lessonCards = document.querySelectorAll('.lesson-card');
+            lessonCards.forEach(function(card) {
+                card.addEventListener('click', function() {
+                    const lessonId = this.getAttribute('data-lesson-id');
+                    if (lessonId) {
+                        window.location.href = '{{ route("dashboard.lesson.view", ":lessonId") }}'.replace(':lessonId', lessonId);
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>

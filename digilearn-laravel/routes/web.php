@@ -85,30 +85,29 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/dashboard/lesson/{lessonId}/save', [DashboardController::class, 'saveLesson'])->name('dashboard.lesson.save');
     Route::delete('/dashboard/lesson/{lessonId}/unsave', [DashboardController::class, 'unsaveLesson'])->name('dashboard.lesson.unsave');
 
-    // University programs
-    Route::get('/dashboard/university/programs', [DashboardController::class, 'universityPrograms'])
+// University years selection
+    Route::get('/dashboard/university/years', [DashboardController::class, 'universityYears'])
+        ->name('dashboard.university.years');
+    
+    // University year selection
+    Route::post('/dashboard/university/year/{yearId}', [DashboardController::class, 'selectUniversityYear'])
+        ->name('dashboard.university.select-year');
+    
+    // University programs for specific year
+    Route::get('/dashboard/university/{yearId}/programs', [DashboardController::class, 'universityPrograms'])
         ->name('dashboard.university.programs');
     
-    // Program courses
-    Route::get('/dashboard/university/program/{programId}/courses', [DashboardController::class, 'programCourses'])
+    // Program courses (DigiLearn style)
+    Route::get('/dashboard/university/{yearId}/program/{programId}/courses', [DashboardController::class, 'programCourses'])
         ->name('dashboard.university.program.courses');
     
     // Course lessons
-    Route::get('/dashboard/university/course/{courseId}/lessons', [DashboardController::class, 'courseLessons'])
+    Route::get('/dashboard/university/{yearId}/program/{programId}/course/{courseId}/lessons', [DashboardController::class, 'courseLessons'])
         ->name('dashboard.university.course.lessons');
-    
-    // Existing routes...
-    Route::get('/dashboard/level-selection', [DashboardController::class, 'levelSelection'])
-        ->name('dashboard.level-selection');
-    
-    Route::post('/dashboard/select-level-group/{groupId}', [DashboardController::class, 'selectLevelGroup'])
-        ->name('dashboard.select-level-group');
-    
-    Route::get('/dashboard/digilearn', [DashboardController::class, 'digilearn'])
-        ->name('dashboard.digilearn');
-    
-    Route::get('/dashboard/lesson/{lessonId}', [DashboardController::class, 'viewLesson'])
-        ->name('dashboard.lesson.view');
+
+    // Course lessons by course ID only (direct from DigiLearn university view)
+    Route::get('/dashboard/university/course/{courseId}/lessons', [DashboardController::class, 'courseLessonsById'])
+        ->name('dashboard.university.course.lessons.by-id');
 
     // Saved lessons
     Route::get('/dashboard/saved-lessons', [DashboardController::class, 'savedLessons'])->name('dashboard.saved-lessons');

@@ -21,16 +21,14 @@ class DashboardController extends Controller
     }
 
     /**
-     * Show level selection page
+     * Show level selection page - Updated with University Years
      */
     public function levelSelection()
     {
-        // Check subscription status (optional)
         $user = Auth::user();
         $hasActiveSubscription = $user->currentSubscription && $user->currentSubscription->isActive();
         $isInTrial = $user->currentSubscription && $user->currentSubscription->isInTrial();
 
-        // Log access to level selection
         Log::channel('security')->info('level_selection_accessed', [
             'user_id' => Auth::id(),
             'has_subscription' => $hasActiveSubscription,
@@ -39,7 +37,6 @@ class DashboardController extends Controller
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
-        // Get available levels
         $levels = $this->getAvailableLevels();
 
         return view('dashboard.level-selection', compact('levels', 'hasActiveSubscription', 'isInTrial'));
@@ -78,7 +75,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Handle level group selection and redirect to digilearn
+     * Handle level group selection and redirect appropriately
      */
     public function selectLevelGroup(Request $request, $groupId)
     {
@@ -89,20 +86,15 @@ class DashboardController extends Controller
                 ->withErrors(['group' => 'Invalid level group selected.']);
         }
 
-        // Check subscription access for premium content (optional)
         $user = Auth::user();
         if (!$this->hasAccessToLevelGroup($user, $groupId)) {
             return redirect()->route('pricing')
                 ->with('warning', 'Please upgrade your subscription to access this content.');
         }
 
-        // Update user's grade
         $user->update(['grade' => $groupId]);
-
-        // Store selected level group in session
         session(['selected_level_group' => $groupId]);
 
-        // Log level group selection
         Log::channel('security')->info('level_group_selected', [
             'user_id' => Auth::id(),
             'level_group' => $groupId,
@@ -111,7 +103,7 @@ class DashboardController extends Controller
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
-        // Redirect directly to digilearn
+        // For all levels including university, redirect to digilearn
         return redirect()->route('dashboard.digilearn')
             ->with('success', 'Level selected successfully!');
     }
@@ -157,11 +149,10 @@ class DashboardController extends Controller
     }
 
     /**
-     * Show DigiLearn page (updated to work with level groups)
+     * Show DigiLearn page (updated to handle university structure)
      */
     public function digilearn()
     {
-        // Check if user has selected a level group
         if (!session('selected_level_group')) {
             return redirect()->route('dashboard.level-selection');
         }
@@ -169,18 +160,14 @@ class DashboardController extends Controller
         $selectedLevelGroup = session('selected_level_group');
         $user = Auth::user();
 
-        // For university, redirect to programs
-        if ($selectedLevelGroup === 'university') {
-            return redirect()->route('dashboard.university.programs');
-        }
+        // University is now handled directly in digilearn view
+        // No special redirect needed
 
-        // Check subscription access
         if (!$this->hasAccessToLevelGroup($user, $selectedLevelGroup)) {
             return redirect()->route('pricing')
                 ->with('warning', 'Please upgrade your subscription to access this content.');
         }
 
-        // Log DigiLearn access
         Log::channel('security')->info('digilearn_accessed', [
             'user_id' => Auth::id(),
             'selected_level_group' => $selectedLevelGroup,
@@ -189,10 +176,14 @@ class DashboardController extends Controller
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
-        // Get lessons for the entire level group
+        // Handle university level specially to show courses instead of lessons
+        if ($selectedLevelGroup === 'university') {
+            $universityCourses = $this->getUniversityCourses();
+            $universityCourses = $this->filterCoursesBySubscription($user, $universityCourses);
+            return view('dashboard.digilearn', compact('selectedLevelGroup', 'universityCourses'));
+        }
+
         $lessons = $this->getLessonsForLevelGroup($selectedLevelGroup);
-        
-        // Filter lessons based on subscription (optional)
         $lessons = $this->filterLessonsBySubscription($user, $lessons);
 
         return view('dashboard.digilearn', compact('selectedLevelGroup', 'lessons'));
@@ -400,6 +391,132 @@ class DashboardController extends Controller
     }
 
     /**
+     * Filter courses based on user's subscription
+     */
+    private function filterCoursesBySubscription($user, $courses)
+    {
+        $currentSubscription = $user->currentSubscription;
+        
+        // If no subscription, limit to first 2 courses
+        if (!$currentSubscription || (!$currentSubscription->isActive() && !$currentSubscription->isInTrial())) {
+            return array_slice($courses, 0, 2);
+        }
+
+        // Full access for subscribed users
+        return $courses;
+    }
+
+    /**
+     * Get all university courses in a format similar to lessons
+     */
+    private function getUniversityCourses()
+    {
+        $courses = [
+            [
+                'id' => 'cs-101',
+                'title' => 'Introduction to Programming',
+                'subject' => 'Computer Science',
+                'duration' => '45 min',
+                'thumbnail' => 'images/courses/intro-programming.jpg',
+                'video_url' => 'videos/courses/cs101/intro.mp4',
+                'instructor' => 'Dr. Kwame Asante',
+                'year' => '2024',
+                'level_display' => 'CS 101',
+                'description' => 'Fundamentals of programming using Python',
+                'credit_hours' => 3,
+                'semester' => 1,
+                'lessons_count' => 24
+            ],
+            [
+                'id' => 'cs-102',
+                'title' => 'Data Structures',
+                'subject' => 'Computer Science',
+                'duration' => '50 min',
+                'thumbnail' => 'images/courses/data-structures.jpg',
+                'video_url' => 'videos/courses/cs102/intro.mp4',
+                'instructor' => 'Prof. Ama Osei',
+                'year' => '2024',
+                'level_display' => 'CS 102',
+                'description' => 'Arrays, linked lists, stacks, queues, trees, and graphs',
+                'credit_hours' => 4,
+                'semester' => 2,
+                'lessons_count' => 28
+            ],
+            [
+                'id' => 'cs-201',
+                'title' => 'Algorithms',
+                'subject' => 'Computer Science',
+                'duration' => '55 min',
+                'thumbnail' => 'images/courses/algorithms.jpg',
+                'video_url' => 'videos/courses/cs201/intro.mp4',
+                'instructor' => 'Dr. Kofi Mensah',
+                'year' => '2024',
+                'level_display' => 'CS 201',
+                'description' => 'Algorithm design and analysis techniques',
+                'credit_hours' => 4,
+                'semester' => 1,
+                'lessons_count' => 32
+            ],
+            [
+                'id' => 'cs-202',
+                'title' => 'Database Systems',
+                'subject' => 'Computer Science',
+                'duration' => '48 min',
+                'thumbnail' => 'images/courses/database-systems.jpg',
+                'video_url' => 'videos/courses/cs202/intro.mp4',
+                'instructor' => 'Dr. Akosua Frimpong',
+                'year' => '2024',
+                'level_display' => 'CS 202',
+                'description' => 'Database design, SQL, and database management',
+                'credit_hours' => 3,
+                'semester' => 2,
+                'lessons_count' => 26
+            ],
+            [
+                'id' => 'ba-101',
+                'title' => 'Principles of Management',
+                'subject' => 'Business Administration',
+                'duration' => '40 min',
+                'thumbnail' => 'images/courses/management.jpg',
+                'video_url' => 'videos/courses/ba101/intro.mp4',
+                'instructor' => 'Prof. Yaw Boateng',
+                'year' => '2024',
+                'level_display' => 'BA 101',
+                'description' => 'Fundamentals of business management and organization',
+                'credit_hours' => 3,
+                'semester' => 1,
+                'lessons_count' => 20
+            ],
+            [
+                'id' => 'ba-102',
+                'title' => 'Financial Accounting',
+                'subject' => 'Business Administration',
+                'duration' => '45 min',
+                'thumbnail' => 'images/courses/accounting.jpg',
+                'video_url' => 'videos/courses/ba102/intro.mp4',
+                'instructor' => 'Dr. Efua Adjei',
+                'year' => '2024',
+                'level_display' => 'BA 102',
+                'description' => 'Basic accounting principles and financial statements',
+                'credit_hours' => 4,
+                'semester' => 2,
+                'lessons_count' => 24
+            ],
+        ];
+
+        // Attach first_lesson_id for quick-start navigation
+        foreach ($courses as &$course) {
+            $lessons = $this->getLessonsForCourse($course['id']);
+            if (!empty($lessons)) {
+                $course['first_lesson_id'] = $lessons[0]['id'];
+            }
+        }
+        unset($course);
+
+        return $courses;
+    }
+
+    /**
      * Show personalized learning page
      */
     public function personalized()
@@ -497,10 +614,59 @@ class DashboardController extends Controller
         $selectedLevelGroup = session('selected_level_group');
         $user = Auth::user();
         
-        // Get all lessons from the level group to find the specific lesson
+        // University: search across all course lessons
+        if ($selectedLevelGroup === 'university') {
+            $allLessons = [];
+            // Build a flat list of all university lessons by iterating known programs
+            foreach (['computer-science', 'business-administration'] as $programKey) {
+                $courses = $this->getCoursesForProgram($programKey);
+                foreach ($courses as $course) {
+                    $courseLessons = $this->getLessonsForCourse($course['id']);
+                    foreach ($courseLessons as $ul) {
+                        // Attach helpful metadata to lesson (subject, instructor, year, level_display)
+                        $ul['subject'] = $course['name'] ?? ($course['code'] ?? '');
+                        $ul['instructor'] = $course['instructor'] ?? ($ul['instructor'] ?? '');
+                        $ul['year'] = date('Y');
+                        $ul['level_display'] = $course['code'] ?? ($course['id'] ?? '');
+                        $allLessons[] = $ul;
+                    }
+                }
+            }
+
+            $lesson = null;
+            foreach ($allLessons as $l) {
+                if ($l['id'] == $lessonId) {
+                    $lesson = $l;
+                    break;
+                }
+            }
+
+            if (!$lesson) {
+                return redirect()->route('dashboard.digilearn')
+                    ->withErrors(['lesson' => 'Lesson not found.']);
+            }
+
+            // Related lessons from same course if possible
+            $relatedLessons = array_values(array_filter($allLessons, function ($l) use ($lessonId) {
+                return $l['id'] !== $lessonId;
+            }));
+            $relatedLessons = array_slice($relatedLessons, 0, 8);
+
+            Log::channel('security')->info('lesson_viewed', [
+                'user_id' => Auth::id(),
+                'lesson_id' => $lessonId,
+                'selected_level_group' => $selectedLevelGroup,
+                'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
+                'ip' => request()->ip(),
+                'timestamp' => Carbon::now()->toISOString()
+            ]);
+
+            return view('dashboard.lesson-view', compact('lesson', 'selectedLevelGroup', 'relatedLessons'));
+        }
+
+        // Get all lessons from the level group (non-university)
         $allLessons = $this->getLessonsForLevelGroup($selectedLevelGroup);
         $lesson = null;
-        
         foreach ($allLessons as $l) {
             if ($l['id'] == $lessonId) {
                 $lesson = $l;
@@ -736,41 +902,87 @@ class DashboardController extends Controller
     }
 
     /**
-     * Show University Programs
+     * Show University Years Selection (Uni-1, Uni-2, etc.)
      */
-    public function universityPrograms()
+    public function universityYears()
     {
         if (session('selected_level_group') !== 'university') {
             return redirect()->route('dashboard.level-selection');
         }
 
         $user = Auth::user();
-        $programs = $this->getUniversityPrograms();
+        $universityYears = $this->getUniversityYears();
 
-        Log::channel('security')->info('university_programs_accessed', [
+        Log::channel('security')->info('university_years_accessed', [
             'user_id' => Auth::id(),
             'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
             'ip' => request()->ip(),
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
-        return view('dashboard.university.programs', compact('programs'));
+        return view('dashboard.university.years', compact('universityYears'));
     }
 
     /**
-     * Show Program Courses
+     * Handle University Year Selection
      */
-    public function programCourses($programId)
+    public function selectUniversityYear($yearId)
     {
         if (session('selected_level_group') !== 'university') {
             return redirect()->route('dashboard.level-selection');
+        }
+
+        $validYears = ['uni-1', 'uni-2', 'uni-3', 'uni-4'];
+        
+        if (!in_array($yearId, $validYears)) {
+            return redirect()->route('dashboard.university.years')
+                ->withErrors(['year' => 'Invalid university year selected.']);
+        }
+
+        session(['selected_university_year' => $yearId]);
+
+        return redirect()->route('dashboard.university.programs', $yearId)
+            ->with('success', 'University year selected successfully!');
+    }
+
+    /**
+     * Show University Programs for Selected Year
+     */
+    public function universityPrograms($yearId)
+    {
+        if (session('selected_level_group') !== 'university' || session('selected_university_year') !== $yearId) {
+            return redirect()->route('dashboard.university.years');
+        }
+
+        $user = Auth::user();
+        $programs = $this->getUniversityPrograms($yearId);
+        $yearInfo = $this->getUniversityYearInfo($yearId);
+
+        Log::channel('security')->info('university_programs_accessed', [
+            'user_id' => Auth::id(),
+            'university_year' => $yearId,
+            'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
+            'ip' => request()->ip(),
+            'timestamp' => Carbon::now()->toISOString()
+        ]);
+
+        return view('dashboard.university.programs', compact('programs', 'yearInfo', 'yearId'));
+    }
+
+    /**
+     * Show Program Courses (DigiLearn Style)
+     */
+    public function programCourses($yearId, $programId)
+    {
+        if (session('selected_level_group') !== 'university' || session('selected_university_year') !== $yearId) {
+            return redirect()->route('dashboard.university.years');
         }
 
         $user = Auth::user();
         $program = $this->getProgramById($programId);
         
         if (!$program) {
-            return redirect()->route('dashboard.university.programs')
+            return redirect()->route('dashboard.university.programs', $yearId)
                 ->withErrors(['program' => 'Program not found.']);
         }
 
@@ -779,29 +991,30 @@ class DashboardController extends Controller
 
         Log::channel('security')->info('program_courses_accessed', [
             'user_id' => Auth::id(),
+            'university_year' => $yearId,
             'program_id' => $programId,
             'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
             'ip' => request()->ip(),
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
-        return view('dashboard.university.courses', compact('program', 'courses'));
+        return view('dashboard.university.courses-digilearn', compact('program', 'courses', 'yearId', 'programId'));
     }
 
     /**
-     * Show Course Lessons
+     * Show Course Lessons (Individual Lesson View)
      */
-    public function courseLessons($courseId)
+    public function courseLessons($yearId, $programId, $courseId)
     {
-        if (session('selected_level_group') !== 'university') {
-            return redirect()->route('dashboard.level-selection');
+        if (session('selected_level_group') !== 'university' || session('selected_university_year') !== $yearId) {
+            return redirect()->route('dashboard.university.years');
         }
 
         $user = Auth::user();
         $course = $this->getCourseById($courseId);
         
         if (!$course) {
-            return redirect()->route('dashboard.university.programs')
+            return redirect()->route('dashboard.university.program.courses', [$yearId, $programId])
                 ->withErrors(['course' => 'Course not found.']);
         }
 
@@ -810,82 +1023,192 @@ class DashboardController extends Controller
 
         Log::channel('security')->info('course_lessons_accessed', [
             'user_id' => Auth::id(),
+            'university_year' => $yearId,
+            'program_id' => $programId,
             'course_id' => $courseId,
             'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
             'ip' => request()->ip(),
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
+        return view('dashboard.university.lessons', compact('course', 'lessons', 'yearId', 'programId', 'courseId'));
+    }
+
+    /**
+     * Show Course Lessons by Course ID only (direct from DigiLearn university view)
+     */
+    public function courseLessonsById($courseId)
+    {
+        // Ensure user selected university level group
+        if (session('selected_level_group') !== 'university') {
+            return redirect()->route('dashboard.level-selection');
+        }
+
+        $user = Auth::user();
+
+        // Find the course by ID across all years/programs
+        $course = $this->getCourseById($courseId);
+        if (!$course) {
+            return redirect()->route('dashboard.digilearn')
+                ->withErrors(['course' => 'Course not found.']);
+        }
+
+        // Get lessons for the course
+        $lessons = $this->getLessonsForCourse($courseId);
+
+        Log::channel('security')->info('course_lessons_accessed_by_id', [
+            'user_id' => Auth::id(),
+            'course_id' => $courseId,
+            'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
+            'ip' => request()->ip(),
+            'timestamp' => Carbon::now()->toISOString()
+        ]);
+
+        // Note: university/lessons view only relies on $course and $lessons
         return view('dashboard.university.lessons', compact('course', 'lessons'));
     }
 
     /**
-     * Get University Programs
+     * Get University Years
      */
-    private function getUniversityPrograms()
+    private function getUniversityYears()
     {
         return [
             [
-                'id' => 'computer-science',
-                'name' => 'Computer Science',
-                'description' => 'Learn programming, algorithms, data structures, and software engineering',
-                'duration' => '4 Years',
-                'courses_count' => 32,
-                'thumbnail' => 'images/programs/computer-science.jpg',
+                'id' => 'uni-1',
+                'name' => 'University Year 1',
+                'description' => 'First year undergraduate programs and foundation courses',
+                'programs_count' => 12,
+                'thumbnail' => 'images/university/year1.jpg',
                 'level' => 'Undergraduate',
-                'department' => 'Engineering & Technology'
+                'year_number' => 1
             ],
             [
-                'id' => 'business-administration',
-                'name' => 'Business Administration',
-                'description' => 'Master business fundamentals, management, and entrepreneurship',
-                'duration' => '4 Years',
-                'courses_count' => 28,
-                'thumbnail' => 'images/programs/business-admin.jpg',
+                'id' => 'uni-2',
+                'name' => 'University Year 2',
+                'description' => 'Second year undergraduate programs with specialized tracks',
+                'programs_count' => 15,
+                'thumbnail' => 'images/university/year2.jpg',
                 'level' => 'Undergraduate',
-                'department' => 'Business & Economics'
+                'year_number' => 2
             ],
             [
-                'id' => 'medicine',
-                'name' => 'Medicine',
-                'description' => 'Comprehensive medical education and clinical training',
-                'duration' => '6 Years',
-                'courses_count' => 45,
-                'thumbnail' => 'images/programs/medicine.jpg',
+                'id' => 'uni-3',
+                'name' => 'University Year 3',
+                'description' => 'Third year undergraduate programs with advanced coursework',
+                'programs_count' => 18,
+                'thumbnail' => 'images/university/year3.jpg',
                 'level' => 'Undergraduate',
-                'department' => 'Health Sciences'
+                'year_number' => 3
             ],
             [
-                'id' => 'engineering',
-                'name' => 'Engineering',
-                'description' => 'Civil, Mechanical, Electrical, and Chemical Engineering',
-                'duration' => '4 Years',
-                'courses_count' => 38,
-                'thumbnail' => 'images/programs/engineering.jpg',
+                'id' => 'uni-4',
+                'name' => 'University Year 4',
+                'description' => 'Final year undergraduate programs and capstone projects',
+                'programs_count' => 14,
+                'thumbnail' => 'images/university/year4.jpg',
                 'level' => 'Undergraduate',
-                'department' => 'Engineering & Technology'
-            ],
-            [
-                'id' => 'law',
-                'name' => 'Law',
-                'description' => 'Legal studies, jurisprudence, and legal practice',
-                'duration' => '4 Years',
-                'courses_count' => 24,
-                'thumbnail' => 'images/programs/law.jpg',
-                'level' => 'Undergraduate',
-                'department' => 'Law & Social Sciences'
-            ],
-            [
-                'id' => 'education',
-                'name' => 'Education',
-                'description' => 'Teacher training and educational methodology',
-                'duration' => '4 Years',
-                'courses_count' => 26,
-                'thumbnail' => 'images/programs/education.jpg',
-                'level' => 'Undergraduate',
-                'department' => 'Education & Humanities'
+                'year_number' => 4
             ]
         ];
+    }
+
+    /**
+     * Get University Year Info
+     */
+    private function getUniversityYearInfo($yearId)
+    {
+        $years = $this->getUniversityYears();
+        return collect($years)->firstWhere('id', $yearId);
+    }
+
+    /**
+     * Get University Programs for specific year
+     */
+    private function getUniversityPrograms($yearId)
+    {
+        $allPrograms = [
+            'uni-1' => [
+                [
+                    'id' => 'computer-science-1',
+                    'name' => 'Computer Science Fundamentals',
+                    'description' => 'Introduction to programming, algorithms, and computer systems',
+                    'duration' => '1 Year',
+                    'courses_count' => 8,
+                    'thumbnail' => 'images/programs/cs-year1.jpg',
+                    'level' => 'Year 1',
+                    'department' => 'Engineering & Technology'
+                ],
+                [
+                    'id' => 'business-admin-1',
+                    'name' => 'Business Fundamentals',
+                    'description' => 'Basic business principles, accounting, and management',
+                    'duration' => '1 Year',
+                    'courses_count' => 6,
+                    'thumbnail' => 'images/programs/business-year1.jpg',
+                    'level' => 'Year 1',
+                    'department' => 'Business & Economics'
+                ],
+                [
+                    'id' => 'medicine-1',
+                    'name' => 'Pre-Medical Sciences',
+                    'description' => 'Biology, chemistry, and basic medical terminology',
+                    'duration' => '1 Year',
+                    'courses_count' => 10,
+                    'thumbnail' => 'images/programs/medicine-year1.jpg',
+                    'level' => 'Year 1',
+                    'department' => 'Health Sciences'
+                ]
+            ],
+            'uni-2' => [
+                [
+                    'id' => 'computer-science-2',
+                    'name' => 'Advanced Programming',
+                    'description' => 'Data structures, object-oriented programming, and databases',
+                    'duration' => '1 Year',
+                    'courses_count' => 10,
+                    'thumbnail' => 'images/programs/cs-year2.jpg',
+                    'level' => 'Year 2',
+                    'department' => 'Engineering & Technology'
+                ],
+                [
+                    'id' => 'business-admin-2',
+                    'name' => 'Business Analytics',
+                    'description' => 'Statistics, market research, and business intelligence',
+                    'duration' => '1 Year',
+                    'courses_count' => 8,
+                    'thumbnail' => 'images/programs/business-year2.jpg',
+                    'level' => 'Year 2',
+                    'department' => 'Business & Economics'
+                ]
+            ],
+            'uni-3' => [
+                [
+                    'id' => 'computer-science-3',
+                    'name' => 'Software Engineering',
+                    'description' => 'Software design, testing, and project management',
+                    'duration' => '1 Year',
+                    'courses_count' => 12,
+                    'thumbnail' => 'images/programs/cs-year3.jpg',
+                    'level' => 'Year 3',
+                    'department' => 'Engineering & Technology'
+                ]
+            ],
+            'uni-4' => [
+                [
+                    'id' => 'computer-science-4',
+                    'name' => 'Advanced Computer Science',
+                    'description' => 'Capstone projects, internships, and specialization',
+                    'duration' => '1 Year',
+                    'courses_count' => 6,
+                    'thumbnail' => 'images/programs/cs-year4.jpg',
+                    'level' => 'Year 4',
+                    'department' => 'Engineering & Technology'
+                ]
+            ]
+        ];
+
+        return $allPrograms[$yearId] ?? [];
     }
 
     /**
@@ -893,8 +1216,15 @@ class DashboardController extends Controller
      */
     private function getProgramById($programId)
     {
-        $programs = $this->getUniversityPrograms();
-        return collect($programs)->firstWhere('id', $programId);
+        $allPrograms = [];
+        $years = $this->getUniversityYears();
+        
+        foreach ($years as $year) {
+            $programs = $this->getUniversityPrograms($year['id']);
+            $allPrograms = array_merge($allPrograms, $programs);
+        }
+
+        return collect($allPrograms)->firstWhere('id', $programId);
     }
 
     /**
@@ -989,11 +1319,10 @@ class DashboardController extends Controller
      */
     private function getCourseById($courseId)
     {
+        // Aggregate across known program keys (aligns with getCoursesForProgram keys)
         $allCourses = [];
-        $programs = $this->getUniversityPrograms();
-        
-        foreach ($programs as $program) {
-            $courses = $this->getCoursesForProgram($program['id']);
+        foreach (['computer-science', 'business-administration'] as $programKey) {
+            $courses = $this->getCoursesForProgram($programKey);
             $allCourses = array_merge($allCourses, $courses);
         }
 
@@ -1114,6 +1443,10 @@ class DashboardController extends Controller
         }
 
         $allLessons = [];
+        // Some groups (e.g., 'university') do not have 'levels' but rather 'years'
+        if (!isset($levelGroups[$groupId]['levels']) || !is_array($levelGroups[$groupId]['levels'])) {
+            return [];
+        }
         $individualLevels = array_keys($levelGroups[$groupId]['levels']);
 
         // Get lessons from all individual levels in the group
@@ -1244,35 +1577,10 @@ class DashboardController extends Controller
                 ]
                     ],
             'university' => [
-                'title' => 'University Programs',
-                'description' => 'Undergraduate degree years',
+                'title' => 'University',
+                'description' => 'Higher education with specialized programs and courses',
                 'has_illustration' => true,
-                'levels' => [
-                    'uni-1' => [
-                        'title' => 'Year 1',
-                        'description' => 'Foundational courses'
-                    ],
-                    'uni-2' => [
-                        'title' => 'Year 2',
-                        'description' => 'Core program studies'
-                    ],
-                    'uni-3' => [
-                        'title' => 'Year 3',
-                        'description' => 'Advanced program studies'
-                    ],
-                    'uni-4' => [
-                        'title' => 'Year 4',
-                        'description' => 'Capstone and specialization'
-                    ],
-                    'uni-5' => [
-                        'title' => 'Year 5',
-                        'description' => 'Final year projects and thesis'
-                    ],
-                    'uni-6' => [
-                        'title' => 'Year 6',
-                        'description' => 'Postgraduate or professional studies'
-                    ]
-                ]
+                'years' => $this->getUniversityYears()
             ]
         ];
     }

@@ -1,37 +1,45 @@
 <?php
 
 return [
-    'report_uri' => env('CSP_REPORT_URI', '/csp-reports'),
+    'report_uri' => env('CSP_REPORT_URI', '/csp-report'),
     'report_group' => 'default',
     'upgrade_insecure_requests' => env('CSP_UPGRADE_INSECURE', false),
+    
+    // Enable report-only mode for testing (set CSP_REPORT_ONLY=true in .env)
+    'report_only' => env('CSP_REPORT_ONLY', false),
     
     'directives' => [
         'default-src' => ["'self'"],
         'script-src' => [
             "'self'",
-            "'nonce-{nonce}'", // Nonce placeholder
+            "'nonce-{nonce}'", // Nonce placeholder for inline scripts
             'https://www.google.com',
             'https://accounts.google.com',
             'https://www.gstatic.com',
             'https://apis.google.com',
-            'https://accounts.google.com',
             'https://cdn.jsdelivr.net',
+            'https://cdn.jsdelivr.net/npm/chart.umd.min.js.map',
             'https://cdn.jsdelivr.net/npm/alpinejs',
             'https://cdn.quilljs.com',
             'https://cdn.tailwindcss.com',
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
-            "'unsafe-inline'",
-            "'unsafe-eval'", // Required for some inline scripts
+            'http://localhost',
+            'http://127.0.0.1',
+            // Remove 'unsafe-inline' for better security - use nonces instead
+            // Remove 'unsafe-eval' if not needed for Chart.js or other libraries
+            // "'unsafe-eval'", // Only enable if absolutely required
         ],
         'style-src' => [
             "'self'",
-            "'unsafe-inline'", // Required for Google buttons
+            "'nonce-{nonce}'", // Nonce placeholder for inline styles
+            "'unsafe-inline'", // Keep temporarily for external libraries that inject styles
             'https://fonts.googleapis.com',
             'https://fonts.bunny.net',
             'https://cdn.jsdelivr.net',
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
+            'http://localhost',
+            'http://127.0.0.1',
             'https://cdnjs.cloudflare.com',
-
         ],
         'font-src' => [
             "'self'",
@@ -63,6 +71,14 @@ return [
             'https://accounts.google.com',
             'https://oauth2.googleapis.com',
             'https://www.googleapis.com',
+            'https://cdn.jsdelivr.net',
+            'https://cdn.jsdelivr.net/npm/chart.umd.min.js.map',
+            'https://cdn.jsdelivr.net/npm/alpinejs',
+            'https://cdn.quilljs.com',
+            'https://cdn.tailwindcss.com',
+            'https://cdnjs.cloudflare.com',
+            'http://localhost',
+            'http://127.0.0.1',
         ],
         'frame-src' => [
             "'self'",

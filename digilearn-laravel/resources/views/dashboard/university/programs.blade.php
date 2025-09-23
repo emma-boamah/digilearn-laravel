@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>University Programs - {{ config('app.name', 'ShoutOutGh') }}</title>
+    <title>{{ $yearInfo['name'] }} Programs - {{ config('app.name', 'ShoutOutGh') }}</title>
     
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
@@ -97,6 +97,21 @@
             color: var(--primary-red);
         }
 
+        .breadcrumb {
+            font-size: 0.875rem;
+            color: var(--gray-500);
+            margin-top: 0.25rem;
+        }
+
+        .breadcrumb a {
+            color: var(--secondary-blue);
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
         .header-right {
             display: flex;
             align-items: center;
@@ -150,6 +165,7 @@
             justify-content: center;
             color: var(--white);
             font-size: 3rem;
+            font-weight: 700;
             position: relative;
         }
 
@@ -158,9 +174,6 @@
         }
 
         .program-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
             margin-bottom: 1rem;
         }
 
@@ -168,10 +181,10 @@
             font-size: 1.25rem;
             font-weight: 700;
             color: var(--gray-900);
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.5rem;
         }
 
-        .program-level {
+        .program-department {
             font-size: 0.75rem;
             color: var(--secondary-blue);
             font-weight: 600;
@@ -240,13 +253,18 @@
         <div class="container">
             <div class="header-content">
                 <div class="header-left">
-                    <button class="back-button" onclick="history.back()">
+                    <button class="back-button" id="backButton">
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                         </svg>
                         Back
                     </button>
-                    <h1 class="page-title">University Programs</h1>
+                    <div>
+                        <h1 class="page-title">{{ $yearInfo['name'] }} Programs</h1>
+                        <div class="breadcrumb">
+                            <a href="{{ route('dashboard.university.years') }}">University Years</a> / {{ $yearInfo['name'] }}
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="header-right">
@@ -261,17 +279,15 @@
     <div class="main-content">
         <div class="container">
             <div class="programs-grid">
-                @foreach($programs as $program)
-                <div class="program-card" onclick="window.location.href='{{ route('dashboard.university.program.courses', $program['id']) }}'">
+                @forelse($programs as $program)
+                <div class="program-card" data-program-id="{{ $program['id'] }}">
                     <div class="program-thumbnail">
                         <i class="fas fa-graduation-cap"></i>
                     </div>
                     <div class="program-info">
                         <div class="program-header">
-                            <div>
-                                <h3 class="program-name">{{ $program['name'] }}</h3>
-                                <div class="program-level">{{ $program['level'] }}</div>
-                            </div>
+                            <h3 class="program-name">{{ $program['name'] }}</h3>
+                            <div class="program-department">{{ $program['department'] }}</div>
                         </div>
                         <p class="program-description">{{ $program['description'] }}</p>
                         <div class="program-meta">
@@ -285,13 +301,59 @@
                                     {{ $program['duration'] }}
                                 </div>
                             </div>
-                            <button class="view-courses-btn">View Courses</button>
+                            <button class="view-courses-btn" data-program-id="{{ $program['id'] }}">View Courses</button>
                         </div>
                     </div>
                 </div>
-                @endforeach
+                @empty
+                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                    <h3 style="color: var(--gray-600); margin-bottom: 1rem;">No programs available</h3>
+                    <p style="color: var(--gray-500);">Programs for {{ $yearInfo['name'] }} are coming soon!</p>
+                </div>
+                @endforelse
             </div>
         </div>
     </div>
+
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle back button
+            const backButton = document.getElementById('backButton');
+            if (backButton) {
+                backButton.addEventListener('click', function() {
+                    history.back();
+                });
+            }
+
+            // Handle program card clicks
+            const programCards = document.querySelectorAll('.program-card');
+            programCards.forEach(function(card) {
+                card.addEventListener('click', function(e) {
+                    // Don't trigger if clicking the button directly
+                    if (e.target.classList.contains('view-courses-btn')) {
+                        return;
+                    }
+                    
+                    const programId = this.getAttribute('data-program-id');
+                    if (programId) {
+                        window.location.href = '/dashboard/university/{{ $yearId }}/program/' + programId + '/courses';
+                    }
+                });
+            });
+
+            // Handle view courses button clicks
+            const viewCoursesButtons = document.querySelectorAll('.view-courses-btn');
+            viewCoursesButtons.forEach(function(button) {
+                button.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Prevent card click
+                    
+                    const programId = this.getAttribute('data-program-id');
+                    if (programId) {
+                        window.location.href = '/dashboard/university/{{ $yearId }}/program/' + programId + '/courses';
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>

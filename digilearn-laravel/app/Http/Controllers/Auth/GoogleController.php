@@ -80,6 +80,19 @@ class GoogleController extends Controller
             // Regenerate session ID after login
             $request->session()->regenerate();
             
+            // Check if user is admin and redirect appropriately
+            $user = Auth::user();
+            if ($user && ($user->is_admin || $user->is_superuser)) {
+                // For admin users, check if they were trying to access admin panel
+                $intendedUrl = session('url.intended');
+                if ($intendedUrl && str_contains($intendedUrl, '/admin')) {
+                    return redirect()->intended(route('admin.dashboard'));
+                }
+                // If no admin-specific intended URL, go to admin dashboard
+                return redirect()->route('admin.dashboard');
+            }
+            
+            // For regular users, use intended or default to main dashboard
             return redirect()->intended(route('dashboard.main'));
 
         } catch (\Exception $e) {

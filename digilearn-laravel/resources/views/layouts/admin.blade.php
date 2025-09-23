@@ -6,124 +6,584 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Admin Dashboard') - ShoutoutGH</title>
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
     <!-- Chart.js for analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
     <!-- Custom styles -->
-    <style>
-        [x-cloak] { display: none !important; }
+    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        /* Color scheme variables */
+        :root {
+            --primary-blue: #2563eb;
+            --primary-blue-hover: #1d4ed8;
+            --primary-blue-light: #dbeafe;
+            --accent-red: #dc2626;
+            --accent-red-hover: #b91c1c;
+            --accent-red-light: #fecaca;
+            --white: #ffffff;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+        }
+
+        /* Layout styles */
+        .min-h-screen {
+            min-height: 100vh;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .flex-col {
+            flex-direction: column;
+        }
+
+        .flex-1 {
+            flex: 1;
+        }
+
+        .items-center {
+            align-items: center;
+        }
+
+        .justify-between {
+            justify-content: space-between;
+        }
+
+        .space-x-4 > * + * {
+            margin-left: 1rem;
+        }
+
+        .space-y-2 > * + * {
+            margin-top: 0.5rem;
+        }
+
+        /* Sidebar styles */
+        .sidebar {
+            background-color: var(--gray-900);
+            color: var(--white);
+            width: 16rem;
+            min-height: 100vh;
+            padding: 1rem;
+            position: relative;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .sidebar.collapsed {
+            width: 4rem;
+        }
+
         .sidebar-link-text {
             display: block;
         }
+
         .sidebar.collapsed .sidebar-link-text {
             display: none;
         }
-        .sidebar.collapsed .sidebar-toggle-icon {
-            transform: rotate(180deg);
-        }
+
         .sidebar-toggle-icon {
             transition: transform 0.3s ease;
         }
+
+        .sidebar.collapsed .sidebar-toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Navigation styles */
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            color: var(--white);
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+
+        .nav-link:hover {
+            background-color: var(--gray-800);
+        }
+
+        .nav-link.active {
+            background-color: var(--primary-blue);
+        }
+
+        .nav-link i {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-right: 0.75rem;
+        }
+
+        /* Header styles */
+        .header {
+            background-color: var(--white);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .header-content {
+            max-width: 80rem;
+            margin: 0 auto;
+            padding: 1rem 1.5rem;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+
+        .header p {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+        }
+
+        /* Button styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-blue);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-blue-hover);
+        }
+
+        .btn-secondary {
+            background-color: var(--accent-red);
+            color: var(--white);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--accent-red-hover);
+        }
+
+        /* Dropdown styles */
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            right: 0;
+            margin-top: 0.5rem;
+            width: 12rem;
+            background-color: var(--white);
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            padding: 0.25rem 0;
+            z-index: 50;
+            display: none;
+        }
+
+        .dropdown.open .dropdown-menu {
+            display: block;
+        }
+
+        /* Content dropdown specific styles */
+        .dropdown.open #contentDropdownMenu {
+            display: block !important;
+        }
+
+        /* Rotate chevron when dropdown is open */
+        .dropdown.open .chevron-transition {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-item {
+            display: block;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            color: var(--gray-700);
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--gray-100);
+        }
+
+        /* Main content styles */
+        .main-content {
+            flex: 1;
+            overflow-x: hidden;
+            overflow-y: auto;
+            background-color: var(--gray-50);
+        }
+
+        .content-wrapper {
+            max-width: 80rem;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        /* Alert styles */
+        .alert {
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid;
+        }
+
+        .alert-success {
+            background-color: #dcfce7;
+            border-color: #16a34a;
+            color: #15803d;
+        }
+
+        .alert-error {
+            background-color: var(--accent-red-light);
+            border-color: var(--accent-red);
+            color: var(--accent-red-hover);
+        }
+
+        /* Utility classes */
+        .hidden {
+            display: none;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .font-bold {
+            font-weight: 700;
+        }
+
+        .font-semibold {
+            font-weight: 600;
+        }
+
+        .font-medium {
+            font-weight: 500;
+        }
+
+        .text-xl {
+            font-size: 1.25rem;
+        }
+
+        .text-2xl {
+            font-size: 1.5rem;
+        }
+
+        .text-sm {
+            font-size: 0.875rem;
+        }
+
+        .text-xs {
+            font-size: 0.75rem;
+        }
+
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-8 { margin-bottom: 2rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .mt-4 { margin-top: 1rem; }
+        .mt-auto { margin-top: auto; }
+        .mr-3 { margin-right: 0.75rem; }
+        .ml-2 { margin-left: 0.5rem; }
+        .ml-6 { margin-left: 1.5rem; }
+
+        .p-2 { padding: 0.5rem; }
+        .p-4 { padding: 1rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .pt-4 { padding-top: 1rem; }
+
+        .w-5 { width: 1.25rem; }
+        .w-6 { width: 1.5rem; }
+        .w-8 { width: 2rem; }
+        .h-5 { height: 1.25rem; }
+        .h-6 { height: 1.5rem; }
+        .h-8 { height: 2rem; }
+
+        .rounded { border-radius: 0.25rem; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded-full { border-radius: 9999px; }
+
+        .border-t { border-top: 1px solid var(--gray-700); }
+
+        /* Logo styles */
+        .logo {
+            background-color: var(--primary-blue);
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            margin-right: 0.75rem;
+        }
+
+        /* Notification badge */
+        .notification-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: block;
+            height: 0.5rem;
+            width: 0.5rem;
+            border-radius: 9999px;
+            background-color: var(--accent-red);
+        }
+
+        /* Avatar styles */
+        .avatar {
+            height: 2rem;
+            width: 2rem;
+            border-radius: 9999px;
+            background-color: var(--gray-300);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .avatar span {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--gray-700);
+        }
+
+        /* Custom styles for inline style replacements */
+        .sidebar-toggle-btn {
+            color: white;
+            background: none;
+            border: none;
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+            cursor: pointer;
+        }
+
+        .content-dropdown-btn {
+            width: 100%;
+            justify-content: space-between;
+            background: none;
+            border: none;
+            text-align: left;
+        }
+
+        .chevron-transition {
+            transition: transform 0.2s;
+        }
+
+        .dropdown-menu-wide {
+            width: 20rem;
+        }
+
+        .notification-header {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            color: var(--gray-700);
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .notification-title {
+            font-weight: 500;
+        }
+
+        .notification-subtitle {
+            color: var(--gray-500);
+        }
+
+        .notification-btn {
+            padding: 0.5rem;
+            color: var(--gray-400);
+            background: none;
+            border: none;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .user-dropdown-btn {
+            font-size: 0.875rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .user-name {
+            color: var(--gray-700);
+        }
+
+        .logout-btn {
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+        }
+
+        .error-list {
+            list-style-type: disc;
+            list-style-position: inside;
+        }
+
+        .icon-small {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        /* Dynamic background for active content items */
+        .content-item-active {
+            background-color: var(--primary-blue-hover);
+        }
+
+        .content-item-inactive {
+            background-color: transparent;
+        }
+
+        /* Dynamic display for dropdown menu */
+        .dropdown-menu-show {
+            display: block;
+        }
+
+        .dropdown-menu-hide {
+            display: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 4rem;
+            }
+            
+            .sidebar-link-text {
+                display: none;
+            }
+        }
     </style>
+    @stack('styles')
 </head>
-<body class="bg-gray-50">
+<body>
     <div class="min-h-screen flex">
         <!-- Sidebar -->
-        <div id="sidebar" class="sidebar bg-gray-900 text-white w-64 min-h-screen p-4 flex flex-col relative transition-all duration-300 ease-in-out">
+        <div id="sidebar" class="sidebar">
             <div class="flex items-center mb-8 justify-between">
                 <div class="flex items-center">
-                    <div class="bg-blue-600 rounded-lg p-2 mr-3">
+                    <div class="logo">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                         </svg>
                     </div>
                     <h1 class="text-xl font-bold sidebar-link-text">ShoutoutGH Admin</h1>
                 </div>
-                <button id="sidebar-toggle" class="text-white focus:outline-none absolute right-4 top-4">
+                <button id="sidebar-toggle" class="sidebar-toggle-btn">
                     <i class="fas fa-chevron-left sidebar-toggle-icon"></i>
                 </button>
             </div>
 
             <nav class="flex-1 space-y-2">
-                <a href="{{ route('admin.dashboard') }}" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.dashboard') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
-                    <i class="fas fa-tachometer-alt w-5 h-5 mr-3"></i>
+                <a href="{{ route('admin.dashboard') }}" class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+                    <i class="fas fa-tachometer-alt"></i>
                     <span class="sidebar-link-text">Dashboard</span>
                 </a>
 
-                <a href="{{ route('admin.users') }}" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.users*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
-                    <i class="fas fa-users w-5 h-5 mr-3"></i>
+                <a href="{{ route('admin.users') }}" class="nav-link {{ request()->routeIs('admin.users*') ? 'active' : '' }}">
+                    <i class="fas fa-users"></i>
                     <span class="sidebar-link-text">Users</span>
                 </a>
 
                 <!-- Content Management Dropdown -->
-                <div x-data="{ open: {{ request()->routeIs('admin.content*') ? 'true' : 'false' }} }" class="relative">
-                    <button @click="open = !open" class="flex items-center justify-between w-full px-4 py-2 rounded-lg {{ request()->routeIs('admin.content*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
+                <div class="dropdown" id="contentDropdown">
+                    <button id="contentDropdownBtn" class="nav-link content-dropdown-btn {{ request()->routeIs('admin.content*') ? 'active' : '' }}">
                         <div class="flex items-center">
-                            <i class="fas fa-folder-open w-5 h-5 mr-3"></i>
+                            <i class="fas fa-folder-open"></i>
                             <span class="sidebar-link-text">Content Management</span>
                         </div>
-                        <i class="fas fa-chevron-down sidebar-link-text transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+                        <i class="fas fa-chevron-down sidebar-link-text chevron-transition"></i>
                     </button>
-                    <div x-show="open" x-cloak class="ml-6 mt-1 space-y-1 sidebar-link-text">
-                        <a href="{{ route('admin.content.videos.index') }}" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.content.videos*') ? 'bg-blue-700' : 'hover:bg-gray-700' }}">
-                            <i class="fas fa-video w-4 h-4 mr-3"></i>
+                    <div class="ml-6 mt-1 space-y-1 sidebar-link-text dropdown-menu-hide" id="contentDropdownMenu">
+                        <a href="{{ route('admin.content.videos.index') }}" class="nav-link {{ request()->routeIs('admin.content.videos*') ? 'active content-item-active' : 'content-item-inactive' }}">
+                            <i class="fas fa-video icon-small"></i>
                             Manage Learning Videos
                         </a>
-                        <a href="{{ route('admin.content.quizzes.index') }}" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.content.quizzes*') ? 'bg-blue-700' : 'hover:bg-gray-700' }}">
-                            <i class="fas fa-question-circle w-4 h-4 mr-3"></i>
+                        <a href="{{ route('admin.content.quizzes.index') }}" class="nav-link {{ request()->routeIs('admin.content.quizzes*') ? 'active content-item-active' : 'content-item-inactive' }}">
+                            <i class="fas fa-question-circle icon-small"></i>
                             Manage Quizzes
                         </a>
-                        <a href="{{ route('admin.content.documents.index') }}" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.content.documents*') ? 'bg-blue-700' : 'hover:bg-gray-700' }}">
-                            <i class="fas fa-file-alt w-4 h-4 mr-3"></i>
+                        <a href="{{ route('admin.content.documents.index') }}" class="nav-link {{ request()->routeIs('admin.content.documents*') ? 'active content-item-active' : 'content-item-inactive' }}">
+                            <i class="fas fa-file-alt icon-small"></i>
                             Manage Documents
                         </a>
                     </div>
                 </div>
 
-                <a href="{{ route('admin.revenue') }}" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.revenue*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
-                    <i class="fas fa-dollar-sign w-5 h-5 mr-3"></i>
+                <a href="{{ route('admin.revenue') }}" class="nav-link {{ request()->routeIs('admin.revenue*') ? 'active' : '' }}">
+                    <i class="fas fa-dollar-sign"></i>
                     <span class="sidebar-link-text">Revenue Analytics</span>
                 </a>
 
-                <a href="#" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.analytics*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
-                    <i class="fas fa-chart-line w-5 h-5 mr-3"></i>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-chart-line"></i>
                     <span class="sidebar-link-text">Reports & Web Analytics</span>
                 </a>
 
-                <a href="#" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.security*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
-                    <i class="fas fa-shield-alt w-5 h-5 mr-3"></i>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-shield-alt"></i>
                     <span class="sidebar-link-text">Security</span>
                 </a>
 
-                <a href="#" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.settings*') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
-                    <i class="fas fa-cog w-5 h-5 mr-3"></i>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-cog"></i>
                     <span class="sidebar-link-text">Settings</span>
                 </a>
 
                 @if(Auth::user()->is_superuser)
-                <a href="{{ route('admin.classes.create') }}" class="flex items-center px-4 py-2 rounded-lg {{ request()->routeIs('admin.classes.create') ? 'bg-blue-600' : 'hover:bg-gray-800' }}">
-                    <i class="fas fa-chalkboard-teacher w-5 h-5 mr-3"></i>
+                <a href="{{ route('admin.classes.create') }}" class="nav-link {{ request()->routeIs('admin.classes.create') ? 'active' : '' }}">
+                    <i class="fas fa-chalkboard-teacher"></i>
                     <span class="sidebar-link-text">Create Class</span>
                 </a>
                 @endif
             </nav>
 
-            <div class="mt-auto pt-4 border-t border-gray-700">
-                <a href="{{ route('dashboard.main') }}" class="flex items-center px-4 py-2 rounded-lg hover:bg-gray-800">
-                    <i class="fas fa-arrow-left w-5 h-5 mr-3"></i>
+            <div class="mt-auto pt-4 border-t">
+                <a href="{{ route('dashboard.main') }}" class="nav-link">
+                    <i class="fas fa-arrow-left"></i>
                     <span class="sidebar-link-text">Back to Site</span>
                 </a>
 
                 <form method="POST" action="{{ route('logout') }}" class="mt-2">
                     @csrf
-                    <button type="submit" class="flex items-center px-4 py-2 rounded-lg hover:bg-gray-800 w-full text-left">
-                        <i class="fas fa-sign-out-alt w-5 h-5 mr-3"></i>
+                    <button type="submit" class="nav-link logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
                         <span class="sidebar-link-text">Logout</span>
                     </button>
                 </form>
@@ -131,71 +591,53 @@
         </div>
 
         <!-- Main Content -->
-        <div class="flex-1 flex flex-col overflow-hidden">
+        <div class="main-content">
             <!-- Top Header -->
-            <header class="bg-white shadow-sm border-b border-gray-200">
-                <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+            <header class="header">
+                <div class="header-content">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h1 class="text-2xl font-semibold text-gray-900">@yield('page-title', 'Dashboard')</h1>
-                            <p class="text-sm text-gray-600">@yield('page-description', 'Welcome to the admin dashboard')</p>
+                            <h1>@yield('page-title', 'Dashboard')</h1>
+                            <p>@yield('page-description', 'Welcome to the admin dashboard')</p>
                         </div>
 
                         <div class="flex items-center space-x-4">
                             <!-- Notifications -->
-                            <div class="relative" x-data="{ open: false }">
-                                <button @click="open = !open" class="p-2 text-gray-400 hover:text-gray-500">
+                            <div class="dropdown" id="notificationDropdown">
+                                <button id="notificationDropdownBtn" class="notification-btn">
                                     <i class="fas fa-bell w-6 h-6"></i>
-                                    <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400"></span>
+                                    <span class="notification-badge"></span>
                                 </button>
 
-                                <div x-show="open"
-                                     x-transition:enter="transition ease-out duration-200"
-                                     x-transition:enter-start="opacity-0 scale-95"
-                                     x-transition:enter-end="opacity-100 scale-100"
-                                     x-transition:leave="transition ease-in duration-75"
-                                     x-transition:leave-start="opacity-100 scale-100"
-                                     x-transition:leave-end="opacity-0 scale-95"
-                                     @click.away="open = false"
-                                     x-cloak
-                                     class="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-50">
-                                    <div class="px-4 py-2 text-sm text-gray-700 border-b">
+                                <div class="dropdown-menu dropdown-menu-wide">
+                                    <div class="notification-header">
                                         <strong>Recent Notifications</strong>
                                     </div>
-                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        <div class="font-medium">New user registered</div>
-                                        <div class="text-gray-500">john@example.com - 2 minutes ago</div>
+                                    <a href="#" class="dropdown-item">
+                                        <div class="notification-title">New user registered</div>
+                                        <div class="notification-subtitle">john@example.com - 2 minutes ago</div>
                                     </a>
-                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        <div class="font-medium">Security alert</div>
-                                        <div class="text-gray-500">Multiple failed login attempts - 5 minutes ago</div>
+                                    <a href="#" class="dropdown-item">
+                                        <div class="notification-title">Security alert</div>
+                                        <div class="notification-subtitle">Multiple failed login attempts - 5 minutes ago</div>
                                     </a>
                                 </div>
                             </div>
 
                             <!-- User Menu -->
-                            <div class="relative" x-data="{ open: false }">
-                                <button @click="open = !open" class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                    <div class="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
-                                        <span class="text-sm font-medium text-gray-700">{{ substr(Auth::user()->name, 0, 1) }}</span>
+                            <div class="dropdown" id="userDropdown">
+                                <button id="userDropdownBtn" class="flex items-center user-dropdown-btn">
+                                    <div class="avatar">
+                                        <span>{{ substr(Auth::user()->name, 0, 1) }}</span>
                                     </div>
-                                    <span class="ml-2 text-gray-700">{{ Auth::user()->name }}</span>
+                                    <span class="ml-2 user-name">{{ Auth::user()->name }}</span>
                                 </button>
 
-                                <div x-show="open"
-                                     x-transition:enter="transition ease-out duration-200"
-                                     x-transition:enter-start="opacity-0 scale-95"
-                                     x-transition:enter-end="opacity-100 scale-100"
-                                     x-transition:leave="transition ease-in duration-75"
-                                     x-transition:leave-start="opacity-100 scale-100"
-                                     x-transition:leave-end="opacity-0 scale-95"
-                                     @click.away="open = false"
-                                     x-cloak
-                                     class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                                    <a href="{{ route('profile.show') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</a>
+                                <div class="dropdown-menu">
+                                    <a href="{{ route('profile.show') }}" class="dropdown-item">Profile</a>
                                     <form method="POST" action="{{ route('logout') }}">
                                         @csrf
-                                        <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Logout</button>
+                                        <button type="submit" class="dropdown-item logout-btn">Logout</button>
                                     </form>
                                 </div>
                             </div>
@@ -205,53 +647,145 @@
             </header>
 
             <!-- Page Content -->
-            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
-                <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                    <!-- Flash Messages -->
-                    @if(session('success'))
-                        <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-                            <span class="block sm:inline">{{ session('success') }}</span>
-                        </div>
-                    @endif
+            <main class="content-wrapper">
+                <!-- Flash Messages -->
+                @if(session('success'))
+                    <div class="alert alert-success">
+                        <span>{{ session('success') }}</span>
+                    </div>
+                @endif
 
-                    @if(session('error'))
-                        <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                            <span class="block sm:inline">{{ session('error') }}</span>
-                        </div>
-                    @endif
+                @if(session('error'))
+                    <div class="alert alert-error">
+                        <span>{{ session('error') }}</span>
+                    </div>
+                @endif
 
-                    @if($errors->any())
-                        <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                            <ul class="list-disc list-inside">
-                                @foreach($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
+                @if($errors->any())
+                    <div class="alert alert-error">
+                        <ul class="error-list">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
 
-                    @yield('content')
-                </div>
+                @yield('content')
             </main>
         </div>
     </div>
 
-    <!-- Alpine.js for interactivity -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        // JavaScript for dropdown functionality and sidebar toggle
+        function toggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            if (!dropdown) {
+                console.error('Dropdown not found:', dropdownId);
+                return;
+            }
+            
+            const isOpen = dropdown.classList.contains('open');
+            
+            // Close all dropdowns
+            document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
+            
+            // Toggle current dropdown
+            if (!isOpen) {
+                dropdown.classList.add('open');
+                
+                // Special handling for content dropdown
+                if (dropdownId === 'contentDropdown') {
+                    const contentMenu = document.getElementById('contentDropdownMenu');
+                    if (contentMenu) {
+                        contentMenu.classList.remove('dropdown-menu-hide');
+                        contentMenu.classList.add('dropdown-menu-show');
+                    }
+                }
+            } else {
+                // Special handling for content dropdown when closing
+                if (dropdownId === 'contentDropdown') {
+                    const contentMenu = document.getElementById('contentDropdownMenu');
+                    if (contentMenu) {
+                        contentMenu.classList.remove('dropdown-menu-show');
+                        contentMenu.classList.add('dropdown-menu-hide');
+                    }
+                }
+            }
+        }
 
-    <script nonce="{{ request()->attributes->get('csp_nonce') }}" defer crossorigin="anonymous">
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.dropdown')) {
+                document.querySelectorAll('.dropdown').forEach(d => {
+                    d.classList.remove('open');
+                    
+                    // Special handling for content dropdown
+                    if (d.id === 'contentDropdown') {
+                        const contentMenu = document.getElementById('contentDropdownMenu');
+                        if (contentMenu) {
+                            contentMenu.classList.remove('dropdown-menu-show');
+                            contentMenu.classList.add('dropdown-menu-hide');
+                        }
+                    }
+                });
+            }
+        });
+
+        // Sidebar toggle functionality
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.querySelector('.sidebar');
             const sidebarToggle = document.querySelector('#sidebar-toggle');
 
-            sidebarToggle.addEventListener('click', function() {
-                sidebar.classList.toggle('collapsed');
-                const icon = this.querySelector('i');
-                icon.classList.toggle('fa-chevron-left');
-                icon.classList.toggle('fa-chevron-right');
-            });
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('collapsed');
+                    const icon = this.querySelector('i');
+                    icon.classList.toggle('fa-chevron-left');
+                    icon.classList.toggle('fa-chevron-right');
+                });
+            }
+
+            // Initialize content dropdown state based on current route
+            @if(request()->routeIs('admin.content*'))
+                const contentDropdown = document.getElementById('contentDropdown');
+                const contentMenu = document.getElementById('contentDropdownMenu');
+                if (contentDropdown && contentMenu) {
+                    contentDropdown.classList.add('open');
+                    contentMenu.classList.remove('dropdown-menu-hide');
+                    contentMenu.classList.add('dropdown-menu-show');
+                }
+            @endif
+
+            // Add event listeners for dropdown buttons
+            const contentDropdownBtn = document.getElementById('contentDropdownBtn');
+            if (contentDropdownBtn) {
+                contentDropdownBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Content dropdown clicked');
+                    toggleDropdown('contentDropdown');
+                });
+            } else {
+                console.error('Content dropdown button not found');
+            }
+
+            const notificationDropdownBtn = document.getElementById('notificationDropdownBtn');
+            if (notificationDropdownBtn) {
+                notificationDropdownBtn.addEventListener('click', function() {
+                    toggleDropdown('notificationDropdown');
+                });
+            }
+
+            const userDropdownBtn = document.getElementById('userDropdownBtn');
+            if (userDropdownBtn) {
+                userDropdownBtn.addEventListener('click', function() {
+                    toggleDropdown('userDropdown');
+                });
+            }
         });
 
+        // Keep session alive
         setInterval(() => {
             if (document.visibilityState === 'visible') {
                 fetch('/ping', {

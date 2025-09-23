@@ -21,6 +21,8 @@ class Video extends Model
         'uploader_ip',
         'uploader_user_agent',
         'views',
+        'document_path',
+        'quiz_id'
     ];
 
     /**
@@ -31,11 +33,23 @@ class Video extends Model
         return $this->belongsTo(User::class, 'uploaded_by');
     }
 
+    // Document relationship (if using document_id)
+    public function document()
+    {
+        return $this->belongsTo(Document::class, 'document_id');
+    }
+
     /**
      * Get the quizzes associated with the video.
      */
     public function quizzes()
     {
         return $this->hasMany(Quiz::class);
+    }
+
+    // Get single quiz for a video
+    public function quiz()
+    {
+        return $this->belongsTo(Quiz::class, 'quiz_id');
     }
 }
