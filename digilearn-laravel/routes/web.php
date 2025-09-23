@@ -20,6 +20,11 @@ use Illuminate\Support\Facades\Redis;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 
+// Include debug routes in development
+if (app()->environment(['local', 'development', 'testing'])) {
+    require __DIR__ . '/debug.php';
+}
+
 /*
 |--------------------------------------------------------------------------
 | Public Routes
