@@ -56,12 +56,16 @@ return [
             'https://*.googleusercontent.com',
             'https://images.unsplash.com',
             'https://flagcdn.com',
+            'https://www.shoutoutgh.com',
+            'https://ui-avatars.com', // For user avatars
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
-            
         ],
         'media-src' => [
             "'self'",
             'blob:',
+            'data:',
+            'http://localhost',
+            'http://127.0.0.1',
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
         ],
         'connect-src' => [

@@ -314,6 +314,9 @@
             <div>
                 <h3 style="font-size: 1.125rem; font-weight: 600; color: var(--gray-500);">Total Videos</h3>
                 <p style="font-size: 2.25rem; font-weight: 700; color: var(--primary-blue); margin-top: 0.5rem;">{{ $totalVideos }}</p>
+                <div style="font-size: 0.75rem; color: var(--gray-500); margin-top: 0.25rem;">
+                    {{ $approvedCount }} approved • {{ $pendingCount }} pending • {{ $rejectedCount }} rejected
+                </div>
             </div>
             <div class="stat-icon primary">
                 <svg style="width: 2rem; height: 2rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -354,6 +357,9 @@
         </div>
     </div>
 
+    <!-- Video Review Section -->
+    @include('admin.content.videos.review-section')
+
     <!-- Upload Section - Hidden by default, shown when button is clicked -->
     <div class="upload-section" id="uploadSection">
         <!-- close button -->
@@ -393,7 +399,7 @@
                 <div>
                     <label class="form-label">Video File *</label>
                     <div class="drag-drop-zone" id="videoDropZone">
-                        <input type="file" name="video_file" id="video_file" accept="video/*" style="display: none;" required>
+                        <input type="file" name="video_file" id="video_file" accept="video/*" style="display: none;">
                         <div class="upload-content">
                             <div class="upload-icon primary">
                                 <svg style="width: 2rem; height: 2rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -405,7 +411,7 @@
                             <div class="btn-upload" style="display: inline-flex;">
                                 Select Video File
                             </div>
-                            <p style="font-size: 0.75rem; color: var(--gray-500); margin-top: 0.75rem;">Max size: 500MB • Duration: up to 60 minutes</p>
+                            <p style="font-size: 0.75rem; color: var(--gray-500); margin-top: 0.75rem;">Max size: 600MB • Duration: up to 60 minutes</p>
                         </div>
                     </div>
                 </div>
@@ -817,6 +823,30 @@
         const emptyUploadBtn = document.querySelector('.empty-state .btn-upload');
         if (emptyUploadBtn) {
             emptyUploadBtn.addEventListener('click', showUploadSection);
+        }
+
+        // Add form validation
+        const uploadForm = document.getElementById('videoUploadForm');
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', function(e) {
+                const videoFile = document.getElementById('video_file');
+                const titleInput = document.querySelector('input[name="title"]');
+                
+                // Check if video file is selected
+                if (!videoFile.files || videoFile.files.length === 0) {
+                    e.preventDefault();
+                    alert('Please select a video file to upload.');
+                    return false;
+                }
+                
+                // Check if title is provided
+                if (!titleInput.value.trim()) {
+                    e.preventDefault();
+                    alert('Please provide a title for the video.');
+                    titleInput.focus();
+                    return false;
+                }
+            });
         }
     });
 </script>

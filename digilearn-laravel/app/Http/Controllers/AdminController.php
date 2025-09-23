@@ -933,31 +933,75 @@ class AdminController extends Controller
         $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3']; // Example grades
         $quizzes = Quiz::all(); // For associating quizzes
 
+        // Get pending videos for review section
+        $pendingVideos = Video::pending()
+            ->with(['uploader:id,name,email'])
+            ->orderBy('created_at', 'asc')
+            ->get();
+
         // Video statistics
         $totalVideos = Video::count();
+        $pendingCount = Video::pending()->count();
+        $approvedCount = Video::approved()->count();
+        $rejectedCount = Video::where('status', 'rejected')->count();
         $mostWatchedVideo = Video::orderBy('views', 'desc')->first();
         $averageDurationSeconds = Video::avg('duration_seconds');
         $averageDuration = $averageDurationSeconds ? gmdate("H:i:s", $averageDurationSeconds) : '00:00:00';
 
-        return view('admin.content.videos.index', compact('videos', 'gradeLevels', 'totalVideos', 'mostWatchedVideo', 'averageDuration', 'quizzes'));
+        // Check for expired temp files
+        $expiredVideos = Video::where('temp_expires_at', '<', now())
+            ->whereNotNull('temp_file_path')
+            ->count();
+
+        return view('admin.content.videos.index', compact(
+            'videos', 
+            'pendingVideos', 
+            'gradeLevels', 
+            'totalVideos', 
+            'pendingCount',
+            'approvedCount', 
+            'rejectedCount',
+            'expiredVideos',
+            'mostWatchedVideo', 
+            'averageDuration', 
+            'quizzes'
+        ));
     }
 
     public function storeVideo(Request $request)
     {
+        // Check temporary video limit
+        $pendingCount = Video::pending()->count();
+        $maxTempVideos = (int) config('services.vimeo.max_temp_videos', 10);
+        
+        if ($pendingCount >= $maxTempVideos) {
+            return back()->withErrors([
+                'video_file' => "Maximum number of pending videos ({$maxTempVideos}) reached. Please review existing videos first."
+            ]);
+        }
+
         $request->validate([
             'title' => 'required|string|max:255',
-            'video_file' => 'required|file|mimes:mp4,mov,avi,wmv|max:500000', // Max 500MB
+            'video_file' => 'required|file|mimes:mp4,mov,avi,wmv|max:600000', // Max 600MB
             'thumbnail_file' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB
             'grade_level' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'is_featured' => 'boolean',
         ]);
 
-        $videoPath = $request->file('video_file')->store('videos', 'public');
+        // Store video temporarily
+        $tempVideoPath = $request->file('video_file')->store('temp_videos', 'public');
         $thumbnailPath = null;
         if ($request->hasFile('thumbnail_file')) {
             $thumbnailPath = $request->file('thumbnail_file')->store('thumbnails', 'public');
         }
+
+        // Get file size
+        $fileSize = $request->file('video_file')->getSize();
+
+        // Calculate expiry time
+        $expiryHours = (int) config('services.vimeo.temp_expiry_hours', 72);
+        $tempExpiresAt = now()->addHours($expiryHours);
 
         // Simulate duration calculation (in a real app, you'd use a video processing library)
         $durationSeconds = rand(60, 3600); // Placeholder duration
@@ -970,16 +1014,21 @@ class AdminController extends Controller
 
         $video = Video::create([
             'title' => $request->title,
-            'video_path' => $videoPath,
+            'video_path' => null, // Will be set after Vimeo upload
+            'temp_file_path' => $tempVideoPath,
+            'temp_expires_at' => $tempExpiresAt,
             'thumbnail_path' => $thumbnailPath,
             'grade_level' => $request->grade_level,
             'duration_seconds' => $durationSeconds,
+            'file_size_bytes' => $fileSize,
             'description' => $request->description,
             'is_featured' => $request->has('is_featured'),
+            'status' => 'pending', // Set to pending for review
             'uploaded_by' => Auth::id(),
             'uploader_ip' => get_client_ip(),
             'uploader_user_agent' => $request->userAgent(),
-            'views' => 0, // Initialize views to 0
+            'views' => 0,
+            'document_path' => $documentPath,
         ]);
 
         // Handle quiz association
@@ -994,7 +1043,7 @@ class AdminController extends Controller
             $video->save();
         }
 
-        return redirect()->route('admin.content.videos.index')->with('success', 'Video uploaded successfully!');
+        return redirect()->route('admin.content.videos.index')->with('success', 'Video uploaded successfully and is pending review!');
     }
 
     public function editVideo(Video $video)
@@ -1064,6 +1113,111 @@ class AdminController extends Controller
         $video->save();
 
         return back()->with('success', 'Video feature status updated.');
+    }
+
+    /**
+     * Approve video and upload to Vimeo
+     */
+    public function approveVideo(Request $request, Video $video)
+    {
+        if (!$video->isPending()) {
+            return back()->withErrors(['error' => 'Video is not pending approval.']);
+        }
+
+        try {
+            // Set status to processing
+            $video->update([
+                'status' => 'processing',
+                'reviewed_by' => Auth::id(),
+                'reviewed_at' => now(),
+                'review_notes' => $request->input('review_notes')
+            ]);
+
+            // Upload to Vimeo
+            $vimeoService = new \App\Services\VimeoService();
+            $result = $vimeoService->uploadVideo(
+                $video->temp_file_path,
+                $video->title,
+                $video->description
+            );
+
+            if ($result['success']) {
+                // Update video with Vimeo details
+                $video->update([
+                    'status' => 'approved',
+                    'vimeo_id' => $result['video_id'],
+                    'vimeo_embed_url' => $result['embed_url'],
+                    'video_path' => null, // Clear old path
+                ]);
+
+                // Delete temporary file
+                if ($video->temp_file_path) {
+                    \Storage::disk('public')->delete($video->temp_file_path);
+                    $video->update(['temp_file_path' => null, 'temp_expires_at' => null]);
+                }
+
+                return back()->with('success', 'Video approved and uploaded to Vimeo successfully!');
+            } else {
+                // Revert status on failure
+                $video->update(['status' => 'pending']);
+                return back()->withErrors(['error' => 'Failed to upload to Vimeo: ' . $result['error']]);
+            }
+
+        } catch (\Exception $e) {
+            // Revert status on exception
+            $video->update(['status' => 'pending']);
+            \Log::error('Video approval failed', [
+                'video_id' => $video->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return back()->withErrors(['error' => 'An error occurred while approving the video.']);
+        }
+    }
+
+    /**
+     * Reject video
+     */
+    public function rejectVideo(Request $request, Video $video)
+    {
+        if (!$video->isPending()) {
+            return back()->withErrors(['error' => 'Video is not pending approval.']);
+        }
+
+        $video->update([
+            'status' => 'rejected',
+            'reviewed_by' => Auth::id(),
+            'reviewed_at' => now(),
+            'review_notes' => $request->input('review_notes', 'Video rejected.')
+        ]);
+
+        // Delete temporary file
+        if ($video->temp_file_path) {
+            \Storage::disk('public')->delete($video->temp_file_path);
+            $video->update(['temp_file_path' => null, 'temp_expires_at' => null]);
+        }
+
+        return back()->with('success', 'Video rejected successfully.');
+    }
+
+    /**
+     * Get video for preview (AJAX)
+     */
+    public function previewVideo(Video $video)
+    {
+        return response()->json([
+            'id' => $video->id,
+            'title' => $video->title,
+            'description' => $video->description,
+            'grade_level' => $video->grade_level,
+            'duration' => $video->duration_seconds,
+            'file_size' => $video->getFormattedFileSize(),
+            'video_url' => $video->getVideoUrl(),
+            'status' => $video->status,
+            'uploaded_by' => $video->uploader->name,
+            'uploaded_at' => $video->created_at->format('M d, Y H:i'),
+            'expires_at' => $video->temp_expires_at ? $video->temp_expires_at->format('M d, Y H:i') : null,
+        ]);
     }
 
     // Content Management - Quizzes

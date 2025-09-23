@@ -83,4 +83,12 @@ return [
         'rate_limit' => env('GOOGLE_RATE_LIMIT', 5),
     ],
 
+    'vimeo' => [
+        'access_token' => env('VIMEO_ACCESS_TOKEN'),
+        'client_id' => env('VIMEO_CLIENT_ID'),
+        'client_secret' => env('VIMEO_CLIENT_SECRET'),
+        'max_temp_videos' => env('VIMEO_MAX_TEMP_VIDEOS', 10),
+        'temp_expiry_hours' => env('VIMEO_TEMP_EXPIRY_HOURS', 72), // 3 days
+    ],
+
 ];

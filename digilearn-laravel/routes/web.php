@@ -223,6 +223,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::put('/{video}', [AdminController::class, 'updateVideo'])->name('update');
         Route::delete('/{video}', [AdminController::class, 'destroyVideo'])->name('destroy');
         Route::post('/{video}/toggle-feature', [AdminController::class, 'toggleVideoFeature'])->name('toggle-feature');
+        
+        // Video review workflow
+        Route::post('/{video}/approve', [AdminController::class, 'approveVideo'])->name('approve');
+        Route::post('/{video}/reject', [AdminController::class, 'rejectVideo'])->name('reject');
+        Route::get('/{video}/preview', [AdminController::class, 'previewVideo'])->name('preview');
     });
 
     // Content Management - Quizzes
