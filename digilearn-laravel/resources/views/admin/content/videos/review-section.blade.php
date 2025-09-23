@@ -82,7 +82,8 @@
                 
                 <!-- Video Player -->
                 <div class="aspect-video bg-black rounded mb-4">
-                    <video id="previewPlayer" class="w-full h-full" controls>
+                    <video id="previewPlayer" class="w-full h-full" controls preload="metadata">
+                        <source id="videoSource" type="video/mp4">
                         Your browser does not support the video tag.
                     </video>
                 </div>
@@ -144,7 +145,13 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 document.getElementById('previewTitle').textContent = data.title;
-                document.getElementById('previewPlayer').src = data.video_url;
+                
+                // Set video source properly
+                const videoPlayer = document.getElementById('previewPlayer');
+                const videoSource = document.getElementById('videoSource');
+                
+                videoSource.src = data.video_url;
+                videoPlayer.load(); // Reload the video element
                 
                 document.getElementById('previewDetails').innerHTML = `
                     <div><strong>Description:</strong> ${data.description || 'No description'}</div>
@@ -170,7 +177,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function closePreviewModal() {
         document.getElementById('videoPreviewModal').classList.add('hidden');
-        document.getElementById('previewPlayer').src = '';
+        
+        // Properly reset video
+        const videoPlayer = document.getElementById('previewPlayer');
+        const videoSource = document.getElementById('videoSource');
+        
+        videoPlayer.pause();
+        videoSource.src = '';
+        videoPlayer.load();
+        
         currentVideoId = null;
     }
 

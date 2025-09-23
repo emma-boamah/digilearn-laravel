@@ -228,6 +228,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/{video}/approve', [AdminController::class, 'approveVideo'])->name('approve');
         Route::post('/{video}/reject', [AdminController::class, 'rejectVideo'])->name('reject');
         Route::get('/{video}/preview', [AdminController::class, 'previewVideo'])->name('preview');
+        Route::get('/{video}/stream', [App\Http\Controllers\VideoStreamController::class, 'stream'])->name('stream');
     });
 
     // Content Management - Quizzes

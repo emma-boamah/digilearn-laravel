@@ -66,6 +66,8 @@ return [
             'data:',
             'http://localhost',
             'http://127.0.0.1',
+            'http://localhost:*', // For different ports
+            'http://127.0.0.1:*', // For different ports
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
         ],
         'connect-src' => [

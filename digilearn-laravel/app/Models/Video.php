@@ -123,11 +123,16 @@ class Video extends Model
             return "https://player.vimeo.com/video/{$this->vimeo_id}";
         }
         
+        // Use streaming route for better browser compatibility
         if ($this->temp_file_path && !$this->isTempExpired()) {
-            return asset('storage/' . $this->temp_file_path);
+            return route('admin.content.videos.stream', $this);
         }
         
-        return $this->video_path ? asset('storage/' . $this->video_path) : null;
+        if ($this->video_path) {
+            return route('admin.content.videos.stream', $this);
+        }
+        
+        return null;
     }
 
     /**
