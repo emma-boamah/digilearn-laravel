@@ -1064,7 +1064,9 @@ class AdminController extends Controller
         ]);
 
         if ($request->hasFile('video_file')) {
-            Storage::disk('public')->delete($video->video_path);
+            if ($video->video_path) {
+                Storage::disk('public')->delete($video->video_path);
+            }
             $video->video_path = $request->file('video_file')->store('videos', 'public');
         }
 
@@ -1098,10 +1100,8 @@ class AdminController extends Controller
 
     public function destroyVideo(Video $video)
     {
-        Storage::disk('public')->delete($video->video_path);
-        if ($video->thumbnail_path) {
-            Storage::disk('public')->delete($video->thumbnail_path);
-        }
+        // Safely delete all associated files
+        $video->deleteFiles();
         $video->delete();
 
         return redirect()->route('admin.content.videos.index')->with('success', 'Video deleted successfully!');
@@ -1407,7 +1407,9 @@ class AdminController extends Controller
         ]);
 
         if ($request->hasFile('document_file')) {
-            Storage::disk('public')->delete($document->file_path);
+            if ($document->file_path) {
+                Storage::disk('public')->delete($document->file_path);
+            }
             $document->file_path = $request->file('document_file')->store('documents', 'public');
         }
 
@@ -1423,7 +1425,9 @@ class AdminController extends Controller
 
     public function destroyDocument(Document $document)
     {
-        Storage::disk('public')->delete($document->file_path);
+        if ($document->file_path) {
+            Storage::disk('public')->delete($document->file_path);
+        }
         $document->delete();
 
         return redirect()->route('admin.content.documents.index')->with('success', 'Document deleted successfully!');

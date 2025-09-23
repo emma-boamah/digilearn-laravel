@@ -145,11 +145,39 @@ class Video extends Model
         $bytes = $this->file_size_bytes;
         $units = ['B', 'KB', 'MB', 'GB'];
         
-        for ($i = 0; $bytes > 1024 && $i < count($units) - 1; $i++) {
+        for ($i = 0; $bytes >= 1024 && $i < 3; $i++) {
             $bytes /= 1024;
         }
         
         return round($bytes, 2) . ' ' . $units[$i];
+    }
+
+    /**
+     * Safely delete all associated files
+     */
+    public function deleteFiles()
+    {
+        $disk = \Storage::disk('public');
+        
+        // Delete main video file
+        if ($this->video_path && $disk->exists($this->video_path)) {
+            $disk->delete($this->video_path);
+        }
+        
+        // Delete temporary video file
+        if ($this->temp_file_path && $disk->exists($this->temp_file_path)) {
+            $disk->delete($this->temp_file_path);
+        }
+        
+        // Delete thumbnail
+        if ($this->thumbnail_path && $disk->exists($this->thumbnail_path)) {
+            $disk->delete($this->thumbnail_path);
+        }
+        
+        // Delete document
+        if ($this->document_path && $disk->exists($this->document_path)) {
+            $disk->delete($this->document_path);
+        }
     }
 
     /**
