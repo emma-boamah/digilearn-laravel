@@ -602,9 +602,7 @@
                 </svg>
             </button>
             
-            <div class="user-avatar">
-                {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
-            </div>
+            <x-user-avatar :user="auth()->user()" :size="36" class="border-2 border-white" />
         </div>
     </div>
 

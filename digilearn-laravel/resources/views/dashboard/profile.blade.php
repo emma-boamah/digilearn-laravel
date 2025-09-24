@@ -1399,11 +1399,9 @@
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="profile-summary">
-                <div class="profile-avatar">
-                    {{ substr(auth()->user()->name ?? 'AS', 0, 2) }}
-                </div>
-                <div class="profile-name">{{ auth()->user()->name ?? 'Aboagye Samuel' }}</div>
-                <div class="profile-email">{{ auth()->user()->email ?? 'samuel.aboagye@gmail.com' }}</div>
+                <x-user-avatar :user="auth()->user()" :size="40" />
+                <div class="profile-name">{{ auth()->user()->name ?? 'User' }}</div>
+                <div class="profile-email">{{ auth()->user()->email ?? 'Please Sign up' }}</div>
                 <div class="profile-location">
                     <img src="https://flagcdn.com/w20/gh.png" alt="Ghana" class="flag-icon">
                     <span>Ghana | 6+ JHS 2024</span>
@@ -1480,8 +1478,8 @@
                 <!-- Avatar Upload Section -->
                 <div class="avatar-upload">
                     <div class="avatar-large" id="avatarPreview">
-                        @if(auth()->user()->avatar ?? false)
-                            <img src="{{ auth()->user()->avatar }}" alt="Profile" class="avatar-image">
+                        @if(auth()->user()->avatar_url ?? false)
+                            <img src="{{ auth()->user()->avatar_url }}" alt="Profile" class="avatar-image" id="avatarImage">
                         @else
                             {{ substr(auth()->user()->name ?? 'AS', 0, 2) }}
                         @endif
@@ -1619,12 +1617,12 @@
                                     <img src="https://flagcdn.com/w20/gh.png" alt="Ghana" class="flag-icon">
                                 </div>
                                 <select id="country" name="country" class="form-input" onchange="updateFlag(this)">
-                                    <option value="GH" selected>Ghana</option>
-                                    <option value="NG">Nigeria</option>
-                                    <option value="KE">Kenya</option>
-                                    <option value="ZA">South Africa</option>
-                                    <option value="US">United States</option>
-                                    <option value="GB">United Kingdom</option>
+                                    <option value="Ghana" data-code="gh" selected>Ghana</option>
+                                    <option value="Nigeria" data-code="ng">Nigeria</option>
+                                    <option value="Kenya" data-code="ke">Kenya</option>
+                                    <option value="South Africa" data-code="za">South Africa</option>
+                                    <option value="United States" data-code="us">United States</option>
+                                    <option value="United Kingdom" data-code="uk">United Kingdom</option>
                                 </select>
                             </div>
                         </div>
@@ -2107,58 +2105,105 @@
         function previewAvatar(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
+                const preview = document.getElementById('avatarPreview');
+                const avatarImage = document.getElementById('avatarImage');
                 
                 reader.onload = function(e) {
-                    const avatarPreview = document.getElementById('avatarPreview');
-                    avatarPreview.innerHTML = `<img src="${e.target.result}" alt="Profile" class="avatar-image">`;
-                };
+                    if (!avatarImage) {
+                        // If no image element exists, create one
+                        const img = document.createElement('img');
+                        img.id = 'avatarImage';
+                        img.className = 'avatar-image';
+                        img.src = e.target.result;
+                        preview.innerHTML = '';
+                        preview.appendChild(img);
+                    } else {
+                        // Update existing image
+                        avatarImage.src = e.target.result;
+                    }
+                }
                 
                 reader.readAsDataURL(input.files[0]);
+                
+                // Show a success message when a new avatar is selected
+                showNotification('Click "Update" to update your profile picture', 'info');
             }
         }
 
         // Country flag update
         function updateFlag(select) {
             const flagDisplay = select.parentElement.querySelector('.flag-display img');
-            const countryCode = select.value.toLowerCase();
-            flagDisplay.src = `https://flagcdn.com/w20/${countryCode}.png`;
-            flagDisplay.alt = select.options[select.selectedIndex].text;
+            const selectedOption = select.options[select.selectedIndex];
+            const countryCode = selectedOption.getAttribute('data-code');
+            if (countryCode) {
+            
+                flagDisplay.src = `https://flagcdn.com/w20/${countryCode.toLowerCase()}.png`;
+                flagDisplay.alt = selectedOption.text;
+            }
         }
 
         // Form submission
         document.getElementById('profileForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            // Show loading state
-            const submitBtn = document.querySelector('.btn-primary');
+            const submitBtn = this.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
             submitBtn.disabled = true;
             
             try {
                 const formData = new FormData(this);
+                
+                // Log form data for debugging
+                console.log('Form data being submitted:');
+                for (let [key, value] of formData.entries()) {
+                    console.log(`${key}:`, value);
+                }
+                
                 const response = await fetch('{{ route("profile.update") }}', {
                     method: 'POST',
                     body: formData,
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
                     }
                 });
                 
                 const data = await response.json();
                 
-                if (data.success) {
-                    showNotification('Profile updated successfully!', 'success');
-                    // Optionally reload the page to show updated data
-                    setTimeout(() => location.reload(), 1500);
-                } else {
-                    showNotification(data.message || 'Failed to update profile', 'error');
+                if (!response.ok) {
+                    // Handle validation errors
+                    if (response.status === 422 && data.errors) {
+                        let errorMessage = 'Please correct the following issues:';
+                        for (const [field, errors] of Object.entries(data.errors)) {
+                            // Format field name to be more readable
+                            const fieldName = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                            errorMessage += `\n- ${fieldName}: ${errors[0]}`;
+                        }
+                        showNotification(errorMessage, 'error');
+                        return;
+                    }
+                    throw new Error(data.message || 'Failed to update profile');
                 }
+                
+                // Success case
+                if (data.avatar_url) {
+                    const avatarImage = document.getElementById('avatarImage');
+                    if (avatarImage) {
+                        avatarImage.src = data.avatar_url + '?v=' + new Date().getTime();
+                    } else {
+                        const preview = document.getElementById('avatarPreview');
+                        preview.innerHTML = `<img src="${data.avatar_url}?v=${new Date().getTime()}" alt="Profile" class="avatar-image" id="avatarImage">`;
+                    }
+                }
+                
+                showNotification('Profile updated successfully!', 'success');
+                
             } catch (error) {
-                showNotification('An error occurred. Please try again.', 'error');
+                console.error('Error updating profile:', error);
+                showNotification(error.message || 'An error occurred while updating your profile', 'error');
             } finally {
-                // Reset button
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
             }

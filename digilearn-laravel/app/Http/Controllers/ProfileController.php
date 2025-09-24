@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
@@ -107,12 +108,14 @@ class ProfileController extends Controller
             // Handle avatar upload
             if ($request->hasFile('avatar')) {
                 // Delete old avatar if exists
-                if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
-                    Storage::disk('public')->delete($user->avatar);
+                if ($user->avatar_path && Storage::disk('public')->exists($user->avatar_path)) {
+                    Storage::disk('public')->delete($user->avatar_path);
                 }
 
-                $avatarPath = $request->file('avatar')->store('avatars', 'public');
-                $validated['avatar'] = $avatarPath;
+                // Store the new avatar
+                $path = $request->file('avatar')->store('avatars', 'public');
+                $user->avatar_path = $path;
+                $user->avatar_url = Storage::disk('public')->url($path);
             }
 
             // Combine first and last name
@@ -143,6 +146,7 @@ class ProfileController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Profile updated successfully!',
+                    'avatar_url' => $user->avatar_url,
                     'user' => $user->refresh()
                 ]);
             }
@@ -202,6 +206,32 @@ class ProfileController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Profile updated successfully!');
+    }
+
+    /**
+     * Get the current user's avatar information
+     *
+     * 
+     */
+    public function getAvatarInfo(Request $request)
+    {
+        try {
+            $user = $request->user();
+            
+            return response()->json([
+                'success' => true,
+                'avatar_url' => $user->avatar_url,
+                'name' => $user->name,
+                'initials' => $user->initials
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to get avatar info: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load avatar information'
+            ], 500);
+        }
     }
 
     /**

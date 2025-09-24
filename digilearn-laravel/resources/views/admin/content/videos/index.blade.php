@@ -611,7 +611,7 @@
                         <td>
                             @if($video->uploader)
                                 <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                    <img src="{{ $video->uploader->avatar ? Storage::url($video->uploader->avatar) : 'https://ui-avatars.com/api/?name='.urlencode($video->uploader->name).'&background=random' }}" style="height: 2rem; width: 2rem; border-radius: 50%; object-fit: cover; border: 1px solid var(--gray-200);" alt="avatar"/>
+                                    <x-user-avatar :user="$video->uploader" :size="32" />
                                     <div style="font-size: 0.875rem;">
                                         <div style="color: var(--gray-900); font-weight: 500;">{{ $video->uploader->name }}</div>
                                         <div style="color: var(--gray-500);">{{ $video->uploader->email }}</div>

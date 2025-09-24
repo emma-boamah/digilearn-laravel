@@ -580,9 +580,7 @@
                 </button>
                 <h1 class="page-title">My Projects</h1>
             </div>
-            <div class="user-avatar">
-                {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
-            </div>
+            <x-user-avatar :user="auth()->user()" :size="40" class="border-2 border-white" />
         </div>
     </div>
 

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -187,10 +188,15 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getAvatarUrlAttribute()
     {
-        if ($this->avatar) {
-            return secure_asset('storage/' . $this->avatar);
+        if (!$this->avatar) {
+            return null;
         }
-        return null;
+
+        // Use Storage facade for consistent URL generation
+        $url = Storage::disk('public')->url($this->avatar);
+        
+        // Add cache-busting parameter
+        return $url . '?v=' . ($this->updated_at ? $this->updated_at->timestamp : time());
     }
 
     /**
@@ -198,12 +204,40 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getInitialsAttribute()
     {
-        $names = explode(' ', $this->name);
+        $names = explode(' ', trim($this->name ?? ''));
         $initials = '';
         foreach ($names as $name) {
-            $initials .= strtoupper(substr($name, 0, 1));
+            if (!empty($name)) {
+                $initials .= strtoupper(substr($name, 0, 1));
+            }
         }
-        return substr($initials, 0, 2);
+        return substr($initials ?: 'U', 0, 2);
+    }
+
+    /**
+     * Get avatar with fallback to UI Avatars service
+     */
+    public function getAvatarWithFallback($size = 40)
+    {
+        if ($this->avatar_url) {
+            return $this->avatar_url;
+        }
+        
+        // Fallback to UI Avatars service
+        $name = urlencode($this->name ?? 'User');
+        return "https://ui-avatars.com/api/?name={$name}&size={$size}&background=random&color=fff&bold=true";
+    }
+
+    /**
+     * Get avatar HTML element
+     */
+    public function getAvatarHtml($size = 40, $classes = '')
+    {
+        $avatarUrl = $this->getAvatarWithFallback($size);
+        $defaultClasses = 'rounded-full object-cover';
+        $allClasses = trim($defaultClasses . ' ' . $classes);
+        
+        return "<img src=\"{$avatarUrl}\" alt=\"{$this->name}\" class=\"{$allClasses}\" style=\"width: {$size}px; height: {$size}px;\" />";
     }
 
     /**

@@ -48,13 +48,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="flex items-center space-x-4">
                                 <div class="flex-shrink-0">
-                                    @if($user->avatar_url)
-                                        <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="h-20 w-20 rounded-full object-cover">
-                                    @else
-                                        <div class="h-20 w-20 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
-                                            {{ $user->initials }}
-                                        </div>
-                                    @endif
+                                    <x-user-avatar :user="$user" :size="80" />
                                 </div>
                                 <div>
                                     <h3 class="text-lg font-medium text-gray-900">{{ $user->name }}</h3>

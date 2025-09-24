@@ -140,6 +140,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    // API endpoints
+    Route::get('/api/user/avatar-info', [ProfileController::class, 'getAvatarInfo'])->name('api.user.avatar-info');
     Route::post('/profile/phone', [ProfileController::class, 'updatePhone'])->name('profile.phone.update');
     Route::put('/profile/phone', [ProfileController::class, 'updatePhone'])->name('profile.phone.update');
     Route::delete('/profile/phone', [ProfileController::class, 'removePhone'])->name('profile.phone.remove');
