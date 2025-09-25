@@ -192,11 +192,23 @@ class User extends Authenticatable implements MustVerifyEmail
             return null;
         }
 
-        // Use Storage facade for consistent URL generation
-        $url = Storage::disk('public')->url($this->avatar);
-        
-        // Add cache-busting parameter
-        return $url . '?v=' . ($this->updated_at ? $this->updated_at->timestamp : time());
+        // If avatar is an absolute URL (e.g., Google), return as-is
+        if (preg_match('/^https?:\/\//', $this->avatar)) {
+            return $this->avatar;
+        }
+
+        // Check for invalid paths (temporary upload paths, etc.)
+        if (preg_match('/^tmp\//', $this->avatar) || !preg_match('/^avatars\//', $this->avatar)) {
+            // Invalid path detected, clear it
+            $this->avatar = null;
+            $this->save();
+            return null;
+        }
+
+        // Local storage: generate a relative URL to avoid APP_URL host/scheme mismatches
+        // This ensures the image is served from the current host (via the storage symlink)
+        $relativeUrl = '/storage/' . ltrim($this->avatar, '/');
+        return $relativeUrl . '?v=' . ($this->updated_at ? $this->updated_at->timestamp : time());
     }
 
     /**

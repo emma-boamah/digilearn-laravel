@@ -94,7 +94,7 @@ class ProfileController extends Controller
             'preferred_language' => 'required|string|max:5|in:en,tw,ga,ee,fr',
             'learning_style' => 'nullable|string|in:visual,auditory,kinesthetic,mixed',
             'bio' => 'nullable|string|max:500',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'avatar' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp|max:7000',
         ], [
             'first_name.regex' => 'First name can only contain letters, spaces, hyphens, apostrophes, and periods.',
             'last_name.regex' => 'Last name can only contain letters, spaces, hyphens, apostrophes, and periods.',
@@ -105,22 +105,60 @@ class ProfileController extends Controller
         ]);
 
         try {
+            $avatarUpdated = false;
+            $avatarPath = null;
+
             // Handle avatar upload
             if ($request->hasFile('avatar')) {
-                // Delete old avatar if exists
-                if ($user->avatar_path && Storage::disk('public')->exists($user->avatar_path)) {
-                    Storage::disk('public')->delete($user->avatar_path);
+                $file = $request->file('avatar');
+
+                Log::info('avatar_upload_attempt', [
+                    'user_id'   => $user->id,
+                    'file_name' => $file->getClientOriginalName(),
+                    'file_size' => $file->getSize(),
+                    'ip'        => $request->ip()
+                ]);
+
+                // Delete old avatar if it exists and is stored locally
+                if ($user->avatar 
+                    && !preg_match('/^https?:\/\//', $user->avatar) 
+                    && Storage::disk('public')->exists($user->avatar)) 
+                {
+                    Storage::disk('public')->delete($user->avatar);
+                    Log::info('old_avatar_deleted', [
+                        'user_id'  => $user->id,
+                        'old_path' => $user->avatar
+                    ]);
                 }
 
-                // Store the new avatar
-                $path = $request->file('avatar')->store('avatars', 'public');
-                $user->avatar_path = $path;
-                $user->avatar_url = Storage::disk('public')->url($path);
+                // Generate unique filename and store the file
+                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs('avatars', $filename, 'public');
+
+                // Confirm file is stored
+                if (!Storage::disk('public')->exists($path)) {
+                    throw new \Exception('Avatar file was not stored successfully: ' . $path);
+                }
+
+                // Save only the relative path (e.g. "avatars/xyz.jpg") in DB
+                $user->avatar = $path;
+                $avatarPath   = $path;
+                $avatarUpdated = true;
+
+                Log::info('avatar_file_stored', [
+                    'user_id'    => $user->id,
+                    'db_path'    => $path, // what’s saved in DB
+                    'public_url' => Storage::url($path), // what you show in views
+                ]);
             }
+
 
             // Combine first and last name
             $validated['name'] = trim($validated['first_name'] . ' ' . $validated['last_name']);
             unset($validated['first_name'], $validated['last_name']);
+
+            // Remove avatar from validated data since we handle it separately
+            unset($validated['avatar']);
 
             // Sanitize inputs
             $validated['email'] = strtolower(trim($validated['email']));
@@ -132,12 +170,33 @@ class ProfileController extends Controller
             }
 
             // Update user
-            $user->update($validated);
+            $updateResult = $user->update($validated);
+
+            // Verify avatar was saved to database if it was updated
+            if ($avatarUpdated) {
+                $user->refresh(); // Refresh the model from database
+                if ($user->avatar !== $avatarPath) {
+                    Log::error('avatar_save_failed', [
+                        'user_id' => $user->id,
+                        'expected_path' => $avatarPath,
+                        'actual_path' => $user->avatar,
+                        'update_result' => $updateResult
+                    ]);
+                    throw new \Exception('Avatar was not saved to database correctly');
+                }
+
+                Log::info('avatar_save_verified', [
+                    'user_id' => $user->id,
+                    'path' => $user->avatar
+                ]);
+            }
 
             // Log the profile update
             Log::info('profile_updated', [
                 'user_id' => $user->id,
                 'email' => $user->email,
+                'avatar_updated' => $avatarUpdated,
+                'avatar_path' => $user->avatar,
                 'ip' => $request->ip(),
                 'timestamp' => now()->toISOString()
             ]);
@@ -147,6 +206,7 @@ class ProfileController extends Controller
                     'success' => true,
                     'message' => 'Profile updated successfully!',
                     'avatar_url' => $user->avatar_url,
+                    'avatar_updated' => $avatarUpdated,
                     'user' => $user->refresh()
                 ]);
             }
@@ -154,9 +214,21 @@ class ProfileController extends Controller
             return redirect()->back()->with('success', 'Profile updated successfully!');
 
         } catch (\Exception $e) {
+            // If avatar was uploaded but update failed, clean up the uploaded file
+            if (isset($avatarPath) && Storage::disk('public')->exists($avatarPath)) {
+                Storage::disk('public')->delete($avatarPath);
+                Log::info('avatar_cleanup_after_error', [
+                    'user_id' => $user->id,
+                    'path' => $avatarPath
+                ]);
+            }
+
             Log::error('profile_update_error', [
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine(),
+                'avatar_updated' => $avatarUpdated ?? false,
                 'ip' => $request->ip(),
                 'timestamp' => now()->toISOString()
             ]);
@@ -164,7 +236,8 @@ class ProfileController extends Controller
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to update profile. Please try again.'
+                    'message' => 'Failed to update profile. Please try again.',
+                    'error' => $e->getMessage()
                 ], 500);
             }
 
@@ -172,41 +245,7 @@ class ProfileController extends Controller
         }
     }
 
-    /**
-     * Update user profile information.
-     */
-    public function updateProfile(Request $request)
-    {
-        $user = Auth::user();
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'grade' => 'nullable|string|max:50',
-            'country' => 'nullable|string|max:100',
-            'phone' => [
-                'nullable',
-                'string',
-                'max:20',
-                Validator::make(['phone' => $user->phone], ['phone' => Rule::unique('users')->ignore($user->id)])->passes() ? '' : Rule::unique('users')->ignore($user->id),
-                'regex:/^\+?[0-9\s\-$$$$]{7,20}$/'
-            ],
-        ]);
-
-        $user->name = $validated['name'];
-        $user->grade = $validated['grade'];
-        $user->country = $validated['country'];
-        $user->phone = $validated['phone'];
-        $user->save();
-
-        Log::channel('security')->info('profile_updated', [
-            'user_id' => Auth::id(),
-            'updated_fields' => array_keys($validated),
-            'ip' => request()->ip(),
-            'timestamp' => Carbon::now()->toISOString()
-        ]);
-
-        return redirect()->back()->with('success', 'Profile updated successfully!');
-    }
+    
 
     /**
      * Get the current user's avatar information

@@ -220,13 +220,22 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background-color: var(--primary-red);
+            background: linear-gradient(135deg, var(--primary-red), var(--secondary-blue));
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--white);
             font-weight: 600;
             cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
         }
 
         /* Search/Filter Bar */
@@ -688,5 +697,6 @@
             });
         });
     </script>
+<script src="/js/avatar-updater.js"></script>
 </body>
 </html>

@@ -1056,7 +1056,7 @@ class AdminController extends Controller
     {
         $request->validate([
             'title' => 'required|string|max:255',
-            'video_file' => 'nullable|file|mimes:mp4,mov,avi,wmv|max:500000',
+            'video_file' => 'nullable|file|mimes:mp4,mov,avi,wmv|max:600000',
             'thumbnail_file' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'grade_level' => 'nullable|string|max:255',
             'description' => 'nullable|string',
@@ -1442,19 +1442,118 @@ class AdminController extends Controller
     }
 
     /**
+     * Update user avatar from admin panel
+     */
+    public function updateUserAvatar(Request $request, $userId)
+    {
+        $user = User::findOrFail($userId);
+
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        try {
+            // Delete old avatar if it exists and is a local file
+            if ($user->avatar && !preg_match('/^https?:\/\//', $user->avatar) && Storage::disk('public')->exists($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+
+            // Store the new avatar
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $user->avatar = $path;
+            $user->save();
+
+            Log::channel('security')->info('admin_updated_user_avatar', [
+                'admin_id' => Auth::id(),
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+                'ip' => get_client_ip(),
+                'user_agent' => $request->userAgent(),
+                'timestamp' => now()->toISOString()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Avatar updated successfully!',
+                'avatar_url' => $user->avatar_url
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('admin_avatar_update_error', [
+                'admin_id' => Auth::id(),
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'ip' => get_client_ip(),
+                'timestamp' => now()->toISOString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update avatar. Please try again.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete user avatar from admin panel
+     */
+    public function deleteUserAvatar($userId)
+    {
+        $user = User::findOrFail($userId);
+
+        try {
+            // Delete avatar if it exists and is a local file
+            if ($user->avatar && !preg_match('/^https?:\/\//', $user->avatar) && Storage::disk('public')->exists($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+
+            $user->avatar = null;
+            $user->save();
+
+            Log::channel('security')->info('admin_deleted_user_avatar', [
+                'admin_id' => Auth::id(),
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+                'ip' => get_client_ip(),
+                'user_agent' => request()->userAgent(),
+                'timestamp' => now()->toISOString()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Avatar deleted successfully!'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('admin_avatar_delete_error', [
+                'admin_id' => Auth::id(),
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'ip' => get_client_ip(),
+                'timestamp' => now()->toISOString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete avatar. Please try again.'
+            ], 500);
+        }
+    }
+
+    /**
      * Show revenue analytics page
      */
     public function revenue()
     {
         // Get revenue data
         $revenueData = $this->getRevenueData();
-        
+
         // Get subscription analytics
         $subscriptionAnalytics = $this->getSubscriptionAnalytics();
-        
+
         // Get revenue trends
         $revenueTrends = $this->getRevenueTrends();
-        
+
         // Get top performing plans
         $topPlans = $this->getTopPerformingPlans();
 

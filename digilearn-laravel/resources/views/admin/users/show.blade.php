@@ -47,8 +47,15 @@
                     <div class="p-6">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="flex items-center space-x-4">
-                                <div class="flex-shrink-0">
-                                    <x-user-avatar :user="$user" :size="80" />
+                                <div class="flex-shrink-0 relative">
+                                    <x-user-avatar :user="$user" :size="80" id="user-avatar" />
+                                    <form id="avatar-upload-form" enctype="multipart/form-data" class="absolute bottom-0 right-0">
+                                        @csrf
+                                        <input type="file" name="avatar" id="avatar-input" accept="image/*" class="hidden" />
+                                        <button type="button" id="avatar-upload-button" title="Change Avatar" class="bg-gray-700 text-white rounded-full p-1 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                            <i class="fas fa-camera text-sm"></i>
+                                        </button>
+                                    </form>
                                 </div>
                                 <div>
                                     <h3 class="text-lg font-medium text-gray-900">{{ $user->name }}</h3>
@@ -629,5 +636,41 @@
             alert('User impersonation functionality would be implemented here');
         }
     }
+
+    // Avatar upload functionality
+    document.getElementById('avatar-upload-button').addEventListener('click', function() {
+        document.getElementById('avatar-input').click();
+    });
+
+    document.getElementById('avatar-input').addEventListener('change', function() {
+        const fileInput = this;
+        if (fileInput.files.length === 0) return;
+
+        const formData = new FormData();
+        formData.append('avatar', fileInput.files[0]);
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+        fetch('/admin/users/{{ $user->id }}/update-avatar', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Accept': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update avatar image src with cache buster
+                const avatarImg = document.querySelector('#user-avatar img');
+                avatarImg.src = data.avatar_url + '?t=' + new Date().getTime();
+                alert(data.message);
+            } else {
+                alert(data.message || 'Failed to update avatar.');
+            }
+        })
+        .catch(() => {
+            alert('An error occurred while uploading the avatar.');
+        });
+    });
 </script>
 @endsection

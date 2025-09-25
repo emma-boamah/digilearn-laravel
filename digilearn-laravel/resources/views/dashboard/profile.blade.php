@@ -11,7 +11,7 @@
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <style>
+    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         :root {
             --primary-red: #E11E2D;
             --primary-red-hover: #c41e2a;
@@ -353,10 +353,11 @@
         }
 
         .avatar-image {
-            width: 100%;
-            height: 100%;
+            width: 120px;
+            height: 120px;
             object-fit: cover;
             border-radius: 50%;
+            display: block;
         }
 
         .edit-avatar-btn {
@@ -1332,6 +1333,38 @@
             color: var(--gray-500);
             padding: 2rem;
         }
+
+        /* Avatar image styles */
+        .avatar-image {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .avatar-image.sidebar {
+            width: 80px;
+            height: 80px;
+        }
+
+        .avatar-image.header {
+            width: 32px;
+            height: 32px;
+        }
+
+        /* Phone actions layout */
+        .phone-actions {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        /* Subscription button margins */
+        .subscription-btn-margin {
+            margin-top: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -1358,7 +1391,11 @@
             
             <div class="user-dropdown">
                 <button class="user-avatar-header" id="userDropdownToggle">
-                    {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
+                    @if(auth()->user()->avatar_url)
+                        <img src="{{ auth()->user()->avatar_url }}" alt="Profile" class="avatar-image header">
+                    @else
+                        {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
+                    @endif
                 </button>
                 <div class="user-dropdown-menu" id="userDropdownMenu">
                     <div class="dropdown-header">
@@ -1399,7 +1436,13 @@
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="profile-summary">
-                <x-user-avatar :user="auth()->user()" :size="40" />
+                <div class="profile-avatar">
+                    @if(auth()->user()->avatar_url)
+                        <img src="{{ auth()->user()->avatar_url }}" alt="Profile" class="avatar-image sidebar">
+                    @else
+                        {{ substr(auth()->user()->name ?? 'U', 0, 2) }}
+                    @endif
+                </div>
                 <div class="profile-name">{{ auth()->user()->name ?? 'User' }}</div>
                 <div class="profile-email">{{ auth()->user()->email ?? 'Please Sign up' }}</div>
                 <div class="profile-location">
@@ -1430,7 +1473,7 @@
                     Language
                 </a>
 
-                <button class="nav-item" onclick="showPasswordChangeModal()">
+                <button class="nav-item" id="changePasswordBtn">
                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2v5a2 2 0 01-2 2H9a2 2 0 01-2-2V9a2 2 0 012-2h6zM12 14a2 2 0 100-4 2 2 0 000 4z"/>
                     </svg>
@@ -1451,7 +1494,7 @@
                     Help
                 </a>
                 
-                <button class="nav-item danger" onclick="showDeleteAccountModal()">
+                <button class="nav-item danger" id="deleteAccountBtn">
                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                     </svg>
@@ -1478,17 +1521,17 @@
                 <!-- Avatar Upload Section -->
                 <div class="avatar-upload">
                     <div class="avatar-large" id="avatarPreview">
-                        @if(auth()->user()->avatar_url ?? false)
+                        @if(auth()->user()->avatar_url)
                             <img src="{{ auth()->user()->avatar_url }}" alt="Profile" class="avatar-image" id="avatarImage">
                         @else
                             {{ substr(auth()->user()->name ?? 'AS', 0, 2) }}
                         @endif
                     </div>
-                    <button type="button" class="edit-avatar-btn" onclick="document.getElementById('avatarInput').click()">
+                    <button type="button" class="edit-avatar-btn" id="editAvatarBtn">
                         <i class="fas fa-camera"></i>
                         Edit
                     </button>
-                    <input type="file" id="avatarInput" name="avatar" class="avatar-upload-input" accept="image/*" onchange="previewAvatar(this)">
+                    <input type="file" id="avatarInput" name="avatar" class="avatar-upload-input" accept="image/*">
                 </div>
 
                 <!-- Personal Information -->
@@ -1497,17 +1540,17 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="first_name" class="form-label">First Name</label>
-                            <input type="text" id="first_name" name="first_name" class="form-input" value="{{ explode(' ', auth()->user()->name ?? 'Aboagye Samuel')[0] }}" required>
+                            <input type="text" id="first_name" name="first_name" class="form-input" value="{{ explode(' ', auth()->user()->name ?? 'Aboagye Samuel')[0] }}" required autocomplete="">
                         </div>
                         
                         <div class="form-group">
                             <label for="last_name" class="form-label">Last Name</label>
-                            <input type="text" id="last_name" name="last_name" class="form-input" value="{{ explode(' ', auth()->user()->name ?? 'Aboagye Samuel')[1] ?? '' }}" required>
+                            <input type="text" id="last_name" name="last_name" class="form-input" value="{{ explode(' ', auth()->user()->name ?? 'Aboagye Samuel')[1] ?? '' }}" required autocomplete>
                         </div>
                         
                         <div class="form-group full-width">
                             <label for="email" class="form-label">Email Address</label>
-                            <input type="email" id="email" name="email" class="form-input" value="{{ auth()->user()->email ?? 'samuel.aboagye@gmail.com' }}" required>
+                            <input type="email" id="email" name="email" class="form-input" value="{{ auth()->user()->email ?? 'samuel.aboagye@gmail.com' }}" required autocomplete>
                         </div>
                         
                         <div class="form-group">
@@ -1563,33 +1606,33 @@
                                     value="{{ auth()->user()->phone ? ltrim(auth()->user()->phone, auth()->user()->phone ? substr(auth()->user()->phone, 0, strpos(auth()->user()->phone, ' ') + 1) : '') : '' }}" 
                                     placeholder="24 123 4567"
                                 >
-                                <input type="hidden" id="country_code" name="country_code" value="+233">
+                                <input type="hidden" id="country_code" name="country_code" value="+233" autocomplete>
                             </div>
                             
-                            <div class="phone-actions" style="margin-top: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                            <div class="phone-actions">
                                 @if(auth()->user()->phone)
                                     @if(!auth()->user()->phone_verified_at)
-                                        <button type="button" class="btn btn-primary btn-sm" onclick="showPhoneVerificationModal()">
+                                        <button type="button" class="btn btn-primary btn-sm" id="verifyCurrentNumberBtn">
                                             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                             </svg>
                                             Verify Current Number
                                         </button>
                                     @endif
-                                    <button type="button" class="btn btn-secondary btn-sm" onclick="showPhoneUpdateModal()">
+                                    <button type="button" class="btn btn-secondary btn-sm" id="updateNumberBtn">
                                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                         </svg>
                                         Update Number
                                     </button>
-                                    <button type="button" class="btn btn-outline btn-sm" onclick="removePhoneNumber()">
+                                    <button type="button" class="btn btn-outline btn-sm" id="removePhoneBtn">
                                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                         </svg>
                                         Remove
                                     </button>
                                 @else
-                                    <button type="button" class="btn btn-primary btn-sm" onclick="showPhoneUpdateModal()">
+                                    <button type="button" class="btn btn-primary btn-sm" id="addPhoneBtn">
                                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                                         </svg>
@@ -1601,7 +1644,7 @@
                         
                         <div class="form-group">
                             <label for="date_of_birth" class="form-label">Date of Birth</label>
-                            <input type="date" id="date_of_birth" name="date_of_birth" class="form-input" value="{{ auth()->user()->date_of_birth ?? '2008-01-15' }}">
+                            <input type="date" id="date_of_birth" name="date_of_birth" class="form-input" value="{{ auth()->user()->date_of_birth ?? '2008-01-15' }}" autocomplete>
                         </div>
                     </div>
                 </div>
@@ -1616,7 +1659,7 @@
                                 <div class="flag-display">
                                     <img src="https://flagcdn.com/w20/gh.png" alt="Ghana" class="flag-icon">
                                 </div>
-                                <select id="country" name="country" class="form-input" onchange="updateFlag(this)">
+                                <select id="country" name="country" class="form-input">
                                     <option value="Ghana" data-code="gh" selected>Ghana</option>
                                     <option value="Nigeria" data-code="ng">Nigeria</option>
                                     <option value="Kenya" data-code="ke">Kenya</option>
@@ -1629,7 +1672,7 @@
                         
                         <div class="form-group">
                             <label for="city" class="form-label">City</label>
-                            <input type="text" id="city" name="city" class="form-input" value="{{ auth()->user()->city ?? 'Accra' }}">
+                            <input type="text" id="city" name="city" class="form-input" value="{{ auth()->user()->city ?? 'Accra' }}" autocomplete>
                         </div>
                         
                         <div class="form-group">
@@ -1689,7 +1732,7 @@
                             <textarea id="bio" name="bio" class="form-input" rows="3" placeholder="Tell us a bit about yourself...">{{ auth()->user()->bio ?? 'Passionate student from Ghana, currently in JHS 2. I love learning new things and exploring different subjects!' }}</textarea>
                         </div>
                         <div class="header-actions">
-                            <button type="button" class="btn btn-secondary" onclick="cancelChanges()">Cancel</button>
+                            <button type="button" class="btn btn-secondary" id="cancelChangesBtn">Cancel</button>
                             <button type="submit" form="profileForm" class="btn btn-primary">Update</button>
                         </div>
                     </div>
@@ -1712,7 +1755,7 @@
                             @elseif($user->currentSubscription->expires_at)
                                 <p id="currentPlanExpiryDisplay">Next Billing Date: {{ $user->currentSubscription->expires_at->format('M d, Y') }} ({{ now()->diffInDays($user->currentSubscription->expires_at) }} days)</p>
                             @endif
-                            <button type="button" class="btn btn-primary btn-sm" style="margin-top: 1rem;" onclick="showManageSubscriptionModal()">
+                            <button type="button" class="btn btn-primary btn-sm subscription-btn-margin" id="manageSubscriptionBtn">
                                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
                                 </svg>
@@ -1723,7 +1766,7 @@
                         <div class="current-plan-details">
                             <h4>You are currently on the Free Plan.</h4>
                             <p>Upgrade to unlock premium features and content.</p>
-                            <button type="button" class="btn btn-primary" style="margin-top: 1rem;" onclick="showSubscriptionPlans()">
+                            <button type="button" class="btn btn-primary subscription-btn-margin" id="subscribeNowBtn">
                                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                                 </svg>
@@ -1741,7 +1784,7 @@
         <div class="modal-container modal-sm">
             <div class="modal-header">
                 <h3 class="modal-title">Update Phone Number</h3>
-                <button class="modal-close" onclick="closeModal('phoneUpdateModal')">
+                <button class="modal-close">
                     <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -1794,8 +1837,8 @@
             </div>
             
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('phoneUpdateModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="submitPhoneUpdate(event)">
+                <button class="btn btn-secondary" id="cancelPhoneUpdateBtn">Cancel</button>
+                <button class="btn btn-primary" id="submitPhoneUpdateBtn">
                     <span class="btn-text">Update Phone</span>
                     <span class="btn-loading" style="display: none;">
                         <svg class="spinner" width="16" height="16" viewBox="0 0 24 24">
@@ -1814,7 +1857,7 @@
         <div class="modal-container modal-sm">
             <div class="modal-header">
                 <h3 class="modal-title">Verify Phone Number</h3>
-                <button class="modal-close" onclick="closeModal('phoneVerificationModal')">
+                <button class="modal-close">
                     <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -1840,14 +1883,14 @@
                     </div>
                     
                     <div class="resend-section">
-                        <p>Didn't receive the code? <button type="button" class="resend-btn" onclick="resendVerificationCode()">Resend</button></p>
+                        <p>Didn't receive the code? <button type="button" class="resend-btn" id="resendVerificationBtn">Resend</button></p>
                     </div>
                 </form>
             </div>
             
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('phoneVerificationModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="submitPhoneVerification(event)">
+                <button class="btn btn-secondary" id="cancelPhoneVerifyBtn">Cancel</button>
+                <button class="btn btn-primary" id="submitPhoneVerifyBtn">
                     <span class="btn-text">Verify</span>
                     <span class="btn-loading" style="display: none;">
                         <svg class="spinner" width="16" height="16" viewBox="0 0 24 24">
@@ -1866,7 +1909,7 @@
         <div class="modal-container modal-sm">
             <div class="modal-header">
                 <h3 class="modal-title">Change Password</h3>
-                <button class="modal-close" onclick="closeModal('passwordChangeModal')">
+                <button class="modal-close">
                     <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -1892,8 +1935,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('passwordChangeModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="submitPasswordChange(event)">
+                <button class="btn btn-secondary" id="cancelPasswordChangeBtn">Cancel</button>
+                <button class="btn btn-primary" id="submitPasswordChangeBtn">
                     <span class="btn-text">Change Password</span>
                     <span class="btn-loading" style="display: none;">
                         <svg class="spinner" width="16" height="16" viewBox="0 0 24 24">
@@ -1912,7 +1955,7 @@
         <div class="modal-container modal-sm">
             <div class="modal-header danger-header">
                 <h3 class="modal-title">Delete Account</h3>
-                <button class="modal-close" onclick="closeModal('deleteAccountModal')">
+                <button class="modal-close">
                     <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -1954,8 +1997,8 @@
             </div>
             
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('deleteAccountModal')">Cancel</button>
-                <button class="btn btn-danger" id="confirmDeleteBtn" onclick="submitDeleteAccount(event)" disabled>
+                <button class="btn btn-secondary" id="cancelDeleteAccountBtn">Cancel</button>
+                <button class="btn btn-danger" id="confirmDeleteBtn" disabled>
                     <span class="btn-text">Delete Account</span>
                     <span class="btn-loading" style="display: none;">
                         <svg class="spinner" width="16" height="16" viewBox="0 0 24 24">
@@ -1974,7 +2017,7 @@
         <div class="modal-container modal-lg">
             <div class="modal-header">
                 <h3 class="modal-title" id="subscribeUpgradeModalTitle">Choose Your Plan</h3>
-                <button class="modal-close" onclick="closeModal('subscribeUpgradeModal')">
+                <button class="modal-close">
                     <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -1989,8 +2032,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('subscribeUpgradeModal')">Cancel</button>
-                <button class="btn btn-primary" id="confirmPlanSelectionBtn" onclick="confirmPlanSelection(event)" disabled>
+                <button class="btn btn-secondary" id="cancelSubscribeUpgradeBtn">Cancel</button>
+                <button class="btn btn-primary" id="confirmPlanSelectionBtn" disabled>
                     <span class="btn-text">Confirm Plan</span>
                     <span class="btn-loading" style="display: none;">
                         <svg class="spinner" width="16" height="16" viewBox="0 0 24 24">
@@ -2009,7 +2052,7 @@
         <div class="modal-container">
             <div class="modal-header">
                 <h3 class="modal-title">Manage Your Subscription</h3>
-                <button class="modal-close" onclick="closeModal('manageSubscriptionModal')">
+                <button class="modal-close">
                     <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -2034,7 +2077,7 @@
                 <div class="cancel-subscription-section">
                     <h4>Cancel Subscription</h4>
                     <p>If you cancel, your subscription will remain active until the end of your current billing period.</p>
-                    <button class="btn btn-danger" onclick="confirmCancelSubscription()">
+                    <button class="btn btn-danger" id="confirmCancelSubscriptionBtn">
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
@@ -2043,8 +2086,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('manageSubscriptionModal')">Close</button>
-                <button class="btn btn-primary" onclick="showChangePlanModal()">
+                <button class="btn btn-secondary" id="closeManageSubscriptionBtn">Close</button>
+                <button class="btn btn-primary" id="changePlanBtn">
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
                     </svg>
@@ -2064,71 +2107,59 @@
                 <!-- Message will be populated by JavaScript -->
             </div>
         </div>
-        <button class="toast-close" onclick="hideNotification()">
+        <button class="toast-close" id="toastCloseBtn">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
             </svg>
         </button>
     </div>
 
+    <!-- External JavaScript Files -->
+    <script src="{{ asset('js/utils.js') }}" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+    <script src="{{ asset('js/country-selector.js') }}" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+    <script src="{{ asset('js/modal-phone-input.js') }}" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+    <script src="{{ asset('js/modals.js') }}" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+    <script src="{{ asset('js/profile.js') }}" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+    <script src="{{ asset('js/main.js') }}" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+    
+    <!-- Inline script for avatar preview functionality -->
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-        // Back button functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const backButton = document.getElementById('backButton');
-            if (backButton) {
-                backButton.addEventListener('click', function() {
-                    history.back();
-                });
-            }
-        });
-
-        // Navigation functionality
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', function(e) {
-                if (!this.classList.contains('danger') && this.getAttribute('onclick') === null) { // Added condition to not prevent default for buttons with onclick
-                    e.preventDefault();
-                    
-                    // Remove active class from all items
-                    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-                    
-                    // Add active class to clicked item
-                    this.classList.add('active');
-                    
-                    // Here you would typically show/hide different sections
-                    const section = this.getAttribute('data-section');
-                    console.log('Switching to section:', section);
-                }
-            });
-        });
-
         // Avatar preview functionality
-        function previewAvatar(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
+        const input = document.getElementById('avatarInput');
+
+        // Preview avatar image when selected
+        if(!input) return;
+
+        // Avoid double-binding in case of hot-reloads or partial mounts
+        if (input.dataset.previewBound === '1') return;
+        input.dataset.previewBound = '1';
+
+        input.addEventListener('change', function(){
+            if(this.files && this.files[0]){
+                const reader = newFileReader();
                 const preview = document.getElementById('avatarPreview');
-                const avatarImage = document.getElementById('avatarImage');
-                
-                reader.onload = function(e) {
+                let avatarImage = document.getElementById('avatarImage');
+
+                reader.onload = (e) => {
                     if (!avatarImage) {
-                        // If no image element exists, create one
-                        const img = document.createElement('img');
-                        img.id = 'avatarImage';
-                        img.className = 'avatar-image';
-                        img.src = e.target.result;
+                        avatarImage = document.createElement('img');
+                        avatarImage.id = 'avatarImage';
+                        avatarImage.className = 'avatar-image';
                         preview.innerHTML = '';
-                        preview.appendChild(img);
-                    } else {
-                        // Update existing image
-                        avatarImage.src = e.target.result;
+                        preview.appendChild(avatarImage);
                     }
+                    avatarImage.src = e.target.result;
+                };
+
+                reader.readAsDataURL(this.files[0]);
+
+                // Use existing toast helper if available
+                if (typeof showNotification === 'function') {
+                    showNotification('Click "Update" to update your profile picture', 'info');
                 }
                 
-                reader.readAsDataURL(input.files[0]);
-                
-                // Show a success message when a new avatar is selected
-                showNotification('Click "Update" to update your profile picture', 'info');
             }
-        }
+        });
 
         // Country flag update
         function updateFlag(select) {
@@ -2189,12 +2220,28 @@
                 
                 // Success case
                 if (data.avatar_url) {
+                    const timestamp = new Date().getTime();
+                    const avatarUrl = data.avatar_url + '?v=' + timestamp;
+
+                    // Update main profile form avatar
                     const avatarImage = document.getElementById('avatarImage');
                     if (avatarImage) {
-                        avatarImage.src = data.avatar_url + '?v=' + new Date().getTime();
+                        avatarImage.src = avatarUrl;
                     } else {
                         const preview = document.getElementById('avatarPreview');
-                        preview.innerHTML = `<img src="${data.avatar_url}?v=${new Date().getTime()}" alt="Profile" class="avatar-image" id="avatarImage">`;
+                        preview.innerHTML = `<img src="${avatarUrl}" alt="Profile" class="avatar-image" id="avatarImage">`;
+                    }
+
+                    // Update sidebar avatar
+                    const sidebarAvatar = document.querySelector('.profile-avatar img');
+                    if (sidebarAvatar) {
+                        sidebarAvatar.src = avatarUrl;
+                    }
+
+                    // Update header avatar
+                    const headerAvatar = document.querySelector('#userDropdownToggle img');
+                    if (headerAvatar) {
+                        headerAvatar.src = avatarUrl;
                     }
                 }
                 
@@ -3056,6 +3103,122 @@
             // Initialize the phone input in the modal
             initializeModalPhoneInput();
         });
+    </script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    // Bind events without inline handlers to comply with CSP
+    document.addEventListener('DOMContentLoaded', function() {
+        const $ = (sel, ctx = document) => ctx.querySelector(sel);
+        const on = (el, ev, fn) => { if (el) el.addEventListener(ev, fn, false); };
+
+        // Avatar edit -> open file picker
+        on($('#editAvatarBtn'), 'click', () => $('#avatarInput') && $('#avatarInput').click());
+
+        // Country flag update
+        const countrySelect = $('#country');
+        if (countrySelect) {
+            on(countrySelect, 'change', function() {
+                if (typeof window.updateFlag === 'function') {
+                    window.updateFlag(this);
+                } else {
+                    const flagDisplay = this.parentElement.querySelector('.flag-display img');
+                    const opt = this.options[this.selectedIndex];
+                    const code = opt && opt.getAttribute('data-code');
+                    if (code && flagDisplay) flagDisplay.src = `https://flagcdn.com/w20/${code.toLowerCase()}.png`;
+                }
+            });
+        }
+
+        // Top nav actions
+        on($('#changePasswordBtn'), 'click', () => (window.showPasswordChangeModal ? showPasswordChangeModal() : (window.showModal && showModal('passwordChangeModal'))));
+        on($('#deleteAccountBtn'), 'click', () => (window.showDeleteAccountModal ? showDeleteAccountModal() : (window.showModal && showModal('deleteAccountModal'))));
+
+        // Helper to bind by id to a global function name
+        const bindBtn = (id, fnName) => {
+            const el = $('#' + id);
+            if (!el) return;
+            on(el, 'click', (e) => {
+                if (fnName.startsWith('submit')) e.preventDefault();
+                if (typeof window[fnName] === 'function') {
+                    window[fnName](e);
+                } else {
+                    switch (fnName) {
+                        case 'showPhoneVerificationModal':
+                            return window.showModal && showModal('phoneVerificationModal');
+                        case 'showPhoneUpdateModal':
+                            return window.showModal && showModal('phoneUpdateModal');
+                        case 'confirmCancelSubscription':
+                        case 'confirmPlanSelection':
+                        case 'submitPhoneUpdate':
+                        case 'submitPhoneVerification':
+                        case 'submitPasswordChange':
+                        case 'submitDeleteAccount':
+                            console.warn(fnName + ' is not implemented');
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            });
+        };
+
+        // Phone actions
+        bindBtn('verifyCurrentNumberBtn', 'showPhoneVerificationModal');
+        bindBtn('updateNumberBtn', 'showPhoneUpdateModal');
+        bindBtn('addPhoneBtn', 'showPhoneUpdateModal');
+        bindBtn('removePhoneBtn', 'removePhoneNumber');
+
+        // Phone update modal
+        bindBtn('submitPhoneUpdateBtn', 'submitPhoneUpdate');
+        on($('#cancelPhoneUpdateBtn'), 'click', () => window.closeModal && closeModal('phoneUpdateModal'));
+
+        // Phone verification modal
+        bindBtn('submitPhoneVerifyBtn', 'submitPhoneVerification');
+        on($('#cancelPhoneVerifyBtn'), 'click', () => window.closeModal && closeModal('phoneVerificationModal'));
+        on($('#resendVerificationBtn'), 'click', () => window.resendVerificationCode && resendVerificationCode());
+
+        // Password change modal
+        bindBtn('submitPasswordChangeBtn', 'submitPasswordChange');
+        on($('#cancelPasswordChangeBtn'), 'click', () => window.closeModal && closeModal('passwordChangeModal'));
+
+        // Delete account modal
+        bindBtn('confirmDeleteBtn', 'submitDeleteAccount');
+        on($('#cancelDeleteAccountBtn'), 'click', () => window.closeModal && closeModal('deleteAccountModal'));
+
+        // Subscription actions
+        on($('#manageSubscriptionBtn'), 'click', () => window.showManageSubscriptionModal ? showManageSubscriptionModal() : (window.showModal && showModal('manageSubscriptionModal')));
+        on($('#subscribeNowBtn'), 'click', () => window.showSubscriptionPlans ? showSubscriptionPlans() : (window.showModal && showModal('subscribeUpgradeModal')));
+        on($('#cancelSubscribeUpgradeBtn'), 'click', () => window.closeModal && closeModal('subscribeUpgradeModal'));
+        bindBtn('confirmPlanSelectionBtn', 'confirmPlanSelection');
+        on($('#closeManageSubscriptionBtn'), 'click', () => window.closeModal && closeModal('manageSubscriptionModal'));
+        on($('#changePlanBtn'), 'click', () => window.showChangePlanModal ? showChangePlanModal() : (window.showModal && showModal('subscribeUpgradeModal')));
+        on($('#confirmCancelSubscriptionBtn'), 'click', () => window.confirmCancelSubscription && confirmCancelSubscription());
+
+        // Toast close
+        on($('#toastCloseBtn'), 'click', hideNotification);
+
+        // Cancel changes
+        on($('#cancelChangesBtn'), 'click', function() {
+            if (typeof window.cancelChanges === 'function') return cancelChanges();
+            if (confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                const form = $('#profileForm');
+                if (form) form.reset();
+            }
+        });
+
+        // User dropdown toggle
+        const userToggle = $('#userDropdownToggle');
+        const userMenu = $('#userDropdownMenu');
+        on(userToggle, 'click', () => userMenu && userMenu.classList.toggle('active'));
+        document.addEventListener('click', (e) => {
+            if (!userMenu || !userToggle) return;
+            if (!userMenu.contains(e.target) && !userToggle.contains(e.target)) userMenu.classList.remove('active');
+        });
+    });
+
+    function hideNotification() {
+        const toast = document.getElementById('notificationToast');
+        if (toast) toast.classList.remove('show');
+    }
     </script>
 </body>
 </html>

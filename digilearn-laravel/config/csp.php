@@ -25,8 +25,8 @@ return [
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
             'http://localhost',
             'http://127.0.0.1',
-            // Remove 'unsafe-inline' for better security - use nonces instead
-            // Remove 'unsafe-eval' if not needed for Chart.js or other libraries
+            // Removed 'unsafe-inline' for better security - using nonces instead
+            // Removeed 'unsafe-eval' not needed for Chart.js or other libraries now
             // "'unsafe-eval'", // Only enable if absolutely required
         ],
         'style-src' => [
@@ -59,6 +59,10 @@ return [
             'https://www.shoutoutgh.com',
             'https://ui-avatars.com', // For user avatars
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
+            'http://localhost',
+            'http://127.0.0.1',
+            'http://localhost:*', // Allow any port on localhost
+            'http://127.0.0.1:*', // Allow any port on 127.0.0.1
         ],
         'media-src' => [
             "'self'",

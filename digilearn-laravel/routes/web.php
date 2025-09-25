@@ -207,6 +207,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/users', [AdminController::class, 'users'])->name('users');
     Route::get('/users/{id}', [AdminController::class, 'showUser'])->name('users.show');
     Route::post('/users/{id}/toggle-status', [AdminController::class, 'toggleUserStatus'])->name('users.toggle-status');
+    Route::post('/users/{id}/update-avatar', [AdminController::class, 'updateUserAvatar'])->name('users.update-avatar');
+    Route::delete('/users/{id}/delete-avatar', [AdminController::class, 'deleteUserAvatar'])->name('users.delete-avatar');
     Route::post('/users/bulk-action', [AdminController::class, 'bulkAction'])->name('users.bulk-action');
     Route::get('/content', [AdminController::class, 'content'])->name('content');
     Route::get('/revenue', [AdminController::class, 'revenue'])->name('revenue');

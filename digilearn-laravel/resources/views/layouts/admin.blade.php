@@ -799,5 +799,6 @@
         }, 300000); // 5 minutes
     </script>
     @stack('scripts')
+<script src="/js/avatar-updater.js"></script>
 </body>
 </html>

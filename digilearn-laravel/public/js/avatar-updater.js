@@ -17,7 +17,7 @@ class AvatarUpdater {
     }
 
     attachProfileFormListener() {
-        const profileForm = document.querySelector('#profile-form');
+        const profileForm = document.querySelector('#profileForm') || document.querySelector('#profile-form');
         if (profileForm) {
             profileForm.addEventListener('submit', (e) => {
                 // After successful form submission, check for new avatar

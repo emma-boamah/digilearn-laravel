@@ -1,6 +1,42 @@
 // Profile form submission
 document.addEventListener('DOMContentLoaded', function() {
     const profileForm = document.getElementById('profileForm');
+    const input = document.getElementById('avatarInput');
+
+    // Preview avatar image when selected
+    if(!input) return;
+
+    // Avoid double-binding in case of hot-reloads or partial mounts
+    if (input.dataset.previewBound === '1') return;
+    input.dataset.previewBound = '1';
+
+    input.addEventListener('change', function(){
+        if(this.files && this.files[0]){
+            const reader = new FileReader();
+            const preview = document.getElementById('avatarPreview');
+            let avatarImage = document.getElementById('avatarImage');
+
+            reader.onload = (e) => {
+                if (!avatarImage) {
+                    avatarImage = document.createElement('img');
+                    avatarImage.id = 'avatarImage';
+                    avatarImage.className = 'avatar-image';
+                    preview.innerHTML = '';
+                    preview.appendChild(avatarImage);
+                }
+                avatarImage.src = e.target.result;
+            };
+
+            reader.readAsDataURL(this.files[0]);
+
+            // Use existing toast helper if available
+            if (typeof showNotification === 'function') {
+                showNotification('Click "Update" to update your profile picture', 'info');
+            }
+            
+        }
+    });
+
     if (!profileForm) return;
 
     profileForm.addEventListener('submit', async function(e) {
@@ -76,7 +112,91 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeProfilePage() {
-    // Add any initialization code here
+    // Harden autocomplete/autofill across the profile page
+    const setAttr = (id, name, value) => {
+        const el = document.getElementById(id);
+        if (el) el.setAttribute(name, value);
+    };
+
+    // Personal information
+    setAttr('first_name', 'autocomplete', 'given-name');
+    setAttr('last_name', 'autocomplete', 'family-name');
+    setAttr('email', 'autocomplete', 'email');
+    setAttr('phone', 'autocomplete', 'tel');
+    const phone = document.getElementById('phone');
+    if (phone) phone.setAttribute('inputmode', 'tel');
+    setAttr('date_of_birth', 'autocomplete', 'bday');
+
+    // Location & Education
+    setAttr('country', 'autocomplete', 'country-name');
+    setAttr('city', 'autocomplete', 'address-level2');
+    setAttr('education_level', 'autocomplete', 'off');
+    setAttr('grade', 'autocomplete', 'off');
+
+    // Preferences
+    setAttr('preferred_language', 'autocomplete', 'off');
+    setAttr('learning_style', 'autocomplete', 'off');
+    const bio = document.getElementById('bio');
+    if (bio) bio.setAttribute('autocomplete', 'off');
+
+    // Country dropdown searches
+    setAttr('countrySearch', 'autocomplete', 'off');
+    setAttr('modalCountrySearch', 'autocomplete', 'off');
+
+    // Modal phone & passwords
+    setAttr('modal_phone', 'autocomplete', 'tel');
+    const modalPhone = document.getElementById('modal_phone');
+    if (modalPhone) modalPhone.setAttribute('inputmode', 'tel');
+    setAttr('modal_current_password', 'autocomplete', 'current-password');
+
+    // Verification code
+    const v = document.getElementById('verification_code');
+    if (v) {
+        v.setAttribute('autocomplete', 'one-time-code');
+        v.setAttribute('inputmode', 'numeric');
+        v.setAttribute('pattern', '\\d*');
+    }
+
+    // Password change modal
+    setAttr('current_password_change', 'autocomplete', 'current-password');
+    setAttr('new_password', 'autocomplete', 'new-password');
+    setAttr('new_password_confirmation', 'autocomplete', 'new-password');
+
+    // Delete account modal
+    setAttr('delete_password', 'autocomplete', 'current-password');
+
+    // Country hidden inputs and codes shouldn't be autocompleted
+    const countryCode = document.getElementById('country_code');
+    if (countryCode) countryCode.setAttribute('autocomplete', 'off');
+    const modalCountryCode = document.getElementById('modal_country_code');
+    if (modalCountryCode) modalCountryCode.setAttribute('autocomplete', 'off');
+
+    // Ensure avatar preview also works (safety net if other handlers failed)
+    const input = document.getElementById('avatarInput');
+    if (input && input.dataset.previewBound !== '1') {
+        input.dataset.previewBound = '1';
+        input.addEventListener('change', function(){
+            if (this.files && this.files[0]){
+                const reader = new FileReader();
+                const preview = document.getElementById('avatarPreview');
+                let avatarImage = document.getElementById('avatarImage');
+                reader.onload = (e) => {
+                    if (!avatarImage) {
+                        avatarImage = document.createElement('img');
+                        avatarImage.id = 'avatarImage';
+                        avatarImage.className = 'avatar-image';
+                        if (preview) { preview.innerHTML = ''; preview.appendChild(avatarImage); }
+                    }
+                    avatarImage.src = e.target.result;
+                    if (typeof window.showNotification === 'function') {
+                        showNotification('Click "Update" to update your profile picture', 'info');
+                    }
+                };
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+    }
+
     console.log('Profile page initialized');
 }
 
