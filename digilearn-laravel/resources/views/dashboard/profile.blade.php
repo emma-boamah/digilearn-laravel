@@ -111,10 +111,47 @@
             border-radius: 0.375rem;
             color: var(--gray-600);
             position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+        }
+
+        /* Add notification badge */
+        .notification-badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: var(--primary-red);
+            color: var(--white);
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--white);
         }
 
         .notification-btn:hover {
             background: var(--gray-100);
+            color: var(---gray-900);
+        }
+
+        .notification-icon {
+            width: 20px;
+            height: 20px;
+            stroke-width: 2;
+            border-radius: 50%;
+            background: var(--gray-100);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: var(--gray-600);
         }
 
         .user-avatar-header {
@@ -128,6 +165,14 @@
             color: var(--white);
             font-size: 0.875rem;
             font-weight: 600;
+            overflow: hidden;
+        }
+
+        .user-avatar-header img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
         }
 
         /* Main Layout */
@@ -167,6 +212,15 @@
             font-weight: 700;
             margin: 0 auto 1rem;
             box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profile-avatar img {
+            width: 80px;
+            height: 148px;
+            object-fit: cover;
+            border-radius: 50%;
         }
 
         .profile-name {
@@ -350,6 +404,13 @@
             box-shadow: var(--shadow-lg);
             position: relative;
             overflow: hidden;
+        }
+
+        .avatar-large img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
         }
 
         .avatar-image {
@@ -564,6 +625,115 @@
         .user-info .user-email {
             font-size: 0.875rem;
             color: var(--gray-600);
+        }
+
+        .notification-dropdown {
+            position: relative;
+        }
+
+        .notification-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: var(--white);
+            border-radius: 0.75rem;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--gray-200);
+            width: 380px;
+            max-width: 90vw;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .notification-dropdown-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .notification-dropdown-menu .dropdown-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .notification-dropdown-menu .dropdown-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin: 0;
+        }
+
+        .mark-all-read {
+            background: none;
+            border: none;
+            color: var(--primary-red);
+            font-size: 0.875rem;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .notification-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .notification-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--gray-100);
+            transition: background-color 0.2s ease;
+        }
+
+        .notification-item:hover {
+            background: var(--gray-50);
+        }
+
+        .notification-item.unread {
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .notification-item.unread:hover {
+            background: rgba(59, 130, 246, 0.08);
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-content p {
+            margin: 0 0 0.25rem 0;
+            font-size: 0.875rem;
+            color: var(--gray-800);
+            line-height: 1.4;
+        }
+
+        .notification-time {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+        }
+
+        .dropdown-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--gray-200);
+            text-align: center;
+        }
+
+        .view-all {
+            color: var(--primary-red);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .view-all:hover {
+            text-decoration: underline;
         }
 
         .dropdown-divider {
@@ -801,7 +971,7 @@
             bottom: 0;
             background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(4px);
-            display: flex;
+            display: none;
             align-items: center;
             justify-content: center;
             z-index: 1000;
@@ -944,6 +1114,25 @@
             font-family: "Courier New", monospace;
         }
 
+        .processing {
+            display: none !important;
+        }
+
+        .btn-loading {
+            display: none !important;
+        }
+
+        /* Show processing state only when button has loading or processing class */
+        .btn.loading .btn-loading,
+        .btn.processing .btn-loading {
+            display: inline-flex !important;
+        }
+
+        .btn.loading .btn-text,
+        .btn.processing .btn-text {
+            display: none !important;
+        }
+
         .resend-section {
             text-align: center;
             margin-top: 1rem;
@@ -1028,9 +1217,24 @@
             cursor: not-allowed;
         }
 
+        /* Keep disabled state styling but don't show spinner */
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn:disabled .btn-text {
+            display: inline !important;
+        }
+
+        .btn:disabled .btn-loading {
+            display: none !important;
+        }
+
         /* Loading Spinner */
         .spinner {
             animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
         }
 
         @keyframes spin {
@@ -1336,21 +1540,19 @@
 
         /* Avatar image styles */
         .avatar-image {
-            width: 120px;
-            height: 120px;
             border-radius: 50%;
             object-fit: cover;
             display: block;
         }
 
-        .avatar-image.sidebar {
+        .avatar-image.header {
             width: 80px;
-            height: 80px;
+            height: 55px;
         }
 
-        .avatar-image.header {
-            width: 32px;
-            height: 32px;
+        .avatar-image.large {
+            width: 120px;
+            height: 120px;
         }
 
         /* Phone actions layout */
@@ -1383,10 +1585,12 @@
         </div>
         
         <div class="header-right">
-            <button class="notification-btn">
+            <button class="notification-btn" id="notificationButton">
                 <svg class="notification-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                 </svg>
+                <span class="notification-badge">{{ auth()->user()->unreadNotifications->count() }}</span>
             </button>
             
             <div class="user-dropdown">
@@ -1429,6 +1633,40 @@
                     </form>
                 </div>
             </div>
+
+            <!-- Notification dropdown in the header -->
+            <div class="notification-dropdown">
+                <div class="notification-dropdown-menu" id="notificationDropdown">
+                    <div class="dropdown-header">
+                        <h3>Notifications</h3>
+                        <button class="mark-all-read">Mark all as read</button>
+                    </div>
+                    <div class="notification-list">
+                        <!-- Notifications will be populated here -->
+                        <div class="notification-item unread">
+                            <div class="notification-icon">
+                                <i class="fas fa-user-plus"></i>
+                            </div>
+                            <div class="notification-content">
+                                <p>New follower: John Doe started following you</p>
+                                <span class="notification-time">2 hours ago</span>
+                            </div>
+                        </div>
+                        <div class="notification-item">
+                            <div class="notification-icon">
+                                <i class="fas fa-trophy"></i>
+                            </div>
+                            <div class="notification-content">
+                                <p>Congratulations! You completed the Math challenge</p>
+                                <span class="notification-time">1 day ago</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dropdown-footer">
+                        <a href="{{ route('dashboard.notifications') }}" class="view-all">View all notifications</a>
+                    </div>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -1459,9 +1697,10 @@
                     Account
                 </a>
                 
-                <a href="#" class="nav-item" data-section="notifications">
+                <a href="{{ route('dashboard.notifications') }}" class="nav-item" data-section="notifications">
                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                     </svg>
                     Notification
                 </a>
@@ -1522,7 +1761,7 @@
                 <div class="avatar-upload">
                     <div class="avatar-large" id="avatarPreview">
                         @if(auth()->user()->avatar_url)
-                            <img src="{{ auth()->user()->avatar_url }}" alt="Profile" class="avatar-image" id="avatarImage">
+                            <img src="{{ auth()->user()->avatar_url }}" alt="Profile" class="avatar-image large" id="avatarImage">
                         @else
                             {{ substr(auth()->user()->name ?? 'AS', 0, 2) }}
                         @endif
@@ -1840,7 +2079,7 @@
                 <button class="btn btn-secondary" id="cancelPhoneUpdateBtn">Cancel</button>
                 <button class="btn btn-primary" id="submitPhoneUpdateBtn">
                     <span class="btn-text">Update Phone</span>
-                    <span class="btn-loading" style="display: none;">
+                    <span class="btn-loading">
                         <svg class="spinner" width="16" height="16" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"/>
                             <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" opacity="0.75"/>
@@ -1892,7 +2131,7 @@
                 <button class="btn btn-secondary" id="cancelPhoneVerifyBtn">Cancel</button>
                 <button class="btn btn-primary" id="submitPhoneVerifyBtn">
                     <span class="btn-text">Verify</span>
-                    <span class="btn-loading" style="display: none;">
+                    <span class="btn-loading">
                         <svg class="spinner" width="16" height="16" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"/>
                             <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" opacity="0.75"/>
@@ -1938,7 +2177,7 @@
                 <button class="btn btn-secondary" id="cancelPasswordChangeBtn">Cancel</button>
                 <button class="btn btn-primary" id="submitPasswordChangeBtn">
                     <span class="btn-text">Change Password</span>
-                    <span class="btn-loading" style="display: none;">
+                    <span class="btn-loading">
                         <svg class="spinner" width="16" height="16" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"/>
                             <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" opacity="0.75"/>
@@ -1998,9 +2237,9 @@
             
             <div class="modal-footer">
                 <button class="btn btn-secondary" id="cancelDeleteAccountBtn">Cancel</button>
-                <button class="btn btn-danger" id="confirmDeleteBtn" disabled>
+                <button class="btn btn-danger" id="confirmDeleteBtn">
                     <span class="btn-text">Delete Account</span>
-                    <span class="btn-loading" style="display: none;">
+                    <span class="btn-loading">
                         <svg class="spinner" width="16" height="16" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"/>
                             <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" opacity="0.75"/>
@@ -2033,9 +2272,9 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" id="cancelSubscribeUpgradeBtn">Cancel</button>
-                <button class="btn btn-primary" id="confirmPlanSelectionBtn" disabled>
+                <button class="btn btn-primary" id="confirmPlanSelectionBtn">
                     <span class="btn-text">Confirm Plan</span>
-                    <span class="btn-loading" style="display: none;">
+                    <span class="btn-loading">
                         <svg class="spinner" width="16" height="16" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"/>
                             <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" opacity="0.75"/>
@@ -2117,1108 +2356,1201 @@
     <!-- External JavaScript Files -->
     <script src="{{ asset('js/utils.js') }}" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
     <script src="{{ asset('js/country-selector.js') }}" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
-    <script src="{{ asset('js/modal-phone-input.js') }}" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
     <script src="{{ asset('js/modals.js') }}" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+    <script src="{{ asset('js/modal-phone-input.js') }}" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
     <script src="{{ asset('js/profile.js') }}" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
     <script src="{{ asset('js/main.js') }}" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
     
     <!-- Inline script for avatar preview functionality -->
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-        // Avatar preview functionality
-        const input = document.getElementById('avatarInput');
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Profile Page Initialized');
 
-        // Preview avatar image when selected
-        if(!input) return;
+            // Notification dropdown functionality
+            const notificationButton = document.getElementById('notificationButton');
+            const notificationDropdown = document.getElementById('notificationDropdown');
 
-        // Avoid double-binding in case of hot-reloads or partial mounts
-        if (input.dataset.previewBound === '1') return;
-        input.dataset.previewBound = '1';
-
-        input.addEventListener('change', function(){
-            if(this.files && this.files[0]){
-                const reader = newFileReader();
-                const preview = document.getElementById('avatarPreview');
-                let avatarImage = document.getElementById('avatarImage');
-
-                reader.onload = (e) => {
-                    if (!avatarImage) {
-                        avatarImage = document.createElement('img');
-                        avatarImage.id = 'avatarImage';
-                        avatarImage.className = 'avatar-image';
-                        preview.innerHTML = '';
-                        preview.appendChild(avatarImage);
-                    }
-                    avatarImage.src = e.target.result;
-                };
-
-                reader.readAsDataURL(this.files[0]);
-
-                // Use existing toast helper if available
-                if (typeof showNotification === 'function') {
-                    showNotification('Click "Update" to update your profile picture', 'info');
-                }
-                
-            }
-        });
-
-        // Country flag update
-        function updateFlag(select) {
-            const flagDisplay = select.parentElement.querySelector('.flag-display img');
-            const selectedOption = select.options[select.selectedIndex];
-            const countryCode = selectedOption.getAttribute('data-code');
-            if (countryCode) {
-            
-                flagDisplay.src = `https://flagcdn.com/w20/${countryCode.toLowerCase()}.png`;
-                flagDisplay.alt = selectedOption.text;
-            }
-        }
-
-        // Form submission
-        document.getElementById('profileForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-            submitBtn.disabled = true;
-            
-            try {
-                const formData = new FormData(this);
-                
-                // Log form data for debugging
-                console.log('Form data being submitted:');
-                for (let [key, value] of formData.entries()) {
-                    console.log(`${key}:`, value);
-                }
-                
-                const response = await fetch('{{ route("profile.update") }}', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+            if (notificationButton && notificationDropdown) {
+                notificationButton.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    notificationDropdown.classList.toggle('active');
+                    
+                    // Close user dropdown if open
+                    const userDropdown = document.getElementById('userDropdownMenu');
+                    if (userDropdown) {
+                        userDropdown.classList.remove('active');
                     }
                 });
-                
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    // Handle validation errors
-                    if (response.status === 422 && data.errors) {
-                        let errorMessage = 'Please correct the following issues:';
-                        for (const [field, errors] of Object.entries(data.errors)) {
-                            // Format field name to be more readable
-                            const fieldName = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                            errorMessage += `\n- ${fieldName}: ${errors[0]}`;
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!notificationButton.contains(e.target) && !notificationDropdown.contains(e.target)) {
+                        notificationDropdown.classList.remove('active');
+                    }
+                });
+
+                // Mark all as read functionality
+                const markAllReadBtn = notificationDropdown.querySelector('.mark-all-read');
+                if (markAllReadBtn) {
+                    markAllReadBtn.addEventListener('click', function() {
+                        const unreadNotifications = notificationDropdown.querySelectorAll('.notification-item.unread');
+                        unreadNotifications.forEach(notification => {
+                            notification.classList.remove('unread');
+                        });
+                        
+                        // Update badge count
+                        const badge = notificationButton.querySelector('.notification-badge');
+                        if (badge) {
+                            badge.style.display = 'none';
                         }
-                        showNotification(errorMessage, 'error');
-                        return;
-                    }
-                    throw new Error(data.message || 'Failed to update profile');
+                        
+                        showNotification('All notifications marked as read', 'success');
+                    });
                 }
-                
-                // Success case
-                if (data.avatar_url) {
-                    const timestamp = new Date().getTime();
-                    const avatarUrl = data.avatar_url + '?v=' + timestamp;
+            }
+            
+            // Avatar preview functionality
+            const avatarInput = document.getElementById('avatarInput');
+            const editAvatarBtn = document.getElementById('editAvatarBtn');
 
-                    // Update main profile form avatar
-                    const avatarImage = document.getElementById('avatarImage');
-                    if (avatarImage) {
-                        avatarImage.src = avatarUrl;
-                    } else {
+            if (avatarInput && editAvatarBtn) {
+                editAvatarBtn.addEventListener('click', function() {
+                    avatarInput.click();
+                });
+
+                avatarInput.addEventListener('change', function() {
+                    if (this.files && this.files[0]) {
+                        const reader = new FileReader();
                         const preview = document.getElementById('avatarPreview');
-                        preview.innerHTML = `<img src="${avatarUrl}" alt="Profile" class="avatar-image" id="avatarImage">`;
+                        let avatarImage = document.getElementById('avatarImage');
+
+                        reader.onload = function(e) {
+                            if (!avatarImage) {
+                                avatarImage = document.createElement('img');
+                                avatarImage.id = 'avatarImage';
+                                avatarImage.className = 'avatar-image';
+                                preview.innerHTML = '';
+                                preview.appendChild(avatarImage);
+                            }
+                            avatarImage.src = e.target.result;
+
+                            if (typeof showNotification === 'function') {
+                                showNotification('click "Update" to save your profile picture', 'info');
+                            }
+                        };
+                        reader.readAsDataURL(this.files[0]);
                     }
-
-                    // Update sidebar avatar
-                    const sidebarAvatar = document.querySelector('.profile-avatar img');
-                    if (sidebarAvatar) {
-                        sidebarAvatar.src = avatarUrl;
-                    }
-
-                    // Update header avatar
-                    const headerAvatar = document.querySelector('#userDropdownToggle img');
-                    if (headerAvatar) {
-                        headerAvatar.src = avatarUrl;
-                    }
-                }
-                
-                showNotification('Profile updated successfully!', 'success');
-                
-            } catch (error) {
-                console.error('Error updating profile:', error);
-                showNotification(error.message || 'An error occurred while updating your profile', 'error');
-            } finally {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }
-        });
-
-        // Cancel changes
-        function cancelChanges() {
-            if (confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-                location.reload();
-            }
-        }
-
-        // Auto-save functionality (optional)
-        let autoSaveTimeout;
-        document.querySelectorAll('.form-input').forEach(input => {
-            input.addEventListener('input', function() {
-                clearTimeout(autoSaveTimeout);
-                autoSaveTimeout = setTimeout(() => {
-                    // Auto-save logic would go here
-                    console.log('Auto-saving changes...');
-                }, 2000);
-            });
-        });
-
-        // User dropdown functionality
-        const userDropdownToggle = document.getElementById('userDropdownToggle');
-        const userDropdownMenu = document.getElementById('userDropdownMenu');
-
-        if (userDropdownToggle && userDropdownMenu) {
-            userDropdownToggle.addEventListener('click', function(e) {
-                e.stopPropagation();
-                userDropdownMenu.classList.toggle('active');
-            });
-
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!userDropdownToggle.contains(e.target) && !userDropdownMenu.contains(e.target)) {
-                    userDropdownMenu.classList.remove('active');
-                }
-            });
-        }
-
-        // Phone number functionality
-        const countries = [
-            { name: 'Ghana', code: '+233', flag: 'gh' },
-            { name: 'Nigeria', code: '+234', flag: 'ng' },
-            { name: 'Kenya', code: '+254', flag: 'ke' },
-            { name: 'South Africa', code: '+27', flag: 'za' },
-            { name: 'United States', code: '+1', flag: 'us' },
-            { name: 'United Kingdom', code: '+44', flag: 'gb' },
-            { name: 'Canada', code: '+1', flag: 'ca' },
-            { name: 'Australia', code: '+61', flag: 'au' },
-            { name: 'Germany', code: '+49', flag: 'de' },
-            { name: 'France', code: '+33', flag: 'fr' },
-            { name: 'India', code: '+91', flag: 'in' },
-            { name: 'China', code: '+86', flag: 'cn' },
-            { name: 'Japan', code: '+81', flag: 'jp' },
-            { name: 'Brazil', code: '+55', flag: 'br' },
-            { name: 'Mexico', code: '+52', flag: 'mx' }
-        ];
-
-        function initializePhoneInput() {
-            const countryCodeBtn = document.getElementById('countryCodeBtn');
-            const countryCodeDropdown = document.getElementById('countryCodeDropdown');
-            const countryList = document.getElementById('countryList');
-            const countrySearch = document.getElementById('countrySearch');
-            const selectedFlag = document.getElementById('selectedFlag');
-            const selectedCode = document.getElementById('selectedCode');
-            const countryCodeInput = document.getElementById('country_code');
-            const phoneInput = document.getElementById('phone');
-
-            if (!countryCodeBtn || !countryList) return;
-
-            // Populate country list
-            function populateCountries(filteredCountries = countries) {
-                countryList.innerHTML = '';
-                filteredCountries.forEach(country => {
-                    const option = document.createElement('div');
-                    option.className = 'country-option';
-                    option.innerHTML = `
-                        <img src="https://flagcdn.com/w20/${country.flag}.png" alt="${country.name}" class="country-flag">
-                        <span class="country-name">${country.name}</span>
-                        <span class="country-code">${country.code}</span>
-                    `;
-                    option.addEventListener('click', () => selectCountry(country));
-                    countryList.appendChild(option);
                 });
             }
 
-            // Select country
-            function selectCountry(country) {
-                selectedFlag.src = `https://flagcdn.com/w20/${country.flag}.png`;
-                selectedFlag.alt = country.name;
-                selectedCode.textContent = country.code;
-                countryCodeInput.value = country.code;
-                countryCodeDropdown.classList.remove('active');
+            // Country flag update
+            function updateFlag(select) {
+                const flagDisplay = select.parentElement.querySelector('.flag-display img');
+                const selectedOption = select.options[select.selectedIndex];
+                const countryCode = selectedOption.getAttribute('data-code');
+                if (countryCode) {
+                
+                    flagDisplay.src = `https://flagcdn.com/w20/${countryCode.toLowerCase()}.png`;
+                    flagDisplay.alt = selectedOption.text;
+                }
             }
 
-            // Toggle dropdown
-            countryCodeBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                countryCodeDropdown.classList.toggle('active');
-                if (countryCodeDropdown.classList.contains('active')) {
-                    countrySearch.focus();
+            // Form submission
+            document.getElementById('profileForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                submitBtn.disabled = true;
+                
+                try {
+                    const formData = new FormData(this);
+                    
+                    // Log form data for debugging
+                    console.log('Form data being submitted:');
+                    for (let [key, value] of formData.entries()) {
+                        console.log(`${key}:`, value);
+                    }
+                    
+                    const response = await fetch('{{ route("profile.update") }}', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        // Handle validation errors
+                        if (response.status === 422 && data.errors) {
+                            let errorMessage = 'Please correct the following issues:';
+                            for (const [field, errors] of Object.entries(data.errors)) {
+                                // Format field name to be more readable
+                                const fieldName = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                                errorMessage += `\n- ${fieldName}: ${errors[0]}`;
+                            }
+                            showNotification(errorMessage, 'error');
+                            return;
+                        }
+                        throw new Error(data.message || 'Failed to update profile');
+                    }
+                    
+                    // Success case
+                    if (data.avatar_url) {
+                        const timestamp = new Date().getTime();
+                        const avatarUrl = data.avatar_url + '?v=' + timestamp;
+
+                        // Update main profile form avatar
+                        const avatarImage = document.getElementById('avatarImage');
+                        if (avatarImage) {
+                            avatarImage.src = avatarUrl;
+                        } else {
+                            const preview = document.getElementById('avatarPreview');
+                            if (preview) {
+                                preview.innerHTML = `<img src="${avatarUrl}" alt="Profile" class="avatar-image large" id="avatarImage">`;
+                            }
+                        }
+
+                        // Update sidebar avatar
+                        const sidebarAvatar = document.querySelector('.profile-avatar img');
+                        if (sidebarAvatar) {
+                            sidebarAvatar.src = avatarUrl;
+                        } else {
+                            const sidebarContainer = document.querySelector('.profile-avatar');
+                            if (sidebarContainer) {
+                                sidebarContainer.innerHTML = `<img src="${avatarUrl}" alt="Profile" class="avatar-image sidebar">`;
+                            }
+                        }
+
+                        // Update header avatar
+                        const headerAvatar = document.querySelector('#user-avatar-header img');
+                        if (headerAvatar) {
+                            headerAvatar.src = avatarUrl;
+                        } else {
+                            const headerContainer = document.querySelector('.user-avatar-header');
+                            if (headerContainer && headerContainer.textContent.trim().length <= 2) {
+                                headerContainer.innerHTML = `<img src="${avatarUrl}" alt="Profile" class="avatar-image header">`;
+                            }
+                        }
+
+                        // Trigger avatar update event for other components
+                        if (window.avatarUpdater) {
+                            window.avatarUpdater.updateAllAvatars(avatarUrl, data.name || '{{ auth()->user()->name }}');
+                        }
+                    }
+                    
+                    showNotification('Profile updated successfully!', 'success');
+                    
+                } catch (error) {
+                    console.error('Error updating profile:', error);
+                    showNotification(error.message || 'An error occurred while updating your profile', 'error');
+                } finally {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
                 }
             });
 
-            // Search functionality
-            if (countrySearch) {
-                countrySearch.addEventListener('input', function() {
-                    const searchTerm = this.value.toLowerCase();
-                    const filtered = countries.filter(country => 
-                        country.name.toLowerCase().includes(searchTerm) ||
-                        country.code.includes(searchTerm)
-                    );
-                    populateCountries(filtered);
+            // Cancel changes button
+            const cancelChangesBtn = document.getElementById('cancelChangesBtn');
+            if (cancelChangesBtn) {
+                cancelChangesBtn.addEventListener('click', function() {
+                    if (confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                        window.location.reload();
+                    }
                 });
             }
 
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!countryCodeBtn.contains(e.target) && !countryCodeDropdown.contains(e.target)) {
+            // Auto-save functionality (optional)
+            let autoSaveTimeout;
+            document.querySelectorAll('.form-input').forEach(input => {
+                input.addEventListener('input', function() {
+                    clearTimeout(autoSaveTimeout);
+                    autoSaveTimeout = setTimeout(() => {
+                        // Auto-save logic would go here
+                        console.log('Auto-saving changes...');
+                    }, 2000);
+                });
+            });
+
+            // User dropdown functionality
+            const userDropdownToggle = document.getElementById('userDropdownToggle');
+            const userDropdownMenu = document.getElementById('userDropdownMenu');
+
+            if (userDropdownToggle && userDropdownMenu) {
+                userDropdownToggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    userDropdownMenu.classList.toggle('active');
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!userDropdownToggle.contains(e.target) && !userDropdownMenu.contains(e.target)) {
+                        userDropdownMenu.classList.remove('active');
+                    }
+                });
+            }
+
+            // Phone number functionality
+            const countries = [
+                { name: 'Ghana', code: '+233', flag: 'gh' },
+                { name: 'Nigeria', code: '+234', flag: 'ng' },
+                { name: 'Kenya', code: '+254', flag: 'ke' },
+                { name: 'South Africa', code: '+27', flag: 'za' },
+                { name: 'United States', code: '+1', flag: 'us' },
+                { name: 'United Kingdom', code: '+44', flag: 'gb' },
+                { name: 'Canada', code: '+1', flag: 'ca' },
+                { name: 'Australia', code: '+61', flag: 'au' },
+                { name: 'Germany', code: '+49', flag: 'de' },
+                { name: 'France', code: '+33', flag: 'fr' },
+                { name: 'India', code: '+91', flag: 'in' },
+                { name: 'China', code: '+86', flag: 'cn' },
+                { name: 'Japan', code: '+81', flag: 'jp' },
+                { name: 'Brazil', code: '+55', flag: 'br' },
+                { name: 'Mexico', code: '+52', flag: 'mx' }
+            ];
+
+            function initializePhoneInput() {
+                const countryCodeBtn = document.getElementById('countryCodeBtn');
+                const countryCodeDropdown = document.getElementById('countryCodeDropdown');
+                const countryList = document.getElementById('countryList');
+                const countrySearch = document.getElementById('countrySearch');
+                const selectedFlag = document.getElementById('selectedFlag');
+                const selectedCode = document.getElementById('selectedCode');
+                const countryCodeInput = document.getElementById('country_code');
+                const phoneInput = document.getElementById('phone');
+
+                if (!countryCodeBtn || !countryList) return;
+
+                // Populate country list
+                function populateCountries(filteredCountries = countries) {
+                    countryList.innerHTML = '';
+                    filteredCountries.forEach(country => {
+                        const option = document.createElement('div');
+                        option.className = 'country-option';
+                        option.innerHTML = `
+                            <img src="https://flagcdn.com/w20/${country.flag}.png" alt="${country.name}" class="country-flag">
+                            <span class="country-name">${country.name}</span>
+                            <span class="country-code">${country.code}</span>
+                        `;
+                        option.addEventListener('click', () => selectCountry(country));
+                        countryList.appendChild(option);
+                    });
+                }
+
+                // Select country
+                function selectCountry(country) {
+                    selectedFlag.src = `https://flagcdn.com/w20/${country.flag}.png`;
+                    selectedFlag.alt = country.name;
+                    selectedCode.textContent = country.code;
+                    countryCodeInput.value = country.code;
                     countryCodeDropdown.classList.remove('active');
                 }
-            });
 
-            // Auto-detect country based on user's location (optional)
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    // This would typically involve a geolocation API call
-                    // For now, we'll default to Ghana
-                    const defaultCountry = countries.find(c => c.flag === 'gh');
-                    if (defaultCountry) {
-                        selectCountry(defaultCountry);
+                // Toggle dropdown
+                countryCodeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    countryCodeDropdown.classList.toggle('active');
+                    if (countryCodeDropdown.classList.contains('active')) {
+                        countrySearch.focus();
                     }
                 });
-            }
 
-            // Initialize with default countries
-            populateCountries();
-        }
-
-        // Initialize phone input
-        initializePhoneInput();
-
-        function removePhoneNumber() {
-            if (!confirm('Are you sure you want to remove your phone number? This will disable phone-based security features.')) {
-                return;
-            }
-            
-            const password = prompt('Please enter your current password to confirm this change:');
-            if (!password) return;
-            
-            fetch('{{ route("profile.phone.remove") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'X-HTTP-Method-Override': 'DELETE'
-                },
-                body: JSON.stringify({
-                    current_password: password
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification(data.message, 'success');
-                    location.reload();
-                } else {
-                    showNotification(data.message, 'error');
+                // Search functionality
+                if (countrySearch) {
+                    countrySearch.addEventListener('input', function() {
+                        const searchTerm = this.value.toLowerCase();
+                        const filtered = countries.filter(country => 
+                            country.name.toLowerCase().includes(searchTerm) ||
+                            country.code.includes(searchTerm)
+                        );
+                        populateCountries(filtered);
+                    });
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('An error occurred. Please try again.', 'error');
-            });
-        }
 
-        // Modal Management Functions
-        function openModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.classList.add('active');
-                document.body.style.overflow = 'hidden';
-            }
-        }
-
-        function closeModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.classList.remove('active');
-                document.body.style.overflow = '';
-
-                // Reset modal forms
-                if (modalId === 'phoneUpdateModal') {
-                    document.getElementById('phoneUpdateForm').reset();
-                } else if (modalId === 'phoneVerificationModal') {
-                    document.getElementById('phoneVerificationForm').reset();
-                } else if (modalId === 'deleteAccountModal') {
-                    document.getElementById('deleteAccountForm').reset();
-                    document.getElementById('confirmDeleteBtn').disabled = true;
-                } else if (modalId === 'passwordChangeModal') { // Reset password change form
-                    document.getElementById('passwordChangeForm').reset();
-                } else if (modalId === 'subscribeUpgradeModal') {
-                    // Reset selected plan
-                    const selectedPlanCard = document.querySelector('.plan-card-modal.selected');
-                    if (selectedPlanCard) {
-                        selectedPlanCard.classList.remove('selected');
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!countryCodeBtn.contains(e.target) && !countryCodeDropdown.contains(e.target)) {
+                        countryCodeDropdown.classList.remove('active');
                     }
-                    document.getElementById('confirmPlanSelectionBtn').disabled = true;
-                    selectedPlanId = null; // Reset global selected plan ID
-                }
-            }
-        }
-
-        // Close modal when clicking outside
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal-overlay')) {
-                const modalId = e.target.id;
-                closeModal(modalId);
-            }
-        });
-
-        // Close modal with Escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                const activeModal = document.querySelector('.modal-overlay.active');
-                if (activeModal) {
-                    closeModal(activeModal.id);
-                }
-            }
-        });
-
-        // Initialize modal phone input
-        function initializeModalPhoneInput() {
-            const modalCountryCodeBtn = document.getElementById('modalCountryCodeBtn');
-            const modalCountryCodeDropdown = document.getElementById('modalCountryCodeDropdown');
-            const modalCountryList = document.getElementById('modalCountryList');
-            const modalCountrySearch = document.getElementById('modalCountrySearch');
-            const modalSelectedFlag = document.getElementById('modalSelectedFlag');
-            const modalSelectedCode = document.getElementById('modalSelectedCode');
-            const modalCountryCodeInput = document.getElementById('modal_country_code');
-
-            if (!modalCountryCodeBtn || !modalCountryList) return;
-
-            // Populate country list for modal
-            function populateModalCountries(filteredCountries = countries) {
-                modalCountryList.innerHTML = '';
-                filteredCountries.forEach(country => {
-                    const option = document.createElement('div');
-                    option.className = 'country-option';
-                    option.innerHTML = `
-                        <img src="https://flagcdn.com/w20/${country.flag}.png" alt="${country.name}" class="country-flag">
-                        <span class="country-name">${country.name}</span>
-                        <span class="country-code">${country.code}</span>
-                    `;
-                    option.addEventListener('click', () => selectModalCountry(country));
-                    modalCountryList.appendChild(option);
                 });
+
+                // Auto-detect country based on user's IP using ipapi.co
+                fetch('https://ipapi.co/json/')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.country_code) {
+                            // Convert country code to lowercase for matching with flag codes
+                            const countryCode = data.country_code.toLowerCase();
+                            const detectedCountry = countries.find(c => c.flag === countryCode);
+                            if (detectedCountry) {
+                                selectCountry(detectedCountry);
+                            } else {
+                                // Fallback to Ghana if country not found
+                                const defaultCountry = countries.find(c => c.flag === 'gh');
+                                if (defaultCountry) {
+                                    selectCountry(defaultCountry);
+                                }
+                            }
+                        } else {
+                            // Fallback to Ghana if no country code in response
+                            const defaultCountry = countries.find(c => c.flag === 'gh');
+                            if (defaultCountry) {
+                                selectCountry(defaultCountry);
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.log('IP geolocation failed, using default country:', error);
+                        // Fallback to Ghana on error
+                        const defaultCountry = countries.find(c => c.flag === 'gh');
+                        if (defaultCountry) {
+                            selectCountry(defaultCountry);
+                        }
+                    });
+
+                // Initialize with default countries
+                populateCountries();
             }
 
-            // Select country for modal
-            function selectModalCountry(country) {
-                modalSelectedFlag.src = `https://flagcdn.com/w20/${country.flag}.png`;
-                modalSelectedFlag.alt = country.name;
-                modalSelectedCode.textContent = country.code;
-                modalCountryCodeInput.value = country.code;
-                modalCountryCodeDropdown.classList.remove('active');
-            }
+            // Initialize phone input
+            initializePhoneInput();
 
-            // Toggle dropdown for modal
-            modalCountryCodeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                modalCountryCodeDropdown.classList.toggle('active');
-                if (modalCountryCodeDropdown.classList.contains('active')) {
-                    modalCountrySearch.focus();
+            window.removePhoneNumber = function() {
+                if (!confirm('Are you sure you want to remove your phone number? This will disable phone-based security features.')) {
+                    return;
                 }
-            });
 
-            // Search functionality for modal
-            if (modalCountrySearch) {
-                modalCountrySearch.addEventListener('input', function() {
-                    const searchTerm = this.value.toLowerCase();
-                    const filtered = countries.filter(country => 
-                        country.name.toLowerCase().includes(searchTerm) || 
-                        country.code.includes(searchTerm)
-                    );
-                    populateModalCountries(filtered);
-                });
-            }
+                const password = prompt('Please enter your current password to confirm this change:');
+                if (!password) return;
 
-            // Close dropdown when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!modalCountryCodeBtn.contains(e.target) && !modalCountryCodeDropdown.contains(e.target)) {
-                    modalCountryCodeDropdown.classList.remove('active');
-                }
-            });
-
-            // Initialize with default countries
-            populateModalCountries();
-        }
-
-        // Show notification
-        function showNotification(message, type = 'info') {
-            const toast = document.getElementById('notificationToast');
-            const icon = document.getElementById('toastIcon');
-            const messageEl = document.getElementById('toastMessage');
-
-            // Set message
-            messageEl.textContent = message;
-
-            // Set icon based on type
-            let iconSvg = '';
-            toast.className = `notification-toast toast-${type}`;
-
-            switch (type) {
-                case 'success':
-                    iconSvg = `<svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                    </svg>`;
-                    break;
-                case 'error':
-                    iconSvg = `<svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                    </svg>`;
-                    break;
-                default:
-                    iconSvg = `<svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-                    </svg>`;
-            }
-
-            icon.innerHTML = iconSvg;
-
-            // Show toast
-            toast.classList.add('show');
-
-            // Auto-hide after 5 seconds
-            setTimeout(() => {
-                hideNotification();
-            }, 5000);
-        }
-
-        function hideNotification() {
-            const toast = document.getElementById('notificationToast');
-            toast.classList.remove('show');
-        }
-
-        // Phone Update Modal Functions
-        function showPhoneUpdateModal() {
-            openModal('phoneUpdateModal');
-            initializeModalPhoneInput();
-        }
-
-        async function submitPhoneUpdate(event) {
-            event.preventDefault();
-            const form = document.getElementById('phoneUpdateForm');
-            const phone = document.getElementById('modal_phone').value.trim();
-            const countryCode = document.getElementById('modal_country_code').value;
-            const password = document.getElementById('modal_current_password').value;
-
-            if (!phone || !password) {
-                showNotification('Please fill in all required fields', 'error');
-                return;
-            }
-
-            const submitBtn = event.target;
-            const btnText = submitBtn.querySelector('.btn-text');
-            const btnLoading = submitBtn.querySelector('.btn-loading');
-
-            // Show loading state
-            submitBtn.disabled = true;
-            btnText.style.display = 'none';
-            btnLoading.style.display = 'inline-flex';
-
-            try {
-                const response = await fetch('{{ route("profile.phone.update") }}', {
+                fetch('{{ route("profile.phone.remove") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json'
+                        'X-HTTP-Method-Override': 'DELETE'
                     },
                     body: JSON.stringify({
-                        phone: phone,
-                        country_code: countryCode,
                         current_password: password
                     })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                        location.reload();
+                    } else {
+                        showNotification(data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('An error occurred. Please try again.', 'error');
                 });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    closeModal('phoneUpdateModal');
-                    showNotification('Phone number updated successfully!', 'success');
+            }
 
-                    // Show verification modal
-                    document.getElementById('verificationPhoneNumber').textContent = countryCode + phone;
-                    openModal('phoneVerificationModal');
-                } else {
-                    showNotification(data.message || 'Failed to update phone number', 'error');
+            // Modal Management Functions
+            function openModal(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
                 }
-            } catch (error) {
-                showNotification('An error occurred. Please try again.', 'error');
-            } finally {
-                // Reset button state
-                submitBtn.disabled = false;
-                btnText.style.display = 'inline';
-                btnLoading.style.display = 'none';
-            }
-        }
-
-        // Phone Verification Modal Functions
-        async function submitPhoneVerification(event) {
-            event.preventDefault();
-            const code = document.getElementById('verification_code').value.trim();
-
-            if (!code || code.length !== 6) {
-                showNotification('Please enter a valid 6-digit verification code', 'error');
-                return;
             }
 
-            const submitBtn = event.target;
-            const btnText = submitBtn.querySelector('.btn-text');
-            const btnLoading = submitBtn.querySelector('.btn-loading');
+            function closeModal(modalId) {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.classList.remove('active');
+                    document.body.style.overflow = '';
 
-            // Show loading state
-            submitBtn.disabled = true;
-            btnText.style.display = 'none';
-            btnLoading.style.display = 'inline-flex';
-
-            try {
-                const response = await fetch('{{ route("profile.phone.verify") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        verification_code: code
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    closeModal('phoneVerificationModal');
-                    showNotification('Phone number verified successfully!', 'success');
-                    setTimeout(() => location.reload(), 2000);
-                } else {
-                    showNotification(data.message || 'Invalid verification code', 'error');
+                    // Reset modal forms
+                    if (modalId === 'phoneUpdateModal') {
+                        document.getElementById('phoneUpdateForm').reset();
+                    } else if (modalId === 'phoneVerificationModal') {
+                        document.getElementById('phoneVerificationForm').reset();
+                    } else if (modalId === 'deleteAccountModal') {
+                        document.getElementById('deleteAccountForm').reset();
+                        document.getElementById('confirmDeleteBtn').disabled = true;
+                    } else if (modalId === 'passwordChangeModal') { // Reset password change form
+                        document.getElementById('passwordChangeForm').reset();
+                    } else if (modalId === 'subscribeUpgradeModal') {
+                        // Reset selected plan
+                        const selectedPlanCard = document.querySelector('.plan-card-modal.selected');
+                        if (selectedPlanCard) {
+                            selectedPlanCard.classList.remove('selected');
+                        }
+                        document.getElementById('confirmPlanSelectionBtn').disabled = true;
+                        selectedPlanId = null; // Reset global selected plan ID
+                    }
                 }
-            } catch (error) {
-                showNotification('An error occurred. Please try again.', 'error');
-            } finally {
-                // Reset button state
-                submitBtn.disabled = false;
-                btnText.style.display = 'inline';
-                btnLoading.style.display = 'none';
             }
-        }
 
-        async function resendVerificationCode() {
-            try {
-                const response = await fetch('{{ route("profile.phone.resend-verification") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json'
-                    },
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    showNotification('Verification code resent successfully!', 'success');
-                } else {
-                    showNotification(data.message || 'Failed to resend verification code', 'error');
+            // Close modal when clicking outside
+            document.addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal-overlay')) {
+                    const modalId = e.target.id;
+                    closeModal(modalId);
                 }
-            } catch (error) {
-                showNotification('An error occurred. Please try again.', 'error');
-            }
-        }
+            });
 
-        // Password Change Modal Functions
-        function showPasswordChangeModal() {
-            openModal('passwordChangeModal');
-        }
-
-        async function submitPasswordChange(event) {
-            event.preventDefault();
-            const form = document.getElementById('passwordChangeForm');
-            const currentPassword = document.getElementById('current_password_change').value;
-            const newPassword = document.getElementById('new_password').value;
-            const newPasswordConfirmation = document.getElementById('new_password_confirmation').value;
-
-            if (!currentPassword || !newPassword || !newPasswordConfirmation) {
-                showNotification('Please fill in all password fields.', 'error');
-                return;
-            }
-
-            if (newPassword !== newPasswordConfirmation) {
-                showNotification('New password and confirmation do not match.', 'error');
-                return;
-            }
-
-            const submitBtn = event.target;
-            const btnText = submitBtn.querySelector('.btn-text');
-            const btnLoading = submitBtn.querySelector('.btn-loading');
-
-            submitBtn.disabled = true;
-            btnText.style.display = 'none';
-            btnLoading.style.display = 'inline-flex';
-
-            try {
-                const response = await fetch('{{ route("profile.password.update") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        current_password: currentPassword,
-                        password: newPassword,
-                        password_confirmation: newPasswordConfirmation
-                    })
-                });
-                const data = await response.json();
-
-                if (data.success) {
-                    closeModal('passwordChangeModal');
-                    showNotification(data.message, 'success');
-                    form.reset(); // Clear the form
-                } else {
-                    showNotification(data.message || 'Failed to change password.', 'error');
+            // Close modal with Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const activeModal = document.querySelector('.modal-overlay.active');
+                    if (activeModal) {
+                        closeModal(activeModal.id);
+                    }
                 }
-            } catch (error) {
-                console.error('Error during password change:', error);
-                showNotification('An error occurred. Please try again.', 'error');
-            } finally {
-                submitBtn.disabled = false;
-                btnText.style.display = 'inline';
-                btnLoading.style.display = 'none';
-            }
-        }
+            });
 
-        // Delete Account Modal Functions
-        function showDeleteAccountModal() {
-            openModal('deleteAccountModal');
-        }
+            // Initialize modal phone input
+            function initializeModalPhoneInput() {
+                const modalCountryCodeBtn = document.getElementById('modalCountryCodeBtn');
+                const modalCountryCodeDropdown = document.getElementById('modalCountryCodeDropdown');
+                const modalCountryList = document.getElementById('modalCountryList');
+                const modalCountrySearch = document.getElementById('modalCountrySearch');
+                const modalSelectedFlag = document.getElementById('modalSelectedFlag');
+                const modalSelectedCode = document.getElementById('modalSelectedCode');
+                const modalCountryCodeInput = document.getElementById('modal_country_code');
 
-        // Enable delete button when "DELETE" is typed correctly
-        document.addEventListener('DOMContentLoaded', () => {
-            const deleteConfirmation = document.getElementById('delete_confirmation');
-            const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+                if (!modalCountryCodeBtn || !modalCountryList) return;
 
-            if (deleteConfirmation && confirmDeleteBtn) {
-                deleteConfirmation.addEventListener('input', function() {
-                    confirmDeleteBtn.disabled = this.value !== 'DELETE';
-                });
-            }
-        });
-
-        async function submitDeleteAccount(event) {
-            event.preventDefault();
-            const password = document.getElementById('delete_password').value;
-            const confirmation = document.getElementById('delete_confirmation').value;
-
-            if (confirmation !== 'DELETE') {
-                showNotification('Please type "DELETE" to confirm', 'error');
-                return;
-            }
-
-            if (!password) {
-                showNotification('Please enter your current password', 'error');
-                return;
-            }
-
-            const submitBtn = document.getElementById('confirmDeleteBtn');
-            const btnText = submitBtn.querySelector('.btn-text');
-            const btnLoading = submitBtn.querySelector('.btn-loading');
-
-            // Show loading state
-            submitBtn.disabled = true;
-            btnText.style.display = 'none';
-            btnLoading.style.display = 'inline-flex';
-
-            try {
-                const response = await fetch('{{ route("profile.destroy") }}', { // Corrected route name
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        password: password // Changed to 'password' as per destroy method validation
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    closeModal('deleteAccountModal');
-                    showNotification('Account deleted successfully. Redirecting...', 'success');
-                    setTimeout(() => {
-                        window.location.href = data.redirect || '/'; // Redirect to home or login page
-                    }, 2000);
-                } else {
-                    showNotification(data.message || 'Failed to delete account', 'error');
-                }
-            } catch (error) {
-                showNotification('An error occurred. Please try again.', 'error');
-            } finally {
-                // Reset button state
-                submitBtn.disabled = false;
-                btnText.style.display = 'inline';
-                btnLoading.style.display = 'none';
-            }
-        }
-
-        // Global variable to store selected plan ID for subscription/upgrade
-        let selectedPlanId = null;
-
-        // Subscription/Upgrade Plan Modal Functions
-        async function showSubscriptionPlans() {
-            // Fetch available plans from the server
-            try {
-                const response = await fetch('{{ route("api.pricing-plans") }}'); // API route for plans
-                const plans = await response.json();
-
-                const planSelectionGrid = document.getElementById('planSelectionGrid');
-                planSelectionGrid.innerHTML = ''; // Clear previous plans
-
-                if (plans.success && plans.plans.length > 0) {
-                    plans.plans.forEach(plan => {
-                        const planCard = document.createElement('div');
-                        planCard.className = 'plan-card-modal';
-                        planCard.dataset.planId = plan.id;
-                        planCard.innerHTML = `
-                            <div class="plan-name">${plan.name}</div>
-                            <div class="plan-price">${plan.formatted_price}</div>
-                            <div class="plan-period">/${plan.period}</div>
-                            <p class="plan-description">${plan.description}</p>
-                            <ul class="plan-features-list">
-                                ${plan.features.map(feature => `
-                                    <li>
-                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                        </svg>
-                                        ${feature}
-                                    </li>
-                                `).join('')}
-                            </ul>
-                            <div class="selected-indicator">
-                                <i class="fas fa-check-circle"></i>
-                            </div>
+                // Populate country list for modal
+                function populateModalCountries(filteredCountries = countries) {
+                    modalCountryList.innerHTML = '';
+                    filteredCountries.forEach(country => {
+                        const option = document.createElement('div');
+                        option.className = 'country-option';
+                        option.innerHTML = `
+                            <img src="https://flagcdn.com/w20/${country.flag}.png" alt="${country.name}" class="country-flag">
+                            <span class="country-name">${country.name}</span>
+                            <span class="country-code">${country.code}</span>
                         `;
-                        planCard.addEventListener('click', () => selectPlan(plan.id, planCard));
-                        planSelectionGrid.appendChild(planCard);
+                        option.addEventListener('click', () => selectModalCountry(country));
+                        modalCountryList.appendChild(option);
                     });
-                } else {
-                    planSelectionGrid.innerHTML = '<p class="text-center text-gray-500">No pricing plans available.</p>';
                 }
 
-                document.getElementById('subscribeUpgradeModalTitle').textContent = 'Choose Your Plan';
-                document.getElementById('subscribeUpgradeModalDescription').textContent = 'Unlock premium features and content with a subscription plan.';
-                openModal('subscribeUpgradeModal');
-            } catch (error) {
-                console.error('Error fetching plans:', error);
-                showNotification('Failed to load pricing plans. Please try again.', 'error');
-            }
-        }
+                // Select country for modal
+                function selectModalCountry(country) {
+                    modalSelectedFlag.src = `https://flagcdn.com/w20/${country.flag}.png`;
+                    modalSelectedFlag.alt = country.name;
+                    modalSelectedCode.textContent = country.code;
+                    modalCountryCodeInput.value = country.code;
+                    modalCountryCodeDropdown.classList.remove('active');
+                }
 
-        function showUpgradeModal() {
-            // This function is called when a user on a trial wants to upgrade.
-            // It should behave similarly to showSubscriptionPlans but might highlight upgrade options.
-            // For simplicity, we'll reuse showSubscriptionPlans for now.
-            showSubscriptionPlans();
-            document.getElementById('subscribeUpgradeModalTitle').textContent = 'Upgrade Your Plan';
-            document.getElementById('subscribeUpgradeModalDescription').textContent = 'Select a new plan to upgrade your subscription.';
-        }
-
-        function showChangePlanModal() {
-            // This function is called when a user with an active subscription wants to change plans.
-            // It should filter out the current plan and allow selection of others.
-            showSubscriptionPlans(); // Reusing for now, but could be more specific
-            document.getElementById('subscribeUpgradeModalTitle').textContent = 'Change Your Plan';
-            document.getElementById('subscribeUpgradeModalDescription').textContent = 'Switch to a different plan that better suits your needs.';
-        }
-
-        function selectPlan(planId, planCard) {
-            const currentSelected = document.querySelector('.plan-card-modal.selected');
-            if (currentSelected) {
-                currentSelected.classList.remove('selected');
-            }
-            planCard.classList.add('selected');
-            selectedPlanId = planId;
-            document.getElementById('confirmPlanSelectionBtn').disabled = false;
-        }
-
-        async function confirmPlanSelection(event) {
-            if (!selectedPlanId) {
-                showNotification('Please select a plan first.', 'error');
-                return;
-            }
-
-            const submitBtn = event.target;
-            const btnText = submitBtn.querySelector('.btn-text');
-            const btnLoading = submitBtn.querySelector('.btn-loading');
-
-            submitBtn.disabled = true;
-            btnText.style.display = 'none';
-            btnLoading.style.display = 'inline-flex';
-
-            try {
-                const response = await fetch('{{ route("api.subscribe") }}', { // API route for subscription
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ plan_id: selectedPlanId })
+                // Toggle dropdown for modal
+                modalCountryCodeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    modalCountryCodeDropdown.classList.toggle('active');
+                    if (modalCountryCodeDropdown.classList.contains('active')) {
+                        modalCountrySearch.focus();
+                    }
                 });
-                const data = await response.json();
 
-                if (data.success) {
-                    closeModal('subscribeUpgradeModal');
-                    showNotification(data.message || 'Subscription successful!', 'success');
-                    setTimeout(() => location.reload(), 2000);
-                } else {
-                    showNotification(data.message || 'Failed to process subscription.', 'error');
+                // Search functionality for modal
+                if (modalCountrySearch) {
+                    modalCountrySearch.addEventListener('input', function() {
+                        const searchTerm = this.value.toLowerCase();
+                        const filtered = countries.filter(country => 
+                            country.name.toLowerCase().includes(searchTerm) || 
+                            country.code.includes(searchTerm)
+                        );
+                        populateModalCountries(filtered);
+                    });
                 }
-            } catch (error) {
-                console.error('Error during plan selection:', error);
-                showNotification('An error occurred during subscription. Please try again.', 'error');
-            } finally {
-                submitBtn.disabled = false;
-                btnText.style.display = 'inline';
-                btnLoading.style.display = 'none';
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!modalCountryCodeBtn.contains(e.target) && !modalCountryCodeDropdown.contains(e.target)) {
+                        modalCountryCodeDropdown.classList.remove('active');
+                    }
+                });
+
+                // Initialize with default countries
+                populateModalCountries();
             }
-        }
 
-        // Manage Subscription Modal Functions
-        async function showManageSubscriptionModal() {
-            try {
-                const response = await fetch('{{ route("api.current-subscription") }}'); // API to get current subscription details
-                const subscriptionData = await response.json();
+            // Show notification
+            function showNotification(message, type = 'info') {
+                const toast = document.getElementById('notificationToast');
+                const icon = document.getElementById('toastIcon');
+                const messageEl = document.getElementById('toastMessage');
 
-                if (subscriptionData.success && subscriptionData.subscription) {
-                    const sub = subscriptionData.subscription;
-                    const plan = sub.pricing_plan;
+                // Set message
+                messageEl.textContent = message;
 
-                    document.getElementById('currentPlanName').textContent = plan.name;
-                    document.getElementById('currentPlanPrice').textContent = `${plan.formatted_price}/${plan.period}`;
+                // Set icon based on type
+                let iconSvg = '';
+                toast.className = `notification-toast toast-${type}`;
+
+                switch (type) {
+                    case 'success':
+                        iconSvg = `<svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>`;
+                        break;
+                    case 'error':
+                        iconSvg = `<svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                        </svg>`;
+                        break;
+                    default:
+                        iconSvg = `<svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>`;
+                }
+
+                icon.innerHTML = iconSvg;
+
+                // Show toast
+                toast.classList.add('show');
+
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    hideNotification();
+                }, 5000);
+            }
+
+            function hideNotification() {
+                const toast = document.getElementById('notificationToast');
+                toast.classList.remove('show');
+            }
+
+            // Phone Update Modal Functions
+            window.showPhoneUpdateModal = function() {
+                openModal('phoneUpdateModal');
+                initializeModalPhoneInput();
+            }
+
+            window.showPhoneVerificationModal = function() {
+                openModal('phoneVerificationModal');
+            }
+
+            async function submitPhoneUpdate(event) {
+                event.preventDefault();
+                const submitBtn = event.target;
+                const btnText = submitBtn.querySelector('.btn-text');
+                const btnLoading = submitBtn.querySelector('.btn-loading');
+
+                const phone = document.getElementById('modal_phone').value.trim();
+                const countryCode = document.getElementById('modal_country_code').value;
+                const password = document.getElementById('modal_current_password').value;
+
+                if (!phone || !password) {
+                    showNotification('Please fill in all required fields', 'error');
+                    return;
+                }
+
+                // Show loading state
+                submitBtn.disabled = true;
+                submitBtn.classList.add('loading');
+                btnText.style.display = 'none';
+                btnLoading.style.display = 'inline-flex';
+
+                try {
+                    const response = await fetch('{{ route("profile.phone.update") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            phone: phone,
+                            country_code: countryCode,
+                            current_password: password
+                        })
+                    });
                     
-                    const statusBadge = document.getElementById('currentPlanStatus');
-                    statusBadge.textContent = sub.status.charAt(0).toUpperCase() + sub.status.slice(1);
-                    statusBadge.className = `status-badge status-${sub.status}`;
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        closeModal('phoneUpdateModal');
+                        showNotification('Phone number updated successfully!', 'success');
 
-                    if (sub.is_in_trial) {
-                        document.getElementById('currentPlanTrialInfo').textContent = `Your trial expires in ${sub.trial_days_remaining} days on ${sub.trial_ends_at_formatted}`;
-                        document.getElementById('currentPlanExpiry').textContent = ''; // Clear expiry if trial
-                    } else if (sub.expires_at_formatted) {
-                        document.getElementById('currentPlanExpiry').textContent = `Next Billing Date: ${sub.expires_at_formatted} (${sub.days_remaining} days)`;
-                        document.getElementById('currentPlanTrialInfo').textContent = ''; // Clear trial if not trial
+                        // Show verification modal
+                        document.getElementById('verificationPhoneNumber').textContent = countryCode + phone;
+                        openModal('phoneVerificationModal');
                     } else {
-                        document.getElementById('currentPlanExpiry').textContent = '';
-                        document.getElementById('currentPlanTrialInfo').textContent = '';
+                        showNotification(data.message || 'Failed to update phone number', 'error');
                     }
+                } catch (error) {
+                    showNotification('An error occurred. Please try again.', 'error');
+                } finally {
+                    // Reset button state
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('loading');
+                    btnText.style.display = 'inline';
+                    btnLoading.style.display = 'none';
+                }
+            }
 
-                    // Populate billing history
-                    const billingHistoryContent = document.getElementById('billingHistoryContent');
-                    if (sub.billing_history && sub.billing_history.length > 0) {
-                        let tableHtml = `
-                            <table class="billing-table">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Description</th>
-                                        <th class="text-right">Amount</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                        `;
-                        sub.billing_history.forEach(item => {
-                            tableHtml += `
-                                <tr>
-                                    <td>${item.date}</td>
-                                    <td>${item.description}</td>
-                                    <td class="text-right">${item.currency} ${item.amount}</td>
-                                    <td><span class="status-badge status-${item.status.toLowerCase()}">${item.status}</span></td>
-                                </tr>
+            // Phone Verification Modal Functions
+            async function submitPhoneVerification(event) {
+                event.preventDefault();
+                const submitBtn = event.target;
+                const btnText = submitBtn.querySelector('.btn-text');
+                const btnLoading = submitBtn.querySelector('.btn-loading');
+
+                const code = document.getElementById('verification_code').value.trim();
+
+                if (!code || code.length !== 6) {
+                    showNotification('Please enter a valid 6-digit verification code', 'error');
+                    return;
+                }
+
+                // Show loading state
+                submitBtn.disabled = true;
+                submitBtn.classList.add('loading');
+                btnText.style.display = 'none';
+                btnLoading.style.display = 'inline-flex';
+
+                try {
+                    const response = await fetch('{{ route("profile.phone.verify") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            verification_code: code
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        closeModal('phoneVerificationModal');
+                        showNotification('Phone number verified successfully!', 'success');
+                        setTimeout(() => location.reload(), 2000);
+                    } else {
+                        showNotification(data.message || 'Invalid verification code', 'error');
+                    }
+                } catch (error) {
+                    showNotification('An error occurred. Please try again.', 'error');
+                } finally {
+                    // Reset button state
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('loading');
+                    btnText.style.display = 'inline';
+                    btnLoading.style.display = 'none';
+                }
+            }
+
+            window.resendVerificationCode = async function() {
+                try {
+                    const response = await fetch('{{ route("profile.phone.resend-verification") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        },
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showNotification('Verification code resent successfully!', 'success');
+                    } else {
+                        showNotification(data.message || 'Failed to resend verification code', 'error');
+                    }
+                } catch (error) {
+                    showNotification('An error occurred. Please try again.', 'error');
+                }
+            }
+
+            // Password Change Modal Functions
+            window.showPasswordChangeModal = function() {
+                openModal('passwordChangeModal');
+            }
+
+            window.submitPasswordChange = async function(event) {
+                event.preventDefault();
+                const submitBtn = event.target;
+                const btnText = submitBtn.querySelector('.btn-text');
+                const btnLoading = submitBtn.querySelector('.btn-loading');
+
+                const currentPassword = document.getElementById('current_password_change').value;
+                const newPassword = document.getElementById('new_password').value;
+                const newPasswordConfirmation = document.getElementById('new_password_confirmation').value;
+
+                if (!currentPassword || !newPassword || !newPasswordConfirmation) {
+                    showNotification('Please fill in all password fields.', 'error');
+                    return;
+                }
+
+                if (newPassword !== newPasswordConfirmation) {
+                    showNotification('New password and confirmation do not match.', 'error');
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.classList.add('loading');
+                btnText.style.display = 'none';
+                btnLoading.style.display = 'inline-flex';
+
+                try {
+                    const response = await fetch('{{ route("profile.password.update") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            current_password: currentPassword,
+                            password: newPassword,
+                            password_confirmation: newPasswordConfirmation
+                        })
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        closeModal('passwordChangeModal');
+                        showNotification(data.message, 'success');
+                        document.getElementById('passwordChangeForm').reset(); // Clear the form
+                    } else {
+                        showNotification(data.message || 'Failed to change password.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error during password change:', error);
+                    showNotification('An error occurred. Please try again.', 'error');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('loading');
+                    btnText.style.display = 'inline';
+                    btnLoading.style.display = 'none';
+                }
+            }
+
+            // Delete Account Modal Functions
+            window.showDeleteAccountModal = function() {
+                openModal('deleteAccountModal');
+            }
+
+            // Enable delete button when "DELETE" is typed correctly
+            document.addEventListener('DOMContentLoaded', () => {
+                const deleteConfirmation = document.getElementById('delete_confirmation');
+                const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+                if (deleteConfirmation && confirmDeleteBtn) {
+                    deleteConfirmation.addEventListener('input', function() {
+                        confirmDeleteBtn.disabled = this.value !== 'DELETE';
+                    });
+                }
+            });
+
+            window.submitDeleteAccount = async function(event) {
+                event.preventDefault();
+                const submitBtn = event.target;
+                const btnText = submitBtn.querySelector('.btn-text');
+                const btnLoading = submitBtn.querySelector('.btn-loading');
+
+                const password = document.getElementById('delete_password').value;
+                const confirmation = document.getElementById('delete_confirmation').value;
+
+                if (confirmation !== 'DELETE') {
+                    showNotification('Please type "DELETE" to confirm', 'error');
+                    return;
+                }
+
+                if (!password) {
+                    showNotification('Please enter your current password', 'error');
+                    return;
+                }
+
+
+                // Show loading state
+                submitBtn.disabled = true;
+                submitBtn.classList.add('loading');
+                btnText.style.display = 'none';
+                btnLoading.style.display = 'inline-flex';
+
+                try {
+                    const response = await fetch('{{ route("profile.destroy") }}', { // Corrected route name
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            password: password // Changed to 'password' as per destroy method validation
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        closeModal('deleteAccountModal');
+                        showNotification('Account deleted successfully. Redirecting...', 'success');
+                        setTimeout(() => {
+                            window.location.href = data.redirect || '/'; // Redirect to home or login page
+                        }, 2000);
+                    } else {
+                        showNotification(data.message || 'Failed to delete account', 'error');
+                    }
+                } catch (error) {
+                    showNotification('An error occurred. Please try again.', 'error');
+                } finally {
+                    // Reset button state
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('loading');
+                    btnText.style.display = 'inline';
+                    btnLoading.style.display = 'none';
+                }
+            }
+
+            // Global variable to store selected plan ID for subscription/upgrade
+            let selectedPlanId = null;
+
+            // Subscription/Upgrade Plan Modal Functions
+            window.showSubscriptionPlans = async function() {
+                // Fetch available plans from the server
+                try {
+                    const response = await fetch('{{ route("api.pricing-plans") }}'); // API route for plans
+                    const plans = await response.json();
+
+                    const planSelectionGrid = document.getElementById('planSelectionGrid');
+                    planSelectionGrid.innerHTML = ''; // Clear previous plans
+
+                    if (plans.success && plans.plans.length > 0) {
+                        plans.plans.forEach(plan => {
+                            const planCard = document.createElement('div');
+                            planCard.className = 'plan-card-modal';
+                            planCard.dataset.planId = plan.id;
+                            planCard.innerHTML = `
+                                <div class="plan-name">${plan.name}</div>
+                                <div class="plan-price">${plan.formatted_price}</div>
+                                <div class="plan-period">/${plan.period}</div>
+                                <p class="plan-description">${plan.description}</p>
+                                <ul class="plan-features-list">
+                                    ${plan.features.map(feature => `
+                                        <li>
+                                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                            </svg>
+                                            ${feature}
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                                <div class="selected-indicator">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
                             `;
+                            planCard.addEventListener('click', () => selectPlan(plan.id, planCard));
+                            planSelectionGrid.appendChild(planCard);
                         });
-                        tableHtml += `</tbody></table>`;
-                        billingHistoryContent.innerHTML = tableHtml;
                     } else {
-                        billingHistoryContent.innerHTML = '<p class="no-history-message">No billing history available.</p>';
+                        planSelectionGrid.innerHTML = '<p class="text-center text-gray-500">No pricing plans available.</p>';
                     }
 
-                    openModal('manageSubscriptionModal');
-                } else {
-                    showNotification(subscriptionData.message || 'Failed to load subscription details.', 'error');
+                    document.getElementById('subscribeUpgradeModalTitle').textContent = 'Choose Your Plan';
+                    document.getElementById('subscribeUpgradeModalDescription').textContent = 'Unlock premium features and content with a subscription plan.';
+                    openModal('subscribeUpgradeModal');
+                } catch (error) {
+                    console.error('Error fetching plans:', error);
+                    showNotification('Failed to load pricing plans. Please try again.', 'error');
                 }
-            } catch (error) {
-                console.error('Error fetching subscription details:', error);
-                showNotification('An error occurred while loading subscription details. Please try again.', 'error');
-            }
-        }
-
-        async function confirmCancelSubscription() {
-            if (!confirm('Are you sure you want to cancel your subscription? Your access will continue until the end of the current billing period.')) {
-                return;
             }
 
-            try {
-                const response = await fetch('{{ route("api.cancel-subscription") }}', { // API to cancel subscription
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({}) // No specific data needed for cancellation
+            window.showUpgradeModal = function() {
+                // This function is called when a user on a trial wants to upgrade.
+                // It should behave similarly to showSubscriptionPlans but might highlight upgrade options.
+                // For simplicity, we'll reuse showSubscriptionPlans for now.
+                showSubscriptionPlans();
+                document.getElementById('subscribeUpgradeModalTitle').textContent = 'Upgrade Your Plan';
+                document.getElementById('subscribeUpgradeModalDescription').textContent = 'Select a new plan to upgrade your subscription.';
+            }
+
+            window.showChangePlanModal = function() {
+                // This function is called when a user with an active subscription wants to change plans.
+                // It should filter out the current plan and allow selection of others.
+                showSubscriptionPlans(); // Reusing for now, but could be more specific
+                document.getElementById('subscribeUpgradeModalTitle').textContent = 'Change Your Plan';
+                document.getElementById('subscribeUpgradeModalDescription').textContent = 'Switch to a different plan that better suits your needs.';
+            }
+
+            function selectPlan(planId, planCard) {
+                const currentSelected = document.querySelector('.plan-card-modal.selected');
+                if (currentSelected) {
+                    currentSelected.classList.remove('selected');
+                }
+                planCard.classList.add('selected');
+                selectedPlanId = planId;
+                document.getElementById('confirmPlanSelectionBtn').disabled = false;
+            }
+
+            window.confirmPlanSelection = async function(event) {
+                if (!selectedPlanId) {
+                    showNotification('Please select a plan first.', 'error');
+                    return;
+                }
+
+                const submitBtn = event.target;
+                const btnText = submitBtn.querySelector('.btn-text');
+                const btnLoading = submitBtn.querySelector('.btn-loading');
+
+                submitBtn.disabled = true;
+                btnText.style.display = 'none';
+                btnLoading.style.display = 'inline-flex';
+
+                try {
+                    const response = await fetch('{{ route("api.subscribe") }}', { // API route for subscription
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ plan_id: selectedPlanId })
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        closeModal('subscribeUpgradeModal');
+                        showNotification(data.message || 'Subscription successful!', 'success');
+                        setTimeout(() => location.reload(), 2000);
+                    } else {
+                        showNotification(data.message || 'Failed to process subscription.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error during plan selection:', error);
+                    showNotification('An error occurred during subscription. Please try again.', 'error');
+                } finally {
+                    submitBtn.disabled = false;
+                    btnText.style.display = 'inline';
+                    btnLoading.style.display = 'none';
+                }
+            }
+
+            // Manage Subscription Modal Functions
+            window.showManageSubscriptionModal = async function() {
+                try {
+                    const response = await fetch('{{ route("api.current-subscription") }}'); // API to get current subscription details
+                    const subscriptionData = await response.json();
+
+                    if (subscriptionData.success && subscriptionData.subscription) {
+                        const sub = subscriptionData.subscription;
+                        const plan = sub.pricing_plan;
+
+                        document.getElementById('currentPlanName').textContent = plan.name;
+                        document.getElementById('currentPlanPrice').textContent = `${plan.formatted_price}/${plan.period}`;
+                        
+                        const statusBadge = document.getElementById('currentPlanStatus');
+                        statusBadge.textContent = sub.status.charAt(0).toUpperCase() + sub.status.slice(1);
+                        statusBadge.className = `status-badge status-${sub.status}`;
+
+                        if (sub.is_in_trial) {
+                            document.getElementById('currentPlanTrialInfo').textContent = `Your trial expires in ${sub.trial_days_remaining} days on ${sub.trial_ends_at_formatted}`;
+                            document.getElementById('currentPlanExpiry').textContent = ''; // Clear expiry if trial
+                        } else if (sub.expires_at_formatted) {
+                            document.getElementById('currentPlanExpiry').textContent = `Next Billing Date: ${sub.expires_at_formatted} (${sub.days_remaining} days)`;
+                            document.getElementById('currentPlanTrialInfo').textContent = ''; // Clear trial if not trial
+                        } else {
+                            document.getElementById('currentPlanExpiry').textContent = '';
+                            document.getElementById('currentPlanTrialInfo').textContent = '';
+                        }
+
+                        // Populate billing history
+                        const billingHistoryContent = document.getElementById('billingHistoryContent');
+                        if (sub.billing_history && sub.billing_history.length > 0) {
+                            let tableHtml = `
+                                <table class="billing-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Description</th>
+                                            <th class="text-right">Amount</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                            `;
+                            sub.billing_history.forEach(item => {
+                                tableHtml += `
+                                    <tr>
+                                        <td>${item.date}</td>
+                                        <td>${item.description}</td>
+                                        <td class="text-right">${item.currency} ${item.amount}</td>
+                                        <td><span class="status-badge status-${item.status.toLowerCase()}">${item.status}</span></td>
+                                    </tr>
+                                `;
+                            });
+                            tableHtml += `</tbody></table>`;
+                            billingHistoryContent.innerHTML = tableHtml;
+                        } else {
+                            billingHistoryContent.innerHTML = '<p class="no-history-message">No billing history available.</p>';
+                        }
+
+                        openModal('manageSubscriptionModal');
+                    } else {
+                        showNotification(subscriptionData.message || 'Failed to load subscription details.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error fetching subscription details:', error);
+                    showNotification('An error occurred while loading subscription details. Please try again.', 'error');
+                }
+            }
+
+            window.confirmCancelSubscription = async function() {
+                if (!confirm('Are you sure you want to cancel your subscription? Your access will continue until the end of the current billing period.')) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch('{{ route("api.cancel-subscription") }}', { // API to cancel subscription
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({}) // No specific data needed for cancellation
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        closeModal('manageSubscriptionModal');
+                        showNotification(data.message || 'Subscription cancelled successfully!', 'success');
+                        setTimeout(() => location.reload(), 2000);
+                    } else {
+                        showNotification(data.message || 'Failed to cancel subscription.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error during subscription cancellation:', error);
+                    showNotification('An error occurred during cancellation. Please try again.', 'error');
+                }
+            }
+
+            // Initialize modal functionality when page loads
+            document.addEventListener('DOMContentLoaded', () => {
+                // Initialize the phone input in the modal
+                initializeModalPhoneInput();
+            });
+
+            // Bind events without inline handlers to comply with CSP
+            const $ = (sel, ctx = document) => ctx.querySelector(sel);
+            const on = (el, ev, fn) => { if (el) el.addEventListener(ev, fn, false); };
+
+            // Avatar edit -> open file picker (REMOVED: duplicate event listener already exists in first script block)
+
+            // Country flag update
+            const countrySelect = $('#country');
+            if (countrySelect) {
+                on(countrySelect, 'change', function() {
+                    if (typeof window.updateFlag === 'function') {
+                        window.updateFlag(this);
+                    } else {
+                        const flagDisplay = this.parentElement.querySelector('.flag-display img');
+                        const opt = this.options[this.selectedIndex];
+                        const code = opt && opt.getAttribute('data-code');
+                        if (code && flagDisplay) flagDisplay.src = `https://flagcdn.com/w20/${code.toLowerCase()}.png`;
+                    }
                 });
-                const data = await response.json();
-
-                if (data.success) {
-                    closeModal('manageSubscriptionModal');
-                    showNotification(data.message || 'Subscription cancelled successfully!', 'success');
-                    setTimeout(() => location.reload(), 2000);
-                } else {
-                    showNotification(data.message || 'Failed to cancel subscription.', 'error');
-                }
-            } catch (error) {
-                console.error('Error during subscription cancellation:', error);
-                showNotification('An error occurred during cancellation. Please try again.', 'error');
             }
-        }
 
-        // Initialize modal functionality when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            // Initialize the phone input in the modal
-            initializeModalPhoneInput();
-        });
-    </script>
-<script nonce="{{ request()->attributes->get('csp_nonce') }}">
-    // Bind events without inline handlers to comply with CSP
-    document.addEventListener('DOMContentLoaded', function() {
-        const $ = (sel, ctx = document) => ctx.querySelector(sel);
-        const on = (el, ev, fn) => { if (el) el.addEventListener(ev, fn, false); };
+            // Top nav actions
+            on($('#changePasswordBtn'), 'click', () => (window.showPasswordChangeModal ? showPasswordChangeModal() : (window.showModal && showModal('passwordChangeModal'))));
+            on($('#deleteAccountBtn'), 'click', () => (window.showDeleteAccountModal ? showDeleteAccountModal() : (window.showModal && showModal('deleteAccountModal'))));
 
-        // Avatar edit -> open file picker
-        on($('#editAvatarBtn'), 'click', () => $('#avatarInput') && $('#avatarInput').click());
-
-        // Country flag update
-        const countrySelect = $('#country');
-        if (countrySelect) {
-            on(countrySelect, 'change', function() {
-                if (typeof window.updateFlag === 'function') {
-                    window.updateFlag(this);
-                } else {
-                    const flagDisplay = this.parentElement.querySelector('.flag-display img');
-                    const opt = this.options[this.selectedIndex];
-                    const code = opt && opt.getAttribute('data-code');
-                    if (code && flagDisplay) flagDisplay.src = `https://flagcdn.com/w20/${code.toLowerCase()}.png`;
-                }
-            });
-        }
-
-        // Top nav actions
-        on($('#changePasswordBtn'), 'click', () => (window.showPasswordChangeModal ? showPasswordChangeModal() : (window.showModal && showModal('passwordChangeModal'))));
-        on($('#deleteAccountBtn'), 'click', () => (window.showDeleteAccountModal ? showDeleteAccountModal() : (window.showModal && showModal('deleteAccountModal'))));
-
-        // Helper to bind by id to a global function name
-        const bindBtn = (id, fnName) => {
-            const el = $('#' + id);
-            if (!el) return;
-            on(el, 'click', (e) => {
-                if (fnName.startsWith('submit')) e.preventDefault();
-                if (typeof window[fnName] === 'function') {
-                    window[fnName](e);
-                } else {
-                    switch (fnName) {
-                        case 'showPhoneVerificationModal':
-                            return window.showModal && showModal('phoneVerificationModal');
-                        case 'showPhoneUpdateModal':
-                            return window.showModal && showModal('phoneUpdateModal');
-                        case 'confirmCancelSubscription':
-                        case 'confirmPlanSelection':
-                        case 'submitPhoneUpdate':
-                        case 'submitPhoneVerification':
-                        case 'submitPasswordChange':
-                        case 'submitDeleteAccount':
-                            console.warn(fnName + ' is not implemented');
-                            break;
-                        default:
-                            break;
+            // Helper to bind by id to a global function name
+            const bindBtn = (id, fnName) => {
+                const el = $('#' + id);
+                if (!el) return;
+                on(el, 'click', (e) => {
+                    if (fnName.startsWith('submit')) e.preventDefault();
+                    if (typeof window[fnName] === 'function') {
+                        window[fnName](e);
+                    } else {
+                        switch (fnName) {
+                            case 'showPhoneVerificationModal':
+                                return window.showModal && showModal('phoneVerificationModal');
+                            case 'showPhoneUpdateModal':
+                                return window.showModal && showModal('phoneUpdateModal');
+                            case 'confirmCancelSubscription':
+                            case 'confirmPlanSelection':
+                            case 'submitPhoneUpdate':
+                            case 'submitPhoneVerification':
+                            case 'submitPasswordChange':
+                            case 'submitDeleteAccount':
+                                console.warn(fnName + ' is not implemented');
+                                break;
+                            default:
+                                break;
+                        }
                     }
+                });
+            };
+
+            // Phone actions
+            bindBtn('verifyCurrentNumberBtn', 'showPhoneVerificationModal');
+            bindBtn('updateNumberBtn', 'showPhoneUpdateModal');
+            bindBtn('addPhoneBtn', 'showPhoneUpdateModal');
+            bindBtn('removePhoneBtn', 'removePhoneNumber');
+
+            // Phone update modal
+            bindBtn('submitPhoneUpdateBtn', 'submitPhoneUpdate');
+            on($('#cancelPhoneUpdateBtn'), 'click', () => window.closeModal && closeModal('phoneUpdateModal'));
+
+            // Phone verification modal
+            bindBtn('submitPhoneVerifyBtn', 'submitPhoneVerification');
+            on($('#cancelPhoneVerifyBtn'), 'click', () => window.closeModal && closeModal('phoneVerificationModal'));
+            on($('#resendVerificationBtn'), 'click', () => window.resendVerificationCode && resendVerificationCode());
+
+            // Password change modal
+            bindBtn('submitPasswordChangeBtn', 'submitPasswordChange');
+            on($('#cancelPasswordChangeBtn'), 'click', () => window.closeModal && closeModal('passwordChangeModal'));
+
+            // Delete account modal
+            bindBtn('confirmDeleteBtn', 'submitDeleteAccount');
+            on($('#cancelDeleteAccountBtn'), 'click', () => window.closeModal && closeModal('deleteAccountModal'));
+
+            // Subscription actions
+            on($('#manageSubscriptionBtn'), 'click', () => window.showManageSubscriptionModal ? showManageSubscriptionModal() : (window.showModal && showModal('manageSubscriptionModal')));
+            on($('#subscribeNowBtn'), 'click', () => window.showSubscriptionPlans ? showSubscriptionPlans() : (window.showModal && showModal('subscribeUpgradeModal')));
+            on($('#cancelSubscribeUpgradeBtn'), 'click', () => window.closeModal && closeModal('subscribeUpgradeModal'));
+            bindBtn('confirmPlanSelectionBtn', 'confirmPlanSelection');
+            on($('#closeManageSubscriptionBtn'), 'click', () => window.closeModal && closeModal('manageSubscriptionModal'));
+            on($('#changePlanBtn'), 'click', () => window.showChangePlanModal ? showChangePlanModal() : (window.showModal && showModal('subscribeUpgradeModal')));
+            on($('#confirmCancelSubscriptionBtn'), 'click', () => window.confirmCancelSubscription && confirmCancelSubscription());
+
+            // Toast close
+            on($('#toastCloseBtn'), 'click', hideNotification);
+
+            // Cancel changes
+            on($('#cancelChangesBtn'), 'click', function() {
+                if (typeof window.cancelChanges === 'function') return cancelChanges();
+                if (confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                    const form = $('#profileForm');
+                    if (form) form.reset();
                 }
             });
-        };
 
-        // Phone actions
-        bindBtn('verifyCurrentNumberBtn', 'showPhoneVerificationModal');
-        bindBtn('updateNumberBtn', 'showPhoneUpdateModal');
-        bindBtn('addPhoneBtn', 'showPhoneUpdateModal');
-        bindBtn('removePhoneBtn', 'removePhoneNumber');
-
-        // Phone update modal
-        bindBtn('submitPhoneUpdateBtn', 'submitPhoneUpdate');
-        on($('#cancelPhoneUpdateBtn'), 'click', () => window.closeModal && closeModal('phoneUpdateModal'));
-
-        // Phone verification modal
-        bindBtn('submitPhoneVerifyBtn', 'submitPhoneVerification');
-        on($('#cancelPhoneVerifyBtn'), 'click', () => window.closeModal && closeModal('phoneVerificationModal'));
-        on($('#resendVerificationBtn'), 'click', () => window.resendVerificationCode && resendVerificationCode());
-
-        // Password change modal
-        bindBtn('submitPasswordChangeBtn', 'submitPasswordChange');
-        on($('#cancelPasswordChangeBtn'), 'click', () => window.closeModal && closeModal('passwordChangeModal'));
-
-        // Delete account modal
-        bindBtn('confirmDeleteBtn', 'submitDeleteAccount');
-        on($('#cancelDeleteAccountBtn'), 'click', () => window.closeModal && closeModal('deleteAccountModal'));
-
-        // Subscription actions
-        on($('#manageSubscriptionBtn'), 'click', () => window.showManageSubscriptionModal ? showManageSubscriptionModal() : (window.showModal && showModal('manageSubscriptionModal')));
-        on($('#subscribeNowBtn'), 'click', () => window.showSubscriptionPlans ? showSubscriptionPlans() : (window.showModal && showModal('subscribeUpgradeModal')));
-        on($('#cancelSubscribeUpgradeBtn'), 'click', () => window.closeModal && closeModal('subscribeUpgradeModal'));
-        bindBtn('confirmPlanSelectionBtn', 'confirmPlanSelection');
-        on($('#closeManageSubscriptionBtn'), 'click', () => window.closeModal && closeModal('manageSubscriptionModal'));
-        on($('#changePlanBtn'), 'click', () => window.showChangePlanModal ? showChangePlanModal() : (window.showModal && showModal('subscribeUpgradeModal')));
-        on($('#confirmCancelSubscriptionBtn'), 'click', () => window.confirmCancelSubscription && confirmCancelSubscription());
-
-        // Toast close
-        on($('#toastCloseBtn'), 'click', hideNotification);
-
-        // Cancel changes
-        on($('#cancelChangesBtn'), 'click', function() {
-            if (typeof window.cancelChanges === 'function') return cancelChanges();
-            if (confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-                const form = $('#profileForm');
-                if (form) form.reset();
-            }
+            // User dropdown toggle
+            const userToggle = $('#userDropdownToggle');
+            const userMenu = $('#userDropdownMenu');
+            on(userToggle, 'click', () => userMenu && userMenu.classList.toggle('active'));
+            document.addEventListener('click', (e) => {
+                if (!userMenu || !userToggle) return;
+                if (!userMenu.contains(e.target) && !userToggle.contains(e.target)) userMenu.classList.remove('active');
+            });
         });
-
-        // User dropdown toggle
-        const userToggle = $('#userDropdownToggle');
-        const userMenu = $('#userDropdownMenu');
-        on(userToggle, 'click', () => userMenu && userMenu.classList.toggle('active'));
-        document.addEventListener('click', (e) => {
-            if (!userMenu || !userToggle) return;
-            if (!userMenu.contains(e.target) && !userToggle.contains(e.target)) userMenu.classList.remove('active');
-        });
-    });
-
-    function hideNotification() {
-        const toast = document.getElementById('notificationToast');
-        if (toast) toast.classList.remove('show');
-    }
+        
+        function hideNotification() {
+            const toast = document.getElementById('notificationToast');
+            if (toast) toast.classList.remove('show');
+        }
     </script>
 </body>
 </html>

@@ -224,10 +224,20 @@ document.addEventListener('DOMContentLoaded', function() {
     countrySelector = new CountrySelector();
 
     // Initialize main phone input country selector
-    countrySelector.init('countryCodeBtn');
+    const mainContainer = document.querySelector('.phone-input-container, .country-input-container');
+    if (mainContainer) {
+        countrySelector.init('countryCodeBtn', {
+            initialCountry: 'gh'
+        });
+    }
 
     // Initialize modal country selector if it exists
-    countrySelector.init('modalCountryCodeBtn');
+    const modalContainer = document.getElementById('modalCountryCodeBtn');
+    if (modalContainer) {
+        countrySelector.init('modalCountryCodeBtn', {
+            initialCountry: 'gh'
+        });
+    }
 
     // Update flag function for backward compatibility
     window.updateFlag = function(select) {

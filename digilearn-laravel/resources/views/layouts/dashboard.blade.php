@@ -577,6 +577,52 @@
             </div>
             
             <nav class="sidebar-nav">
+        <!-- Top Header - Minimal with just notifications and user profile -->
+        <header class="top-header">
+            <div class="sidebar-toggle">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </div>
+
+            <div class="header-right">
+                <!-- Notification Dropdown -->
+                <div class="notification-dropdown">
+                    <button class="notification-btn" id="notificationToggle">
+                        <svg class="notification-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM15 7v5H9v-5H4V3h11v4z"/>
+                        </svg>
+                        <span class="notification-badge" id="notificationBadge">0</span>
+                    </button>
+
+                    <div class="notification-menu" id="notificationMenu">
+                        <div class="notification-header">
+                            <h3 class="notification-title">Notifications</h3>
+                            <button class="notification-mark-all" id="markAllReadBtn">Mark all read</button>
+                        </div>
+
+                        <div class="notification-body" id="notificationBody">
+                            <div class="notification-empty" id="notificationEmpty">
+                                <div class="notification-empty-icon">🔔</div>
+                                <div class="notification-empty-text">No notifications yet</div>
+                            </div>
+                        </div>
+
+                        <div class="notification-footer">
+                            <button class="notification-view-all" onclick="window.location.href='/profile'">
+                                View all notifications
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="header-divider"></div>
+
+                <div class="user-avatar">
+                    <span>{{ substr(auth()->user()->name, 0, 1) }}</span>
+                </div>
+            </div>
+        </header>
                 <div class="nav-item">
                     <a href="{{ route('dashboard.main') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                         <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -615,6 +661,15 @@
                 </div>
                 
                 <div class="nav-item">
+                    <a href="{{ route('dashboard.notifications') }}" class="nav-link {{ request()->routeIs('dashboard.notifications') ? 'active' : '' }}">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                        Notifications
+                    </a>
+                </div>
+
+                <div class="nav-item">
                     <a href="#" class="nav-link {{ request()->routeIs('dashboard.personalized') ? 'active' : '' }}">
                         <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
@@ -622,7 +677,7 @@
                         Personalized
                     </a>
                 </div>
-                
+
                 <div class="nav-item">
                     <a href="#" class="nav-link {{ request()->routeIs('dashboard.shop') ? 'active' : '' }}">
                         <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -310,10 +310,148 @@
             background-color: var(--gray-100);
         }
 
+        .notification-dropdown {
+            position: relative;
+        }
+
+        .notification-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: var(--white);
+            border-radius: 0.75rem;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--gray-200);
+            width: 380px;
+            max-width: 90vw;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .notification-dropdown-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .dropdown-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .notification-dropdown-menu .dropdown-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .notification-dropdown-menu .dropdown-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin: 0;
+        }
+
+        .mark-all-read {
+            background: none;
+            border: none;
+            color: var(--primary-red);
+            font-size: 0.875rem;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .notification-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .notification-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--gray-100);
+            transition: background-color 0.2s ease;
+        }
+
+        .notification-item:hover {
+            background: var(--gray-50);
+        }
+
+        .notification-item.unread {
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .notification-item.unread:hover {
+            background: rgba(59, 130, 246, 0.08);
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-content p {
+            margin: 0 0 0.25rem 0;
+            font-size: 0.875rem;
+            color: var(--gray-800);
+            line-height: 1.4;
+        }
+
+        .notification-time {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+        }
+
         .notification-icon {
             width: 20px;
             height: 20px;
+            stroke-width: 2;
+            border-radius: 50%;
+            background: var(--gray-100);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
             color: var(--gray-600);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: var(--primary-red);
+            color: var(--white);
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--white);
+        }
+
+        .dropdown-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--gray-200);
+            text-align: center;
+        }
+
+        .view-all {
+            color: var(--primary-red);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .view-all:hover {
+            text-decoration: underline;
         }
 
         .user-avatar {
@@ -1236,11 +1374,6 @@
             padding: 0.5rem;
         }
 
-        .notification-icon {
-            width: 18px;
-            height: 18px;
-        }
-
         /* Better tap targets for mobile */
         .sidebar-menu-item, .dropdown-option, .filter-button {
             cursor: pointer;
@@ -1325,6 +1458,13 @@
 
                 <div class="sidebar-section">
                     <div class="sidebar-section-title">Account</div>
+                    <a href="{{ route('dashboard.notifications') }}" class="sidebar-menu-item">
+                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                        <span class="sidebar-menu-text">Notifications</span>
+                        <div class="tooltip">Notifications</div>
+                    </a>
                     <a href="/profile" class="sidebar-menu-item">
                         <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
@@ -1374,13 +1514,48 @@
                 </div>
                 
                 <div class="header-right">
-                    <button class="notification-btn">
+                    <button class="notification-btn" id="notificationButton">
                         <svg class="notification-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v0.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                         </svg>
+                        <span class="notification-badge">{{ auth()->user()->unreadNotifications->count() }}</span>
                     </button>
+
+                    <!-- Notification dropdown in the header -->
+                        <div class="notification-dropdown">
+                            <div class="notification-dropdown-menu" id="notificationDropdown">
+                                <div class="dropdown-header">
+                                    <h3>Notifications</h3>
+                                    <button class="mark-all-read">Mark all as read</button>
+                                </div>
+                                <div class="notification-list">
+                                    <!-- Notifications will be populated here -->
+                                    <div class="notification-item unread">
+                                        <div class="notification-icon">
+                                            <i class="fas fa-user-plus"></i>
+                                        </div>
+                                        <div class="notification-content">
+                                            <p>New follower: John Doe started following you</p>
+                                            <span class="notification-time">2 hours ago</span>
+                                        </div>
+                                    </div>
+                                    <div class="notification-item">
+                                        <div class="notification-icon">
+                                            <i class="fas fa-trophy"></i>
+                                        </div>
+                                        <div class="notification-content">
+                                            <p>Congratulations! You completed the Math challenge</p>
+                                            <span class="notification-time">1 day ago</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dropdown-footer">
+                                    <a href="{{ route('dashboard.notifications') }}" class="view-all">View all notifications</a>
+                                </div>
+                            </div>
+                        </div>
                     
-                    <x-user-avatar :user="auth()->user()" :size="36" class="border-2 border-white" />
+                    <x-user-avatar :user="auth()->user()" :size="36" class="border-2 border-white"/>
                 </div>
             </div>
             
@@ -1702,25 +1877,25 @@
 
         // Add this new function to prevent scrolling on body when sidebar is open
         function preventBodyScroll() {
-        const youtubeSidebar = document.getElementById('youtubeSidebar');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-        
-        // Disable body scroll when mobile sidebar is open
-        if (youtubeSidebar && sidebarOverlay) {
-            youtubeSidebar.addEventListener('mouseenter', function() {
-            if (window.innerWidth <= 768 && this.classList.contains('mobile-open')) {
-                document.body.style.overflow = 'hidden';
+            const youtubeSidebar = document.getElementById('youtubeSidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            
+            // Disable body scroll when mobile sidebar is open
+            if (youtubeSidebar && sidebarOverlay) {
+                youtubeSidebar.addEventListener('mouseenter', function() {
+                if (window.innerWidth <= 768 && this.classList.contains('mobile-open')) {
+                    document.body.style.overflow = 'hidden';
+                }
+                });
+                
+                youtubeSidebar.addEventListener('mouseleave', function() {
+                document.body.style.overflow = '';
+                });
+                
+                sidebarOverlay.addEventListener('click', function() {
+                document.body.style.overflow = '';
+                });
             }
-            });
-            
-            youtubeSidebar.addEventListener('mouseleave', function() {
-            document.body.style.overflow = '';
-            });
-            
-            sidebarOverlay.addEventListener('click', function() {
-            document.body.style.overflow = '';
-            });
-        }
         }
         
         // Call the new function
@@ -1816,6 +1991,49 @@
                     document.body.style.overflow = '';
                 }
             });
+        }
+
+        // Notification dropdown functionality
+        const notificationButton = document.getElementById('notificationButton');
+        const notificationDropdown = document.getElementById('notificationDropdown');
+
+        if (notificationButton && notificationDropdown) {
+            notificationButton.addEventListener('click', function(e) {
+                e.stopPropagation();
+                notificationDropdown.classList.toggle('active');
+                
+                // Close user dropdown if open
+                const userDropdown = document.getElementById('userDropdownMenu');
+                if (userDropdown) {
+                    userDropdown.classList.remove('active');
+                }
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!notificationButton.contains(e.target) && !notificationDropdown.contains(e.target)) {
+                    notificationDropdown.classList.remove('active');
+                }
+            });
+
+            // Mark all as read functionality
+            const markAllReadBtn = notificationDropdown.querySelector('.mark-all-read');
+            if (markAllReadBtn) {
+                markAllReadBtn.addEventListener('click', function() {
+                    const unreadNotifications = notificationDropdown.querySelectorAll('.notification-item.unread');
+                    unreadNotifications.forEach(notification => {
+                        notification.classList.remove('unread');
+                    });
+                    
+                    // Update badge count
+                    const badge = notificationButton.querySelector('.notification-badge');
+                    if (badge) {
+                        badge.style.display = 'none';
+                    }
+                    
+                    showNotification('All notifications marked as read', 'success');
+                });
+            }
         }
 
         // Custom dropdown functionality

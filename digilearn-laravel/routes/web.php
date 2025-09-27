@@ -14,6 +14,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ProgressController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Auth\GoogleController;
 use Illuminate\Support\Facades\Redis;
@@ -90,7 +91,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/dashboard/lesson/{lessonId}/save', [DashboardController::class, 'saveLesson'])->name('dashboard.lesson.save');
     Route::delete('/dashboard/lesson/{lessonId}/unsave', [DashboardController::class, 'unsaveLesson'])->name('dashboard.lesson.unsave');
 
-// University years selection
+    // University years selection
     Route::get('/dashboard/university/years', [DashboardController::class, 'universityYears'])
         ->name('dashboard.university.years');
     
@@ -190,11 +191,37 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/join-class', [DashboardController::class, 'joinClass'])->name('dashboard.join-class');
     Route::get('/dashboard/classroom/{roomId}', [DashboardController::class, 'showClassroom'])->name('dashboard.classroom.show');
 
+    // Notifications
+    Route::get('/dashboard/notifications', [NotificationController::class, 'dashboardIndex'])->name('dashboard.notifications');
+
     //
-    Route::post('/ping', function (\Illuminate\Http\Request $request) {
+    Route::post('/ping', function ($request) {
         $request->user()->update(['last_activity_at' => now()]);
         return response()->json(['status' => 'updated']);
     })->name('ping');
+    // Notifications API
+    Route::prefix('api/notifications')->name('api.notifications.')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::get('/unread-count', [NotificationController::class, 'getUnreadCount'])->name('unread-count');
+        Route::put('/{notificationId}/read', [NotificationController::class, 'markAsRead'])->name('mark-read');
+        Route::put('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+        Route::delete('/{notificationId}', [NotificationController::class, 'destroy'])->name('destroy');
+        Route::get('/preferences', [NotificationController::class, 'getPreferences'])->name('preferences');
+        Route::put('/preferences', [NotificationController::class, 'updatePreferences'])->name('preferences.update');
+    });
+
+    // // Admin Notification Routes
+    // Route::middleware(['admin'])->prefix('admin/notifications')->name('admin.notifications.')->group(function () {
+    //     Route::get('/', [App\Http\Controllers\NotificationController::class, 'adminIndex'])->name('index');
+    //     Route::post('/send', [App\Http\Controllers\NotificationController::class, 'sendNotification'])->name('send');
+    //     Route::post('/system-announcement', [App\Http\Controllers\NotificationController::class, 'sendSystemAnnouncement'])->name('system-announcement');
+    //     Route::post('/targeted', [App\Http\Controllers\NotificationController::class, 'sendTargetedNotification'])->name('targeted');
+    //     Route::get('/types', [App\Http\Controllers\NotificationController::class, 'getNotificationTypes'])->name('types');
+    //     Route::post('/types', [App\Http\Controllers\NotificationController::class, 'createNotificationType'])->name('types.create');
+    //     Route::put('/types/{type}', [App\Http\Controllers\NotificationController::class, 'updateNotificationType'])->name('types.update');
+    //     Route::delete('/types/{type}', [App\Http\Controllers\NotificationController::class, 'deleteNotificationType'])->name('types.delete');
+    //     Route::post('/types/{type}/toggle', [App\Http\Controllers\NotificationController::class, 'toggleNotificationType'])->name('types.toggle');
+    // });
 });
 
 /*
@@ -260,6 +287,16 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::delete('/{document}', [AdminController::class, 'destroyDocument'])->name('destroy');
         Route::post('/{document}/toggle-feature', [AdminController::class, 'toggleDocumentFeature'])->name('toggle-feature');
     });
+
+    Route::get('notifications/', [NotificationController::class, 'adminIndex'])->name('notifications.index');
+        Route::post('notifications/send', [NotificationController::class, 'sendNotification'])->name('notifications.send');
+        Route::post('notifications/system-announcement', [NotificationController::class, 'sendSystemAnnouncement'])->name('notifications.system-announcement');
+        Route::post('notifications/targeted', [NotificationController::class, 'sendTargetedNotification'])->name('notifications.targeted');
+        Route::get('notifications/types', [NotificationController::class, 'getNotificationTypes'])->name('notifications.types');
+        Route::post('notifications/types', [NotificationController::class, 'createNotificationType'])->name('notifications.types.create');
+        Route::put('notifications/types/{type}', [NotificationController::class, 'updateNotificationType'])->name('notifications.types.update');
+        Route::delete('notifications/types/{type}', [NotificationController::class, 'deleteNotificationType'])->name('notifications.types.delete');
+        Route::post('notifications/types/{type}/toggle', [NotificationController::class, 'toggleNotificationType'])->name('notifications.types.toggle');
 });
 
 /*

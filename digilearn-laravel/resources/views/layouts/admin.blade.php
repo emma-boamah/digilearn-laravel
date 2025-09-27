@@ -93,14 +93,23 @@
             background-color: var(--gray-900);
             color: var(--white);
             width: 16rem;
-            min-height: 100vh;
+            /* Made sidebar fixed position and full height */
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            overflow-y: auto;
             padding: 1rem;
-            position: relative;
             transition: all 0.3s ease-in-out;
+            z-index: 40;
         }
 
         .sidebar.collapsed {
             width: 4rem;
+        }
+
+        .sidebar.collapsed + .main-content {
+            margin-left: 4rem;
         }
 
         .sidebar-link-text {
@@ -250,6 +259,8 @@
             overflow-x: hidden;
             overflow-y: auto;
             background-color: var(--gray-50);
+            margin-left: 16rem;
+            transition: margin-left 0.3s ease-in-out;
         }
 
         .content-wrapper {
@@ -488,6 +499,10 @@
             .sidebar-link-text {
                 display: none;
             }
+
+            .main-content {
+                margin-left: 4rem;
+            }
         }
     </style>
     @stack('styles')
@@ -519,6 +534,12 @@
                 <a href="{{ route('admin.users') }}" class="nav-link {{ request()->routeIs('admin.users*') ? 'active' : '' }}">
                     <i class="fas fa-users"></i>
                     <span class="sidebar-link-text">Users</span>
+                </a>
+
+                <!-- Added notifications link to sidebar -->
+                <a href="{{ route('admin.notifications.index') }}" class="nav-link {{ request()->routeIs('admin.notifications*') ? 'active' : '' }}">
+                    <i class="fas fa-bell"></i>
+                    <span class="sidebar-link-text">Notifications</span>
                 </a>
 
                 <!-- Content Management Dropdown -->
@@ -627,10 +648,7 @@
                             <!-- User Menu -->
                             <div class="dropdown" id="userDropdown">
                                 <button id="userDropdownBtn" class="flex items-center user-dropdown-btn">
-                                    <div class="avatar">
-                                        <span>{{ substr(Auth::user()->name, 0, 1) }}</span>
-                                    </div>
-                                    <span class="ml-2 user-name">{{ Auth::user()->name }}</span>
+                                    <x-user-avatar :user="auth()->user()" :size="30" id="user-avatar" />
                                 </button>
 
                                 <div class="dropdown-menu">
@@ -736,6 +754,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.querySelector('.sidebar');
             const sidebarToggle = document.querySelector('#sidebar-toggle');
+            const mainContent = document.querySelector('.main-content');
 
             if (sidebarToggle) {
                 sidebarToggle.addEventListener('click', function() {
@@ -744,6 +763,13 @@
                     icon.classList.toggle('fa-chevron-left');
                     icon.classList.toggle('fa-chevron-right');
                 });
+
+                // Adjust main content margin when sidebar toggles 
+                if (sidebar.classList.contains('collapsed')) {
+                    mainContent.style.marginLeft = '4rem';
+                } else {
+                    mainContent.style.marginLeft = '16rem';
+                }
             }
 
             // Initialize content dropdown state based on current route

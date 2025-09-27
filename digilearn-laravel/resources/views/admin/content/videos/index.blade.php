@@ -5,7 +5,7 @@
 @section('page-description', 'Upload, edit, and organize educational videos with modern drag & drop interface.')
 
 @section('content')
-<style>
+<style nonce="{{ request()->attributes->get('csp_nonce') }}">
     /* Added custom CSS with blue, red, white color scheme for video management */
     .video-container {
         max-width: 80rem;

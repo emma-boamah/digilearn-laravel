@@ -55,6 +55,7 @@ return [
             'blob:',
             'https://*.googleusercontent.com',
             'https://images.unsplash.com',
+            'https://via.placeholder.com',
             'https://flagcdn.com',
             'https://www.shoutoutgh.com',
             'https://ui-avatars.com', // For user avatars
@@ -87,6 +88,8 @@ return [
             'https://cdn.quilljs.com',
             'https://cdn.tailwindcss.com',
             'https://cdnjs.cloudflare.com',
+            'https://via.placeholder.com',
+            'https://ipapi.co',
             'http://localhost',
             'http://127.0.0.1',
         ],

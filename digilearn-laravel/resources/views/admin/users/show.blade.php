@@ -503,6 +503,84 @@
     </div>
 </div>
 
+<!-- Send User Notification Modal -->
+<div class="modal fade" id="sendUserNotificationModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Send Notification to {{ $user->name }}</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+
+            <form id="sendUserNotificationForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Notification Type</label>
+                        <select class="form-control" name="notification_type_id" id="userNotificationTypeSelect" required>
+                            <option value="">Select notification type...</option>
+                            @foreach(\App\Models\NotificationType::active()->get() ?? [] as $type)
+                            <option value="{{ $type->id }}" data-channels="{{ json_encode($type->default_channels ?? ['database']) }}">
+                                {{ $type->name }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input type="text" class="form-control" name="title" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Message</label>
+                        <textarea class="form-control" name="message" rows="3" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>URL (optional)</label>
+                        <input type="url" class="form-control" name="url" placeholder="https://...">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Delivery Channels</label>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="custom-control custom-checkbox">
+                                    <input class="custom-control-input" type="checkbox" name="channels[]" value="database" id="userDatabase" checked>
+                                    <label class="custom-control-label" for="userDatabase">In-App</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="custom-control custom-checkbox">
+                                    <input class="custom-control-input" type="checkbox" name="channels[]" value="mail" id="userMail">
+                                    <label class="custom-control-label" for="userMail">Email</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="custom-control custom-checkbox">
+                                    <input class="custom-control-input" type="checkbox" name="channels[]" value="broadcast" id="userBroadcast">
+                                    <label class="custom-control-label" for="userBroadcast">Real-time</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info" id="userNotificationPreview">
+                        <strong>Preview:</strong> Select a notification type to see preview
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Send Notification</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- IP Lookup Modal -->
 <div id="ipLookupModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
@@ -614,9 +692,50 @@
     }
 
     function sendMessage() {
-        // Implement message sending functionality
-        alert('Message functionality would be implemented here');
+        // Open the send notification modal
+        $('#sendUserNotificationModal').modal('show');
     }
+
+    // Handle user notification form submission
+    $('#sendUserNotificationForm').submit(function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        formData.append('user_ids', ['{{ $user->id }}']); // Send to this specific user
+
+        $.ajax({
+            url: '{{ route("admin.notifications.send") }}',
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(data) {
+                if (data.success) {
+                    toastr.success('Notification sent successfully!');
+                    $('#sendUserNotificationModal').modal('hide');
+                    $('#sendUserNotificationForm')[0].reset();
+                } else {
+                    toastr.error(data.message || 'Failed to send notification');
+                }
+            },
+            error: function() {
+                toastr.error('An error occurred while sending the notification');
+            }
+        });
+    });
+
+    // Update preview when notification type changes for user modal
+    $('#userNotificationTypeSelect').change(function() {
+        const selectedOption = $(this).find('option:selected');
+        const channels = selectedOption.data('channels');
+
+        if (channels) {
+            $('#userNotificationPreview').html(`<strong>Preview:</strong> This notification will be sent via: ${channels.join(', ')}`);
+        }
+    });
 
     function resetPassword() {
         if (confirm('Are you sure you want to reset this user\'s password?')) {
