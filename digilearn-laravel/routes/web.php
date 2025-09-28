@@ -266,6 +266,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/{video}/reject', [AdminController::class, 'rejectVideo'])->name('reject');
         Route::get('/{video}/preview', [AdminController::class, 'previewVideo'])->name('preview');
         Route::get('/{video}/stream', [App\Http\Controllers\VideoStreamController::class, 'stream'])->name('stream');
+
+        // Video verification route
+        Route::post('/{video}/verify', [AdminController::class, 'verifyVideoUpload'])
+            ->name('admin.content.videos.verify');
     });
 
     // Content Management - Quizzes
@@ -286,6 +290,20 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::put('/{document}', [AdminController::class, 'updateDocument'])->name('update');
         Route::delete('/{document}', [AdminController::class, 'destroyDocument'])->name('destroy');
         Route::post('/{document}/toggle-feature', [AdminController::class, 'toggleDocumentFeature'])->name('toggle-feature');
+    });
+
+    // Content Management - Courses
+    Route::prefix('content/courses')->name('content.courses.')->group(function () {
+        Route::get('/', [App\Http\Controllers\CourseController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\CourseController::class, 'create'])->name('create');
+        Route::post('/', [App\Http\Controllers\CourseController::class, 'store'])->name('store');
+        Route::get('/{course}', [App\Http\Controllers\CourseController::class, 'show'])->name('show');
+        Route::get('/{course}/edit', [App\Http\Controllers\CourseController::class, 'edit'])->name('edit');
+        Route::put('/{course}', [App\Http\Controllers\CourseController::class, 'update'])->name('update');
+        Route::delete('/{course}', [App\Http\Controllers\CourseController::class, 'destroy'])->name('destroy');
+        Route::post('/{course}/toggle-feature', [App\Http\Controllers\CourseController::class, 'toggleFeature'])->name('toggle-feature');
+        Route::post('/{course}/change-status', [App\Http\Controllers\CourseController::class, 'changeStatus'])->name('change-status');
+        Route::get('/{course}/content', [App\Http\Controllers\CourseController::class, 'getContent'])->name('content');
     });
 
     Route::get('notifications/', [NotificationController::class, 'adminIndex'])->name('notifications.index');
@@ -338,3 +356,12 @@ Route::post('/csp-report', function (Request $request) {
     ]);
     return response()->noContent();
 })->withoutMiddleware([VerifyCsrfToken::class]);
+
+/*
+|--------------------------------------------------------------------------
+| Mux Webhook Endpoint
+|--------------------------------------------------------------------------
+*/
+Route::post('/webhooks/mux', [App\Http\Controllers\MuxWebhookController::class, 'handleWebhook'])
+    ->withoutMiddleware([VerifyCsrfToken::class])
+    ->name('webhooks.mux');

@@ -564,6 +564,10 @@
                             <i class="fas fa-file-alt icon-small"></i>
                             Manage Documents
                         </a>
+                        <a href="{{ route('admin.content.courses.index') }}" class="nav-link {{ request()->routeIs('admin.content.courses*') ? 'active content-item-active' : 'content-item-inactive' }}">
+                            <i class="fas fa-graduation-cap icon-small"></i>
+                            Manage Courses
+                        </a>
                     </div>
                 </div>
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Video extends Model
 {
@@ -119,19 +120,48 @@ class Video extends Model
      */
     public function getVideoUrl()
     {
-        if ($this->isApproved() && $this->vimeo_id) {
-            return "https://player.vimeo.com/video/{$this->vimeo_id}";
+        // Priority: Mux > Vimeo > Local files
+        if ($this->isApproved()) {
+            if ($this->mux_playback_id) {
+                return "https://stream.mux.com/{$this->mux_playback_id}.m3u8";
+            }
+
+            if ($this->vimeo_id) {
+                return "https://player.vimeo.com/video/{$this->vimeo_id}";
+            }
         }
-        
+
         // Use streaming route for better browser compatibility
         if ($this->temp_file_path && !$this->isTempExpired()) {
             return route('admin.content.videos.stream', $this);
         }
-        
+
         if ($this->video_path) {
             return route('admin.content.videos.stream', $this);
         }
-        
+
+        return null;
+    }
+
+    /**
+     * Get Mux video URL
+     */
+    public function getMuxUrl()
+    {
+        if ($this->mux_playback_id) {
+            return "https://stream.mux.com/{$this->mux_playback_id}.m3u8";
+        }
+        return null;
+    }
+
+    /**
+     * Get Mux MP4 download URL
+     */
+    public function getMuxMp4Url()
+    {
+        if ($this->mux_playback_id) {
+            return "https://stream.mux.com/{$this->mux_playback_id}/low.mp4";
+        }
         return null;
     }
 
@@ -157,7 +187,7 @@ class Video extends Model
      */
     public function deleteFiles()
     {
-        $disk = \Storage::disk('public');
+        $disk = Storage::disk('public');
         
         // Delete main video file
         if ($this->video_path && $disk->exists($this->video_path)) {

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Storage;
 use Exception;
 
 class VimeoService
@@ -14,6 +15,10 @@ class VimeoService
     public function __construct()
     {
         $this->accessToken = config('services.vimeo.access_token');
+
+        if (empty($this->accessToken)) {
+            throw new Exception('Vimeo access token is not configured.');
+        }
     }
 
     /**
@@ -22,43 +27,61 @@ class VimeoService
     public function uploadVideo($filePath, $title, $description = null)
     {
         try {
-            // Step 1: Create video entry
-            $videoData = $this->createVideoEntry($title, $description);
-            
-            if (!$videoData) {
-                throw new Exception('Failed to create video entry on Vimeo');
+            Log::info('Starting Vimeo upload process', ['file_path' => $filePath, 'title' => $title]);
+
+            // Validate file existence
+            $fullPath = storage_path('app/public/' . $filePath);
+            if (!file_exists($fullPath)) {
+                throw new Exception("Video file not found: {$fullPath}");
             }
 
+            // Get the file size
+            $fileSize = filesize($fullPath);
+            Log::info('File details', ['path' => $fullPath, 'size' => $fileSize]);
+
+            // Step 1: Create video entry on Vimeo
+            $videoData = $this->createVideoEntry($title, $fileSize, $description);
+            
+            if (!$videoData || !isset($videoData['upload']['upload_link'])) {
+                throw new Exception('Failed to create video entry on Vimeo: ' . ($videoData['error'] ?? 'Unknown error'));
+            }
+
+            Log::info('Video entry created', ['uri' => $videoData['uri']]);
+
             // Step 2: Upload the actual video file
-            $uploadSuccess = $this->uploadVideoFile($videoData['upload']['upload_link'], $filePath);
+            $uploadSuccess = $this->uploadVideoFile($videoData['upload']['upload_link'], $fullPath);
             
             if (!$uploadSuccess) {
                 throw new Exception('Failed to upload video file to Vimeo');
             }
 
-            // Step 3: Complete the upload
-            $completeSuccess = $this->completeUpload($videoData['uri']);
+            Log::info('Video file uploaded successfully');
+
+            // Step 3: Verify the upload was successful
+            $videoId = str_replace('/videos/', '', $videoData['uri']);
+            $verification = $this->verifyVideoUpload($videoId);
             
-            if (!$completeSuccess) {
-                throw new Exception('Failed to complete video upload on Vimeo');
+            if (!$verification['success']) {
+                throw new Exception('Video upload verification failed: ' . ($verification['error'] ?? 'Unknown error'));
             }
 
-            // Extract video ID from URI (e.g., "/videos/123456789" -> "123456789")
-            $videoId = str_replace('/videos/', '', $videoData['uri']);
+            Log::info('Video upload verified', ['videoId' => $videoId, 'status' => $verification['status']]);
 
             return [
                 'success' => true,
                 'video_id' => $videoId,
                 'embed_url' => "https://player.vimeo.com/video/{$videoId}",
                 'vimeo_url' => "https://vimeo.com/{$videoId}",
-                'uri' => $videoData['uri']
+                'uri' => $videoData['uri'],
+                'status' => $verification['status']
             ];
 
         } catch (Exception $e) {
             Log::error('Vimeo upload failed', [
                 'error' => $e->getMessage(),
                 'file_path' => $filePath,
-                'title' => $title
+                'title' => $title,
+                'trace' => $e->getTraceAsString()
             ]);
 
             return [
@@ -71,71 +94,140 @@ class VimeoService
     /**
      * Create video entry on Vimeo
      */
-    private function createVideoEntry($title, $description = null)
+    private function createVideoEntry($title, $description = null, $fileSize)
     {
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->accessToken,
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/vnd.vimeo.*+json;version=3.4'
-        ])->post($this->baseUrl . '/me/videos', [
-            'upload' => [
-                'approach' => 'post',
-                'size' => filesize(storage_path('app/public/' . ltrim($filePath, 'storage/')))
-            ],
-            'name' => $title,
-            'description' => $description,
-            'privacy' => [
-                'view' => 'unlisted' // or 'anybody', 'nobody', 'contacts', 'password'
-            ]
-        ]);
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->accessToken,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/vnd.vimeo.*+json;version=3.4'
+            ])->post($this->baseUrl . '/me/videos', [
+                'upload' => [
+                    'approach' => 'tus', // Use tus for resumable uploads
+                    'size' => $fileSize
+                ],
+                'name' => $title,
+                'description' => $description,
+                'privacy' => [
+                    'view' => 'unlisted'
+                ]
+            ]);
 
-        if ($response->successful()) {
-            return $response->json();
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            $errorResponse = $response->json();
+            Log::error('Failed to create Vimeo video entry', [
+                'status' => $response->status(),
+                'response' => $errorResponse,
+                'headers' => $response->headers()
+            ]);
+
+            return [
+                'error' => $errorResponse['error'] ?? 'HTTP ' . $response->status()
+            ];
+
+        } catch (Exception $e) {
+            Log::error('Exception creating Vimeo video entry', ['error' => $e->getMessage()]);
+            return ['error' => $e->getMessage()];
         }
-
-        Log::error('Failed to create Vimeo video entry', [
-            'status' => $response->status(),
-            'response' => $response->body()
-        ]);
-
-        return null;
     }
 
     /**
      * Upload video file to Vimeo
      */
-    private function uploadVideoFile($uploadUrl, $filePath)
+    private function uploadVideoFile($uploadUrl, $fullPath)
     {
-        $fullPath = storage_path('app/public/' . ltrim($filePath, 'storage/'));
-        
-        if (!file_exists($fullPath)) {
-            throw new Exception("Video file not found: {$fullPath}");
+        try {
+            $fileSize = filesize($fullPath);
+            $chunkSize = 2 * 1024 * 1024; // 2MB chunks
+
+            $fileHandle = fopen($fullPath, 'rb');
+            if (!$fileHandle) {
+                throw new Exception("Cannot open file: {$fullPath}");
+            }
+
+            $offset = 0;
+
+            while ($offset < $fileSize) {
+                $chunk = fread($fileHandle, $chunkSize);
+                $chunkSizeActual = strlen($chunk);
+
+                $response = Http::withHeaders([
+                    'Content-Type' => 'application/offset+octet-stream',
+                    'Upload-Offset' => $offset,
+                    'Tus-Resumable' => '1.0.0'
+                ])->withBody($chunk, 'application/offset+octet-stream')
+                  ->patch($uploadUrl);
+
+                if (!$response->successful()) {
+                    fclose($fileHandle);
+                    Log::error('TUS upload chunk failed', [
+                        'offset' => $offset,
+                        'status' => $response->status(),
+                        'response' => $response->body()
+                    ]);
+                    return false;
+                }
+
+                $offset += $chunkSizeActual;
+                
+                // Log progress for large files
+                if ($fileSize > 10 * 1024 * 1024) { // Only log for files > 10MB
+                    $progress = round(($offset / $fileSize) * 100, 2);
+                    Log::info('Upload progress', ['progress' => $progress . '%']);
+                }
+            }
+
+            fclose($fileHandle);
+            return true;
+
+        } catch (Exception $e) {
+            Log::error('TUS upload failed', [
+                'error' => $e->getMessage(),
+                'file' => $fullPath
+            ]);
+            return false;
         }
-
-        $response = Http::attach(
-            'file_data', 
-            file_get_contents($fullPath), 
-            basename($fullPath)
-        )->post($uploadUrl);
-
-        return $response->successful();
     }
 
     /**
-     * Complete the upload process
+     * Verify that video was successfully uploaded to Vimeo
      */
-    private function completeUpload($videoUri)
+    public function verifyVideoUpload($videoId)
     {
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->accessToken,
-            'Accept' => 'application/vnd.vimeo.*+json;version=3.4'
-        ])->patch($this->baseUrl . $videoUri, [
-            'upload' => [
-                'approach' => 'post'
-            ]
-        ]);
+        try {
+            // Wait a moment for Vimeo to process
+            sleep(5);
 
-        return $response->successful();
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->accessToken,
+                'Accept' => 'application/vnd.vimeo.*+json;version=3.4'
+            ])->get($this->baseUrl . "/videos/{$videoId}");
+
+            if ($response->successful()) {
+                $videoData = $response->json();
+                
+                return [
+                    'success' => true,
+                    'status' => $videoData['status'] ?? 'unknown',
+                    'embed_url' => $videoData['embed']['html'] ?? null,
+                    'name' => $videoData['name'] ?? null
+                ];
+            }
+
+            return [
+                'success' => false,
+                'error' => 'HTTP ' . $response->status() . ': ' . $response->body()
+            ];
+
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
     }
 
     /**
@@ -149,10 +241,20 @@ class VimeoService
                 'Accept' => 'application/vnd.vimeo.*+json;version=3.4'
             ])->delete($this->baseUrl . "/videos/{$videoId}");
 
-            return $response->successful();
+            $success = $response->successful();
+            
+            if (!$success) {
+                Log::error('Failed to delete Vimeo video', [
+                    'video_id' => $videoId,
+                    'status' => $response->status(),
+                    'response' => $response->body()
+                ]);
+            }
+
+            return $success;
 
         } catch (Exception $e) {
-            Log::error('Failed to delete Vimeo video', [
+            Log::error('Exception deleting Vimeo video', [
                 'video_id' => $videoId,
                 'error' => $e->getMessage()
             ]);
@@ -176,15 +278,59 @@ class VimeoService
                 return $response->json();
             }
 
+            Log::error('Failed to get Vimeo video info', [
+                'video_id' => $videoId,
+                'status' => $response->status(),
+                'response' => $response->body()
+            ]);
+
             return null;
 
         } catch (Exception $e) {
-            Log::error('Failed to get Vimeo video info', [
+            Log::error('Exception getting Vimeo video info', [
                 'video_id' => $videoId,
                 'error' => $e->getMessage()
             ]);
 
             return null;
+        }
+    }
+
+    /**
+     * Get video status from Vimeo
+     */
+    public function getVideoStatus($videoId)
+    {
+        $videoInfo = $this->getVideoInfo($videoId);
+
+        if (!$videoInfo) {
+            return null;
+        }
+
+        return [
+            'status' => $videoInfo['status'] ?? null, // e.g., 'available', 'transcoding', 'uploading'
+            'transcode' => $videoInfo['transcode'] ?? null,
+            'upload' => $videoInfo['upload'] ?? null,
+            'embed_url' => $videoInfo['player_embed_url'] ?? null,
+        ];
+    }
+
+    /**
+     * Check if Vimeo credentials are valid
+     */
+    public function checkCredentials()
+    {
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->accessToken,
+                'Accept' => 'application/vnd.vimeo.*+json;version=3.4'
+            ])->get($this->baseUrl . '/me');
+
+            return $response->successful();
+
+        } catch (Exception $e) {
+            Log::error('Vimeo credentials check failed', ['error' => $e->getMessage()]);
+            return false;
         }
     }
 }

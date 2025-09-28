@@ -91,4 +91,12 @@ return [
         'temp_expiry_hours' => env('VIMEO_TEMP_EXPIRY_HOURS', 72), // 3 days
     ],
 
+    'mux' => [
+        'token_id' => env('MUX_TOKEN_ID'),
+        'token_secret' => env('MUX_TOKEN_SECRET'),
+        'webhook_secret' => env('MUX_WEBHOOK_SECRET'),
+        'max_temp_videos' => env('MUX_MAX_TEMP_VIDEOS', 10),
+        'temp_expiry_hours' => env('MUX_TEMP_EXPIRY_HOURS', 72), // 3 days
+    ],
+
 ];

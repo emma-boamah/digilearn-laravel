@@ -13,8 +13,12 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             //
-            $table->string('google_id')->nullable()->after('email');
-            $table->string('google_avatar')->nullable()->after('google_id');
+            if (!Schema::hasColumn('users', 'google_id')) {
+                $table->string('google_id')->nullable()->after('email');
+            }
+            if (!Schema::hasColumn('users', 'google_avatar')) {
+                $table->string('google_avatar')->nullable()->after('google_id');
+            }
         });
     }
 

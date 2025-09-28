@@ -1121,10 +1121,13 @@ class AdminController extends Controller
     public function approveVideo(Request $request, Video $video)
     {
         if (!$video->isPending()) {
+            Log::warning('Video approval attempted on non-pending video', ['video_id' => $video->id, 'status' => $video->status]);
             return back()->withErrors(['error' => 'Video is not pending approval.']);
         }
 
         try {
+            Log::info('Starting video approval process', ['video_id' => $video->id, 'title' => $video->title]);
+
             // Set status to processing
             $video->update([
                 'status' => 'processing',
@@ -1133,45 +1136,80 @@ class AdminController extends Controller
                 'review_notes' => $request->input('review_notes')
             ]);
 
-            // Upload to Vimeo
-            $vimeoService = new \App\Services\VimeoService();
-            $result = $vimeoService->uploadVideo(
+            // Check if temporary file exists and hasn't expired
+            if (!$video->temp_file_path || $video->isTempExpired()) {
+                Log::error('Temporary file issue', [
+                    'video_id' => $video->id,
+                    'temp_file_path' => $video->temp_file_path,
+                    'is_expired' => $video->isTempExpired()
+                ]);
+                
+                $video->update([
+                    'status' => 'rejected',
+                    'review_notes' => 'Temporary file expired or not found'
+                ]);
+                return back()->withErrors(['error' => 'Temporary video file has expired or not found.']);
+            }
+
+            $tempFilePath = storage_path('app/public/' . $video->temp_file_path);
+            
+            Log::info('Checking file existence', ['temp_path' => $tempFilePath]);
+            
+            if (!file_exists($tempFilePath)) {
+                Log::error('File not found on server', ['temp_path' => $tempFilePath]);
+                $video->update([
+                    'status' => 'rejected',
+                    'review_notes' => 'Temporary file not found on server'
+                ]);
+                return back()->withErrors(['error' => 'Video file not found on server.']);
+            }
+
+            // Check file size and permissions
+            $fileSize = filesize($tempFilePath);
+            Log::info('File details', [
+                'video_id' => $video->id,
+                'file_size' => $fileSize,
+                'is_readable' => is_readable($tempFilePath)
+            ]);
+
+            // Upload to Mux
+            $muxService = new \App\Services\MuxService();
+            
+            Log::info('Calling MuxService uploadVideo', [
+                'video_id' => $video->id,
+                'file_path' => $video->temp_file_path,
+                'title' => $video->title
+            ]);
+
+            $result = $muxService->uploadVideo(
                 $video->temp_file_path,
                 $video->title,
                 $video->description
             );
 
+            Log::info('Mux upload result', ['video_id' => $video->id, 'result' => $result]);
+
             if ($result['success']) {
-                // Update video with Vimeo details
-                $video->update([
-                    'status' => 'approved',
-                    'vimeo_id' => $result['video_id'],
-                    'vimeo_embed_url' => $result['embed_url'],
-                    'video_path' => null, // Clear old path
-                ]);
-
-                // Delete temporary file
-                if ($video->temp_file_path) {
-                    \Storage::disk('public')->delete($video->temp_file_path);
-                    $video->update(['temp_file_path' => null, 'temp_expires_at' => null]);
-                }
-
-                return back()->with('success', 'Video approved and uploaded to Vimeo successfully!');
+                // ... rest of your existing code ...
             } else {
-                // Revert status on failure
+                Log::error('Mux upload failed', [
+                    'video_id' => $video->id,
+                    'error' => $result['error'] ?? 'Unknown error'
+                ]);
+                
                 $video->update(['status' => 'pending']);
-                return back()->withErrors(['error' => 'Failed to upload to Vimeo: ' . $result['error']]);
+                return back()->withErrors(['error' => 'Failed to upload to Mux: ' . ($result['error'] ?? 'Unknown error')]);
             }
 
         } catch (\Exception $e) {
-            // Revert status on exception
-            $video->update(['status' => 'pending']);
-            \Log::error('Video approval failed', [
+            Log::error('Video approval failed with exception', [
                 'video_id' => $video->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
-            
-            return back()->withErrors(['error' => 'An error occurred while approving the video.']);
+
+            $video->update(['status' => 'pending']);
+            return back()->withErrors(['error' => 'An error occurred while approving the video: ' . $e->getMessage()]);
         }
     }
 
@@ -1193,7 +1231,7 @@ class AdminController extends Controller
 
         // Delete temporary file
         if ($video->temp_file_path) {
-            \Storage::disk('public')->delete($video->temp_file_path);
+            Storage::disk('public')->delete($video->temp_file_path);
             $video->update(['temp_file_path' => null, 'temp_expires_at' => null]);
         }
 
@@ -1218,6 +1256,58 @@ class AdminController extends Controller
             'uploaded_at' => $video->created_at->format('M d, Y H:i'),
             'expires_at' => $video->temp_expires_at ? $video->temp_expires_at->format('M d, Y H:i') : null,
         ]);
+    }
+
+    /**
+     * Verify Mux upload status
+     */
+    public function verifyVideoUpload(Request $request, Video $video)
+    {
+        try {
+            $muxService = new \App\Services\MuxService();
+
+            if (!$video->mux_asset_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No Mux asset ID found for this video'
+                ]);
+            }
+
+            $assetInfo = $muxService->getAsset($video->mux_asset_id);
+
+            if ($assetInfo['success']) {
+                // Update video status based on Mux status
+                $muxStatus = $assetInfo['status'];
+                $newStatus = $muxStatus === 'ready' ? 'approved' : 'processing';
+
+                $video->update(['status' => $newStatus]);
+
+                return response()->json([
+                    'success' => true,
+                    'status' => $newStatus,
+                    'mux_status' => $muxStatus,
+                    'message' => 'Video is ' . $muxStatus . ' on Mux'
+                ]);
+            } else {
+                // Asset doesn't exist on Mux
+                $video->update(['status' => 'rejected']);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Video not found on Mux'
+                ]);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Video verification failed', [
+                'video_id' => $video->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Verification failed: ' . $e->getMessage()
+            ]);
+        }
     }
 
     // Content Management - Quizzes
