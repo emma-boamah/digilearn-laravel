@@ -26,6 +26,16 @@ if (app()->environment(['local', 'development', 'testing'])) {
     require __DIR__ . '/debug.php';
 }
 
+Route::get('/session-test', function (Request $request) {
+    $count = $request->session()->get('count', 0);
+    $request->session()->put('count', $count + 1);
+    return response()->json([
+        'count' => $count + 1,
+        'session_id' => session()->getId(),
+        'session_data' => $request->session()->all(),
+    ]);
+});
+
 /*
 |--------------------------------------------------------------------------
 | Public Routes
