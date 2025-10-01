@@ -12,10 +12,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
 use App\Rules\Recaptcha;
+use Illuminate\Support\Facades\URL;
 
 
 class GoogleController extends Controller
 {
+    public function boot()
+    {
+        if (config('app.env') === 'production') {
+            URL::forceScheme('https');
+        }
+    }
     // Add rate limiting to redirect
     public function redirectToGoogle(Request $request)
     {
