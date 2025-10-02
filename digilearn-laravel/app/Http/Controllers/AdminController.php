@@ -440,10 +440,25 @@ class AdminController extends Controller
      */
     private function getDashboardStats()
     {
+        // Count online users using Redis
+        $onlineUsers = 0;
+        try {
+            // Check if Redis is available
+            if (class_exists('\Illuminate\Support\Facades\Redis')) {
+                $keys = \Illuminate\Support\Facades\Redis::keys('user:*:last_seen');
+                $onlineUsers = count($keys);
+            } else {
+                throw new \Exception('Redis facade not available');
+            }
+        } catch (\Exception $e) {
+            // Fallback to database if Redis fails
+            $onlineUsers = User::where('last_activity_at', '>=', now()->subMinutes(5))->count();
+        }
+
         return [
             'total_users' => User::count(),
             'active_users' => User::whereNull('suspended_at')->count(),
-            'online_users'=> User::where('last_activity_at', '>=', now()->subMinutes(5))->count(),
+            'online_users' => $onlineUsers,
             'new_users_today' => User::whereDate('created_at', today())->count(),
             'new_users_this_week' => User::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
             'verified_users' => User::whereNotNull('email_verified_at')->count(),

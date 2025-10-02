@@ -4,49 +4,38 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Log;
+use App\Events\UserCameOnline;
+use Carbon\Carbon;
 
 class TrackUsersActivity
 {
     /**
      * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next)
     {
         if (Auth::check()) {
-            // Update only if last activity was more than 1 minute ago
             $user = Auth::user();
+            $userId = $user->id;
+            $redisKey = "user:{$userId}:last_seen";
+            $ttl = 300; // 5 minutes
 
-            // Ensure we have a Carbon instance
-            $lastActivity = $user->last_activity_at ? now()->parse($user->last_activity_at) : null;
+            $now = Carbon::now()->timestamp;
 
-            // Check if update is needed
-            $shouldUpdate = !$lastActivity || $lastActivity->lt(now()->subMinutes(1));
+            // Check if key already exists (to detect first activity in a while)
+            $alreadyOnline = Redis::exists($redisKey);
 
-            Log::debug('TrackUserActivity: Authenticated user', [
-                'user_id' => $user->id,
-                'current_last_activity' => $lastActivity,
-                'should_update' => $shouldUpdate
-            ]);
+            // Update key with new TTL
+            Redis::setex($redisKey, $ttl, $now);
 
-            // Update last_activity_at if needed
-            // This will only update if the last activity was more than 1 minute ago
-            // This prevents unnecessary updates and database writes
-            // You can adjust the time threshold as needed
-            // For example, you might want to update every 5 minutes instead of 1 minute
-            // if you expect users to be active for longer periods without refreshing.
-            if ($shouldUpdate) {
-                Log::debug('Updating last_activity_at', ['user_id' => $user->id]);
-                $user->update(['last_activity_at' => now()]);
+            // If they were not online, mark them as online and broadcast
+            if (!$alreadyOnline) {
+                Log::info("User {$userId} came online");
+                broadcast(new UserCameOnline($user))->toOthers();
             }
-
-            return $next($request);
-        } else {
-            Log::debug('TrackUserActivity: No authenticated user');
         }
 
         return $next($request);

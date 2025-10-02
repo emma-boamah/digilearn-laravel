@@ -1,5 +1,23 @@
 import "./bootstrap"
 import Alpine from "alpinejs"
+import Echo from 'laravel-echo';
+import Pusher from 'pusher-js';
+
+// Configure Laravel Echo with Soketi
+window.Pusher = Pusher;
+
+window.Echo = new Echo({
+    broadcaster: 'pusher',
+    key: import.meta.env.VITE_PUSHER_APP_KEY || 'local',
+    cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER || 'mt1',
+    wsHost: import.meta.env.VITE_PUSHER_HOST || '127.0.0.1',
+    wsPort: import.meta.env.VITE_PUSHER_PORT || 6001,
+    wssPort: import.meta.env.VITE_PUSHER_PORT || 6001,
+    forceTLS: false,
+    encrypted: false,
+    disableStats: true,
+    enabledTransports: ['ws', 'wss'],
+});
 
 // Make Alpine available globally
 window.Alpine = Alpine
@@ -102,6 +120,34 @@ document.addEventListener("DOMContentLoaded", () => {
     })
   })
 })
+
+// Real-time broadcasting with Laravel Echo
+document.addEventListener('DOMContentLoaded', function() {
+    // Listen for online users updates
+    if (window.Echo) {
+        window.Echo.channel('online-users')
+            .listen('.user.came-online', (e) => {
+                console.log('User came online:', e.user);
+                updateOnlineUsersDisplay(e);
+            });
+    }
+});
+
+// Function to update online users display
+function updateOnlineUsersDisplay(event) {
+    // Update admin dashboard if it exists
+    const onlineUsersCard = document.querySelector('[data-online-users]');
+    if (onlineUsersCard) {
+        const countElement = onlineUsersCard.querySelector('.text-2xl.font-bold');
+        const percentageElement = onlineUsersCard.querySelector('.text-sm.text-gray-500');
+
+        if (countElement) {
+            // This would need to be updated with actual count from server
+            // For now, just log the event
+            console.log('Online user event received:', event);
+        }
+    }
+}
 
 setInterval(() => {
     if (document.visibilityState === 'visible') {

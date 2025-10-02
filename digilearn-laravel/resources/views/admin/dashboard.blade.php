@@ -353,9 +353,61 @@
         location.reload();
     }, 300000);
 
-    // Real-time updates (you can implement WebSocket here)
-    function updateStats() {
-        // Implementation for real-time stats updates
+    // Real-time online users updates with Laravel Echo
+    function updateOnlineUsersCount(count) {
+        // Update the online users count
+        const onlineUsersElement = document.querySelector('.text-3xl.font-bold.text-gray-900');
+        const onlineUsersCard = onlineUsersElement.closest('.bg-white.rounded-xl');
+
+        if (onlineUsersCard && onlineUsersCard.querySelector('.text-sm.font-medium.text-gray-600')) {
+            const label = onlineUsersCard.querySelector('.text-sm.font-medium.text-gray-600');
+            if (label.textContent.includes('Online Users')) {
+                onlineUsersElement.textContent = count.toLocaleString();
+
+                // Update percentage
+                const percentageElement = onlineUsersCard.querySelector('.text-sm.text-gray-500');
+                if (percentageElement && percentageElement.textContent.includes('% of total')) {
+                    const totalUsers = parseInt(onlineUsersCard.getAttribute('data-total-users')) || 0;
+                    const percentage = totalUsers > 0 ? ((count / totalUsers) * 100).toFixed(1) : 0;
+                    percentageElement.innerHTML = percentage + '% of total <i class="fas fa-wifi text-green-500 mr-1"></i> Active in last 5 minutes';
+                }
+            }
+        }
     }
+
+    // Get initial online users count
+    function fetchOnlineUsersCount() {
+        fetch('{{ route("online-users") }}', {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateOnlineUsersCount(data.count);
+            }
+        })
+        .catch(error => {
+            console.log('Failed to fetch online users count:', error);
+        });
+    }
+
+    // Listen for real-time user online events
+    if (window.Echo) {
+        window.Echo.channel('online-users')
+            .listen('.user.came-online', (e) => {
+                console.log('User came online:', e.user);
+                // Fetch updated count when a user comes online
+                fetchOnlineUsersCount();
+            });
+    }
+
+    // Fallback: Update online users count every 30 seconds (in case WebSocket fails)
+    setInterval(fetchOnlineUsersCount, 30000);
+
+    // Initial update
+    setTimeout(fetchOnlineUsersCount, 2000);
 </script>
 @endsection
