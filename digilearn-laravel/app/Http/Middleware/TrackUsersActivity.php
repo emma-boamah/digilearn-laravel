@@ -40,12 +40,15 @@ class TrackUsersActivity
             // For example, you might want to update every 5 minutes instead of 1 minute
             // if you expect users to be active for longer periods without refreshing.
             if ($shouldUpdate) {
-                    Log::debug('Updating last_activity_at', ['user_id' => $user->id]);
-                    $user->update(['last_activity_at' => now()]);
-                }
-            } else {
-                Log::debug('TrackUserActivity: No authenticated user');}
+                Log::debug('Updating last_activity_at', ['user_id' => $user->id]);
+                $user->update(['last_activity_at' => now()]);
+            }
 
             return $next($request);
+        } else {
+            Log::debug('TrackUserActivity: No authenticated user');
         }
+
+        return $next($request);
+    }
 }
