@@ -15,6 +15,7 @@ class Document extends Model
         'grade_level',
         'description',
         'uploaded_by',
+        'video_id',
         'is_featured',
         'views',
     ];
@@ -25,5 +26,13 @@ class Document extends Model
     public function uploader()
     {
         return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    /**
+     * Get the video this document is related to.
+     */
+    public function video()
+    {
+        return $this->belongsTo(Video::class, 'video_id');
     }
 }

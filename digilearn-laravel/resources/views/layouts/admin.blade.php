@@ -542,34 +542,11 @@
                     <span class="sidebar-link-text">Notifications</span>
                 </a>
 
-                <!-- Content Management Dropdown -->
-                <div class="dropdown" id="contentDropdown">
-                    <button id="contentDropdownBtn" class="nav-link content-dropdown-btn {{ request()->routeIs('admin.content*') ? 'active' : '' }}">
-                        <div class="flex items-center">
-                            <i class="fas fa-folder-open"></i>
-                            <span class="sidebar-link-text">Content Management</span>
-                        </div>
-                        <i class="fas fa-chevron-down sidebar-link-text chevron-transition"></i>
-                    </button>
-                    <div class="ml-6 mt-1 space-y-1 sidebar-link-text dropdown-menu-hide" id="contentDropdownMenu">
-                        <a href="{{ route('admin.content.videos.index') }}" class="nav-link {{ request()->routeIs('admin.content.videos*') ? 'active content-item-active' : 'content-item-inactive' }}">
-                            <i class="fas fa-video icon-small"></i>
-                            Manage Learning Videos
-                        </a>
-                        <a href="{{ route('admin.content.quizzes.index') }}" class="nav-link {{ request()->routeIs('admin.content.quizzes*') ? 'active content-item-active' : 'content-item-inactive' }}">
-                            <i class="fas fa-question-circle icon-small"></i>
-                            Manage Quizzes
-                        </a>
-                        <a href="{{ route('admin.content.documents.index') }}" class="nav-link {{ request()->routeIs('admin.content.documents*') ? 'active content-item-active' : 'content-item-inactive' }}">
-                            <i class="fas fa-file-alt icon-small"></i>
-                            Manage Documents
-                        </a>
-                        <a href="{{ route('admin.content.courses.index') }}" class="nav-link {{ request()->routeIs('admin.content.courses*') ? 'active content-item-active' : 'content-item-inactive' }}">
-                            <i class="fas fa-graduation-cap icon-small"></i>
-                            Manage Courses
-                        </a>
-                    </div>
-                </div>
+                <!-- Simplified Contents Section -->
+                <a href="{{ route('admin.contents.index') }}" class="nav-link {{ request()->routeIs('admin.contents*') ? 'active' : '' }}">
+                    <i class="fas fa-folder-open"></i>
+                    <span class="sidebar-link-text">Contents</span>
+                </a>
 
                 <a href="{{ route('admin.revenue') }}" class="nav-link {{ request()->routeIs('admin.revenue*') ? 'active' : '' }}">
                     <i class="fas fa-dollar-sign"></i>
@@ -627,6 +604,7 @@
                         </div>
 
                         <div class="flex items-center space-x-4">
+
                             <!-- Notifications -->
                             <div class="dropdown" id="notificationDropdown">
                                 <button id="notificationDropdownBtn" class="notification-btn">
@@ -776,29 +754,7 @@
                 }
             }
 
-            // Initialize content dropdown state based on current route
-            @if(request()->routeIs('admin.content*'))
-                const contentDropdown = document.getElementById('contentDropdown');
-                const contentMenu = document.getElementById('contentDropdownMenu');
-                if (contentDropdown && contentMenu) {
-                    contentDropdown.classList.add('open');
-                    contentMenu.classList.remove('dropdown-menu-hide');
-                    contentMenu.classList.add('dropdown-menu-show');
-                }
-            @endif
-
-            // Add event listeners for dropdown buttons
-            const contentDropdownBtn = document.getElementById('contentDropdownBtn');
-            if (contentDropdownBtn) {
-                contentDropdownBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('Content dropdown clicked');
-                    toggleDropdown('contentDropdown');
-                });
-            } else {
-                console.error('Content dropdown button not found');
-            }
+            // Content dropdown functionality removed - now using simple navigation
 
             const notificationDropdownBtn = document.getElementById('notificationDropdownBtn');
             if (notificationDropdownBtn) {
@@ -830,5 +786,153 @@
     </script>
     @stack('scripts')
 <script src="/js/avatar-updater.js"></script>
+
+
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    // Header upload modal functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const headerUploadBtn = document.getElementById('headerUploadBtn');
+        const headerUploadModal = document.getElementById('headerUploadModal');
+        const closeHeaderModal = document.getElementById('closeHeaderModal');
+        const headerCancelUpload = document.getElementById('headerCancelUpload');
+        const headerFileUploadArea = document.getElementById('headerFileUploadArea');
+        const headerFileInput = document.getElementById('headerFileInput');
+        const headerUploadForm = document.getElementById('headerUploadForm');
+
+        // Open modal
+        headerUploadBtn.addEventListener('click', () => {
+            headerUploadModal.classList.add('show');
+        });
+
+        // Close modal
+        [closeHeaderModal, headerCancelUpload].forEach(btn => {
+            btn.addEventListener('click', () => {
+                headerUploadModal.classList.remove('show');
+                headerUploadForm.reset();
+                headerFileUploadArea.innerHTML = `
+                    <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                    <p class="text-gray-600">Click to upload or drag and drop</p>
+                    <p class="text-sm text-gray-500">MP4, PDF, DOC, DOCX up to 600MB</p>
+                `;
+            });
+        });
+
+        // File upload area click
+        headerFileUploadArea.addEventListener('click', () => {
+            headerFileInput.click();
+        });
+
+        // File input change
+        headerFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                updateHeaderFileUploadArea(file);
+            }
+        });
+
+        // Drag and drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            headerFileUploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            headerFileUploadArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            headerFileUploadArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            headerFileUploadArea.classList.add('dragover');
+        }
+
+        function unhighlight() {
+            headerFileUploadArea.classList.remove('dragover');
+        }
+
+        headerFileUploadArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            if (files.length > 0) {
+                headerFileInput.files = files;
+                updateHeaderFileUploadArea(files[0]);
+            }
+        }
+
+        function updateHeaderFileUploadArea(file) {
+            const fileSize = (file.size / (1024 * 1024)).toFixed(2);
+            headerFileUploadArea.innerHTML = `
+                <i class="fas fa-file text-2xl text-blue-600 mb-2"></i>
+                <p class="text-gray-900 font-medium">${file.name}</p>
+                <p class="text-sm text-gray-500">${fileSize} MB</p>
+            `;
+        }
+
+        // Form submission
+        headerUploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(headerUploadForm);
+            const contentType = formData.get('content_type');
+
+            try {
+                let response;
+                if (contentType === 'video') {
+                    response = await fetch('{{ route("admin.content.videos.store") }}', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    });
+                } else if (contentType === 'document') {
+                    response = await fetch('{{ route("admin.content.documents.store") }}', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    });
+                } else if (contentType === 'quiz') {
+                    response = await fetch('{{ route("admin.content.quizzes.store") }}', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    });
+                }
+
+                if (response.ok) {
+                    headerUploadModal.classList.remove('show');
+                    headerUploadForm.reset();
+                    headerFileUploadArea.innerHTML = `
+                        <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                        <p class="text-gray-600">Click to upload or drag and drop</p>
+                        <p class="text-sm text-gray-500">MP4, PDF, DOC, DOCX up to 600MB</p>
+                    `;
+                    // Redirect to contents page to see new content
+                    window.location.href = '{{ route("admin.contents.index") }}';
+                } else {
+                    const error = await response.json();
+                    alert('Upload failed: ' + (error.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Upload failed. Please try again.');
+            }
+        });
+    });
+</script>
+
 </body>
 </html>

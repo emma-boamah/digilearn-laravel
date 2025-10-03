@@ -117,6 +117,36 @@
             </div>
         </div>
 
+        <!-- Subscription Plans Badges -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-900">Subscription Plans</h2>
+                <a href="{{ route('admin.revenue') }}" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                    View Revenue Analytics <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                @foreach($stats['subscription_plans'] as $plan)
+                <div class="bg-gradient-to-r from-{{ $plan['color'] }}-50 to-{{ $plan['color'] }}-100 rounded-lg p-4 border border-{{ $plan['color'] }}-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-{{ $plan['color'] }}-900">{{ $plan['name'] }}</h3>
+                            <p class="text-2xl font-bold text-{{ $plan['color'] }}-800">{{ number_format($plan['subscribers']) }}</p>
+                            <p class="text-sm text-{{ $plan['color'] }}-700">subscribers</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-lg font-semibold text-{{ $plan['color'] }}-900">${{ number_format($plan['revenue'], 0) }}</p>
+                            <p class="text-sm text-{{ $plan['color'] }}-700">revenue</p>
+                        </div>
+                    </div>
+                    <div class="mt-3 bg-{{ $plan['color'] }}-200 rounded-full h-2">
+                        <div class="bg-{{ $plan['color'] }}-600 h-2 rounded-full" style="width: {{ ($plan['subscribers'] / collect($stats['subscription_plans'])->sum('subscribers')) * 100 }}%"></div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+
         <!-- Main Content Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Recent Activities -->

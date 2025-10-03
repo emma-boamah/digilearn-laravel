@@ -20,6 +20,8 @@ use App\Http\Controllers\DashboardController; // Import DashboardController to a
 use App\Models\Video; // Import the Video model
 use App\Models\Quiz; // Import the Quiz model
 use App\Models\Document; // Import the Document model
+use App\Models\UserSubscription; // Import the UserSubscription model
+use App\Models\PricingPlan; // Import the PricingPlan model
 use Illuminate\Support\Facades\Storage; // For file uploads
 
 class AdminController extends Controller
@@ -465,7 +467,56 @@ class AdminController extends Controller
             'suspended_users' => User::whereNotNull('suspended_at')->count(),
             'total_lessons' => 150, // Should be replaced with actual query
             'total_subjects' => 8,  // Should be replaced with actual query
+            'subscription_plans' => $this->getSubscriptionPlansData(),
         ];
+    }
+
+    /**
+     * Get subscription plans data for dashboard badges
+     */
+    private function getSubscriptionPlansData()
+    {
+        $plans = PricingPlan::active()->ordered()->get();
+
+        if ($plans->isEmpty()) {
+            // Return sample data if no plans exist in database
+            return [
+                [
+                    'name' => 'Essential',
+                    'subscribers' => 180,
+                    'revenue' => 9000.00,
+                    'color' => 'blue'
+                ],
+                [
+                    'name' => 'Extra Tuition',
+                    'subscribers' => 200,
+                    'revenue' => 40000.00,
+                    'color' => 'green'
+                ],
+                [
+                    'name' => 'Home School',
+                    'subscribers' => 70,
+                    'revenue' => 14000.00,
+                    'color' => 'purple'
+                ]
+            ];
+        }
+
+        $colors = ['blue', 'green', 'purple', 'red', 'yellow', 'indigo', 'pink'];
+
+        return $plans->map(function ($plan, $index) use ($colors) {
+            $activeSubscriptions = $plan->activeSubscriptions()->count();
+            $totalRevenue = $plan->subscriptions()
+                ->where('status', 'active')
+                ->sum('amount_paid');
+
+            return [
+                'name' => $plan->name,
+                'subscribers' => $activeSubscriptions,
+                'revenue' => (float) $totalRevenue,
+                'color' => $colors[$index % count($colors)]
+            ];
+        })->toArray();
     }
 
     /**
@@ -1746,5 +1797,252 @@ class AdminController extends Controller
             ['plan' => 'Home School', 'revenue' => 14000, 'growth' => 8.7],
             ['plan' => 'Essential', 'revenue' => 9000, 'growth' => 5.3]
         ];
+    }
+
+    /**
+     * Show unified contents management page (YouTube-style dashboard)
+     */
+    public function contents(Request $request)
+    {
+        $query = $request->get('q', '');
+        $type = $request->get('type', 'all'); // all, videos, documents, quizzes
+        $sort = $request->get('sort', 'newest'); // newest, oldest, most_viewed, most_liked
+
+        // Get all content with unified structure
+        $contents = $this->getUnifiedContents($query, $type, $sort);
+
+        // Get content statistics
+        $stats = [
+            'total_videos' => Video::count(),
+            'total_documents' => Document::count(),
+            'total_quizzes' => Quiz::count(),
+            'total_views' => Video::sum('views') + Document::sum('views') + Quiz::sum('attempts_count'),
+            'pending_reviews' => Video::pending()->count(),
+        ];
+
+        return view('admin.contents.index', compact('contents', 'stats', 'query', 'type', 'sort'));
+    }
+
+    /**
+     * Get unified contents for the dashboard
+     */
+    private function getUnifiedContents($query = '', $type = 'all', $sort = 'newest')
+    {
+        $contents = collect();
+
+        // Get videos (always included, with attachment counts)
+        if ($type === 'all' || $type === 'videos') {
+            $videos = Video::with(['uploader:id,name,email', 'quiz', 'documents', 'quizzes'])
+                ->when($query, function($q) use ($query) {
+                    $q->where('title', 'like', "%{$query}%")
+                      ->orWhere('description', 'like', "%{$query}%");
+                })
+                ->select([
+                    'id', 'title', 'description', 'thumbnail_path', 'views', 'created_at',
+                    'uploaded_by', 'status', 'grade_level', 'duration_seconds', 'document_path', 'quiz_id',
+                    DB::raw("'video' as content_type"),
+                    DB::raw('0 as likes'),
+                    DB::raw('0 as dislikes'),
+                    DB::raw('0 as comments_count')
+                ]);
+
+            $contents = $contents->merge($videos->get()->map(function($item) {
+                $item->published_date = $item->created_at->format('M d, Y');
+                $item->uploader_name = $item->uploader->name ?? 'Unknown';
+                $item->uploader_email = $item->uploader->email ?? '';
+                $item->duration_formatted = $item->duration_seconds ? gmdate('H:i:s', $item->duration_seconds) : '00:00:00';
+                // Add counts manually
+                $item->documents_count = $item->documents->count();
+                $item->quizzes_count = $item->quizzes->count();
+                return $item;
+            }));
+        }
+
+        // Get standalone documents (only when specifically filtering for documents)
+        if ($type === 'documents') {
+            $documents = Document::with(['uploader:id,name,email'])
+                ->whereNull('video_id') // Only standalone documents
+                ->when($query, function($q) use ($query) {
+                    $q->where('title', 'like', "%{$query}%")
+                      ->orWhere('description', 'like', "%{$query}%");
+                })
+                ->select([
+                    'id', 'title', 'description', 'file_path', 'views', 'created_at',
+                    'uploaded_by', 'grade_level',
+                    DB::raw("'document' as content_type"),
+                    DB::raw('0 as likes'),
+                    DB::raw('0 as dislikes'),
+                    DB::raw('0 as comments_count'),
+                    DB::raw('NULL as duration_seconds')
+                ]);
+
+            $contents = $contents->merge($documents->get()->map(function($item) {
+                $item->published_date = $item->created_at->format('M d, Y');
+                $item->uploader_name = $item->uploader->name ?? 'Unknown';
+                $item->uploader_email = $item->uploader->email ?? '';
+                $item->thumbnail_path = null; // Documents don't have thumbnails
+                $item->status = 'approved'; // Documents are auto-approved
+                $item->duration_formatted = 'N/A';
+                return $item;
+            }));
+        }
+
+        // Get standalone quizzes (only when specifically filtering for quizzes)
+        if ($type === 'quizzes') {
+            $quizzes = Quiz::with(['uploader:id,name,email'])
+                ->whereNull('video_id') // Only standalone quizzes
+                ->when($query, function($q) use ($query) {
+                    $q->where('title', 'like', "%{$query}%")
+                      ->orWhere('subject', 'like', "%{$query}%");
+                })
+                ->select([
+                    'id', 'title', 'subject as description', 'created_at', 'uploaded_by',
+                    'grade_level', 'is_featured',
+                    DB::raw("'quiz' as content_type"),
+                    DB::raw('0 as views'),
+                    DB::raw('0 as likes'),
+                    DB::raw('0 as dislikes'),
+                    DB::raw('0 as comments_count'),
+                    DB::raw('NULL as duration_seconds')
+                ]);
+
+            $contents = $contents->merge($quizzes->get()->map(function($item) {
+                $item->published_date = $item->created_at->format('M d, Y');
+                $item->uploader_name = $item->uploader->name ?? 'Unknown';
+                $item->uploader_email = $item->uploader->email ?? '';
+                $item->thumbnail_path = null;
+                $item->status = 'approved'; // Quizzes are auto-approved
+                $item->duration_formatted = 'N/A';
+                return $item;
+            }));
+        }
+
+        // Sort contents
+        switch ($sort) {
+            case 'oldest':
+                $contents = $contents->sortBy('created_at');
+                break;
+            case 'most_viewed':
+                $contents = $contents->sortByDesc('views');
+                break;
+            case 'most_liked':
+                $contents = $contents->sortByDesc('likes');
+                break;
+            case 'newest':
+            default:
+                $contents = $contents->sortByDesc('created_at');
+                break;
+        }
+
+        return $contents;
+    }
+
+    /**
+     * Store a complete content package (video + documents + quiz)
+     */
+    public function storeContentPackage(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Step 1: Upload and store the video
+            $video = null;
+            if ($request->hasFile('video_file')) {
+                $videoData = [
+                    'title' => $request->title,
+                    'description' => $request->description,
+                    'grade_level' => $request->grade_level,
+                    'uploaded_by' => auth()->id(),
+                    'status' => 'pending' // Videos need approval
+                ];
+
+                $video = Video::create($videoData);
+
+                // Handle video file upload
+                if ($request->hasFile('video_file')) {
+                    $videoFile = $request->file('video_file');
+                    $filename = time() . '_' . $video->id . '.' . $videoFile->getClientOriginalExtension();
+                    $path = $videoFile->storeAs('videos', $filename, 'public');
+                    $video->update(['video_path' => $path]);
+                }
+
+                // Handle thumbnail upload
+                if ($request->hasFile('thumbnail_file')) {
+                    $thumbnailFile = $request->file('thumbnail_file');
+                    $thumbnailFilename = time() . '_thumb_' . $video->id . '.' . $thumbnailFile->getClientOriginalExtension();
+                    $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailFilename, 'public');
+                    $video->update(['thumbnail_path' => $thumbnailPath]);
+                }
+            }
+
+            // Step 2: Upload documents (optional)
+            $documents = [];
+            if ($request->hasFile('documents')) {
+                foreach ($request->file('documents') as $docFile) {
+                    // Handle document file upload first
+                    $filename = time() . '_' . uniqid() . '.' . $docFile->getClientOriginalExtension();
+                    $path = $docFile->storeAs('documents', $filename, 'public');
+
+                    $docData = [
+                        'title' => pathinfo($docFile->getClientOriginalName(), PATHINFO_FILENAME),
+                        'file_path' => $path,
+                        'description' => 'Related document for video: ' . $request->title,
+                        'uploaded_by' => auth()->id(),
+                        'video_id' => $video ? $video->id : null,
+                        'grade_level' => $request->grade_level
+                    ];
+
+                    $document = Document::create($docData);
+                    $documents[] = $document;
+                }
+            }
+
+            // Step 3: Create quiz (optional)
+            $quiz = null;
+            if ($request->filled('quiz_data')) {
+                $quizData = json_decode($request->quiz_data, true);
+
+                if (!empty($quizData['questions'])) {
+                    $quizDataToCreate = [
+                        'title' => 'Quiz for: ' . $request->title,
+                        'subject' => $request->title,
+                        'uploaded_by' => auth()->id(),
+                        'grade_level' => $request->grade_level,
+                        'video_id' => $video ? $video->id : null,
+                        'quiz_data' => json_encode($quizData),
+                        'is_featured' => false
+                    ];
+
+                    $quiz = Quiz::create($quizDataToCreate);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Content package uploaded successfully!',
+                'data' => [
+                    'video_id' => $video ? $video->id : null,
+                    'documents_count' => count($documents),
+                    'quiz_id' => $quiz ? $quiz->id : null,
+                    'questions_count' => $quiz ? $quiz->questions()->count() : 0
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Content package upload failed', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Upload failed: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
