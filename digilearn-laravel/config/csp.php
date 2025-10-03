@@ -23,8 +23,6 @@ return [
             'https://cdn.quilljs.com',
             'https://cdn.tailwindcss.com',
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
-            'http://localhost',
-            'http://127.0.0.1',
             // Removed 'unsafe-inline' for better security - using nonces instead
             // Removeed 'unsafe-eval' not needed for Chart.js or other libraries now
             // "'unsafe-eval'", // Only enable if absolutely required
@@ -37,8 +35,6 @@ return [
             'https://fonts.bunny.net',
             'https://cdn.jsdelivr.net',
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
-            'http://localhost',
-            'http://127.0.0.1',
             'https://cdnjs.cloudflare.com',
         ],
         'font-src' => [
@@ -60,19 +56,12 @@ return [
             'https://www.shoutoutgh.com',
             'https://ui-avatars.com', // For user avatars
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
-            'http://localhost',
-            'http://127.0.0.1',
-            'http://localhost:*', // Allow any port on localhost
-            'http://127.0.0.1:*', // Allow any port on 127.0.0.1
+            'https://shoutoutgh.com',
         ],
         'media-src' => [
             "'self'",
             'blob:',
             'data:',
-            'http://localhost',
-            'http://127.0.0.1',
-            'http://localhost:*', // For different ports
-            'http://127.0.0.1:*', // For different ports
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
         ],
         'connect-src' => [
@@ -92,9 +81,7 @@ return [
             'https://api.vimeo.com',
             'https://vimeo.com',
             'https://ipapi.co',
-            'http://localhost',
-            'http://127.0.0.1',
-        ],
+    	 ],
         'frame-src' => [
             "'self'",
             'https://accounts.google.com',

@@ -15,7 +15,7 @@
         "laravel/tinker": "^2.10.1",
         "mongodb/laravel-mongodb": "^5.4",
         "pbmedia/laravel-ffmpeg": "^8.7",
-        "predis/predis": "^3.0"
+        "predis/predis": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
