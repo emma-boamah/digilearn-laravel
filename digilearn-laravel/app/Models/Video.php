@@ -62,6 +62,14 @@ class Video extends Model
     }
 
     /**
+     * Get the documents associated with the video.
+     */
+    public function documents()
+    {
+        return $this->hasMany(Document::class, 'video_id');
+    }
+
+    /**
      * Get the quizzes associated with the video.
      */
     public function quizzes()

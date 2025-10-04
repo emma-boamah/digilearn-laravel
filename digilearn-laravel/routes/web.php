@@ -20,6 +20,7 @@ use App\Http\Controllers\Auth\GoogleController;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use App\Models\User;
 
 // Include debug routes in development
 if (app()->environment(['local', 'development', 'testing'])) {
@@ -209,6 +210,40 @@ Route::middleware(['auth'])->group(function () {
         $request->user()->update(['last_activity_at' => now()]);
         return response()->json(['status' => 'updated']);
     })->name('ping');
+
+    // Online users API
+    Route::get('/online-users', function () {
+        try {
+            $keys = Redis::keys('user:*:last_seen');
+            $onlineUsers = [];
+
+            foreach ($keys as $key) {
+                $userId = str_replace(['user:', ':last_seen'], '', $key);
+                $user = User::find($userId);
+                if ($user) {
+                    $onlineUsers[] = [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'avatar' => $user->avatar,
+                        'last_seen' => Redis::get($key),
+                    ];
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'online_users' => $onlineUsers,
+                'count' => count($onlineUsers)
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to fetch online users',
+                'count' => 0
+            ]);
+        }
+    })->name('online-users');
+
     // Notifications API
     Route::prefix('api/notifications')->name('api.notifications.')->group(function () {
         Route::get('/', [NotificationController::class, 'index'])->name('index');
@@ -241,6 +276,8 @@ Route::middleware(['auth'])->group(function () {
 */
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/contents', [AdminController::class, 'contents'])->name('contents.index');
+    Route::post('/contents', [AdminController::class, 'storeContentPackage'])->name('contents.store');
     Route::get('/users', [AdminController::class, 'users'])->name('users');
     Route::get('/users/{id}', [AdminController::class, 'showUser'])->name('users.show');
     Route::post('/users/{id}/toggle-status', [AdminController::class, 'toggleUserStatus'])->name('users.toggle-status');

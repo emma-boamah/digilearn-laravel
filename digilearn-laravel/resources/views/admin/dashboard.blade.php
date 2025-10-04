@@ -117,6 +117,36 @@
             </div>
         </div>
 
+        <!-- Subscription Plans Badges -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-900">Subscription Plans</h2>
+                <a href="{{ route('admin.revenue') }}" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                    View Revenue Analytics <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                @foreach($stats['subscription_plans'] as $plan)
+                <div class="bg-gradient-to-r from-{{ $plan['color'] }}-50 to-{{ $plan['color'] }}-100 rounded-lg p-4 border border-{{ $plan['color'] }}-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-{{ $plan['color'] }}-900">{{ $plan['name'] }}</h3>
+                            <p class="text-2xl font-bold text-{{ $plan['color'] }}-800">{{ number_format($plan['subscribers']) }}</p>
+                            <p class="text-sm text-{{ $plan['color'] }}-700">subscribers</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-lg font-semibold text-{{ $plan['color'] }}-900">${{ number_format($plan['revenue'], 0) }}</p>
+                            <p class="text-sm text-{{ $plan['color'] }}-700">revenue</p>
+                        </div>
+                    </div>
+                    <div class="mt-3 bg-{{ $plan['color'] }}-200 rounded-full h-2">
+                        <div class="bg-{{ $plan['color'] }}-600 h-2 rounded-full" style="width: {{ ($plan['subscribers'] / collect($stats['subscription_plans'])->sum('subscribers')) * 100 }}%"></div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+
         <!-- Main Content Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Recent Activities -->
@@ -353,9 +383,61 @@
         location.reload();
     }, 300000);
 
-    // Real-time updates (you can implement WebSocket here)
-    function updateStats() {
-        // Implementation for real-time stats updates
+    // Real-time online users updates with Laravel Echo
+    function updateOnlineUsersCount(count) {
+        // Update the online users count
+        const onlineUsersElement = document.querySelector('.text-3xl.font-bold.text-gray-900');
+        const onlineUsersCard = onlineUsersElement.closest('.bg-white.rounded-xl');
+
+        if (onlineUsersCard && onlineUsersCard.querySelector('.text-sm.font-medium.text-gray-600')) {
+            const label = onlineUsersCard.querySelector('.text-sm.font-medium.text-gray-600');
+            if (label.textContent.includes('Online Users')) {
+                onlineUsersElement.textContent = count.toLocaleString();
+
+                // Update percentage
+                const percentageElement = onlineUsersCard.querySelector('.text-sm.text-gray-500');
+                if (percentageElement && percentageElement.textContent.includes('% of total')) {
+                    const totalUsers = parseInt(onlineUsersCard.getAttribute('data-total-users')) || 0;
+                    const percentage = totalUsers > 0 ? ((count / totalUsers) * 100).toFixed(1) : 0;
+                    percentageElement.innerHTML = percentage + '% of total <i class="fas fa-wifi text-green-500 mr-1"></i> Active in last 5 minutes';
+                }
+            }
+        }
     }
+
+    // Get initial online users count
+    function fetchOnlineUsersCount() {
+        fetch('{{ route("online-users") }}', {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateOnlineUsersCount(data.count);
+            }
+        })
+        .catch(error => {
+            console.log('Failed to fetch online users count:', error);
+        });
+    }
+
+    // Listen for real-time user online events
+    if (window.Echo) {
+        window.Echo.channel('online-users')
+            .listen('.user.came-online', (e) => {
+                console.log('User came online:', e.user);
+                // Fetch updated count when a user comes online
+                fetchOnlineUsersCount();
+            });
+    }
+
+    // Fallback: Update online users count every 30 seconds (in case WebSocket fails)
+    setInterval(fetchOnlineUsersCount, 30000);
+
+    // Initial update
+    setTimeout(fetchOnlineUsersCount, 2000);
 </script>
 @endsection
