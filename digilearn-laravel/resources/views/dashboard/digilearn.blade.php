@@ -1760,21 +1760,12 @@
                                 </p>
                                 @endif
                                 <div class="lesson-actions">
-                                    @if(isset($course['first_lesson_id']))
-                                    <a href="{{ route('dashboard.lesson.view', ['lessonId' => $course['first_lesson_id']]) }}" class="lesson-action-btn primary">
+                                    <a href="{{ route('dashboard.lesson.view', ['lessonId' => $course['id'], 'course_id' => $course['id']]) }}" class="lesson-action-btn primary">
                                         <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
                                             <path d="M8 5v14l11-7z"/>
                                         </svg>
                                         Start Course
                                     </a>
-                                    @else
-                                    <a href="{{ route('dashboard.university.course.lessons.by-id', ['courseId' => $course['id']]) }}" class="lesson-action-btn primary">
-                                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M8 5v14l11-7z"/>
-                                        </svg>
-                                        View Lessons
-                                    </a>
-                                    @endif
                                     <a href="{{ route('quiz.index') }}" class="lesson-action-btn secondary">
                                         <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
                                             <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>

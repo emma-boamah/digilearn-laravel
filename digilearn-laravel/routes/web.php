@@ -129,6 +129,7 @@ Route::middleware(['auth'])->group(function () {
     // Saved lessons
     Route::get('/dashboard/saved-lessons', [DashboardController::class, 'savedLessons'])->name('dashboard.saved-lessons');
 
+
     // Progress
     Route::get('/dashboard/my-progress', [ProgressController::class, 'index'])->name('dashboard.my-progress');
     Route::post('/dashboard/lesson/{lessonId}/progress', [ProgressController::class, 'recordLessonProgress'])->name('dashboard.lesson.progress');
@@ -339,19 +340,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/{document}/toggle-feature', [AdminController::class, 'toggleDocumentFeature'])->name('toggle-feature');
     });
 
-    // Content Management - Courses
-    Route::prefix('content/courses')->name('content.courses.')->group(function () {
-        Route::get('/', [App\Http\Controllers\CourseController::class, 'index'])->name('index');
-        Route::get('/create', [App\Http\Controllers\CourseController::class, 'create'])->name('create');
-        Route::post('/', [App\Http\Controllers\CourseController::class, 'store'])->name('store');
-        Route::get('/{course}', [App\Http\Controllers\CourseController::class, 'show'])->name('show');
-        Route::get('/{course}/edit', [App\Http\Controllers\CourseController::class, 'edit'])->name('edit');
-        Route::put('/{course}', [App\Http\Controllers\CourseController::class, 'update'])->name('update');
-        Route::delete('/{course}', [App\Http\Controllers\CourseController::class, 'destroy'])->name('destroy');
-        Route::post('/{course}/toggle-feature', [App\Http\Controllers\CourseController::class, 'toggleFeature'])->name('toggle-feature');
-        Route::post('/{course}/change-status', [App\Http\Controllers\CourseController::class, 'changeStatus'])->name('change-status');
-        Route::get('/{course}/content', [App\Http\Controllers\CourseController::class, 'getContent'])->name('content');
-    });
 
     Route::get('notifications/', [NotificationController::class, 'adminIndex'])->name('notifications.index');
         Route::post('notifications/send', [NotificationController::class, 'sendNotification'])->name('notifications.send');

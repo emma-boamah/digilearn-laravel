@@ -603,9 +603,9 @@ class DashboardController extends Controller
     }
 
     /**
-     * View specific lesson (updated to work with level groups)
+     * View specific lesson (updated to work with level groups and courses)
      */
-    public function viewLesson($lessonId)
+    public function viewLesson($lessonId, Request $request)
     {
         if (!session('selected_level_group')) {
             return redirect()->route('dashboard.level-selection');
@@ -613,7 +613,45 @@ class DashboardController extends Controller
 
         $selectedLevelGroup = session('selected_level_group');
         $user = Auth::user();
-        
+
+        // Check if this is a course view (when course_id is passed)
+        $courseId = $request->get('course_id');
+        if ($courseId) {
+            // Load course content instead of individual lesson
+            $course = \App\Models\Course::with([
+                'creator',
+                'videos' => function($query) {
+                    $query->orderBy('course_videos.order');
+                },
+                'documents' => function($query) {
+                    $query->orderBy('course_documents.order');
+                },
+                'quizzes' => function($query) {
+                    $query->orderBy('course_quizzes.order');
+                }
+            ])->findOrFail($courseId);
+
+            // Check if course is published
+            if (!$course->isPublished()) {
+                return redirect()->route('dashboard.digilearn')
+                    ->withErrors(['course' => 'Course not available.']);
+            }
+
+
+            $stats = $course->getStats();
+
+            Log::channel('security')->info('course_viewed_via_lesson', [
+                'user_id' => Auth::id(),
+                'course_id' => $courseId,
+                'course_title' => $course->title,
+                'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
+                'ip' => request()->ip(),
+                'timestamp' => Carbon::now()->toISOString()
+            ]);
+
+            return view('dashboard.lesson-view', compact('course', 'selectedLevelGroup', 'stats'));
+        }
+
         // University: search across all course lessons
         if ($selectedLevelGroup === 'university') {
             $allLessons = [];
@@ -1700,6 +1738,7 @@ class DashboardController extends Controller
             ],
         ];
     }
+
 
     /**
      * Get class forum data based on user's grade.

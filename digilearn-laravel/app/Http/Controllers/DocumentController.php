@@ -9,18 +9,36 @@ class DocumentController extends Controller
     // First page - Document preview/selection
     public function viewDocument($lessonId, $type)
     {
-        // Check if user has selected a level
-        if (!session('selected_level')) {
+        // Check if this is an AJAX request to check document existence
+        if (request()->ajax() || request()->wantsJson()) {
+            // For AJAX requests, check level group selection first
+            if (!session('selected_level_group')) {
+                return response()->json([
+                    'exists' => false,
+                    'error' => 'level_required',
+                    'message' => 'Please select your grade level first.'
+                ]);
+            }
+
+            $document = $this->getDocumentForLesson($lessonId, $type);
+            return response()->json([
+                'exists' => $document !== null && !empty($document),
+                'document' => $document
+            ]);
+        }
+
+        // Check if user has selected a level group
+        if (!session('selected_level_group')) {
             return redirect()->route('dashboard.level-selection')
                 ->with('error', 'Please select your grade level first.');
         }
 
         $selectedLevel = session('selected_level');
-        
+
         // Get lesson data
         $lessons = $this->getLessonsForLevel($selectedLevel);
         $lesson = collect($lessons)->firstWhere('id', (int)$lessonId);
-        
+
         if (!$lesson) {
             return view('dashboard.document-viewer', [
                 'lesson' => null,
@@ -33,7 +51,7 @@ class DocumentController extends Controller
 
         // Get basic document info for preview
         $document = $this->getDocumentForLesson($lessonId, $type);
-        
+
         if (!$document) {
             // Pass a flag or empty document to the view
             return view('dashboard.document-viewer', [
@@ -51,16 +69,16 @@ class DocumentController extends Controller
     // Second page - Document content viewer
     public function viewDocumentContent($lessonId, $type)
     {
-        // Check if user has selected a level
-        if (!session('selected_level')) {
+        // Check if user has selected a level group
+        if (!session('selected_level_group')) {
             return redirect()->route('dashboard.level-selection')
                 ->with('error', 'Please select your grade level first.');
         }
 
-        $selectedLevel = session('selected_level');
-        
+        $selectedLevelGroup = session('selected_level_group');
+
         // Get lesson data
-        $lessons = $this->getLessonsForLevel($selectedLevel);
+        $lessons = $this->getLessonsForLevel($selectedLevelGroup);
         $lesson = collect($lessons)->firstWhere('id', (int)$lessonId);
         
         if (!$lesson) {
@@ -77,7 +95,7 @@ class DocumentController extends Controller
         }
 
         // Return the full content viewer page
-        return view('dashboard.document-content-viewer', compact('lesson', 'document', 'selectedLevel', 'type'));
+        return view('dashboard.document-content-viewer', compact('lesson', 'document', 'selectedLevelGroup', 'type'));
     }
 
     private function getLessonsForLevel($level)
@@ -549,18 +567,18 @@ Key concepts include:
     // Create new PPT
     public function createPpt($lessonId)
     {
-        // Check if user has selected a level
-        if (!session('selected_level')) {
+        // Check if user has selected a level group
+        if (!session('selected_level_group')) {
             return redirect()->route('dashboard.level-selection')
                 ->with('error', 'Please select your grade level first.');
         }
 
-        $selectedLevel = session('selected_level');
-        
+        $selectedLevelGroup = session('selected_level_group');
+
         // Get lesson data
-        $lessons = $this->getLessonsForLevel($selectedLevel);
+        $lessons = $this->getLessonsForLevel($selectedLevelGroup);
         $lesson = collect($lessons)->firstWhere('id', (int)$lessonId);
-        
+
         if (!$lesson) {
             return redirect()->route('dashboard.digilearn')
                 ->with('error', 'Lesson not found.');
@@ -582,7 +600,7 @@ Key concepts include:
             ]
         ];
 
-        return view('dashboard.ppt-creator', compact('lesson', 'newPpt', 'selectedLevel'));
+        return view('dashboard.ppt-creator', compact('lesson', 'newPpt', 'selectedLevelGroup'));
     }
 
     // Store new PPT
@@ -595,8 +613,8 @@ Key concepts include:
             'slides.*.title' => 'required|string',
         ]);
 
-        // Check if user has selected a level
-        if (!session('selected_level')) {
+        // Check if user has selected a level group
+        if (!session('selected_level_group')) {
             return response()->json(['error' => 'Session expired'], 401);
         }
 
@@ -630,8 +648,8 @@ Key concepts include:
             'slides' => 'required|array'
         ]);
 
-        // Check if user has selected a level
-        if (!session('selected_level')) {
+        // Check if user has selected a level group
+        if (!session('selected_level_group')) {
             return response()->json(['error' => 'Session expired'], 401);
         }
 
@@ -658,8 +676,8 @@ Key concepts include:
             'changes' => 'required|array'
         ]);
 
-        // Check if user has selected a level
-        if (!session('selected_level')) {
+        // Check if user has selected a level group
+        if (!session('selected_level_group')) {
             return response()->json(['error' => 'Session expired'], 401);
         }
 

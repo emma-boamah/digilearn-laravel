@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $lesson['title'] ?? 'Lesson' }} - {{ config('app.name', 'ShoutOutGh') }}</title>
+    <title>{{ isset($course) ? $course->title : ($lesson['title'] ?? 'Lesson') }} - {{ config('app.name', 'ShoutOutGh') }}</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -773,6 +773,28 @@
             height: 18px;
         }
 
+        /* Document availability indicator */
+        .document-indicator {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 16px;
+            height: 16px;
+            background-color: #10b981;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .action-btn {
+            position: relative;
+        }
+
         /* Enhanced Notes Section - Updated to match screenshot */
         .notes-section {
             background-color: var(--gray-100);
@@ -1328,6 +1350,300 @@
             }
         }
 
+        /* Course Content Styles */
+        .course-content-section {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .course-header-card {
+            background-color: var(--white);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-200);
+        }
+
+        .course-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 0.75rem;
+            line-height: 1.3;
+            letter-spacing: -0.025em;
+        }
+
+        .course-description {
+            color: var(--gray-600);
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .course-meta {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .course-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background-color: var(--gray-50);
+            border-radius: 0.5rem;
+            font-weight: 500;
+            color: var(--gray-700);
+            font-size: 0.875rem;
+        }
+
+        .course-stats {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            display: block;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-red);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            font-weight: 500;
+        }
+
+        .course-tabs {
+            background-color: var(--white);
+            border-radius: 1rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-200);
+            overflow: hidden;
+        }
+
+        .tab-buttons {
+            display: flex;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-600);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .tab-btn:hover {
+            background-color: var(--gray-50);
+            color: var(--gray-900);
+        }
+
+        .tab-btn.active {
+            color: var(--primary-red);
+            background-color: rgba(225, 30, 45, 0.05);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background-color: var(--primary-red);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 2rem;
+            min-height: 400px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .course-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1.5rem;
+            border: 1px solid var(--gray-200);
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s ease;
+            background-color: var(--white);
+        }
+
+        .course-item:hover {
+            box-shadow: var(--shadow-md);
+            border-color: var(--gray-300);
+        }
+
+        .item-thumbnail {
+            position: relative;
+            width: 200px;
+            height: 112px;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .item-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .item-icon {
+            width: 64px;
+            height: 64px;
+            background-color: var(--gray-100);
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray-600);
+            flex-shrink: 0;
+        }
+
+        .video-item .item-icon,
+        .document-item .item-icon,
+        .quiz-item .item-icon {
+            background-color: var(--secondary-blue);
+            color: var(--white);
+        }
+
+        .document-item .item-icon {
+            background-color: #10b981;
+        }
+
+        .quiz-item .item-icon {
+            background-color: #7c3aed;
+        }
+
+        .item-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .item-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 0.5rem;
+        }
+
+        .item-description {
+            color: var(--gray-600);
+            font-size: 0.875rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .item-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.75rem;
+            color: var(--gray-500);
+        }
+
+        .item-status.approved {
+            color: #10b981;
+            font-weight: 500;
+        }
+
+        .item-status.pending {
+            color: #f59e0b;
+            font-weight: 500;
+        }
+
+        .item-status.rejected {
+            color: #ef4444;
+            font-weight: 500;
+        }
+
+        .item-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .action-btn-small {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--secondary-blue);
+            background-color: var(--white);
+            color: var(--secondary-blue);
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn-small:hover {
+            background-color: var(--secondary-blue);
+            color: var(--white);
+        }
+
+        .action-btn-small.primary {
+            background-color: var(--secondary-blue);
+            color: var(--white);
+        }
+
+        .action-btn-small.primary:hover {
+            background-color: var(--secondary-blue-hover);
+        }
+
+        .empty-tab {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 2rem;
+            text-align: center;
+            color: var(--gray-500);
+        }
+
+        .empty-tab svg {
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-tab h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-tab p {
+            font-size: 0.875rem;
+            color: var(--gray-500);
+        }
+
         /* Enhanced Responsive Design */
         @media (max-width: 1200px) {
             .main-layout {
@@ -1715,61 +2031,250 @@
     <div class="main-layout">
         <!-- Enhanced Left Content -->
         <div class="left-content">
-            <!-- Sticky Video Section with scroll-triggered animations -->
-            <div class="sticky-video-section" id="stickyVideoSection">
-                <!-- Enhanced Video Player -->
-                <div class="video-container">
-                    <video controls class="video-player" poster="{{ secure_asset($lesson['thumbnail'] ?? '') }}">
-                        <source src="{{ secure_asset($lesson['video_url'] ?? '') }}" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                </div>
-                
-                <!-- Enhanced Lesson Info -->
-                <div class="lesson-info-card">
-                    <h1 class="lesson-title">{{ $lesson['title'] ?? 'Living and Non Living organism' }}</h1>
-                    
-                    <div class="lesson-meta">
-                        <div class="lesson-meta-item">
-                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                            </svg>
-                            {{ $lesson['subject'] ?? 'Science' }}
+            @if(isset($course))
+                <!-- Course Content with Tabs -->
+                <div class="course-content-section">
+                    <!-- Course Header -->
+                    <div class="course-header-card">
+                        <h1 class="course-title">{{ $course->title }}</h1>
+                        <p class="course-description">{{ $course->description }}</p>
+
+                        <div class="course-meta">
+                            <div class="course-meta-item">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                                </svg>
+                                {{ $course->subject }}
+                            </div>
+                            <div class="course-meta-item">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                                {{ $course->creator->name }}
+                            </div>
+                            <div class="course-meta-item">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0h6m-6 0l-2 9a2 2 0 002 2h6a2 2 0 002-2l-2-9"/>
+                                </svg>
+                                {{ $course->grade_level }}
+                            </div>
                         </div>
-                        <div class="lesson-meta-item">
-                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                            </svg>
-                            {{ $lesson['instructor'] ?? 'Prof. Aboagye' }}
-                        </div>
-                        <div class="lesson-meta-item">
-                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0h6m-6 0l-2 9a2 2 0 002 2h6a2 2 0 002-2l-2-9"/>
-                            </svg>
-                            {{ $lesson['year'] ?? '2022' }}
+
+                        <div class="course-stats">
+                            <div class="stat-item">
+                                <span class="stat-number">{{ $course->videos->count() }}</span>
+                                <span class="stat-label">Videos</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">{{ $course->documents->count() }}</span>
+                                <span class="stat-label">Documents</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">{{ $course->quizzes->count() }}</span>
+                                <span class="stat-label">Quizzes</span>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="lesson-actions">
-                        <button class="action-btn-primary">
-                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                            </svg>
-                            Save Lesson
-                        </button>
-                        <button class="action-btn-secondary">
-                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-                                <circle cx="18" cy="5" r="3"/>
-                                <circle cx="6" cy="12" r="3"/>
-                                <circle cx="18" cy="19" r="3"/>
-                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                            </svg>
-                            Share
-                        </button>
+
+                    <!-- Course Content Tabs -->
+                    <div class="course-tabs">
+                        <div class="tab-buttons">
+                            <button class="tab-btn active" data-tab="videos">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                </svg>
+                                Videos ({{ $course->videos->count() }})
+                            </button>
+                            <button class="tab-btn" data-tab="documents">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                    <polyline points="14,2 14,8 20,8"/>
+                                </svg>
+                                Documents ({{ $course->documents->count() }})
+                            </button>
+                            <button class="tab-btn" data-tab="quizzes">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                Quizzes ({{ $course->quizzes->count() }})
+                            </button>
+                        </div>
+
+                        <!-- Videos Tab -->
+                        <div class="tab-content active" id="videos-tab">
+                            @forelse($course->videos as $video)
+                            <div class="course-item video-item">
+                                <div class="item-thumbnail">
+                                    <video class="item-video" muted preload="metadata" poster="{{ secure_asset($video->thumbnail_path) }}">
+                                        <source src="{{ secure_asset($video->video_path) }}" type="video/mp4">
+                                    </video>
+                                    <div class="play-overlay">
+                                        <div class="play-button">
+                                            <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M8 5v14l11-7z"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="item-duration">{{ $video->duration_seconds ? floor($video->duration_seconds / 60) . ':' . str_pad($video->duration_seconds % 60, 2, '0', STR_PAD_LEFT) : 'N/A' }}</div>
+                                </div>
+                                <div class="item-info">
+                                    <h4 class="item-title">{{ $video->title }}</h4>
+                                    <p class="item-description">{{ Str::limit($video->description, 100) }}</p>
+                                    <div class="item-meta">
+                                        <span class="item-views">{{ number_format($video->views ?? 0) }} views</span>
+                                        <span class="item-status {{ $video->status }}">{{ ucfirst($video->status) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            @empty
+                            <div class="empty-tab">
+                                <svg width="48" height="48" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                </svg>
+                                <h3>No videos in this course</h3>
+                                <p>Videos will be added to this course soon.</p>
+                            </div>
+                            @endforelse
+                        </div>
+
+                        <!-- Documents Tab -->
+                        <div class="tab-content" id="documents-tab">
+                            @forelse($course->documents as $document)
+                            <div class="course-item document-item">
+                                <div class="item-icon">
+                                    <svg width="32" height="32" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                        <polyline points="14,2 14,8 20,8"/>
+                                    </svg>
+                                </div>
+                                <div class="item-info">
+                                    <h4 class="item-title">{{ $document->title }}</h4>
+                                    <p class="item-description">{{ Str::limit($document->description, 100) }}</p>
+                                    <div class="item-meta">
+                                        <span class="item-size">{{ $document->getFormattedFileSize() }}</span>
+                                        <span class="item-type">{{ strtoupper($document->file_type ?? 'PDF') }}</span>
+                                    </div>
+                                </div>
+                                <div class="item-actions">
+                                    <a href="{{ route('dashboard.lesson.document', ['lessonId' => $document->id, 'type' => 'pdf']) }}" class="action-btn-small">
+                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M14 3v4a1 1 0 001 1h4"/>
+                                            <path d="M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/>
+                                            <path d="M9 9h6"/>
+                                            <path d="M9 13h6"/>
+                                            <path d="M9 17h6"/>
+                                        </svg>
+                                        View
+                                    </a>
+                                </div>
+                            </div>
+                            @empty
+                            <div class="empty-tab">
+                                <svg width="48" height="48" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                    <polyline points="14,2 14,8 20,8"/>
+                                </svg>
+                                <h3>No documents in this course</h3>
+                                <p>Documents will be added to this course soon.</p>
+                            </div>
+                            @endforelse
+                        </div>
+
+                        <!-- Quizzes Tab -->
+                        <div class="tab-content" id="quizzes-tab">
+                            @forelse($course->quizzes as $quiz)
+                            <div class="course-item quiz-item">
+                                <div class="item-icon">
+                                    <svg width="32" height="32" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                </div>
+                                <div class="item-info">
+                                    <h4 class="item-title">{{ $quiz->title }}</h4>
+                                    <p class="item-description">{{ Str::limit($quiz->description, 100) }}</p>
+                                    <div class="item-meta">
+                                        <span class="item-questions">{{ $quiz->questions_count ?? 0 }} questions</span>
+                                        <span class="item-subject">{{ $quiz->subject }}</span>
+                                    </div>
+                                </div>
+                                <div class="item-actions">
+                                    <a href="{{ route('quiz.take', ['quizId' => $quiz->id]) }}" class="action-btn-small primary">
+                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M14.23 12.004a2.236 2.236 0 0 0 .53-1.482 2.236 2.236 0 0 0-.53-1.482l-4.23-2.882a2.236 2.236 0 0 0-2.46 0L3.31 9.04a2.236 2.236 0 0 0 0 3.848l4.23 2.882a2.236 2.236 0 0 0 2.46 0l4.23-2.882z"/>
+                                        </svg>
+                                        Take Quiz
+                                    </a>
+                                </div>
+                            </div>
+                            @empty
+                            <div class="empty-tab">
+                                <svg width="48" height="48" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                <h3>No quizzes in this course</h3>
+                                <p>Quizzes will be added to this course soon.</p>
+                            </div>
+                            @endforelse
+                        </div>
                     </div>
                 </div>
-            </div>
+            @else
+                <!-- Sticky Video Section with scroll-triggered animations -->
+                <div class="sticky-video-section" id="stickyVideoSection">
+                    <!-- Enhanced Video Player -->
+                    <div class="video-container">
+                        <video controls class="video-player" poster="{{ secure_asset($lesson['thumbnail'] ?? '') }}">
+                            <source src="{{ secure_asset($lesson['video_url'] ?? '') }}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+
+                    <!-- Enhanced Lesson Info -->
+                    <div class="lesson-info-card">
+                        <h1 class="lesson-title">{{ $lesson['title'] ?? 'Living and Non Living organism' }}</h1>
+
+                        <div class="lesson-meta">
+                            <div class="lesson-meta-item">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                                </svg>
+                                {{ $lesson['subject'] ?? 'Science' }}
+                            </div>
+                            <div class="lesson-meta-item">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                                {{ $lesson['instructor'] ?? 'Prof. Aboagye' }}
+                            </div>
+                            <div class="lesson-meta-item">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0h6m-6 0l-2 9a2 2 0 002 2h6a2 2 0 002-2l-2-9"/>
+                                </svg>
+                                {{ $lesson['year'] ?? '2022' }}
+                            </div>
+                        </div>
+
+                        <div class="lesson-actions">
+                            <button class="action-btn-primary">
+                                <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                                </svg>
+                                Save Lesson
+                            </button>
+                            <button class="action-btn-secondary">
+                                <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                                    <circle cx="18" cy="5" r="3"/>
+                                    <circle cx="6" cy="12" r="3"/>
+                                    <circle cx="18" cy="19" r="3"/>
+                                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                                </svg>
+                                Share
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            @endif
             
             <!-- Enhanced Comments Section -->
             <div class="comments-card">
@@ -1831,20 +2336,26 @@
                     </svg>
                     Test
                 </button>
-                <button class="action-btn action-navigate-btn" data-href="{{ route('dashboard.lesson.document', ['lessonId' => $lesson['id'], 'type' => 'pdf']) }}">
+                <button class="action-btn action-navigate-btn" data-href="{{ route('dashboard.lesson.document', ['lessonId' => $lesson['id'], 'type' => 'pdf']) }}" data-document-type="pdf">
                     <svg fill="currentColor" viewBox="0 0 24 24">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                         <polyline points="14,2 14,8 20,8"/>
                     </svg>
                     Document
+                    <div class="document-indicator" id="pdf-indicator" style="display: none;">
+                        <i class="fas fa-check"></i>
+                    </div>
                 </button>
-                <button class="action-btn action-navigate-btn" data-href="{{ route('dashboard.lesson.document', ['lessonId' => $lesson['id'], 'type' => 'ppt']) }}">
+                <button class="action-btn action-navigate-btn" data-href="{{ route('dashboard.lesson.document', ['lessonId' => $lesson['id'], 'type' => 'ppt']) }}" data-document-type="ppt">
                     <svg fill="currentColor" viewBox="0 0 24 24">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                         <line x1="9" y1="9" x2="15" y2="9"/>
                         <line x1="9" y1="12" x2="15" y2="12"/>
                     </svg>
                     PPT
+                    <div class="document-indicator" id="ppt-indicator" style="display: none;">
+                        <i class="fas fa-check"></i>
+                    </div>
                 </button>
             </div>
 
@@ -2040,6 +2551,8 @@
             initializeNavigation();
             initializeCommentsToggle();
             initializeMobileVideoScroll();
+            initializeCourseTabs();
+            checkDocumentAvailability();
         });
 
         // Enhanced mobile video scroll functionality
@@ -2163,6 +2676,47 @@
             }
         }
 
+        // Check document availability and show indicators
+        function checkDocumentAvailability() {
+            const lessonId = '{{ $lesson["id"] ?? "" }}';
+
+            if (!lessonId) return;
+
+            // Check PDF documents
+            fetch(`/dashboard/lesson/${lessonId}/document/pdf`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const pdfIndicator = document.getElementById('pdf-indicator');
+                if (data.exists && pdfIndicator) {
+                    pdfIndicator.style.display = 'flex';
+                }
+            })
+            .catch(error => console.error('Error checking PDF availability:', error));
+
+            // Check PPT documents
+            fetch(`/dashboard/lesson/${lessonId}/document/ppt`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const pptIndicator = document.getElementById('ppt-indicator');
+                if (data.exists && pptIndicator) {
+                    pptIndicator.style.display = 'flex';
+                }
+            })
+            .catch(error => console.error('Error checking PPT availability:', error));
+        }
+
         // Enhanced action button functionality
         function initializeActionButtons() {
             const actionButtons = document.querySelectorAll('.action-btn');
@@ -2193,10 +2747,45 @@
                 });
             });
 
-            // Navigation buttons
+            // Navigation buttons - Check if documents exist before navigating
             document.querySelectorAll('.action-navigate-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                window.location.href = this.dataset.href;
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const href = this.dataset.href;
+                    const buttonText = this.textContent.trim().toLowerCase();
+
+                    // Check if this is a document or PPT button
+                    if (buttonText.includes('document') || buttonText.includes('ppt')) {
+                        // Make AJAX call to check if documents exist
+                        fetch(href, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.error === 'level_required') {
+                                // Level selection required, redirect to level selection
+                                window.location.href = '/dashboard/level-selection';
+                            } else if (data.exists) {
+                                // Documents exist, proceed with navigation
+                                window.location.href = href;
+                            } else {
+                                // No documents found, show message
+                                showNoDocumentsMessage(buttonText.includes('ppt') ? 'PPT' : 'Document');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error checking documents:', error);
+                            // On error, show message instead of redirecting
+                            showNoDocumentsMessage(buttonText.includes('ppt') ? 'PPT' : 'Document');
+                        });
+                    } else {
+                        // For other buttons, proceed normally
+                        window.location.href = href;
+                    }
                 });
             });
         }
@@ -2716,12 +3305,90 @@
                 <i class="fas fa-check-circle"></i>
                 ${message}
             `;
-            
+
             document.body.appendChild(successDiv);
-            
+
             setTimeout(() => {
                 successDiv.remove();
             }, 3000);
+        }
+
+        function showNoDocumentsMessage(type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'no-documents-message';
+            messageDiv.innerHTML = `
+                <i class="fas fa-info-circle"></i>
+                No ${type.toLowerCase()} documents are currently attached to this video lesson.
+            `;
+
+            // Style the message
+            messageDiv.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background-color: var(--white);
+                border: 2px solid var(--gray-200);
+                border-radius: 1rem;
+                padding: 2rem;
+                box-shadow: var(--shadow-xl);
+                z-index: 2000;
+                max-width: 400px;
+                text-align: center;
+                font-size: 0.875rem;
+                color: var(--gray-700);
+                animation: slideIn 0.3s ease;
+            `;
+
+            // Add close button
+            const closeBtn = document.createElement('button');
+            closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+            closeBtn.style.cssText = `
+                position: absolute;
+                top: 1rem;
+                right: 1rem;
+                background: none;
+                border: none;
+                cursor: pointer;
+                color: var(--gray-500);
+                font-size: 1.25rem;
+            `;
+            closeBtn.onclick = () => messageDiv.remove();
+
+            messageDiv.appendChild(closeBtn);
+            document.body.appendChild(messageDiv);
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // Course tabs functionality
+        function initializeCourseTabs() {
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const tabName = this.dataset.tab;
+
+                    // Remove active class from all buttons
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    // Add active class to clicked button
+                    this.classList.add('active');
+
+                    // Hide all tab contents
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    // Show selected tab content
+                    const targetContent = document.getElementById(tabName + '-tab');
+                    if (targetContent) {
+                        targetContent.classList.add('active');
+                    }
+                });
+            });
         }
 
         // Add smooth scrolling for better UX
