@@ -58,6 +58,21 @@ return [
             'connection' => 'default',
         ],
 
+        'soketi' => [
+            'driver' => 'pusher',
+            'key' => env('SOKETI_APP_KEY', 'local'),
+            'secret' => env('SOKETI_APP_SECRET', 'local'),
+            'app_id' => env('SOKETI_APP_ID', 'local'),
+            'options' => [
+                'cluster' => env('SOKETI_APP_CLUSTER', 'local'),
+                'host' => env('SOKETI_HOST', '127.0.0.1'),
+                'port' => env('SOKETI_PORT', 6001),
+                'scheme' => env('SOKETI_SCHEME', 'http'),
+                'encrypted' => false,
+                'useTLS' => false,
+            ],
+        ],
+
         'log' => [
             'driver' => 'log',
         ],

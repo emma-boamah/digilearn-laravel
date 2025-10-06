@@ -606,6 +606,43 @@
                     </div>
                 </div>
             </div>
+
+            <div class="progress-card">
+                <div class="progress-card-header">
+                    <h3 class="progress-card-title">Time Invested</h3>
+                    <div class="progress-card-icon" style="background-color: var(--warning-yellow); color: var(--gray-700);">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="progress-value">{{ $analytics['engagement']['time_spent_formatted'] ?? '0m' }}</div>
+                <div class="progress-label">Total Time Spent</div>
+                <div class="progress-bar-container">
+                    <div class="progress-percentage">
+                        Active for {{ $analytics['level_info']['duration'] ?? 'Just started' }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-card">
+                <div class="progress-card-header">
+                    <h3 class="progress-card-title">Learning Streak</h3>
+                    <div class="progress-card-icon" style="background-color: var(--primary-red);">
+                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/>
+                            <path d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="progress-value">{{ $analytics['engagement']['current_streak'] ?? 0 }}</div>
+                <div class="progress-label">Day Streak</div>
+                <div class="progress-bar-container">
+                    <div class="progress-percentage">
+                        Best: {{ $analytics['engagement']['longest_streak'] ?? 0 }} days
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Level Progression Section -->
@@ -779,6 +816,42 @@
             </div>
         </div>
 
+        <!-- Achievements & Milestones -->
+        @if(isset($analytics['milestones']) && count($analytics['milestones']) > 0)
+        <div class="activity-section">
+            <div class="activity-header">
+                <h3 class="activity-title">Achievements & Milestones</h3>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                @foreach($analytics['milestones'] as $milestone)
+                <div class="activity-item" style="text-align: center; padding: 1.5rem;">
+                    <div class="activity-icon" style="width: 60px; height: 60px; margin: 0 auto 1rem; font-size: 1.5rem;">
+                        {{ $milestone['icon'] }}
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-name" style="font-weight: 700; color: var(--gray-900);">
+                            {{ $milestone['title'] }}
+                        </div>
+                        <div class="activity-meta" style="color: var(--gray-600);">
+                            @if($milestone['type'] === 'lessons')
+                                Completed {{ $milestone['count'] }} lessons
+                            @elseif($milestone['type'] === 'quizzes')
+                                @if($milestone['count'] >= 80)
+                                    Achieved {{ $milestone['count'] }}% average score
+                                @else
+                                    Passed {{ $milestone['count'] }} quizzes
+                                @endif
+                            @elseif($milestone['type'] === 'streak')
+                                {{ $milestone['count'] }}-day learning streak
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
         <!-- Progression History -->
         @if($progressionHistory && $progressionHistory->count() > 0)
         <div class="activity-section">
@@ -795,12 +868,12 @@
                     </div>
                     <div class="activity-content">
                         <div class="activity-name">
-                            Progressed from {{ ucwords(str_replace('-', ' ', $progression->from_level)) }} 
+                            Progressed from {{ ucwords(str_replace('-', ' ', $progression->from_level)) }}
                             to {{ ucwords(str_replace('-', ' ', $progression->to_level)) }}
                         </div>
                         <div class="activity-meta">
-                            {{ $progression->progressed_at->format('M j, Y') }} • 
-                            {{ $progression->lessons_completed }} lessons • 
+                            {{ $progression->progressed_at->format('M j, Y') }} •
+                            {{ $progression->lessons_completed }} lessons •
                             {{ $progression->quizzes_passed }} quizzes passed
                         </div>
                     </div>

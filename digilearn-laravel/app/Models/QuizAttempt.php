@@ -67,8 +67,12 @@ class QuizAttempt extends Model
             }
         }
 
+        // Get minimum passing score from standards
+        $standards = \App\Models\ProgressionStandard::getStandardsForLevel($quizData['level_group'] ?? 'primary-lower');
+        $minimumScore = $standards['minimum_quiz_score'];
+
         $scorePercentage = ($correctAnswers / $totalQuestions) * 100;
-        $passed = $scorePercentage >= 70; // 70% passing grade
+        $passed = $scorePercentage >= $minimumScore;
 
         return static::create([
             'user_id' => $userId,

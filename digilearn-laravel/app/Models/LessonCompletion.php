@@ -67,8 +67,12 @@ class LessonCompletion extends Model
         $completion->watch_time_seconds = max($completion->watch_time_seconds, $watchTimeSeconds);
         $completion->completion_percentage = min(100, ($completion->watch_time_seconds / $totalDurationSeconds) * 100);
         
-        // Mark as fully completed if watched 90% or more
-        if ($completion->completion_percentage >= 90 && !$completion->fully_completed) {
+        // Get the watch threshold from standards
+        $standards = \App\Models\ProgressionStandard::getStandardsForLevel($lessonData['level_group'] ?? 'primary-lower');
+        $watchThreshold = $standards['lesson_watch_threshold_percentage'];
+
+        // Mark as fully completed if watched above threshold or more
+        if ($completion->completion_percentage >= $watchThreshold && !$completion->fully_completed) {
             $completion->fully_completed = true;
             $completion->completed_at = now();
         }

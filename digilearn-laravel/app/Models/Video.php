@@ -84,6 +84,22 @@ class Video extends Model
     }
 
     /**
+     * Get the comments for this video.
+     */
+    public function comments()
+    {
+        return $this->hasMany(Comment::class)->approved()->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Get the top-level comments for this video (excluding replies).
+     */
+    public function topLevelComments()
+    {
+        return $this->hasMany(Comment::class)->whereNull('parent_id')->approved()->with(['user', 'replies'])->orderBy('created_at', 'desc');
+    }
+
+    /**
      * Check if video is pending review
      */
     public function isPending()

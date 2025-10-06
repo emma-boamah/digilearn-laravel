@@ -187,6 +187,11 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/dashboard/notes/{id}', [NotesController::class, 'update'])->name('dashboard.notes.update');
     Route::delete('/dashboard/notes/{id}', [NotesController::class, 'destroy'])->name('dashboard.notes.destroy');
 
+    // Comments
+    Route::get('/dashboard/lesson/{lessonId}/comments', [DashboardController::class, 'getComments'])->name('dashboard.lesson.comments');
+    Route::post('/dashboard/lesson/{lessonId}/comment', [DashboardController::class, 'postComment'])->name('dashboard.lesson.comment');
+    Route::post('/dashboard/comment/{commentId}/like', [DashboardController::class, 'likeComment'])->name('dashboard.comment.like');
+
     // Quiz
     Route::prefix('quiz')->name('quiz.')->group(function () {
         Route::get('/', [QuizController::class, 'index'])->name('index');
@@ -338,6 +343,17 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::put('/{document}', [AdminController::class, 'updateDocument'])->name('update');
         Route::delete('/{document}', [AdminController::class, 'destroyDocument'])->name('destroy');
         Route::post('/{document}/toggle-feature', [AdminController::class, 'toggleDocumentFeature'])->name('toggle-feature');
+    });
+
+    // Progress Management
+    Route::prefix('progress')->name('progress.')->group(function () {
+        Route::get('/', [AdminController::class, 'progressOverview'])->name('overview');
+        Route::get('/standards', [AdminController::class, 'progressionStandards'])->name('standards');
+        Route::post('/standards', [AdminController::class, 'storeProgressionStandard'])->name('standards.store');
+        Route::put('/standards/{standard}', [AdminController::class, 'updateProgressionStandard'])->name('standards.update');
+        Route::post('/standards/{standard}/toggle', [AdminController::class, 'toggleStandardStatus'])->name('standards.toggle');
+        Route::get('/user/{userId}', [AdminController::class, 'userProgressDetail'])->name('user.detail');
+        Route::post('/user/{userId}/progress', [AdminController::class, 'manualProgressUser'])->name('user.progress');
     });
 
     // Pricing Management

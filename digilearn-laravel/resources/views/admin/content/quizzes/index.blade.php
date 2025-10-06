@@ -131,7 +131,7 @@
                                 </form>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button onclick="openEditModal({{ $quiz->id }}, '{{ $quiz->title }}', '{{ $quiz->subject }}', '{{ $quiz->video_id }}', '{{ $quiz->grade_level }}', `{{ addslashes($quiz->quiz_data) }}`, {{ $quiz->is_featured ? 'true' : 'false' }})" class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                               <button onclick="openEditModal(this, {{ $quiz->id }}, '{{ addslashes($quiz->title) }}', '{{ addslashes($quiz->subject) }}', '{{ $quiz->video_id }}', '{{ $quiz->grade_level }}', {{ $quiz->is_featured ? 'true' : 'false' }})" data-quiz-data='@json($quiz->quiz_data)' class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
                                 <form action="{{ route('admin.content.quizzes.destroy', $quiz) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this quiz? This action cannot be undone.');">
                                     @csrf
                                     @method('DELETE')
@@ -206,9 +206,15 @@
                 </select>
             </div>
             <div class="mb-4">
-                <label for="add_quiz_data" class="block text-sm font-medium text-gray-700">Quiz Content (e.g., JSON or text)</label>
-                <textarea name="quiz_data" id="add_quiz_data" rows="5" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Quiz Questions</label>
+                <div id="add_questions_container" class="space-y-4">
+                    <!-- Questions will be added here -->
+                </div>
+                <button type="button" onclick="addQuestion('add')" class="mt-3 bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 transition-colors text-sm">
+                    <i class="fas fa-plus mr-1"></i> Add Question
+                </button>
             </div>
+            <input type="hidden" name="quiz_data" id="add_quiz_data">
             @if(Auth::user()->is_superuser)
             <div class="mb-4 flex items-center">
                 <input type="checkbox" name="is_featured" id="add_is_featured" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
@@ -260,9 +266,15 @@
                 </select>
             </div>
             <div class="mb-4">
-                <label for="edit_quiz_data" class="block text-sm font-medium text-gray-700">Quiz Content (e.g., JSON or text)</label>
-                <textarea name="quiz_data" id="edit_quiz_data" rows="5" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Quiz Questions</label>
+                <div id="edit_questions_container" class="space-y-4">
+                    <!-- Questions will be added here -->
+                </div>
+                <button type="button" onclick="addQuestion('edit')" class="mt-3 bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 transition-colors text-sm">
+                    <i class="fas fa-plus mr-1"></i> Add Question
+                </button>
             </div>
+            <input type="hidden" name="quiz_data" id="edit_quiz_data">
             @if(Auth::user()->is_superuser)
             <div class="mb-4 flex items-center">
                 <input type="checkbox" name="is_featured" id="edit_is_featured" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
@@ -287,7 +299,7 @@
         document.getElementById(modalId).classList.add('hidden');
     }
 
-    function openEditModal(id, title, subject, videoId, gradeLevel, quizData, isFeatured) {
+    function openEditModal(button, id, title, subject, videoId, gradeLevel, isFeatured) {
         const form = document.getElementById('editQuizForm');
         form.action = `/admin/content/quizzes/${id}`; // Update action URL
 
@@ -295,11 +307,122 @@
         document.getElementById('edit_subject').value = subject;
         document.getElementById('edit_video_id').value = videoId;
         document.getElementById('edit_grade_level').value = gradeLevel;
-        document.getElementById('edit_quiz_data').value = quizData;
         document.getElementById('edit_is_featured').checked = isFeatured;
+
+        // Clear existing questions
+        document.getElementById('edit_questions_container').innerHTML = '';
+
+        // Load existing quiz data from button's data attribute
+        const quizData = button.getAttribute('data-quiz-data');
+        if (quizData) {
+            try {
+                const quizObj = JSON.parse(quizData);
+                if (quizObj.questions && Array.isArray(quizObj.questions)) {
+                    quizObj.questions.forEach((question, index) => {
+                        addQuestion('edit', question);
+                    });
+                }
+            } catch (e) {
+                console.error('Invalid quiz data:', e);
+            }
+        }
 
         openModal('editQuizModal');
     }
+
+    function addQuestion(type, questionData = null) {
+        const container = document.getElementById(`${type}_questions_container`);
+        const questionIndex = container.children.length;
+
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'border border-gray-200 rounded-lg p-4 bg-gray-50';
+        questionDiv.innerHTML = `
+            <div class="flex justify-between items-center mb-3">
+                <h4 class="text-sm font-medium text-gray-700">Question ${questionIndex + 1}</h4>
+                <button type="button" onclick="removeQuestion(this)" class="text-red-600 hover:text-red-800">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <div class="mb-3">
+                <label class="block text-xs font-medium text-gray-600 mb-1">Question Text</label>
+                <input type="text" class="question-text w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Enter your question" value="${questionData ? questionData.text || '' : ''}">
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                ${['A', 'B', 'C', 'D'].map((letter, index) => `
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Option ${letter}</label>
+                        <input type="text" class="option-text w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Enter option ${letter}" value="${questionData && questionData.options ? questionData.options[index] || '' : ''}">
+                    </div>
+                `).join('')}
+            </div>
+            <div class="mb-3">
+                <label class="block text-xs font-medium text-gray-600 mb-2">Correct Answer</label>
+                <div class="flex space-x-4">
+                    ${['A', 'B', 'C', 'D'].map((letter, index) => `
+                        <label class="flex items-center">
+                            <input type="radio" name="correct_${type}_${questionIndex}" value="${index}" class="correct-radio h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500" ${questionData && questionData.correct === index ? 'checked' : ''}>
+                            <span class="ml-2 text-sm text-gray-700">${letter}</span>
+                        </label>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        container.appendChild(questionDiv);
+    }
+
+    function removeQuestion(button) {
+        button.closest('.border').remove();
+        updateQuestionNumbers();
+    }
+
+    function updateQuestionNumbers() {
+        document.querySelectorAll('#add_questions_container .border, #edit_questions_container .border').forEach((div, index) => {
+            div.querySelector('h4').textContent = `Question ${index + 1}`;
+        });
+    }
+
+    function generateQuizData(type) {
+        const container = document.getElementById(`${type}_questions_container`);
+        const questions = [];
+
+        container.querySelectorAll('.border').forEach((questionDiv, questionIndex) => {
+            const questionText = questionDiv.querySelector('.question-text').value.trim();
+            const optionInputs = questionDiv.querySelectorAll('.option-text');
+            const correctRadio = questionDiv.querySelector(`input[name="correct_${type}_${questionIndex}"]:checked`);
+
+            if (questionText && optionInputs.length === 4 && correctRadio) {
+                const options = Array.from(optionInputs).map(input => input.value.trim()).filter(opt => opt);
+                if (options.length === 4) {
+                    questions.push({
+                        id: questionIndex + 1,
+                        text: questionText,
+                        options: options,
+                        correct: parseInt(correctRadio.value)
+                    });
+                }
+            }
+        });
+
+        const quizData = { questions: questions };
+        document.getElementById(`${type}_quiz_data`).value = JSON.stringify(quizData, null, 2);
+        return questions.length > 0;
+    }
+
+    // Form submission handlers
+    document.getElementById('addQuizModal').querySelector('form').addEventListener('submit', function(e) {
+        if (!generateQuizData('add')) {
+            e.preventDefault();
+            alert('Please add at least one complete question with 4 options and select a correct answer.');
+        }
+    });
+
+    document.getElementById('editQuizForm').addEventListener('submit', function(e) {
+        if (!generateQuizData('edit')) {
+            e.preventDefault();
+            alert('Please add at least one complete question with 4 options and select a correct answer.');
+        }
+    });
     // Handle subject selection for adding quizzes
     // This will update the hidden input when a subject is selected from the dropdown
     // This allows the user to select an existing subject from the dropdown

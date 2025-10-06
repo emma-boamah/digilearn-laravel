@@ -140,7 +140,7 @@
                         </div>
                     </div>
                     <div class="mt-3 bg-{{ $plan['color'] }}-200 rounded-full h-2">
-                        <div class="bg-{{ $plan['color'] }}-600 h-2 rounded-full" style="width: {{ ($plan['subscribers'] / collect($stats['subscription_plans'])->sum('subscribers')) * 100 }}%"></div>
+                        <div class="bg-{{ $plan['color'] }}-600 h-2 rounded-full" style="width: {{ collect($stats['subscription_plans'])->sum('subscribers') > 0 ? ($plan['subscribers'] / collect($stats['subscription_plans'])->sum('subscribers')) * 100 : 0 }}%"></div>
                     </div>
                 </div>
                 @endforeach

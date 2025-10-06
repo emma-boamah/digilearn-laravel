@@ -2281,7 +2281,7 @@
                 <div class="comments-header">
                     <div class="comments-header-left">
                         <span class="comments-count">
-                            {{ count($comments ?? []) }} Comments
+                            <span id="commentsCount">0</span> Comments
                             <button class="comments-dropdown" id="commentsToggleBtn">
                                 <svg class="dropdown-icon" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M19 9l-7 7-7-7"/>
@@ -2290,38 +2290,22 @@
                         </span>
                     </div>
                 </div>
-                
+
                 <div class="comment-input-container">
                     <div class="comment-avatar">{{ substr(auth()->user()->name ?? 'U', 0, 1) }}</div>
-                    <input type="text" class="comment-input" placeholder="Add a comment..." />
+                    <input type="text" class="comment-input" id="commentInput" placeholder="Add a comment..." />
+                    <button class="comment-submit-btn" id="commentSubmitBtn" style="display: none;">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                        </svg>
+                    </button>
                 </div>
-                
+
                 <div class="comments-list" id="commentsList">
-                    <!-- Sample comments to match screenshot -->
-                    @for($i = 1; $i <= 7; $i++)
-                    <div class="comment">
-                        <div class="comment-avatar">E</div>
-                        <div class="comment-content">
-                            <div class="comment-header">
-                                <span class="comment-author">einana kojo</span>
-                                <span class="comment-time">3 hours ago</span>
-                            </div>
-                            <p class="comment-text">very interesting and helpful lesson please add more to it. this time make it more easy.</p>
-                            <div class="comment-actions">
-                                <button class="comment-action">
-                                    <i class="fas fa-thumbs-up"></i>
-                                    <span class="comment-like-count">22</span>
-                                </button>
-                                <button class="comment-action">
-                                    <i class="fas fa-thumbs-down"></i>
-                                </button>
-                                <button class="comment-action">
-                                    Reply
-                                </button>
-                            </div>
-                        </div>
+                    <div class="loading-comments" id="loadingComments">
+                        <div class="loading-spinner"></div>
+                        <span>Loading comments...</span>
                     </div>
-                    @endfor
                 </div>
             </div>
         </div>
@@ -2630,22 +2614,319 @@
 
         // Enhanced comment interactions
         function initializeComments() {
-            const commentActions = document.querySelectorAll('.comment-action');
-            commentActions.forEach(action => {
-                action.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const actionText = this.textContent.trim();
-                    console.log('Comment action:', actionText);
-                    
-                    // Add visual feedback for interactions
-                    if (actionText.includes('👍') || this.querySelector('.fa-thumbs-up')) {
-                        this.style.color = 'var(--primary-red)';
-                        setTimeout(() => {
-                            this.style.color = '';
-                        }, 200);
+            const lessonId = '{{ $lesson["id"] ?? "" }}';
+            const commentInput = document.getElementById('commentInput');
+            const commentSubmitBtn = document.getElementById('commentSubmitBtn');
+
+            // Load comments on page load
+            loadComments();
+    
+            // Initialize real-time comment broadcasting
+            initializeCommentBroadcasting();
+
+            // Show submit button when typing
+            if (commentInput) {
+                commentInput.addEventListener('input', function() {
+                    if (this.value.trim().length > 0) {
+                        commentSubmitBtn.style.display = 'block';
+                    } else {
+                        commentSubmitBtn.style.display = 'none';
                     }
                 });
+
+                // Submit comment on Enter key
+                commentInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        submitComment();
+                    }
+                });
+            }
+
+            // Submit comment button click
+            if (commentSubmitBtn) {
+                commentSubmitBtn.addEventListener('click', submitComment);
+            }
+        }
+
+        // Load comments from server
+        function loadComments() {
+            const lessonId = '{{ $lesson["id"] ?? "" }}';
+            const commentsList = document.getElementById('commentsList');
+            const loadingComments = document.getElementById('loadingComments');
+
+            if (!lessonId) return;
+
+            fetch(`/dashboard/lesson/${lessonId}/comments`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderComments(data.comments);
+                        document.getElementById('commentsCount').textContent = data.total_count;
+                    } else {
+                        commentsList.innerHTML = '<div class="error-message">Failed to load comments</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading comments:', error);
+                    commentsList.innerHTML = '<div class="error-message">Failed to load comments</div>';
+                });
+        }
+
+        // Render comments in the UI
+        function renderComments(comments) {
+            const commentsList = document.getElementById('commentsList');
+
+            if (comments.length === 0) {
+                commentsList.innerHTML = '<div class="no-comments">No comments yet. Be the first to comment!</div>';
+                return;
+            }
+
+            const commentsHtml = comments.map(comment => `
+                <div class="comment" data-comment-id="${comment.id}">
+                    <div class="comment-avatar">${comment.user.avatar_initial}</div>
+                    <div class="comment-content">
+                        <div class="comment-header">
+                            <span class="comment-author">${comment.user.name}</span>
+                            <span class="comment-time">${comment.time_ago}</span>
+                        </div>
+                        <p class="comment-text">${comment.content}</p>
+                        <div class="comment-actions">
+                            <button class="comment-action like-btn" data-action="like" data-comment-id="${comment.id}">
+                                <i class="fas fa-thumbs-up"></i>
+                                <span class="comment-like-count">${comment.likes_count}</span>
+                            </button>
+                            <button class="comment-action dislike-btn" data-action="dislike" data-comment-id="${comment.id}">
+                                <i class="fas fa-thumbs-down"></i>
+                                <span class="comment-dislike-count">${comment.dislikes_count}</span>
+                            </button>
+                            <button class="comment-action reply-btn" data-comment-id="${comment.id}">
+                                Reply
+                            </button>
+                        </div>
+                        ${comment.replies && comment.replies.length > 0 ? `
+                            <div class="comment-replies">
+                                ${comment.replies.map(reply => `
+                                    <div class="comment reply" data-comment-id="${reply.id}">
+                                        <div class="comment-avatar">${reply.user.avatar_initial}</div>
+                                        <div class="comment-content">
+                                            <div class="comment-header">
+                                                <span class="comment-author">${reply.user.name}</span>
+                                                <span class="comment-time">${reply.time_ago}</span>
+                                            </div>
+                                            <p class="comment-text">${reply.content}</p>
+                                            <div class="comment-actions">
+                                                <button class="comment-action like-btn" data-action="like" data-comment-id="${reply.id}">
+                                                    <i class="fas fa-thumbs-up"></i>
+                                                    <span class="comment-like-count">${reply.likes_count}</span>
+                                                </button>
+                                                <button class="comment-action dislike-btn" data-action="dislike" data-comment-id="${reply.id}">
+                                                    <i class="fas fa-thumbs-down"></i>
+                                                    <span class="comment-dislike-count">${reply.dislikes_count}</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            commentsList.innerHTML = commentsHtml;
+
+            // Add event listeners for comment actions
+            attachCommentEventListeners();
+        }
+
+        // Submit a new comment
+        function submitComment(parentId = null) {
+            const commentInput = document.getElementById('commentInput');
+            const commentText = commentInput.value.trim();
+            const lessonId = '{{ $lesson["id"] ?? "" }}';
+
+            if (!commentText || !lessonId) return;
+
+            const submitBtn = document.getElementById('commentSubmitBtn');
+            const originalContent = submitBtn.innerHTML;
+
+            // Show loading state
+            submitBtn.innerHTML = '<div class="loading-spinner"></div>';
+            submitBtn.disabled = true;
+
+            fetch(`/dashboard/lesson/${lessonId}/comment`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    comment: commentText,
+                    parent_id: parentId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    commentInput.value = '';
+                    submitBtn.style.display = 'none';
+                    loadComments(); // Reload comments to show the new one
+                    showSuccessMessage('Comment posted successfully!');
+                } else {
+                    alert(data.message || 'Failed to post comment');
+                }
+            })
+            .catch(error => {
+                console.error('Error posting comment:', error);
+                alert('Failed to post comment. Please try again.');
+            })
+            .finally(() => {
+                submitBtn.innerHTML = originalContent;
+                submitBtn.disabled = false;
             });
+        }
+
+        // Attach event listeners to comment actions
+        function attachCommentEventListeners() {
+            // Like/dislike buttons
+            document.querySelectorAll('.like-btn, .dislike-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const commentId = this.dataset.commentId;
+                    const action = this.dataset.action;
+
+                    fetch(`/dashboard/comment/${commentId}/like`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({ action: action })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Update the counts
+                            const likeCount = this.querySelector('.comment-like-count');
+                            const dislikeCount = this.querySelector('.comment-dislike-count');
+
+                            if (likeCount) likeCount.textContent = data.likes_count;
+                            if (dislikeCount) dislikeCount.textContent = data.dislikes_count;
+
+                            // Visual feedback
+                            this.style.color = 'var(--primary-red)';
+                            setTimeout(() => {
+                                this.style.color = '';
+                            }, 200);
+                        }
+                    })
+                    .catch(error => console.error('Error updating comment:', error));
+                });
+            });
+
+            // Reply buttons
+            document.querySelectorAll('.reply-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const commentId = this.dataset.commentId;
+                    const commentInput = document.getElementById('commentInput');
+
+                    // Focus on input and set placeholder
+                    commentInput.placeholder = 'Reply to this comment...';
+                    commentInput.focus();
+
+                    // Store parent comment ID for reply
+                    commentInput.dataset.parentId = commentId;
+
+                    // Update submit handler to include parent ID
+                    const submitBtn = document.getElementById('commentSubmitBtn');
+                    submitBtn.onclick = () => submitComment(commentId);
+                });
+            });
+        }
+
+        // Initialize real-time comment broadcasting
+        function initializeCommentBroadcasting() {
+            const lessonId = '{{ $lesson["id"] ?? "" }}';
+
+            if (!lessonId || typeof Echo === 'undefined') {
+                console.log('Broadcasting not available or lesson ID missing');
+                return;
+            }
+
+            // Listen for new comments on this lesson
+            Echo.channel(`lesson.${lessonId}`)
+                .listen('.comment.created', (e) => {
+                    console.log('New comment received:', e);
+
+                    // Only add the comment if it's not from the current user
+                    // (since they already see their own comment after posting)
+                    const currentUserId = '{{ auth()->id() }}';
+                    if (e.comment.user.id != currentUserId) {
+                        // Add the new comment to the UI
+                        addRealTimeComment(e.comment);
+
+                        // Update comment count
+                        const commentsCount = document.getElementById('commentsCount');
+                        if (commentsCount) {
+                            const currentCount = parseInt(commentsCount.textContent) || 0;
+                            commentsCount.textContent = currentCount + 1;
+                        }
+
+                        // Show success notification
+                        showSuccessMessage('New comment added!');
+                    }
+                });
+        }
+
+        // Add a real-time comment to the UI
+        function addRealTimeComment(commentData) {
+            const commentsList = document.getElementById('commentsList');
+
+            // Remove "no comments" message if it exists
+            const noCommentsMsg = commentsList.querySelector('.no-comments');
+            if (noCommentsMsg) {
+                noCommentsMsg.remove();
+            }
+
+            // Create new comment element
+            const commentElement = document.createElement('div');
+            commentElement.className = 'comment';
+            commentElement.setAttribute('data-comment-id', commentData.id);
+
+            commentElement.innerHTML = `
+                <div class="comment-avatar">${commentData.user.avatar_initial}</div>
+                <div class="comment-content">
+                    <div class="comment-header">
+                        <span class="comment-author">${commentData.user.name}</span>
+                        <span class="comment-time">${commentData.time_ago}</span>
+                    </div>
+                    <p class="comment-text">${commentData.content}</p>
+                    <div class="comment-actions">
+                        <button class="comment-action like-btn" data-action="like" data-comment-id="${commentData.id}">
+                            <i class="fas fa-thumbs-up"></i>
+                            <span class="comment-like-count">${commentData.likes_count}</span>
+                        </button>
+                        <button class="comment-action dislike-btn" data-action="dislike" data-comment-id="${commentData.id}">
+                            <i class="fas fa-thumbs-down"></i>
+                            <span class="comment-dislike-count">${commentData.dislikes_count}</span>
+                        </button>
+                        <button class="comment-action reply-btn" data-comment-id="${commentData.id}">
+                            Reply
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Add to the top of the comments list
+            const firstComment = commentsList.querySelector('.comment');
+            if (firstComment) {
+                commentsList.insertBefore(commentElement, firstComment);
+            } else {
+                commentsList.appendChild(commentElement);
+            }
+
+            // Re-attach event listeners for the new comment
+            attachCommentEventListeners();
         }
 
         function initializeCommentsToggle() {

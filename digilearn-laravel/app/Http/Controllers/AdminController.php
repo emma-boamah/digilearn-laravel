@@ -22,6 +22,8 @@ use App\Models\Quiz; // Import the Quiz model
 use App\Models\Document; // Import the Document model
 use App\Models\UserSubscription; // Import the UserSubscription model
 use App\Models\PricingPlan; // Import the PricingPlan model
+use App\Models\ProgressionStandard; // Import the ProgressionStandard model
+use App\Models\UserProgress; // Import the UserProgress model
 use Illuminate\Support\Facades\Storage; // For file uploads
 
 class AdminController extends Controller
@@ -2044,5 +2046,170 @@ class AdminController extends Controller
                 'message' => 'Upload failed: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    // Progress Management - Admin
+    public function progressOverview(Request $request)
+    {
+        $query = UserProgress::with(['user:id,name,email,grade']);
+
+        // Filter by level group
+        if ($request->has('level_group') && $request->level_group != '') {
+            $query->where('level_group', $request->level_group);
+        }
+
+        // Filter by eligibility status
+        if ($request->has('eligibility') && $request->eligibility != '') {
+            $query->where('eligible_for_next_level', $request->eligibility === 'eligible');
+        }
+
+        // Search by user name or email
+        if ($request->has('search') && $request->search != '') {
+            $search = $request->search;
+            $query->whereHas('user', function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $progressRecords = $query->orderBy('updated_at', 'desc')->paginate(20);
+
+        $levelGroups = [
+            'primary-lower' => 'Primary Lower (P1-P3)',
+            'primary-upper' => 'Primary Upper (P4-P6)',
+            'jhs' => 'Junior High School (JHS 1-3)',
+            'shs' => 'Senior High School (SHS 1-3)',
+        ];
+
+        // Progress statistics
+        $stats = [
+            'total_students' => UserProgress::count(),
+            'eligible_students' => UserProgress::where('eligible_for_next_level', true)->count(),
+            'completed_levels' => UserProgress::where('level_completed', true)->count(),
+            'active_students' => UserProgress::where('last_activity_at', '>=', now()->subDays(7))->count(),
+        ];
+
+        return view('admin.progress.overview', compact('progressRecords', 'levelGroups', 'stats'));
+    }
+
+    public function userProgressDetail($userId)
+    {
+        $user = User::findOrFail($userId);
+        $progressRecords = UserProgress::where('user_id', $userId)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $currentProgress = $progressRecords->first();
+        $analytics = $currentProgress ? $currentProgress->getDetailedAnalytics() : null;
+
+        // Get progression history
+        $progressionHistory = \App\Models\LevelProgression::where('user_id', $userId)
+            ->orderBy('progressed_at', 'desc')
+            ->get();
+
+        return view('admin.progress.user-detail', compact(
+            'user',
+            'progressRecords',
+            'currentProgress',
+            'analytics',
+            'progressionHistory'
+        ));
+    }
+
+    public function progressionStandards()
+    {
+        $standards = ProgressionStandard::orderBy('level_group')->get();
+        $levelGroups = [
+            'primary-lower' => 'Primary Lower (P1-P3)',
+            'primary-upper' => 'Primary Upper (P4-P6)',
+            'jhs' => 'Junior High School (JHS 1-3)',
+            'shs' => 'Senior High School (SHS 1-3)',
+        ];
+
+        return view('admin.progress.standards', compact('standards', 'levelGroups'));
+    }
+
+    public function storeProgressionStandard(Request $request)
+    {
+        $request->validate([
+            'level_group' => 'required|string',
+            'required_lesson_completion_percentage' => 'required|numeric|min:0|max:100',
+            'required_quiz_completion_percentage' => 'required|numeric|min:0|max:100',
+            'required_average_quiz_score' => 'required|numeric|min:0|max:100',
+            'minimum_quiz_score' => 'required|numeric|min:0|max:100',
+            'lesson_watch_threshold_percentage' => 'required|numeric|min:0|max:100',
+        ]);
+
+        // Deactivate existing standard for this level group
+        ProgressionStandard::where('level_group', $request->level_group)
+            ->update(['is_active' => false]);
+
+        // Create new standard
+        ProgressionStandard::create([
+            'level_group' => $request->level_group,
+            'required_lesson_completion_percentage' => $request->required_lesson_completion_percentage,
+            'required_quiz_completion_percentage' => $request->required_quiz_completion_percentage,
+            'required_average_quiz_score' => $request->required_average_quiz_score,
+            'minimum_quiz_score' => $request->minimum_quiz_score,
+            'lesson_watch_threshold_percentage' => $request->lesson_watch_threshold_percentage,
+            'is_active' => true,
+        ]);
+
+        return redirect()->back()->with('success', 'Progression standards updated successfully!');
+    }
+
+    public function updateProgressionStandard(Request $request, ProgressionStandard $standard)
+    {
+        $request->validate([
+            'required_lesson_completion_percentage' => 'required|numeric|min:0|max:100',
+            'required_quiz_completion_percentage' => 'required|numeric|min:0|max:100',
+            'required_average_quiz_score' => 'required|numeric|min:0|max:100',
+            'minimum_quiz_score' => 'required|numeric|min:0|max:100',
+            'lesson_watch_threshold_percentage' => 'required|numeric|min:0|max:100',
+        ]);
+
+        $standard->update($request->only([
+            'required_lesson_completion_percentage',
+            'required_quiz_completion_percentage',
+            'required_average_quiz_score',
+            'minimum_quiz_score',
+            'lesson_watch_threshold_percentage',
+        ]));
+
+        return redirect()->back()->with('success', 'Progression standard updated successfully!');
+    }
+
+    public function toggleStandardStatus(ProgressionStandard $standard)
+    {
+        // If activating, deactivate others for same level group
+        if (!$standard->is_active) {
+            ProgressionStandard::where('level_group', $standard->level_group)
+                ->update(['is_active' => false]);
+        }
+
+        $standard->update(['is_active' => !$standard->is_active]);
+
+        return redirect()->back()->with('success', 'Standard status updated successfully!');
+    }
+
+    public function manualProgressUser(Request $request, $userId)
+    {
+        $request->validate([
+            'from_level' => 'required|string',
+            'to_level' => 'required|string',
+            'reason' => 'nullable|string',
+        ]);
+
+        $user = User::findOrFail($userId);
+
+        // Use the existing manual progression method from ProgressController
+        $progressController = new \App\Http\Controllers\ProgressController();
+        $result = $progressController->manualProgression($request, $userId, $request->to_level);
+
+        if ($result->getData()->success) {
+            return redirect()->back()->with('success', 'User progressed successfully!');
+        }
+
+        return redirect()->back()->with('error', 'Failed to progress user.');
     }
 }

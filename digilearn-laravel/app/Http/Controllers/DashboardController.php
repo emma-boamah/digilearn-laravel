@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Models\SavedLesson;
 use App\Models\VirtualClass;
+use App\Models\Comment;
+use App\Models\Video;
 
 class DashboardController extends Controller
 {
@@ -791,19 +793,204 @@ class DashboardController extends Controller
     public function postComment(Request $request, $lessonId)
     {
         $request->validate([
-            'comment' => 'required|string|max:1000'
+            'comment' => 'required|string|max:1000',
+            'parent_id' => 'nullable|exists:comments,id'
         ]);
 
-        // Here you would save to database
-        Log::info('lesson_comment_posted', [
-            'user_id' => Auth::id(),
-            'lesson_id' => $lessonId,
-            'comment_length' => strlen($request->comment),
-            'subscription_plan' => Auth::user()->currentSubscription?->pricingPlan?->name ?? 'Free',
-            'timestamp' => Carbon::now()->toISOString()
+        // Find the video associated with this lesson
+        $video = $this->findVideoByLessonId($lessonId);
+        if (!$video) {
+            return response()->json(['success' => false, 'message' => 'Video not found'], 404);
+        }
+
+        // Check if user has access to comment
+        if (!$this->hasLessonAccess(Auth::user(), ['id' => $lessonId])) {
+            return response()->json(['success' => false, 'message' => 'Access denied'], 403);
+        }
+
+        try {
+            $comment = Comment::create([
+                'content' => $request->comment,
+                'user_id' => Auth::id(),
+                'video_id' => $video->id,
+                'parent_id' => $request->parent_id,
+                'is_approved' => true, // Auto-approve for now
+            ]);
+
+            // Load the user relationship for the response
+            $comment->load('user');
+
+            // Fire the event for real-time broadcasting
+            broadcast(new \App\Events\CommentCreated($comment))->toOthers();
+
+            Log::info('lesson_comment_posted', [
+                'user_id' => Auth::id(),
+                'lesson_id' => $lessonId,
+                'video_id' => $video->id,
+                'comment_id' => $comment->id,
+                'parent_id' => $request->parent_id,
+                'comment_length' => strlen($request->comment),
+                'subscription_plan' => Auth::user()->currentSubscription?->pricingPlan?->name ?? 'Free',
+                'timestamp' => Carbon::now()->toISOString()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Comment posted successfully',
+                'comment' => [
+                    'id' => $comment->id,
+                    'content' => $comment->content,
+                    'user' => [
+                        'name' => $comment->user->name,
+                        'avatar' => $comment->user->avatar,
+                    ],
+                    'time_ago' => $comment->time_ago,
+                    'likes_count' => $comment->likes_count,
+                    'dislikes_count' => $comment->dislikes_count,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('comment_post_error', [
+                'user_id' => Auth::id(),
+                'lesson_id' => $lessonId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json(['success' => false, 'message' => 'Failed to post comment'], 500);
+        }
+    }
+
+    /**
+     * Get comments for a lesson
+     */
+    public function getComments($lessonId)
+    {
+        // Find the video associated with this lesson
+        $video = $this->findVideoByLessonId($lessonId);
+        if (!$video) {
+            return response()->json(['success' => false, 'message' => 'Video not found'], 404);
+        }
+
+        try {
+            $comments = Comment::forVideo($video->id)->get();
+
+            $formattedComments = $comments->map(function ($comment) {
+                return [
+                    'id' => $comment->id,
+                    'content' => $comment->content,
+                    'user' => [
+                        'name' => $comment->user->name,
+                        'avatar' => $comment->user->avatar,
+                        'avatar_initial' => $comment->avatar_initial,
+                    ],
+                    'time_ago' => $comment->time_ago,
+                    'likes_count' => $comment->likes_count,
+                    'dislikes_count' => $comment->dislikes_count,
+                    'replies' => $comment->replies->map(function ($reply) {
+                        return [
+                            'id' => $reply->id,
+                            'content' => $reply->content,
+                            'user' => [
+                                'name' => $reply->user->name,
+                                'avatar' => $reply->user->avatar,
+                                'avatar_initial' => $reply->avatar_initial,
+                            ],
+                            'time_ago' => $reply->time_ago,
+                            'likes_count' => $reply->likes_count,
+                            'dislikes_count' => $reply->dislikes_count,
+                        ];
+                    }),
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'comments' => $formattedComments,
+                'total_count' => $comments->count() + $comments->sum(function ($comment) {
+                    return $comment->replies->count();
+                })
+            ]);
+        } catch (\Exception $e) {
+            Log::error('get_comments_error', [
+                'lesson_id' => $lessonId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json(['success' => false, 'message' => 'Failed to load comments'], 500);
+        }
+    }
+
+    /**
+     * Like or dislike a comment
+     */
+    public function likeComment(Request $request, $commentId)
+    {
+        $request->validate([
+            'action' => 'required|in:like,dislike,unlike,undislike'
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Comment posted successfully']);
+        try {
+            $comment = Comment::findOrFail($commentId);
+
+            switch ($request->action) {
+                case 'like':
+                    $comment->increment('likes_count');
+                    break;
+                case 'dislike':
+                    $comment->increment('dislikes_count');
+                    break;
+                case 'unlike':
+                    $comment->decrement('likes_count');
+                    break;
+                case 'undislike':
+                    $comment->decrement('dislikes_count');
+                    break;
+            }
+
+            return response()->json([
+                'success' => true,
+                'likes_count' => $comment->likes_count,
+                'dislikes_count' => $comment->dislikes_count
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to update comment'], 500);
+        }
+    }
+
+    /**
+     * Find video by lesson ID
+     */
+    private function findVideoByLessonId($lessonId)
+    {
+        // For university lessons, search through all courses
+        if (session('selected_level_group') === 'university') {
+            // This is a simplified approach - in production you'd have a proper lesson-video mapping
+            // For now, we'll assume the lesson ID corresponds to a video ID
+            return Video::find($lessonId);
+        }
+
+        // For regular lessons, search through all level groups
+        $allLessons = [];
+        $levelGroups = $this->getLevelGroups();
+
+        foreach ($levelGroups as $groupId => $group) {
+            if (isset($group['levels'])) {
+                foreach ($levelGroups[$groupId]['levels'] as $level => $levelData) {
+                    $levelLessons = $this->getLessonsForLevel($level);
+                    $allLessons = array_merge($allLessons, $levelLessons);
+                }
+            }
+        }
+
+        foreach ($allLessons as $lesson) {
+            if ($lesson['id'] == $lessonId) {
+                // For now, assume lesson ID corresponds to video ID
+                // In a real implementation, you'd have a proper mapping
+                return Video::find($lessonId);
+            }
+        }
+
+        return null;
     }
 
     /**

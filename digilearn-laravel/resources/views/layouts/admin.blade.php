@@ -536,6 +536,12 @@
                     <span class="sidebar-link-text">Users</span>
                 </a>
 
+                <!-- Student Progress Management -->
+                <a href="{{ route('admin.progress.overview') }}" class="nav-link {{ request()->routeIs('admin.progress*') ? 'active' : '' }}">
+                    <i class="fas fa-chart-line"></i>
+                    <span class="sidebar-link-text">Student Progress</span>
+                </a>
+
                 <!-- Added notifications link to sidebar -->
                 <a href="{{ route('admin.notifications.index') }}" class="nav-link {{ request()->routeIs('admin.notifications*') ? 'active' : '' }}">
                     <i class="fas fa-bell"></i>

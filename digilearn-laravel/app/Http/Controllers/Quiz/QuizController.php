@@ -272,19 +272,29 @@ class QuizController extends Controller
     }
 
     /**
-     * Get quiz by ID (replace with database query)
+     * Get quiz by ID from database
      */
     private function getQuizById($quizId)
     {
-        $quizzes = $this->getSampleQuizzes();
-        
-        foreach ($quizzes as $quiz) {
-            if ($quiz['id'] == $quizId) {
-                return $quiz;
-            }
+        $quiz = \App\Models\Quiz::with('uploader')->find($quizId);
+
+        if (!$quiz) {
+            return null;
         }
-        
-        return null;
+
+        // Parse quiz_data JSON
+        $quizData = json_decode($quiz->quiz_data, true);
+
+        return [
+            'id' => $quiz->id,
+            'title' => $quiz->title,
+            'subject' => $quiz->subject,
+            'grade_level' => $quiz->grade_level,
+            'duration' => '3 min', // Default duration
+            'questions_count' => $quizData && isset($quizData['questions']) ? count($quizData['questions']) : 0,
+            'questions' => $quizData && isset($quizData['questions']) ? $quizData['questions'] : [],
+            'uploader' => $quiz->uploader,
+        ];
     }
 
     /**
@@ -292,16 +302,41 @@ class QuizController extends Controller
      */
     private function processQuizSubmission($quizId, $answers, $timeSpent)
     {
-        // This is where you would:
-        // 1. Get correct answers from database
-        // 2. Compare with user answers
-        // 3. Calculate score
-        // 4. Save attempt to database
-        
-        $totalQuestions = 10; // Get from database
-        $correctAnswers = count($answers); // Simplified - replace with actual scoring logic
-        $percentage = round(($correctAnswers / $totalQuestions) * 100);
-        
+        $quiz = $this->getQuizById($quizId);
+        if (!$quiz || !isset($quiz['questions'])) {
+            return [
+                'score' => 0,
+                'total' => 0,
+                'percentage' => 0
+            ];
+        }
+
+        $questions = $quiz['questions'];
+        $totalQuestions = count($questions);
+        $correctAnswers = 0;
+
+        foreach ($questions as $index => $question) {
+            $userAnswer = isset($answers[$index]) ? (int)$answers[$index] : null;
+            $correctAnswer = isset($question['correct']) ? (int)$question['correct'] : null;
+
+            if ($userAnswer === $correctAnswer) {
+                $correctAnswers++;
+            }
+        }
+
+        $percentage = $totalQuestions > 0 ? round(($correctAnswers / $totalQuestions) * 100) : 0;
+
+        // Save attempt to database
+        \App\Models\QuizAttempt::create([
+            'user_id' => Auth::id(),
+            'quiz_id' => $quizId,
+            'score_percentage' => $percentage,
+            'total_questions' => $totalQuestions,
+            'correct_answers' => $correctAnswers,
+            'time_spent_seconds' => $timeSpent,
+            'completed_at' => now(),
+        ]);
+
         return [
             'score' => $correctAnswers,
             'total' => $totalQuestions,

@@ -19,22 +19,22 @@ class ProgressController extends Controller
     {
         $userId = Auth::id();
         $currentLevel = session('selected_level_group', 'primary-lower');
-        
+
         // Get or create progress record
         $progress = $this->getOrCreateProgress($userId, $currentLevel);
-        
+
         // Get detailed statistics
         $lessonStats = LessonCompletion::getLevelStats($userId, $currentLevel);
         $quizStats = QuizAttempt::getLevelStats($userId, $currentLevel);
         $progressionHistory = LevelProgression::getUserHistory($userId);
-        
+
         // Get recent activities
         $recentLessons = LessonCompletion::where('user_id', $userId)
             ->where('lesson_level', $currentLevel)
             ->orderBy('last_watched_at', 'desc')
             ->limit(5)
             ->get();
-            
+
         $recentQuizzes = QuizAttempt::where('user_id', $userId)
             ->where('quiz_level', $currentLevel)
             ->orderBy('completed_at', 'desc')
@@ -43,7 +43,10 @@ class ProgressController extends Controller
 
         // Check for level progression eligibility
         $progressionStatus = $this->checkProgressionEligibility($userId, $currentLevel);
-        
+
+        // Get detailed analytics
+        $analytics = $progress->getDetailedAnalytics();
+
         return view('dashboard.my-progress', compact(
             'progress',
             'lessonStats',
@@ -52,7 +55,8 @@ class ProgressController extends Controller
             'recentLessons',
             'recentQuizzes',
             'progressionStatus',
-            'currentLevel'
+            'currentLevel',
+            'analytics'
         ));
     }
 
@@ -69,7 +73,12 @@ class ProgressController extends Controller
 
         $userId = Auth::id();
         $lessonData = $request->lesson_data;
-        
+
+        // Add level_group to lesson data if not present
+        if (!isset($lessonData['level_group'])) {
+            $lessonData['level_group'] = $this->getLevelGroup($lessonData['level']);
+        }
+
         // Record the lesson completion
         $completion = LessonCompletion::recordWatchProgress(
             $userId,
@@ -79,7 +88,13 @@ class ProgressController extends Controller
         );
 
         // Update user progress
-        $this->updateUserProgress($userId, $lessonData['level']);
+        $progress = $this->updateUserProgress($userId, $lessonData['level']);
+
+        // Record activity and time spent
+        if ($progress) {
+            $progress->recordActivity();
+            $progress->addTimeSpent($request->watch_time);
+        }
 
         Log::info('lesson_progress_recorded', [
             'user_id' => $userId,
@@ -110,7 +125,12 @@ class ProgressController extends Controller
 
         $userId = Auth::id();
         $quizData = $request->quiz_data;
-        
+
+        // Add level_group to quiz data if not present
+        if (!isset($quizData['level_group'])) {
+            $quizData['level_group'] = $this->getLevelGroup($quizData['level']);
+        }
+
         // Record the quiz attempt
         $attempt = QuizAttempt::recordAttempt(
             $userId,
@@ -120,7 +140,13 @@ class ProgressController extends Controller
         );
 
         // Update user progress
-        $this->updateUserProgress($userId, $quizData['level']);
+        $progress = $this->updateUserProgress($userId, $quizData['level']);
+
+        // Record activity and time spent
+        if ($progress) {
+            $progress->recordActivity();
+            $progress->addTimeSpent($request->time_taken);
+        }
 
         Log::info('quiz_attempt_recorded', [
             'user_id' => $userId,
@@ -258,21 +284,22 @@ class ProgressController extends Controller
     {
         $progress = $this->getOrCreateProgress($userId, $level);
         $isEligible = $progress->calculateEligibility();
-        
+
         $nextLevel = $this->getNextLevel($level);
-        
+        $standards = \App\Models\ProgressionStandard::getStandardsForLevel($progress->level_group);
+
         return [
             'eligible' => $isEligible,
             'current_level' => $level,
             'next_level' => $nextLevel,
             'progress_data' => $progress->getPerformanceMetrics(),
             'requirements' => [
-                'lesson_completion_required' => 80,
-                'quiz_completion_required' => 70,
-                'average_score_required' => 70,
+                'lesson_completion_required' => $standards['required_lesson_completion_percentage'],
+                'quiz_completion_required' => $standards['required_quiz_completion_percentage'],
+                'average_score_required' => $standards['required_average_quiz_score'],
             ],
-            'message' => $isEligible 
-                ? "Congratulations! You're ready to progress to {$nextLevel}!" 
+            'message' => $isEligible
+                ? "Congratulations! You're ready to progress to {$nextLevel}!"
                 : 'Keep learning to unlock the next level!',
         ];
     }
