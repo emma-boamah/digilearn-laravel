@@ -19,6 +19,10 @@
         order: 2; /* Logo below copyright */
     }
 
+    .image-logo-height {
+        height: 40px;
+    }
+
     .brand-link {
         display: flex;
         align-items: center;
@@ -311,7 +315,7 @@
             <div class="copyright">© {{ date('Y') }} ShoutoutGh All rights reserved.</div>
             <div class="footer-brand">
                 <a href="{{ route('home') }}" class="brand-link">
-                    <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image" style="height: 40px;">
+                    <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image image-logo-height">
                 </a>
                 <p>Educating through Entertainment</p>
             </div>

@@ -23,6 +23,27 @@
         margin-bottom: 1.5rem;
     }
 
+    .hr {
+        border: none;
+        height: 1px;
+        background-color: #e5e7eb;
+        margin-bottom: 2rem;
+    }
+
+    .tools-on-shoutout {
+        color: var(--primary-red);
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin-bottom: 1rem;
+    }
+
+    .discover-innovative-features{
+        color: var(--gray-600);
+        font-size: 1rem;
+        line-height: 1.6;
+        margin-bottom: 2rem;
+    }
+
     /* Tablet sizes */
     @media (min-width: 768px) {
         .journey-title {
@@ -2071,12 +2092,12 @@
         <div class="container">
             <div class="why-choose">
                 <div class="why-choose-text">
-                    <p style="color: var(--primary-red); font-size: 0.875rem; font-weight: 500; margin-bottom: 1rem;">Tools on ShoutoutGh</p>
+                    <p class="tools-on-shoutout">Tools on ShoutoutGh</p>
                     <h2 class="text-3xl font-bold mb-6">Why Choose DigiLearn?</h2>
-                    <p style="color: var(--gray-600); font-size: 1rem; line-height: 1.6; margin-bottom: 2rem;">
+                    <p class=discover-innovative-features>
                         Discover innovative features, designed to simplify your study process and maximize your academic success.
                     </p>
-                    <hr style="border: none; height: 1px; background-color: #e5e7eb; margin-bottom: 2rem;">
+                    <hr class="hr">
                     <ul class="feature-list">
                         <li>
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
