@@ -19,8 +19,8 @@ class PricingPlan extends Model
         'duration_days',
         'features',
         'is_active',
+        'is_featured',
         'sort_order',
-        'is_features',
     ];
 
     protected $casts = [

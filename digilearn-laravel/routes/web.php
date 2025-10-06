@@ -340,6 +340,19 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/{document}/toggle-feature', [AdminController::class, 'toggleDocumentFeature'])->name('toggle-feature');
     });
 
+    // Pricing Management
+    Route::prefix('pricing')->name('pricing.')->group(function () {
+        Route::get('/', [App\Http\Controllers\PricingPlanController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\PricingPlanController::class, 'create'])->name('create');
+        Route::post('/', [App\Http\Controllers\PricingPlanController::class, 'store'])->name('store');
+        Route::get('/{pricingPlan}', [App\Http\Controllers\PricingPlanController::class, 'show'])->name('show');
+        Route::get('/{pricingPlan}/edit', [App\Http\Controllers\PricingPlanController::class, 'edit'])->name('edit');
+        Route::put('/{pricingPlan}', [App\Http\Controllers\PricingPlanController::class, 'update'])->name('update');
+        Route::delete('/{pricingPlan}', [App\Http\Controllers\PricingPlanController::class, 'destroy'])->name('destroy');
+        Route::post('/{pricingPlan}/toggle-active', [App\Http\Controllers\PricingPlanController::class, 'toggleActive'])->name('toggle-active');
+        Route::post('/{pricingPlan}/toggle-featured', [App\Http\Controllers\PricingPlanController::class, 'toggleFeatured'])->name('toggle-featured');
+        Route::post('/update-sort-order', [App\Http\Controllers\PricingPlanController::class, 'updateSortOrder'])->name('update-sort-order');
+    });
 
     Route::get('notifications/', [NotificationController::class, 'adminIndex'])->name('notifications.index');
         Route::post('notifications/send', [NotificationController::class, 'sendNotification'])->name('notifications.send');

@@ -1,5 +1,6 @@
 services:
     laravel.test:
+        container_name: digilearn-laravel-laravel.test-1
         build:
             context: './vendor/laravel/sail/runtimes/8.4'
             dockerfile: Dockerfile
@@ -29,6 +30,7 @@ services:
         restart: unless-stopped
 
     mysql:
+        container_name: digilearn-laravel-mysql-1
         image: 'mysql/mysql-server:8.0'
         ports:
             - '${FORWARD_DB_PORT:-3307}:3306'
@@ -56,6 +58,7 @@ services:
         restart: unless-stopped
 
     redis:
+        container_name: digilearn-laravel-redis-1
         image: 'redis:alpine'
         ports:
             - '${FORWARD_REDIS_PORT:-6380}:6379'
@@ -75,6 +78,7 @@ services:
         command: redis-server /usr/local/etc/redis/redis.conf
 
     mongo:
+        container_name: digilearn-laravel-mongo-1
         image: mongo:latest
         restart: unless-stopped
         volumes:

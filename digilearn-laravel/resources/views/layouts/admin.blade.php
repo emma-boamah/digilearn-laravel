@@ -542,6 +542,12 @@
                     <span class="sidebar-link-text">Notifications</span>
                 </a>
 
+                <!-- Pricing Plans -->
+                <a href="{{ route('admin.pricing.index') }}" class="nav-link {{ request()->routeIs('admin.pricing*') ? 'active' : '' }}">
+                    <i class="fas fa-dollar-sign"></i>
+                    <span class="sidebar-link-text">Pricing Plans</span>
+                </a>
+
                 <!-- Simplified Contents Section -->
                 <a href="{{ route('admin.contents.index') }}" class="nav-link {{ request()->routeIs('admin.contents*') ? 'active' : '' }}">
                     <i class="fas fa-folder-open"></i>

@@ -2354,12 +2354,12 @@
     </div>
 
     <!-- External JavaScript Files -->
-    <script src="{{ asset('js/utils.js') }}" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
-    <script src="{{ asset('js/country-selector.js') }}" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
-    <script src="{{ asset('js/modals.js') }}" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
-    <script src="{{ asset('js/modal-phone-input.js') }}" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
-    <script src="{{ asset('js/profile.js') }}" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
-    <script src="{{ asset('js/main.js') }}" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+    <script src="/js/utils.js" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+    <script src="/js/country-selector.js" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+    <script src="/js/modals.js" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+    <script src="/js/modal-phone-input.js" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+    <script src="/js/profile.js" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+    <script src="/js/main.js" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
     
     <!-- Inline script for avatar preview functionality -->
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">

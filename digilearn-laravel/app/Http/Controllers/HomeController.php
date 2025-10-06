@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\PricingPlan;
 
 class HomeController extends Controller
 {
@@ -35,39 +36,10 @@ class HomeController extends Controller
             ]
         ];
 
-        $pricingPlans = [
-            [
-                'title' => 'Essential',
-                'price' => '₵50.00',
-                'features' => [
-                    'Digilearn',
-                    'Join a class / one one',
-                    'Learning Resources',
-                    'Sample Questions',
-                    '24/7 service support'
-                ]
-            ],
-            [
-                'title' => 'Home School',
-                'price' => '₵200.00',
-                'features' => [
-                    'Digilearn',
-                    'Join a class',
-                    'Personal class',
-                    '24/7 service support'
-                ]
-            ],
-            [
-                'title' => 'Extra Tuition',
-                'price' => '₵200.00',
-                'features' => [
-                    'Digilearn',
-                    'Personalized tuition',
-                    'Sample Questions',
-                    '24/7 service support'
-                ]
-            ]
-        ];
+        $pricingPlans = PricingPlan::where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('price')
+            ->get();
 
         $testimonials = [
             [
