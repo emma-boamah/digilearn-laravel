@@ -2403,7 +2403,7 @@
                 </header>
 
                 <!-- Pricing Cards -->
-                <div class="pricing-grid" role="list" aria-label="Available pricing plans">
+                <div class="pricing-grid" @if($pricingPlans->count() > 0) role="list" aria-label="Available pricing plans" @endif>
                     @forelse($pricingPlans as $plan)
                         <article class="pricing-card" role="listitem" itemscope itemtype="https://schema.org/Product">
                             <meta itemprop="name" content="{{ $plan->name }} Plan">
