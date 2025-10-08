@@ -1,6 +1,118 @@
 @extends('layouts.app')
 
+@section('title', 'DigiLearn - Online Learning Platform for Ghanaian Students')
+@section('description', 'DigiLearn is Ghana\'s premier online learning platform offering interactive lessons, quizzes, and educational resources for students from primary to tertiary level.')
+
 @section('content')
+    <!-- JSON-LD Structured Data for SEO -->
+    @php
+    $jsonLd = [
+        "@context" => "https://schema.org",
+        "@type" => "EducationalOrganization",
+        "name" => "DigiLearn",
+        "description" => "Ghana's premier online learning platform offering interactive lessons, quizzes, and educational resources for students from primary to tertiary level.",
+        "url" => url('/'),
+        "logo" => secure_asset('images/shoutoutgh-logo.png'),
+        "sameAs" => [
+            "https://facebook.com/digilearn",
+            "https://twitter.com/digilearn",
+            "https://instagram.com/digilearn"
+        ],
+        "contactPoint" => [
+            "@type" => "ContactPoint",
+            "telephone" => "+233-207-646-203",
+            "contactType" => "customer service",
+            "availableLanguage" => "English"
+        ],
+        "offers" => [
+            [
+                "@type" => "EducationalOccupationalCredential",
+                "name" => "Primary Education",
+                "educationalLevel" => "Primary School",
+                "provider" => [
+                    "@type" => "EducationalOrganization",
+                    "name" => "DigiLearn"
+                ]
+            ],
+            [
+                "@type" => "EducationalOccupationalCredential",
+                "name" => "Junior High School",
+                "educationalLevel" => "JHS",
+                "provider" => [
+                    "@type" => "EducationalOrganization",
+                    "name" => "DigiLearn"
+                ]
+            ],
+            [
+                "@type" => "EducationalOccupationalCredential",
+                "name" => "Senior High School",
+                "educationalLevel" => "SHS",
+                "provider" => [
+                    "@type" => "EducationalOrganization",
+                    "name" => "DigiLearn"
+                ]
+            ],
+            [
+                "@type" => "EducationalOccupationalCredential",
+                "name" => "Tertiary Education",
+                "educationalLevel" => "University Level",
+                "provider" => [
+                    "@type" => "EducationalOrganization",
+                    "name" => "DigiLearn"
+                ]
+            ]
+        ],
+        "hasOfferCatalog" => [
+            "@type" => "OfferCatalog",
+            "name" => "Learning Resources",
+            "itemListElement" => [
+                [
+                    "@type" => "Offer",
+                    "itemOffered" => [
+                        "@type" => "Course",
+                        "name" => "Interactive Lessons",
+                        "description" => "Video lessons with interactive elements"
+                    ]
+                ],
+                [
+                    "@type" => "Offer",
+                    "itemOffered" => [
+                        "@type" => "AssessmentEvent",
+                        "name" => "Practice Quizzes",
+                        "description" => "Multiple choice questions for assessment"
+                    ]
+                ],
+                [
+                    "@type" => "Offer",
+                    "itemOffered" => [
+                        "@type" => "CreativeWork",
+                        "name" => "Study Materials",
+                        "description" => "PDF documents and presentation slides"
+                    ]
+                ]
+            ]
+        ]
+    ];
+    @endphp
+
+    <script type="application/ld+json" nonce="{{ request()->attributes->get('csp_nonce') }}">
+    {{ json_encode($jsonLd, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) }}
+    </script>
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="DigiLearn - Online Learning Platform for Ghanaian Students">
+    <meta property="og:description" content="DigiLearn is Ghana's premier online learning platform offering interactive lessons, quizzes, and educational resources for students from primary to tertiary level.">
+    <meta property="og:image" content="{{ secure_asset('images/shoutoutgh-logo.png') }}">
+    <meta property="og:url" content="{{ url('/') }}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="DigiLearn">
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="DigiLearn - Online Learning Platform for Ghanaian Students">
+    <meta name="twitter:description" content="DigiLearn is Ghana's premier online learning platform offering interactive lessons, quizzes, and educational resources for students from primary to tertiary level.">
+    <meta name="twitter:image" content="{{ secure_asset('images/shoutoutgh-logo.png') }}">
+
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
     html, body {
         width: 100%;
@@ -2058,9 +2170,9 @@
     </style>
 
     <!-- Hero Section -->
-    <section class="hero">
+    <header class="hero" role="banner" aria-labelledby="hero-title">
         <div class="hero-background">
-            <video preload="auto" loading="lazy" autoplay muted loop playsinline poster="{{ secure_asset('images/hero-image.png') }}">
+            <video preload="auto" loading="lazy" autoplay muted loop playsinline poster="{{ secure_asset('images/hero-image.png') }}" aria-hidden="true">
                 <source src="{{ secure_asset('videos/hero-video.mp4') }}" type="video/mp4">
                 <source src="{{ secure_asset('videos/hero-video.webm') }}" type="video/webm">
                 Your browser does not support the video tag.
@@ -2070,150 +2182,164 @@
 
         <div class="hero-content">
             <div class="hero-text">
-                <h1 class="hero-title">
+                <h1 id="hero-title" class="hero-title">
                     Welcome to<br>
                     <span class="hero-title-emphasis">DigiLearn</span>
                 </h1>
                 <div class="hero-description">
-                    <a href="{{ route('login') }}" class="hero-btn">
+                    <a href="{{ route('login') }}" class="hero-btn" aria-label="Start learning now on DigiLearn">
                         Start now
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M5 12h14M12 5l7 7-7 7"/>
                         </svg>
                     </a>
                 </div>
             </div>
         </div>
-    </section>
+    </header>
 
-
-    <!-- Why Choose DigiLearn -->
-    <section class="section bg-white">
-        <div class="container">
-            <div class="why-choose">
-                <div class="why-choose-text">
-                    <p class="tools-on-shoutout">Tools on ShoutoutGh</p>
-                    <h2 class="text-3xl font-bold mb-6">Why Choose DigiLearn?</h2>
-                    <p class=discover-innovative-features>
-                        Discover innovative features, designed to simplify your study process and maximize your academic success.
-                    </p>
-                    <hr class="hr">
-                    <ul class="feature-list">
-                        <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                            </svg>
-                            <span>Access a library of curated resources tailored to your needs</span>
-                        </li>
-                        <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                            </svg>
-                            <span>Get interactive tools to enhance your understanding of complex topics</span>
-                        </li>
-                        <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                            </svg>
-                            <span>Learn at your own convenient time on our platform</span>
-                        </li>
-                        <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                            </svg>
-                            <span>Make personal note edit and save on your preferences</span>
-                        </li>
-                    </ul>
-                </div>
-                <div class="why-choose-videos">
-                    <div class="youtube-style-video-container">
-                        <video
-                            preload="auto"
-                            loading="lazy"
-                            autoplay
-                            id="whyChooseVideo" 
-                            muted 
-                            loop 
-                            playsinline 
-                            preload="metadata"
-                            poster="{{ secure_asset('images/student-focus.png') }}"
-                        >
-                            <source src="{{ secure_asset('videos/personalized-study.mp4') }}" type="video/mp4">
-                            Your browser does not support the video tag.
-                        </video>
+    <main role="main">
+        <!-- Why Choose DigiLearn -->
+        <section class="section bg-white" aria-labelledby="why-choose-title" itemscope itemtype="https://schema.org/Service">
+            <div class="container">
+                <div class="why-choose">
+                    <div class="why-choose-text">
+                        <p class="tools-on-shoutout">Tools on ShoutoutGh</p>
+                        <h2 id="why-choose-title" class="text-3xl font-bold mb-6" itemprop="name">Why Choose DigiLearn?</h2>
+                        <p class="discover-innovative-features" itemprop="description">
+                            Discover innovative features, designed to simplify your study process and maximize your academic success.
+                        </p>
+                        <hr class="hr">
+                        <ul class="feature-list" itemscope itemtype="https://schema.org/ItemList">
+                            <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                                <meta itemprop="position" content="1">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg>
+                                <span itemprop="name">Access a library of curated resources tailored to your needs</span>
+                            </li>
+                            <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                                <meta itemprop="position" content="2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg>
+                                <span itemprop="name">Get interactive tools to enhance your understanding of complex topics</span>
+                            </li>
+                            <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                                <meta itemprop="position" content="3">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg>
+                                <span itemprop="name">Learn at your own convenient time on our platform</span>
+                            </li>
+                            <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                                <meta itemprop="position" content="4">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg>
+                                <span itemprop="name">Make personal note edit and save on your preferences</span>
+                            </li>
+                        </ul>
                     </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Start Your Study Journey CTA -->
-    <section class="study-journey-section">
-        <div class="container">
-            <div class="study-journey-content">
-                <div class="study-journey-text">
-                    <h2 class="journey-title">Start Your Study<br>Journey Today</h2>
-                    <p class="journey-subtitle">Join thousands of students who are achieving their goals with DigiLearn.<br>Signup now and unlock your potentials</p>
-                </div>
-                <div class="study-journey-button">
-                    <a href="{{ route('signup') }}" class="btn btn-white">Sign up now</a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Learning Goals Section -->
-    <section class="learning-goals-section">
-        <div class="container">
-            <div class="learning-goals-content">
-                <div class="learning-goals-image">
-                    <img src="{{ secure_asset('images/team-learning.png') }}" alt="Team learning together">
-                </div>
-                <div class="learning-goals-text">
-                    <h3>We have quizzes that questions and answer choice on all levels, from grade one to tertiary level.</h3>
-                    <p>All resources based on the level selected and all on the platform.</p>
-                    <a href="#" class="btn btn-primary">Get Started</a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Course Videos Section -->
-    <section class="course-videos-section">
-        <div class="container">
-            <h2 class="course-videos-title">Explore Over 1M Learning Videos on DigiLearn</h2>
-            <div class="course-videos-grid">
-                @foreach($courseCategories as $index => $category)
-                <div class="hover-video-card" data-video-id="course-video-{{ $index }}">
-                    <video 
-                        id="course-video-{{ $index }}" 
-                        class="hover-video" 
-                        muted 
-                        loop 
-                        poster="{{ secure_asset($category['img']) }}"
-                        preload="metadata"
-                    >
-                        <source src="{{ secure_asset($category['preview_video']) }}" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                    <div class="hover-video-overlay">
-                        <div class="play-button">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                            </svg>
+                    <div class="why-choose-videos">
+                        <div class="youtube-style-video-container">
+                            <video
+                                preload="auto"
+                                loading="lazy"
+                                autoplay
+                                id="whyChooseVideo"
+                                muted
+                                loop
+                                playsinline
+                                preload="metadata"
+                                poster="{{ secure_asset('images/student-focus.png') }}"
+                                aria-label="Video demonstration of DigiLearn's interactive learning features"
+                            >
+                                <source src="{{ secure_asset('videos/personalized-study.mp4') }}" type="video/mp4">
+                                <track kind="captions" src="" srclang="en" label="English captions">
+                                Your browser does not support the video tag.
+                            </video>
                         </div>
-                        <h3>{{ $category['title'] }}</h3>
-                        <p>Learn more</p>
                     </div>
                 </div>
-                @endforeach
             </div>
-        </div>
-    </section>
+        </section>
+
+        <!-- Start Your Study Journey CTA -->
+        <section class="study-journey-section" aria-labelledby="journey-title">
+            <div class="container">
+                <div class="study-journey-content">
+                    <div class="study-journey-text">
+                        <h2 id="journey-title" class="journey-title">Start Your Study<br>Journey Today</h2>
+                        <p class="journey-subtitle">Join thousands of students who are achieving their goals with DigiLearn.<br>Signup now and unlock your potentials</p>
+                    </div>
+                    <div class="study-journey-button">
+                        <a href="{{ route('signup') }}" class="btn btn-white" aria-label="Sign up for DigiLearn to start your learning journey">Sign up now</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Learning Goals Section -->
+        <section class="learning-goals-section" aria-labelledby="learning-goals-title">
+            <div class="container">
+                <div class="learning-goals-content">
+                    <div class="learning-goals-image">
+                        <img src="{{ secure_asset('images/team-learning.png') }}" alt="Students collaborating and learning together on DigiLearn platform" loading="lazy">
+                    </div>
+                    <div class="learning-goals-text">
+                        <h3 id="learning-goals-title">We have quizzes that questions and answer choice on all levels, from grade one to tertiary level.</h3>
+                        <p>All resources based on the level selected and all on the platform.</p>
+                        <a href="{{ route('login') }}" class="btn btn-primary" aria-label="Get started with learning on DigiLearn">Get Started</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Course Videos Section -->
+        <section class="course-videos-section" aria-labelledby="course-videos-title">
+            <div class="container">
+                <h2 id="course-videos-title" class="course-videos-title">Explore Over 1M Learning Videos on DigiLearn</h2>
+                <div class="course-videos-grid" role="list" aria-label="Course categories">
+                    @foreach($courseCategories as $index => $category)
+                        <article class="hover-video-card" data-video-id="course-video-{{ $index }}" role="listitem" itemscope itemtype="https://schema.org/VideoObject">
+                            <meta itemprop="name" content="{{ $category['title'] }} Learning Videos">
+                            <meta itemprop="description" content="Educational videos for {{ $category['title'] }} students on DigiLearn">
+                            <meta itemprop="thumbnailUrl" content="{{ secure_asset($category['img']) }}">
+                            <meta itemprop="uploadDate" content="2024-01-01">
+                            <meta itemprop="duration" content="PT3M">
+                            <meta itemprop="interactionStatistic" content="1000+ views">
+                            <video
+                                id="course-video-{{ $index }}"
+                                class="hover-video"
+                                muted
+                                loop
+                                poster="{{ secure_asset($category['img']) }}"
+                                preload="metadata"
+                                aria-label="Preview video for {{ $category['title'] }} courses"
+                            >
+                                <source src="{{ secure_asset($category['preview_video']) }}" type="video/mp4">
+                                <track kind="captions" src="" srclang="en" label="English captions">
+                                Your browser does not support the video tag.
+                            </video>
+                            <div class="hover-video-overlay">
+                                <div class="play-button" aria-hidden="true">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                    </svg>
+                                </div>
+                                <h3 itemprop="headline">{{ $category['title'] }}</h3>
+                                <p>Learn more</p>
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+            </div>
+        </section>
 
     <!-- All Learning Resources -->
     <section class="resources-section">
@@ -2256,110 +2382,121 @@
         </div>
     </section>
 
-    <!-- Pricing Plans -->
-    <section class="pricing-section bg-white">
-        <div class="container">
-            <!-- Pricing Header -->
-            <div class="pricing-header-new">
-                <div class="pricing-header-content-new">
-                    <div class="pricing-text-center">
-                        <h2 class="pricing-main-title">Choose Your Learning Plan</h2>
-                        <p class="pricing-subtitle">Select your membership plan tailored to your needs.<br>customize your subscription for a seamless fit.</p>
-                        <div class="pricing-monthly-section">
-                            <button class="monthly-btn">Monthly</button>
-                            <span class="save-text">save more than 10%</span>
+        <!-- Pricing Plans -->
+        <section class="pricing-section bg-white" aria-labelledby="pricing-title" itemscope itemtype="https://schema.org/Service">
+            <div class="container">
+                <!-- Pricing Header -->
+                <header class="pricing-header-new">
+                    <div class="pricing-header-content-new">
+                        <div class="pricing-text-center">
+                            <h2 id="pricing-title" class="pricing-main-title" itemprop="name">Choose Your Learning Plan</h2>
+                            <p class="pricing-subtitle">Select your membership plan tailored to your needs.<br>customize your subscription for a seamless fit.</p>
+                            <div class="pricing-monthly-section">
+                                <button class="monthly-btn" aria-label="Switch to monthly billing">Monthly</button>
+                                <span class="save-text">save more than 10%</span>
+                            </div>
+                        </div>
+                        <div class="pricing-image-right">
+                            <img src="{{ secure_asset('images/student-laptop.png') }}" alt="Student learning on laptop with DigiLearn platform" loading="lazy">
                         </div>
                     </div>
-                    <div class="pricing-image-right">
-                        <img src="{{ secure_asset('images/student-laptop.png') }}" alt="Student with laptop">
-                    </div>
-                </div>
-            </div>
+                </header>
 
-            <!-- Pricing Cards -->
-            <div class="pricing-grid">
-                @forelse($pricingPlans as $plan)
-                <div class="pricing-card">
-                    <div class="pricing-badge {{ strtolower(str_replace(' ', '-', $plan->name)) }}">{{ $plan->name }}</div>
-                    <div class="pricing-body">
-                        <p class="pricing-description">{{ $plan->description ?? 'Comprehensive learning package with access to all platform features.' }}</p>
-                        <div class="pricing-price-section">
-                            <span class="price">{{ $plan->currency }} {{ number_format($plan->price, 2) }}</span>
+                <!-- Pricing Cards -->
+                <div class="pricing-grid" role="list" aria-label="Available pricing plans">
+                    @forelse($pricingPlans as $plan)
+                        <article class="pricing-card" role="listitem" itemscope itemtype="https://schema.org/Product">
+                            <meta itemprop="name" content="{{ $plan->name }} Plan">
+                            <meta itemprop="description" content="{{ $plan->description ?? 'Comprehensive learning package with access to all platform features.' }}">
+                            <div class="pricing-badge {{ strtolower(str_replace(' ', '-', $plan->name)) }}">{{ $plan->name }}</div>
+                            <div class="pricing-body">
+                                <p class="pricing-description">{{ $plan->description ?? 'Comprehensive learning package with access to all platform features.' }}</p>
+                                <div class="pricing-price-section" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+                                    <meta itemprop="priceCurrency" content="{{ $plan->currency }}">
+                                    <meta itemprop="price" content="{{ $plan->price }}">
+                                    <span class="price">{{ $plan->currency }} {{ number_format($plan->price, 2) }}</span>
+                                </div>
+                                <ul class="pricing-features" itemscope itemtype="https://schema.org/ItemList">
+                                    {{-- The issue is in this nested conditional logic --}}
+                                    @if(!empty($plan->features) && is_array($plan->features))
+                                        @foreach($plan->features as $index => $feature)
+                                            <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                                                <meta itemprop="position" content="{{ $index + 1 }}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                                </svg>
+                                                <span itemprop="name">{{ $feature }}</span>
+                                            </li>
+                                        @endforeach
+                                    @else
+                                        <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                                            <meta itemprop="position" content="1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                            </svg>
+                                            <span itemprop="name">Access to {{ $plan->name }} features</span>
+                                        </li>
+                                    @endif
+                                </ul>
+                                <button class="pricing-btn-new" aria-label="Get started with {{ $plan->name }} plan">Get Started</button>
+                            </div>
+                        </article>
+                    @empty
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;" role="status" aria-live="polite">
+                            <h3 style="color: var(--gray-600); margin-bottom: 1rem;">No pricing plans available</h3>
+                            <p style="color: var(--gray-500);">Pricing plans are being configured. Please check back later.</p>
                         </div>
-                        <ul class="pricing-features">
-                            @if($plan->features && is_array($plan->features))
-                                @foreach($plan->features as $feature)
-                                <li>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                    </svg>
-                                    {{ $feature }}
-                                </li>
-                                @endforeach
-                            @else
-                                <li>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                    </svg>
-                                    Access to {{ $plan->name }} features
-                                </li>
-                            @endif
-                        </ul>
-                        <button class="pricing-btn-new">Get Started</button>
-                    </div>
+                    @endforelse
                 </div>
-                @empty
-                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
-                    <h3 style="color: var(--gray-600); margin-bottom: 1rem;">No pricing plans available</h3>
-                    <p style="color: var(--gray-500);">Pricing plans are being configured. Please check back later.</p>
-                </div>
-                @endforelse
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Testimonials -->
-    <section class="section bg-gray-50">
-        <div class="container">
-            <h2 class="section-title text-center">What our students say</h2>
-            <div class="testimonials-grid">
-                @foreach($testimonials as $testimonial)
-                <div class="testimonial-card">
-                    <div class="testimonial-content">
-                        <p>"{{ $testimonial['quote'] }}"</p>
-                    </div>
-                    <div class="testimonial-author">
-                        <img src="{{ secure_asset($testimonial['image']) }}" alt="{{ $testimonial['name'] }}">
-                        <div class="author-info">
-                            <h4>{{ $testimonial['name'] }}</h4>
-                            <span>{{ $testimonial['role'] }}</span>
+        <!-- Testimonials -->
+        <section class="section bg-gray-50" aria-labelledby="testimonials-title">
+            <div class="container">
+                <h2 id="testimonials-title" class="section-title text-center">What our students say</h2>
+                <div class="testimonials-grid" role="list" aria-label="Student testimonials">
+                    @foreach($testimonials as $testimonial)
+                        <article class="testimonial-card" role="listitem" itemscope itemtype="https://schema.org/Review">
+                            <meta itemprop="reviewRating" content="5">
+                            <div class="testimonial-content" itemprop="reviewBody">
+                                <p>"{{ $testimonial['quote'] }}"</p>
+                            </div>
+                            <div class="testimonial-author" itemprop="author" itemscope itemtype="https://schema.org/Person">
+                                <img src="{{ secure_asset($testimonial['image']) }}" alt="Photo of {{ $testimonial['name'] }}" loading="lazy" itemprop="image">
+                                <div class="author-info">
+                                    <h4 itemprop="name">{{ $testimonial['name'] }}</h4>
+                                    <span itemprop="jobTitle">{{ $testimonial['role'] }}</span>
+                                </div>
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="faq-section bg-red" aria-labelledby="faq-title">
+            <div class="container">
+                <h2 id="faq-title" class="faq-main-title">FAQ</h2>
+                <div class="faq-list" itemscope itemtype="https://schema.org/FAQPage">
+                    @foreach($faqs as $faq)
+                        <div class="faq-item-new" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+                            <div class="faq-content">
+                                <h3 class="faq-question" itemprop="name">{{ strtoupper($faq['question']) }}</h3>
+                                <div class="faq-divider"></div>
+                                <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+                                    <p class="faq-answer" itemprop="text">{{ $faq['answer'] }}</p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    @endforeach
                 </div>
-                @endforeach
             </div>
-        </div>
-    </section>
-
-    <!-- FAQ Section -->
-    <section class="faq-section bg-red">
-        <div class="container">
-            <h2 class="faq-main-title">FAQ</h2>
-            <div class="faq-list">
-                @foreach($faqs as $faq)
-                <div class="faq-item-new">
-                    <div class="faq-content">
-                        <h3 class="faq-question">{{ strtoupper($faq['question']) }}</h3>
-                        <div class="faq-divider"></div>
-                        <p class="faq-answer">{{ $faq['answer'] }}</p>
-                    </div>
-                </div>
-                @endforeach
-            </div>
-        </div>
-    </section>
+        </section>
+    </main>
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         let currentlyPlaying = null;

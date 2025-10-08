@@ -21,6 +21,7 @@ return [
             'https://cdn.jsdelivr.net/npm/chart.umd.min.js.map',
             'https://cdn.jsdelivr.net/npm/alpinejs',
             'https://cdn.quilljs.com',
+            'https://schema.org',
             'https://cdn.tailwindcss.com',
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
             // Removed 'unsafe-inline' for better security - using nonces instead
@@ -81,6 +82,7 @@ return [
             'https://api.vimeo.com',
             'https://vimeo.com',
             'https://ipapi.co',
+            'https://schema.org',
     	 ],
         'frame-src' => [
             "'self'",
