@@ -1705,7 +1705,7 @@
                     @if(isset($universityCourses))
                         {{-- Display University Courses --}}
                         @forelse($universityCourses as $course)
-                        <div class="lesson-card hover-video-card" data-lesson-id="{{ $course['id'] }}">
+                        <div class="lesson-card hover-video-card" data-lesson-id="{{ $course['id'] }}" data-subject="{{ $course['subject'] }}" data-title="{{ $course['title'] }}">
                             <div class="lesson-thumbnail">
                                 <!-- Video element for hover-to-play functionality -->
                                 <video 
@@ -1784,7 +1784,7 @@
                     @else
                         {{-- Display Regular Lessons --}}
                         @forelse($lessons ?? [] as $lesson)
-                    <div class="lesson-card hover-video-card" data-lesson-id="{{ $lesson['id'] }}">
+                    <div class="lesson-card hover-video-card" data-lesson-id="{{ $lesson['id'] }}" data-subject="{{ $lesson['subject'] }}" data-title="{{ $lesson['title'] }}">
                         <div class="lesson-thumbnail">
                             <!-- Video element for hover-to-play functionality -->
                             <video 

@@ -296,7 +296,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/security', [AdminController::class, 'security'])->name('security');
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
     Route::post('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
-    Route::get('/export', [AdminController::class, 'export'])->name('export');
+    Route::get('/export', [AdminController::class, 'exportUsers'])->name('export');
     Route::get('/credentials', [AdminController::class, 'showCredentials'])->name('credentials');
     Route::post('/credentials/update', [AdminController::class, 'updateCredentials'])->name('credentials.update');
     Route::post('/credentials/recovery', [AdminController::class, 'generateRecoveryCodes'])->name('credentials.recovery');
