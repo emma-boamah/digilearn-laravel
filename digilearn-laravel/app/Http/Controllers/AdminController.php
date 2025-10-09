@@ -1895,7 +1895,7 @@ class AdminController extends Controller
 
         // Get standalone quizzes (only when specifically filtering for quizzes)
         if ($type === 'quizzes') {
-            $quizzes = Quiz::with(['uploader:id,name,email'])
+            $quizzes = Quiz::with(['uploader:id,name,email', 'ratings'])
                 ->whereNull('video_id') // Only standalone quizzes
                 ->when($query, function($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
@@ -1919,6 +1919,12 @@ class AdminController extends Controller
                 $item->thumbnail_path = null;
                 $item->status = 'approved'; // Quizzes are auto-approved
                 $item->duration_formatted = 'N/A';
+
+                // Add quiz ratings data
+                $ratings = $item->ratings;
+                $item->average_rating = $ratings->count() > 0 ? round($ratings->avg('rating'), 1) : null;
+                $item->total_ratings = $ratings->count();
+
                 return $item;
             }));
         }

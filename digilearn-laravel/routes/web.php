@@ -332,18 +332,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             ->name('admin.content.videos.verify');
     });
 
-    // Content Management - Quizzes
-    Route::prefix('content/quizzes')->name('content.quizzes.')->group(function () {
-        Route::get('/', [AdminController::class, 'indexQuizzes'])->name('index');
-        Route::get('/ratings', [AdminController::class, 'quizRatings'])->name('ratings');
-        Route::get('/manage', [AdminController::class, 'manageQuiz'])->name('manage');
-        Route::get('/manage/{quiz}', [AdminController::class, 'manageQuiz'])->name('manage.edit');
-        Route::post('/', [AdminController::class, 'storeQuiz'])->name('store');
-        Route::get('/{quiz}/edit', [AdminController::class, 'editQuiz'])->name('edit');
-        Route::put('/{quiz}', [AdminController::class, 'updateQuiz'])->name('update');
-        Route::delete('/{quiz}', [AdminController::class, 'destroyQuiz'])->name('destroy');
-        Route::post('/{quiz}/toggle-feature', [AdminController::class, 'toggleQuizFeature'])->name('toggle-feature');
-    });
 
     // Content Management - Documents
     Route::prefix('content/documents')->name('content.documents.')->group(function () {
