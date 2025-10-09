@@ -102,6 +102,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/dashboard/lesson/{lessonId}/save', [DashboardController::class, 'saveLesson'])->name('dashboard.lesson.save');
     Route::delete('/dashboard/lesson/{lessonId}/unsave', [DashboardController::class, 'unsaveLesson'])->name('dashboard.lesson.unsave');
 
+    // User Notes for Videos
+    Route::post('/dashboard/lesson/{videoId}/user-notes', [DashboardController::class, 'saveUserNotes'])->name('dashboard.lesson.user-notes.save');
+    Route::get('/dashboard/lesson/{videoId}/user-notes', [DashboardController::class, 'loadUserNotes'])->name('dashboard.lesson.user-notes.load');
+    Route::delete('/dashboard/lesson/{videoId}/user-notes', [DashboardController::class, 'deleteUserNotes'])->name('dashboard.lesson.user-notes.delete');
+    Route::get('/dashboard/user-notes', [DashboardController::class, 'getAllUserNotes'])->name('dashboard.user-notes.all');
+
     // University years selection
     Route::get('/dashboard/university/years', [DashboardController::class, 'universityYears'])
         ->name('dashboard.university.years');

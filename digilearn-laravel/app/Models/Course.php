@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Services\UrlObfuscator;
 
 class Course extends Model
 {
@@ -149,5 +150,52 @@ class Course extends Model
     public function scopeBySubject($query, $subject)
     {
         return $query->where('subject', $subject);
+    }
+
+    /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName()
+    {
+        return 'seo_url';
+    }
+
+    /**
+     * Get the SEO-friendly URL attribute.
+     */
+    public function getSeoUrlAttribute()
+    {
+        return UrlObfuscator::createSeoUrl($this->id, $this->title);
+    }
+
+    /**
+     * Get the slug for SEO URLs.
+     */
+    public function getSlugAttribute()
+    {
+        return UrlObfuscator::generateSlug($this->title);
+    }
+
+    /**
+     * Resolve route binding using SEO URL (encrypted_id-slug).
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        $parsed = UrlObfuscator::parseSeoUrl($value);
+
+        if (!$parsed) {
+            return null;
+        }
+
+        // Find the course by ID
+        $course = $this->where('id', $parsed['id'])->first();
+
+        // Optional: Verify slug matches for SEO purposes
+        if ($course && $parsed['slug'] !== UrlObfuscator::generateSlug($course->title)) {
+            // Slug doesn't match, but we still return the course for flexibility
+            // In production, you might want to redirect to the correct URL
+        }
+
+        return $course;
     }
 }

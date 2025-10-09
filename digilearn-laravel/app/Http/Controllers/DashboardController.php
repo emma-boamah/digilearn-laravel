@@ -10,6 +10,7 @@ use App\Models\SavedLesson;
 use App\Models\VirtualClass;
 use App\Models\Comment;
 use App\Models\Video;
+use App\Models\UserNote;
 
 class DashboardController extends Controller
 {
@@ -1976,5 +1977,180 @@ class DashboardController extends Controller
         ];
 
         return $forumTopics[$grade] ?? [];
+    }
+
+    /**
+     * Save user notes for a video
+     */
+    public function saveUserNotes(Request $request, $videoId)
+    {
+        $request->validate([
+            'title' => 'nullable|string|max:255',
+            'content' => 'required|string',
+        ]);
+
+        try {
+            $userId = Auth::id();
+
+            // Check if notes already exist for this user and video
+            $existingNote = UserNote::forUserAndVideo($userId, $videoId)->first();
+
+            if ($existingNote) {
+                // Update existing note
+                $existingNote->update([
+                    'title' => $request->title,
+                    'content' => $request->content,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Notes updated successfully!',
+                    'action' => 'updated'
+                ]);
+            } else {
+                // Create new note
+                UserNote::create([
+                    'user_id' => $userId,
+                    'video_id' => $videoId,
+                    'title' => $request->title,
+                    'content' => $request->content,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Notes saved successfully!',
+                    'action' => 'created'
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('save_user_notes_error', [
+                'user_id' => Auth::id(),
+                'video_id' => $videoId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save notes. Please try again.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Load user notes for a video
+     */
+    public function loadUserNotes($videoId)
+    {
+        try {
+            $userId = Auth::id();
+
+            $note = UserNote::forUserAndVideo($userId, $videoId)->first();
+
+            if ($note) {
+                return response()->json([
+                    'success' => true,
+                    'note' => [
+                        'id' => $note->id,
+                        'title' => $note->title,
+                        'content' => $note->content,
+                        'created_at' => $note->formatted_created_at,
+                        'updated_at' => $note->formatted_updated_at,
+                    ]
+                ]);
+            } else {
+                return response()->json([
+                    'success' => true,
+                    'note' => null
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('load_user_notes_error', [
+                'user_id' => Auth::id(),
+                'video_id' => $videoId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load notes.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete user notes for a video
+     */
+    public function deleteUserNotes($videoId)
+    {
+        try {
+            $userId = Auth::id();
+
+            $note = UserNote::forUserAndVideo($userId, $videoId)->first();
+
+            if ($note) {
+                $note->delete();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Notes deleted successfully!'
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No notes found to delete.'
+                ], 404);
+            }
+        } catch (\Exception $e) {
+            Log::error('delete_user_notes_error', [
+                'user_id' => Auth::id(),
+                'video_id' => $videoId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete notes. Please try again.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get all user notes (for a dashboard or overview)
+     */
+    public function getAllUserNotes()
+    {
+        try {
+            $userId = Auth::id();
+
+            $notes = UserNote::where('user_id', $userId)
+                ->with('video')
+                ->orderBy('updated_at', 'desc')
+                ->get()
+                ->map(function ($note) {
+                    return [
+                        'id' => $note->id,
+                        'video_id' => $note->video_id,
+                        'title' => $note->title ?: 'Untitled Notes',
+                        'content_preview' => substr(strip_tags($note->content), 0, 100) . '...',
+                        'updated_at' => $note->formatted_updated_at,
+                        'video_title' => $note->video ? $note->video->title : 'Unknown Video',
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'notes' => $notes
+            ]);
+        } catch (\Exception $e) {
+            Log::error('get_all_user_notes_error', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load notes.'
+            ], 500);
+        }
     }
 }

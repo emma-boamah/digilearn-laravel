@@ -2514,6 +2514,7 @@
             content: '',
             lastSaved: null
         };
+        let notesManager = null;
 
         // Scroll tracking variables for mobile video section
         let lastScrollY = 0;
@@ -3102,6 +3103,10 @@
             const exportNotesBtn = document.getElementById('exportNotesBtn');
             const deleteNotesBtn = document.getElementById('deleteNotesBtn');
 
+            // Initialize NotesManager
+            notesManager = new NotesManager();
+            notesManager.init();
+
             // Initialize Quill editor
             function initializeQuill() {
                 if (quillEditor) return;
@@ -3160,21 +3165,44 @@
             }
 
             // Auto-save functionality
-            function autoSave() {
+            async function autoSave() {
                 if (notesTitleInput.value.trim() || (quillEditor && quillEditor.getText().trim())) {
-                    notesData.title = notesTitleInput.value.trim();
-                    notesData.content = quillEditor ? quillEditor.root.innerHTML : '';
-                    notesData.lastSaved = new Date().toISOString();
-                    
-                    // Save to localStorage for demo purposes
-                    localStorage.setItem('lessonNotes', JSON.stringify(notesData));
-                    
-                    console.log('Notes auto-saved:', notesData);
+                    const title = notesTitleInput.value.trim();
+                    const content = quillEditor ? quillEditor.root.innerHTML : '';
+
+                    try {
+                        // Save locally first
+                        await notesManager.saveNoteLocally({
+                            title: title,
+                            content: content
+                        });
+
+                        notesData.title = title;
+                        notesData.content = content;
+                        notesData.lastSaved = new Date().toISOString();
+
+                        // Update save button to show success
+                        const saveBtn = document.getElementById('saveNotesBtn');
+                        if (saveBtn) {
+                            const originalContent = saveBtn.innerHTML;
+                            saveBtn.innerHTML = '<i class="fas fa-check"></i> Auto-saved!';
+                            saveBtn.style.backgroundColor = '#10b981';
+
+                            setTimeout(() => {
+                                saveBtn.innerHTML = originalContent;
+                                saveBtn.style.backgroundColor = '';
+                            }, 2000);
+                        }
+
+                        console.log('Notes auto-saved locally');
+                    } catch (error) {
+                        console.error('Auto-save error:', error);
+                    }
                 }
             }
 
             // Manual save functionality
-            function saveNotes() {
+            async function saveNotes() {
                 if (!notesTitleInput.value.trim() && (!quillEditor || !quillEditor.getText().trim())) {
                     alert('Please add a title or content before saving.');
                     return;
@@ -3182,33 +3210,43 @@
 
                 const saveBtn = saveNotesBtn;
                 const originalContent = saveBtn.innerHTML;
-                
+
                 // Show loading state
                 saveBtn.innerHTML = '<div class="loading-spinner"></div> Saving...';
                 saveBtn.disabled = true;
 
-                // Simulate API call
-                setTimeout(() => {
-                    notesData.title = notesTitleInput.value.trim();
-                    notesData.content = quillEditor ? quillEditor.root.innerHTML : '';
+                const title = notesTitleInput.value.trim();
+                const content = quillEditor ? quillEditor.root.innerHTML : '';
+
+                try {
+                    // Save locally first
+                    await notesManager.saveNoteLocally({
+                        title: title,
+                        content: content
+                    });
+
+                    notesData.title = title;
+                    notesData.content = content;
                     notesData.lastSaved = new Date().toISOString();
-                    
-                    // Save to localStorage for demo purposes
-                    localStorage.setItem('lessonNotes', JSON.stringify(notesData));
-                    
+
                     // Show success state
                     saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
                     saveBtn.style.backgroundColor = '#10b981';
-                    
+
                     // Show success message
                     showSuccessMessage('Notes saved successfully!');
-                    
+
                     setTimeout(() => {
                         saveBtn.innerHTML = originalContent;
                         saveBtn.style.backgroundColor = '';
                         saveBtn.disabled = false;
                     }, 2000);
-                }, 1000);
+                } catch (error) {
+                    console.error('Save error:', error);
+                    saveBtn.innerHTML = originalContent;
+                    saveBtn.disabled = false;
+                    alert('Failed to save notes. Please try again.');
+                }
             }
 
             // Export functionality
@@ -3273,36 +3311,72 @@
             }
 
             // Delete functionality
-            function deleteNotes() {
+            async function deleteNotes() {
                 if (confirm('Are you sure you want to delete these notes? This action cannot be undone.')) {
-                    notesTitleInput.value = '';
-                    if (quillEditor) {
-                        quillEditor.setContents([]);
+                    try {
+                        // Clear UI
+                        notesTitleInput.value = '';
+                        if (quillEditor) {
+                            quillEditor.setContents([]);
+                        }
+
+                        // Delete from local storage
+                        // Note: NotesManager doesn't have a delete method yet, so we'll clear the UI and let sync handle server deletion
+                        notesData = { title: '', content: '', lastSaved: null };
+
+                        // Optionally delete from server
+                        try {
+                            await fetch(`/dashboard/lesson/{{ $lesson['id'] ?? '' }}/user-notes`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                }
+                            });
+                        } catch (serverError) {
+                            console.warn('Failed to delete from server:', serverError);
+                        }
+
+                        showSuccessMessage('Notes deleted successfully!');
+                        console.log('Notes deleted');
+                    } catch (error) {
+                        console.error('Error deleting notes:', error);
+                        alert('Failed to delete notes. Please try again.');
                     }
-                    
-                    // Clear localStorage
-                    localStorage.removeItem('lessonNotes');
-                    
-                    showSuccessMessage('Notes deleted successfully!');
-                    console.log('Notes deleted');
                 }
             }
 
             // Load saved notes
             function loadSavedNotes() {
-                const saved = localStorage.getItem('lessonNotes');
-                if (saved) {
-                    try {
-                        const data = JSON.parse(saved);
-                        notesTitleInput.value = data.title || '';
-                        if (quillEditor && data.content) {
-                            quillEditor.root.innerHTML = data.content;
-                        }
-                        notesData = data;
-                    } catch (e) {
-                        console.error('Error loading saved notes:', e);
+                // Load from database via AJAX
+                fetch(`/dashboard/lesson/{{ $lesson['id'] ?? '' }}/user-notes`, {
+                    method: 'GET',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     }
-                }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.note) {
+                        notesTitleInput.value = data.note.title || '';
+                        if (quillEditor && data.note.content) {
+                            quillEditor.root.innerHTML = data.note.content;
+                        }
+                        notesData = {
+                            title: data.note.title || '',
+                            content: data.note.content || '',
+                            lastSaved: data.note.updated_at
+                        };
+                        console.log('Notes loaded from database');
+                    } else {
+                        // No notes found, keep empty
+                        notesData = { title: '', content: '', lastSaved: null };
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading saved notes:', error);
+                    // Fallback to empty notes
+                    notesData = { title: '', content: '', lastSaved: null };
+                });
             }
 
             // Event listeners
@@ -3645,6 +3719,286 @@
                     messageDiv.remove();
                 }
             }, 5000);
+        }
+
+        // IndexedDB Notes Manager for offline-first functionality
+        class NotesManager {
+            constructor() {
+                this.dbName = 'DigiLearnNotes';
+                this.version = 1;
+                this.db = null;
+                this.lessonId = '{{ $lesson["id"] ?? "" }}';
+                this.userId = '{{ auth()->id() }}';
+                this.syncInterval = null;
+                this.isOnline = navigator.onLine;
+                this.pendingSyncs = new Set();
+            }
+
+            async init() {
+                try {
+                    this.db = await this.openDB();
+                    this.setupOnlineOfflineListeners();
+                    this.startPeriodicSync();
+                    console.log('NotesManager initialized');
+                } catch (error) {
+                    console.error('Failed to initialize NotesManager:', error);
+                    // Fallback to localStorage
+                    this.useLocalStorage = true;
+                }
+            }
+
+            async openDB() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.version);
+
+                    request.onerror = () => {
+                        console.warn('IndexedDB not available, falling back to localStorage');
+                        this.useLocalStorage = true;
+                        reject(new Error('IndexedDB not available'));
+                    };
+
+                    request.onsuccess = (event) => {
+                        resolve(event.target.result);
+                    };
+
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+
+                        // Create notes store
+                        if (!db.objectStoreNames.contains('notes')) {
+                            const notesStore = db.createObjectStore('notes', { keyPath: 'id' });
+                            notesStore.createIndex('lessonId', 'lessonId', { unique: false });
+                            notesStore.createIndex('userId', 'userId', { unique: false });
+                            notesStore.createIndex('lastModified', 'lastModified', { unique: false });
+                        }
+
+                        // Create sync queue store
+                        if (!db.objectStoreNames.contains('syncQueue')) {
+                            const syncStore = db.createObjectStore('syncQueue', { keyPath: 'id', autoIncrement: true });
+                            syncStore.createIndex('lessonId', 'lessonId', { unique: false });
+                            syncStore.createIndex('timestamp', 'timestamp', { unique: false });
+                        }
+                    };
+                });
+            }
+
+            setupOnlineOfflineListeners() {
+                window.addEventListener('online', () => {
+                    this.isOnline = true;
+                    console.log('Back online - syncing notes');
+                    this.syncWithServer();
+                });
+
+                window.addEventListener('offline', () => {
+                    this.isOnline = false;
+                    console.log('Gone offline - notes will be cached locally');
+                });
+            }
+
+            startPeriodicSync() {
+                // Sync every 30 seconds when online
+                this.syncInterval = setInterval(() => {
+                    if (this.isOnline && !this.useLocalStorage) {
+                        this.syncWithServer();
+                    }
+                }, 30000);
+            }
+
+            async saveNoteLocally(noteData) {
+                if (this.useLocalStorage) {
+                    const key = `note_${this.lessonId}`;
+                    localStorage.setItem(key, JSON.stringify({
+                        ...noteData,
+                        lastModified: Date.now(),
+                        synced: false
+                    }));
+                    return;
+                }
+
+                const note = {
+                    id: `${this.userId}_${this.lessonId}`,
+                    userId: this.userId,
+                    lessonId: this.lessonId,
+                    title: noteData.title || '',
+                    content: noteData.content || '',
+                    lastModified: Date.now(),
+                    synced: false,
+                    version: Date.now() // For conflict resolution
+                };
+
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['notes'], 'readwrite');
+                    const store = transaction.objectStore('notes');
+                    const request = store.put(note);
+
+                    request.onsuccess = () => {
+                        console.log('Note saved locally');
+                        resolve(note);
+                    };
+
+                    request.onerror = () => {
+                        console.error('Failed to save note locally');
+                        reject(new Error('Failed to save locally'));
+                    };
+                });
+            }
+
+            async loadNoteLocally() {
+                if (this.useLocalStorage) {
+                    const key = `note_${this.lessonId}`;
+                    const data = localStorage.getItem(key);
+                    return data ? JSON.parse(data) : null;
+                }
+
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['notes'], 'readonly');
+                    const store = transaction.objectStore('notes');
+                    const request = store.get(`${this.userId}_${this.lessonId}`);
+
+                    request.onsuccess = () => {
+                        resolve(request.result || null);
+                    };
+
+                    request.onerror = () => {
+                        reject(new Error('Failed to load note locally'));
+                    };
+                });
+            }
+
+            async syncWithServer() {
+                if (!this.isOnline || this.useLocalStorage) return;
+
+                try {
+                    // Get all unsynced notes
+                    const unsyncedNotes = await this.getUnsyncedNotes();
+
+                    for (const note of unsyncedNotes) {
+                        await this.syncNoteToServer(note);
+                    }
+
+                    // Load latest from server to check for conflicts
+                    await this.loadFromServer();
+
+                } catch (error) {
+                    console.error('Sync failed:', error);
+                }
+            }
+
+            async getUnsyncedNotes() {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['notes'], 'readonly');
+                    const store = transaction.objectStore('notes');
+                    const index = store.index('lastModified');
+                    const request = index.openCursor();
+                    const unsynced = [];
+
+                    request.onsuccess = (event) => {
+                        const cursor = event.target.result;
+                        if (cursor) {
+                            if (!cursor.value.synced) {
+                                unsynced.push(cursor.value);
+                            }
+                            cursor.continue();
+                        } else {
+                            resolve(unsynced);
+                        }
+                    };
+
+                    request.onerror = () => reject(new Error('Failed to get unsynced notes'));
+                });
+            }
+
+            async syncNoteToServer(note) {
+                try {
+                    const response = await fetch(`/dashboard/lesson/${this.lessonId}/user-notes`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            title: note.title,
+                            content: note.content
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Mark as synced
+                        await this.markNoteSynced(note.id);
+                        console.log('Note synced to server');
+                    }
+                } catch (error) {
+                    console.error('Failed to sync note:', error);
+                    // Will retry on next sync
+                }
+            }
+
+            async markNoteSynced(noteId) {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['notes'], 'readwrite');
+                    const store = transaction.objectStore('notes');
+                    const request = store.get(noteId);
+
+                    request.onsuccess = () => {
+                        const note = request.result;
+                        if (note) {
+                            note.synced = true;
+                            const updateRequest = store.put(note);
+                            updateRequest.onsuccess = () => resolve();
+                            updateRequest.onerror = () => reject(new Error('Failed to mark synced'));
+                        } else {
+                            resolve();
+                        }
+                    };
+
+                    request.onerror = () => reject(new Error('Failed to get note for sync'));
+                });
+            }
+
+            async loadFromServer() {
+                try {
+                    const response = await fetch(`/dashboard/lesson/${this.lessonId}/user-notes`, {
+                        method: 'GET',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success && data.note) {
+                        const serverNote = data.note;
+                        const localNote = await this.loadNoteLocally();
+
+                        // Check for conflicts
+                        if (localNote && localNote.lastModified > new Date(serverNote.updated_at).getTime()) {
+                            // Local is newer, keep local but mark for sync
+                            console.log('Local note is newer, keeping local version');
+                        } else {
+                            // Server is newer or same, update local
+                            await this.saveNoteLocally({
+                                title: serverNote.title || '',
+                                content: serverNote.content || '',
+                                synced: true
+                            });
+                            console.log('Updated local note from server');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to load from server:', error);
+                }
+            }
+
+            destroy() {
+                if (this.syncInterval) {
+                    clearInterval(this.syncInterval);
+                }
+                if (this.db) {
+                    this.db.close();
+                }
+            }
         }
 
         // Course tabs functionality
