@@ -875,6 +875,48 @@
       color: var(--gray-400);
   }
 
+  /* Quiz Rating Section */
+  .quiz-rating-section {
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background-color: var(--gray-50);
+      border-radius: 0.75rem;
+      border: 1px solid var(--gray-100);
+  }
+
+  .rating-display {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+  }
+
+  .rating-stars {
+      display: flex;
+      gap: 0.125rem;
+  }
+
+  .rating-stars .star {
+      width: 16px;
+      height: 16px;
+      color: var(--gray-300);
+      transition: color 0.2s ease;
+  }
+
+  .rating-stars .star.filled {
+      color: var(--warning);
+  }
+
+  .rating-score {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--gray-900);
+  }
+
+  .rating-count {
+      font-size: 0.75rem;
+      color: var(--gray-500);
+  }
+
   /* Sidebar Overlay for Mobile */
   .sidebar-overlay {
       position: fixed;

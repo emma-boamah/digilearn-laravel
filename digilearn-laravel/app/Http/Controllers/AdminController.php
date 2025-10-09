@@ -988,6 +988,10 @@ class AdminController extends Controller
             $query->where('grade_level', $request->grade_level);
         }
 
+        if ($request->has('difficulty_level') && $request->difficulty_level != '') {
+            $query->where('difficulty_level', $request->difficulty_level);
+        }
+
         if ($request->has('is_featured') && $request->is_featured != '') {
             $query->where('is_featured', filter_var($request->is_featured, FILTER_VALIDATE_BOOLEAN));
         }

@@ -207,6 +207,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{quizId}/submit', [QuizController::class, 'submit'])->name('submit');
         Route::post('/{quizId}/essay/submit', [QuizController::class, 'submitEssay'])->name('essay.submit');
         Route::post('/{quizId}/violation', [QuizController::class, 'violation'])->name('violation');
+        Route::post('/{quizId}/rate', [QuizController::class, 'rate'])->name('rate');
         Route::get('/results', [QuizController::class, 'results'])->name('results');
     });
 
@@ -334,6 +335,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Content Management - Quizzes
     Route::prefix('content/quizzes')->name('content.quizzes.')->group(function () {
         Route::get('/', [AdminController::class, 'indexQuizzes'])->name('index');
+        Route::get('/ratings', [AdminController::class, 'quizRatings'])->name('ratings');
+        Route::get('/manage', [AdminController::class, 'manageQuiz'])->name('manage');
+        Route::get('/manage/{quiz}', [AdminController::class, 'manageQuiz'])->name('manage.edit');
         Route::post('/', [AdminController::class, 'storeQuiz'])->name('store');
         Route::get('/{quiz}/edit', [AdminController::class, 'editQuiz'])->name('edit');
         Route::put('/{quiz}', [AdminController::class, 'updateQuiz'])->name('update');

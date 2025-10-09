@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Quiz;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class QuizController extends Controller
 {
@@ -14,33 +15,71 @@ class QuizController extends Controller
     public function index(Request $request)
     {
         $selectedLevelGroup = session('selected_level_group', 'grade-1-3');
-        
-        // Sample quiz data - replace with actual database queries
-        $quizzes = $this->getSampleQuizzes();
-
-        // Personalize with user-specific progress/attempts
         $userId = Auth::id();
-        foreach ($quizzes as &$quiz) {
-            $attempts = \App\Models\QuizAttempt::where('user_id', $userId)
-                ->where('quiz_id', $quiz['id'])
-                ->orderByDesc('completed_at')
-                ->get(['score_percentage', 'total_questions', 'correct_answers']);
 
-            $quiz['attempts_count'] = $attempts->count();
-            if ($attempts->isNotEmpty()) {
-                $last = $attempts->first();
-                $quiz['user_progress'] = (int) round($last->score_percentage);
-                $quiz['last_result'] = [
-                    'score' => (int) ($last->correct_answers ?? 0),
-                    'total' => (int) ($last->total_questions ?? 0),
-                    'percentage' => (int) round($last->score_percentage ?? 0),
-                ];
-            } else {
-                $quiz['user_progress'] = 0;
-                $quiz['last_result'] = null;
+        // Cache key for base quiz data (changes less frequently)
+        $cacheKey = "quizzes.{$selectedLevelGroup}";
+        $cacheDuration = 300; // 5 minutes
+
+        // Get base quiz data with caching
+        $baseQuizzes = Cache::remember($cacheKey, $cacheDuration, function () use ($selectedLevelGroup) {
+            $query = \App\Models\Quiz::with(['uploader', 'ratings', 'attempts']);
+
+            // Filter by grade level if specified
+            if ($selectedLevelGroup && $selectedLevelGroup !== 'all') {
+                $query->where('grade_level', $selectedLevelGroup);
             }
-        }
-        
+
+            return $query->orderBy('created_at', 'desc')->get();
+        });
+
+        // Personalize with user-specific data (cached per user)
+        $quizzes = $baseQuizzes->map(function ($quiz) use ($userId) {
+            // Cache user-specific data for this quiz
+            $userCacheKey = "quiz_user_data.{$userId}.{$quiz->id}";
+            $userCacheDuration = 60; // 1 minute for user data
+
+            return Cache::remember($userCacheKey, $userCacheDuration, function () use ($quiz, $userId) {
+                // Get user's attempts for this quiz
+                $userAttempts = $quiz->attempts()->where('user_id', $userId)
+                    ->orderByDesc('completed_at')
+                    ->get(['score_percentage', 'total_questions', 'correct_answers']);
+
+                // Get user's rating for this quiz
+                $userRating = $quiz->getUserRating($userId);
+
+                // Parse quiz data for questions count
+                $quizData = json_decode($quiz->quiz_data, true);
+                $questionsCount = $quizData && isset($quizData['questions']) ? count($quizData['questions']) : 0;
+
+                return [
+                    'id' => $quiz->id,
+                    'title' => $quiz->title,
+                    'subject' => $quiz->subject,
+                    'grade_level' => $quiz->grade_level,
+                    'level_display' => $this->formatGradeLevel($quiz->grade_level),
+                    'duration' => $quiz->formatted_time_limit,
+                    'time_limit_minutes' => $quiz->time_limit_minutes,
+                    'questions_count' => $questionsCount,
+                    'difficulty' => $quiz->difficulty_level ?? 'medium',
+                    'description' => $quiz->title . ' quiz covering ' . ($quiz->subject ?? 'various topics'),
+                    'is_featured' => $quiz->is_featured,
+                    'average_rating' => $quiz->average_rating,
+                    'total_ratings' => $quiz->total_ratings,
+                    'total_attempts_count' => $quiz->total_attempts_count,
+                    'user_rating' => $userRating ? $userRating->rating : null,
+                    'user_attempts_count' => $userAttempts->count(),
+                    'user_progress' => $userAttempts->isNotEmpty() ? (int) round($userAttempts->first()->score_percentage) : 0,
+                    'last_result' => $userAttempts->isNotEmpty() ? [
+                        'score' => (int) ($userAttempts->first()->correct_answers ?? 0),
+                        'total' => (int) ($userAttempts->first()->total_questions ?? 0),
+                        'percentage' => (int) round($userAttempts->first()->score_percentage ?? 0),
+                    ] : null,
+                    'created_at' => $quiz->created_at,
+                ];
+            });
+        });
+
         return view('dashboard.quiz.index', compact('quizzes', 'selectedLevelGroup'));
     }
 
@@ -272,29 +311,34 @@ class QuizController extends Controller
     }
 
     /**
-     * Get quiz by ID from database
+     * Get quiz by ID from database with caching
      */
     private function getQuizById($quizId)
     {
-        $quiz = \App\Models\Quiz::with('uploader')->find($quizId);
+        $cacheKey = "quiz.{$quizId}";
+        $cacheDuration = 600; // 10 minutes
 
-        if (!$quiz) {
-            return null;
-        }
+        return Cache::remember($cacheKey, $cacheDuration, function () use ($quizId) {
+            $quiz = \App\Models\Quiz::with('uploader')->find($quizId);
 
-        // Parse quiz_data JSON
-        $quizData = json_decode($quiz->quiz_data, true);
+            if (!$quiz) {
+                return null;
+            }
 
-        return [
-            'id' => $quiz->id,
-            'title' => $quiz->title,
-            'subject' => $quiz->subject,
-            'grade_level' => $quiz->grade_level,
-            'duration' => '3 min', // Default duration
-            'questions_count' => $quizData && isset($quizData['questions']) ? count($quizData['questions']) : 0,
-            'questions' => $quizData && isset($quizData['questions']) ? $quizData['questions'] : [],
-            'uploader' => $quiz->uploader,
-        ];
+            // Parse quiz_data JSON
+            $quizData = json_decode($quiz->quiz_data, true);
+
+            return [
+                'id' => $quiz->id,
+                'title' => $quiz->title,
+                'subject' => $quiz->subject,
+                'grade_level' => $quiz->grade_level,
+                'duration' => '3 min', // Default duration
+                'questions_count' => $quizData && isset($quizData['questions']) ? count($quizData['questions']) : 0,
+                'questions' => $quizData && isset($quizData['questions']) ? $quizData['questions'] : [],
+                'uploader' => $quiz->uploader,
+            ];
+        });
     }
 
     /**
@@ -327,7 +371,7 @@ class QuizController extends Controller
         $percentage = $totalQuestions > 0 ? round(($correctAnswers / $totalQuestions) * 100) : 0;
 
         // Save attempt to database
-        \App\Models\QuizAttempt::create([
+        $attempt = \App\Models\QuizAttempt::create([
             'user_id' => Auth::id(),
             'quiz_id' => $quizId,
             'score_percentage' => $percentage,
@@ -336,6 +380,10 @@ class QuizController extends Controller
             'time_spent_seconds' => $timeSpent,
             'completed_at' => now(),
         ]);
+
+        // Clear user-specific cache for this quiz
+        $userId = Auth::id();
+        Cache::forget("quiz_user_data.{$userId}.{$quizId}");
 
         return [
             'score' => $correctAnswers,
@@ -346,11 +394,102 @@ class QuizController extends Controller
 
     /**
      * Check if the user has already attempted the quiz
-     * (Stub implementation, replace with actual database check)
      */
     private function checkUserAttempt($quizId, $userId)
     {
-        // TODO: Replace with actual logic to check if user has attempted the quiz
-        return false;
+        return \App\Models\QuizAttempt::where('quiz_id', $quizId)
+            ->where('user_id', $userId)
+            ->exists();
+    }
+
+    /**
+     * Format grade level for display
+     */
+    private function formatGradeLevel($gradeLevel)
+    {
+        $levels = [
+            'grade-1-3' => 'Grade 1-3',
+            'grade-4-6' => 'Grade 4-6',
+            'jhs' => 'Junior High School',
+            'shs' => 'Senior High School',
+            'tertiary' => 'Tertiary',
+        ];
+
+        return $levels[$gradeLevel] ?? ucfirst(str_replace('-', ' ', $gradeLevel));
+    }
+
+    /**
+     * Calculate difficulty based on question count
+     */
+    private function calculateDifficulty($questionCount)
+    {
+        if ($questionCount <= 5) return 'easy';
+        if ($questionCount <= 15) return 'medium';
+        return 'hard';
+    }
+
+    /**
+     * Rate a quiz
+     */
+    public function rate(Request $request, $quizId)
+    {
+        $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'review' => 'nullable|string|max:500',
+        ]);
+
+        $userId = Auth::id();
+
+        // Find or create rating
+        $rating = \App\Models\QuizRating::updateOrCreate(
+            [
+                'quiz_id' => $quizId,
+                'user_id' => $userId,
+            ],
+            [
+                'rating' => $request->rating,
+                'review' => $request->review,
+            ]
+        );
+
+        // Update quiz average rating
+        $quiz = \App\Models\Quiz::find($quizId);
+        if ($quiz) {
+            $quiz->updateAverageRating();
+        }
+
+        // Clear user-specific cache for this quiz
+        Cache::forget("quiz_user_data.{$userId}.{$quizId}");
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Rating submitted successfully',
+            'rating' => $rating,
+        ]);
+    }
+
+    /**
+     * Clear quiz-related caches (helper method for cache invalidation)
+     */
+    private function clearQuizCaches($quizId = null, $userId = null)
+    {
+        if ($quizId) {
+            // Clear specific quiz cache
+            Cache::forget("quiz.{$quizId}");
+
+            if ($userId) {
+                // Clear user-specific data for this quiz
+                Cache::forget("quiz_user_data.{$userId}.{$quizId}");
+            } else {
+                // Clear all user caches for this quiz (expensive, use sparingly)
+                // This would require iterating through all users, so we skip it for now
+            }
+        }
+
+        // Clear quiz listing caches for all grade levels
+        $gradeLevels = ['grade-1-3', 'grade-4-6', 'jhs', 'shs', 'tertiary', 'all'];
+        foreach ($gradeLevels as $level) {
+            Cache::forget("quizzes.{$level}");
+        }
     }
 }

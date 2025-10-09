@@ -43,11 +43,37 @@
             </div>
             <div class="stat-item">
                 <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+                <span>{{ number_format($quiz['total_attempts_count'] ?? 0) }} attempts</span>
+            </div>
+            <div class="stat-item">
+                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.168 18.477 18.582 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
                 </svg>
                 <span class="quiz-subject">{{ $quiz['subject'] ?? 'General' }}</span>
             </div>
         </div>
+
+        <!-- Quiz Rating Section -->
+        @if(($quiz['total_ratings'] ?? 0) > 0 || ($quiz['average_rating'] ?? 0) > 0)
+        <div class="quiz-rating-section">
+            <div class="rating-display">
+                <div class="rating-stars">
+                    @php
+                        $rating = round($quiz['average_rating'] ?? 0);
+                    @endphp
+                    @for($i = 1; $i <= 5; $i++)
+                        <svg class="star {{ $i <= $rating ? 'filled' : '' }}" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                    @endfor
+                </div>
+                <span class="rating-score">{{ number_format($quiz['average_rating'] ?? 0, 1) }}</span>
+                <span class="rating-count">({{ $quiz['total_ratings'] ?? 0 }} ratings)</span>
+            </div>
+        </div>
+        @endif
 
         <!-- Quiz Progress (only if user has attempted) -->
         @if(($quiz['attempts_count'] ?? 0) > 0 && ($quiz['user_progress'] ?? 0) > 0)

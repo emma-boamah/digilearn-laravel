@@ -917,6 +917,44 @@
                 <p class="text-gray-600 mb-4">Build a quiz to test student understanding of this lesson.</p>
 
                 <div id="quizBuilder" class="space-y-4">
+                    <!-- Quiz Settings -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h4 class="font-medium text-gray-900 mb-3">Quiz Settings</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Difficulty Level -->
+                            <div>
+                                <label for="quiz_difficulty" class="block text-sm font-medium text-gray-700 mb-2">Difficulty Level</label>
+                                <select id="quiz_difficulty" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="easy">Easy</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="hard">Hard</option>
+                                </select>
+                                <div class="mt-2 flex space-x-2">
+                                    <div class="flex items-center">
+                                        <div class="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                                        <span class="text-xs text-gray-600">Easy</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
+                                        <span class="text-xs text-gray-600">Medium</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                                        <span class="text-xs text-gray-600">Hard</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Time Limit -->
+                            <div>
+                                <label for="quiz_time_limit" class="block text-sm font-medium text-gray-700 mb-2">Time Limit (minutes)</label>
+                                <input type="number" id="quiz_time_limit" min="1" max="300" value="15"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <p class="text-xs text-gray-500 mt-1">Set to 0 for no time limit</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="questionsList">
                         <!-- Questions will be added here -->
                     </div>
@@ -1001,7 +1039,9 @@
             thumbnail: null,
             documents: [],
             quiz: {
-                questions: []
+                questions: [],
+                difficulty_level: 'medium',
+                time_limit_minutes: 15
             }
         };
 
@@ -1051,6 +1091,7 @@
 
             // Step 3: Quiz builder
             initializeQuizStep();
+            initializeQuizSettings();
         }
 
         function resetWizard() {
@@ -1059,7 +1100,11 @@
                 video: null,
                 thumbnail: null,
                 documents: [],
-                quiz: { questions: [] }
+                quiz: {
+                    questions: [],
+                    difficulty_level: 'medium',
+                    time_limit_minutes: 15
+                }
             };
             navigateStep(1);
             clearAllSteps();
@@ -1090,6 +1135,8 @@
 
             // Clear quiz step
             document.getElementById('questionsList').innerHTML = '';
+            document.getElementById('quiz_difficulty').value = 'medium';
+            document.getElementById('quiz_time_limit').value = '15';
 
             // Clear video preview
             const videoPreview = document.getElementById('videoPreview');
@@ -1344,6 +1391,24 @@
             addEssayBtn.addEventListener('click', () => addQuestion('essay'));
         }
 
+        // Step 3: Quiz Settings
+        function initializeQuizSettings() {
+            const difficultySelect = document.getElementById('quiz_difficulty');
+            const timeLimitInput = document.getElementById('quiz_time_limit');
+
+            if (difficultySelect) {
+                difficultySelect.addEventListener('change', (e) => {
+                    uploadData.quiz.difficulty_level = e.target.value;
+                });
+            }
+
+            if (timeLimitInput) {
+                timeLimitInput.addEventListener('input', (e) => {
+                    uploadData.quiz.time_limit_minutes = parseInt(e.target.value) || 15;
+                });
+            }
+        }
+
         function addQuestion(type) {
             const questionsList = document.getElementById('questionsList');
             const questionId = Date.now();
@@ -1485,7 +1550,14 @@
                 });
 
                 if (finalData.quiz.questions.length > 0) {
-                    formData.append('quiz_data', JSON.stringify(finalData.quiz));
+                    const quizData = {
+                        questions: finalData.quiz.questions,
+                        difficulty_level: finalData.quiz.difficulty_level,
+                        time_limit_minutes: finalData.quiz.time_limit_minutes
+                    };
+                    formData.append('quiz_data', JSON.stringify(quizData));
+                    formData.append('difficulty_level', finalData.quiz.difficulty_level);
+                    formData.append('time_limit_minutes', finalData.quiz.time_limit_minutes);
                 }
 
                 const response = await fetch('{{ route("admin.contents.store") }}', {

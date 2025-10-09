@@ -65,6 +65,15 @@
                     </select>
                 </div>
                 <div>
+                    <label for="difficulty_level" class="block text-sm font-medium text-gray-700">Difficulty</label>
+                    <select name="difficulty_level" id="difficulty_level" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <option value="">All Difficulties</option>
+                        <option value="easy" {{ request('difficulty_level') == 'easy' ? 'selected' : '' }}>Easy</option>
+                        <option value="medium" {{ request('difficulty_level') == 'medium' ? 'selected' : '' }}>Medium</option>
+                        <option value="hard" {{ request('difficulty_level') == 'hard' ? 'selected' : '' }}>Hard</option>
+                    </select>
+                </div>
+                <div>
                     <label for="is_featured" class="block text-sm font-medium text-gray-700">Featured</label>
                     <select name="is_featured" id="is_featured" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                         <option value="">All</option>
@@ -91,6 +100,7 @@
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject / Video</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Difficulty</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Uploaded By</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Views</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attempts</th>
@@ -114,6 +124,19 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $quiz->grade_level ?? 'N/A' }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                @if($quiz->difficulty_level)
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                        @if($quiz->difficulty_level === 'easy') bg-green-100 text-green-800
+                                        @elseif($quiz->difficulty_level === 'medium') bg-yellow-100 text-yellow-800
+                                        @elseif($quiz->difficulty_level === 'hard') bg-red-100 text-red-800
+                                        @endif">
+                                        {{ ucfirst($quiz->difficulty_level) }}
+                                    </span>
+                                @else
+                                    <span class="text-gray-400">Not set</span>
+                                @endif
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $quiz->uploader->name ?? 'Unknown' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($quiz->views_count) }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($quiz->attempts_count) }}</td>
