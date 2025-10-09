@@ -78,7 +78,7 @@
             <!-- Content -->
             <main class="p-6">
                 <div class="max-w-4xl mx-auto">
-                    <form action="{{ isset($quiz) ? route('admin.content.quizzes.update', $quiz) : route('admin.content.quizzes.store') }}"
+                    <form action="{{ isset($quiz) ? route('admin.content.quizzes.update', $quiz) : route('admin.contents.store') }}"
                           method="POST" class="bg-white rounded-lg shadow-lg p-6">
                         @csrf
                         @if(isset($quiz))

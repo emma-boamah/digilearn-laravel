@@ -189,7 +189,7 @@
             <h3 class="text-lg font-semibold text-gray-900">Add New Quiz</h3>
             <button onclick="closeModal('addQuizModal')" class="text-gray-400 hover:text-gray-600">&times;</button>
         </div>
-        <form action="{{ route('admin.content.quizzes.store') }}" method="POST" class="mt-4">
+        <form action="{{ route('admin.contents.store') }}" method="POST" class="mt-4">
             @csrf
             <div class="mb-4">
                 <label for="add_title" class="block text-sm font-medium text-gray-700">Quiz Title <span class="text-red-500">*</span></label>

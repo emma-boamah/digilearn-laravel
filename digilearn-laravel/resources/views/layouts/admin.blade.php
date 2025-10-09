@@ -915,7 +915,7 @@
                         }
                     });
                 } else if (contentType === 'quiz') {
-                    response = await fetch('{{ route("admin.content.quizzes.store") }}', {
+                    response = await fetch('{{ route("admin.contents.store") }}', {
                         method: 'POST',
                         body: formData,
                         headers: {
