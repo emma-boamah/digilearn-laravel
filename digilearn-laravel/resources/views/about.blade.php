@@ -1,5 +1,11 @@
 @extends('layouts.app')
 
+@section('head')
+    <!-- Preload critical LCP image -->
+    <link rel="preload" as="image" href="{{ secure_asset('images/student-laptop-about.webp') }}" type="image/webp" fetchpriority="high">
+    <link rel="preload" as="image" href="{{ secure_asset('images/student-laptop-about.jpg') }}" fetchpriority="high">
+@endsection
+
 @section('content')
     <style>
         /* Reset body padding for about page */
@@ -233,7 +239,19 @@
 
     <!-- Image Section -->
     <section class="image-section">
-        <img src="{{ secure_asset('images/student-laptop-about.jpg') }}" alt="Student with laptop" class="student-image">
+        <picture>
+            <!-- WebP format for modern browsers -->
+            <source srcset="{{ secure_asset('images/student-laptop-about.webp') }}" type="image/webp">
+            <!-- Fallback to JPEG -->
+            <img src="{{ secure_asset('images/student-laptop-about.jpg') }}"
+                 alt="Student with laptop"
+                 class="student-image"
+                 loading="eager"
+                 decoding="async"
+                 width="1200"
+                 height="540"
+                 fetchpriority="high">
+        </picture>
     </section>
 
     <!-- Main Content Section -->
