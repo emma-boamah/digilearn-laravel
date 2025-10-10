@@ -17,6 +17,7 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Auth\GoogleController;
+use App\Http\Controllers\CookieController;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -377,6 +378,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::put('notifications/types/{type}', [NotificationController::class, 'updateNotificationType'])->name('notifications.types.update');
         Route::delete('notifications/types/{type}', [NotificationController::class, 'deleteNotificationType'])->name('notifications.types.delete');
         Route::post('notifications/types/{type}/toggle', [NotificationController::class, 'toggleNotificationType'])->name('notifications.types.toggle');
+
+    // Cookie Analytics
+    Route::get('/cookie-stats', [CookieController::class, 'adminStatsPage'])->name('cookie-stats');
 });
 
 /*
@@ -412,6 +416,26 @@ Route::middleware(['auth', 'superuser'])->prefix('admin')->name('admin.')->group
 | CSP Report Endpoint
 |--------------------------------------------------------------------------
 */
+/*
+|--------------------------------------------------------------------------
+| Cookie Management Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('cookies')->name('cookies.')->group(function () {
+    Route::get('/status', [CookieController::class, 'status'])->name('status');
+    Route::post('/consent', [CookieController::class, 'setConsent'])->name('consent');
+    Route::post('/accept-all', [CookieController::class, 'acceptAll'])->name('accept-all');
+    Route::post('/reject-all', [CookieController::class, 'rejectAll'])->name('reject-all');
+    Route::post('/delete', [CookieController::class, 'deleteAll'])->name('delete');
+    Route::get('/policy', [CookieController::class, 'policy'])->name('policy');
+    Route::get('/settings', [CookieController::class, 'settings'])->name('settings');
+
+    // Admin routes for cookie statistics
+    Route::middleware(['auth', 'admin'])->group(function () {
+        Route::get('/stats', [CookieController::class, 'stats'])->name('stats');
+    });
+});
+
 Route::post('/csp-report', function (Request $request) {
     Log::channel('security')->warning('CSP violation', [
         'data' => $request->getContent()

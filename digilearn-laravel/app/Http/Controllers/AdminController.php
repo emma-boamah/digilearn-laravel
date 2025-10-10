@@ -470,6 +470,7 @@ class AdminController extends Controller
             'total_lessons' => 150, // Should be replaced with actual query
             'total_subjects' => 8,  // Should be replaced with actual query
             'subscription_plans' => $this->getSubscriptionPlansData(),
+            'cookie_consents' => $this->getCookieConsentStats(),
         ];
     }
 
@@ -519,6 +520,35 @@ class AdminController extends Controller
                 'color' => $colors[$index % count($colors)]
             ];
         })->toArray();
+    }
+
+    /**
+     * Get cookie consent statistics for dashboard
+     */
+    private function getCookieConsentStats()
+    {
+        try {
+            $cookieStats = \App\Models\CookieConsent::getConsentStats();
+
+            return [
+                'total_consents' => $cookieStats['total_consents'] ?? 0,
+                'recent_consents' => $cookieStats['recent_consents'] ?? 0,
+                'unique_ips' => $cookieStats['unique_ips'] ?? 0,
+                'analytics_accepted' => ($cookieStats['consent_types']['analytics'] ?? 0),
+                'consent_rate' => $cookieStats['total_consents'] > 0
+                    ? round(($cookieStats['total_consents'] / User::count()) * 100, 1)
+                    : 0,
+            ];
+        } catch (\Exception $e) {
+            // Return default values if there's an error
+            return [
+                'total_consents' => 0,
+                'recent_consents' => 0,
+                'unique_ips' => 0,
+                'analytics_accepted' => 0,
+                'consent_rate' => 0,
+            ];
+        }
     }
 
     /**

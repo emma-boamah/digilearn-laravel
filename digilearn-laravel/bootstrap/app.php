@@ -13,6 +13,7 @@ use App\Http\Middleware\SuperuserMiddleware;
 use App\Http\Middleware\TrackUsersActivity;
 use App\Http\Middleware\RealIpMiddleware;
 use App\Http\Middleware\ThrottleRequestsWithRedirect;
+use App\Http\Middleware\CookieConsentMiddleware;
 
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -27,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             // Add web-specific middleware here if needed
             ShareErrorsFromSession::class,
+            CookieConsentMiddleware::class,
         ]);
         // Global middleware (applies to all requests)
         $middleware->append(RealIpMiddleware::class);

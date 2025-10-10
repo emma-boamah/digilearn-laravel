@@ -117,6 +117,60 @@
             </div>
         </div>
 
+        <!-- Cookie Consent Stats -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-900">Cookie Consent Analytics</h2>
+                <a href="{{ route('admin.cookie-stats') }}" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                    View Details <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-green-900">Total Consents</h3>
+                            <p class="text-2xl font-bold text-green-800">{{ number_format($stats['cookie_consents']['total_consents']) }}</p>
+                            <p class="text-sm text-green-700">{{ number_format($stats['cookie_consents']['consent_rate'], 1) }}% of users</p>
+                        </div>
+                        <div class="text-green-600">
+                            <i class="fas fa-cookie-bite text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-blue-900">Analytics Accepted</h3>
+                            <p class="text-2xl font-bold text-blue-800">{{ number_format($stats['cookie_consents']['analytics_accepted']) }}</p>
+                            <p class="text-sm text-blue-700">Optional tracking</p>
+                        </div>
+                        <div class="text-blue-600">
+                            <i class="fas fa-chart-line text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-purple-900">Recent Activity</h3>
+                            <p class="text-2xl font-bold text-purple-800">{{ number_format($stats['cookie_consents']['recent_consents']) }}</p>
+                            <p class="text-sm text-purple-700">Last 30 days</p>
+                        </div>
+                        <div class="text-purple-600">
+                            <i class="fas fa-clock text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        </div>
+
         <!-- Subscription Plans Badges -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
             <div class="flex items-center justify-between mb-4">
