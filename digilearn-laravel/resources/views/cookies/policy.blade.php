@@ -3,68 +3,276 @@
 @section('title', 'Cookie Policy - DigiLearn')
 
 @section('content')
-<div class="min-h-screen bg-gray-50 py-12">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- Header -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8">
-            <div class="text-center">
-                <svg class="w-16 h-16 text-blue-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<style nonce="{{ request()->attributes->get('csp_nonce') }}">
+    .policy-container {
+        min-height: 100vh;
+        background-color: var(--gray-50);
+        padding: 3rem 0;
+    }
+
+    .policy-wrapper {
+        max-width: 56rem;
+        margin: 0 auto;
+        padding: 0 1rem;
+    }
+
+    @media (min-width: 640px) {
+        .policy-wrapper {
+            padding: 0 1.5rem;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .policy-wrapper {
+            padding: 0 2rem;
+        }
+    }
+
+    .policy-card {
+        background-color: var(--white);
+        border-radius: var(--border-radius-lg);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--gray-300);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .policy-header {
+        text-align: center;
+    }
+
+    .policy-icon {
+        width: 4rem;
+        height: 4rem;
+        color: var(--secondary-blue);
+        margin: 0 auto 1rem;
+    }
+
+    .policy-main-title {
+        font-size: 1.875rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 0.5rem;
+    }
+
+    .policy-subtitle {
+        color: var(--gray-600);
+        margin-bottom: 0.5rem;
+    }
+
+    .policy-date {
+        font-size: 0.875rem;
+        color: var(--gray-500);
+    }
+
+    .policy-section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 1rem;
+    }
+
+    .policy-subsection-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 1rem;
+    }
+
+    .policy-text {
+        color: var(--gray-600);
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+
+    .policy-alert {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: var(--border-radius-lg);
+    }
+
+    .alert-blue {
+        background-color: #eff6ff;
+        border-left: 4px solid #3b82f6;
+    }
+
+    .alert-yellow {
+        background-color: #fefce8;
+        border-left: 4px solid #facc15;
+    }
+
+    .alert-green {
+        background-color: #f0fdf4;
+        border-left: 4px solid #22c55e;
+    }
+
+    .alert-title {
+        font-weight: 500;
+        margin-bottom: 0.25rem;
+    }
+
+    .alert-blue .alert-title {
+        color: #1e40af;
+    }
+
+    .alert-yellow .alert-title {
+        color: #a16207;
+    }
+
+    .alert-green .alert-title {
+        color: #166534;
+    }
+
+    .alert-text {
+        font-size: 0.875rem;
+    }
+
+    .alert-blue .alert-text {
+        color: #1e3a8a;
+    }
+
+    .alert-yellow .alert-text {
+        color: #854d0e;
+    }
+
+    .alert-green .alert-text {
+        color: #14532d;
+    }
+
+    .policy-list {
+        list-style-type: disc;
+        padding-left: 1.5rem;
+        color: var(--gray-600);
+        margin-bottom: 1rem;
+    }
+
+    .policy-list li {
+        margin-bottom: 0.25rem;
+    }
+
+    .policy-note-box {
+        background-color: var(--gray-50);
+        padding: 1rem;
+        border-radius: var(--border-radius-lg);
+    }
+
+    .policy-note-text {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+    }
+
+    .policy-link {
+        color: var(--secondary-blue);
+        text-decoration: none;
+    }
+
+    .policy-link:hover {
+        text-decoration: underline;
+    }
+
+    .policy-contact-box {
+        background-color: var(--gray-50);
+        padding: 1rem;
+        border-radius: var(--border-radius-lg);
+    }
+
+    .policy-contact-item {
+        color: var(--gray-900);
+        margin-bottom: 0.25rem;
+    }
+
+    .policy-footer {
+        text-align: center;
+        margin-top: 2rem;
+    }
+
+    .policy-cta-button {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.75rem 1.5rem;
+        background-color: var(--secondary-blue);
+        color: var(--white);
+        font-weight: 500;
+        border-radius: var(--border-radius-lg);
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .policy-cta-button:hover {
+        background-color: var(--secondary-blue-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(38, 119, 184, 0.3);
+    }
+
+    .policy-category-list {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+</style>
+
+<div class="policy-container">
+    <div class="policy-wrapper">
+         Header 
+        <div class="policy-card">
+            <div class="policy-header">
+                <svg class="policy-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                 </svg>
-                <h1 class="text-3xl font-bold text-gray-900 mb-2">Cookie Policy</h1>
-                <p class="text-gray-600">Learn about how we use cookies and how you can control them</p>
-                <p class="text-sm text-gray-500 mt-2">Last updated: {{ now()->format('F j, Y') }}</p>
+                <h1 class="policy-main-title">Cookie Policy</h1>
+                <p class="policy-subtitle">Learn about how we use cookies and how you can control them</p>
+                <p class="policy-date">Last updated: {{ now()->format('F j, Y') }}</p>
             </div>
         </div>
 
-        <!-- Introduction -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">What are Cookies?</h2>
-            <p class="text-gray-600 mb-4 leading-relaxed">
+         Introduction 
+        <div class="policy-card">
+            <h2 class="policy-section-title">What are Cookies?</h2>
+            <p class="policy-text">
                 Cookies are small text files that are stored on your device when you visit our website.
                 They help us provide you with a better browsing experience by remembering your preferences
                 and understanding how you use our site.
             </p>
-            <p class="text-gray-600 leading-relaxed">
+            <p class="policy-text">
                 This cookie policy explains what cookies we use, why we use them, and how you can control
                 your cookie preferences.
             </p>
         </div>
 
-        <!-- Cookie Categories -->
-        <div class="space-y-8">
+         Cookie Categories 
+        <div class="policy-category-list">
             @foreach($categories as $key => $description)
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-                    <h3 class="text-xl font-bold text-gray-900 mb-4">{{ ucfirst($key) }} Cookies</h3>
+                <div class="policy-card">
+                    <h3 class="policy-subsection-title">{{ ucfirst($key) }} Cookies</h3>
 
                     @if($key === 'preference')
-                        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
-                            <p class="text-blue-800 font-medium">Required Cookies</p>
-                            <p class="text-blue-700 text-sm mt-1">
+                        <div class="policy-alert alert-blue">
+                            <p class="alert-title">Required Cookies</p>
+                            <p class="alert-text">
                                 These cookies are essential for the website to function properly and cannot be disabled.
                             </p>
                         </div>
                     @elseif($key === 'analytics')
-                        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-                            <p class="text-yellow-800 font-medium">Optional Analytics Cookies</p>
-                            <p class="text-yellow-700 text-sm mt-1">
+                        <div class="policy-alert alert-yellow">
+                            <p class="alert-title">Optional Analytics Cookies</p>
+                            <p class="alert-text">
                                 These cookies help us understand how visitors use our website by collecting
                                 information anonymously. You can choose to disable these cookies.
                             </p>
                         </div>
                     @elseif($key === 'consent')
-                        <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
-                            <p class="text-green-800 font-medium">Consent Management Cookies</p>
-                            <p class="text-green-700 text-sm mt-1">
+                        <div class="policy-alert alert-green">
+                            <p class="alert-title">Consent Management Cookies</p>
+                            <p class="alert-text">
                                 These cookies store your cookie preferences and cannot be disabled.
                             </p>
                         </div>
                     @endif
 
-                    <p class="text-gray-600 mb-4">{{ $description }}</p>
+                    <p class="policy-text">{{ $description }}</p>
 
-                    <h4 class="font-semibold text-gray-900 mb-2">Purpose:</h4>
-                    <ul class="list-disc list-inside text-gray-600 space-y-1 mb-4">
+                    <h4 style="font-weight: 600; color: var(--gray-900); margin-bottom: 0.5rem;">Purpose:</h4>
+                    <ul class="policy-list">
                         @if($key === 'preference')
                             <li>Remember your login status</li>
                             <li>Maintain your session security</li>
@@ -80,10 +288,10 @@
                     </ul>
 
                     @if($key !== 'preference' && $key !== 'consent')
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <p class="text-sm text-gray-600">
+                        <div class="policy-note-box">
+                            <p class="policy-note-text">
                                 <strong>Note:</strong> You can change your preferences for {{ $key }} cookies at any time
-                                by visiting our <a href="{{ route('cookies.settings') }}" class="text-blue-600 hover:underline">cookie settings page</a>.
+                                by visiting our <a href="{{ route('cookies.settings') }}" class="policy-link">cookie settings page</a>.
                             </p>
                         </div>
                     @endif
@@ -91,41 +299,41 @@
             @endforeach
         </div>
 
-        <!-- Third-party Cookies -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Third-party Cookies</h2>
-            <p class="text-gray-600 mb-4">
+         Third-party Cookies 
+        <div class="policy-card">
+            <h2 class="policy-section-title">Third-party Cookies</h2>
+            <p class="policy-text">
                 We may use third-party services that set their own cookies. These include:
             </p>
-            <ul class="list-disc list-inside text-gray-600 space-y-2">
+            <ul class="policy-list">
                 <li><strong>Google Analytics:</strong> For website analytics and performance monitoring</li>
                 <li><strong>Cloudflare:</strong> For website security and performance optimization</li>
                 <li><strong>Social Media Platforms:</strong> For social sharing functionality</li>
             </ul>
         </div>
 
-        <!-- Managing Cookies -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Managing Your Cookies</h2>
-            <p class="text-gray-600 mb-4">
+         Managing Cookies 
+        <div class="policy-card">
+            <h2 class="policy-section-title">Managing Your Cookies</h2>
+            <p class="policy-text">
                 You have several options for managing cookies:
             </p>
 
-            <div class="space-y-4">
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
                 <div>
-                    <h3 class="font-semibold text-gray-900 mb-2">Cookie Settings</h3>
-                    <p class="text-gray-600">
-                        Visit our <a href="{{ route('cookies.settings') }}" class="text-blue-600 hover:underline">cookie settings page</a>
+                    <h3 style="font-weight: 600; color: var(--gray-900); margin-bottom: 0.5rem;">Cookie Settings</h3>
+                    <p class="policy-text">
+                        Visit our <a href="{{ route('cookies.settings') }}" class="policy-link">cookie settings page</a>
                         to customize your cookie preferences.
                     </p>
                 </div>
 
                 <div>
-                    <h3 class="font-semibold text-gray-900 mb-2">Browser Settings</h3>
-                    <p class="text-gray-600">
+                    <h3 style="font-weight: 600; color: var(--gray-900); margin-bottom: 0.5rem;">Browser Settings</h3>
+                    <p class="policy-text">
                         You can also control cookies through your browser settings. Most browsers allow you to:
                     </p>
-                    <ul class="list-disc list-inside text-gray-600 mt-2 space-y-1">
+                    <ul class="policy-list">
                         <li>View what cookies are stored</li>
                         <li>Delete existing cookies</li>
                         <li>Block cookies from specific sites</li>
@@ -134,10 +342,10 @@
                 </div>
 
                 <div>
-                    <h3 class="font-semibold text-gray-900 mb-2">Opt-out Links</h3>
-                    <p class="text-gray-600">
+                    <h3 style="font-weight: 600; color: var(--gray-900); margin-bottom: 0.5rem;">Opt-out Links</h3>
+                    <p class="policy-text">
                         For Google Analytics, you can opt-out by visiting:
-                        <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" class="text-blue-600 hover:underline">
+                        <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" class="policy-link">
                             Google Analytics Opt-out
                         </a>
                     </p>
@@ -145,23 +353,22 @@
             </div>
         </div>
 
-        <!-- Contact Information -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Contact Us</h2>
-            <p class="text-gray-600 mb-4">
+         Contact Information 
+        <div class="policy-card">
+            <h2 class="policy-section-title">Contact Us</h2>
+            <p class="policy-text">
                 If you have any questions about our cookie policy or how we use cookies, please contact us:
             </p>
-            <div class="bg-gray-50 p-4 rounded-lg">
-                <p class="text-gray-900"><strong>Email:</strong> privacy@digilearn.com</p>
-                <p class="text-gray-900"><strong>Phone:</strong> +233-207-646-203</p>
-                <p class="text-gray-900"><strong>Address:</strong> Accra, Ghana</p>
+            <div class="policy-contact-box">
+                <p class="policy-contact-item"><strong>Email:</strong> privacy@digilearn.com</p>
+                <p class="policy-contact-item"><strong>Phone:</strong> +233-207-646-203</p>
+                <p class="policy-contact-item"><strong>Address:</strong> Accra, Ghana</p>
             </div>
         </div>
 
-        <!-- Footer Actions -->
-        <div class="text-center mt-8">
-            <a href="{{ route('cookies.settings') }}"
-               class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+         Footer Actions 
+        <div class="policy-footer">
+            <a href="{{ route('cookies.settings') }}" class="policy-cta-button">
                 Manage Cookie Settings
             </a>
         </div>
