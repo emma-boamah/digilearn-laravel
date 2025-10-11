@@ -22,6 +22,7 @@ class QuizAttempt extends Model
         'score_percentage',
         'time_taken_seconds',
         'passed',
+        'failed_due_to_violation',
         'attempt_number',
         'answers',
         'question_details',
@@ -31,6 +32,7 @@ class QuizAttempt extends Model
 
     protected $casts = [
         'passed' => 'boolean',
+        'failed_due_to_violation' => 'boolean',
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
         'answers' => 'array',

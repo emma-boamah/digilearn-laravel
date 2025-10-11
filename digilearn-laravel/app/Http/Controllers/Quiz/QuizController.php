@@ -173,7 +173,14 @@ class QuizController extends Controller
             'details' => 'nullable|string',
         ]);
 
-        // TODO: Store violation record; for now, mark as failed and redirect
+        // Store violation record
+        \App\Models\QuizViolation::recordViolation(
+            Auth::id(),
+            $quizId,
+            $request->input('type'),
+            $request->input('details')
+        );
+
         return response()->json(['status' => 'ok']);
     }
 
@@ -189,15 +196,17 @@ class QuizController extends Controller
 
         $answers = $request->input('answers', []);
         $timeSpent = $request->input('time_spent', 0);
+        $failedDueToViolation = $request->input('failed_due_to_violation', false);
         
         // Process quiz submission
-        $result = $this->processQuizSubmission($quizId, $answers, $timeSpent);
+        $result = $this->processQuizSubmission($quizId, $answers, $timeSpent, $failedDueToViolation);
         
         return redirect()->route('quiz.results', [
             'quiz' => $quizId,
             'score' => $result['score'],
             'total' => $result['total'],
-            'percentage' => $result['percentage']
+            'percentage' => $result['percentage'],
+            'failed_due_to_violation' => $failedDueToViolation
         ]);
     }
 
@@ -210,11 +219,12 @@ class QuizController extends Controller
         $total = $request->input('total', 10);
         $percentage = $total > 0 ? round(($score / $total) * 100) : 0;
         $quizId = $request->input('quiz');
-        
+        $failedDueToViolation = $request->input('failed_due_to_violation', false);
+
         $quiz = $this->getQuizById($quizId);
         $duration = $quiz['duration'] ?? '3 min';
-        
-        return view('dashboard.quiz.results', compact('score', 'total', 'percentage', 'quiz', 'duration'));
+
+        return view('dashboard.quiz.results', compact('score', 'total', 'percentage', 'quiz', 'duration', 'failedDueToViolation'));
     }
 
     /**
@@ -344,7 +354,7 @@ class QuizController extends Controller
     /**
      * Process quiz submission
      */
-    private function processQuizSubmission($quizId, $answers, $timeSpent)
+    private function processQuizSubmission($quizId, $answers, $timeSpent, $failedDueToViolation = false)
     {
         $quiz = $this->getQuizById($quizId);
         if (!$quiz || !isset($quiz['questions'])) {
@@ -378,6 +388,7 @@ class QuizController extends Controller
             'total_questions' => $totalQuestions,
             'correct_answers' => $correctAnswers,
             'time_spent_seconds' => $timeSpent,
+            'failed_due_to_violation' => $failedDueToViolation,
             'completed_at' => now(),
         ]);
 
