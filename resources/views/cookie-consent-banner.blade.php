@@ -9,70 +9,58 @@
 
 @if(!$hasConsent)
 <style nonce="{{ request()->attributes->get('csp_nonce') }}">
-    /* Cookie Banner Styles */
+    /* Modern Cookie Banner Styles */
     #cookie-consent-banner {
         position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
+        bottom: 1.5rem;
+        right: 1.5rem;
         background-color: var(--white);
-        border-top: 1px solid var(--gray-300);
-        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--gray-200);
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
         z-index: 1000;
-        padding: 1.5rem 1rem;
-        animation: slideUp 0.4s ease-out;
+        max-width: 420px;
+        animation: slideInRight 0.3s ease-out;
     }
 
-    @keyframes slideUp {
+    @keyframes slideInRight {
         from {
-            transform: translateY(100%);
+            transform: translateX(100%);
             opacity: 0;
         }
         to {
-            transform: translateY(0);
+            transform: translateX(0);
             opacity: 1;
         }
     }
 
-    .cookie-banner-container {
-        max-width: var(--container-max-width);
-        margin: 0 auto;
-    }
-
-    .cookie-banner-content {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
-
-    @media (min-width: 1024px) {
-        .cookie-banner-content {
-            flex-direction: row;
-            align-items: flex-start;
-            justify-content: space-between;
-        }
-    }
-
-    .cookie-banner-main {
-        flex: 1;
-    }
-
     .cookie-banner-header {
+        padding: 1.25rem 1.25rem 0.75rem;
+        border-bottom: 1px solid var(--gray-100);
+    }
+
+    .cookie-banner-title-row {
         display: flex;
         align-items: center;
-        margin-bottom: 0.75rem;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+
+    .cookie-banner-title-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
 
     .cookie-banner-icon {
-        width: 1.5rem;
-        height: 1.5rem;
+        width: 1.25rem;
+        height: 1.25rem;
         color: var(--secondary-blue);
-        margin-right: 0.75rem;
         flex-shrink: 0;
     }
 
     .cookie-banner-title {
-        font-size: 1.125rem;
+        font-size: 1rem;
         font-weight: 600;
         color: var(--gray-900);
         margin: 0;
@@ -80,30 +68,42 @@
 
     .cookie-banner-description {
         color: var(--gray-600);
-        line-height: 1.6;
-        margin-bottom: 1rem;
-        font-size: 0.95rem;
+        line-height: 1.5;
+        font-size: 0.875rem;
+        margin: 0;
+    }
+
+    .cookie-banner-body {
+        padding: 1rem 1.25rem;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+    }
+
+    .cookie-banner-body.expanded {
+        max-height: 400px;
+        overflow-y: auto;
     }
 
     .cookie-categories {
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
-        margin-bottom: 1rem;
     }
 
     .cookie-category {
         display: flex;
         align-items: flex-start;
+        gap: 0.625rem;
     }
 
     .cookie-checkbox {
-        margin-top: 0.25rem;
+        margin-top: 0.125rem;
         width: 1rem;
         height: 1rem;
         color: var(--secondary-blue);
         border: 1px solid var(--gray-300);
-        border-radius: var(--border-radius-sm);
+        border-radius: 4px;
         cursor: pointer;
         flex-shrink: 0;
     }
@@ -119,7 +119,6 @@
     }
 
     .cookie-category-info {
-        margin-left: 0.75rem;
         flex: 1;
     }
 
@@ -139,37 +138,29 @@
     }
 
     .cookie-category-description {
-        font-size: 0.875rem;
+        font-size: 0.8125rem;
         color: var(--gray-600);
         line-height: 1.4;
+        margin-top: 0.125rem;
     }
 
-    .cookie-banner-actions {
+    .cookie-banner-footer {
+        padding: 0.75rem 1.25rem 1.25rem;
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
-        min-width: 200px;
+        gap: 0.5rem;
     }
 
-    @media (min-width: 640px) {
-        .cookie-banner-actions {
-            flex-direction: row;
-            flex-wrap: wrap;
-        }
-    }
-
-    @media (min-width: 1024px) {
-        .cookie-banner-actions {
-            flex-direction: column;
-            margin-left: 1.5rem;
-        }
+    .cookie-btn-group {
+        display: flex;
+        gap: 0.5rem;
     }
 
     .cookie-btn {
-        padding: 0.625rem 1.25rem;
+        padding: 0.5rem 1rem;
         font-size: 0.875rem;
         font-weight: 500;
-        border-radius: var(--border-radius-lg);
+        border-radius: 8px;
         border: none;
         cursor: pointer;
         transition: all 0.2s ease;
@@ -177,6 +168,7 @@
         text-decoration: none;
         display: inline-block;
         white-space: nowrap;
+        flex: 1;
     }
 
     .cookie-btn-primary {
@@ -187,57 +179,71 @@
     .cookie-btn-primary:hover {
         background-color: var(--secondary-blue-hover);
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(38, 119, 184, 0.3);
-    }
-
-    .cookie-btn-success {
-        background-color: #16a34a;
-        color: var(--white);
-    }
-
-    .cookie-btn-success:hover {
-        background-color: #15803d;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+        box-shadow: 0 4px 12px rgba(38, 119, 184, 0.25);
     }
 
     .cookie-btn-secondary {
-        background-color: var(--gray-600);
-        color: var(--white);
+        background-color: var(--gray-100);
+        color: var(--gray-700);
     }
 
     .cookie-btn-secondary:hover {
-        background-color: var(--gray-900);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(75, 85, 99, 0.3);
+        background-color: var(--gray-200);
     }
 
-    .cookie-btn-outline {
-        background-color: var(--white);
+    .cookie-btn-text {
+        background: none;
         color: var(--gray-600);
-        border: 1px solid var(--gray-300);
+        padding: 0.5rem;
+        font-size: 0.8125rem;
+        text-align: center;
+        width: 100%;
     }
 
-    .cookie-btn-outline:hover {
-        background-color: var(--gray-50);
-        border-color: var(--gray-600);
+    .cookie-btn-text:hover {
+        color: var(--secondary-blue);
+        background: none;
+    }
+
+    .cookie-toggle-btn {
+        background: none;
+        border: none;
+        color: var(--secondary-blue);
+        font-size: 0.8125rem;
+        font-weight: 500;
+        cursor: pointer;
+        padding: 0;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    .cookie-toggle-btn:hover {
+        color: var(--secondary-blue-hover);
+    }
+
+    .location-notice {
+        background-color: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+        font-size: 0.8125rem;
+        color: #1e40af;
+        line-height: 1.4;
     }
 
     @media (max-width: 640px) {
         #cookie-consent-banner {
-            padding: 1rem;
+            bottom: 0;
+            right: 0;
+            left: 0;
+            max-width: 100%;
+            border-radius: 12px 12px 0 0;
+            margin: 0;
         }
 
-        .cookie-banner-title {
-            font-size: 1rem;
-        }
-
-        .cookie-banner-description {
-            font-size: 0.875rem;
-        }
-
-        .cookie-btn {
-            width: 100%;
+        .cookie-banner-body.expanded {
+            max-height: 300px;
         }
     }
 </style>
@@ -246,76 +252,67 @@
      x-data="cookieConsentBanner()"
      x-show="showBanner">
 
-    <div class="cookie-banner-container">
-        <div class="cookie-banner-content">
-
-            <!-- Main Content -->
-            <div class="cookie-banner-main">
-                <div class="cookie-banner-header">
-                    <svg class="cookie-banner-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                    </svg>
-                    <h3 class="cookie-banner-title">Cookie Preferences</h3>
-                </div>
-
-                <p class="cookie-banner-description">
-                    We use cookies to enhance your experience, analyze site usage, and assist in our marketing efforts.
-                    You can choose which types of cookies to accept.
-                </p>
-
-                <!-- Location Permission Notice -->
-                <div x-show="showLocationPrompt" x-transition class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                    <div class="flex items-start">
-                        <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        </svg>
-                        <div>
-                            <p class="text-sm text-blue-800 font-medium">Location Permission</p>
-                            <p class="text-sm text-blue-700 mt-1">Your browser may ask for permission to share your location. This helps us provide better localized services and is completely optional.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Cookie Categories -->
-                <div class="cookie-categories">
-                    @foreach($categories as $key => $description)
-                        <div class="cookie-category">
-                            <input type="checkbox"
-                                   id="cookie-{{ $key }}"
-                                   class="cookie-checkbox"
-                                   x-model="selectedCookies.{{ $key }}"
-                                   @if($key === 'preference' || $key === 'consent') disabled checked @endif>
-                            <div class="cookie-category-info">
-                                <label for="cookie-{{ $key }}" class="cookie-category-label">
-                                    {{ ucfirst($key) }} Cookies
-                                    @if($key === 'preference' || $key === 'consent')
-                                        <span class="cookie-category-required">(Required)</span>
-                                    @endif
-                                </label>
-                                <p class="cookie-category-description">{{ $description }}</p>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="cookie-banner-actions">
-                <button @click="acceptSelected()" class="cookie-btn cookie-btn-primary">
-                    Accept Selected
-                </button>
-                <button @click="acceptAll()" class="cookie-btn cookie-btn-success">
-                    Accept All
-                </button>
-                <button @click="rejectAll()" class="cookie-btn cookie-btn-secondary">
-                    Reject Non-Essential
-                </button>
-                <a href="{{ route('cookies.settings') }}" class="cookie-btn cookie-btn-outline">
-                    Cookie Settings
-                </a>
+    <!-- Header -->
+    <div class="cookie-banner-header">
+        <div class="cookie-banner-title-row">
+            <div class="cookie-banner-title-group">
+                <svg class="cookie-banner-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+                <h3 class="cookie-banner-title">Cookie Preferences</h3>
             </div>
         </div>
+        <p class="cookie-banner-description">
+            We use cookies to enhance your experience. 
+            <button @click="toggleDetails()" class="cookie-toggle-btn" type="button">
+                <span x-text="showDetails ? 'Hide details' : 'Customize'"></span>
+            </button>
+        </p>
+    </div>
+
+    <!-- Expandable Body -->
+    <div class="cookie-banner-body" :class="{ 'expanded': showDetails }">
+        <!-- Location Permission Notice -->
+        <div x-show="showLocationPrompt" x-transition class="location-notice">
+            <strong>Location Permission:</strong> Your browser may ask to share your location for better localized services (optional).
+        </div>
+
+        <!-- Cookie Categories -->
+        <div class="cookie-categories">
+            @foreach($categories as $key => $description)
+                <div class="cookie-category">
+                    <input type="checkbox"
+                           id="cookie-{{ $key }}"
+                           class="cookie-checkbox"
+                           x-model="selectedCookies.{{ $key }}"
+                           @if($key === 'preference' || $key === 'consent') disabled checked @endif>
+                    <div class="cookie-category-info">
+                        <label for="cookie-{{ $key }}" class="cookie-category-label">
+                            {{ ucfirst($key) }}
+                            @if($key === 'preference' || $key === 'consent')
+                                <span class="cookie-category-required">(Required)</span>
+                            @endif
+                        </label>
+                        <p class="cookie-category-description">{{ $description }}</p>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+
+    <!-- Footer Actions -->
+    <div class="cookie-banner-footer">
+        <div class="cookie-btn-group">
+            <button @click="acceptAll()" class="cookie-btn cookie-btn-primary">
+                Accept All
+            </button>
+            <button @click="showDetails ? acceptSelected() : rejectAll()" class="cookie-btn cookie-btn-secondary">
+                <span x-text="showDetails ? 'Save' : 'Reject'"></span>
+            </button>
+        </div>
+        <a href="{{ route('cookies.settings') }}" class="cookie-btn cookie-btn-text">
+            Cookie Settings
+        </a>
     </div>
 </div>
 
@@ -323,6 +320,7 @@
 function cookieConsentBanner() {
     return {
         showBanner: false,
+        showDetails: false,
         selectedCookies: {
             preference: true,
             analytics: false,
@@ -334,36 +332,33 @@ function cookieConsentBanner() {
         init() {
             setTimeout(() => {
                 this.showBanner = true;
-                // Request location permission immediately when banner shows
                 this.requestLocationPermission();
             }, 500);
         },
 
+        toggleDetails() {
+            this.showDetails = !this.showDetails;
+        },
+
         requestLocationPermission() {
-            // First check if we need to request permission
             if (navigator.permissions && navigator.permissions.query) {
                 navigator.permissions.query({name: 'geolocation'}).then((result) => {
                     if (result.state === 'granted') {
                         this.requestLocation();
                     } else if (result.state === 'prompt') {
-                        // Show a message to user about location permission
                         this.showLocationPrompt = true;
-                        // Try to get location anyway
                         this.requestLocation();
                     } else {
-                        // Permission denied, continue without location
                         this.locationData = {};
                     }
                 });
             } else {
-                // Fallback for browsers without permissions API
                 this.requestLocation();
             }
         },
 
         requestLocation() {
             if (navigator.geolocation) {
-                // Show user feedback that we're requesting location
                 console.log('Requesting location permission...');
 
                 navigator.geolocation.getCurrentPosition(
@@ -374,29 +369,27 @@ function cookieConsentBanner() {
                             longitude: position.coords.longitude
                         };
                         this.reverseGeocode(position.coords.latitude, position.coords.longitude);
-                        this.showLocationPrompt = false; // Hide the prompt once we have location
+                        this.showLocationPrompt = false;
                     },
                     (error) => {
                         console.log('Location access denied or unavailable:', error.message);
-                        // Continue without location data - this is expected and normal
-                        this.locationData = {}; // Ensure empty object for consistency
-                        this.showLocationPrompt = false; // Hide prompt on error too
+                        this.locationData = {};
+                        this.showLocationPrompt = false;
                     },
                     {
                         enableHighAccuracy: true,
-                        timeout: 15000, // Increased timeout
-                        maximumAge: 300000 // 5 minutes
+                        timeout: 15000,
+                        maximumAge: 300000
                     }
                 );
             } else {
                 console.log('Geolocation is not supported by this browser');
-                this.locationData = {}; // Ensure empty object for consistency
+                this.locationData = {};
                 this.showLocationPrompt = false;
             }
         },
 
         reverseGeocode(lat, lng) {
-            // Simple reverse geocoding using a free API (you might want to use a paid service for production)
             fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`)
                 .then(response => response.json())
                 .then(data => {
@@ -409,7 +402,6 @@ function cookieConsentBanner() {
                 })
                 .catch(error => {
                     console.log('Reverse geocoding failed:', error);
-                    // Continue with just coordinates
                 });
         },
 
