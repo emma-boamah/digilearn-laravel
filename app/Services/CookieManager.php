@@ -63,12 +63,22 @@ class CookieManager
         $currentConsent = $this->getConsent();
         $newConsent = array_merge($currentConsent, $consent);
 
+        Log::info('Setting cookie consent', [
+            'current_consent' => $currentConsent,
+            'new_consent' => $newConsent,
+            'consent_param' => $consent,
+            'gps_data' => $gpsData,
+            'days' => $days,
+            'ip' => request()->ip(),
+            'user_agent' => request()->userAgent()
+        ]);
+
         Cookie::queue('cookie_consent', json_encode($newConsent), $days * 24 * 60);
 
         // Store consent data in database with GPS information
         $this->storeConsentRecord($newConsent, $gpsData);
 
-        Log::info('Cookie consent updated', [
+        Log::info('Cookie consent updated successfully', [
             'consent' => $newConsent,
             'ip' => request()->ip(),
             'user_agent' => request()->userAgent(),

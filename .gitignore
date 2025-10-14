@@ -17,6 +17,10 @@ Homestead.yaml
 npm-debug.log
 yarn-error.log
 /auth.json
+sail
+docker-compose.overide.yml
+docker-compose.yaml
+.docker/
 /.fleet
 /.idea
 /.nova

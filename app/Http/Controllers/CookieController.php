@@ -8,6 +8,7 @@ use App\Services\CookieManager;
 use App\Models\CookieConsent;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Log;
 
 class CookieController extends Controller
 {
@@ -35,6 +36,13 @@ class CookieController extends Controller
      */
     public function setConsent(Request $request): JsonResponse
     {
+        Log::info('Cookie consent request received', [
+            'all_data' => $request->all(),
+            'headers' => $request->headers->all(),
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
         $validator = Validator::make($request->all(), [
             'preference' => 'boolean',
             'analytics' => 'boolean',
@@ -47,6 +55,10 @@ class CookieController extends Controller
         ]);
 
         if ($validator->fails()) {
+            Log::error('Cookie consent validation failed', [
+                'errors' => $validator->errors(),
+                'data' => $request->all()
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid consent data',
@@ -56,12 +68,24 @@ class CookieController extends Controller
 
         $consent = $request->only(['preference', 'analytics', 'consent']);
         $gpsData = $request->only(['latitude', 'longitude', 'country', 'city', 'region']);
+
+        Log::info('Processing cookie consent', [
+            'consent' => $consent,
+            'gps_data' => $gpsData
+        ]);
+
         $this->cookieManager->setConsent($consent, $gpsData);
+
+        $finalConsent = $this->cookieManager->getConsent();
+
+        Log::info('Cookie consent processed successfully', [
+            'final_consent' => $finalConsent
+        ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Cookie preferences updated successfully',
-            'consent' => $this->cookieManager->getConsent()
+            'consent' => $finalConsent
         ]);
     }
 

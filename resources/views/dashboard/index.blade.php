@@ -449,6 +449,7 @@
                 // Handle touch devices (mobile)
                 card.addEventListener('touchstart', function(e) {
                     e.preventDefault();
+                }, { passive: false });
                     
                     if (video.paused && !card.classList.contains('video-error')) {
                         const playPromise = video.play();

@@ -535,7 +535,7 @@
                 } else {
                     video.pause();
                 }
-            });
+            }, { passive: true });
         });
 
         // Mobile Menu Functionality

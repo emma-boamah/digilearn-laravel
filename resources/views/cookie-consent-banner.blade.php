@@ -441,6 +441,9 @@ function cookieConsentBanner() {
                 ...this.locationData
             };
 
+            console.log('Submitting consent data:', consentData);
+            console.log('CSRF token:', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'));
+
             fetch(url, {
                 method: 'POST',
                 headers: {
@@ -449,13 +452,22 @@ function cookieConsentBanner() {
                 },
                 body: JSON.stringify(consentData)
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+                return response.json();
+            })
             .then(data => {
+                console.log('Response data:', data);
                 if (data.success) {
+                    console.log('Consent successful, hiding banner');
                     this.showBanner = false;
                     setTimeout(() => {
+                        console.log('Reloading page...');
                         window.location.reload();
                     }, 300);
+                } else {
+                    console.error('Consent failed:', data);
                 }
             })
             .catch(error => {

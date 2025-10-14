@@ -339,15 +339,15 @@
       longPressTimer = setTimeout(function() {
         reportViolation('long_press', 'Long press detected (potential screenshot attempt)');
       }, 500);
-    });
+    }, { passive: false });
 
     document.addEventListener('touchend', function() {
       clearTimeout(longPressTimer);
-    });
+    }, { passive: true });
 
     document.addEventListener('touchmove', function() {
       clearTimeout(longPressTimer);
-    });
+    }, { passive: true });
 
     // Detect device orientation changes (may indicate app switching)
     window.addEventListener('orientationchange', function() {
