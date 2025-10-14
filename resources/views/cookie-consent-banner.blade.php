@@ -263,6 +263,20 @@
                     You can choose which types of cookies to accept.
                 </p>
 
+                <!-- Location Permission Notice -->
+                <div x-show="showLocationPrompt" x-transition class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <div>
+                            <p class="text-sm text-blue-800 font-medium">Location Permission</p>
+                            <p class="text-sm text-blue-700 mt-1">Your browser may ask for permission to share your location. This helps us provide better localized services and is completely optional.</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Cookie Categories -->
                 <div class="cookie-categories">
                     @foreach($categories as $key => $description)
@@ -315,34 +329,69 @@ function cookieConsentBanner() {
             consent: true
         },
         locationData: {},
+        showLocationPrompt: false,
 
         init() {
             setTimeout(() => {
                 this.showBanner = true;
-                this.requestLocation();
+                // Request location permission immediately when banner shows
+                this.requestLocationPermission();
             }, 500);
+        },
+
+        requestLocationPermission() {
+            // First check if we need to request permission
+            if (navigator.permissions && navigator.permissions.query) {
+                navigator.permissions.query({name: 'geolocation'}).then((result) => {
+                    if (result.state === 'granted') {
+                        this.requestLocation();
+                    } else if (result.state === 'prompt') {
+                        // Show a message to user about location permission
+                        this.showLocationPrompt = true;
+                        // Try to get location anyway
+                        this.requestLocation();
+                    } else {
+                        // Permission denied, continue without location
+                        this.locationData = {};
+                    }
+                });
+            } else {
+                // Fallback for browsers without permissions API
+                this.requestLocation();
+            }
         },
 
         requestLocation() {
             if (navigator.geolocation) {
+                // Show user feedback that we're requesting location
+                console.log('Requesting location permission...');
+
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
+                        console.log('Location obtained successfully');
                         this.locationData = {
                             latitude: position.coords.latitude,
                             longitude: position.coords.longitude
                         };
                         this.reverseGeocode(position.coords.latitude, position.coords.longitude);
+                        this.showLocationPrompt = false; // Hide the prompt once we have location
                     },
                     (error) => {
                         console.log('Location access denied or unavailable:', error.message);
-                        // Continue without location data
+                        // Continue without location data - this is expected and normal
+                        this.locationData = {}; // Ensure empty object for consistency
+                        this.showLocationPrompt = false; // Hide prompt on error too
                     },
                     {
                         enableHighAccuracy: true,
-                        timeout: 10000,
+                        timeout: 15000, // Increased timeout
                         maximumAge: 300000 // 5 minutes
                     }
                 );
+            } else {
+                console.log('Geolocation is not supported by this browser');
+                this.locationData = {}; // Ensure empty object for consistency
+                this.showLocationPrompt = false;
             }
         },
 
