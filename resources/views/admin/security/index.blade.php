@@ -32,7 +32,7 @@
                     <p class="text-gray-600">Monitor security events and system activities</p>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <div class="text-sm text-gray-500">
+                    <div class="text-sm text-gray-500" id="lastUpdated">
                         Last updated: {{ now()->format('M d, Y H:i') }}
                     </div>
                     <button id="refreshButton" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
@@ -51,7 +51,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-600">Total Activities</p>
-                        <p class="text-3xl font-bold text-gray-900">{{ is_array($securityLogs) ? number_format(count($securityLogs)) : number_format($securityLogs->count()) }}</p>
+                        <p class="text-3xl font-bold text-gray-900" id="totalActivities">{{ is_array($securityLogs) ? number_format(count($securityLogs)) : number_format($securityLogs->count()) }}</p>
                         <p class="text-sm text-green-600 mt-1">
                             <i class="fas fa-arrow-up mr-1"></i>Last 24h
                         </p>
@@ -67,7 +67,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-600">Failed Logins</p>
-                        <p class="text-3xl font-bold text-gray-900">{{ is_array($failedLogins) ? number_format(count($failedLogins)) : number_format($failedLogins->count()) }}</p>
+                        <p class="text-3xl font-bold text-gray-900" id="failedLogins">{{ is_array($failedLogins) ? number_format(count($failedLogins)) : number_format($failedLogins->count()) }}</p>
                         <p class="text-sm text-red-600 mt-1">
                             <i class="fas fa-exclamation-triangle mr-1"></i>Requires attention
                         </p>
@@ -83,7 +83,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-600">Suspicious Activities</p>
-                        <p class="text-3xl font-bold text-gray-900">{{ is_array($suspiciousActivities) ? number_format(count($suspiciousActivities)) : number_format($suspiciousActivities->count()) }}</p>
+                        <p class="text-3xl font-bold text-gray-900" id="suspiciousActivities">{{ is_array($suspiciousActivities) ? number_format(count($suspiciousActivities)) : number_format($suspiciousActivities->count()) }}</p>
                         <p class="text-sm text-orange-600 mt-1">
                             <i class="fas fa-eye mr-1"></i>Under monitoring
                         </p>
@@ -99,7 +99,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-600">Active Threats</p>
-                        <p class="text-3xl font-bold text-gray-900">{{ is_array($suspiciousActivities) ? collect($suspiciousActivities)->where('risk', 'high')->count() + collect($suspiciousActivities)->where('risk', 'critical')->count() : $suspiciousActivities->where('risk', 'high')->count() + $suspiciousActivities->where('risk', 'critical')->count() }}</p>
+                        <p class="text-3xl font-bold text-gray-900" id="activeThreats">{{ is_array($suspiciousActivities) ? collect($suspiciousActivities)->where('risk', 'high')->count() + collect($suspiciousActivities)->where('risk', 'critical')->count() : $suspiciousActivities->where('risk', 'high')->count() + $suspiciousActivities->where('risk', 'critical')->count() }}</p>
                         <p class="text-sm text-gray-500 mt-1">
                             High & Critical
                         </p>
@@ -133,45 +133,7 @@
                     </div>
                     <div class="p-6">
                         <div class="space-y-4" id="securityLogsContainer">
-                            @foreach($securityLogs as $log)
-                            <div class="activity-item flex items-start space-x-3 p-4 rounded-lg border border-gray-100 severity-{{ $log['level'] }}">
-                                <div class="flex-shrink-0">
-                                    @if($log['level'] === 'critical')
-                                        <div class="bg-red-100 p-2 rounded-full">
-                                            <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
-                                        </div>
-                                    @elseif($log['level'] === 'warning')
-                                        <div class="bg-orange-100 p-2 rounded-full">
-                                            <i class="fas fa-exclamation-circle text-orange-600 text-sm"></i>
-                                        </div>
-                                    @elseif($log['level'] === 'info')
-                                        <div class="bg-blue-100 p-2 rounded-full">
-                                            <i class="fas fa-info text-blue-600 text-sm"></i>
-                                        </div>
-                                    @else
-                                        <div class="bg-gray-100 p-2 rounded-full">
-                                            <i class="fas fa-edit text-gray-600 text-sm"></i>
-                                        </div>
-                                    @endif
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm text-gray-900 font-medium">{{ $log['message'] }}</p>
-                                    <div class="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                                        <span><i class="fas fa-clock mr-1"></i>{{ $log['time'] }}</span>
-                                        @if(isset($log['ip']))
-                                            <span><i class="fas fa-globe mr-1"></i>{{ $log['ip'] }}</span>
-                                        @endif
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-                                            @if($log['level'] === 'critical') bg-red-100 text-red-800
-                                            @elseif($log['level'] === 'warning') bg-orange-100 text-orange-800
-                                            @elseif($log['level'] === 'info') bg-blue-100 text-blue-800
-                                            @else bg-gray-100 text-gray-800 @endif">
-                                            {{ ucfirst($log['level']) }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            @endforeach
+                            <!-- Security logs will be populated via AJAX -->
                         </div>
                     </div>
                 </div>
@@ -185,26 +147,8 @@
                         <h2 class="text-xl font-semibold text-gray-900">Failed Login Attempts</h2>
                     </div>
                     <div class="p-6">
-                        <div class="space-y-4">
-                            @foreach($failedLogins as $attempt)
-                            <div class="flex items-start space-x-3 p-3 rounded-lg bg-red-50 border border-red-200">
-                                <div class="flex-shrink-0">
-                                    <div class="bg-red-100 p-2 rounded-full">
-                                        <i class="fas fa-times text-red-600 text-sm"></i>
-                                    </div>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm text-gray-900 font-medium">{{ $attempt['email'] }}</p>
-                                    <div class="flex items-center space-x-4 mt-1 text-xs text-gray-500">
-                                        <span><i class="fas fa-clock mr-1"></i>{{ $attempt['last_attempt'] }}</span>
-                                        <span><i class="fas fa-globe mr-1"></i>{{ $attempt['ip'] }}</span>
-                                        <span class="bg-red-100 text-red-800 px-2 py-0.5 rounded-full text-xs font-medium">
-                                            {{ $attempt['attempts'] }} attempts
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            @endforeach
+                        <div class="space-y-4" id="failedLoginsContainer">
+                            <!-- Failed logins will be populated via AJAX -->
                         </div>
                     </div>
                 </div>
@@ -215,42 +159,8 @@
                         <h2 class="text-xl font-semibold text-gray-900">Suspicious Activities</h2>
                     </div>
                     <div class="p-6">
-                        <div class="space-y-4">
-                            @foreach($suspiciousActivities as $activity)
-                            <div class="flex items-start space-x-3 p-3 rounded-lg border border-gray-200
-                                @if($activity['risk'] === 'high') bg-red-50 border-red-200
-                                @elseif($activity['risk'] === 'medium') bg-orange-50 border-orange-200
-                                @else bg-yellow-50 border-yellow-200 @endif">
-                                <div class="flex-shrink-0">
-                                    @if($activity['risk'] === 'high')
-                                        <div class="bg-red-100 p-2 rounded-full">
-                                            <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
-                                        </div>
-                                    @elseif($activity['risk'] === 'medium')
-                                        <div class="bg-orange-100 p-2 rounded-full">
-                                            <i class="fas fa-exclamation-circle text-orange-600 text-sm"></i>
-                                        </div>
-                                    @else
-                                        <div class="bg-yellow-100 p-2 rounded-full">
-                                            <i class="fas fa-eye text-yellow-600 text-sm"></i>
-                                        </div>
-                                    @endif
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm text-gray-900 font-medium">{{ $activity['type'] }}</p>
-                                    <p class="text-xs text-gray-600 mt-1">{{ $activity['description'] }}</p>
-                                    <div class="flex items-center justify-between mt-2">
-                                        <span class="text-xs text-gray-500">{{ $activity['user'] }}</span>
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-                                            @if($activity['risk'] === 'high') bg-red-100 text-red-800
-                                            @elseif($activity['risk'] === 'medium') bg-orange-100 text-orange-800
-                                            @else bg-yellow-100 text-yellow-800 @endif">
-                                            {{ ucfirst($activity['risk']) }} Risk
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            @endforeach
+                        <div class="space-y-4" id="suspiciousActivitiesContainer">
+                            <!-- Suspicious activities will be populated via AJAX -->
                         </div>
                     </div>
                 </div>
@@ -298,9 +208,209 @@
 </div>
 
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    let refreshInterval;
+
+    // Function to refresh security data via AJAX
+    function refreshSecurityData() {
+        fetch('/admin/security/data', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateSecurityStats(data.data.stats);
+                updateSecurityLogs(data.data.securityLogs);
+                updateFailedLogins(data.data.failedLogins);
+                updateSuspiciousActivities(data.data.suspiciousActivities);
+                updateTimestamp(data.formatted_timestamp);
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing security data:', error);
+        });
+    }
+
+    // Update statistics cards
+    function updateSecurityStats(stats) {
+        document.getElementById('totalActivities').textContent = stats.total_activities.toLocaleString();
+        document.getElementById('failedLogins').textContent = stats.failed_logins.toLocaleString();
+        document.getElementById('suspiciousActivities').textContent = stats.suspicious_activities.toLocaleString();
+        document.getElementById('activeThreats').textContent = stats.active_threats.toLocaleString();
+    }
+
+    // Update security logs
+    function updateSecurityLogs(logs) {
+        const container = document.getElementById('securityLogsContainer');
+        container.innerHTML = '';
+
+        logs.forEach(log => {
+            const logElement = createSecurityLogElement(log);
+            container.appendChild(logElement);
+        });
+    }
+
+    // Create security log element
+    function createSecurityLogElement(log) {
+        const div = document.createElement('div');
+        div.className = `activity-item flex items-start space-x-3 p-4 rounded-lg border border-gray-100 severity-${log.level}`;
+
+        let iconHtml = '';
+        if (log.level === 'critical') {
+            iconHtml = '<div class="bg-red-100 p-2 rounded-full"><i class="fas fa-exclamation-triangle text-red-600 text-sm"></i></div>';
+        } else if (log.level === 'warning') {
+            iconHtml = '<div class="bg-orange-100 p-2 rounded-full"><i class="fas fa-exclamation-circle text-orange-600 text-sm"></i></div>';
+        } else if (log.level === 'info') {
+            iconHtml = '<div class="bg-blue-100 p-2 rounded-full"><i class="fas fa-info text-blue-600 text-sm"></i></div>';
+        } else {
+            iconHtml = '<div class="bg-gray-100 p-2 rounded-full"><i class="fas fa-edit text-gray-600 text-sm"></i></div>';
+        }
+
+        let badgeClass = '';
+        if (log.level === 'critical') {
+            badgeClass = 'bg-red-100 text-red-800';
+        } else if (log.level === 'warning') {
+            badgeClass = 'bg-orange-100 text-orange-800';
+        } else if (log.level === 'info') {
+            badgeClass = 'bg-blue-100 text-blue-800';
+        } else {
+            badgeClass = 'bg-gray-100 text-gray-800';
+        }
+
+        div.innerHTML = `
+            <div class="flex-shrink-0">
+                ${iconHtml}
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm text-gray-900 font-medium">${log.message}</p>
+                <div class="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                    <span><i class="fas fa-clock mr-1"></i>${log.time}</span>
+                    ${log.ip ? `<span><i class="fas fa-globe mr-1"></i>${log.ip}</span>` : ''}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${badgeClass}">
+                        ${log.level.charAt(0).toUpperCase() + log.level.slice(1)}
+                    </span>
+                </div>
+            </div>
+        `;
+
+        return div;
+    }
+
+    // Update failed logins
+    function updateFailedLogins(failedLogins) {
+        const container = document.getElementById('failedLoginsContainer');
+        container.innerHTML = '';
+
+        failedLogins.forEach(attempt => {
+            const attemptElement = createFailedLoginElement(attempt);
+            container.appendChild(attemptElement);
+        });
+    }
+
+    // Create failed login element
+    function createFailedLoginElement(attempt) {
+        const div = document.createElement('div');
+        div.className = 'flex items-start space-x-3 p-3 rounded-lg bg-red-50 border border-red-200';
+
+        div.innerHTML = `
+            <div class="flex-shrink-0">
+                <div class="bg-red-100 p-2 rounded-full">
+                    <i class="fas fa-times text-red-600 text-sm"></i>
+                </div>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm text-gray-900 font-medium">${attempt.email}</p>
+                <div class="flex items-center space-x-4 mt-1 text-xs text-gray-500">
+                    <span><i class="fas fa-clock mr-1"></i>${attempt.last_attempt}</span>
+                    <span><i class="fas fa-globe mr-1"></i>${attempt.ip}</span>
+                    <span class="bg-red-100 text-red-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                        ${attempt.attempts} attempts
+                    </span>
+                </div>
+            </div>
+        `;
+
+        return div;
+    }
+
+    // Update suspicious activities
+    function updateSuspiciousActivities(activities) {
+        const container = document.getElementById('suspiciousActivitiesContainer');
+        container.innerHTML = '';
+
+        activities.forEach(activity => {
+            const activityElement = createSuspiciousActivityElement(activity);
+            container.appendChild(activityElement);
+        });
+    }
+
+    // Create suspicious activity element
+    function createSuspiciousActivityElement(activity) {
+        let bgClass = '';
+        let borderClass = '';
+        if (activity.risk === 'high') {
+            bgClass = 'bg-red-50';
+            borderClass = 'border-red-200';
+        } else if (activity.risk === 'medium') {
+            bgClass = 'bg-orange-50';
+            borderClass = 'border-orange-200';
+        } else {
+            bgClass = 'bg-yellow-50';
+            borderClass = 'border-yellow-200';
+        }
+
+        let iconHtml = '';
+        if (activity.risk === 'high') {
+            iconHtml = '<div class="bg-red-100 p-2 rounded-full"><i class="fas fa-exclamation-triangle text-red-600 text-sm"></i></div>';
+        } else if (activity.risk === 'medium') {
+            iconHtml = '<div class="bg-orange-100 p-2 rounded-full"><i class="fas fa-exclamation-circle text-orange-600 text-sm"></i></div>';
+        } else {
+            iconHtml = '<div class="bg-yellow-100 p-2 rounded-full"><i class="fas fa-eye text-yellow-600 text-sm"></i></div>';
+        }
+
+        let badgeClass = '';
+        if (activity.risk === 'high') {
+            badgeClass = 'bg-red-100 text-red-800';
+        } else if (activity.risk === 'medium') {
+            badgeClass = 'bg-orange-100 text-orange-800';
+        } else {
+            badgeClass = 'bg-yellow-100 text-yellow-800';
+        }
+
+        const div = document.createElement('div');
+        div.className = `flex items-start space-x-3 p-3 rounded-lg border ${bgClass} ${borderClass}`;
+
+        div.innerHTML = `
+            <div class="flex-shrink-0">
+                ${iconHtml}
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm text-gray-900 font-medium">${activity.type}</p>
+                <p class="text-xs text-gray-600 mt-1">${activity.description}</p>
+                <div class="flex items-center justify-between mt-2">
+                    <span class="text-xs text-gray-500">${activity.user}</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${badgeClass}">
+                        ${activity.risk.charAt(0).toUpperCase() + activity.risk.slice(1)} Risk
+                    </span>
+                </div>
+            </div>
+        `;
+
+        return div;
+    }
+
+    // Update timestamp
+    function updateTimestamp(timestamp) {
+        document.getElementById('lastUpdated').textContent = 'Last updated: ' + timestamp;
+    }
+
     // Refresh button handler
     document.getElementById('refreshButton').addEventListener('click', function() {
-        location.reload();
+        refreshSecurityData();
     });
 
     // Severity filter handler
@@ -318,25 +428,34 @@
     });
 
     // Auto-refresh every 30 seconds
-    setInterval(function() {
-        // Only auto-refresh if the page is visible
-        if (!document.hidden) {
-            // You could implement AJAX refresh here
-            // For now, we'll just update the timestamp
-            const timestampElement = document.querySelector('.text-sm.text-gray-500');
-            if (timestampElement && timestampElement.textContent.includes('Last updated:')) {
-                const now = new Date();
-                const formatted = now.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true
-                });
-                timestampElement.textContent = 'Last updated: ' + formatted;
+    function startAutoRefresh() {
+        refreshInterval = setInterval(function() {
+            // Only auto-refresh if the page is visible
+            if (!document.hidden) {
+                refreshSecurityData();
             }
+        }, 30000); // 30 seconds
+    }
+
+    function stopAutoRefresh() {
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
         }
-    }, 30000); // 30 seconds
+    }
+
+    // Handle page visibility changes
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            stopAutoRefresh();
+        } else {
+            startAutoRefresh();
+        }
+    });
+
+    // Initial data load and start auto-refresh
+    document.addEventListener('DOMContentLoaded', function() {
+        refreshSecurityData();
+        startAutoRefresh();
+    });
 </script>
 @endsection

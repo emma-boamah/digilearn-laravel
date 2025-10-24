@@ -302,6 +302,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/revenue', [AdminController::class, 'revenue'])->name('revenue');
     Route::get('/analytics', [AdminController::class, 'analytics'])->name('analytics');
     Route::get('/security', [AdminController::class, 'security'])->name('security');
+    Route::get('/security/data', [AdminController::class, 'getSecurityDataAjax'])->name('security.data');
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
     Route::post('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
     Route::get('/export', [AdminController::class, 'exportUsers'])->name('export');

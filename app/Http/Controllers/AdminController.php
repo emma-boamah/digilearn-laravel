@@ -324,6 +324,56 @@ class AdminController extends Controller
     }
 
     /**
+     * Get security data via AJAX
+     */
+    public function getSecurityDataAjax()
+    {
+        try {
+            // Get security logs
+            $securityLogs = $this->getSecurityLogs();
+
+            // Get failed login attempts
+            $failedLogins = $this->getFailedLoginAttempts();
+
+            // Get suspicious activities
+            $suspiciousActivities = $this->getSuspiciousActivities();
+
+            // Get statistics
+            $stats = [
+                'total_activities' => is_array($securityLogs) ? count($securityLogs) : $securityLogs->count(),
+                'failed_logins' => is_array($failedLogins) ? count($failedLogins) : $failedLogins->count(),
+                'suspicious_activities' => is_array($suspiciousActivities) ? count($suspiciousActivities) : $suspiciousActivities->count(),
+                'active_threats' => is_array($suspiciousActivities)
+                    ? collect($suspiciousActivities)->whereIn('risk', ['high', 'critical'])->count()
+                    : $suspiciousActivities->whereIn('risk', ['high', 'critical'])->count(),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'securityLogs' => $securityLogs,
+                    'failedLogins' => $failedLogins,
+                    'suspiciousActivities' => $suspiciousActivities,
+                    'stats' => $stats,
+                ],
+                'timestamp' => now()->toISOString(),
+                'formatted_timestamp' => now()->format('M d, Y H:i')
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Security data AJAX error', [
+                'error' => $e->getMessage(),
+                'admin_id' => Auth::id(),
+                'ip' => get_client_ip()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load security data'
+            ], 500);
+        }
+    }
+
+    /**
      * Show system settings page
      */
     public function settings()
