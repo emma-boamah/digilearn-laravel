@@ -6,6 +6,7 @@ use App\Models\Video;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class VideoStreamController extends Controller
@@ -16,9 +17,29 @@ class VideoStreamController extends Controller
     public function stream(Video $video, Request $request)
     {
         // Check if user has permission to view this video
-        if (!auth()->check()) {
+        if (!Auth::check()) {
             abort(403, 'Unauthorized');
         }
+
+        // Log video watching activity
+        \App\Models\ActivityLog::log(
+            'video_watch',
+            'User watched video: ' . $video->title,
+            'info',
+            Auth::id(),
+            Auth::user()->email,
+            $request->ip(),
+            $request->userAgent(),
+            [
+                'video_id' => $video->id,
+                'video_title' => $video->title,
+                'grade_level' => $video->grade_level,
+                'duration_seconds' => $video->duration_seconds,
+                'subject' => $video->subject ?? 'General',
+                'action_type' => 'stream_start'
+            ],
+            $video
+        );
 
         // Get the video file path
         $filePath = null;

@@ -20,6 +20,7 @@ use App\Http\Controllers\DashboardController; // Import DashboardController to a
 use App\Models\Video; // Import the Video model
 use App\Models\Quiz; // Import the Quiz model
 use App\Models\Document; // Import the Document model
+use App\Models\ActivityLog;
 use App\Models\UserSubscription; // Import the UserSubscription model
 use App\Models\PricingPlan; // Import the PricingPlan model
 use App\Models\ProgressionStandard; // Import the ProgressionStandard model
@@ -755,12 +756,22 @@ class AdminController extends Controller
      */
     private function getSecurityLogs()
     {
-        // This would come from your security log files or database
-        return [
-            ['level' => 'warning', 'message' => 'Multiple failed login attempts', 'ip' => '192.168.1.100', 'time' => '5 minutes ago'],
-            ['level' => 'info', 'message' => 'Admin login successful', 'ip' => '192.168.1.1', 'time' => '10 minutes ago'],
-            ['level' => 'warning', 'message' => 'Suspicious user activity detected', 'ip' => '10.0.0.50', 'time' => '1 hour ago'],
-        ];
+        // Get real activity logs from database
+        $logs = \App\Models\ActivityLog::with('user')
+            ->orderBy('created_at', 'desc')
+            ->limit(50)
+            ->get();
+
+        return $logs->map(function ($log) {
+            return [
+                'level' => $log->level,
+                'message' => $log->description,
+                'ip' => $log->ip_address,
+                'time' => $log->created_at->diffForHumans(),
+                'user' => $log->user ? $log->user->name : 'System',
+                'action' => $log->action,
+            ];
+        })->toArray();
     }
 
     /**
@@ -779,10 +790,51 @@ class AdminController extends Controller
      */
     private function getSuspiciousActivities()
     {
-        return [
-            ['type' => 'Multiple IPs', 'user' => 'user@example.com', 'description' => 'Login from 3 different countries', 'risk' => 'high'],
-            ['type' => 'Rapid requests', 'user' => 'bot@example.com', 'description' => '100+ requests in 1 minute', 'risk' => 'medium'],
-        ];
+        $suspiciousActivities = [];
+
+        // Check for users with multiple IP addresses in short time
+        $multiIpUsers = ActivityLog::where('action', 'login')
+            ->where('created_at', '>=', now()->subHours(24))
+            ->selectRaw('user_id, user_email, COUNT(DISTINCT ip_address) as ip_count')
+            ->groupBy('user_id', 'user_email')
+            ->having('ip_count', '>', 2)
+            ->get();
+
+        foreach ($multiIpUsers as $user) {
+            $suspiciousActivities[] = [
+                'type' => 'Multiple IPs',
+                'user' => $user->user_email ?? 'Unknown',
+                'description' => "Login from {$user->ip_count} different IP addresses in 24 hours",
+                'risk' => 'high',
+            ];
+        }
+
+        // Check for rapid failed login attempts
+        $rapidAttempts = ActivityLog::where('action', 'failed_login')
+            ->where('created_at', '>=', now()->subHours(1))
+            ->selectRaw('ip_address, COUNT(*) as attempt_count, MIN(created_at) as first_attempt, MAX(created_at) as last_attempt')
+            ->groupBy('ip_address')
+            ->having('attempt_count', '>', 10)
+            ->get();
+
+        foreach ($rapidAttempts as $attempt) {
+            $duration = $attempt->first_attempt->diffInMinutes($attempt->last_attempt);
+            $rate = $duration > 0 ? $attempt->attempt_count / $duration : $attempt->attempt_count;
+
+            if ($rate > 5) { // More than 5 attempts per minute
+                $suspiciousActivities[] = [
+                    'type' => 'Rapid Failed Logins',
+                    'user' => $attempt->ip_address,
+                    'description' => "{$attempt->attempt_count} failed login attempts in {$duration} minutes",
+                    'risk' => 'high',
+                ];
+            }
+        }
+
+        // Check for unusual login times (if we had user timezone data)
+        // This would require additional user profile data
+
+        return array_slice($suspiciousActivities, 0, 10); // Limit to 10 most recent
     }
 
     /**
