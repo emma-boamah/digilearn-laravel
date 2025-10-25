@@ -64,6 +64,8 @@ return [
             'blob:',
             'data:',
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
+            'https://stream.mux.com',
+            'https://*.mux.com',
         ],
         'connect-src' => [
             "'self'",
@@ -90,6 +92,9 @@ return [
             'https://www.google.com',
             'https://vimeo.com',
             'https://player.vimeo.com',
+            'https://www.youtube.com',
+            'https://youtube.com',
+            'https://youtu.be',
         ],
         'object-src' => ["'none'"],
         'base-uri' => ["'self'"],
