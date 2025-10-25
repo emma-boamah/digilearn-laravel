@@ -296,6 +296,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/dashboard/stats', [AdminController::class, 'getDashboardStatsAjax'])->name('dashboard.stats');
     Route::get('/contents', [AdminController::class, 'contents'])->name('contents.index');
     Route::post('/contents', [AdminController::class, 'storeContentPackage'])->name('contents.store');
+    Route::delete('/contents/youtube/{contentId}', [AdminController::class, 'destroyYouTubeContent'])->name('contents.youtube.destroy');
     Route::get('/users', [AdminController::class, 'users'])->name('users');
     Route::get('/users/{id}', [AdminController::class, 'showUser'])->name('users.show');
     Route::post('/users/{id}/toggle-status', [AdminController::class, 'toggleUserStatus'])->name('users.toggle-status');

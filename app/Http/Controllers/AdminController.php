@@ -25,6 +25,8 @@ use App\Models\UserSubscription; // Import the UserSubscription model
 use App\Models\PricingPlan; // Import the PricingPlan model
 use App\Models\ProgressionStandard; // Import the ProgressionStandard model
 use App\Models\UserProgress; // Import the UserProgress model
+use App\Models\QuizAttempt; // Import the QuizAttempt model
+use App\Models\QuizRating; // Import the QuizRating model
 use Illuminate\Support\Facades\Storage; // For file uploads
 
 class AdminController extends Controller
@@ -2428,5 +2430,108 @@ class AdminController extends Controller
         }
 
         return redirect()->back()->with('error', 'Failed to progress user.');
+    }
+
+    /**
+     * Delete YouTube content and all related data
+     */
+    public function destroyYouTubeContent(Request $request, $contentId)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Find the video content
+            $video = Video::findOrFail($contentId);
+
+            // Verify it's YouTube content
+            if ($video->video_source !== 'youtube') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This content is not a YouTube video.'
+                ], 400);
+            }
+
+            // Log the deletion action
+            Log::channel('security')->info('youtube_content_deletion_started', [
+                'admin_id' => Auth::id(),
+                'video_id' => $video->id,
+                'video_title' => $video->title,
+                'youtube_video_id' => $video->external_video_id,
+                'ip' => get_client_ip(),
+                'user_agent' => $request->userAgent(),
+                'timestamp' => now()->toISOString()
+            ]);
+
+            // Delete related comments
+            $commentsCount = Comment::where('video_id', $video->id)->count();
+            Comment::where('video_id', $video->id)->delete();
+
+            // Delete related documents
+            $documentsCount = Document::where('video_id', $video->id)->count();
+            $documents = Document::where('video_id', $video->id)->get();
+            foreach ($documents as $document) {
+                if ($document->file_path) {
+                    Storage::disk('public')->delete($document->file_path);
+                }
+                $document->delete();
+            }
+
+            // Delete related quizzes and their attempts/ratings
+            $quizzesCount = Quiz::where('video_id', $video->id)->count();
+            $quizzes = Quiz::where('video_id', $video->id)->get();
+            foreach ($quizzes as $quiz) {
+                // Delete quiz attempts
+                QuizAttempt::where('quiz_id', $quiz->id)->delete();
+                // Delete quiz ratings
+                QuizRating::where('quiz_id', $quiz->id)->delete();
+                // Delete the quiz
+                $quiz->delete();
+            }
+
+            // Delete the video itself (this will also delete any associated files via the model's deleteFiles method)
+            $video->deleteFiles();
+            $video->delete();
+
+            DB::commit();
+
+            Log::channel('security')->info('youtube_content_deletion_completed', [
+                'admin_id' => Auth::id(),
+                'video_id' => $video->id,
+                'video_title' => $video->title,
+                'deleted_comments' => $commentsCount,
+                'deleted_documents' => $documentsCount,
+                'deleted_quizzes' => $quizzesCount,
+                'ip' => get_client_ip(),
+                'user_agent' => $request->userAgent(),
+                'timestamp' => now()->toISOString()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'YouTube content and all related data deleted successfully.',
+                'deleted_items' => [
+                    'comments' => $commentsCount,
+                    'documents' => $documentsCount,
+                    'quizzes' => $quizzesCount
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('youtube_content_deletion_failed', [
+                'admin_id' => Auth::id(),
+                'video_id' => $contentId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'ip' => get_client_ip(),
+                'timestamp' => now()->toISOString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete YouTube content: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

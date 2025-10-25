@@ -133,4 +133,13 @@ class Quiz extends Model
     {
         return $query->where('grade_level', $gradeLevel);
     }
+
+    /**
+     * Get the questions from quiz_data
+     */
+    public function questions()
+    {
+        $quizData = json_decode($this->quiz_data, true);
+        return collect($quizData['questions'] ?? []);
+    }
 }

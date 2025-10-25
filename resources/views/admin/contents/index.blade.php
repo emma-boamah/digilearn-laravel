@@ -569,14 +569,25 @@
         cursor: pointer;
     }
 
-    /* Responsive */
-    @media (max-width: 1024px) {
-        .content-table-container {
-            overflow-x: auto;
+    /* Always enable horizontal scrolling for better UX */
+    .content-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .content-table {
+        min-width: 1400px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .content-table {
+            min-width: 1600px;
         }
 
-        .content-table {
-            min-width: 1200px;
+        .actions-cell {
+            min-width: 120px;
+            white-space: nowrap;
         }
     }
 </style>
@@ -795,7 +806,7 @@
                         <button class="action-btn" title="Edit">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="action-btn delete" title="Delete">
+                        <button class="action-btn delete" title="Delete" data-content-id="{{ $content->id }}" data-content-type="{{ $content->content_type }}" data-video-source="{{ $content->video_source ?? '' }}">
                             <i class="fas fa-trash"></i>
                         </button>
                         <button class="action-btn" title="More">
@@ -1103,6 +1114,70 @@
                 }
             });
         }
+
+        // Delete functionality
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.action-btn.delete')) {
+                e.preventDefault();
+                const deleteBtn = e.target.closest('.action-btn.delete');
+                const contentId = deleteBtn.getAttribute('data-content-id');
+                const contentType = deleteBtn.getAttribute('data-content-type');
+                const videoSource = deleteBtn.getAttribute('data-video-source');
+
+                if (confirm('Are you sure you want to delete this content? This action cannot be undone.')) {
+                    deleteContent(contentId, contentType, videoSource);
+                }
+            }
+        });
+
+        async function deleteContent(contentId, contentType, videoSource) {
+            try {
+                let response;
+
+                if (contentType === 'video' && videoSource === 'youtube') {
+                    // Use specific YouTube deletion endpoint
+                    response = await fetch(`{{ route("admin.contents.youtube.destroy", ":contentId") }}`.replace(':contentId', contentId), {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                } else {
+                    // For other content types, show a different message
+                    alert('Deletion for this content type (' + contentType + ') is not yet implemented. Only YouTube videos can be deleted from this interface.');
+                    return;
+                }
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert('Content deleted successfully!');
+                    window.location.reload();
+                } else {
+                    alert('Failed to delete content: ' + (result.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Delete error:', error);
+                alert('An error occurred while deleting the content.');
+            }
+        }
+
+        // Ping functionality to keep session alive
+        function pingServer() {
+            fetch('{{ route("ping") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json',
+                }
+            }).catch(error => {
+                console.error('Ping failed:', error);
+            });
+        }
+
+        // Ping every 5 minutes to keep session alive
+        setInterval(pingServer, 5 * 60 * 1000);
 
         // Upload Modal Elements
         const uploadBtn = document.getElementById('uploadBtn');
