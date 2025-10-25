@@ -403,6 +403,11 @@
 
     // Toggle lock button handler
     document.getElementById('toggleLockButton').addEventListener('click', function() {
+        // Show loading state
+        const originalText = this.innerHTML;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+        this.disabled = true;
+
         fetch('{{ route("admin.toggle-lock") }}', {
             method: 'POST',
             headers: {
@@ -413,9 +418,19 @@
         })
         .then(response => response.json())
         .then(data => {
+            // Restore button state
+            this.innerHTML = originalText;
+            this.disabled = false;
+
+            if (data.requires_recovery_codes) {
+                // Show recovery code warning modal
+                showRecoveryCodeWarning();
+                return;
+            }
+
             const icon = this.querySelector('i');
             const textNode = this.childNodes[this.childNodes.length - 1];
-            
+
             if (data.locked) {
                 icon.className = 'fas fa-unlock mr-2';
                 textNode.textContent = ' Unlock Website';
@@ -427,10 +442,83 @@
                 this.classList.remove('bg-green-600');
                 this.classList.add('bg-red-600');
             }
-            
+
             alert(data.message);
+        })
+        .catch(error => {
+            // Restore button state on error
+            this.innerHTML = originalText;
+            this.disabled = false;
+            alert('An error occurred. Please try again.');
         });
     });
+
+    // Function to show recovery code warning modal
+    function showRecoveryCodeWarning() {
+        // Create modal HTML
+        const modalHTML = `
+            <div id="recoveryCodeModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                    <div class="mt-3">
+                        <div class="flex items-center justify-center mb-4">
+                            <div class="bg-yellow-100 p-3 rounded-full">
+                                <i class="fas fa-exclamation-triangle text-yellow-600 text-xl"></i>
+                            </div>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 text-center mb-2">Recovery Codes Required</h3>
+                        <div class="mt-2 px-7 py-3">
+                            <p class="text-sm text-gray-700 text-center">
+                                You cannot lock the website without valid recovery codes for superusers.
+                                Please generate recovery codes first to ensure you can unlock the website later.
+                            </p>
+                        </div>
+                        <div class="flex items-center px-4 py-3 space-x-3">
+                            <button id="generateCodesBtn" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <i class="fas fa-key mr-2"></i>Generate Recovery Codes
+                            </button>
+                            <button id="cancelLockBtn" class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add modal to page
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+        // Handle generate codes button
+        document.getElementById('generateCodesBtn').addEventListener('click', function() {
+            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+            this.disabled = true;
+
+            fetch('{{ route("admin.generate-recovery-codes") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('recoveryCodeModal').remove();
+                alert('Recovery codes generated successfully! You can now lock the website.');
+                location.reload(); // Refresh to show updated codes
+            })
+            .catch(error => {
+                this.innerHTML = '<i class="fas fa-key mr-2"></i>Generate Recovery Codes';
+                this.disabled = false;
+                alert('Failed to generate recovery codes. Please try again.');
+            });
+        });
+
+        // Handle cancel button
+        document.getElementById('cancelLockBtn').addEventListener('click', function() {
+            document.getElementById('recoveryCodeModal').remove();
+        });
+    }
 
     // Auto-refresh dashboard every 30 seconds for better real-time updates
     setInterval(function() {

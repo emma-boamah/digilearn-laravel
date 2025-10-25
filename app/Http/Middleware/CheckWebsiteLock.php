@@ -12,7 +12,7 @@ class CheckWebsiteLock
     public function handle($request, Closure $next)
     {
         $lockSetting = WebsiteLockSetting::first();
-        
+
         if ($lockSetting && $lockSetting->is_locked) {
 
             // Log authentication status
@@ -20,19 +20,27 @@ class CheckWebsiteLock
                 'is_locked' => true,
                 'auth_check' => Auth::check(),
                 'is_superuser' => Auth::check() ? Auth::user()->is_superuser : false,
+                'is_admin' => Auth::check() ? (Auth::user()->is_admin || Auth::user()->is_superuser) : false,
                 'path' => $request->path()
             ]);
+
             // Allow unlock routes
             if ($request->is('unlock*') || $request->is('admin/toggle-lock')) {
                 return $next($request);
             }
-            
+
             // Allow authenticated superusers
             if (Auth::check() && Auth::user()->is_superuser) {
                 return $next($request);
             }
-            
-            return redirect()->route('unlock');
+
+            // Allow authenticated admins to access unlock page
+            if (Auth::check() && (Auth::user()->is_admin || Auth::user()->is_superuser)) {
+                return $next($request);
+            }
+
+            // For all non-admin users (authenticated or not), show locked message
+            return response()->view('auth.locked', [], 503);
         }
 
         return $next($request);

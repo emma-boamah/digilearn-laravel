@@ -119,9 +119,17 @@ class AuthController extends Controller
         // Check if user is already authenticated
         if (Auth::check()) {
             $this->logSecurityEvent('authenticated_user_accessed_login', $request);
-            
+
             $user = Auth::user();
-            
+
+            Log::info('User already authenticated on login page', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'has_remember_token' => !empty($user->remember_token),
+                'session_id' => $request->session()->getId(),
+                'via_remember' => Auth::viaRemember()
+            ]);
+
             // Check if user is admin and redirect appropriately
             if ($user->is_admin || $user->is_superuser) {
                 // For admin users, check if they were trying to access admin panel
@@ -132,7 +140,7 @@ class AuthController extends Controller
                 // If no admin-specific intended URL, go to admin dashboard
                 return redirect()->route('admin.dashboard');
             }
-            
+
             // For regular users
             if (session('selected_level')) {
                 return redirect()->route('dashboard.main');
@@ -243,7 +251,8 @@ class AuthController extends Controller
             // Log successful login
             $this->logSecurityEvent('successful_login', $request, [
                 'user_id' => $user->id,
-                'email' => $user->email
+                'email' => $user->email,
+                'remember_me' => $request->boolean('remember')
             ]);
 
             // Fire login event

@@ -31,9 +31,39 @@ class AdminController extends Controller
 {
     public function toggleLock(Request $request)
     {
+        // Check recovery codes before locking
+        if (!$request->has('confirm_lock')) {
+            $superusers = User::where('is_superuser', true)->get();
+            $hasValidRecoveryCodes = false;
+
+            foreach ($superusers as $superuser) {
+                $recoveryCodesCount = SuperuserRecoveryCode::where('user_id', $superuser->id)->count();
+                if ($recoveryCodesCount > 0) {
+                    $hasValidRecoveryCodes = true;
+                    break;
+                }
+            }
+
+            if (!$hasValidRecoveryCodes) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot lock website: No valid recovery codes found for superusers. Please generate recovery codes first.',
+                    'requires_recovery_codes' => true
+                ], 400);
+            }
+        }
+
         $lockSetting = WebsiteLockSetting::firstOrCreate();
         $lockSetting->is_locked = !$lockSetting->is_locked;
         $lockSetting->save();
+
+        Log::channel('security')->info('website_lock_toggled', [
+            'admin_id' => Auth::id(),
+            'locked' => $lockSetting->is_locked,
+            'ip' => get_client_ip(),
+            'user_agent' => $request->userAgent(),
+            'timestamp' => now()->toISOString()
+        ]);
 
         return response()->json([
             'locked' => $lockSetting->is_locked,

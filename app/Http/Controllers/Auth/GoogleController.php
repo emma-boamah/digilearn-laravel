@@ -70,8 +70,15 @@ class GoogleController extends Controller
                 ]);
             }
 
-            Auth::login($user, true);
+            Auth::login($user, true); // Always remember Google users
             $request->session()->regenerate();
+
+            Log::info('Google login successful', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'has_remember_token' => !empty($user->remember_token),
+                'session_id' => $request->session()->getId()
+            ]);
 
             // 🔹 Role-based redirect
             if ($user->is_admin || $user->is_superuser) {
