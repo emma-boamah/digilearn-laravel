@@ -2148,23 +2148,41 @@ class AdminController extends Controller
 
             // Step 1: Upload and store the video
             $video = null;
-            if ($request->hasFile('video_file')) {
+            if ($request->hasFile('video_file') || $request->filled('external_video_url')) {
                 $videoData = [
                     'title' => $request->title,
                     'description' => $request->description,
                     'grade_level' => $request->grade_level,
                     'uploaded_by' => auth()->id(),
+                    'video_source' => $request->video_source ?? 'local',
                     'status' => 'pending' // Videos need approval
                 ];
 
+                // Handle external video URL
+                if ($request->filled('external_video_url')) {
+                    $parsed = \App\Services\VideoSourceService::parseVideoUrl($request->external_video_url);
+                    if ($parsed) {
+                        $videoData['external_video_id'] = $parsed['video_id'];
+                        $videoData['external_video_url'] = $parsed['embed_url'];
+                        $videoData['status'] = 'approved'; // External videos are auto-approved
+                    } else {
+                        throw new \Exception('Invalid video URL provided');
+                    }
+                }
+
                 $video = Video::create($videoData);
 
-                // Handle video file upload
+                // Handle local video file upload
                 if ($request->hasFile('video_file')) {
                     $videoFile = $request->file('video_file');
                     $filename = time() . '_' . $video->id . '.' . $videoFile->getClientOriginalExtension();
                     $path = $videoFile->storeAs('videos', $filename, 'public');
                     $video->update(['video_path' => $path]);
+
+                    // If upload destination is specified, set video_source accordingly
+                    if ($request->filled('upload_destination')) {
+                        $video->update(['video_source' => $request->upload_destination]);
+                    }
                 }
 
                 // Handle thumbnail upload

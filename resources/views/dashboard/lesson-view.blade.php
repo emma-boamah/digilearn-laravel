@@ -2245,10 +2245,14 @@
                 <div class="sticky-video-section" id="stickyVideoSection">
                     <!-- Enhanced Video Player -->
                     <div class="video-container">
-                        <video controls class="video-player" poster="{{ secure_asset($lesson['thumbnail'] ?? '') }}">
-                            <source src="{{ secure_asset($lesson['video_url'] ?? '') }}" type="video/mp4">
-                            Your browser does not support the video tag.
-                        </video>
+                        @if(isset($lesson) && $lesson instanceof \App\Models\Video)
+                            {!! $lesson->getEmbedHtml() !!}
+                        @else
+                            <video controls class="video-player" poster="{{ secure_asset($lesson['thumbnail'] ?? '') }}">
+                                <source src="{{ secure_asset($lesson['video_url'] ?? '') }}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        @endif
                     </div>
 
                     <!-- Enhanced Lesson Info -->

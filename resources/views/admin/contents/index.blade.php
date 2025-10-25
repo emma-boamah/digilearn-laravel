@@ -862,8 +862,63 @@
                     </div>
                 </div>
 
-                <!-- File Upload Area -->
+                <!-- Video Source Selection -->
                 <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Video Source</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="relative">
+                            <input type="radio" name="video_source" value="local" class="sr-only peer" checked>
+                            <div class="p-4 border-2 border-gray-200 rounded-lg cursor-pointer peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:border-gray-300 transition-colors">
+                                <div class="flex items-center">
+                                    <i class="fas fa-server text-2xl text-gray-600 mr-3"></i>
+                                    <div>
+                                        <div class="font-medium text-gray-900">Local Upload</div>
+                                        <div class="text-sm text-gray-500">Upload MP4, MOV, AVI files</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="relative">
+                            <input type="radio" name="video_source" value="youtube" class="sr-only peer">
+                            <div class="p-4 border-2 border-gray-200 rounded-lg cursor-pointer peer-checked:border-red-500 peer-checked:bg-red-50 hover:border-gray-300 transition-colors">
+                                <div class="flex items-center">
+                                    <i class="fab fa-youtube text-2xl text-red-600 mr-3"></i>
+                                    <div>
+                                        <div class="font-medium text-gray-900">YouTube</div>
+                                        <div class="text-sm text-gray-500">Paste YouTube video URL</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="relative">
+                            <input type="radio" name="video_source" value="vimeo" class="sr-only peer">
+                            <div class="p-4 border-2 border-gray-200 rounded-lg cursor-pointer peer-checked:border-blue-600 peer-checked:bg-blue-50 hover:border-gray-300 transition-colors">
+                                <div class="flex items-center">
+                                    <i class="fab fa-vimeo text-2xl text-blue-600 mr-3"></i>
+                                    <div>
+                                        <div class="font-medium text-gray-900">Vimeo</div>
+                                        <div class="text-sm text-gray-500">Paste Vimeo video URL</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="relative">
+                            <input type="radio" name="video_source" value="mux" class="sr-only peer">
+                            <div class="p-4 border-2 border-gray-200 rounded-lg cursor-pointer peer-checked:border-purple-500 peer-checked:bg-purple-50 hover:border-gray-300 transition-colors">
+                                <div class="flex items-center">
+                                    <i class="fas fa-video text-2xl text-purple-600 mr-3"></i>
+                                    <div>
+                                        <div class="font-medium text-gray-900">Mux</div>
+                                        <div class="text-sm text-gray-500">Paste Mux stream URL</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Local File Upload Area -->
+                <div class="mb-4" id="localUploadSection">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Video File</label>
                     <div id="fileUploadArea" class="file-upload-area">
                         <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
@@ -871,6 +926,14 @@
                         <p class="text-sm text-gray-500">MP4, MOV, AVI up to 600MB</p>
                     </div>
                     <input type="file" id="fileInput" class="hidden" accept=".mp4,.mov,.avi">
+                </div>
+
+                <!-- External URL Input -->
+                <div class="mb-4 hidden" id="externalUrlSection">
+                    <label for="external_video_url" class="block text-sm font-medium text-gray-700 mb-2">Video URL</label>
+                    <input type="url" id="external_video_url" placeholder="https://youtube.com/watch?v=..."
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <p class="text-sm text-gray-500 mt-1">Paste the full URL of your video from the selected platform</p>
                 </div>
 
                 <!-- Title -->
@@ -1058,6 +1121,8 @@
         let uploadData = {
             video: null,
             thumbnail: null,
+            video_source: 'local',
+            external_video_url: '',
             documents: [],
             quiz: {
                 questions: [],
@@ -1104,6 +1169,7 @@
             finishBtn.addEventListener('click', submitWizard);
 
             // Step 1: Video upload
+            initializeVideoSourceSelection();
             initializeVideoStep();
             initializeThumbnailStep();
 
@@ -1132,8 +1198,17 @@
         }
 
         function clearAllSteps() {
+            // Clear video source selection
+            const localRadio = document.querySelector('input[name="video_source"][value="local"]');
+            if (localRadio) localRadio.checked = true;
+            uploadData.video_source = 'local';
+            uploadData.external_video_url = '';
+            uploadData.upload_destination = 'vimeo'; // Default to Vimeo
+            toggleVideoSourceSections('local');
+
             // Clear video step
             document.getElementById('fileInput').value = '';
+            document.getElementById('external_video_url').value = '';
             document.getElementById('title').value = '';
             document.getElementById('description').value = '';
             document.getElementById('grade_level').value = '';
@@ -1204,10 +1279,28 @@
                 case 1:
                     const title = document.getElementById('title').value.trim();
                     const gradeLevel = document.getElementById('grade_level').value;
-                    if (!uploadData.video) {
-                        alert('Please upload a video file.');
-                        return false;
+
+                    if (uploadData.video_source === 'local') {
+                        if (!uploadData.video) {
+                            alert('Please upload a video file.');
+                            return false;
+                        }
+                    } else {
+                        const externalUrl = document.getElementById('external_video_url').value.trim();
+                        if (!externalUrl) {
+                            alert('Please enter a video URL.');
+                            return false;
+                        }
+                        // Basic URL validation
+                        try {
+                            new URL(externalUrl);
+                        } catch {
+                            alert('Please enter a valid URL.');
+                            return false;
+                        }
+                        uploadData.external_video_url = externalUrl;
                     }
+
                     if (!title) {
                         alert('Please enter a title.');
                         return false;
@@ -1541,6 +1634,49 @@
             return div;
         }
 
+        // Video source selection handler
+        function initializeVideoSourceSelection() {
+            const sourceRadios = document.querySelectorAll('input[name="video_source"]');
+
+            sourceRadios.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    const selectedSource = e.target.value;
+                    uploadData.video_source = selectedSource;
+                    toggleVideoSourceSections(selectedSource);
+                });
+            });
+        }
+
+        function toggleVideoSourceSections(source) {
+            const localSection = document.getElementById('localUploadSection');
+            const externalSection = document.getElementById('externalUrlSection');
+            const uploadDestinationSection = document.getElementById('uploadDestinationSection');
+
+            if (source === 'local') {
+                localSection.classList.remove('hidden');
+                externalSection.classList.add('hidden');
+                uploadDestinationSection.classList.remove('hidden');
+                // Clear external URL
+                document.getElementById('external_video_url').value = '';
+                uploadData.external_video_url = '';
+            } else if (source === 'youtube') {
+                localSection.classList.add('hidden');
+                externalSection.classList.remove('hidden');
+                uploadDestinationSection.classList.add('hidden');
+                // Clear local file
+                document.getElementById('fileInput').value = '';
+                uploadData.video = null;
+                // Hide video preview
+                const videoPreviewContainer = document.getElementById('videoPreviewContainer');
+                if (videoPreviewContainer) videoPreviewContainer.classList.add('hidden');
+            } else {
+                // Vimeo or Mux - hide both sections for now (could be extended)
+                localSection.classList.add('hidden');
+                externalSection.classList.add('hidden');
+                uploadDestinationSection.classList.add('hidden');
+            }
+        }
+
         // Final submission
         async function submitWizard() {
             try {
@@ -1549,7 +1685,10 @@
                         file: uploadData.video,
                         title: document.getElementById('title').value.trim(),
                         description: document.getElementById('description').value.trim(),
-                        grade_level: document.getElementById('grade_level').value
+                        grade_level: document.getElementById('grade_level').value,
+                        video_source: uploadData.video_source,
+                        external_video_url: uploadData.external_video_url,
+                        upload_destination: uploadData.upload_destination
                     },
                     documents: uploadData.documents,
                     quiz: uploadData.quiz
@@ -1557,7 +1696,15 @@
 
                 const formData = new FormData();
                 formData.append('_token', '{{ csrf_token() }}');
-                formData.append('video_file', finalData.video.file);
+                formData.append('video_source', finalData.video.video_source);
+
+                if (finalData.video.video_source === 'local') {
+                    formData.append('video_file', finalData.video.file);
+                    formData.append('upload_destination', finalData.video.upload_destination);
+                } else if (finalData.video.video_source === 'youtube') {
+                    formData.append('external_video_url', finalData.video.external_video_url);
+                }
+
                 formData.append('title', finalData.video.title);
                 formData.append('description', finalData.video.description);
                 formData.append('grade_level', finalData.video.grade_level);

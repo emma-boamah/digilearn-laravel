@@ -31,7 +31,10 @@ class Video extends Model
         'uploader_user_agent',
         'views',
         'document_path',
-        'quiz_id'
+        'quiz_id',
+        'video_source',
+        'external_video_id',
+        'external_video_url'
     ];
 
     protected $casts = [
@@ -145,6 +148,11 @@ class Video extends Model
      */
     public function getVideoUrl()
     {
+        // Handle external video sources first
+        if ($this->video_source !== 'local' && $this->external_video_url) {
+            return $this->external_video_url;
+        }
+
         // Priority: Mux > Vimeo > Local files
         if ($this->isApproved()) {
             if ($this->mux_playback_id) {
@@ -196,14 +204,14 @@ class Video extends Model
     public function getFormattedFileSize()
     {
         if (!$this->file_size_bytes) return 'Unknown';
-        
+
         $bytes = $this->file_size_bytes;
         $units = ['B', 'KB', 'MB', 'GB'];
-        
+
         for ($i = 0; $bytes >= 1024 && $i < 3; $i++) {
             $bytes /= 1024;
         }
-        
+
         return round($bytes, 2) . ' ' . $units[$i];
     }
 
@@ -213,22 +221,22 @@ class Video extends Model
     public function deleteFiles()
     {
         $disk = Storage::disk('public');
-        
+
         // Delete main video file
         if ($this->video_path && $disk->exists($this->video_path)) {
             $disk->delete($this->video_path);
         }
-        
+
         // Delete temporary video file
         if ($this->temp_file_path && $disk->exists($this->temp_file_path)) {
             $disk->delete($this->temp_file_path);
         }
-        
+
         // Delete thumbnail
         if ($this->thumbnail_path && $disk->exists($this->thumbnail_path)) {
             $disk->delete($this->thumbnail_path);
         }
-        
+
         // Delete document
         if ($this->document_path && $disk->exists($this->document_path)) {
             $disk->delete($this->document_path);
@@ -296,5 +304,46 @@ class Video extends Model
         }
 
         return $video;
+    }
+
+    /**
+     * Get embed HTML for the video
+     */
+    public function getEmbedHtml()
+    {
+        return \App\Services\VideoSourceService::getEmbedHtml($this);
+    }
+
+    /**
+     * Get canonical URL for the video
+     */
+    public function getCanonicalUrl()
+    {
+        return \App\Services\VideoSourceService::getCanonicalUrl($this);
+    }
+
+    /**
+     * Check if video is from external source
+     */
+    public function isExternalSource()
+    {
+        return $this->video_source !== 'local';
+    }
+
+    /**
+     * Set video source from URL
+     */
+    public function setVideoSourceFromUrl($url)
+    {
+        $parsed = \App\Services\VideoSourceService::parseVideoUrl($url);
+
+        if ($parsed) {
+            $this->video_source = $parsed['source'];
+            $this->external_video_id = $parsed['video_id'];
+            $this->external_video_url = $parsed['embed_url'];
+            return true;
+        }
+
+        return false;
     }
 }
