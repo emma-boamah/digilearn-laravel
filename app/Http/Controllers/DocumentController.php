@@ -80,7 +80,7 @@ class DocumentController extends Controller
         // Get lesson data
         $lessons = $this->getLessonsForLevel($selectedLevelGroup);
         $lesson = collect($lessons)->firstWhere('id', (int)$lessonId);
-        
+
         if (!$lesson) {
             return redirect()->route('dashboard.digilearn')
                 ->with('error', 'Lesson not found.');
@@ -88,10 +88,27 @@ class DocumentController extends Controller
 
         // Get full document data with content
         $document = $this->getDocumentContentForLesson($lessonId, $type);
-        
+
         if (!$document) {
             return redirect()->route('dashboard.lesson.document', [$lessonId, $type])
                 ->with('error', 'Document content not found.');
+        }
+
+        // Record document view engagement for recommendation system
+        if (auth()->check()) {
+            \App\Models\UserEngagement::record(
+                auth()->id(),
+                'document',
+                $lessonId,
+                'view',
+                0, // duration tracked separately
+                [
+                    'title' => $document['title'] ?? 'Document',
+                    'subject' => $lesson['subject'] ?? 'General',
+                    'type' => $type,
+                    'lesson_id' => $lessonId,
+                ]
+            );
         }
 
         // Return the full content viewer page

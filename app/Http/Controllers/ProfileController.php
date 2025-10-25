@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
+use App\Models\UserPreference;
 
 class ProfileController extends Controller
 {
@@ -26,7 +27,7 @@ class ProfileController extends Controller
     public function show()
     {
         $user = Auth::user();
-        
+
         // Load user with current subscription
         $user->load(['currentSubscription.pricingPlan']);
 
@@ -36,7 +37,10 @@ class ProfileController extends Controller
         // Get all available pricing plans for potential upgrades
         $availablePlans = PricingPlan::active()->ordered()->get();
 
-        return view('dashboard.profile', compact('user', 'maskedPhone', 'availablePlans'));
+        // Get user's subject preferences for display
+        $userSubjectPreferences = UserPreference::getSubjectPreferences($user->id)->pluck('preference_value')->toArray();
+
+        return view('dashboard.profile', compact('user', 'maskedPhone', 'availablePlans', 'userSubjectPreferences'));
     }
 
     /**
@@ -95,6 +99,8 @@ class ProfileController extends Controller
             'learning_style' => 'nullable|string|in:visual,auditory,kinesthetic,mixed',
             'bio' => 'nullable|string|max:500',
             'avatar' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp|max:7000',
+            'subjects' => 'nullable|array',
+            'subjects.*' => 'string|in:mathematics,science,programming,english,history,geography',
         ], [
             'first_name.regex' => 'First name can only contain letters, spaces, hyphens, apostrophes, and periods.',
             'last_name.regex' => 'Last name can only contain letters, spaces, hyphens, apostrophes, and periods.',
@@ -102,6 +108,7 @@ class ProfileController extends Controller
             'country.regex' => 'Country name can only contain letters, spaces, and hyphens.',
             'city.regex' => 'City name can only contain letters, spaces, hyphens, apostrophes, and periods.',
             'date_of_birth.before' => 'Date of birth must be in the past.',
+            'subjects.*.in' => 'Invalid subject selected.',
         ]);
 
         try {
@@ -168,6 +175,27 @@ class ProfileController extends Controller
             if (isset($validated['bio'])) {
                 $validated['bio'] = trim($validated['bio']);
             }
+
+            // Handle subject preferences
+            if (isset($validated['subjects'])) {
+                // Delete existing subject preferences
+                UserPreference::where('user_id', $user->id)
+                    ->where('preference_type', 'subject')
+                    ->delete();
+
+                // Add new subject preferences
+                foreach ($validated['subjects'] as $subject) {
+                    UserPreference::create([
+                        'user_id' => $user->id,
+                        'preference_type' => 'subject',
+                        'preference_value' => $subject,
+                        'weight' => 1, // Default weight
+                    ]);
+                }
+            }
+
+            // Remove subjects from validated data since we handle it separately
+            unset($validated['subjects']);
 
             // Update user
             $updateResult = $user->update($validated);

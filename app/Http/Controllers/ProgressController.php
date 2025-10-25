@@ -96,6 +96,24 @@ class ProgressController extends Controller
             $progress->addTimeSpent($request->watch_time);
         }
 
+        // Record detailed engagement for recommendation system
+        $action = $completion->fully_completed ? 'complete' : 'view';
+        \App\Models\UserEngagement::record(
+            $userId,
+            'lesson',
+            $lessonData['id'],
+            $action,
+            $request->watch_time,
+            [
+                'title' => $lessonData['title'],
+                'subject' => $lessonData['subject'],
+                'level' => $lessonData['level'],
+                'completion_percentage' => $completion->completion_percentage,
+                'fully_completed' => $completion->fully_completed,
+                'total_duration' => $request->total_duration,
+            ]
+        );
+
         Log::info('lesson_progress_recorded', [
             'user_id' => $userId,
             'lesson_id' => $lessonId,
@@ -147,6 +165,26 @@ class ProgressController extends Controller
             $progress->recordActivity();
             $progress->addTimeSpent($request->time_taken);
         }
+
+        // Record detailed engagement for recommendation system
+        $action = $attempt->passed ? 'complete' : 'attempt';
+        \App\Models\UserEngagement::record(
+            $userId,
+            'quiz',
+            $quizData['id'],
+            $action,
+            $request->time_taken,
+            [
+                'title' => $quizData['title'],
+                'subject' => $quizData['subject'],
+                'level' => $quizData['level'],
+                'score_percentage' => $attempt->score_percentage,
+                'passed' => $attempt->passed,
+                'attempt_number' => $attempt->attempt_number,
+                'total_questions' => $attempt->total_questions,
+                'correct_answers' => $attempt->correct_answers,
+            ]
+        );
 
         Log::info('quiz_attempt_recorded', [
             'user_id' => $userId,

@@ -41,6 +41,22 @@ class VideoStreamController extends Controller
             $video
         );
 
+        // Record detailed engagement for recommendation system
+        \App\Models\UserEngagement::record(
+            Auth::id(),
+            'video',
+            $video->id,
+            'view',
+            0, // duration will be tracked separately
+            [
+                'title' => $video->title,
+                'subject' => $video->subject ?? 'General',
+                'grade_level' => $video->grade_level,
+                'duration_seconds' => $video->duration_seconds,
+                'action_type' => 'stream_start'
+            ]
+        );
+
         // Get the video file path
         $filePath = null;
         if ($video->temp_file_path && !$video->isTempExpired()) {

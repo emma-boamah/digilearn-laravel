@@ -257,6 +257,10 @@ Route::middleware(['auth'])->group(function () {
         }
     })->name('online-users');
 
+    // Recommendation feeds
+    Route::get('/api/dashboard/feeds', [App\Http\Controllers\RecommendationController::class, 'getDashboardFeeds'])->name('api.dashboard.feeds');
+    Route::get('/api/analytics', [App\Http\Controllers\RecommendationController::class, 'getAnalytics'])->name('api.analytics');
+
     // Notifications API
     Route::prefix('api/notifications')->name('api.notifications.')->group(function () {
         Route::get('/', [NotificationController::class, 'index'])->name('index');

@@ -962,6 +962,67 @@
             margin-left: 0.25rem;
         }
 
+        /* Subject Preferences Styles */
+        .subject-preferences {
+            margin-top: 0.5rem;
+        }
+
+        .preference-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .preference-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border: 1px solid var(--gray-300);
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--white);
+        }
+
+        .preference-option:hover {
+            border-color: var(--primary-red);
+            background: rgba(225, 30, 45, 0.05);
+        }
+
+        .preference-option input[type="checkbox"] {
+            display: none;
+        }
+
+        .checkmark {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--gray-300);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .preference-option input[type="checkbox"]:checked + .checkmark {
+            background: var(--primary-red);
+            border-color: var(--primary-red);
+        }
+
+        .preference-option input[type="checkbox"]:checked + .checkmark::after {
+            content: '✓';
+            color: var(--white);
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .preference-option span:last-child {
+            font-size: 0.875rem;
+            color: var(--gray-700);
+        }
+
         /* Modal Base Styles */
         .modal-overlay {
             position: fixed;
