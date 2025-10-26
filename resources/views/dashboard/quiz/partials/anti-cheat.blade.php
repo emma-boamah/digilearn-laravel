@@ -234,16 +234,20 @@
   }
 
   function submitQuizWithViolation() {
+    console.log('Submitting quiz with violation...');
     const form = document.querySelector('form[data-quiz-form]');
     if (form) {
+      console.log('Found quiz form, adding violation flag');
       // Mark as failed
       const failed = document.createElement('input');
       failed.type = 'hidden';
       failed.name = 'failed_due_to_violation';
       failed.value = '1';
       form.appendChild(failed);
+      console.log('Submitting form...');
       form.submit();
     } else {
+      console.log('No quiz form found, redirecting to index');
       window.location.href = '{{ route('quiz.index') }}';
     }
   }
@@ -262,8 +266,12 @@
     reportViolation('paste', 'User attempted to paste text');
   });
 
-  // Prevent text selection
+  // Prevent text selection (only for non-quiz elements)
   document.addEventListener('selectstart', function(e) {
+    // Allow text selection on quiz options and question text
+    if (e.target.closest('.option') || e.target.closest('.question-text')) {
+      return; // Allow selection
+    }
     e.preventDefault();
     reportViolation('selection', 'User attempted to select text');
   });

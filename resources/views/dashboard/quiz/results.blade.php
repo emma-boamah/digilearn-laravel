@@ -756,32 +756,33 @@
                 
                 <div class="questions-list" id="questionsList">
                     @if(isset($questions) && is_array($questions))
-                        @foreach($questions as $index => $question)
-                        <div class="question-item">
-                            <div class="question-header" onclick="toggleQuestion({{ $index }})">
-                                <span class="question-number">Question {{ $index + 1 }}</span>
-                                <div class="question-status {{ $question['user_correct'] ? 'correct' : 'incorrect' }}">
-                                    <i class="fas fa-{{ $question['user_correct'] ? 'check-circle' : 'times-circle' }}"></i>
-                                    {{ $question['user_correct'] ? 'Correct' : 'Incorrect' }}
+                            @foreach($questions as $index => $question)
+                            <div class="question-item">
+                                <div class="question-header" onclick="toggleQuestion({{ $index }})">
+                                    <span class="question-number">Question {{ $index + 1 }}</span>
+                                    <div class="question-status {{ $question['user_correct'] ? 'correct' : 'incorrect' }}">
+                                        <i class="fas fa-{{ $question['user_correct'] ? 'check-circle' : 'times-circle' }}"></i>
+                                        {{ $question['user_correct'] ? 'Correct' : 'Incorrect' }}
+                                    </div>
+                                </div>
+                                <div class="question-content" id="question-{{ $index }}">
+                                    <div class="question-text">{{ $question['question'] }}</div>
+                                    @foreach($question['options'] as $optionIndex => $option)
+                                        <div class="answer-option
+                                            {{ $optionIndex == $question['correct_answer'] ? 'correct' : '' }}
+                                            {{ $optionIndex == $question['user_answer'] ? 'user-selected' : '' }}
+                                            {{ $optionIndex == $question['correct_answer'] && $optionIndex == $question['user_answer'] ? 'correct user-selected' : '' }}
+                                            {{ $optionIndex != $question['correct_answer'] && $optionIndex == $question['user_answer'] ? 'incorrect user-selected' : '' }}
+                                        ">
+                                            {{ $option }}
+                                        </div>
+                                    @endforeach
                                 </div>
                             </div>
-                            <div class="question-content" id="question-{{ $index }}">
-                                <div class="question-text">{{ $question['text'] }}</div>
-                                @foreach($question['options'] as $optionIndex => $option)
-                                    <div class="answer-option 
-                                        {{ $optionIndex == $question['correct_answer'] ? 'correct' : '' }}
-                                        {{ $optionIndex == $question['user_answer'] ? 'incorrect user-selected' : '' }}
-                                        {{ $optionIndex == $question['correct_answer'] && $optionIndex == $question['user_answer'] ? 'correct user-selected' : '' }}
-                                    ">
-                                        {{ $option }}
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                        @endforeach
-                    @else
-                        <p class="text-center text-gray-500">Question details not available for review.</p>
-                    @endif
+                            @endforeach
+                        @else
+                            <p class="text-center text-gray-500">Question details not available for review.</p>
+                        @endif
                 </div>
             </div>
         </div>

@@ -11,6 +11,7 @@ use App\Models\VirtualClass;
 use App\Models\Comment;
 use App\Models\Video;
 use App\Models\UserNote;
+use App\Models\Course;
 
 class DashboardController extends Controller
 {
@@ -410,113 +411,193 @@ class DashboardController extends Controller
     }
 
     /**
+     * Get lessons for a specific level (grade level)
+     */
+    private function getLessonsForLevel($level)
+    {
+        try {
+            // Convert level format from "primary-1" to "Primary 1" to match database
+            $dbLevel = $this->convertLevelFormat($level);
+
+            // Query approved videos for the specific grade level
+            $videos = Video::approved()
+                ->where('grade_level', $dbLevel)
+                ->with(['uploader', 'documents', 'quiz'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $lessons = [];
+            foreach ($videos as $index => $video) {
+                $lesson = [
+                    'id' => $video->id,
+                    'video_id' => $video->id,
+                    'title' => $video->title,
+                    'description' => $video->description,
+                    'duration' => $this->formatDuration($video->duration_seconds),
+                    'video_url' => $video->getVideoUrl(),
+                    'thumbnail' => $video->thumbnail_path ? asset('storage/' . $video->thumbnail_path) : asset('images/video-placeholder.jpg'),
+                    'instructor' => $video->uploader ? $video->uploader->name : 'Unknown',
+                    'subject' => $this->getSubjectFromLevel($level),
+                    'year' => date('Y'),
+                    'level' => $level,
+                    'level_display' => $this->getLevelDisplayName($level),
+                    'documents_count' => $video->documents->count(),
+                    'has_quiz' => $video->quiz ? true : false,
+                    'views' => $video->views ?? 0,
+                    'is_featured' => $video->is_featured,
+                ];
+
+                $lessons[] = $lesson;
+            }
+
+            Log::info('getLessonsForLevel query results', [
+                'level' => $level,
+                'videos_found' => $videos->count(),
+                'lessons_returned' => count($lessons),
+                'timestamp' => now()->toISOString()
+            ]);
+
+            return $lessons;
+        } catch (\Exception $e) {
+            Log::error('getLessonsForLevel error', [
+                'level' => $level,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // Return empty array as fallback
+            return [];
+        }
+    }
+
+    /**
+     * Convert level format from "primary-1" to "Primary 1" to match database
+     */
+    private function convertLevelFormat($level)
+    {
+        $levelMapping = [
+            'primary-1' => 'Primary 1',
+            'primary-2' => 'Primary 2',
+            'primary-3' => 'Primary 3',
+            'primary-4' => 'Primary 4',
+            'primary-5' => 'Primary 5',
+            'primary-6' => 'Primary 6',
+            'jhs-1' => 'JHS 1',
+            'jhs-2' => 'JHS 2',
+            'jhs-3' => 'JHS 3',
+            'shs-1' => 'SHS 1',
+            'shs-2' => 'SHS 2',
+            'shs-3' => 'SHS 3',
+        ];
+
+        return $levelMapping[$level] ?? ucwords(str_replace('-', ' ', $level));
+    }
+
+    /**
+     * Get subject name from level (for display purposes)
+     */
+    private function getSubjectFromLevel($level)
+    {
+        $subjectMapping = [
+            'primary-1' => 'Primary Education',
+            'primary-2' => 'Primary Education',
+            'primary-3' => 'Primary Education',
+            'primary-4' => 'Primary Education',
+            'primary-5' => 'Primary Education',
+            'primary-6' => 'Primary Education',
+            'jhs-1' => 'Junior High School',
+            'jhs-2' => 'Junior High School',
+            'jhs-3' => 'Junior High School',
+            'shs-1' => 'Senior High School',
+            'shs-2' => 'Senior High School',
+            'shs-3' => 'Senior High School',
+        ];
+
+        return $subjectMapping[$level] ?? 'General Education';
+    }
+
+    /**
      * Get all university courses in a format similar to lessons
      */
     private function getUniversityCourses()
     {
-        $courses = [
-            [
-                'id' => 'cs-101',
-                'title' => 'Introduction to Programming',
-                'subject' => 'Computer Science',
-                'duration' => '45 min',
-                'thumbnail' => 'images/courses/intro-programming.jpg',
-                'video_url' => 'videos/courses/cs101/intro.mp4',
-                'instructor' => 'Dr. Kwame Asante',
-                'year' => '2024',
-                'level_display' => 'CS 101',
-                'description' => 'Fundamentals of programming using Python',
-                'credit_hours' => 3,
-                'semester' => 1,
-                'lessons_count' => 24
-            ],
-            [
-                'id' => 'cs-102',
-                'title' => 'Data Structures',
-                'subject' => 'Computer Science',
-                'duration' => '50 min',
-                'thumbnail' => 'images/courses/data-structures.jpg',
-                'video_url' => 'videos/courses/cs102/intro.mp4',
-                'instructor' => 'Prof. Ama Osei',
-                'year' => '2024',
-                'level_display' => 'CS 102',
-                'description' => 'Arrays, linked lists, stacks, queues, trees, and graphs',
-                'credit_hours' => 4,
-                'semester' => 2,
-                'lessons_count' => 28
-            ],
-            [
-                'id' => 'cs-201',
-                'title' => 'Algorithms',
-                'subject' => 'Computer Science',
-                'duration' => '55 min',
-                'thumbnail' => 'images/courses/algorithms.jpg',
-                'video_url' => 'videos/courses/cs201/intro.mp4',
-                'instructor' => 'Dr. Kofi Mensah',
-                'year' => '2024',
-                'level_display' => 'CS 201',
-                'description' => 'Algorithm design and analysis techniques',
-                'credit_hours' => 4,
-                'semester' => 1,
-                'lessons_count' => 32
-            ],
-            [
-                'id' => 'cs-202',
-                'title' => 'Database Systems',
-                'subject' => 'Computer Science',
-                'duration' => '48 min',
-                'thumbnail' => 'images/courses/database-systems.jpg',
-                'video_url' => 'videos/courses/cs202/intro.mp4',
-                'instructor' => 'Dr. Akosua Frimpong',
-                'year' => '2024',
-                'level_display' => 'CS 202',
-                'description' => 'Database design, SQL, and database management',
-                'credit_hours' => 3,
-                'semester' => 2,
-                'lessons_count' => 26
-            ],
-            [
-                'id' => 'ba-101',
-                'title' => 'Principles of Management',
-                'subject' => 'Business Administration',
-                'duration' => '40 min',
-                'thumbnail' => 'images/courses/management.jpg',
-                'video_url' => 'videos/courses/ba101/intro.mp4',
-                'instructor' => 'Prof. Yaw Boateng',
-                'year' => '2024',
-                'level_display' => 'BA 101',
-                'description' => 'Fundamentals of business management and organization',
-                'credit_hours' => 3,
-                'semester' => 1,
-                'lessons_count' => 20
-            ],
-            [
-                'id' => 'ba-102',
-                'title' => 'Financial Accounting',
-                'subject' => 'Business Administration',
-                'duration' => '45 min',
-                'thumbnail' => 'images/courses/accounting.jpg',
-                'video_url' => 'videos/courses/ba102/intro.mp4',
-                'instructor' => 'Dr. Efua Adjei',
-                'year' => '2024',
-                'level_display' => 'BA 102',
-                'description' => 'Basic accounting principles and financial statements',
-                'credit_hours' => 4,
-                'semester' => 2,
-                'lessons_count' => 24
-            ],
-        ];
+        try {
+            // Query published courses with their relationships
+            $courses = Course::published()
+                ->with(['creator', 'videos', 'documents', 'quizzes'])
+                ->orderBy('created_at', 'desc')
+                ->get();
 
-        // Attach first_lesson_id for quick-start navigation
-        foreach ($courses as &$course) {
-            $lessons = $this->getLessonsForCourse($course['id']);
-            if (!empty($lessons)) {
-                $course['first_lesson_id'] = $lessons[0]['id'];
+            $formattedCourses = [];
+            foreach ($courses as $course) {
+                $stats = $course->getStats();
+
+                $formattedCourse = [
+                    'id' => $course->id,
+                    'title' => $course->title,
+                    'subject' => $course->subject,
+                    'duration' => $this->calculateCourseDuration($course),
+                    'thumbnail' => $course->getThumbnailUrl(),
+                    'video_url' => $this->getCourseIntroVideoUrl($course),
+                    'instructor' => $course->creator ? $course->creator->name : 'Unknown',
+                    'year' => $course->created_at->format('Y'),
+                    'level_display' => $course->subject . ' ' . $course->id,
+                    'description' => $course->description,
+                    'credit_hours' => $stats['total_content'], // Using total content as credit hours approximation
+                    'semester' => 1, // Default to semester 1
+                    'lessons_count' => $stats['videos_count'],
+                    'documents_count' => $stats['documents_count'],
+                    'quizzes_count' => $stats['quizzes_count'],
+                    'total_content' => $stats['total_content'],
+                    'first_lesson_id' => $this->getFirstLessonId($course),
+                ];
+
+                $formattedCourses[] = $formattedCourse;
             }
-        }
-        unset($course);
 
-        return $courses;
+            Log::info('getUniversityCourses query results', [
+                'courses_found' => $courses->count(),
+                'courses_returned' => count($formattedCourses),
+                'timestamp' => now()->toISOString()
+            ]);
+
+            return $formattedCourses;
+        } catch (\Exception $e) {
+            Log::error('getUniversityCourses error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // Return empty array as fallback
+            return [];
+        }
+    }
+
+    /**
+     * Calculate total duration for a course based on its videos
+     */
+    private function calculateCourseDuration($course)
+    {
+        $totalSeconds = $course->videos->sum('duration_seconds');
+        return $this->formatDuration($totalSeconds);
+    }
+
+    /**
+     * Get intro video URL for a course
+     */
+    private function getCourseIntroVideoUrl($course)
+    {
+        $firstVideo = $course->videos->first();
+        return $firstVideo ? $firstVideo->getVideoUrl() : null;
+    }
+
+    /**
+     * Get first lesson ID for a course
+     */
+    private function getFirstLessonId($course)
+    {
+        $firstVideo = $course->videos->first();
+        return $firstVideo ? $firstVideo->id : null;
     }
 
     /**
@@ -655,6 +736,14 @@ class DashboardController extends Controller
             return view('dashboard.lesson-view', compact('course', 'selectedLevelGroup', 'stats'));
         }
 
+        // Debug: Log lesson loading attempt
+        Log::info('Lesson View Debug - Starting', [
+            'lesson_id' => $lessonId,
+            'selected_level_group' => $selectedLevelGroup,
+            'user_id' => Auth::id(),
+            'request_params' => $request->all()
+        ]);
+
         // University: search across all course lessons
         if ($selectedLevelGroup === 'university') {
             $allLessons = [];
@@ -706,16 +795,36 @@ class DashboardController extends Controller
         }
 
         // Get all lessons from the level group (non-university)
+        Log::info('Lesson View Debug - Non-University Path', [
+            'lesson_id' => $lessonId,
+            'selected_level_group' => $selectedLevelGroup
+        ]);
+
         $allLessons = $this->getLessonsForLevelGroup($selectedLevelGroup);
+        Log::info('Lesson View Debug - Level Group Lessons', [
+            'level_group' => $selectedLevelGroup,
+            'total_lessons' => count($allLessons),
+            'lesson_ids' => array_column($allLessons, 'id')
+        ]);
+
         $lesson = null;
         foreach ($allLessons as $l) {
             if ($l['id'] == $lessonId) {
                 $lesson = $l;
+                Log::info('Lesson View Debug - Lesson Found in Level Group', [
+                    'lesson_id' => $lessonId,
+                    'lesson_data' => $l
+                ]);
                 break;
             }
         }
 
         if (!$lesson) {
+            Log::error('Lesson View Debug - Lesson Not Found in Level Group', [
+                'lesson_id' => $lessonId,
+                'level_group' => $selectedLevelGroup,
+                'total_lessons_searched' => count($allLessons)
+            ]);
             return redirect()->route('dashboard.digilearn')
                 ->withErrors(['lesson' => 'Lesson not found.']);
         }
@@ -1469,86 +1578,78 @@ class DashboardController extends Controller
      */
     private function getCoursesForProgram($programId)
     {
-        $coursesData = [
-            'computer-science' => [
-                [
-                    'id' => 'cs-101',
-                    'name' => 'Introduction to Programming',
-                    'code' => 'CS 101',
-                    'description' => 'Fundamentals of programming using Python',
-                    'credit_hours' => 3,
-                    'semester' => 1,
-                    'year' => 1,
-                    'lessons_count' => 24,
-                    'thumbnail' => 'images/courses/intro-programming.jpg',
-                    'instructor' => 'Dr. Kwame Asante'
-                ],
-                [
-                    'id' => 'cs-102',
-                    'name' => 'Data Structures',
-                    'code' => 'CS 102',
-                    'description' => 'Arrays, linked lists, stacks, queues, trees, and graphs',
-                    'credit_hours' => 4,
-                    'semester' => 2,
-                    'year' => 1,
-                    'lessons_count' => 28,
-                    'thumbnail' => 'images/courses/data-structures.jpg',
-                    'instructor' => 'Prof. Ama Osei'
-                ],
-                [
-                    'id' => 'cs-201',
-                    'name' => 'Algorithms',
-                    'code' => 'CS 201',
-                    'description' => 'Algorithm design and analysis techniques',
-                    'credit_hours' => 4,
-                    'semester' => 1,
-                    'year' => 2,
-                    'lessons_count' => 32,
-                    'thumbnail' => 'images/courses/algorithms.jpg',
-                    'instructor' => 'Dr. Kofi Mensah'
-                ],
-                [
-                    'id' => 'cs-202',
-                    'name' => 'Database Systems',
-                    'code' => 'CS 202',
-                    'description' => 'Database design, SQL, and database management',
-                    'credit_hours' => 3,
-                    'semester' => 2,
-                    'year' => 2,
-                    'lessons_count' => 26,
-                    'thumbnail' => 'images/courses/database-systems.jpg',
-                    'instructor' => 'Dr. Akosua Frimpong'
-                ]
-            ],
-            'business-administration' => [
-                [
-                    'id' => 'ba-101',
-                    'name' => 'Principles of Management',
-                    'code' => 'BA 101',
-                    'description' => 'Fundamentals of business management and organization',
-                    'credit_hours' => 3,
-                    'semester' => 1,
-                    'year' => 1,
-                    'lessons_count' => 20,
-                    'thumbnail' => 'images/courses/management.jpg',
-                    'instructor' => 'Prof. Yaw Boateng'
-                ],
-                [
-                    'id' => 'ba-102',
-                    'name' => 'Financial Accounting',
-                    'code' => 'BA 102',
-                    'description' => 'Basic accounting principles and financial statements',
-                    'credit_hours' => 4,
-                    'semester' => 2,
-                    'year' => 1,
-                    'lessons_count' => 24,
-                    'thumbnail' => 'images/courses/accounting.jpg',
-                    'instructor' => 'Dr. Efua Adjei'
-                ]
-            ]
-        ];
+        try {
+            // Map program IDs to subject filters
+            $subjectMapping = [
+                'computer-science' => 'Computer Science',
+                'computer-science-1' => 'Computer Science',
+                'computer-science-2' => 'Computer Science',
+                'computer-science-3' => 'Computer Science',
+                'computer-science-4' => 'Computer Science',
+                'business-admin' => 'Business Administration',
+                'business-admin-1' => 'Business Administration',
+                'business-admin-2' => 'Business Administration',
+                'medicine-1' => 'Medicine',
+            ];
 
-        return $coursesData[$programId] ?? [];
+            $subject = $subjectMapping[$programId] ?? null;
+
+            if (!$subject) {
+                Log::warning('getCoursesForProgram: Unknown program ID', [
+                    'program_id' => $programId,
+                    'timestamp' => now()->toISOString()
+                ]);
+                return [];
+            }
+
+            // Query courses by subject and published status
+            $courses = Course::published()
+                ->where('subject', $subject)
+                ->with(['creator', 'videos', 'documents', 'quizzes'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $formattedCourses = [];
+            foreach ($courses as $course) {
+                $stats = $course->getStats();
+
+                $formattedCourses[] = [
+                    'id' => $course->id,
+                    'name' => $course->title,
+                    'code' => $course->subject . ' ' . $course->id,
+                    'description' => $course->description,
+                    'credit_hours' => $stats['total_content'],
+                    'semester' => 1, // Default to semester 1
+                    'year' => 1, // Default to year 1
+                    'lessons_count' => $stats['videos_count'],
+                    'thumbnail' => $course->getThumbnailUrl(),
+                    'instructor' => $course->creator ? $course->creator->name : 'Unknown',
+                    'videos_count' => $stats['videos_count'],
+                    'documents_count' => $stats['documents_count'],
+                    'quizzes_count' => $stats['quizzes_count'],
+                    'total_content' => $stats['total_content'],
+                ];
+            }
+
+            Log::info('getCoursesForProgram query results', [
+                'program_id' => $programId,
+                'subject' => $subject,
+                'courses_found' => $courses->count(),
+                'courses_returned' => count($formattedCourses),
+                'timestamp' => now()->toISOString()
+            ]);
+
+            return $formattedCourses;
+        } catch (\Exception $e) {
+            Log::error('getCoursesForProgram error', [
+                'program_id' => $programId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // Return empty array as fallback
+            return [];
+        }
     }
 
     /**
@@ -1571,61 +1672,62 @@ class DashboardController extends Controller
      */
     private function getLessonsForCourse($courseId)
     {
-        $lessonsData = [
-            'cs-101' => [
-                [
-                    'id' => 'cs101-001',
-                    'video_id' => 101,
-                    'title' => 'Introduction to Python Programming',
-                    'description' => 'Getting started with Python syntax and basic concepts',
-                    'duration' => '45 min',
-                    'video_url' => 'videos/courses/cs101/lesson1.mp4',
-                    'thumbnail' => 'images/lessons/python-intro.jpg',
-                    'instructor' => 'Dr. Kwame Asante',
-                    'week' => 1,
-                    'order' => 1
-                ],
-                [
-                    'id' => 'cs101-002',
-                    'video_id' => 102,
-                    'title' => 'Variables and Data Types',
-                    'description' => 'Understanding Python variables, strings, numbers, and booleans',
-                    'duration' => '38 min',
-                    'video_url' => 'videos/courses/cs101/lesson2.mp4',
-                    'thumbnail' => 'images/lessons/variables.jpg',
-                    'instructor' => 'Dr. Kwame Asante',
-                    'week' => 1,
-                    'order' => 2
-                ],
-                [
-                    'id' => 'cs101-003',
-                    'video_id' => 103,
-                    'title' => 'Control Structures - If Statements',
-                    'description' => 'Conditional logic and decision making in Python',
-                    'duration' => '42 min',
-                    'video_url' => 'videos/courses/cs101/lesson3.mp4',
-                    'thumbnail' => 'images/lessons/control-structures.jpg',
-                    'instructor' => 'Dr. Kwame Asante',
-                    'week' => 2,
-                    'order' => 3
-                ]
-            ],
-            'cs-102' => [
-                [
-                    'id' => 'cs102-001',
-                    'title' => 'Introduction to Data Structures',
-                    'description' => 'Overview of data structures and their importance',
-                    'duration' => '40 min',
-                    'video_url' => 'videos/courses/cs102/lesson1.mp4',
-                    'thumbnail' => 'images/lessons/data-structures-intro.jpg',
-                    'instructor' => 'Prof. Ama Osei',
-                    'week' => 1,
-                    'order' => 1
-                ]
-            ]
-        ];
+        try {
+            // Find the course first
+            $course = Course::find($courseId);
+            if (!$course) {
+                Log::warning('getLessonsForCourse: Course not found', [
+                    'course_id' => $courseId,
+                    'timestamp' => now()->toISOString()
+                ]);
+                return [];
+            }
 
-        return $lessonsData[$courseId] ?? [];
+            // Get videos for this course with their relationships
+            $videos = $course->videos()
+                ->with(['documents', 'quiz', 'uploader'])
+                ->orderBy('course_videos.order')
+                ->get();
+
+            $lessons = [];
+            foreach ($videos as $index => $video) {
+                $lesson = [
+                    'id' => $video->id,
+                    'video_id' => $video->id,
+                    'title' => $video->title,
+                    'description' => $video->description,
+                    'duration' => $this->formatDuration($video->duration_seconds),
+                    'video_url' => $video->getVideoUrl(),
+                    'thumbnail' => $video->thumbnail_path ? asset('storage/' . $video->thumbnail_path) : asset('images/video-placeholder.jpg'),
+                    'instructor' => $video->uploader ? $video->uploader->name : 'Unknown',
+                    'week' => ceil(($index + 1) / 3), // Assuming 3 lessons per week
+                    'order' => $index + 1,
+                    'documents_count' => $video->documents->count(),
+                    'has_quiz' => $video->quiz ? true : false,
+                ];
+
+                $lessons[] = $lesson;
+            }
+
+            Log::info('getLessonsForCourse query results', [
+                'course_id' => $courseId,
+                'course_title' => $course->title,
+                'videos_found' => $videos->count(),
+                'lessons_returned' => count($lessons),
+                'timestamp' => now()->toISOString()
+            ]);
+
+            return $lessons;
+        } catch (\Exception $e) {
+            Log::error('getLessonsForCourse error', [
+                'course_id' => $courseId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // Return empty array as fallback
+            return [];
+        }
     }
 
     /**
@@ -1826,77 +1928,25 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get lessons for a specific level
+     * Format duration from seconds to human readable format
      */
-    private function getLessonsForLevel($level)
+    private function formatDuration($seconds)
     {
-        // Sample lessons data - in production, this would come from database
-        $allLessons = [
-            'primary-1' => [
-                ['id' => 1, 'video_id' => 1, 'title' => 'Basic Mathematics', 'subject' => 'Mathematics', 'duration' => '15 min', 'thumbnail' => 'images/lessons/math-basic.jpg', 'video_url' => 'videos/lessons/math-basic.mp4', 'instructor' => 'Mrs. Asante', 'year' => '2024'],
-                ['id' => 2, 'video_id' => 2, 'title' => 'English Alphabet', 'subject' => 'English', 'duration' => '20 min', 'thumbnail' => 'images/lessons/english-alphabet.jpg', 'video_url' => 'videos/lessons/english-alphabet.mp4', 'instructor' => 'Mr. Osei', 'year' => '2024'],
-                ['id' => 3, 'video_id' => 3, 'title' => 'Colors and Shapes', 'subject' => 'Art', 'duration' => '12 min', 'thumbnail' => 'images/lessons/colors-shapes.jpg', 'video_url' => 'videos/lessons/colors-shapes.mp4', 'instructor' => 'Ms. Adjei', 'year' => '2024'],
-                ['id' => 4, 'video_id' => 4, 'title' => 'Our Body Parts', 'subject' => 'Science', 'duration' => '18 min', 'thumbnail' => 'images/lessons/body-parts.jpg', 'video_url' => 'videos/lessons/body-parts.mp4', 'instructor' => 'Dr. Mensah', 'year' => '2024'],
-            ],
-            'primary-2' => [
-                ['id' => 5, 'video_id' => 5, 'title' => 'Addition and Subtraction', 'subject' => 'Mathematics', 'duration' => '18 min', 'thumbnail' => 'images/lessons/math-addition.jpg', 'video_url' => 'videos/lessons/math-addition.mp4', 'instructor' => 'Mrs. Asante', 'year' => '2024'],
-                ['id' => 6, 'video_id' => 6, 'title' => 'Reading Comprehension', 'subject' => 'English', 'duration' => '25 min', 'thumbnail' => 'images/lessons/reading-comp.jpg', 'video_url' => 'videos/lessons/reading-comp.mp4', 'instructor' => 'Mr. Osei', 'year' => '2024'],
-                ['id' => 7, 'video_id' => 7, 'title' => 'Our Environment', 'subject' => 'Science', 'duration' => '22 min', 'thumbnail' => 'images/lessons/environment.jpg', 'video_url' => 'videos/lessons/environment.mp4', 'instructor' => 'Dr. Mensah', 'year' => '2024'],
-                ['id' => 8, 'video_id' => 8, 'title' => 'Ghanaian Culture', 'subject' => 'Social Studies', 'duration' => '20 min', 'thumbnail' => 'images/lessons/culture.jpg', 'video_url' => 'videos/lessons/culture.mp4', 'instructor' => 'Prof. Boateng', 'year' => '2024'],
-            ],
-            'primary-3' => [
-                ['id' => 9, 'video_id' => 9, 'title' => 'Multiplication Tables', 'subject' => 'Mathematics', 'duration' => '25 min', 'thumbnail' => 'images/lessons/multiplication.jpg', 'video_url' => 'videos/lessons/multiplication.mp4', 'instructor' => 'Mrs. Asante', 'year' => '2024'],
-                ['id' => 10, 'video_id' => 10, 'title' => 'Creative Writing', 'subject' => 'English', 'duration' => '30 min', 'thumbnail' => 'images/lessons/creative-writing.jpg', 'video_url' => 'videos/lessons/creative-writing.mp4', 'instructor' => 'Mr. Osei', 'year' => '2024'],
-                ['id' => 11, 'video_id' => 11, 'title' => 'Plants and Animals', 'subject' => 'Science', 'duration' => '28 min', 'thumbnail' => 'images/lessons/plants-animals.jpg', 'video_url' => 'videos/lessons/plants-animals.mp4', 'instructor' => 'Dr. Mensah', 'year' => '2024'],
-                ['id' => 12, 'video_id' => 12, 'title' => 'Map Reading', 'subject' => 'Social Studies', 'duration' => '22 min', 'thumbnail' => 'images/lessons/map-reading.jpg', 'video_url' => 'videos/lessons/map-reading.mp4', 'instructor' => 'Prof. Boateng', 'year' => '2024'],
-            ],
-            'primary-4' => [
-                ['id' => 25, 'video_id' => 25, 'title' => 'Fractions and Decimals', 'subject' => 'Mathematics', 'duration' => '28 min', 'thumbnail' => 'images/lessons/fractions.jpg', 'video_url' => 'videos/lessons/fractions.mp4', 'instructor' => 'Mrs. Asante', 'year' => '2024'],
-                ['id' => 26, 'video_id' => 26, 'title' => 'Story Writing', 'subject' => 'English', 'duration' => '32 min', 'thumbnail' => 'images/lessons/story-writing.jpg', 'video_url' => 'videos/lessons/story-writing.mp4', 'instructor' => 'Mr. Osei', 'year' => '2024'],
-            ],
-            'primary-5' => [
-                ['id' => 27, 'video_id' => 27, 'title' => 'Advanced Mathematics', 'subject' => 'Mathematics', 'duration' => '35 min', 'thumbnail' => 'images/lessons/advanced-math-p5.jpg', 'video_url' => 'videos/lessons/advanced-math-p5.mp4', 'instructor' => 'Mrs. Asante', 'year' => '2024'],
-                ['id' => 28, 'video_id' => 28, 'title' => 'Comprehension Skills', 'subject' => 'English', 'duration' => '30 min', 'thumbnail' => 'images/lessons/comprehension.jpg', 'video_url' => 'videos/lessons/comprehension.mp4', 'instructor' => 'Mr. Osei', 'year' => '2024'],
-            ],
-            'primary-6' => [
-                ['id' => 29, 'video_id' => 29, 'title' => 'BECE Preparation Math', 'subject' => 'Mathematics', 'duration' => '40 min', 'thumbnail' => 'images/lessons/bece-math.jpg', 'video_url' => 'videos/lessons/bece-math.mp4', 'instructor' => 'Mrs. Asante', 'year' => '2024'],
-                ['id' => 30, 'video_id' => 30, 'title' => 'BECE English Prep', 'subject' => 'English', 'duration' => '38 min', 'thumbnail' => 'images/lessons/bece-english.jpg', 'video_url' => 'videos/lessons/bece-english.mp4', 'instructor' => 'Mr. Osei', 'year' => '2024'],
-            ],
-            'jhs-1' => [
-                ['id' => 13, 'video_id' => 13, 'title' => 'Algebra Basics', 'subject' => 'Mathematics', 'duration' => '30 min', 'thumbnail' => 'images/lessons/algebra-basics.jpg', 'video_url' => 'videos/lessons/algebra-basics.mp4', 'instructor' => 'Mr. Kwame', 'year' => '2024'],
-                ['id' => 14, 'video_id' => 14, 'title' => 'Grammar Rules', 'subject' => 'English', 'duration' => '28 min', 'thumbnail' => 'images/lessons/grammar.jpg', 'video_url' => 'videos/lessons/grammar.mp4', 'instructor' => 'Mrs. Akosua', 'year' => '2024'],
-                ['id' => 15, 'video_id' => 15, 'title' => 'Introduction to Chemistry', 'subject' => 'Science', 'duration' => '35 min', 'thumbnail' => 'images/lessons/chemistry-intro.jpg', 'video_url' => 'videos/lessons/chemistry-intro.mp4', 'instructor' => 'Dr. Appiah', 'year' => '2024'],
-                ['id' => 16, 'video_id' => 16, 'title' => 'Ghana History', 'subject' => 'Social Studies', 'duration' => '32 min', 'thumbnail' => 'images/lessons/ghana-history.jpg', 'video_url' => 'videos/lessons/ghana-history.mp4', 'instructor' => 'Prof. Nkrumah', 'year' => '2024'],
-            ],
-            'jhs-2' => [
-                ['id' => 17, 'video_id' => 17, 'title' => 'Geometry Fundamentals', 'subject' => 'Mathematics', 'duration' => '35 min', 'thumbnail' => 'images/lessons/geometry.jpg', 'video_url' => 'videos/lessons/geometry.mp4', 'instructor' => 'Mr. Kwame', 'year' => '2024'],
-                ['id' => 18, 'video_id' => 18, 'title' => 'Literature Analysis', 'subject' => 'English', 'duration' => '40 min', 'thumbnail' => 'images/lessons/literature.jpg', 'video_url' => 'videos/lessons/literature.mp4', 'instructor' => 'Mrs. Akosua', 'year' => '2024'],
-                ['id' => 19, 'video_id' => 19, 'title' => 'Physics Principles', 'subject' => 'Science', 'duration' => '38 min', 'thumbnail' => 'images/lessons/physics.jpg', 'video_url' => 'videos/lessons/physics.mp4', 'instructor' => 'Dr. Appiah', 'year' => '2024'],
-                ['id' => 20, 'video_id' => 20, 'title' => 'Economics Basics', 'subject' => 'Social Studies', 'duration' => '30 min', 'thumbnail' => 'images/lessons/economics.jpg', 'video_url' => 'videos/lessons/economics.mp4', 'instructor' => 'Prof. Nkrumah', 'year' => '2024'],
-            ],
-            'jhs-3' => [
-                ['id' => 31, 'video_id' => 31, 'title' => 'BECE Mathematics', 'subject' => 'Mathematics', 'duration' => '45 min', 'thumbnail' => 'images/lessons/bece-final-math.jpg', 'video_url' => 'videos/lessons/bece-final-math.mp4', 'instructor' => 'Mr. Kwame', 'year' => '2024'],
-                ['id' => 32, 'video_id' => 32, 'title' => 'BECE Science', 'subject' => 'Science', 'duration' => '42 min', 'thumbnail' => 'images/lessons/bece-science.jpg', 'video_url' => 'videos/lessons/bece-science.mp4', 'instructor' => 'Dr. Appiah', 'year' => '2024'],
-            ],
-            'shs-1' => [
-                ['id' => 21, 'video_id' => 21, 'title' => 'Advanced Algebra', 'subject' => 'Mathematics', 'duration' => '45 min', 'thumbnail' => 'images/lessons/advanced-algebra.jpg', 'video_url' => 'videos/lessons/advanced-algebra.mp4', 'instructor' => 'Dr. Frimpong', 'year' => '2024'],
-                ['id' => 22, 'video_id' => 22, 'title' => 'Essay Writing', 'subject' => 'English', 'duration' => '50 min', 'thumbnail' => 'images/lessons/essay-writing.jpg', 'video_url' => 'videos/lessons/essay-writing.mp4', 'instructor' => 'Prof. Agyeman', 'year' => '2024'],
-                ['id' => 23, 'video_id' => 23, 'title' => 'Organic Chemistry', 'subject' => 'Chemistry', 'duration' => '55 min', 'thumbnail' => 'images/lessons/organic-chemistry.jpg', 'video_url' => 'videos/lessons/organic-chemistry.mp4', 'instructor' => 'Dr. Owusu', 'year' => '2024'],
-                ['id' => 24, 'video_id' => 24, 'title' => 'World History', 'subject' => 'History', 'duration' => '40 min', 'thumbnail' => 'images/lessons/world-history.jpg', 'video_url' => 'videos/lessons/world-history.mp4', 'instructor' => 'Prof. Danso', 'year' => '2024'],
-            ],
-            'shs-2' => [
-                ['id' => 33, 'video_id' => 33, 'title' => 'Calculus Introduction', 'subject' => 'Mathematics', 'duration' => '50 min', 'thumbnail' => 'images/lessons/calculus.jpg', 'video_url' => 'videos/lessons/calculus.mp4', 'instructor' => 'Dr. Frimpong', 'year' => '2024'],
-                ['id' => 34, 'video_id' => 34, 'title' => 'Advanced Literature', 'subject' => 'English', 'duration' => '48 min', 'thumbnail' => 'images/lessons/advanced-lit.jpg', 'video_url' => 'videos/lessons/advanced-lit.mp4', 'instructor' => 'Prof. Agyeman', 'year' => '2024'],
-            ],
-            'shs-3' => [
-                ['id' => 35, 'video_id' => 35, 'title' => 'WASSCE Mathematics', 'subject' => 'Mathematics', 'duration' => '60 min', 'thumbnail' => 'images/lessons/wassce-math.jpg', 'video_url' => 'videos/lessons/wassce-math.mp4', 'instructor' => 'Dr. Frimpong', 'year' => '2024'],
-                ['id' => 36, 'video_id' => 36, 'title' => 'WASSCE Preparation', 'subject' => 'General', 'duration' => '55 min', 'thumbnail' => 'images/lessons/wassce-prep.jpg', 'video_url' => 'videos/lessons/wassce-prep.mp4', 'instructor' => 'Prof. Agyeman', 'year' => '2024'],
-            ],
-        ];
+        if (!$seconds) return 'Unknown';
 
-        // Return the lessons for the specific level, or empty array if level not found
-        return $allLessons[$level] ?? [];
+        $hours = floor($seconds / 3600);
+        $minutes = floor(($seconds % 3600) / 60);
+        $remainingSeconds = $seconds % 60;
+
+        if ($hours > 0) {
+            return sprintf('%dh %dm', $hours, $minutes);
+        } elseif ($minutes > 0) {
+            return sprintf('%d min', $minutes);
+        } else {
+            return sprintf('%d sec', $remainingSeconds);
+        }
     }
+
 
     /**
      * Get lesson by ID

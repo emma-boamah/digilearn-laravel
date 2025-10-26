@@ -92,21 +92,42 @@ class VideoSourceService
         $videoId = $video->external_video_id;
         $embedUrl = $video->external_video_url;
 
+        Log::info('VideoSourceService::getEmbedHtml called', [
+            'video_id' => $video->id ?? 'unknown',
+            'source' => $source,
+            'video_id_field' => $videoId,
+            'embed_url' => $embedUrl,
+            'mux_playback_id' => $video->mux_playback_id ?? 'none',
+            'status' => $video->status ?? 'unknown'
+        ]);
+
         switch ($source) {
             case self::SOURCE_YOUTUBE:
                 if ($videoId) {
+                    Log::info('VideoSourceService::getEmbedHtml - YouTube video', [
+                        'video_id' => $video->id,
+                        'youtube_video_id' => $videoId
+                    ]);
                     return self::getYouTubeEmbedHtml($videoId);
                 }
                 break;
 
             case self::SOURCE_VIMEO:
                 if ($videoId) {
+                    Log::info('VideoSourceService::getEmbedHtml - Vimeo video', [
+                        'video_id' => $video->id,
+                        'vimeo_video_id' => $videoId
+                    ]);
                     return self::getVimeoEmbedHtml($videoId);
                 }
                 break;
 
             case self::SOURCE_MUX:
                 if ($video->mux_playback_id) {
+                    Log::info('VideoSourceService::getEmbedHtml - Mux video', [
+                        'video_id' => $video->id,
+                        'mux_playback_id' => $video->mux_playback_id
+                    ]);
                     return self::getMuxEmbedHtml($video->mux_playback_id);
                 }
                 break;
@@ -114,9 +135,22 @@ class VideoSourceService
             case self::SOURCE_LOCAL:
             default:
                 // For local videos, return streaming URL or null
-                return $video->getVideoUrl();
+                $videoUrl = $video->getVideoUrl();
+                Log::info('VideoSourceService::getEmbedHtml - Local video', [
+                    'video_id' => $video->id ?? 'unknown',
+                    'video_url' => $videoUrl,
+                    'video_path' => $video->video_path ?? 'none',
+                    'temp_file_path' => $video->temp_file_path ?? 'none'
+                ]);
+                return $videoUrl;
         }
 
+        Log::warning('VideoSourceService::getEmbedHtml - No embed HTML generated', [
+            'video_id' => $video->id ?? 'unknown',
+            'source' => $source,
+            'video_id_field' => $videoId,
+            'embed_url' => $embedUrl
+        ]);
         return null;
     }
 

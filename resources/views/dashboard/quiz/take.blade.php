@@ -636,7 +636,7 @@
             </div>
             
             <div class="question-text" id="questionText">
-                Which of the following is not a living thing?
+                <!-- Question text will be populated by JavaScript -->
             </div>
             
             <div class="options-container" id="optionsContainer">
@@ -677,7 +677,8 @@
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         // Quiz data and state
         let currentQuestion = 0;
-        let timeRemaining = {{ isset($seconds) ? (int)$seconds : 180 }}; // Use dynamic duration
+        let timeLimitMinutes = {{ $quiz['time_limit_minutes'] ?? 3 }};
+        let timeRemaining = timeLimitMinutes * 60; // Use time limit from database
         let answers = {};
         let timerInterval;
 
@@ -715,36 +716,49 @@
         }
 
         function renderCurrentQuestion() {
+            if (!questions || questions.length === 0) {
+                console.log('No questions available');
+                document.getElementById('questionText').textContent = 'No questions available for this quiz.';
+                return;
+            }
+
             const question = questions[currentQuestion];
-            
+            console.log('Rendering question:', question);
+
             document.getElementById('questionLabel').textContent = `Question ${currentQuestion + 1}`;
-            document.getElementById('questionText').textContent = question.text;
-            
+            document.getElementById('questionText').textContent = question ? question.question : 'Question not available';
+
             const optionsContainer = document.getElementById('optionsContainer');
             optionsContainer.innerHTML = '';
-            
-            question.options.forEach((option, index) => {
-                const optionDiv = document.createElement('div');
-                optionDiv.className = 'option';
-                optionDiv.onclick = () => selectOption(index);
-                
-                if (answers[currentQuestion] === index) {
-                    optionDiv.classList.add('selected');
-                }
-                
-                optionDiv.innerHTML = `
-                    <div class="option-letter">${option.letter}</div>
-                    <div class="option-text">${option.text}</div>
-                `;
-                
-                optionsContainer.appendChild(optionDiv);
-            });
+
+            if (question && question.options && Array.isArray(question.options)) {
+                question.options.forEach((option, index) => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'option';
+                    optionDiv.onclick = () => selectOption(index);
+
+                    if (answers[currentQuestion] === index) {
+                        optionDiv.classList.add('selected');
+                    }
+
+                    optionDiv.innerHTML = `
+                        <div class="option-letter">${String.fromCharCode(65 + index)}</div>
+                        <div class="option-text">${option}</div>
+                    `;
+
+                    optionsContainer.appendChild(optionDiv);
+                });
+            } else {
+                console.log('No options available for this question');
+                optionsContainer.innerHTML = '<p>No answer options available.</p>';
+            }
         }
 
         function selectOption(optionIndex) {
             answers[currentQuestion] = optionIndex;
             renderCurrentQuestion();
             renderQuestionsGrid();
+            updateNavigationButtons(); // Update button states when answer is selected
         }
 
         function goToQuestion(questionIndex) {
@@ -775,13 +789,19 @@
         function updateNavigationButtons() {
             const prevBtn = document.getElementById('prevBtn');
             const nextBtn = document.getElementById('nextBtn');
-            
+            const submitBtn = document.getElementById('submitQuizBtn');
+
             prevBtn.disabled = currentQuestion === 0;
-            nextBtn.disabled = currentQuestion === questions.length - 1;
-            
+
+            // Enable submit button if all questions are answered, regardless of timer
+            const allAnswered = Object.keys(answers).length === questions.length;
+            submitBtn.disabled = !allAnswered;
+
+            // Change next button to "Finish" on last question
             if (currentQuestion === questions.length - 1) {
                 nextBtn.textContent = 'Finish';
                 nextBtn.onclick = submitQuiz;
+                nextBtn.disabled = false; // Allow finishing even if timer is running
             } else {
                 nextBtn.innerHTML = `
                     Next
@@ -790,6 +810,12 @@
                     </svg>
                 `;
                 nextBtn.onclick = nextQuestion;
+                nextBtn.disabled = false;
+            }
+
+            // Update submit button state in real-time
+            if (submitBtn) {
+                submitBtn.disabled = !allAnswered;
             }
         }
 
@@ -830,21 +856,62 @@
 
         function confirmSubmit() {
             clearInterval(timerInterval);
-            
+
             // Calculate score
-            const answeredQuestions = Object.keys(answers).length;
+            let correctAnswers = 0;
+            questions.forEach((question, index) => {
+                const userAnswer = answers[index];
+                if (userAnswer !== undefined && userAnswer === question.correct_answer) {
+                    correctAnswers++;
+                }
+            });
+
             const totalQuestions = questions.length;
-            
+            const percentage = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+
             // Show loading state
             const submitBtn = document.querySelector('.modal-btn.primary');
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
             submitBtn.disabled = true;
-            
-            // Simulate submission
-            setTimeout(() => {
-                // Navigate to results page
-                window.location.href = `/quiz/results?quiz={{ $quiz['id'] }}&score=${answeredQuestions}&total=${totalQuestions}`;
-            }, 2000);
+
+            // Submit the quiz
+            console.log('Starting quiz submission...');
+            console.log('Submitting to:', `/quiz/{{ $quiz['id'] }}/submit`);
+            console.log('Form data:', {
+                answers: answers,
+                time_spent: (timeLimitMinutes * 60) - timeRemaining
+            });
+
+            // Create a form element and submit it normally
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/quiz/{{ $quiz['id'] }}/submit`;
+            form.setAttribute('data-quiz-form', 'true'); // Add the data attribute for anti-cheat detection
+
+            // Add hidden inputs for the data
+            const answersInput = document.createElement('input');
+            answersInput.type = 'hidden';
+            answersInput.name = 'answers';
+            answersInput.value = JSON.stringify(answers);
+            form.appendChild(answersInput);
+
+            const timeSpentInput = document.createElement('input');
+            timeSpentInput.type = 'hidden';
+            timeSpentInput.name = 'time_spent';
+            timeSpentInput.value = (timeLimitMinutes * 60) - timeRemaining;
+            form.appendChild(timeSpentInput);
+
+            // Add CSRF token
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = '_token';
+            csrfInput.value = document.querySelector('meta[name="csrf-token"]').content;
+            form.appendChild(csrfInput);
+
+            // Append to body and submit
+            document.body.appendChild(form);
+            console.log('Submitting form...');
+            form.submit();
         }
 
         function autoSubmitQuiz() {
@@ -859,9 +926,9 @@
             }
         }
 
-        // Prevent accidental page refresh
+        // Prevent accidental page refresh (only when quiz is active and not submitting)
         window.addEventListener('beforeunload', function(e) {
-            if (timeRemaining > 0) {
+            if (timeRemaining > 0 && Object.keys(answers).length > 0 && !document.querySelector('.modal-overlay.active')) {
                 e.preventDefault();
                 e.returnValue = '';
             }

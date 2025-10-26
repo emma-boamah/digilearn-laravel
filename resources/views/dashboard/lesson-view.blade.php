@@ -2246,13 +2246,86 @@
                     <!-- Enhanced Video Player -->
                     <div class="video-container">
                         @if(isset($lesson) && $lesson instanceof \App\Models\Video)
-                            {!! $lesson->getEmbedHtml() !!}
-                        @else
-                            <video controls class="video-player" poster="{{ secure_asset($lesson['thumbnail'] ?? '') }}">
-                                <source src="{{ secure_asset($lesson['video_url'] ?? '') }}" type="video/mp4">
-                                Your browser does not support the video tag.
-                            </video>
-                        @endif
+                             @php
+                                 $videoUrl = $lesson->getVideoUrl();
+                                 $embedHtml = $lesson->getEmbedHtml();
+                                 \Log::info('Video Debug - Model Instance', [
+                                     'lesson_id' => $lesson->id,
+                                     'video_url' => $videoUrl,
+                                     'embed_html_length' => strlen($embedHtml),
+                                     'video_source' => $lesson->video_source,
+                                     'status' => $lesson->status,
+                                     'mux_playback_id' => $lesson->mux_playback_id ?? 'none',
+                                     'vimeo_id' => $lesson->vimeo_id ?? 'none',
+                                     'video_path' => $lesson->video_path,
+                                     'temp_file_path' => $lesson->temp_file_path,
+                                     'is_temp_expired' => $lesson->isTempExpired()
+                                 ]);
+                             @endphp
+                             @if($embedHtml)
+                                 <div id="video-debug-info" style="background: #f0f0f0; padding: 10px; margin-bottom: 10px; font-size: 12px; border: 1px solid #ccc;">
+                                     <strong>Debug Info:</strong><br>
+                                     Video ID: {{ $lesson->id }}<br>
+                                     Source: {{ $lesson->video_source }}<br>
+                                     Status: {{ $lesson->status }}<br>
+                                     Embed HTML Length: {{ strlen($embedHtml) }}<br>
+                                     Video URL: {{ $videoUrl }}
+                                 </div>
+                                 @if($lesson->video_source === 'youtube')
+                                     <div class="video-player" style="width: 100%; height: 100%; position: relative; padding-bottom: 56.25%; /* 16:9 aspect ratio */">
+                                         {!! $embedHtml !!}
+                                     </div>
+                                 @elseif($lesson->video_source === 'vimeo')
+                                     <div class="video-player" style="width: 100%; height: 100%; position: relative; padding-bottom: 56.25%; /* 16:9 aspect ratio */">
+                                         {!! $embedHtml !!}
+                                     </div>
+                                 @elseif($lesson->video_source === 'mux')
+                                     {!! $embedHtml !!}
+                                 @else
+                                     <video controls class="video-player">
+                                         <source src="{{ $videoUrl }}" type="video/mp4">
+                                         Your browser does not support the video tag.
+                                     </video>
+                                 @endif
+                             @else
+                                 <div style="background: #ffebee; padding: 20px; border: 1px solid #f44336; border-radius: 5px;">
+                                     <strong>Error:</strong> No embed HTML generated for this video.
+                                     <br>Video Source: {{ $lesson->video_source }}
+                                     <br>Status: {{ $lesson->status }}
+                                 </div>
+                             @endif
+                         @else
+                             @php
+                                 $videoSrc = secure_asset($lesson['video_url'] ?? '');
+                                 $posterSrc = secure_asset($lesson['thumbnail'] ?? '');
+                                 \Log::info('Video Debug - Array Data', [
+                                     'lesson_id' => $lesson['id'] ?? 'unknown',
+                                     'video_url_raw' => $lesson['video_url'] ?? 'none',
+                                     'thumbnail_raw' => $lesson['thumbnail'] ?? 'none',
+                                     'video_src_secure' => $videoSrc,
+                                     'poster_src_secure' => $posterSrc,
+                                     'lesson_keys' => array_keys($lesson)
+                                 ]);
+                             @endphp
+                             <!-- <div id="video-debug-info" style="background: #f0f0f0; padding: 10px; margin-bottom: 10px; font-size: 12px; border: 1px solid #ccc;">
+                                 <strong>Debug Info (Array Data):</strong><br>
+                                 Lesson ID: {{ $lesson['id'] ?? 'unknown' }}<br>
+                                 Video URL Raw: {{ $lesson['video_url'] ?? 'none' }}<br>
+                                 Video Src Secure: {{ $videoSrc }}<br>
+                                 Poster Src Secure: {{ $posterSrc }}<br>
+                                 Available Keys: {{ implode(', ', array_keys($lesson)) }}
+                             </div> -->
+                             @if(strpos($lesson['video_url'] ?? '', 'youtube.com/embed') !== false)
+                                 <div class="video-player" style="width: 100%; height: 100%; position: relative; padding-bottom: 56.25%; /* 16:9 aspect ratio */">
+                                     <iframe src="{{ $lesson['video_url'] }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
+                                 </div>
+                             @else
+                                 <video controls class="video-player" poster="{{ $posterSrc }}">
+                                     <source src="{{ $videoSrc }}" type="video/mp4">
+                                     Your browser does not support the video tag.
+                                 </video>
+                             @endif
+                         @endif
                     </div>
 
                     <!-- Enhanced Lesson Info -->

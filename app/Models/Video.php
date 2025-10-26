@@ -148,31 +148,75 @@ class Video extends Model
      */
     public function getVideoUrl()
     {
+        // Debug logging
+        \Log::info('Video::getVideoUrl called', [
+            'video_id' => $this->id,
+            'video_source' => $this->video_source,
+            'external_video_url' => $this->external_video_url,
+            'status' => $this->status,
+            'mux_playback_id' => $this->mux_playback_id ?? 'none',
+            'vimeo_id' => $this->vimeo_id ?? 'none',
+            'video_path' => $this->video_path,
+            'temp_file_path' => $this->temp_file_path,
+            'is_temp_expired' => $this->isTempExpired(),
+            'is_approved' => $this->isApproved()
+        ]);
+
         // Handle external video sources first
         if ($this->video_source !== 'local' && $this->external_video_url) {
+            \Log::info('Video::getVideoUrl - Using external video URL', [
+                'video_id' => $this->id,
+                'external_video_url' => $this->external_video_url
+            ]);
             return $this->external_video_url;
         }
 
         // Priority: Mux > Vimeo > Local files
         if ($this->isApproved()) {
             if ($this->mux_playback_id) {
-                return "https://stream.mux.com/{$this->mux_playback_id}.m3u8";
+                $muxUrl = "https://stream.mux.com/{$this->mux_playback_id}.m3u8";
+                \Log::info('Video::getVideoUrl - Using Mux URL', [
+                    'video_id' => $this->id,
+                    'mux_url' => $muxUrl
+                ]);
+                return $muxUrl;
             }
 
             if ($this->vimeo_id) {
-                return "https://player.vimeo.com/video/{$this->vimeo_id}";
+                $vimeoUrl = "https://player.vimeo.com/video/{$this->vimeo_id}";
+                \Log::info('Video::getVideoUrl - Using Vimeo URL', [
+                    'video_id' => $this->id,
+                    'vimeo_url' => $vimeoUrl
+                ]);
+                return $vimeoUrl;
             }
         }
 
         // Use streaming route for better browser compatibility
         if ($this->temp_file_path && !$this->isTempExpired()) {
-            return route('admin.content.videos.stream', $this);
+            $streamUrl = route('admin.content.videos.stream', $this);
+            \Log::info('Video::getVideoUrl - Using temp file stream URL', [
+                'video_id' => $this->id,
+                'stream_url' => $streamUrl,
+                'temp_file_path' => $this->temp_file_path
+            ]);
+            return $streamUrl;
         }
 
         if ($this->video_path) {
-            return route('admin.content.videos.stream', $this);
+            $streamUrl = route('admin.content.videos.stream', $this);
+            \Log::info('Video::getVideoUrl - Using video file stream URL', [
+                'video_id' => $this->id,
+                'stream_url' => $streamUrl,
+                'video_path' => $this->video_path
+            ]);
+            return $streamUrl;
         }
 
+        \Log::warning('Video::getVideoUrl - No valid video URL found', [
+            'video_id' => $this->id,
+            'all_attributes' => $this->toArray()
+        ]);
         return null;
     }
 

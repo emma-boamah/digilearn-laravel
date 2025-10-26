@@ -351,7 +351,7 @@
                 </div>
                 <div class="quiz-info-item">
                     <div class="quiz-info-label">Duration</div>
-                    <div class="quiz-info-value">{{ $quiz['duration'] ?? '3 min' }}</div>
+                    <div class="quiz-info-value">{{ $quiz['time_limit_minutes'] ?? '3 min' }}</div>
                 </div>
                 <div class="quiz-info-item">
                     <div class="quiz-info-label">Subject</div>
@@ -392,7 +392,7 @@
                     <svg class="instruction-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    <div class="instruction-text">You have a maximum of {{ $quiz['duration'] ?? '3 min' }} time allocated to the quiz</div>
+                    <div class="instruction-text">You have a maximum of {{ $quiz['time_limit_minutes'] ?? '3 min' }} time allocated to the quiz</div>
                 </div>
             </div>
 

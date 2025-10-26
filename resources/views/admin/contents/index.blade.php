@@ -1282,32 +1282,47 @@
             toggleVideoSourceSections('local');
 
             // Clear video step
-            document.getElementById('fileInput').value = '';
-            document.getElementById('external_video_url').value = '';
-            document.getElementById('title').value = '';
-            document.getElementById('description').value = '';
-            document.getElementById('grade_level').value = '';
-            document.getElementById('fileUploadArea').innerHTML = `
+            const fileInput = document.getElementById('fileInput');
+            const externalVideoUrl = document.getElementById('external_video_url');
+            const title = document.getElementById('title');
+            const description = document.getElementById('description');
+            const gradeLevel = document.getElementById('grade_level');
+            const fileUploadArea = document.getElementById('fileUploadArea');
+
+            if (fileInput) fileInput.value = '';
+            if (externalVideoUrl) externalVideoUrl.value = '';
+            if (title) title.value = '';
+            if (description) description.value = '';
+            if (gradeLevel) gradeLevel.value = '';
+            if (fileUploadArea) fileUploadArea.innerHTML = `
                 <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
                 <p class="text-gray-600">Click to upload or drag and drop</p>
                 <p class="text-sm text-gray-500">MP4, MOV, AVI up to 600MB</p>
             `;
 
             // Clear thumbnail step
-            document.getElementById('thumbnail_file').value = '';
-            document.getElementById('thumbnailUploadArea').innerHTML = `
+            const thumbnailFile = document.getElementById('thumbnail_file');
+            const thumbnailUploadArea = document.getElementById('thumbnailUploadArea');
+
+            if (thumbnailFile) thumbnailFile.value = '';
+            if (thumbnailUploadArea) thumbnailUploadArea.innerHTML = `
                 <i class="fas fa-image text-3xl text-gray-400 mb-2"></i>
                 <p class="text-gray-600">Click to upload thumbnail</p>
                 <p class="text-sm text-gray-500">JPG, PNG, GIF up to 2MB</p>
             `;
 
             // Clear documents step
-            document.getElementById('documentsList').innerHTML = '';
+            const documentsList = document.getElementById('documentsList');
+            if (documentsList) documentsList.innerHTML = '';
 
             // Clear quiz step
-            document.getElementById('questionsList').innerHTML = '';
-            document.getElementById('quiz_difficulty').value = 'medium';
-            document.getElementById('quiz_time_limit').value = '15';
+            const questionsList = document.getElementById('questionsList');
+            const quizDifficulty = document.getElementById('quiz_difficulty');
+            const quizTimeLimit = document.getElementById('quiz_time_limit');
+
+            if (questionsList) questionsList.innerHTML = '';
+            if (quizDifficulty) quizDifficulty.value = 'medium';
+            if (quizTimeLimit) quizTimeLimit.value = '15';
 
             // Clear video preview
             const videoPreview = document.getElementById('videoPreview');
@@ -1352,8 +1367,16 @@
         function validateCurrentStep() {
             switch (currentStep) {
                 case 1:
-                    const title = document.getElementById('title').value.trim();
-                    const gradeLevel = document.getElementById('grade_level').value;
+                    const title = document.getElementById('title');
+                    const gradeLevel = document.getElementById('grade_level');
+
+                    if (!title || !gradeLevel) {
+                        console.error('Required form elements not found');
+                        return false;
+                    }
+
+                    const titleValue = title.value.trim();
+                    const gradeLevelValue = gradeLevel.value;
 
                     if (uploadData.video_source === 'local') {
                         if (!uploadData.video) {
@@ -1361,7 +1384,13 @@
                             return false;
                         }
                     } else {
-                        const externalUrl = document.getElementById('external_video_url').value.trim();
+                        const externalVideoUrl = document.getElementById('external_video_url');
+                        if (!externalVideoUrl) {
+                            console.error('External video URL element not found');
+                            return false;
+                        }
+
+                        const externalUrl = externalVideoUrl.value.trim();
                         if (!externalUrl) {
                             alert('Please enter a video URL.');
                             return false;
@@ -1376,11 +1405,11 @@
                         uploadData.external_video_url = externalUrl;
                     }
 
-                    if (!title) {
+                    if (!titleValue) {
                         alert('Please enter a title.');
                         return false;
                     }
-                    if (!gradeLevel) {
+                    if (!gradeLevelValue) {
                         alert('Please select a grade level.');
                         return false;
                     }
@@ -1401,6 +1430,11 @@
         function initializeVideoStep() {
             const fileUploadArea = document.getElementById('fileUploadArea');
             const fileInput = document.getElementById('fileInput');
+
+            if (!fileUploadArea || !fileInput) {
+                console.error('Video upload elements not found');
+                return;
+            }
 
             fileUploadArea.addEventListener('click', () => fileInput.click());
 
@@ -1434,11 +1468,17 @@
         }
 
         function highlight() {
-            document.getElementById('fileUploadArea').classList.add('dragover');
+            const fileUploadArea = document.getElementById('fileUploadArea');
+            if (fileUploadArea) {
+                fileUploadArea.classList.add('dragover');
+            }
         }
 
         function unhighlight() {
-            document.getElementById('fileUploadArea').classList.remove('dragover');
+            const fileUploadArea = document.getElementById('fileUploadArea');
+            if (fileUploadArea) {
+                fileUploadArea.classList.remove('dragover');
+            }
         }
 
         function handleVideoDrop(e) {
@@ -1449,7 +1489,10 @@
                 const file = files[0];
                 if (file.type.startsWith('video/')) {
                     uploadData.video = file;
-                    document.getElementById('fileInput').files = files;
+                    const fileInput = document.getElementById('fileInput');
+                    if (fileInput) {
+                        fileInput.files = files;
+                    }
                     updateVideoUploadArea(file);
                 } else {
                     alert('Please upload a video file.');
@@ -1460,6 +1503,13 @@
         function updateVideoUploadArea(file) {
             const videoPreviewContainer = document.getElementById('videoPreviewContainer');
             const videoPreview = document.getElementById('videoPreview');
+            const fileUploadArea = document.getElementById('fileUploadArea');
+
+            if (!videoPreviewContainer || !videoPreview || !fileUploadArea) {
+                console.error('Video preview elements not found');
+                return;
+            }
+
             const fileURL = URL.createObjectURL(file);
 
             uploadData.video = file;
@@ -1467,7 +1517,7 @@
             // Show video preview
             videoPreview.src = fileURL;
             videoPreviewContainer.classList.remove('hidden');
-            document.getElementById('fileUploadArea').classList.add('has-video');
+            fileUploadArea.classList.add('has-video');
         }
 
         // Step 1: Thumbnail Upload
@@ -1476,6 +1526,11 @@
             const thumbnailInput = document.getElementById('thumbnail_file');
             const thumbnailPreview = document.getElementById('thumbnailPreview');
             const removeBtn = document.getElementById('removeThumbnailBtn');
+
+            if (!thumbnailUploadArea || !thumbnailInput || !thumbnailPreview || !removeBtn) {
+                console.error('Thumbnail upload elements not found');
+                return;
+            }
 
             thumbnailUploadArea.addEventListener('click', () => thumbnailInput.click());
 
@@ -1498,26 +1553,40 @@
                     uploadData.thumbnail = file;
                     const reader = new FileReader();
                     reader.onload = function(ev) {
-                        thumbnailPreview.src = ev.target.result;
-                        thumbnailPreview.style.display = 'block';
-                        removeBtn.classList.remove('hidden');
+                        if (thumbnailPreview) {
+                            thumbnailPreview.src = ev.target.result;
+                            thumbnailPreview.style.display = 'block';
+                        }
+                        if (removeBtn) {
+                            removeBtn.classList.remove('hidden');
+                        }
                     };
                     reader.readAsDataURL(file);
                     updateThumbnailUploadArea(file);
                 }
             });
 
-            removeBtn.addEventListener('click', () => {
-                uploadData.thumbnail = null;
-                thumbnailPreview.src = '';
-                thumbnailPreview.style.display = 'none';
-                removeBtn.classList.add('hidden');
-            });
+            if (removeBtn) {
+                removeBtn.addEventListener('click', () => {
+                    uploadData.thumbnail = null;
+                    if (thumbnailPreview) {
+                        thumbnailPreview.src = '';
+                        thumbnailPreview.style.display = 'none';
+                    }
+                    removeBtn.classList.add('hidden');
+                });
+            }
         }
 
         function updateThumbnailUploadArea(file) {
+            const thumbnailUploadArea = document.getElementById('thumbnailUploadArea');
+            if (!thumbnailUploadArea) {
+                console.error('Thumbnail upload area not found');
+                return;
+            }
+
             const fileSize = (file.size / 1024).toFixed(1);
-            document.getElementById('thumbnailUploadArea').innerHTML = `
+            thumbnailUploadArea.innerHTML = `
                 <i class="fas fa-image text-2xl text-green-600 mb-2"></i>
                 <p class="text-gray-900 font-medium">${file.name}</p>
                 <p class="text-sm text-gray-500">${fileSize} KB</p>
@@ -1529,6 +1598,11 @@
             const addDocumentBtn = document.getElementById('addDocumentBtn');
             const documentInput = document.getElementById('documentInput');
             const documentsList = document.getElementById('documentsList');
+
+            if (!addDocumentBtn || !documentInput || !documentsList) {
+                console.error('Document upload elements not found');
+                return;
+            }
 
             addDocumentBtn.addEventListener('click', () => documentInput.click());
 
@@ -1548,6 +1622,11 @@
 
         function addDocumentToList(file) {
             const documentsList = document.getElementById('documentsList');
+            if (!documentsList) {
+                console.error('Documents list element not found');
+                return;
+            }
+
             const documentItem = document.createElement('div');
             documentItem.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
             documentItem.innerHTML = `
@@ -1563,10 +1642,13 @@
                 </button>
             `;
 
-            documentItem.querySelector('.remove-document').addEventListener('click', () => {
-                uploadData.documents = uploadData.documents.filter(f => f !== file);
-                documentItem.remove();
-            });
+            const removeBtn = documentItem.querySelector('.remove-document');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', () => {
+                    uploadData.documents = uploadData.documents.filter(f => f !== file);
+                    documentItem.remove();
+                });
+            }
 
             documentsList.appendChild(documentItem);
         }
@@ -1575,6 +1657,11 @@
         function initializeQuizStep() {
             const addMcqBtn = document.getElementById('addMcqBtn');
             const addEssayBtn = document.getElementById('addEssayBtn');
+
+            if (!addMcqBtn || !addEssayBtn) {
+                console.error('Quiz builder elements not found');
+                return;
+            }
 
             addMcqBtn.addEventListener('click', () => addQuestion('mcq'));
             addEssayBtn.addEventListener('click', () => addQuestion('essay'));
@@ -1600,6 +1687,11 @@
 
         function addQuestion(type) {
             const questionsList = document.getElementById('questionsList');
+            if (!questionsList) {
+                console.error('Questions list element not found');
+                return;
+            }
+
             const questionId = Date.now();
             const question = {
                 id: questionId,
@@ -1675,35 +1767,55 @@
             }
 
             // Add event listeners
-            div.querySelector('.remove-question').addEventListener('click', () => {
-                uploadData.quiz.questions = uploadData.quiz.questions.filter(q => q.id !== question.id);
-                div.remove();
-            });
+            const removeBtn = div.querySelector('.remove-question');
+            const questionText = div.querySelector('.question-text');
+            const questionPoints = div.querySelector('.question-points');
 
-            div.querySelector('.question-text').addEventListener('input', (e) => {
-                question.question = e.target.value;
-            });
+            if (removeBtn) {
+                removeBtn.addEventListener('click', () => {
+                    uploadData.quiz.questions = uploadData.quiz.questions.filter(q => q.id !== question.id);
+                    div.remove();
+                });
+            }
 
-            div.querySelector('.question-points').addEventListener('input', (e) => {
-                question.points = parseInt(e.target.value) || 1;
-            });
+            if (questionText) {
+                questionText.addEventListener('input', (e) => {
+                    question.question = e.target.value;
+                });
+            }
+
+            if (questionPoints) {
+                questionPoints.addEventListener('input', (e) => {
+                    question.points = parseInt(e.target.value) || 1;
+                });
+            }
 
             if (question.type === 'mcq') {
-                div.querySelectorAll('.option-text').forEach((input, index) => {
-                    input.addEventListener('input', (e) => {
-                        question.options[index] = e.target.value;
-                    });
+                const optionTexts = div.querySelectorAll('.option-text');
+                const correctAnswers = div.querySelectorAll('.correct-answer');
+
+                optionTexts.forEach((input, index) => {
+                    if (input) {
+                        input.addEventListener('input', (e) => {
+                            question.options[index] = e.target.value;
+                        });
+                    }
                 });
 
-                div.querySelectorAll('.correct-answer').forEach((radio, index) => {
-                    radio.addEventListener('change', () => {
-                        question.correct_answer = index;
-                    });
+                correctAnswers.forEach((radio, index) => {
+                    if (radio) {
+                        radio.addEventListener('change', () => {
+                            question.correct_answer = index;
+                        });
+                    }
                 });
             } else {
-                div.querySelector('.correct-answer').addEventListener('input', (e) => {
-                    question.correct_answer = e.target.value;
-                });
+                const correctAnswer = div.querySelector('.correct-answer');
+                if (correctAnswer) {
+                    correctAnswer.addEventListener('input', (e) => {
+                        question.correct_answer = e.target.value;
+                    });
+                }
             }
 
             return div;
@@ -1726,41 +1838,53 @@
             const localSection = document.getElementById('localUploadSection');
             const externalSection = document.getElementById('externalUrlSection');
             const uploadDestinationSection = document.getElementById('uploadDestinationSection');
+            const externalVideoUrl = document.getElementById('external_video_url');
+            const fileInput = document.getElementById('fileInput');
+            const videoPreviewContainer = document.getElementById('videoPreviewContainer');
 
             if (source === 'local') {
-                localSection.classList.remove('hidden');
-                externalSection.classList.add('hidden');
-                uploadDestinationSection.classList.remove('hidden');
+                if (localSection) localSection.classList.remove('hidden');
+                if (externalSection) externalSection.classList.add('hidden');
+                if (uploadDestinationSection) uploadDestinationSection.classList.remove('hidden');
                 // Clear external URL
-                document.getElementById('external_video_url').value = '';
+                if (externalVideoUrl) externalVideoUrl.value = '';
                 uploadData.external_video_url = '';
             } else if (source === 'youtube') {
-                localSection.classList.add('hidden');
-                externalSection.classList.remove('hidden');
-                uploadDestinationSection.classList.add('hidden');
+                if (localSection) localSection.classList.add('hidden');
+                if (externalSection) externalSection.classList.remove('hidden');
+                if (uploadDestinationSection) uploadDestinationSection.classList.add('hidden');
                 // Clear local file
-                document.getElementById('fileInput').value = '';
+                if (fileInput) fileInput.value = '';
                 uploadData.video = null;
                 // Hide video preview
-                const videoPreviewContainer = document.getElementById('videoPreviewContainer');
                 if (videoPreviewContainer) videoPreviewContainer.classList.add('hidden');
             } else {
                 // Vimeo or Mux - hide both sections for now (could be extended)
-                localSection.classList.add('hidden');
-                externalSection.classList.add('hidden');
-                uploadDestinationSection.classList.add('hidden');
+                if (localSection) localSection.classList.add('hidden');
+                if (externalSection) externalSection.classList.add('hidden');
+                if (uploadDestinationSection) uploadDestinationSection.classList.add('hidden');
             }
         }
 
         // Final submission
         async function submitWizard() {
             try {
+                const title = document.getElementById('title');
+                const description = document.getElementById('description');
+                const gradeLevel = document.getElementById('grade_level');
+
+                if (!title || !description || !gradeLevel) {
+                    console.error('Required form elements not found for submission');
+                    alert('Form elements not found. Please refresh the page and try again.');
+                    return;
+                }
+
                 const finalData = {
                     video: {
                         file: uploadData.video,
-                        title: document.getElementById('title').value.trim(),
-                        description: document.getElementById('description').value.trim(),
-                        grade_level: document.getElementById('grade_level').value,
+                        title: title.value.trim(),
+                        description: description.value.trim(),
+                        grade_level: gradeLevel.value,
                         video_source: uploadData.video_source,
                         external_video_url: uploadData.external_video_url,
                         upload_destination: uploadData.upload_destination
