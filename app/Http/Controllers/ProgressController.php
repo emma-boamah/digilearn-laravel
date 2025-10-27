@@ -23,10 +23,29 @@ class ProgressController extends Controller
         // Get or create progress record
         $progress = $this->getOrCreateProgress($userId, $currentLevel);
 
-        // Get detailed statistics
-        $lessonStats = LessonCompletion::getLevelStats($userId, $currentLevel);
-        $quizStats = QuizAttempt::getLevelStats($userId, $currentLevel);
+        // Get detailed statistics from database
+        $lessonStats = LessonCompletion::getLevelGroupStats($userId, $currentLevel);
+        $quizStats = QuizAttempt::getLevelGroupStats($userId, $currentLevel);
         $progressionHistory = LevelProgression::getUserHistory($userId);
+
+        // Debug logging to verify data is coming from database
+        Log::info('Progress page data sources', [
+            'user_id' => $userId,
+            'current_level' => $currentLevel,
+            'progress_from_db' => [
+                'id' => $progress->id,
+                'user_id' => $progress->user_id,
+                'current_level' => $progress->current_level,
+                'completed_lessons' => $progress->completed_lessons,
+                'completed_quizzes' => $progress->completed_quizzes,
+                'completion_percentage' => $progress->completion_percentage,
+                'average_quiz_score' => $progress->average_quiz_score,
+                'total_time_spent_seconds' => $progress->total_time_spent_seconds,
+            ],
+            'lesson_stats_type' => gettype($lessonStats),
+            'quiz_stats_type' => gettype($quizStats),
+            'progression_history_count' => $progressionHistory ? $progressionHistory->count() : 0,
+        ]);
 
         // Get recent activities
         $recentLessons = LessonCompletion::where('user_id', $userId)
@@ -298,8 +317,8 @@ class ProgressController extends Controller
         $progress = $this->getOrCreateProgress($userId, $level);
         
         // Get current stats
-        $lessonStats = LessonCompletion::getLevelStats($userId, $level);
-        $quizStats = QuizAttempt::getLevelStats($userId, $level);
+        $lessonStats = LessonCompletion::getLevelGroupStats($userId, $level);
+        $quizStats = QuizAttempt::getLevelGroupStats($userId, $level);
         
         // Update progress record
         $progress->update([

@@ -59,6 +59,7 @@ class LessonCompletion extends Model
                 'lesson_subject' => $lessonData['subject'],
                 'lesson_level' => $lessonData['level'],
                 'total_duration_seconds' => $totalDurationSeconds,
+                'first_watched_at' => now(),
                 'last_watched_at' => now(),
             ]
         );
@@ -99,6 +100,33 @@ class LessonCompletion extends Model
     {
         return static::where('user_id', $userId)
                     ->where('lesson_level', $level)
+                    ->selectRaw('
+                        COUNT(*) as total_lessons,
+                        SUM(CASE WHEN fully_completed = 1 THEN 1 ELSE 0 END) as completed_lessons,
+                        AVG(completion_percentage) as avg_completion_percentage,
+                        SUM(watch_time_seconds) as total_watch_time
+                    ')
+                    ->first();
+    }
+
+    /**
+     * Get completion statistics for a user and level group
+     */
+    public static function getLevelGroupStats($userId, $levelGroup)
+    {
+        // Map level group to individual levels
+        $levelMapping = [
+            'primary-lower' => ['Primary 1', 'Primary 2', 'Primary 3'],
+            'primary-upper' => ['Primary 4', 'Primary 5', 'Primary 6'],
+            'jhs' => ['JHS 1', 'JHS 2', 'JHS 3'],
+            'shs' => ['SHS 1', 'SHS 2', 'SHS 3'],
+            'tertiary' => ['Tertiary'],
+        ];
+
+        $levels = $levelMapping[$levelGroup] ?? [$levelGroup];
+
+        return static::where('user_id', $userId)
+                    ->whereIn('lesson_level', $levels)
                     ->selectRaw('
                         COUNT(*) as total_lessons,
                         SUM(CASE WHEN fully_completed = 1 THEN 1 ELSE 0 END) as completed_lessons,

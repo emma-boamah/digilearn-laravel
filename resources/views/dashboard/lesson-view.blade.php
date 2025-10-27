@@ -2637,6 +2637,7 @@
             initializeMobileVideoScroll();
             initializeCourseTabs();
             checkDocumentAvailability();
+            initializeVideoProgressTracking();
         });
 
         // Enhanced mobile video scroll functionality
@@ -4177,6 +4178,231 @@
                     }
                 });
             });
+        }
+
+        // Video progress tracking functionality
+        let videoProgressTracker = null;
+
+        // Initialize video progress tracking
+        function initializeVideoProgressTracking() {
+            // Look for iframe elements within video-player containers
+            const videoElement = document.querySelector('.video-player iframe') ||
+                                document.querySelector('.video-player video') ||
+                                document.querySelector('iframe[src*="youtube.com"]') ||
+                                document.querySelector('iframe[src*="vimeo.com"]');
+            const lessonId = '{{ $lesson["id"] ?? "" }}';
+
+            if (!videoElement || !lessonId) {
+                console.log('Video element or lesson ID not found, skipping progress tracking');
+                console.log('Available video elements:', document.querySelectorAll('iframe, video'));
+                return;
+            }
+
+            console.log('Found video element:', videoElement);
+            videoProgressTracker = new VideoProgressTracker(videoElement, lessonId);
+            videoProgressTracker.init();
+        }
+
+        class VideoProgressTracker {
+            constructor(videoElement, lessonId) {
+                this.videoElement = videoElement;
+                this.lessonId = lessonId;
+                this.watchTime = 0;
+                this.lastUpdateTime = Date.now();
+                this.totalDuration = 0;
+                this.progressInterval = null;
+                this.isTracking = false;
+                this.lastReportedProgress = 0;
+                this.csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            }
+
+            init() {
+                console.log('Initializing video progress tracking for lesson:', this.lessonId);
+
+                // Handle different video types (HTML5 video vs iframe)
+                if (this.videoElement.tagName === 'VIDEO') {
+                    this.initHTML5Video();
+                } else if (this.videoElement.tagName === 'IFRAME') {
+                    this.initIframeVideo();
+                }
+
+                // Track page visibility to pause/resume tracking
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        this.pauseTracking();
+                    } else {
+                        this.resumeTracking();
+                    }
+                });
+
+                // Track before page unload
+                window.addEventListener('beforeunload', () => {
+                    this.reportProgress(true);
+                });
+            }
+
+            initHTML5Video() {
+                console.log('Setting up HTML5 video tracking');
+
+                this.videoElement.addEventListener('loadedmetadata', () => {
+                    this.totalDuration = this.videoElement.duration;
+                    console.log('Video duration loaded:', this.totalDuration);
+                });
+
+                this.videoElement.addEventListener('play', () => {
+                    console.log('Video started playing');
+                    this.startTracking();
+                });
+
+                this.videoElement.addEventListener('pause', () => {
+                    console.log('Video paused');
+                    this.pauseTracking();
+                    this.reportProgress();
+                });
+
+                this.videoElement.addEventListener('ended', () => {
+                    console.log('Video ended');
+                    this.pauseTracking();
+                    this.reportProgress(true);
+                });
+
+                // Periodic progress updates during playback
+                this.videoElement.addEventListener('timeupdate', () => {
+                    if (this.isTracking) {
+                        const currentTime = Date.now();
+                        const timeDiff = (currentTime - this.lastUpdateTime) / 1000; // Convert to seconds
+                        this.watchTime += timeDiff;
+                        this.lastUpdateTime = currentTime;
+
+                        // Report progress every 10 seconds or when significant progress is made
+                        const currentProgress = (this.videoElement.currentTime / this.totalDuration) * 100;
+                        if (Math.abs(currentProgress - this.lastReportedProgress) >= 5 || this.watchTime >= 10) {
+                            this.reportProgress();
+                        }
+                    }
+                });
+            }
+
+            initIframeVideo() {
+                console.log('Setting up iframe video tracking (limited functionality)');
+
+                // For iframe videos (YouTube, Vimeo), we can only track basic events
+                // More advanced tracking would require their APIs
+
+                // Simulate progress tracking for iframe videos
+                // This is a basic implementation - real iframe tracking needs platform-specific APIs
+                let playStartTime = null;
+
+                // Listen for iframe messages if available
+                window.addEventListener('message', (event) => {
+                    // Handle YouTube API messages if implemented
+                    if (event.origin.includes('youtube.com') || event.origin.includes('vimeo.com')) {
+                        try {
+                            const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+
+                            if (data.event === 'onStateChange') {
+                                if (data.info === 1) { // Playing
+                                    this.startTracking();
+                                } else if (data.info === 2 || data.info === 0) { // Paused or ended
+                                    this.pauseTracking();
+                                    this.reportProgress(data.info === 0); // true if ended
+                                }
+                            }
+                        } catch (e) {
+                            // Ignore parsing errors
+                        }
+                    }
+                });
+
+                // Fallback: Track based on visibility and time spent on page
+                // Start tracking immediately for iframe videos since we can't detect play events
+                this.startTracking();
+                this.startPeriodicTracking();
+            }
+
+            startPeriodicTracking() {
+                // For iframe videos without API access, track periodically
+                this.progressInterval = setInterval(() => {
+                    if (!document.hidden && this.isTracking) {
+                        this.watchTime += 5; // Add 5 seconds every interval
+                        this.reportProgress();
+                    }
+                }, 5000); // Every 5 seconds
+            }
+
+            startTracking() {
+                if (!this.isTracking) {
+                    this.isTracking = true;
+                    this.lastUpdateTime = Date.now();
+                    console.log('Started tracking video progress');
+                }
+            }
+
+            pauseTracking() {
+                this.isTracking = false;
+                if (this.progressInterval) {
+                    clearInterval(this.progressInterval);
+                    this.progressInterval = null;
+                }
+            }
+
+            resumeTracking() {
+                if (!this.isTracking && !document.hidden) {
+                    this.startTracking();
+                }
+            }
+
+            async reportProgress(forceComplete = false) {
+                if (this.watchTime < 1) return; // Don't report if less than 1 second watched
+
+                try {
+                    const progressData = {
+                        watch_time: Math.floor(this.watchTime),
+                        total_duration: Math.floor(this.totalDuration) || 300, // Default 5 minutes if unknown
+                        lesson_data: {
+                            id: this.lessonId,
+                            title: '{{ $lesson["title"] ?? "Unknown Lesson" }}',
+                            subject: '{{ $lesson["subject"] ?? "General" }}',
+                            level: '{{ $selectedLevel ?? "primary-lower" }}',
+                            level_group: '{{ $selectedLevel ?? "primary-lower" }}'
+                        }
+                    };
+
+                    console.log('Reporting progress:', progressData);
+
+                    const response = await fetch(`/dashboard/lesson/${this.lessonId}/progress`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': this.csrfToken,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(progressData)
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        console.log('Progress reported successfully:', result);
+                        this.lastReportedProgress = result.completion_percentage || 0;
+                        this.watchTime = 0; // Reset watch time after successful report
+
+                        // Show completion message if lesson is fully completed
+                        if (result.fully_completed) {
+                            showSuccessMessage('Lesson completed! 🎉');
+                        }
+                    } else {
+                        console.error('Failed to report progress:', result);
+                    }
+                } catch (error) {
+                    console.error('Error reporting progress:', error);
+                }
+            }
+
+            destroy() {
+                this.pauseTracking();
+                this.reportProgress(true); // Final report on destroy
+            }
         }
 
         // Add smooth scrolling for better UX

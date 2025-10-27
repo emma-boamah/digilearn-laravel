@@ -114,6 +114,34 @@ class QuizAttempt extends Model
     }
 
     /**
+     * Get quiz statistics for a user and level group
+     */
+    public static function getLevelGroupStats($userId, $levelGroup)
+    {
+        // Map level group to individual levels
+        $levelMapping = [
+            'primary-lower' => ['Primary 1', 'Primary 2', 'Primary 3'],
+            'primary-upper' => ['Primary 4', 'Primary 5', 'Primary 6'],
+            'jhs' => ['JHS 1', 'JHS 2', 'JHS 3'],
+            'shs' => ['SHS 1', 'SHS 2', 'SHS 3'],
+            'tertiary' => ['Tertiary'],
+        ];
+
+        $levels = $levelMapping[$levelGroup] ?? [$levelGroup];
+
+        return static::where('user_id', $userId)
+                    ->whereIn('quiz_level', $levels)
+                    ->selectRaw('
+                        COUNT(DISTINCT quiz_id) as total_quizzes,
+                        SUM(CASE WHEN passed = 1 THEN 1 ELSE 0 END) as passed_quizzes,
+                        AVG(score_percentage) as avg_score,
+                        MAX(score_percentage) as best_score,
+                        COUNT(*) as total_attempts
+                    ')
+                    ->first();
+    }
+
+    /**
      * Get best attempt for each quiz
      */
     public static function getBestAttempts($userId, $level)

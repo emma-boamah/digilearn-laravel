@@ -328,19 +328,12 @@ class QuizController extends Controller
         $questionsCount = 'no_questions_key';
         $quizKeys = 'not_array';
 
-        try {
-            if (is_array($quiz)) {
-                $quizTitle = isset($quiz['title']) ? $quiz['title'] : 'unknown';
-                $quizKeys = array_keys($quiz);
-                if (isset($quiz['questions']) && is_array($quiz['questions'])) {
-                    $questionsCount = count($quiz['questions']);
-                }
+        if (is_array($quiz)) {
+            $quizTitle = isset($quiz['title']) ? $quiz['title'] : 'unknown';
+            $quizKeys = array_keys($quiz);
+            if (isset($quiz['questions']) && is_array($quiz['questions'])) {
+                $questionsCount = count($quiz['questions']);
             }
-        } catch (\Exception $e) {
-            Log::warning('Error during safe quiz data extraction for logging', [
-                'quiz_id' => $quizId,
-                'error' => $e->getMessage()
-            ]);
         }
 
         // Log detailed quiz submission data for debugging (minimal)
