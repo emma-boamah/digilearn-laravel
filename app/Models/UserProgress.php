@@ -185,7 +185,7 @@ class UserProgress extends Model
     }
 
     /**
-     * Get level duration (time since started)
+     * Get level duration (time since started) with better formatting
      */
     public function getLevelDuration(): ?string
     {
@@ -193,16 +193,39 @@ class UserProgress extends Model
             return null;
         }
 
-        $days = $this->level_started_at->diffInDays(now());
+        $now = now();
+        $diff = $this->level_started_at->diff($now);
 
-        if ($days > 0) {
-            return "{$days} days";
+        // More than a week
+        if ($diff->days > 7) {
+            $weeks = floor($diff->days / 7);
+            $remainingDays = $diff->days % 7;
+
+            if ($weeks >= 4) {
+                $months = floor($weeks / 4.33); // Approximate months
+                return $months === 1 ? "1 month" : "{$months} months";
+            }
+
+            if ($remainingDays === 0) {
+                return $weeks === 1 ? "1 week" : "{$weeks} weeks";
+            }
+
+            return $weeks === 1 ? "1 week {$remainingDays} day" . ($remainingDays > 1 ? 's' : '') : "{$weeks} weeks {$remainingDays} day" . ($remainingDays > 1 ? 's' : '');
         }
 
-        $hours = $this->level_started_at->diffInHours(now());
+        // Days
+        if ($diff->days > 0) {
+            return $diff->days === 1 ? "1 day" : "{$diff->days} days";
+        }
 
-        if ($hours > 0) {
-            return "{$hours} hours";
+        // Hours
+        if ($diff->h > 0) {
+            return $diff->h === 1 ? "1 hour" : "{$diff->h} hours";
+        }
+
+        // Minutes
+        if ($diff->i > 0) {
+            return $diff->i === 1 ? "1 minute" : "{$diff->i} minutes";
         }
 
         return 'Just started';

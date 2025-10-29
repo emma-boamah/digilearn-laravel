@@ -106,8 +106,9 @@ class ProgressController extends Controller
             $request->total_duration
         );
 
-        // Update user progress
-        $progress = $this->updateUserProgress($userId, $lessonData['level']);
+        // Update user progress using level group
+        $levelGroup = $this->getLevelGroup($lessonData['level']);
+        $progress = $this->updateUserProgress($userId, $levelGroup);
 
         // Record activity and time spent
         if ($progress) {
@@ -176,8 +177,9 @@ class ProgressController extends Controller
             $request->time_taken
         );
 
-        // Update user progress
-        $progress = $this->updateUserProgress($userId, $quizData['level']);
+        // Update user progress using level group
+        $levelGroup = $this->getLevelGroup($quizData['level']);
+        $progress = $this->updateUserProgress($userId, $levelGroup);
 
         // Record activity and time spent
         if ($progress) {
@@ -312,25 +314,43 @@ class ProgressController extends Controller
     /**
      * Update user progress based on completions
      */
-    private function updateUserProgress($userId, $level)
+    private function updateUserProgress($userId, $levelGroup)
     {
-        $progress = $this->getOrCreateProgress($userId, $level);
-        
-        // Get current stats
-        $lessonStats = LessonCompletion::getLevelGroupStats($userId, $level);
-        $quizStats = QuizAttempt::getLevelGroupStats($userId, $level);
-        
+        // $levelGroup is already converted to level group
+        $progress = $this->getOrCreateProgress($userId, $levelGroup);
+
+        // Get current stats for the level group
+        $lessonStats = LessonCompletion::getLevelGroupStats($userId, $levelGroup);
+        $quizStats = QuizAttempt::getLevelGroupStats($userId, $levelGroup);
+
+        // Debug logging
+        Log::info('updateUserProgress called', [
+            'user_id' => $userId,
+            'level_group' => $levelGroup,
+            'lesson_stats' => $lessonStats ? $lessonStats->toArray() : null,
+            'quiz_stats' => $quizStats ? $quizStats->toArray() : null,
+        ]);
+
         // Update progress record
         $progress->update([
             'completed_lessons' => $lessonStats->completed_lessons ?? 0,
             'completed_quizzes' => $quizStats->passed_quizzes ?? 0,
             'average_quiz_score' => $quizStats->avg_score ?? 0,
         ]);
-        
+
         // Update completion percentage and eligibility
         $progress->updateCompletionPercentage();
         $progress->calculateEligibility();
-        
+
+        Log::info('updateUserProgress completed', [
+            'user_id' => $userId,
+            'level_group' => $levelGroup,
+            'updated_completed_lessons' => $progress->completed_lessons,
+            'updated_completed_quizzes' => $progress->completed_quizzes,
+            'updated_average_score' => $progress->average_quiz_score,
+            'updated_completion_percentage' => $progress->completion_percentage,
+        ]);
+
         return $progress;
     }
 
@@ -403,29 +423,39 @@ class ProgressController extends Controller
      */
     private function getTotalLessonsForLevel($level)
     {
-        // This would typically come from your lessons database
-        // For now, using the sample data structure
-        $lessonCounts = [
-            'primary-lower' => 12, // Combined P1-P3
-            'primary-upper' => 8,  // Combined P4-P6
-            'jhs' => 12,           // Combined JHS 1-3
-            'shs' => 8,            // Combined SHS 1-3
+        // Map level group to individual levels for database query
+        $levelMapping = [
+            'primary-lower' => ['Primary 1', 'Primary 2', 'Primary 3'],
+            'primary-upper' => ['Primary 4', 'Primary 5', 'Primary 6'],
+            'jhs' => ['JHS 1', 'JHS 2', 'JHS 3'],
+            'shs' => ['SHS 1', 'SHS 2', 'SHS 3'],
+            'tertiary' => ['Tertiary'],
         ];
-        
-        return $lessonCounts[$level] ?? 10;
+
+        $levels = $levelMapping[$level] ?? [$level];
+
+        // Get actual count from videos table
+        return \App\Models\Video::whereIn('grade_level', $levels)
+                               ->where('status', 'approved')
+                               ->count();
     }
     
     private function getTotalQuizzesForLevel($level)
     {
-        // This would typically come from your quizzes database
-        $quizCounts = [
-            'primary-lower' => 6,
-            'primary-upper' => 4,
-            'jhs' => 6,
-            'shs' => 4,
+        // Map level group to individual levels for database query
+        $levelMapping = [
+            'primary-lower' => ['Primary 1', 'Primary 2', 'Primary 3'],
+            'primary-upper' => ['Primary 4', 'Primary 5', 'Primary 6'],
+            'jhs' => ['JHS 1', 'JHS 2', 'JHS 3'],
+            'shs' => ['SHS 1', 'SHS 2', 'SHS 3'],
+            'tertiary' => ['Tertiary'],
         ];
-        
-        return $quizCounts[$level] ?? 5;
+
+        $levels = $levelMapping[$level] ?? [$level];
+
+        // Get actual count from quizzes table
+        return \App\Models\Quiz::whereIn('grade_level', $levels)
+                              ->count();
     }
     
     private function getLevelGroup($level)
