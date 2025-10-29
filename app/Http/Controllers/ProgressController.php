@@ -234,13 +234,37 @@ class ProgressController extends Controller
         $progressionStatus = $this->checkProgressionEligibility($userId, $level);
 
         if ($progressionStatus['eligible']) {
-            // Update lesson_completions table when user meets progression thresholds
-            $this->updateLessonCompletionsForProgression($userId, $level);
+            // First check if user should progress within their current level group
+            $progress = UserProgress::getCurrentProgress($userId, $level);
 
-            // Auto-progress the user
-            $nextLevel = $this->getNextLevel($level);
-            if ($nextLevel) {
-                $this->progressUserToNextLevel($userId, $level, $nextLevel, $progressionStatus);
+            if ($progress && $progress->shouldProgressWithinLevelGroup()) {
+                // Progress within level group (e.g., Primary 1 → Primary 2)
+                $progressedWithinGroup = $progress->progressWithinLevelGroup();
+
+                if ($progressedWithinGroup) {
+                    // Update progression status to reflect within-group progression
+                    $progressionStatus['progressed_within_group'] = true;
+                    $progressionStatus['new_individual_level'] = $progress->user->grade;
+                    $progressionStatus['message'] = "Congratulations! You've advanced to " . $progress->user->grade . "!";
+
+                    Log::info('User progressed within level group', [
+                        'user_id' => $userId,
+                        'from_level' => $level,
+                        'to_level' => $progress->user->grade,
+                        'level_group' => $progress->level_group,
+                    ]);
+                }
+            } else {
+                // Progress to next level group (e.g., primary-lower → primary-upper)
+                $nextLevel = $this->getNextLevel($level);
+                if ($nextLevel) {
+                    // Update lesson_completions table when user meets progression thresholds
+                    $this->updateLessonCompletionsForProgression($userId, $level);
+
+                    $this->progressUserToNextLevel($userId, $level, $nextLevel, $progressionStatus);
+                    $progressionStatus['progressed_to_group'] = true;
+                    $progressionStatus['new_level_group'] = $nextLevel;
+                }
             }
         }
 
@@ -378,6 +402,8 @@ class ProgressController extends Controller
                 'quiz_completion_required' => $standards['required_quiz_completion_percentage'],
                 'average_score_required' => $standards['required_average_quiz_score'],
             ],
+            'individual_progression_available' => $progress->shouldProgressWithinLevelGroup() !== null,
+            'next_individual_level' => $progress->shouldProgressWithinLevelGroup(),
             'message' => $isEligible
                 ? "Congratulations! You're ready to progress to {$nextLevel}!"
                 : 'Keep learning to unlock the next level!',
@@ -409,6 +435,9 @@ class ProgressController extends Controller
         ];
 
         LevelProgression::recordProgression($userId, $fromLevel, $toLevel, $progressData);
+
+        // Update user's grade level in the users table
+        $this->updateUserGradeLevel($userId, $toLevel);
 
         // Update session to new level
         session(['selected_level_group' => $this->getLevelGroup($toLevel)]);
@@ -490,6 +519,43 @@ class ProgressController extends Controller
             Log::error('Failed to update lesson_completions for progression', [
                 'user_id' => $userId,
                 'level_group' => $levelGroup,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Update user's grade level in the users table when they progress
+     */
+    private function updateUserGradeLevel($userId, $newLevelGroup)
+    {
+        try {
+            $user = \App\Models\User::find($userId);
+            if ($user) {
+                // Map level group to appropriate grade level for display
+                $gradeMapping = [
+                    'primary-lower' => 'Primary 1-3',
+                    'primary-upper' => 'Primary 4-6',
+                    'jhs' => 'JHS 1-3',
+                    'shs' => 'SHS 1-3',
+                    'tertiary' => 'Tertiary',
+                ];
+
+                $newGrade = $gradeMapping[$newLevelGroup] ?? $newLevelGroup;
+
+                $user->update(['grade' => $newGrade]);
+
+                Log::info('Updated user grade level after progression', [
+                    'user_id' => $userId,
+                    'old_grade' => $user->getOriginal('grade'),
+                    'new_grade' => $newGrade,
+                    'level_group' => $newLevelGroup,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to update user grade level', [
+                'user_id' => $userId,
+                'new_level_group' => $newLevelGroup,
                 'error' => $e->getMessage(),
             ]);
         }

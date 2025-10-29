@@ -218,6 +218,9 @@ class UpdateLessonCompletions extends Command
                 }
             }
 
+            // Update user's grade level in the users table
+            $this->updateUserGradeLevel($userId, $levelGroup);
+
             if ($lessonUpdates > 0 || $quizAdditions > 0) {
                 Log::info('Updated lesson_completions via command', [
                     'user_id' => $userId,
@@ -237,6 +240,47 @@ class UpdateLessonCompletions extends Command
             ]);
 
             $this->error("Failed to update lesson completions for user {$userId}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update user's grade level in the users table when they progress
+     */
+    private function updateUserGradeLevel($userId, $levelGroup)
+    {
+        try {
+            $user = \App\Models\User::find($userId);
+            if ($user) {
+                // Map level group to appropriate grade level for display
+                $gradeMapping = [
+                    'primary-lower' => 'Primary 1-3',
+                    'primary-upper' => 'Primary 4-6',
+                    'jhs' => 'JHS 1-3',
+                    'shs' => 'SHS 1-3',
+                    'tertiary' => 'Tertiary',
+                ];
+
+                $newGrade = $gradeMapping[$levelGroup] ?? $levelGroup;
+
+                $user->update(['grade' => $newGrade]);
+
+                Log::info('Updated user grade level after progression', [
+                    'user_id' => $userId,
+                    'old_grade' => $user->getOriginal('grade'),
+                    'new_grade' => $newGrade,
+                    'level_group' => $levelGroup,
+                ]);
+
+                $this->line("  Updated user grade to: {$newGrade}");
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to update user grade level', [
+                'user_id' => $userId,
+                'new_level_group' => $levelGroup,
+                'error' => $e->getMessage(),
+            ]);
+
+            $this->error("Failed to update user grade level for user {$userId}: " . $e->getMessage());
         }
     }
 }

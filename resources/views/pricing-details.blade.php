@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<style>
+<style nonce="{{ request()->attributes->get('csp_nonce') }}">
 
     li {
         list-style: none;

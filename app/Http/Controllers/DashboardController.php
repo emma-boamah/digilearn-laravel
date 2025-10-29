@@ -96,7 +96,9 @@ class DashboardController extends Controller
                 ->with('warning', 'Please upgrade your subscription to access this content.');
         }
 
-        $user->update(['grade' => $groupId]);
+        // Set the user's grade to the lowest level in the selected group
+        $lowestGrade = $this->getLowestGradeForLevelGroup($groupId);
+        $user->update(['grade' => $lowestGrade]);
         session(['selected_level_group' => $groupId]);
 
         // Initialize user progress for the selected level group
@@ -1998,6 +2000,22 @@ class DashboardController extends Controller
         ];
 
         return $levelMappings[$levelGroup] ?? [];
+    }
+
+    /**
+     * Get the lowest grade level for a level group (for new user assignment)
+     */
+    private function getLowestGradeForLevelGroup($levelGroup)
+    {
+        $lowestGrades = [
+            'primary-lower' => 'Primary 1',
+            'primary-upper' => 'Primary 4',
+            'jhs' => 'JHS 1',
+            'shs' => 'SHS 1',
+            'university' => 'University Year 1',
+        ];
+
+        return $lowestGrades[$levelGroup] ?? $levelGroup;
     }
 
     /**

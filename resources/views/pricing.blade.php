@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<style>
+<style nonce="{{ request()->attributes->get('csp_nonce') }}">
     html, body {
         width: 100%;
         max-width: 100vw;

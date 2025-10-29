@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-    <style>
+    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         /* Contact page specific styles */
         .contact-hero {
             position: relative;

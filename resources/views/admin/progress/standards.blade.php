@@ -5,246 +5,895 @@
 @section('page-description', 'Configure requirements for level progression')
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
-    <div class="bg-white shadow-md rounded-lg p-6">
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <h2 class="text-2xl font-semibold text-gray-800">Progression Standards</h2>
-                <p class="text-gray-600 mt-1">Set the requirements students must meet to progress to the next level</p>
-            </div>
-            <button onclick="openModal('addStandardModal')" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center">
-                <i class="fas fa-plus mr-2"></i> Add Standard
-            </button>
-        </div>
+<style nonce="{{ request()->attributes->get('csp_nonce') }}">
+    /* Modal Enhancements */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 50;
+        padding: 1rem;
+    }
 
-        <!-- Standards Table -->
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+    .modal-overlay.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background-color: var(--white);
+        border-radius: 0.75rem;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 48rem;
+        max-height: 90vh;
+        overflow-y: auto;
+        animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(1rem);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--gray-200);
+        background-color: var(--gray-50);
+    }
+
+    .modal-header-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .modal-header-icon {
+        width: 1.5rem;
+        height: 1.5rem;
+        color: var(--primary-blue);
+    }
+
+    .modal-header h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin: 0;
+    }
+
+    .modal-close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--gray-400);
+        cursor: pointer;
+        padding: 0;
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.375rem;
+        transition: all 0.2s;
+    }
+
+    .modal-close-btn:hover {
+        background-color: var(--gray-200);
+        color: var(--gray-600);
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+    }
+
+    .form-section:last-child {
+        margin-bottom: 0;
+    }
+
+    .form-section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid var(--gray-200);
+    }
+
+    .form-section-icon {
+        width: 1.25rem;
+        height: 1.25rem;
+        color: var(--primary-blue);
+    }
+
+    .form-section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin: 0;
+    }
+
+    .form-section-description {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+        margin: 0;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .form-grid.cols-2 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .form-grid.cols-3 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    @media (max-width: 640px) {
+        .form-grid.cols-2,
+        .form-grid.cols-3 {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--gray-700);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .form-label-required {
+        color: var(--accent-red);
+    }
+
+    .form-input {
+        padding: 0.625rem 0.75rem;
+        border: 1px solid var(--gray-300);
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        color: var(--gray-900);
+        background-color: var(--white);
+        transition: all 0.2s;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--primary-blue);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-input:disabled {
+        background-color: var(--gray-100);
+        color: var(--gray-500);
+        cursor: not-allowed;
+    }
+
+    .form-input-hint {
+        font-size: 0.75rem;
+        color: var(--gray-500);
+        margin-top: 0.25rem;
+    }
+
+    .form-input-hint.success {
+        color: #16a34a;
+    }
+
+    .form-input-hint.info {
+        color: var(--primary-blue);
+    }
+
+    .modal-footer {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+        padding: 1.5rem;
+        border-top: 1px solid var(--gray-200);
+        background-color: var(--gray-50);
+    }
+
+    .btn-modal {
+        padding: 0.625rem 1.25rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-modal-primary {
+        background-color: var(--primary-blue);
+        color: var(--white);
+    }
+
+    .btn-modal-primary:hover {
+        background-color: var(--primary-blue-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-modal-secondary {
+        background-color: var(--gray-300);
+        color: var(--gray-800);
+    }
+
+    .btn-modal-secondary:hover {
+        background-color: var(--gray-400);
+    }
+
+    /* Table Enhancements */
+    .table-container {
+        overflow-x: auto;
+        border-radius: 0.5rem;
+        border: 1px solid var(--gray-200);
+    }
+
+    .standards-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .standards-table thead {
+        background-color: var(--gray-50);
+    }
+
+    .standards-table th {
+        padding: 0.75rem 1rem;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--gray-600);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid var(--gray-200);
+    }
+
+    .standards-table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--gray-200);
+        font-size: 0.875rem;
+        color: var(--gray-700);
+    }
+
+    .standards-table tbody tr:hover {
+        background-color: var(--gray-50);
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.375rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .status-badge.active {
+        background-color: #dcfce7;
+        color: #166534;
+    }
+
+    .status-badge.inactive {
+        background-color: var(--gray-100);
+        color: var(--gray-600);
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .action-btn {
+        padding: 0.375rem 0.75rem;
+        border: none;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: none;
+    }
+
+    .action-btn-edit {
+        color: var(--primary-blue);
+    }
+
+    .action-btn-edit:hover {
+        background-color: var(--primary-blue-light);
+    }
+
+    .action-btn-toggle {
+        color: #f59e0b;
+    }
+
+    .action-btn-toggle:hover {
+        background-color: #fef3c7;
+    }
+
+    /* Info Box */
+    .info-box {
+        background-color: var(--primary-blue-light);
+        border: 1px solid #bfdbfe;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .info-box-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #1e40af;
+        margin-bottom: 0.75rem;
+    }
+
+    .info-box-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    @media (min-width: 768px) {
+        .info-box-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+
+    .info-box-item {
+        font-size: 0.875rem;
+    }
+
+    .info-box-label {
+        font-weight: 500;
+        color: #1e40af;
+    }
+
+    .info-box-value {
+        color: #1e3a8a;
+        font-weight: 600;
+    }
+
+    /* Header Section */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1.5rem;
+        gap: 1rem;
+    }
+
+    .page-header-content h2 {
+        font-size: 1.875rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin: 0 0 0.25rem 0;
+    }
+
+    .page-header-content p {
+        color: var(--gray-600);
+        margin: 0;
+    }
+
+    .btn-add-standard {
+        background-color: var(--primary-blue);
+        color: var(--white);
+        padding: 0.625rem 1.25rem;
+        border: none;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+
+    .btn-add-standard:hover {
+        background-color: var(--primary-blue-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .card {
+        background-color: var(--white);
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--gray-200);
+        padding: 1.5rem;
+    }
+</style>
+
+<div class="card">
+    <div class="page-header">
+        <div class="page-header-content">
+            <h2>Progression Standards</h2>
+            <p>Set the requirements students must meet to progress to the next level</p>
+        </div>
+        <button class="btn-add-standard" id="addStandardBtn">
+            <i class="fas fa-plus"></i> Add Standard
+        </button>
+    </div>
+
+    <!-- Standards Table -->
+    <div class="table-container">
+        <table class="standards-table">
+            <thead>
+                <tr>
+                    <th>Level Group</th>
+                    <th>Group Progression</th>
+                    <th>Individual Progression</th>
+                    <th>Min Quiz Score</th>
+                    <th>Watch Threshold</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($standards as $standard)
                     <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level Group</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lesson Completion</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quiz Completion</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Quiz Score</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Min Quiz Score</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Watch Threshold</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @forelse($standards as $standard)
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                {{ $levelGroups[$standard->level_group] ?? $standard->level_group }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ $standard->required_lesson_completion_percentage }}%
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ $standard->required_quiz_completion_percentage }}%
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ $standard->required_average_quiz_score }}%
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ $standard->minimum_quiz_score }}%
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ $standard->lesson_watch_threshold_percentage }}%
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                @if($standard->is_active)
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        <i class="fas fa-check-circle mr-1"></i> Active
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                        <i class="fas fa-pause-circle mr-1"></i> Inactive
-                                    </span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button onclick="openEditModal({{ $standard->id }}, '{{ $standard->level_group }}', {{ $standard->required_lesson_completion_percentage }}, {{ $standard->required_quiz_completion_percentage }}, {{ $standard->required_average_quiz_score }}, {{ $standard->minimum_quiz_score }}, {{ $standard->lesson_watch_threshold_percentage }}, {{ $standard->is_active ? 'true' : 'false' }})" class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                                <form action="{{ route('admin.progress.standards.toggle', $standard) }}" method="POST" class="inline-block">
+                        <td class="font-medium">
+                            {{ $levelGroups[$standard->level_group] ?? $standard->level_group }}
+                        </td>
+                        <td>
+                            <div style="font-size: 0.75rem; line-height: 1.5;">
+                                <div><strong>L:</strong> {{ $standard->required_lesson_completion_percentage }}%</div>
+                                <div><strong>Q:</strong> {{ $standard->required_quiz_completion_percentage }}%</div>
+                                <div><strong>Avg:</strong> {{ $standard->required_average_quiz_score }}%</div>
+                            </div>
+                        </td>
+                        <td>
+                            <div style="font-size: 0.75rem; line-height: 1.5;">
+                                <div><strong>L:</strong> {{ $standard->individual_level_lesson_threshold ?? 75 }}%</div>
+                                <div><strong>Q:</strong> {{ $standard->individual_level_quiz_threshold ?? 60 }}%</div>
+                                <div><strong>Avg:</strong> {{ $standard->individual_level_score_threshold ?? 65 }}%</div>
+                            </div>
+                        </td>
+                        <td>{{ $standard->minimum_quiz_score }}%</td>
+                        <td>{{ $standard->lesson_watch_threshold_percentage }}%</td>
+                        <td>
+                            <span class="status-badge {{ $standard->is_active ? 'active' : 'inactive' }}">
+                                <i class="fas {{ $standard->is_active ? 'fa-check-circle' : 'fa-pause-circle' }}"></i>
+                                {{ $standard->is_active ? 'Active' : 'Inactive' }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn action-btn-edit edit-standard-btn" data-standard-id="{{ $standard->id }}" data-level-group="{{ $standard->level_group }}" data-lesson-req="{{ $standard->required_lesson_completion_percentage }}" data-quiz-req="{{ $standard->required_quiz_completion_percentage }}" data-avg-score="{{ $standard->required_average_quiz_score }}" data-min-score="{{ $standard->minimum_quiz_score }}" data-watch-threshold="{{ $standard->lesson_watch_threshold_percentage }}" data-individual-lesson="{{ $standard->individual_level_lesson_threshold ?? 75 }}" data-individual-quiz="{{ $standard->individual_level_quiz_threshold ?? 60 }}" data-individual-score="{{ $standard->individual_level_score_threshold ?? 65 }}">
+                                    Edit
+                                </button>
+                                <form action="{{ route('admin.progress.standards.toggle', $standard) }}" method="POST" style="display: inline;">
                                     @csrf
                                     @method('POST')
-                                    <button type="submit" class="text-{{ $standard->is_active ? 'orange' : 'green' }}-600 hover:text-{{ $standard->is_active ? 'orange' : 'green' }}-900">
+                                    <button type="submit" class="action-btn action-btn-toggle">
                                         {{ $standard->is_active ? 'Deactivate' : 'Activate' }}
                                     </button>
                                 </form>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="8" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                                No progression standards configured yet.
-                                <br><small class="text-gray-400">Default standards will be used until custom ones are set.</small>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 2rem;">
+                            <div style="color: var(--gray-500);">
+                                <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 0.5rem; display: block;"></i>
+                                <p style="margin: 0;">No progression standards configured yet.</p>
+                                <p style="margin: 0.25rem 0 0 0; font-size: 0.875rem;">Default standards will be used until custom ones are set.</p>
+                            </div>
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
 
-        <!-- Default Standards Info -->
-        <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <h4 class="text-sm font-semibold text-blue-800 mb-2">Default Standards (Used When No Custom Standards Exist)</h4>
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-                <div>
-                    <span class="font-medium text-blue-700">Lesson Completion:</span>
-                    <span class="text-blue-600">80%</span>
-                </div>
-                <div>
-                    <span class="font-medium text-blue-700">Quiz Completion:</span>
-                    <span class="text-blue-600">70%</span>
-                </div>
-                <div>
-                    <span class="font-medium text-blue-700">Avg Quiz Score:</span>
-                    <span class="text-blue-600">70%</span>
-                </div>
-                <div>
-                    <span class="font-medium text-blue-700">Min Quiz Score:</span>
-                    <span class="text-blue-600">70%</span>
-                </div>
-                <div>
-                    <span class="font-medium text-blue-700">Watch Threshold:</span>
-                    <span class="text-blue-600">90%</span>
-                </div>
+    <!-- Default Standards Info -->
+    <div class="info-box">
+        <div class="info-box-title">
+            <i class="fas fa-info-circle"></i> Default Standards (Used When No Custom Standards Exist)
+        </div>
+        <div class="info-box-grid">
+            <div class="info-box-item">
+                <div class="info-box-label">Lesson (Group)</div>
+                <div class="info-box-value">80%</div>
+            </div>
+            <div class="info-box-item">
+                <div class="info-box-label">Quiz (Group)</div>
+                <div class="info-box-value">70%</div>
+            </div>
+            <div class="info-box-item">
+                <div class="info-box-label">Avg Score (Group)</div>
+                <div class="info-box-value">70%</div>
+            </div>
+            <div class="info-box-item">
+                <div class="info-box-label">Min Score</div>
+                <div class="info-box-value">70%</div>
+            </div>
+            <div class="info-box-item">
+                <div class="info-box-label">Lesson (Individual)</div>
+                <div class="info-box-value">75%</div>
+            </div>
+            <div class="info-box-item">
+                <div class="info-box-label">Quiz (Individual)</div>
+                <div class="info-box-value">60%</div>
+            </div>
+            <div class="info-box-item">
+                <div class="info-box-label">Avg Score (Individual)</div>
+                <div class="info-box-value">65%</div>
+            </div>
+            <div class="info-box-item">
+                <div class="info-box-label">Watch Threshold</div>
+                <div class="info-box-value">90%</div>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Add Standard Modal -->
-<div id="addStandardModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 lg:w-2/3 shadow-lg rounded-md bg-white">
-        <div class="flex justify-between items-center pb-3 border-b">
-            <h3 class="text-lg font-semibold text-gray-900">Add Progression Standard</h3>
-            <button onclick="closeModal('addStandardModal')" class="text-gray-400 hover:text-gray-600">&times;</button>
+<div class="modal-overlay" id="addStandardModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-header-title">
+                <svg class="modal-header-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                <h3>Add Progression Standard</h3>
+            </div>
+            <button class="modal-close-btn" id="closeAddModal">&times;</button>
         </div>
-        <form action="{{ route('admin.progress.standards.store') }}" method="POST" class="mt-4">
+
+        <form action="{{ route('admin.progress.standards.store') }}" method="POST">
             @csrf
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="md:col-span-2">
-                    <label for="level_group" class="block text-sm font-medium text-gray-700">Level Group <span class="text-red-500">*</span></label>
-                    <select name="level_group" id="level_group" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
-                        <option value="">Select Level Group</option>
-                        @foreach($levelGroups as $key => $label)
-                            <option value="{{ $key }}">{{ $label }}</option>
-                        @endforeach
-                    </select>
+            <div class="modal-body">
+                <!-- Level Group Section -->
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <svg class="form-section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                        </svg>
+                        <h4 class="form-section-title">Level Group</h4>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            Select Level Group
+                            <span class="form-label-required">*</span>
+                        </label>
+                        <select name="level_group" id="level_group" class="form-input" required>
+                            <option value="">Choose a level group...</option>
+                            @foreach($levelGroups as $key => $label)
+                                <option value="{{ $key }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
 
-                <div>
-                    <label for="required_lesson_completion_percentage" class="block text-sm font-medium text-gray-700">Lesson Completion Required (%)</label>
-                    <input type="number" name="required_lesson_completion_percentage" id="required_lesson_completion_percentage" min="0" max="100" value="80" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
-                    <p class="text-xs text-gray-500 mt-1">Percentage of lessons student must complete</p>
+                <!-- Group Progression Section -->
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <svg class="form-section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        <div>
+                            <h4 class="form-section-title">Group Progression Thresholds</h4>
+                            <p class="form-section-description">Requirements for advancing between level groups</p>
+                        </div>
+                    </div>
+                    <div class="form-grid cols-3">
+                        <div class="form-group">
+                            <label class="form-label">Lesson Completion (%)</label>
+                            <input type="number" name="required_lesson_completion_percentage" min="0" max="100" value="80" class="form-input" required>
+                            <div class="form-input-hint">For level group advancement</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Quiz Completion (%)</label>
+                            <input type="number" name="required_quiz_completion_percentage" min="0" max="100" value="70" class="form-input" required>
+                            <div class="form-input-hint">For level group advancement</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Avg Quiz Score (%)</label>
+                            <input type="number" name="required_average_quiz_score" min="0" max="100" value="70" class="form-input" required>
+                            <div class="form-input-hint">For level group advancement</div>
+                        </div>
+                    </div>
                 </div>
 
-                <div>
-                    <label for="required_quiz_completion_percentage" class="block text-sm font-medium text-gray-700">Quiz Completion Required (%)</label>
-                    <input type="number" name="required_quiz_completion_percentage" id="required_quiz_completion_percentage" min="0" max="100" value="70" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
-                    <p class="text-xs text-gray-500 mt-1">Percentage of quizzes student must pass</p>
+                <!-- Individual Progression Section -->
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <svg class="form-section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                        <div>
+                            <h4 class="form-section-title">Individual Progression Thresholds</h4>
+                            <p class="form-section-description">Requirements for advancing within level groups</p>
+                        </div>
+                    </div>
+                    <div class="form-grid cols-3">
+                        <div class="form-group">
+                            <label class="form-label">Lesson Threshold (%)</label>
+                            <input type="number" name="individual_level_lesson_threshold" min="0" max="100" value="75" class="form-input" required>
+                            <div class="form-input-hint success">For individual level advancement</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Quiz Threshold (%)</label>
+                            <input type="number" name="individual_level_quiz_threshold" min="0" max="100" value="60" class="form-input" required>
+                            <div class="form-input-hint success">For individual level advancement</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Score Threshold (%)</label>
+                            <input type="number" name="individual_level_score_threshold" min="0" max="100" value="65" class="form-input" required>
+                            <div class="form-input-hint success">For individual level advancement</div>
+                        </div>
+                    </div>
                 </div>
 
-                <div>
-                    <label for="required_average_quiz_score" class="block text-sm font-medium text-gray-700">Average Quiz Score Required (%)</label>
-                    <input type="number" name="required_average_quiz_score" id="required_average_quiz_score" min="0" max="100" value="70" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
-                    <p class="text-xs text-gray-500 mt-1">Minimum average score across all quizzes</p>
-                </div>
-
-                <div>
-                    <label for="minimum_quiz_score" class="block text-sm font-medium text-gray-700">Minimum Quiz Score (%)</label>
-                    <input type="number" name="minimum_quiz_score" id="minimum_quiz_score" min="0" max="100" value="70" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
-                    <p class="text-xs text-gray-500 mt-1">Minimum score required to pass individual quizzes</p>
-                </div>
-
-                <div class="md:col-span-2">
-                    <label for="lesson_watch_threshold_percentage" class="block text-sm font-medium text-gray-700">Lesson Watch Threshold (%)</label>
-                    <input type="number" name="lesson_watch_threshold_percentage" id="lesson_watch_threshold_percentage" min="0" max="100" value="90" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
-                    <p class="text-xs text-gray-500 mt-1">Percentage of lesson that must be watched to count as completed</p>
+                <!-- Additional Settings Section -->
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <svg class="form-section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                        </svg>
+                        <h4 class="form-section-title">Additional Settings</h4>
+                    </div>
+                    <div class="form-grid cols-2">
+                        <div class="form-group">
+                            <label class="form-label">Minimum Quiz Score (%)</label>
+                            <input type="number" name="minimum_quiz_score" min="0" max="100" value="70" class="form-input" required>
+                            <div class="form-input-hint info">Minimum score required to pass individual quizzes</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Lesson Watch Threshold (%)</label>
+                            <input type="number" name="lesson_watch_threshold_percentage" min="0" max="100" value="90" class="form-input" required>
+                            <div class="form-input-hint info">Percentage of lesson that must be watched</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="flex justify-end space-x-2 mt-6">
-                <button type="button" onclick="closeModal('addStandardModal')" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors">Cancel</button>
-                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">Add Standard</button>
+            <div class="modal-footer">
+                <button type="button" class="btn-modal btn-modal-secondary" id="cancelAddModal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="submit" class="btn-modal btn-modal-primary">
+                    <i class="fas fa-check"></i> Add Standard
+                </button>
             </div>
         </form>
     </div>
 </div>
 
 <!-- Edit Standard Modal -->
-<div id="editStandardModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 lg:w-2/3 shadow-lg rounded-md bg-white">
-        <div class="flex justify-between items-center pb-3 border-b">
-            <h3 class="text-lg font-semibold text-gray-900">Edit Progression Standard</h3>
-            <button onclick="closeModal('editStandardModal')" class="text-gray-400 hover:text-gray-600">&times;</button>
+<div class="modal-overlay" id="editStandardModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-header-title">
+                <svg class="modal-header-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                <h3>Edit Progression Standard</h3>
+            </div>
+            <button class="modal-close-btn" id="closeEditModal">&times;</button>
         </div>
-        <form id="editStandardForm" method="POST" class="mt-4">
+
+        <form id="editStandardForm" method="POST">
             @csrf
             @method('PUT')
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700">Level Group</label>
-                    <input type="text" id="edit_level_group_display" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-100" readonly>
+            <div class="modal-body">
+                <!-- Level Group Section -->
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <svg class="form-section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                        </svg>
+                        <h4 class="form-section-title">Level Group</h4>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Level Group</label>
+                        <input type="text" id="edit_level_group_display" class="form-input" disabled>
+                    </div>
                 </div>
 
-                <div>
-                    <label for="edit_required_lesson_completion_percentage" class="block text-sm font-medium text-gray-700">Lesson Completion Required (%)</label>
-                    <input type="number" name="required_lesson_completion_percentage" id="edit_required_lesson_completion_percentage" min="0" max="100" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+                <!-- Group Progression Section -->
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <svg class="form-section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        <div>
+                            <h4 class="form-section-title">Group Progression Thresholds</h4>
+                            <p class="form-section-description">Requirements for advancing between level groups</p>
+                        </div>
+                    </div>
+                    <div class="form-grid cols-3">
+                        <div class="form-group">
+                            <label class="form-label">Lesson Completion (%)</label>
+                            <input type="number" name="required_lesson_completion_percentage" id="edit_required_lesson_completion_percentage" min="0" max="100" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Quiz Completion (%)</label>
+                            <input type="number" name="required_quiz_completion_percentage" id="edit_required_quiz_completion_percentage" min="0" max="100" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Avg Quiz Score (%)</label>
+                            <input type="number" name="required_average_quiz_score" id="edit_required_average_quiz_score" min="0" max="100" class="form-input" required>
+                        </div>
+                    </div>
                 </div>
 
-                <div>
-                    <label for="edit_required_quiz_completion_percentage" class="block text-sm font-medium text-gray-700">Quiz Completion Required (%)</label>
-                    <input type="number" name="required_quiz_completion_percentage" id="edit_required_quiz_completion_percentage" min="0" max="100" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+                <!-- Individual Progression Section -->
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <svg class="form-section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                        <div>
+                            <h4 class="form-section-title">Individual Progression Thresholds</h4>
+                            <p class="form-section-description">Requirements for advancing within level groups</p>
+                        </div>
+                    </div>
+                    <div class="form-grid cols-3">
+                        <div class="form-group">
+                            <label class="form-label">Lesson Threshold (%)</label>
+                            <input type="number" name="individual_level_lesson_threshold" id="edit_individual_level_lesson_threshold" min="0" max="100" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Quiz Threshold (%)</label>
+                            <input type="number" name="individual_level_quiz_threshold" id="edit_individual_level_quiz_threshold" min="0" max="100" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Score Threshold (%)</label>
+                            <input type="number" name="individual_level_score_threshold" id="edit_individual_level_score_threshold" min="0" max="100" class="form-input" required>
+                        </div>
+                    </div>
                 </div>
 
-                <div>
-                    <label for="edit_required_average_quiz_score" class="block text-sm font-medium text-gray-700">Average Quiz Score Required (%)</label>
-                    <input type="number" name="required_average_quiz_score" id="edit_required_average_quiz_score" min="0" max="100" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
-                </div>
-
-                <div>
-                    <label for="edit_minimum_quiz_score" class="block text-sm font-medium text-gray-700">Minimum Quiz Score (%)</label>
-                    <input type="number" name="minimum_quiz_score" id="edit_minimum_quiz_score" min="0" max="100" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
-                </div>
-
-                <div class="md:col-span-2">
-                    <label for="edit_lesson_watch_threshold_percentage" class="block text-sm font-medium text-gray-700">Lesson Watch Threshold (%)</label>
-                    <input type="number" name="lesson_watch_threshold_percentage" id="edit_lesson_watch_threshold_percentage" min="0" max="100" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+                <!-- Additional Settings Section -->
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <svg class="form-section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                        </svg>
+                        <h4 class="form-section-title">Additional Settings</h4>
+                    </div>
+                    <div class="form-grid cols-2">
+                        <div class="form-group">
+                            <label class="form-label">Minimum Quiz Score (%)</label>
+                            <input type="number" name="minimum_quiz_score" id="edit_minimum_quiz_score" min="0" max="100" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Lesson Watch Threshold (%)</label>
+                            <input type="number" name="lesson_watch_threshold_percentage" id="edit_lesson_watch_threshold_percentage" min="0" max="100" class="form-input" required>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="flex justify-end space-x-2 mt-6">
-                <button type="button" onclick="closeModal('editStandardModal')" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors">Cancel</button>
-                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">Update Standard</button>
+            <div class="modal-footer">
+                <button type="button" class="btn-modal btn-modal-secondary" id="cancelEditModal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="submit" class="btn-modal btn-modal-primary">
+                    <i class="fas fa-check"></i> Update Standard
+                </button>
             </div>
         </form>
     </div>
 </div>
 
-<script>
-function openModal(modalId) {
-    document.getElementById(modalId).classList.remove('hidden');
-}
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    document.addEventListener('DOMContentLoaded', function() {
+        const levelGroups = @json($levelGroups);
+        
+        // Modal elements
+        const addStandardBtn = document.getElementById('addStandardBtn');
+        const addStandardModal = document.getElementById('addStandardModal');
+        const editStandardModal = document.getElementById('editStandardModal');
+        const closeAddModal = document.getElementById('closeAddModal');
+        const cancelAddModal = document.getElementById('cancelAddModal');
+        const closeEditModal = document.getElementById('closeEditModal');
+        const cancelEditModal = document.getElementById('cancelEditModal');
+        const editStandardForm = document.getElementById('editStandardForm');
+        const editStandardBtns = document.querySelectorAll('.edit-standard-btn');
 
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
-}
+        // Open Add Modal
+        addStandardBtn.addEventListener('click', function() {
+            addStandardModal.classList.add('active');
+        });
 
-function openEditModal(id, levelGroup, lessonReq, quizReq, avgScoreReq, minScore, watchThreshold, isActive) {
-    const levelGroups = @json($levelGroups);
-    document.getElementById('edit_level_group_display').value = levelGroups[levelGroup] || levelGroup;
-    document.getElementById('edit_required_lesson_completion_percentage').value = lessonReq;
-    document.getElementById('edit_required_quiz_completion_percentage').value = quizReq;
-    document.getElementById('edit_required_average_quiz_score').value = avgScoreReq;
-    document.getElementById('edit_minimum_quiz_score').value = minScore;
-    document.getElementById('edit_lesson_watch_threshold_percentage').value = watchThreshold;
+        // Close Add Modal
+        closeAddModal.addEventListener('click', function() {
+            addStandardModal.classList.remove('active');
+        });
 
-    document.getElementById('editStandardForm').action = `/admin/progress/standards/${id}`;
-    openModal('editStandardModal');
-}
+        cancelAddModal.addEventListener('click', function() {
+            addStandardModal.classList.remove('active');
+        });
+
+        // Close Edit Modal
+        closeEditModal.addEventListener('click', function() {
+            editStandardModal.classList.remove('active');
+        });
+
+        cancelEditModal.addEventListener('click', function() {
+            editStandardModal.classList.remove('active');
+        });
+
+        // Close modal when clicking outside
+        addStandardModal.addEventListener('click', function(e) {
+            if (e.target === addStandardModal) {
+                addStandardModal.classList.remove('active');
+            }
+        });
+
+        editStandardModal.addEventListener('click', function(e) {
+            if (e.target === editStandardModal) {
+                editStandardModal.classList.remove('active');
+            }
+        });
+
+        // Edit Standard Button Handlers
+        editStandardBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const standardId = this.dataset.standardId;
+                const levelGroup = this.dataset.levelGroup;
+                const lessonReq = this.dataset.lessonReq;
+                const quizReq = this.dataset.quizReq;
+                const avgScore = this.dataset.avgScore;
+                const minScore = this.dataset.minScore;
+                const watchThreshold = this.dataset.watchThreshold;
+                const individualLesson = this.dataset.individualLesson;
+                const individualQuiz = this.dataset.individualQuiz;
+                const individualScore = this.dataset.individualScore;
+
+                // Populate form fields
+                document.getElementById('edit_level_group_display').value = levelGroups[levelGroup] || levelGroup;
+                document.getElementById('edit_required_lesson_completion_percentage').value = lessonReq;
+                document.getElementById('edit_required_quiz_completion_percentage').value = quizReq;
+                document.getElementById('edit_required_average_quiz_score').value = avgScore;
+                document.getElementById('edit_minimum_quiz_score').value = minScore;
+                document.getElementById('edit_lesson_watch_threshold_percentage').value = watchThreshold;
+                document.getElementById('edit_individual_level_lesson_threshold').value = individualLesson;
+                document.getElementById('edit_individual_level_quiz_threshold').value = individualQuiz;
+                document.getElementById('edit_individual_level_score_threshold').value = individualScore;
+
+                // Set form action
+                editStandardForm.action = `/admin/progress/standards/${standardId}`;
+
+                // Open modal
+                editStandardModal.classList.add('active');
+            });
+        });
+    });
 </script>
 @endsection

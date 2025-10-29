@@ -23,6 +23,7 @@ return [
             'https://cdn.quilljs.com',
             'https://schema.org',
             'https://cdn.tailwindcss.com',
+            'https://cdnjs.cloudflare.com',
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
             // Removed 'unsafe-inline' for better security - using nonces instead
             // Removeed 'unsafe-eval' not needed for Chart.js or other libraries now
@@ -58,7 +59,7 @@ return [
             'https://www.shoutoutgh.com',
             'https://ui-avatars.com', // For user avatars
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
-            'https://shoutoutgh.com',
+            'https://i.ytimg.com',
         ],
         'media-src' => [
             "'self'",
@@ -67,6 +68,11 @@ return [
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
             'https://stream.mux.com',
             'https://*.mux.com',
+            'https://vimeo.com',
+            'https://player.vimeo.com',
+            'https://www.youtube.com',
+            'https://youtu.be',
+            'https://www.shoutoutgh.com'
         ],
         'connect-src' => [
             "'self'",
@@ -84,6 +90,8 @@ return [
             'https://via.placeholder.com',
             'https://api.vimeo.com',
             'https://vimeo.com',
+            'https://*.mux.com',
+            'https://www.youtube.com',
             'https://ipapi.co',
             'https://schema.org',
     	 ],
@@ -92,6 +100,7 @@ return [
             'https://accounts.google.com',
             'https://www.google.com',
             'https://vimeo.com',
+            'https://*.mux.com',
             'https://player.vimeo.com',
             'https://www.youtube.com',
             'https://youtube.com',

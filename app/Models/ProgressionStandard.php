@@ -49,6 +49,10 @@ class ProgressionStandard extends Model
             'required_average_quiz_score' => 70.00,
             'minimum_quiz_score' => 70.00,
             'lesson_watch_threshold_percentage' => 90.00,
+            // Individual level progression thresholds (within level groups)
+            'individual_level_lesson_threshold' => 75.00, // 75% for within-group progression
+            'individual_level_quiz_threshold' => 60.00,    // 60% for within-group progression
+            'individual_level_score_threshold' => 65.00,   // 65% average score for within-group
         ];
     }
 
