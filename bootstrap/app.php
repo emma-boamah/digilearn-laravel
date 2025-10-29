@@ -61,5 +61,6 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withCommands([
         // Register your custom Artisan commands here
         ClearEmailVerificationCache::class,
+        \App\Console\Commands\UpdateLessonCompletions::class,
     ])
     ->create();

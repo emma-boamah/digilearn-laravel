@@ -7,10 +7,46 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class VideoStreamController extends Controller
 {
+    /**
+     * Helper method to get level group from grade level
+     */
+    private function getLevelGroup($level)
+    {
+        $groups = [
+            'primary-1' => 'primary-lower',
+            'primary-2' => 'primary-lower',
+            'primary-3' => 'primary-lower',
+            'primary-4' => 'primary-upper',
+            'primary-5' => 'primary-upper',
+            'primary-6' => 'primary-upper',
+            'jhs-1' => 'jhs',
+            'jhs-2' => 'jhs',
+            'jhs-3' => 'jhs',
+            'shs-1' => 'shs',
+            'shs-2' => 'shs',
+            'shs-3' => 'shs',
+            'Primary 1' => 'primary-lower',
+            'Primary 2' => 'primary-lower',
+            'Primary 3' => 'primary-lower',
+            'Primary 4' => 'primary-upper',
+            'Primary 5' => 'primary-upper',
+            'Primary 6' => 'primary-upper',
+            'JHS 1' => 'jhs',
+            'JHS 2' => 'jhs',
+            'JHS 3' => 'jhs',
+            'SHS 1' => 'shs',
+            'SHS 2' => 'shs',
+            'SHS 3' => 'shs',
+        ];
+
+        return $groups[$level] ?? $level;
+    }
+
     /**
      * Stream video file with proper headers for browser playback
      */
@@ -56,6 +92,7 @@ class VideoStreamController extends Controller
                 'action_type' => 'stream_start'
             ]
         );
+
 
         // Get the video file path
         $filePath = null;

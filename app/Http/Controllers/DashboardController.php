@@ -99,6 +99,9 @@ class DashboardController extends Controller
         $user->update(['grade' => $groupId]);
         session(['selected_level_group' => $groupId]);
 
+        // Initialize user progress for the selected level group
+        $this->initializeUserProgressForLevelGroup($user, $groupId);
+
         Log::channel('security')->info('level_group_selected', [
             'user_id' => Auth::id(),
             'level_group' => $groupId,
@@ -1925,6 +1928,76 @@ class DashboardController extends Controller
                 'years' => $this->getUniversityYears()
             ]
         ];
+    }
+
+    /**
+     * Initialize user progress for the selected level group
+     */
+    private function initializeUserProgressForLevelGroup($user, $levelGroup)
+    {
+        try {
+            // Check if user already has progress for this level group
+            $existingProgress = \App\Models\UserProgress::where('user_id', $user->id)
+                ->where('level_group', $levelGroup)
+                ->first();
+
+            if (!$existingProgress) {
+                // Get grade levels for this level group
+                $gradeLevels = $this->getGradeLevelsForLevelGroup($levelGroup);
+
+                // Get actual counts from database for this level group
+                $totalLessons = Video::approved()
+                    ->whereIn('grade_level', $gradeLevels)
+                    ->count();
+
+                $totalQuizzes = \App\Models\Quiz::whereIn('grade_level', $gradeLevels)
+                    ->count();
+
+                // Create progress record for the selected level group
+                \App\Models\UserProgress::create([
+                    'user_id' => $user->id,
+                    'current_level' => $levelGroup,
+                    'level_group' => $levelGroup,
+                    'total_lessons_in_level' => $totalLessons,
+                    'completed_lessons' => 0,
+                    'total_quizzes_in_level' => $totalQuizzes,
+                    'completed_quizzes' => 0,
+                    'average_quiz_score' => 0,
+                    'completion_percentage' => 0,
+                    'level_started_at' => now(),
+                ]);
+
+                Log::info('Initialized user progress for level group', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'level_group' => $levelGroup,
+                    'total_lessons' => $totalLessons,
+                    'total_quizzes' => $totalQuizzes
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to initialize user progress for level group', [
+                'user_id' => $user->id,
+                'level_group' => $levelGroup,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get grade levels for a level group
+     */
+    private function getGradeLevelsForLevelGroup($levelGroup)
+    {
+        $levelMappings = [
+            'primary-lower' => ['Primary 1', 'Primary 2', 'Primary 3'],
+            'primary-upper' => ['Primary 4', 'Primary 5', 'Primary 6'],
+            'jhs' => ['JHS 1', 'JHS 2', 'JHS 3'],
+            'shs' => ['SHS 1', 'SHS 2', 'SHS 3'],
+            'university' => [], // University handled differently
+        ];
+
+        return $levelMappings[$levelGroup] ?? [];
     }
 
     /**

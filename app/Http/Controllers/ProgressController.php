@@ -232,8 +232,11 @@ class ProgressController extends Controller
     {
         $userId = Auth::id();
         $progressionStatus = $this->checkProgressionEligibility($userId, $level);
-        
+
         if ($progressionStatus['eligible']) {
+            // Update lesson_completions table when user meets progression thresholds
+            $this->updateLessonCompletionsForProgression($userId, $level);
+
             // Auto-progress the user
             $nextLevel = $this->getNextLevel($level);
             if ($nextLevel) {
@@ -387,13 +390,13 @@ class ProgressController extends Controller
     private function progressUserToNextLevel($userId, $fromLevel, $toLevel, $progressionStatus)
     {
         $progress = UserProgress::getCurrentProgress($userId, $fromLevel);
-        
+
         // Mark current level as completed
         $progress->update([
             'level_completed' => true,
             'level_completed_at' => now(),
         ]);
-        
+
         // Record progression
         $progressData = [
             'from_level_group' => $this->getLevelGroup($fromLevel),
@@ -404,18 +407,92 @@ class ProgressController extends Controller
             'average_quiz_score' => $progress->average_quiz_score,
             'criteria_met' => $progressionStatus['progress_data'],
         ];
-        
+
         LevelProgression::recordProgression($userId, $fromLevel, $toLevel, $progressData);
-        
+
         // Update session to new level
         session(['selected_level_group' => $this->getLevelGroup($toLevel)]);
-        
+
         Log::info('automatic_level_progression', [
             'user_id' => $userId,
             'from_level' => $fromLevel,
             'to_level' => $toLevel,
             'final_score' => $progress->completion_percentage,
         ]);
+    }
+
+    /**
+     * Update lesson_completions table when user meets progression thresholds
+     */
+    private function updateLessonCompletionsForProgression($userId, $levelGroup)
+    {
+        try {
+            // Get all lesson completions for this user and level group
+            $lessonCompletions = \App\Models\LessonCompletion::where('user_id', $userId)
+                ->where('lesson_level_group', $levelGroup)
+                ->get();
+
+            // Get all quiz attempts for this user and level group
+            $quizAttempts = \App\Models\QuizAttempt::where('user_id', $userId)
+                ->where('quiz_level', $levelGroup)
+                ->get();
+
+            // Update lesson_completions with final completion status
+            foreach ($lessonCompletions as $completion) {
+                // Mark as fully completed if not already done
+                if (!$completion->fully_completed) {
+                    $completion->update([
+                        'fully_completed' => true,
+                        'completed_at' => now(),
+                        'completion_percentage' => 100.00, // Mark as 100% complete for progression
+                    ]);
+                }
+            }
+
+            // Create lesson completion records for quizzes that were passed
+            foreach ($quizAttempts as $attempt) {
+                if ($attempt->passed) {
+                    // Check if we already have a completion record for this quiz
+                    $existingCompletion = \App\Models\LessonCompletion::where('user_id', $userId)
+                        ->where('lesson_id', $attempt->quiz_id)
+                        ->first();
+
+                    if (!$existingCompletion) {
+                        // Create a new completion record for the passed quiz
+                        \App\Models\LessonCompletion::create([
+                            'user_id' => $userId,
+                            'lesson_id' => $attempt->quiz_id,
+                            'lesson_title' => $attempt->quiz_title,
+                            'lesson_subject' => $attempt->quiz_subject,
+                            'lesson_level' => $attempt->quiz_level,
+                            'lesson_level_group' => $levelGroup,
+                            'watch_time_seconds' => $attempt->time_taken_seconds,
+                            'total_duration_seconds' => $attempt->time_taken_seconds, // Use quiz time as duration
+                            'completion_percentage' => 100.00, // Quizzes are 100% complete when passed
+                            'fully_completed' => true,
+                            'times_watched' => 1,
+                            'first_watched_at' => $attempt->started_at ?? now(),
+                            'last_watched_at' => $attempt->completed_at ?? now(),
+                            'completed_at' => $attempt->completed_at ?? now(),
+                        ]);
+                    }
+                }
+            }
+
+            Log::info('Updated lesson_completions for level progression', [
+                'user_id' => $userId,
+                'level_group' => $levelGroup,
+                'lesson_completions_updated' => $lessonCompletions->count(),
+                'quiz_completions_added' => $quizAttempts->where('passed', true)->count(),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to update lesson_completions for progression', [
+                'user_id' => $userId,
+                'level_group' => $levelGroup,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

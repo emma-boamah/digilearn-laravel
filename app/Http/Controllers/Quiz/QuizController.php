@@ -392,6 +392,7 @@ class QuizController extends Controller
             'result_type' => gettype($result)
         ]);
 
+
         // Log the submission for debugging - safe array access
         Log::info('Quiz submission processed', [
             'quiz_id' => $quizId,

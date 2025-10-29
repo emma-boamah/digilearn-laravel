@@ -16,6 +16,7 @@ class LessonCompletion extends Model
         'lesson_title',
         'lesson_subject',
         'lesson_level',
+        'lesson_level_group',
         'watch_time_seconds',
         'total_duration_seconds',
         'completion_percentage',
@@ -49,6 +50,10 @@ class LessonCompletion extends Model
      */
     public static function recordWatchProgress($userId, $lessonData, $watchTimeSeconds, $totalDurationSeconds)
     {
+        // Ensure we have both individual level and level group
+        $individualLevel = $lessonData['level']; // e.g., "Primary 1"
+        $levelGroup = $lessonData['level_group'] ?? static::getLevelGroup($individualLevel); // e.g., "primary-lower"
+
         $completion = static::updateOrCreate(
             [
                 'user_id' => $userId,
@@ -57,19 +62,21 @@ class LessonCompletion extends Model
             [
                 'lesson_title' => $lessonData['title'],
                 'lesson_subject' => $lessonData['subject'],
-                'lesson_level' => $lessonData['level'],
+                'lesson_level' => $individualLevel, // Store individual level
+                'lesson_level_group' => $levelGroup, // Store level group for aggregation
                 'total_duration_seconds' => $totalDurationSeconds,
                 'first_watched_at' => now(),
                 'last_watched_at' => now(),
             ]
         );
 
-        // Update watch time and completion percentage
-        $completion->watch_time_seconds = max($completion->watch_time_seconds, $watchTimeSeconds);
-        $completion->completion_percentage = min(100, ($completion->watch_time_seconds / $totalDurationSeconds) * 100);
-        
+        // Update watch time - only accumulate if this watch session exceeds the previous maximum
+        $previousMaxWatchTime = $completion->watch_time_seconds;
+        $previousMaxWatchTime = max($previousMaxWatchTime, $watchTimeSeconds);
+        $completion->completion_percentage = min(100, ($previousMaxWatchTime / $totalDurationSeconds) * 100);
+
         // Get the watch threshold from standards
-        $standards = \App\Models\ProgressionStandard::getStandardsForLevel($lessonData['level_group'] ?? 'primary-lower');
+        $standards = \App\Models\ProgressionStandard::getStandardsForLevel($levelGroup);
         $watchThreshold = $standards['lesson_watch_threshold_percentage'];
 
         // Mark as fully completed if watched above threshold or more
@@ -94,6 +101,30 @@ class LessonCompletion extends Model
     }
 
     /**
+     * Get level group from individual level
+     */
+    private static function getLevelGroup($individualLevel)
+    {
+        $groups = [
+            'Primary 1' => 'primary-lower',
+            'Primary 2' => 'primary-lower',
+            'Primary 3' => 'primary-lower',
+            'Primary 4' => 'primary-upper',
+            'Primary 5' => 'primary-upper',
+            'Primary 6' => 'primary-upper',
+            'JHS 1' => 'jhs',
+            'JHS 2' => 'jhs',
+            'JHS 3' => 'jhs',
+            'SHS 1' => 'shs',
+            'SHS 2' => 'shs',
+            'SHS 3' => 'shs',
+            'Tertiary' => 'tertiary',
+        ];
+
+        return $groups[$individualLevel] ?? $individualLevel;
+    }
+
+    /**
      * Get completion statistics for a user and level
      */
     public static function getLevelStats($userId, $level)
@@ -114,19 +145,8 @@ class LessonCompletion extends Model
      */
     public static function getLevelGroupStats($userId, $levelGroup)
     {
-        // Map level group to individual levels
-        $levelMapping = [
-            'primary-lower' => ['Primary 1', 'Primary 2', 'Primary 3'],
-            'primary-upper' => ['Primary 4', 'Primary 5', 'Primary 6'],
-            'jhs' => ['JHS 1', 'JHS 2', 'JHS 3'],
-            'shs' => ['SHS 1', 'SHS 2', 'SHS 3'],
-            'tertiary' => ['Tertiary'],
-        ];
-
-        $levels = $levelMapping[$levelGroup] ?? [$levelGroup];
-
         return static::where('user_id', $userId)
-                    ->whereIn('lesson_level', $levels)
+                    ->where('lesson_level_group', $levelGroup)
                     ->selectRaw('
                         COUNT(*) as total_lessons,
                         SUM(CASE WHEN fully_completed = 1 THEN 1 ELSE 0 END) as completed_lessons,
