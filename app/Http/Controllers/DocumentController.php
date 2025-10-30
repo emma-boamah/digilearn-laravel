@@ -33,17 +33,32 @@ class DocumentController extends Controller
                 ->with('error', 'Please select your grade level first.');
         }
 
-        $selectedLevel = session('selected_level');
+        $selectedLevelGroup = session('selected_level_group');
 
-        // Get lesson data
-        $lessons = $this->getLessonsForLevel($selectedLevel);
-        $lesson = collect($lessons)->firstWhere('id', (int)$lessonId);
+        // Get lesson data from database (similar to DashboardController approach)
+        $gradeLevels = $this->getGradeLevelForLevelGroup($selectedLevelGroup);
+        $videos = \App\Models\Video::approved()->whereIn('grade_level', $gradeLevels)->with('documents')->get();
+        $lesson = $videos->firstWhere('id', (int)$lessonId);
+
+        // Convert to array format expected by the view
+        if ($lesson) {
+            $lesson = [
+                'id' => $lesson->id,
+                'title' => $lesson->title,
+                'subject' => $lesson->subject,
+                'duration' => $lesson->duration ?? 'Unknown',
+                'instructor' => $lesson->instructor ?? 'Unknown',
+                'year' => $lesson->year ?? '2025',
+                'video_url' => $lesson->getVideoUrl(),
+                'thumbnail' => $lesson->thumbnail ?? null,
+            ];
+        }
 
         if (!$lesson) {
             return view('dashboard.document-viewer', [
                 'lesson' => null,
                 'document' => null,
-                'selectedLevel' => $selectedLevel,
+                'selectedLevelGroup' => $selectedLevelGroup,
                 'type' => $type,
                 'error' => 'Lesson not found.'
             ]);
@@ -52,18 +67,15 @@ class DocumentController extends Controller
         // Get basic document info for preview
         $document = $this->getDocumentForLesson($lessonId, $type);
 
+        // Ensure document is always an array for consistent view handling
         if (!$document) {
-            // Pass a flag or empty document to the view
-            return view('dashboard.document-viewer', [
-                'lesson' => $lesson,
-                'document' => null,
-                'selectedLevel' => $selectedLevel,
-                'type' => $type
-            ]);
+            $document = []; // Empty array instead of null
+        } elseif (!is_array($document)) {
+            $document = [$document]; // Wrap single document in array
         }
 
         // Return the simple preview page
-        return view('dashboard.document-viewer', compact('lesson', 'document', 'selectedLevel', 'type'));
+        return view('dashboard.document-viewer', compact('lesson', 'document', 'selectedLevelGroup', 'type'));
     }
 
     // Second page - Document content viewer
@@ -77,9 +89,24 @@ class DocumentController extends Controller
 
         $selectedLevelGroup = session('selected_level_group');
 
-        // Get lesson data
-        $lessons = $this->getLessonsForLevel($selectedLevelGroup);
-        $lesson = collect($lessons)->firstWhere('id', (int)$lessonId);
+        // Get lesson data from database (similar to DashboardController approach)
+        $gradeLevels = $this->getGradeLevelForLevelGroup($selectedLevelGroup);
+        $videos = \App\Models\Video::approved()->whereIn('grade_level', $gradeLevels)->with('documents')->get();
+        $lesson = $videos->firstWhere('id', (int)$lessonId);
+
+        // Convert to array format expected by the view
+        if ($lesson) {
+            $lesson = [
+                'id' => $lesson->id,
+                'title' => $lesson->title,
+                'subject' => $lesson->subject,
+                'duration' => $lesson->duration ?? 'Unknown',
+                'instructor' => $lesson->instructor ?? 'Unknown',
+                'year' => $lesson->year ?? '2025',
+                'video_url' => $lesson->getVideoUrl(),
+                'thumbnail' => $lesson->thumbnail ?? null,
+            ];
+        }
 
         if (!$lesson) {
             return redirect()->route('dashboard.digilearn')
@@ -115,205 +142,62 @@ class DocumentController extends Controller
         return view('dashboard.document-content-viewer', compact('lesson', 'document', 'selectedLevelGroup', 'type'));
     }
 
-    private function getLessonsForLevel($level)
+    private function getGradeLevelForLevelGroup($levelGroup)
     {
-        $allLessons = [
-            'primary-1-3' => [
-                [
-                    'id' => 1,
-                    'title' => 'Basic Numbers and Counting',
-                    'subject' => 'Mathematics Gr-1',
-                    'duration' => '12:30',
-                    'instructor' => 'Prof. Mensah',
-                    'year' => '2025',
-                ],
-                [
-                    'id' => 2,
-                    'title' => 'Animals and Their Homes',
-                    'subject' => 'Science Gr-2',
-                    'duration' => '15:45',
-                    'instructor' => 'Prof. Asante',
-                    'year' => '2025',
-                ]
-            ],
-            'primary-4-6' => [
-                [
-                    'id' => 3,
-                    'title' => 'Fractions and Decimals',
-                    'subject' => 'Mathematics Gr-4',
-                    'duration' => '18:20',
-                    'instructor' => 'Prof. Osei',
-                    'year' => '2025',
-                ]
-            ],
-            'jhs-7-9' => [
-                [
-                    'id' => 4,
-                    'title' => 'Living and Non Living organism',
-                    'subject' => 'Science Gr-7',
-                    'duration' => '14:07',
-                    'instructor' => 'Prof. Aboagye',
-                    'year' => '2025',
-                ],
-                [
-                    'id' => 5,
-                    'title' => 'Algebraic Expressions',
-                    'subject' => 'Mathematics Gr-8',
-                    'duration' => '16:30',
-                    'instructor' => 'Prof. Kwame',
-                    'year' => '2025',
-                ]
-            ],
-            'shs-1-3' => [
-                [
-                    'id' => 6,
-                    'title' => 'Chemical Bonding',
-                    'subject' => 'Chemistry SHS-1',
-                    'duration' => '22:15',
-                    'instructor' => 'Prof. Adjei',
-                    'year' => '2025',
-                ]
-            ]
+        // Map level groups to all possible grade levels they contain
+        $gradeLevels = [
+            'primary-lower' => ['Primary 1', 'Primary 2', 'Primary 3'],
+            'primary-upper' => ['Primary 4', 'Primary 5', 'Primary 6'],
+            'jhs' => ['JHS 1', 'JHS 2', 'JHS 3'],
+            'shs' => ['SHS 1', 'SHS 2', 'SHS 3'],
+            'university' => ['University']
         ];
 
-        return $allLessons[$level] ?? [];
+        return $gradeLevels[$levelGroup] ?? ['SHS 1'];
     }
 
     // Basic document info for preview page
     private function getDocumentForLesson($lessonId, $type)
     {
-        $documents = [
-            1 => [
-                'pdf' => [
-                    [
-                        'id' => 1,
-                        'title' => 'How to operate on woods - Part 1',
-                        'file_path' => 'documents/lessons/basic-numbers-counting-1.pdf',
-                        'file_size' => '2.5 MB',
-                        'pages' => 15
-                    ],
-                    [
-                        'id' => 2,
-                        'title' => 'How to operate on woods - Part 2',
-                        'file_path' => 'documents/lessons/basic-numbers-counting-2.pdf',
-                        'file_size' => '1.8 MB',
-                        'pages' => 12
-                    ]
-                ],
-                'ppt' => [
-                    [
-                        'id' => 1,
-                        'title' => 'How to operate on woods - Presentation',
-                        'file_path' => 'documents/lessons/basic-numbers-counting.pptx',
-                        'file_size' => '4.2 MB',
-                        'slides' => 20
-                    ]
-                ]
-            ],
-            2 => [
-                'pdf' => [
-                    'title' => 'Animals and Their Homes Guide',
-                    'file_path' => 'documents/lessons/animals-homes.pdf',
-                    'file_size' => '1.8 MB',
-                    'pages' => 12
-                ],
-                [
-                    'title' => 'Animals and Their Homes Presentation',
-                    'file_path' => 'documents/lessons/animals-homes.pptx',
-                    'file_size' => '3.5 MB',
-                    'slides' => 15
-                ],
-                'ppt' => [
-                    'title' => 'Animals and Their Homes Presentation',
-                    'file_path' => 'documents/lessons/animals-homes.pptx',
-                    'file_size' => '3.5 MB',
-                    'slides' => 15
-                ]
-            ],
-            3 => [
-                'pdf' => [
-                    'title' => 'Fractions and Decimals Workbook',
-                    'file_path' => 'documents/lessons/fractions-decimals.pdf',
-                    'file_size' => '2.2 MB',
-                    'pages' => 18
-                ],
-                [
-                    'title' => 'Fractions and Decimals Presentation',
-                    'file_path' => 'documents/lessons/fractions-decimals.pptx',
-                    'file_size' => '4.1 MB',
-                    'slides' => 22
-                ],
-                'ppt' => [
-                    'title' => 'Fractions and Decimals Slides',
-                    'file_path' => 'documents/lessons/fractions-decimals.pptx',
-                    'file_size' => '4.1 MB',
-                    'slides' => 22
-                ]
-            ],
-            4 => [
-                'pdf' => [
-                    'title' => 'How to operate on woods',
-                    'file_path' => 'documents/lessons/living-non-living.pdf',
-                    'file_size' => '3.1 MB',
-                    'pages' => 22
-                ],
-                [
-                    'title' => 'How to operate on woods Presentation',
-                    'file_path' => 'documents/lessons/living-non-living.pptx',
-                    'file_size' => '5.8 MB',
-                    'slides' => 25
-                ],
-                'ppt' => [
-                    'title' => 'How to operate on woods',
-                    'file_path' => 'documents/lessons/living-non-living.pptx',
-                    'file_size' => '5.8 MB',
-                    'slides' => 25
-                ]
-            ],
-            5 => [
-                'pdf' => [
-                    'title' => 'Algebraic Expressions Manual',
-                    'file_path' => 'documents/lessons/algebra.pdf',
-                    'file_size' => '2.7 MB',
-                    'pages' => 20
-                ],
-                [
-                    'title' => 'Algebraic Expressions Presentation',
-                    'file_path' => 'documents/lessons/algebra.pptx',
-                    'file_size' => '4.8 MB',
-                    'slides' => 28
-                ],
-                'ppt' => [
-                    'title' => 'Algebraic Expressions Presentation',
-                    'file_path' => 'documents/lessons/algebra.pptx',
-                    'file_size' => '4.8 MB',
-                    'slides' => 28
-                ]
-            ],
-            6 => [
-                'pdf' => [
-                    'title' => 'Chemical Bonding Study Guide',
-                    'file_path' => 'documents/lessons/chemistry.pdf',
-                    'file_size' => '3.5 MB',
-                    'pages' => 25
-                ],
-                [
-                    'title' => 'How to operate on woods Presentation',
-                    'file_path' => 'documents/lessons/living-non-living.pptx',
-                    'file_size' => '5.8 MB',
-                    'slides' => 25
-                ],
-                'ppt' => [
-                    'title' => 'Chemical Bonding Slides',
-                    'file_path' => 'documents/lessons/chemistry.pptx',
-                    'file_size' => '6.2 MB',
-                    'slides' => 35
-                ]
-            ]
-        ];
+        // Query database for documents related to this video (lesson)
+        $document = \App\Models\Document::where('video_id', $lessonId)->first();
 
-        $docs = $documents[$lessonId][$type] ?? [];
-        return is_array($docs) && isset($docs[0]) ? $docs[0] : $docs;
+        if (!$document) {
+            return null;
+        }
+
+        // Determine file type based on file extension
+        $fileExtension = strtolower(pathinfo($document->file_path, PATHINFO_EXTENSION));
+        $documentType = $fileExtension === 'pdf' ? 'pdf' : 'ppt';
+
+        // Only return document if it matches the requested type
+        if ($documentType !== $type) {
+            return null;
+        }
+
+        // Return basic document info for preview
+        if ($type === 'pdf') {
+            return [
+                'id' => $document->id,
+                'title' => $document->title,
+                'file_path' => $document->file_path,
+                'file_size' => $this->formatFileSize($document->file_path),
+                'pages' => 1 // Placeholder, could be calculated from actual file
+            ];
+        }
+
+        // For PPT documents
+        if ($type === 'ppt') {
+            return [
+                'id' => $document->id,
+                'title' => $document->title,
+                'file_path' => $document->file_path,
+                'file_size' => $this->formatFileSize($document->file_path),
+                'slides' => 1 // Placeholder, could be calculated from actual file
+            ];
+        }
+
+        return null;
     }
 
     // Full document content for content viewer page
@@ -323,262 +207,71 @@ class DocumentController extends Controller
         if ($type === 'ppt' && request()->has('ppt_id')) {
             $pptId = request()->get('ppt_id');
             $presentations = session('user_presentations', []);
-            
+
             if (isset($presentations[$lessonId][$pptId])) {
                 return $presentations[$lessonId][$pptId];
             }
         }
 
-        $documents = [
-            1 => [
-                'pdf' => [
-                    'id' => 1,
-                    'title' => 'Basic Numbers and Counting Study Guide',
-                    'file_path' => 'documents/lessons/basic-numbers-counting.pdf',
-                    'file_size' => '2.5 MB',
-                    'pages' => [
-                        [
-                            'number' => 1,
-                            'title' => 'Page 1',
-                            'content' => 'Introduction to Numbers and Counting
+        // Query database for documents related to this video (lesson)
+        $document = \App\Models\Document::where('video_id', $lessonId)->first();
 
-Numbers are fundamental building blocks of mathematics. In this lesson, we will explore basic counting principles and number recognition. Understanding numbers helps us in daily life activities such as counting objects, telling time, and measuring quantities.
+        if (!$document) {
+            return [];
+        }
 
-Basic counting starts with understanding the sequence: 1, 2, 3, 4, 5, and so on. Each number represents a specific quantity. When we count, we assign one number to each object in a group.
+        // Determine file type based on file extension
+        $fileExtension = strtolower(pathinfo($document->file_path, PATHINFO_EXTENSION));
+        $documentType = $fileExtension === 'pdf' ? 'pdf' : 'ppt';
 
-Key concepts covered:
-- Number recognition from 1 to 100
-- Counting forward and backward
-- Understanding quantity and number relationships
-- Basic addition and subtraction concepts'
-                        ],
-                        [
-                            'number' => 2,
-                            'title' => 'Page 2',
-                            'content' => 'Counting Exercises and Practice
+        // Only return document if it matches the requested type
+        if ($documentType !== $type) {
+            return [];
+        }
 
-Practice makes perfect when learning to count. Here are some exercises to help reinforce counting skills:
-
-Exercise 1: Count the objects
-Look around your classroom and count different items like chairs, books, pencils, and windows.
-
-Exercise 2: Number sequence
-Fill in the missing numbers: 1, 2, _, 4, 5, _, 7, 8, _, 10
-
-Exercise 3: Counting backwards
-Practice counting backwards from 10: 10, 9, 8, 7, 6, 5, 4, 3, 2, 1
-
-These exercises help develop number sense and mathematical thinking skills that will be useful throughout your education.'
-                        ],
-                        [
-                            'number' => 3,
-                            'title' => 'Page 3',
-                            'content' => 'Advanced Counting Concepts
-
-As we progress in mathematics, counting becomes more sophisticated. We learn to count by 2s, 5s, and 10s, which helps with multiplication and division later.
-
-Skip counting examples:
-- By 2s: 2, 4, 6, 8, 10, 12, 14, 16, 18, 20
-- By 5s: 5, 10, 15, 20, 25, 30, 35, 40, 45, 50
-- By 10s: 10, 20, 30, 40, 50, 60, 70, 80, 90, 100
-
-Understanding these patterns helps students recognize mathematical relationships and prepares them for more complex mathematical concepts in future grades.'
-                        ]
-                    ]
-                ],
-                'ppt' => [
-                    'id' => 1,
-                    'title' => 'Basic Numbers and Counting',
-                    'file_path' => 'documents/lessons/basic-numbers-counting.pptx',
-                    'file_size' => '4.2 MB',
-                    'subject' => 'Mathematics Gr-1',
-                    'slides' => [
-                        [
-                            'number' => 1,
-                            'title' => 'Basic Numbers and Counting',
-                            'subtitle' => 'Mathematics Grade 1',
-                            'type' => 'title'
-                        ],
-                        [
-                            'number' => 2,
-                            'title' => 'What are Numbers?',
-                            'content' => 'Numbers help us count and measure things around us.',
-                            'type' => 'definition'
-                        ],
-                        [
-                            'number' => 3,
-                            'title' => 'Counting Examples',
-                            'content' => [
-                                'Fingers on your hand',
-                                'Books on the shelf',
-                                'Students in class',
-                                'Days in a week'
-                            ],
-                            'type' => 'list'
-                        ]
+        // For PDF documents, return structured content
+        if ($type === 'pdf') {
+            return [
+                'id' => $document->id,
+                'title' => $document->title,
+                'file_path' => $document->file_path,
+                'file_size' => $this->formatFileSize($document->file_path),
+                'pages' => [
+                    [
+                        'number' => 1,
+                        'title' => 'Document Content',
+                        'content' => $document->description ?: 'Document content not available for preview.'
                     ]
                 ]
-            ],
-            2 => [
-                'pdf' => [
-                    'title' => 'Animals and Their Homes Study Guide',
-                    'pages' => [
-                        [
-                            'number' => 1,
-                            'title' => 'Page 1',
-                            'content' => 'Animals and Their Homes
+            ];
+        }
 
-Animals live in different types of homes depending on their needs and environment. Just like humans need shelter, animals also need safe places to live, sleep, and raise their young.
-
-Different animals have adapted to live in various environments:
-- Some animals live in water
-- Some live on land
-- Some live in trees
-- Some live underground
-
-Understanding where animals live helps us learn about their behavior and how they survive in nature. This knowledge is important for protecting wildlife and their habitats.'
-                        ],
-                        [
-                            'number' => 2,
-                            'title' => 'Page 2',
-                            'content' => 'Types of Animal Homes
-
-Land Animals:
-- Bears live in caves or dens
-- Birds build nests in trees
-- Rabbits live in burrows underground
-- Lions live in dens
-
-Water Animals:
-- Fish live in rivers, lakes, and oceans
-- Beavers build dams in streams
-- Frogs live near ponds and wetlands
-
-Each type of home provides protection from weather, predators, and a safe place to raise babies.'
-                        ]
-                    ]
-                ],
-                'ppt' => [
-                    'title' => 'Animals and Their Homes',
-                    'subject' => 'Science Grade 2',
-                    'slides' => [
-                        [
-                            'number' => 1,
-                            'title' => 'Animals and Their Homes',
-                            'subtitle' => 'Science Grade 2',
-                            'type' => 'title'
-                        ],
-                        [
-                            'number' => 2,
-                            'title' => 'Why do animals need homes?',
-                            'content' => 'Animals need homes for protection, shelter, and raising their babies.',
-                            'type' => 'definition'
-                        ],
-                        [
-                            'number' => 3,
-                            'title' => 'Examples of Animal Homes',
-                            'content' => [
-                                'Birds - Nests',
-                                'Bears - Caves',
-                                'Fish - Water',
-                                'Bees - Hives'
-                            ],
-                            'type' => 'list'
-                        ]
+        // For PPT documents, return slide structure
+        if ($type === 'ppt') {
+            return [
+                'id' => $document->id,
+                'title' => $document->title,
+                'file_path' => $document->file_path,
+                'file_size' => $this->formatFileSize($document->file_path),
+                'subject' => $document->video->subject ?? 'General',
+                'slides' => [
+                    [
+                        'number' => 1,
+                        'title' => $document->title,
+                        'subtitle' => $document->video->subject ?? 'General',
+                        'type' => 'title'
+                    ],
+                    [
+                        'number' => 2,
+                        'title' => 'Document Overview',
+                        'content' => $document->description ?: 'Document slides not available for preview.',
+                        'type' => 'definition'
                     ]
                 ]
-            ],
-            4 => [
-                'pdf' => [
-                    'title' => 'Living and Non-Living Organisms Study Guide',
-                    'pages' => [
-                        [
-                            'number' => 1,
-                            'title' => 'Page 1',
-                            'content' => 'Sustainable Number Kendall Organic Properties Regulate Yang Cells Recreational Limits Metabolism Includes Fuel Provide Protein Repair
+            ];
+        }
 
-Provide oxygen and liquids sugar, breathe clean work, membrane oxygen. Plant has produced also both hormonal plant properties are also important. Provide that may necessary information oxygen may extremely nutritious balance contain they require. Kinda health contain also require may has work energy and liquid oxygen and liquid substance that require. Provide that may necessary information oxygen may extremely nutritious balance contain they require. Kinda health contain also require may has work energy and liquid oxygen and liquid substance that require.
-
-That can be below, advise value but information also may liquid oxygen and liquid substance that require. Provide that may necessary information oxygen may extremely nutritious balance contain they require. Kinda health contain also require may has work energy and liquid oxygen and liquid substance that require. Provide that may necessary information oxygen may extremely nutritious balance contain they require. Kinda health contain also require may has work energy and liquid oxygen and liquid substance that require.
-
-Provide that may necessary information oxygen may extremely nutritious balance contain they require. Kinda health contain also require may has work energy and liquid oxygen and liquid substance that require. Provide that may necessary information oxygen may extremely nutritious balance contain they require. Kinda health contain also require may has work energy and liquid oxygen and liquid substance that require.'
-                        ],
-                        [
-                            'number' => 2,
-                            'title' => 'Page 2',
-                            'content' => 'Sustainable Number Kendall Organic Properties Regulate Yang Cells Recreational Limits Metabolism Includes Fuel Provide Protein Repair
-
-Provide oxygen and liquids sugar, breathe clean work, membrane oxygen. Plant has produced also both hormonal plant properties are also important. Provide that may necessary information oxygen may extremely nutritious balance contain they require. Kinda health contain also require may has work energy and liquid oxygen and liquid substance that require.
-
-That can be below, advise value but information also may liquid oxygen and liquid substance that require. Provide that may necessary information oxygen may extremely nutritious balance contain they require. Kinda health contain also require may has work energy and liquid oxygen and liquid substance that require.'
-                        ],
-                        [
-                            'number' => 3,
-                            'title' => 'Page 3',
-                            'content' => 'Advanced Topics in Living Organisms
-
-This section covers more complex aspects of living organisms including cellular respiration, photosynthesis, and metabolic processes. Understanding these fundamental processes is crucial for comprehending how life sustains itself.
-
-Key concepts include:
-- Energy conversion in cells
-- Nutrient absorption and distribution
-- Waste elimination processes
-- Growth and reproduction mechanisms'
-                        ]
-                    ]
-                ],
-                'ppt' => [
-                    'title' => 'Living and Non-Living Things',
-                    'subject' => 'Grade 3 Science',
-                    'slides' => [
-                        [
-                            'number' => 1,
-                            'title' => 'Living and non-living things',
-                            'subtitle' => 'Grade 3 Science',
-                            'type' => 'title',
-                            'background_image' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop'
-                        ],
-                        [
-                            'number' => 2,
-                            'title' => 'Definition',
-                            'content' => 'Living things are the things the have life and performs life activities.',
-                            'type' => 'definition',
-                            'background_image' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop'
-                        ],
-                        [
-                            'number' => 3,
-                            'title' => 'Examples',
-                            'content' => [
-                                'Trees',
-                                'Animals', 
-                                'Humans'
-                            ],
-                            'type' => 'list',
-                            'background_image' => 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop'
-                        ],
-                        [
-                            'number' => 4,
-                            'title' => 'Non-living things',
-                            'content' => 'They do not have life and performs life activities',
-                            'type' => 'definition'
-                        ],
-                        [
-                            'number' => 5,
-                            'title' => 'Example of non-living things',
-                            'content' => [
-                                'car',
-                                'stone',
-                                'toy',
-                                'laptop'
-                            ],
-                            'type' => 'list'
-                        ]
-                    ]
-                ]
-            ]
-        ];
-
-        return $documents[$lessonId][$type] ?? [];
+        return [];
     }
 
     // Create new PPT
@@ -592,9 +285,23 @@ Key concepts include:
 
         $selectedLevelGroup = session('selected_level_group');
 
-        // Get lesson data
-        $lessons = $this->getLessonsForLevel($selectedLevelGroup);
-        $lesson = collect($lessons)->firstWhere('id', (int)$lessonId);
+        // Get lesson data from database (similar to DashboardController approach)
+        $videos = \App\Models\Video::approved()->where('grade_level', $this->getGradeLevelForLevelGroup($selectedLevelGroup))->with('documents')->get();
+        $lesson = $videos->firstWhere('id', (int)$lessonId);
+
+        // Convert to array format expected by the view
+        if ($lesson) {
+            $lesson = [
+                'id' => $lesson->id,
+                'title' => $lesson->title,
+                'subject' => $lesson->subject,
+                'duration' => $lesson->duration ?? 'Unknown',
+                'instructor' => $lesson->instructor ?? 'Unknown',
+                'year' => $lesson->year ?? '2025',
+                'video_url' => $lesson->getVideoUrl(),
+                'thumbnail' => $lesson->thumbnail ?? null,
+            ];
+        }
 
         if (!$lesson) {
             return redirect()->route('dashboard.digilearn')
@@ -708,5 +415,25 @@ Key concepts include:
             'success' => true,
             'message' => 'Document changes saved successfully'
         ]);
+    }
+
+    private function formatFileSize($filePath)
+    {
+        // Check if file exists
+        if (!file_exists(storage_path('app/public/' . $filePath))) {
+            return 'Unknown';
+        }
+
+        $bytes = filesize(storage_path('app/public/' . $filePath));
+
+        if ($bytes >= 1073741824) {
+            return number_format($bytes / 1073741824, 1) . ' GB';
+        } elseif ($bytes >= 1048576) {
+            return number_format($bytes / 1048576, 1) . ' MB';
+        } elseif ($bytes >= 1024) {
+            return number_format($bytes / 1024, 1) . ' KB';
+        } else {
+            return $bytes . ' bytes';
+        }
     }
 }

@@ -431,6 +431,21 @@ class DashboardController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
 
+            Log::info('DashboardController::getLessonsForLevel - Videos with documents', [
+                'level' => $level,
+                'videos_count' => $videos->count(),
+                'videos_with_documents' => $videos->filter(function($video) {
+                    return $video->documents->count() > 0;
+                })->map(function($video) {
+                    return [
+                        'id' => $video->id,
+                        'title' => $video->title,
+                        'documents_count' => $video->documents->count(),
+                        'documents' => $video->documents->pluck('title')->toArray()
+                    ];
+                })->toArray()
+            ]);
+
             $lessons = [];
             foreach ($videos as $index => $video) {
                 $lesson = [
@@ -447,6 +462,16 @@ class DashboardController extends Controller
                     'level' => $level,
                     'level_display' => $this->getLevelDisplayName($level),
                     'documents_count' => $video->documents->count(),
+                    'documents' => $video->documents->map(function($doc) {
+                        return [
+                            'id' => $doc->id,
+                            'title' => $doc->title,
+                            'file_path' => $doc->file_path,
+                            'description' => $doc->description,
+                            'uploaded_by' => $doc->uploader ? $doc->uploader->name : 'Unknown',
+                            'views' => $doc->views ?? 0,
+                        ];
+                    }),
                     'has_quiz' => $video->quiz ? true : false,
                     'views' => $video->views ?? 0,
                     'is_featured' => $video->is_featured,
@@ -1708,6 +1733,16 @@ class DashboardController extends Controller
                     'week' => ceil(($index + 1) / 3), // Assuming 3 lessons per week
                     'order' => $index + 1,
                     'documents_count' => $video->documents->count(),
+                    'documents' => $video->documents->map(function($doc) {
+                        return [
+                            'id' => $doc->id,
+                            'title' => $doc->title,
+                            'file_path' => $doc->file_path,
+                            'description' => $doc->description,
+                            'uploaded_by' => $doc->uploader ? $doc->uploader->name : 'Unknown',
+                            'views' => $doc->views ?? 0,
+                        ];
+                    }),
                     'has_quiz' => $video->quiz ? true : false,
                 ];
 
@@ -1719,6 +1754,7 @@ class DashboardController extends Controller
                 'course_title' => $course->title,
                 'videos_found' => $videos->count(),
                 'lessons_returned' => count($lessons),
+                'documents_loaded' => collect($lessons)->sum(function($lesson) { return count($lesson['documents'] ?? []); }),
                 'timestamp' => now()->toISOString()
             ]);
 

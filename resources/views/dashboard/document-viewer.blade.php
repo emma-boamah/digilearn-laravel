@@ -614,40 +614,34 @@
     <!-- Main Content -->
     <div class="main-content">
         @php
-            // Handle both array of documents and single document
-            $documents = $document ?? [];
-            $documentCount = is_array($documents) ? count($documents) : 0;
+            // Normalize $document into an array of documents
+            $documents = is_array($document)
+                ? (isset($document[0]) ? $document : [$document])  // wrap single assoc doc into array
+                : [];
+            $documentCount = count($documents);
         @endphp
 
         @if($documentCount === 0)
             <!-- No documents found -->
             <div class="document-card">
                 <div class="document-icon {{ $type }}">
-                    @if($type === 'pdf')
-                        PDF
-                    @else
-                        PPT
-                    @endif
+                    {{ strtoupper($type) }}
                 </div>
                 <h1 class="document-title">No Documents Found</h1>
                 <p class="document-subtitle">{{ $lesson['subject'] ?? 'Subject' }} • {{ $lesson['year'] ?? '2025' }}</p>
-                <p>No {{ $type === 'pdf' ? 'PDF' : 'PowerPoint' }} documents are available for this lesson.</p>
+                <p>No {{ strtoupper($type) }} documents are available for this lesson.</p>
             </div>
         @elseif($documentCount === 1)
             <!-- Single document - card design -->
+            @php $singleDoc = $documents[0]; @endphp
             <div class="document-card">
-                @php $singleDoc = $documents[0] @endphp
                 <div class="document-icon {{ $type }}">
-                    @if($type === 'pdf')
-                        PDF
-                    @else
-                        PPT
-                    @endif
+                    {{ strtoupper($type) }}
                 </div>
-                
+
                 <h1 class="document-title">{{ $singleDoc['title'] ?? 'Document Title' }}</h1>
                 <p class="document-subtitle">{{ $lesson['subject'] ?? 'Subject' }} • {{ $lesson['year'] ?? '2025' }}</p>
-                
+
                 <div class="instructor-info">
                     <div class="instructor-label">Attached by</div>
                     <div class="instructor-name">{{ $singleDoc['attached_by'] ?? $lesson['instructor'] ?? 'Instructor' }}</div>
@@ -656,43 +650,39 @@
                 <div class="document-meta">
                     <div class="file-type">
                         <i class="fas fa-file-{{ $type === 'pdf' ? 'pdf' : 'powerpoint' }}"></i>
-                        {{ $singleDoc['file_type'] ?? ($type === 'pdf' ? 'PDF Document' : 'PowerPoint Presentation') }}
+                        {{ $singleDoc['file_type'] ?? strtoupper($type) }}
                     </div>
                     <div class="read-only-badge">
-                        <i class="fas fa-eye"></i>
-                        View Only
+                        <i class="fas fa-eye"></i> View Only
                     </div>
                 </div>
 
                 @if(isset($singleDoc['pages']) || isset($singleDoc['slides']))
                 <div class="file-stats">
                     @if($type === 'pdf' && isset($singleDoc['pages']))
-                    <div class="file-stat">
-                        <div class="file-stat-value">
-                            {{ is_array($singleDoc['pages']) ? count($singleDoc['pages']) : $singleDoc['pages'] }}
+                        <div class="file-stat">
+                            <div class="file-stat-value">{{ $singleDoc['pages'] }}</div>
+                            <div class="file-stat-label">Pages</div>
                         </div>
-                        <div class="file-stat-label">Pages</div>
-                    </div>
                     @elseif($type === 'ppt' && isset($singleDoc['slides']))
-                    <div class="file-stat">
-                        <div class="file-stat-value">
-                            {{ is_array($singleDoc['slides']) ? count($singleDoc['slides']) : $singleDoc['slides'] }}
+                        <div class="file-stat">
+                            <div class="file-stat-value">{{ $singleDoc['slides'] }}</div>
+                            <div class="file-stat-label">Slides</div>
                         </div>
-                        <div class="file-stat-label">Slides</div>
-                    </div>
                     @endif
-                    
                     <div class="file-stat">
                         <div class="file-stat-value">{{ $singleDoc['file_size'] ?? 'N/A' }}</div>
                         <div class="file-stat-label">File Size</div>
                     </div>
                 </div>
                 @endif
-                
-                <a href="{{ route('dashboard.lesson.document.content', ['lessonId' => $lesson['id'], 'type' => $type, 'docId' => $singleDoc['id'] ?? 1]) }}" 
-                   class="action-button {{ $type }}">
-                    <i class="fas fa-eye"></i>
-                    View {{ $type === 'pdf' ? 'Document' : 'Presentation' }}
+
+                <a href="{{ route('dashboard.lesson.document.content', [
+                    'lessonId' => $lesson['id'],
+                    'type' => $type,
+                    'docId' => $singleDoc['id'] ?? 1
+                ]) }}" class="action-button {{ $type }}">
+                    <i class="fas fa-eye"></i> View {{ $type === 'pdf' ? 'Document' : 'Presentation' }}
                 </a>
             </div>
         @else
@@ -702,37 +692,33 @@
                     <h2>{{ ucfirst($type) }} Documents ({{ $documentCount }})</h2>
                     <p>{{ $lesson['subject'] ?? 'Subject' }} • {{ $lesson['year'] ?? '2025' }}</p>
                 </div>
-                
                 <div class="documents-container">
                     @foreach($documents as $index => $doc)
                     <div class="document-card-small">
                         <div class="document-icon-small {{ $type }}">
-                            @if($type === 'pdf')
-                                PDF
-                            @else
-                                PPT
-                            @endif
+                            {{ strtoupper($type) }}
                         </div>
-                        
                         <h3 class="document-title-small">{{ $doc['title'] ?? 'Document Title' }}</h3>
-                        
+
                         <div class="document-meta-small">
-                            <span class="file-size">{{ $doc['file_size'] ?? 'N/A' }}</span>
-                            <span class="file-count">
+                            <span>{{ $doc['file_size'] ?? 'N/A' }}</span>
+                            <span>
                                 @if($type === 'pdf' && isset($doc['pages']))
-                                    {{ is_array($doc['pages']) ? count($doc['pages']) : $doc['pages'] }} pages
+                                    {{ $doc['pages'] }} pages
                                 @elseif($type === 'ppt' && isset($doc['slides']))
-                                    {{ is_array($doc['slides']) ? count($doc['slides']) : $doc['slides'] }} slides
+                                    {{ $doc['slides'] }} slides
                                 @else
                                     N/A
                                 @endif
                             </span>
                         </div>
-                        
-                        <a href="{{ route('dashboard.lesson.document.content', ['lessonId' => $lesson['id'], 'type' => $type, 'docId' => $doc['id'] ?? ($index + 1)]) }}" 
-                           class="action-button-small {{ $type }}">
-                            <i class="fas fa-eye"></i>
-                            View
+
+                        <a href="{{ route('dashboard.lesson.document.content', [
+                            'lessonId' => $lesson['id'],
+                            'type' => $type,
+                            'docId' => $doc['id'] ?? ($index + 1)
+                        ]) }}" class="action-button-small {{ $type }}">
+                            <i class="fas fa-eye"></i> View
                         </a>
                     </div>
                     @endforeach
@@ -740,6 +726,7 @@
             </div>
         @endif
     </div>
+
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         document.addEventListener('DOMContentLoaded', function() {
