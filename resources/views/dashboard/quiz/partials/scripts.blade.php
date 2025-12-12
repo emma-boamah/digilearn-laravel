@@ -7,8 +7,7 @@
 
     function initializeSidebar() {
         // Sidebar functionality
-        const desktopSidebarToggle = document.getElementById('desktopSidebarToggle');
-        const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
+        const sidebarToggle = document.getElementById('sidebarToggle');
         const youtubeSidebar = document.getElementById('youtubeSidebar');
         const sidebarOverlay = document.getElementById('sidebarOverlay');
 
@@ -43,44 +42,39 @@
         });
 
         console.log('Sidebar elements:', {
-            desktopSidebarToggle,
-            mobileSidebarToggle,
+            sidebarToggle,
             youtubeSidebar,
             sidebarOverlay
         });
 
-        // Desktop header toggle
-        if (desktopSidebarToggle && youtubeSidebar) {
-            desktopSidebarToggle.addEventListener('click', function(e) {
+        // Sidebar toggle (works for both desktop and mobile)
+        if (sidebarToggle && youtubeSidebar) {
+            sidebarToggle.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Desktop sidebar toggle clicked');
-                youtubeSidebar.classList.toggle('collapsed');
-            });
-        }
+                console.log('Sidebar toggle clicked');
 
-        // Mobile sidebar toggle
-        if (mobileSidebarToggle && youtubeSidebar && sidebarOverlay) {
-            mobileSidebarToggle.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('Mobile sidebar toggle clicked');
-                
-                const isOpen = youtubeSidebar.classList.contains('mobile-open');
-                console.log('Sidebar currently open:', isOpen);
-                
-                if (isOpen) {
-                    // Close sidebar
-                    youtubeSidebar.classList.remove('mobile-open');
-                    sidebarOverlay.classList.remove('active');
-                    document.body.style.overflow = '';
-                    console.log('Closing sidebar');
+                if (window.innerWidth <= 768) {
+                    // Mobile behavior
+                    const isOpen = youtubeSidebar.classList.contains('mobile-open');
+                    console.log('Sidebar currently open:', isOpen);
+
+                    if (isOpen) {
+                        // Close sidebar
+                        youtubeSidebar.classList.remove('mobile-open');
+                        if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+                        document.body.style.overflow = '';
+                        console.log('Closing sidebar');
+                    } else {
+                        // Open sidebar
+                        youtubeSidebar.classList.add('mobile-open');
+                        if (sidebarOverlay) sidebarOverlay.classList.add('active');
+                        document.body.style.overflow = 'hidden';
+                        console.log('Opening sidebar');
+                    }
                 } else {
-                    // Open sidebar
-                    youtubeSidebar.classList.add('mobile-open');
-                    sidebarOverlay.classList.add('active');
-                    document.body.style.overflow = 'hidden';
-                    console.log('Opening sidebar');
+                    // Desktop behavior
+                    youtubeSidebar.classList.toggle('collapsed');
                 }
             });
         }
@@ -111,8 +105,8 @@
         });
 
         // Add touch event handling for better mobile experience
-        if (mobileSidebarToggle) {
-            mobileSidebarToggle.addEventListener('touchstart', function(e) {
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('touchstart', function(e) {
                 e.preventDefault();
                 this.click();
             }, { passive: false });
@@ -146,18 +140,18 @@
             toggle.addEventListener('click', function(e) {
                 e.stopPropagation();
                 const dropdown = this.closest('.custom-dropdown');
-                
+
                 // Close other dropdowns
                 document.querySelectorAll('.custom-dropdown').forEach(d => {
                     if (d !== dropdown) {
                         d.classList.remove('open');
                     }
                 });
-                
+
                 dropdown.classList.toggle('open');
             });
         });
-        
+
         // Handle option selection
         document.querySelectorAll('.dropdown-option').forEach(option => {
             option.addEventListener('click', function() {
@@ -165,11 +159,11 @@
                 const toggle = this.closest('.custom-dropdown').querySelector('.dropdown-toggle span');
                 toggle.textContent = text;
                 this.closest('.custom-dropdown').classList.remove('open');
-                
+
                 // Handle level or subject filtering
                 const level = this.getAttribute('data-level');
                 const subject = this.getAttribute('data-subject');
-                
+
                 if (level) {
                     filterByLevel(level);
                 } else if (subject) {
@@ -177,7 +171,7 @@
                 }
             });
         });
-        
+
         // Close dropdowns when clicking outside
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.custom-dropdown')) {
@@ -194,7 +188,7 @@
         if (card) {
             card.style.opacity = '0.7';
             card.style.transform = 'scale(0.98)';
-            
+
             // Add loading state
             const startBtn = card.querySelector('.quiz-start-btn');
             if (startBtn) {
@@ -206,7 +200,7 @@
                 `;
             }
         }
-        
+
         // Navigate to quiz instructions page with proper route
         setTimeout(() => {
             window.location.href = `/quiz/${quizId}/instructions`;
@@ -227,7 +221,7 @@
                 `;
             }
         }
-        
+
         // Navigate to last results page (revise notes)
         setTimeout(() => {
             const params = new URLSearchParams(window.location.search);
@@ -242,9 +236,9 @@
             const title = card.querySelector('.quiz-title').textContent.toLowerCase();
             const subject = card.querySelector('.quiz-subject').textContent.toLowerCase();
             const description = card.querySelector('.quiz-description').textContent.toLowerCase();
-            
-            if (title.includes(query.toLowerCase()) || 
-                subject.includes(query.toLowerCase()) || 
+
+            if (title.includes(query.toLowerCase()) ||
+                subject.includes(query.toLowerCase()) ||
                 description.includes(query.toLowerCase())) {
                 card.style.display = 'block';
                 card.style.opacity = '0';

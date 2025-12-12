@@ -13,16 +13,18 @@
     <!-- Toastr CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 
-    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
-        /* DigiLearn Brand Colors */
+    <style>
         :root {
             --primary-red: #E11E2D;
             --primary-red-hover: #c41e2a;
             --secondary-blue: #2677B8;
             --secondary-blue-hover: #1e5a8a;
+            --accent-blue: #3b82f6;
+            --accent-red: #ef4444;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-purple: #8b5cf6;
             --white: #ffffff;
-            
-            /* Light Theme Colors (Default) */
             --gray-25: #fcfcfd;
             --gray-50: #f9fafb;
             --gray-100: #f3f4f6;
@@ -34,67 +36,24 @@
             --gray-700: #374151;
             --gray-800: #1f2937;
             --gray-900: #111827;
-            
-            /* Light Theme Variables */
-            --background: var(--white);
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            --sidebar-width-expanded: 280px;
+            --sidebar-width-collapsed: 72px;
+
+            /* Modern UI Variables */
+            --foreground: var(--gray-900);
+            --foreground-muted: var(--gray-600);
+            --foreground-subtle: var(--gray-500);
             --surface: var(--white);
             --surface-elevated: var(--gray-50);
             --surface-hover: var(--gray-100);
             --border: var(--gray-200);
             --border-hover: var(--gray-300);
-            
-            /* Text Colors */
-            --foreground: var(--gray-900);
-            --foreground-muted: var(--gray-600);
-            --foreground-subtle: var(--gray-500);
-            
-            /* Accent Colors */
-            --accent-blue: var(--secondary-blue);
-            --accent-green: #10b981;
-            --accent-orange: #f59e0b;
-            --accent-red: var(--primary-red);
-            --accent-purple: #8b5cf6;
-            
-            /* Shadows */
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px 0 rgb(0 0 0 / 0.06);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-            
-            /* Layout */
-            --sidebar-width-expanded: 280px;
-            --sidebar-width-collapsed: 80px;
-            --header-height: 64px;
-            
-            /* Border Radius */
-            --radius-sm: 0.375rem;
             --radius: 0.5rem;
             --radius-md: 0.75rem;
-            --radius-lg: 1rem;
-        }
-
-        /* Dark theme variables */
-        [data-theme="dark"] {
-            /* Dark Theme Colors */
-            --background: #0a0a0a;
-            --surface: #111111;
-            --surface-elevated: #1a1a1a;
-            --surface-hover: #222222;
-            --border: #2a2a2a;
-            --border-hover: #3a3a3a;
-            
-            /* Dark Text Colors */
-            --foreground: #ffffff;
-            --foreground-muted: #a1a1aa;
-            --foreground-subtle: #71717a;
-            
-            /* Dark Shadows */
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
-            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
         }
 
         * {
@@ -104,224 +63,34 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--background);
-            color: var(--foreground);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--gray-25);
+            color: var(--gray-900);
             line-height: 1.6;
-            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .main-container {
             display: flex;
             min-height: 100vh;
-            background-color: var(--background);
-        }
-
-        /* Modern Sidebar Styling */
-        .youtube-sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: var(--sidebar-width-expanded);
-            height: 100vh;
-            background-color: var(--surface);
-            border-right: 1px solid var(--border);
-            z-index: 1000;
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            overflow: hidden;
-        }
-
-        .youtube-sidebar.collapsed {
-            width: var(--sidebar-width-collapsed);
-        }
-
-        .sidebar-header {
-            display: flex;
-            align-items: center;
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--border);
-            height: var(--header-height);
-            min-height: var(--header-height);
-        }
-
-        .sidebar-toggle-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 0.75rem;
-            border-radius: var(--radius);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            margin-right: 1rem;
-            color: var(--foreground-muted);
-        }
-
-        .sidebar-toggle-btn:hover {
-            background-color: var(--surface-hover);
-            color: var(--foreground);
-        }
-
-        .hamburger-icon {
-            width: 20px;
-            height: 20px;
-        }
-
-        .sidebar-logo {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            transition: opacity 0.3s ease;
-        }
-
-        .youtube-sidebar.collapsed .sidebar-logo {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .sidebar-logo img {
-            height: 32px;
-            width: auto;
-        }
-
-        .sidebar-brand {
-            font-size: 1.125rem;
-            font-weight: 700;
-            color: var(--primary-red);
-            letter-spacing: -0.025em;
-            white-space: nowrap;
-        }
-
-        .sidebar-content {
-            padding: 1rem 0;
-            height: calc(100vh - var(--header-height));
-            overflow-y: auto;
-            scrollbar-width: none;
-        }
-
-        .sidebar-content::-webkit-scrollbar {
-            display: none;
-        }
-
-        .sidebar-section {
-            margin-bottom: 1.5rem;
-        }
-
-        .sidebar-section-title {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--foreground-subtle);
-            padding: 0.5rem 1.5rem;
-            margin-bottom: 0.5rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            transition: opacity 0.3s ease;
-        }
-
-        .youtube-sidebar.collapsed .sidebar-section-title {
-            opacity: 0;
-            height: 0;
-            padding: 0;
-            margin: 0;
-            overflow: hidden;
-        }
-
-        .sidebar-menu-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 0.75rem 1.5rem;
-            color: var(--foreground-muted);
-            text-decoration: none;
-            transition: all 0.2s ease;
-            cursor: pointer;
-            border-left: 3px solid transparent;
-            position: relative;
-        }
-
-        .youtube-sidebar.collapsed .sidebar-menu-item {
-            padding: 0.75rem;
-            justify-content: center;
-            gap: 0;
-            margin: 0.25rem 0.5rem;
-            border-radius: var(--radius);
-            border-left: none;
-        }
-
-        .sidebar-menu-item:hover {
-            background-color: var(--surface-hover);
-            color: var(--foreground);
-            border-left-color: var(--border-hover);
-        }
-
-        .youtube-sidebar.collapsed .sidebar-menu-item:hover {
-            border-left-color: transparent;
-        }
-
-        .sidebar-menu-item.active {
-            background-color: rgba(225, 30, 45, 0.1);
-            color: var(--primary-red);
-            border-left-color: var(--primary-red);
-            font-weight: 600;
-        }
-
-        .youtube-sidebar.collapsed .sidebar-menu-item.active {
-            border-left-color: transparent;
-            background-color: rgba(225, 30, 45, 0.1);
-            color: var(--primary-red);
-        }
-
-        .sidebar-menu-icon {
-            width: 20px;
-            height: 20px;
-            flex-shrink: 0;
-        }
-
-        .sidebar-menu-text {
-            font-size: 0.875rem;
-            font-weight: 500;
-            white-space: nowrap;
-            transition: opacity 0.3s ease;
-        }
-
-        .youtube-sidebar.collapsed .sidebar-menu-text {
-            opacity: 0;
-            width: 0;
-            overflow: hidden;
-        }
-
-        /* Modern Main Content Area */
-        .main-content {
-            flex: 1;
-            width: calc(100vw - var(--sidebar-width-expanded));
-            max-width: calc(100vw - var(--sidebar-width-expanded));
-            margin-left: var(--sidebar-width-expanded);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-sizing: border-box;
             overflow-x: hidden;
-            background-color: var(--background);
         }
 
-        .youtube-sidebar.collapsed ~ .main-content {
-            width: calc(100vw - var(--sidebar-width-collapsed));
-            max-width: calc(100vw - var(--sidebar-width-collapsed));
-            margin-left: var(--sidebar-width-collapsed);
-        }
 
-        /* Modern Header */
+
+        /* Top Header */
         .top-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0.75rem 1rem;
-            background-color: var(--surface);
-            border-bottom: 1px solid var(--border);
+            background-color: var(--white);
+            border-bottom: 1px solid var(--gray-200);
             position: sticky;
             top: 0;
             z-index: 999;
             backdrop-filter: blur(8px);
-            height: var(--header-height);
+            background-color: rgba(255, 255, 255, 0.95);
+            height: 64px;
         }
 
         .header-left {
@@ -336,42 +105,18 @@
             gap: 1rem;
         }
 
-        /* Added dark mode toggle button */
-        .theme-toggle-btn {
-            background: none;
-            border: 1px solid var(--border);
-            cursor: pointer;
-            padding: 0.5rem;
-            border-radius: var(--radius);
-            transition: all 0.2s ease;
-            color: var(--foreground-muted);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-        }
-
-        .theme-toggle-btn:hover {
-            background-color: var(--surface-hover);
-            color: var(--foreground);
-            border-color: var(--border-hover);
-        }
-
         .notification-btn {
             position: relative;
             background: none;
             border: none;
             cursor: pointer;
             padding: 0.75rem;
-            border-radius: var(--radius);
+            border-radius: 0.5rem;
             transition: all 0.2s ease;
-            color: var(--foreground-muted);
         }
 
         .notification-btn:hover {
-            background-color: var(--surface-hover);
-            color: var(--foreground);
+            background-color: var(--gray-100);
         }
 
         .notification-badge {
@@ -807,129 +552,11 @@
 </head>
 <body>
     <div class="main-container">
-        <!-- Modern Sidebar with DigiLearn Navigation -->
-        <aside class="youtube-sidebar" id="youtubeSidebar">
-            <div class="sidebar-header">
-                <button class="sidebar-toggle-btn" id="sidebarToggle">
-                    <svg class="hamburger-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                    </svg>
-                </button>
-                <div class="sidebar-logo">
-                    <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="DigiLearn">
-                </div>
-            </div>
-            
-            <div class="sidebar-content">
-                <div class="sidebar-section">
-                    <div class="sidebar-section-title">Main</div>
-                    <a href="{{ route('dashboard.main') }}" class="sidebar-menu-item">
-                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
-                        </svg>
-                        <span class="sidebar-menu-text">Dashboard</span>
-                    </a>
-                    <a href="{{ route('dashboard.digilearn') }}" class="sidebar-menu-item">
-                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                        </svg>
-                        <span class="sidebar-menu-text">Lessons</span>
-                    </a>
-                    <a href="{{ route('quiz.index') }}" class="sidebar-menu-item">
-                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                        <span class="sidebar-menu-text">Quiz</span>
-                    </a>
-                </div>
-
-                <div class="sidebar-section">
-                    <div class="sidebar-section-title">Learning</div>
-                    <a href="/dashboard/my-progress" class="sidebar-menu-item">
-                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                        </svg>
-                        <span class="sidebar-menu-text">My Progress</span>
-                    </a>
-                    <a href="/dashboard/saved-lessons" class="sidebar-menu-item">
-                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
-                        </svg>
-                        <span class="sidebar-menu-text">Saved Lessons</span>
-                    </a>
-                    <a href="{{ route('dashboard.join-class') }}" class="sidebar-menu-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="sidebar-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <rect x="3" y="5" width="18" height="12" rx="2" stroke-width="2"/>
-                            <circle cx="8" cy="15" r="1.5" stroke-width="2"/>
-                            <circle cx="12" cy="15" r="1.5" stroke-width="2"/>
-                            <circle cx="16" cy="15" r="1.5" stroke-width="2"/>
-                        </svg>
-                        <span class="sidebar-menu-text">Join Your Class</span>
-                    </a>
-                </div>
-
-                <div class="sidebar-section">
-                    <div class="sidebar-section-title">Account</div>
-                    <a href="{{ route('dashboard.notifications') }}" class="sidebar-menu-item active">
-                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                        </svg>
-                        <span class="sidebar-menu-text">Notifications</span>
-                    </a>
-                    <a href="/profile" class="sidebar-menu-item">
-                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                        </svg>
-                        <span class="sidebar-menu-text">Profile</span>
-                    </a>
-                    <a href="/settings" class="sidebar-menu-item">
-                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        </svg>
-                        <span class="sidebar-menu-text">Settings</span>
-                    </a>
-                    <form action="{{ route('logout') }}" method="POST" style="margin-top: 1rem;">
-                        @csrf
-                        <button type="submit" class="sidebar-menu-item" style="border: none; background: none; width: 100%; text-align: left;">
-                            <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                            </svg>
-                            <span class="sidebar-menu-text">Log out</span>
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </aside>
+        @include('components.dashboard-sidebar')
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Modern Header -->
-            <div class="top-header">
-                <div class="header-left">
-                    <!-- <button class="sidebar-toggle-btn" id="sidebarToggleMain">
-                        <svg class="hamburger-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                        </svg>
-                    </button> -->
-                </div>
-                
-                <div class="header-right">
-                    <!-- Added dark mode toggle button -->
-                    <button class="theme-toggle-btn" id="toggledarkmodebutton" title="Toggle Dark Mode">
-                        <i class="fas fa-moon" id="themeIcon"></i>
-                    </button>
-                    
-                    <button class="notification-btn">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                        </svg>
-                        <span class="notification-badge">{{ auth()->user()->unreadNotifications->count() }}</span>
-                    </button>
-                    
-                    <x-user-avatar :user="auth()->user()" :size="36" class="border-2 border-white"/>
-                </div>
-            </div>
+            @include('components.dashboard-header')
 
             <!-- Modern Notifications Content -->
             <div class="notifications-container">
@@ -1126,34 +753,6 @@
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         $(document).ready(function() {
-            const toggleButton = $('#toggledarkmodebutton');
-            const themeIcon = $('#themeIcon');
-            const body = $('body');
-            
-            // Check for saved theme preference or default to light mode
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            setTheme(savedTheme);
-            
-            // Toggle theme on button click
-            toggleButton.click(function() {
-                const currentTheme = body.attr('data-theme') || 'light';
-                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-                setTheme(newTheme);
-                localStorage.setItem('theme', newTheme);
-            });
-            
-            function setTheme(theme) {
-                if (theme === 'dark') {
-                    body.attr('data-theme', 'dark');
-                    themeIcon.removeClass('fa-moon').addClass('fa-sun');
-                    toggleButton.attr('title', 'Switch to Light Mode');
-                } else {
-                    body.removeAttr('data-theme');
-                    themeIcon.removeClass('fa-sun').addClass('fa-moon');
-                    toggleButton.attr('title', 'Switch to Dark Mode');
-                }
-            }
-
             // Sidebar toggle functionality
             $('#sidebarToggle, #sidebarToggleMain').click(function() {
                 $('#youtubeSidebar').toggleClass('collapsed');

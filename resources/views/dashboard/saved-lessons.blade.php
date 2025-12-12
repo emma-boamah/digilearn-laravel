@@ -734,71 +734,7 @@
 <body>
     <div class="main-container">
         <!-- YouTube-style Sidebar -->
-        <aside class="youtube-sidebar" id="youtubeSidebar">
-            <div class="sidebar-header">
-                <button class="sidebar-toggle-btn" id="sidebarToggle">
-                    <svg class="hamburger-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                    </svg>
-                </button>
-                <div class="sidebar-logo">
-                    <img src="{{ asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
-                </div>
-            </div>
-            
-            <div class="sidebar-content">
-                <div class="sidebar-section">
-                    <div class="sidebar-section-title">Main</div>
-                    <a href="{{ route('dashboard.main') }}" class="sidebar-menu-item">
-                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h2a2 2 0 012 2v2M8 5a2 2 0 000 4h8a2 2 0 000-4M8 5v0"/>
-                        </svg>
-                        <span class="sidebar-menu-text">Dashboard</span>
-                        <div class="tooltip">Dashboard</div>
-                    </a>
-                    <a href="{{ route('dashboard.digilearn') }}" class="sidebar-menu-item">
-                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                        </svg>
-                        <span class="sidebar-menu-text">Lessons</span>
-                        <div class="tooltip">Lessons</div>
-                    </a>
-                </div>
-
-                <div class="sidebar-section">
-                    <div class="sidebar-section-title">Learning</div>
-                    <a href="{{ route('dashboard.saved-lessons') }}" class="sidebar-menu-item active">
-                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
-                        </svg>
-                        <span class="sidebar-menu-text">Saved Lessons</span>
-                        <div class="tooltip">Saved Lessons</div>
-                    </a>
-                </div>
-
-                <div class="sidebar-section">
-                    <div class="sidebar-section-title">Account</div>
-                    <a href="{{ route('profile.show') }}" class="sidebar-menu-item">
-                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                        </svg>
-                        <span class="sidebar-menu-text">Profile</span>
-                        <div class="tooltip">Profile</div>
-                    </a>
-                    <form action="{{ route('logout') }}" method="POST" style="margin-top: 1rem;">
-                        @csrf
-                        <button type="submit" class="sidebar-menu-item" style="border: none; background: none; width: 100%; text-align: left;">
-                            <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                            </svg>
-                            <span class="sidebar-menu-text">Log out</span>
-                            <div class="tooltip">Log out</div>
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </aside>
+        @include('components.dashboard-sidebar')
 
         <!-- Sidebar Overlay for Mobile -->
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
@@ -806,23 +742,7 @@
         <!-- Main Content -->
         <main class="main-content">
             <!-- Top Header -->
-            <div class="top-header">
-                <div class="header-left">
-                    <!-- Empty for now, hamburger is in sidebar -->
-                </div>
-                
-                <div class="header-right">
-                    <button class="notification-btn">
-                        <svg class="notification-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5z"/>
-                        </svg>
-                    </button>
-                    
-                    <div class="user-avatar">
-                        {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
-                    </div>
-                </div>
-            </div>
+            @include('components.dashboard-header')
 
             <!-- Page Header -->
             <div class="page-header">

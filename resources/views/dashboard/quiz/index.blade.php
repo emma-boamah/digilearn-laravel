@@ -15,7 +15,7 @@
 </head>
 <body>
     <div class="main-container">
-        @include('dashboard.quiz.partials.sidebar')
+        @include('components.dashboard-sidebar')
         @include('dashboard.quiz.partials.sidebar-overlay')
 
         <!-- Main Content -->

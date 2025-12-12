@@ -131,7 +131,13 @@
   .sidebar-content {
       padding: 1rem 0;
       overflow-y: auto;
+      overflow-x: hidden;
       height: calc(100vh - 64px);
+      scrollbar-width: none; /* Hide scrollbar for Firefox */
+  }
+
+  .sidebar-content::-webkit-scrollbar {
+      display: none; /* Hide scrollbar for WebKit browsers */
   }
 
   .sidebar-section {
