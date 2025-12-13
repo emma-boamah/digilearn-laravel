@@ -47,6 +47,7 @@
             background-color: var(--gray-25);
             color: var(--gray-900);
             line-height: 1.6;
+            overflow-x: hidden;
         }
 
         /* YouTube-style Sidebar */
@@ -59,7 +60,7 @@
             background-color: var(--white);
             border-right: 1px solid var(--gray-200);
             z-index: 1000;
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease;
             overflow: hidden;
         }
 
@@ -243,16 +244,21 @@
 
         /* Main Content */
         .main-content {
+            position: relative;
             margin-left: var(--sidebar-width-expanded);
             min-height: calc(100vh - 60px);
             background-color: var(--gray-25);
             transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: calc(100% - var(--sidebar-width-expanded));
+            max-width: calc(100% - var(--sidebar-width-expanded));
+            overflow-x: hidden;
         }
 
         .youtube-sidebar.collapsed ~ .main-content {
             margin-left: var(--sidebar-width-collapsed);
+            width: calc(100% - var(--sidebar-width-collapsed));
+            max-width: calc(100% - var(--sidebar-width-collapsed));
         }
-
 
         /* Mobile overlay */
         .sidebar-overlay {
@@ -273,23 +279,70 @@
             visibility: visible;
         }
 
-        /* Responsive adjustments */
+        /* Improved mobile responsive adjustments for all devices */
         @media (max-width: 768px) {
             .youtube-sidebar {
                 transform: translateX(-100%);
-                transition: transform 0.3s ease, width 0.3s ease;
+                width: 280px;
+                transition: transform 0.3s ease;
             }
 
             .youtube-sidebar.mobile-open {
                 transform: translateX(0);
             }
 
+            /* Main content takes full width on mobile */
             .main-content {
-                margin-left: 0;
+                margin-left: 0 !important;
+                width: 100vw !important;
+                max-width: 100vw !important;
             }
 
             .youtube-sidebar.collapsed ~ .main-content {
-                margin-left: 0;
+                margin-left: 0 !important;
+                width: 100vw !important;
+                max-width: 100vw !important;
+            }
+
+            /* Ensure sidebar is never collapsed on mobile when open */
+            .youtube-sidebar.mobile-open.collapsed {
+                width: 280px;
+            }
+        }
+
+        /* Extra small mobile devices */
+        @media (max-width: 480px) {
+            .youtube-sidebar {
+                width: 260px;
+            }
+
+            .sidebar-header {
+                padding: 1rem;
+            }
+
+            .sidebar-menu-item {
+                padding: 0.625rem 1rem;
+            }
+
+            .sidebar-brand {
+                font-size: 1rem;
+            }
+        }
+
+        /* Tablet landscape adjustments */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .main-content {
+                margin-left: var(--sidebar-width-collapsed);
+                width: calc(100% - var(--sidebar-width-collapsed));
+                max-width: calc(100% - var(--sidebar-width-collapsed));
+            }
+
+            .youtube-sidebar {
+                width: var(--sidebar-width-collapsed);
+            }
+
+            .youtube-sidebar.collapsed {
+                width: var(--sidebar-width-collapsed);
             }
         }
     </style>
