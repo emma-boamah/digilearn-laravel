@@ -168,7 +168,7 @@
             display: grid;
             grid-template-columns: 1fr minmax(300px, 400px);
             gap: 1rem;
-            padding: 1rem 0.5rem;
+            padding: 1rem 1.5rem;
             max-width: 100%;
             margin: 0;
             overflow-x: hidden;
@@ -889,6 +889,9 @@
             object-fit: cover;
             flex-shrink: 0;
             background-color: var(--gray-200);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
         }
 
         .video-thumbnail img {
