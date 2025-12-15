@@ -1,4 +1,4 @@
-<style>
+<style nonce="{{ request()->attributes->get('csp_nonce') }}">
   :root {
       --primary-red: #E11E2D;
       --primary-red-hover: #c41e2a;

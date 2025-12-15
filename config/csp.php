@@ -21,18 +21,15 @@ return [
             'https://cdn.jsdelivr.net/npm/chart.umd.min.js.map',
             'https://cdn.jsdelivr.net/npm/alpinejs',
             'https://cdn.quilljs.com',
+            'https://cdnjs.cloudflare.com',
             'https://schema.org',
             'https://cdn.tailwindcss.com',
-            'https://cdnjs.cloudflare.com',
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
-            // Removed 'unsafe-inline' for better security - using nonces instead
-            // Removeed 'unsafe-eval' not needed for Chart.js or other libraries now
             // "'unsafe-eval'", // Only enable if absolutely required
         ],
         'style-src' => [
             "'self'",
             "'nonce-{nonce}'", // Nonce placeholder for inline styles
-            "'unsafe-inline'", // Keep temporarily for external libraries that inject styles
             'https://fonts.googleapis.com',
             'https://fonts.bunny.net',
             'https://cdn.jsdelivr.net',

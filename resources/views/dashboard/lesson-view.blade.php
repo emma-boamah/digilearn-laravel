@@ -3,9 +3,9 @@
 @section('title', (isset($course) ? $course->title : ($lesson['title'] ?? 'Lesson')) . ' - ' . config('app.name', 'ShoutOutGh'))
 
 @section('head')
-    <!-- Quill.js Rich Text Editor -->
-    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <!-- Quill.js Rich Text Editor (Using Cloudflare CDN) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.snow.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.min.js"></script>
 
     <!-- Additional Libraries for Enhanced Functionality -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -13,7 +13,7 @@
 @endsection
 
 @section('content')
-    <style>
+    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         :root {
             --primary-red: #E11E2D;
             --primary-red-hover: #c41e2a;
@@ -759,47 +759,64 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            position: relative;
         }
 
         #notesQuillEditor {
             flex: 1;
             min-height: 400px;
+            display: block !important;
+            visibility: visible !important;
+        }
+
+        /* Ensure Quill elements are visible */
+        .ql-toolbar {
+            display: block !important;
+            visibility: visible !important;
+        }
+
+        .ql-container {
+            display: block !important;
+            visibility: visible !important;
+        }
+
+        .ql-editor {
+            display: block !important;
+            visibility: visible !important;
         }
 
         .ql-toolbar {
             border: none !important;
             border-bottom: 1px solid var(--gray-200) !important;
-            background-color: var(--gray-50);
-            padding: 1rem !important;
+            background-color: var(--gray-50) !important;
+            padding: 1rem 1.25rem !important;
+            display: block !important;
+            visibility: visible !important;
         }
 
         .ql-container {
             border: none !important;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
             font-size: 0.9375rem !important;
-            min-height: 400px;
-            background-color: var(--white);
+            min-height: 400px !important;
+            background-color: var(--white) !important;
             line-height: 1.6 !important;
+            display: block !important;
+            visibility: visible !important;
         }
 
         .ql-editor {
             padding: 1.5rem !important;
             min-height: 400px !important;
-            line-height: 1.7;
+            line-height: 1.7 !important;
+            display: block !important;
+            visibility: visible !important;
         }
 
         .ql-editor.ql-blank::before {
             color: var(--gray-500) !important;
             font-style: normal !important;
-            left: 1.5rem;
-        }
-
-        /* Custom Quill Toolbar Styling */
-        .ql-toolbar {
-            border: none !important;
-            border-bottom: 1px solid var(--gray-200) !important;
-            background-color: var(--gray-50);
-            padding: 1rem 1.25rem;
+            left: 1.5rem !important;
         }
 
         .ql-stroke {
@@ -2572,12 +2589,56 @@
         };
         let notesManager = null;
 
+        // Global constants and functions for the rich text editor
+        const MAX_CHARS = 1000;
+
+        // Global function for character count updates
+        function updateCharCount() {
+            if (!quillEditor || !document.querySelector('.notes-character-count')) return;
+
+            const text = quillEditor.getText();
+            const charCount = text.length;
+            const charCountElement = document.querySelector('.notes-character-count');
+
+            charCountElement.textContent = `${charCount}/${MAX_CHARS}`;
+
+            // Update styling based on character count
+            charCountElement.classList.remove('warning', 'error');
+
+            if (charCount > MAX_CHARS * 0.9) {
+                charCountElement.classList.add('warning');
+            }
+            if (charCount > MAX_CHARS) {
+                charCountElement.classList.add('error');
+            }
+        }
+
         // Scroll tracking variables for mobile video section
         let lastScrollY = 0;
         let isScrollingDown = false;
         let scrollThreshold = 100; // Pixels to scroll before triggering compact mode
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Check if Quill is loaded before initializing
+            if (typeof Quill === 'undefined') {
+                console.warn('Quill.js not loaded yet, waiting...');
+                // Wait a bit and try again
+                setTimeout(() => {
+                    if (typeof Quill === 'undefined') {
+                        console.error('Quill.js failed to load from CDN');
+                        alert('The notes editor failed to load. Please refresh the page.');
+                        return;
+                    }
+                    console.log('Quill.js loaded successfully');
+                    initializeAll();
+                }, 2000);
+            } else {
+                console.log('Quill.js already loaded');
+                initializeAll();
+            }
+        });
+
+        function initializeAll() {
             // Initialize all functionality
             initializeFilters();
             initializeComments();
@@ -2594,7 +2655,7 @@
             initializeCourseTabs();
             checkDocumentAvailability();
             initializeVideoProgressTracking();
-        });
+        }
 
         // Enhanced mobile video scroll functionality
         function initializeMobileVideoScroll() {
@@ -3137,45 +3198,62 @@
             function initializeQuill() {
                 if (quillEditor) return;
 
-                quillEditor = new Quill('#notesQuillEditor', {
-                    theme: 'snow',
-                    placeholder: 'Start writing your notes here...',
-                    modules: {
-                        toolbar: [
-                            [{ 'header': [1, 2, 3, false] }],
-                            ['bold', 'italic', 'underline', 'strike'],
-                            [{ 'color': [] }, { 'background': [] }],
-                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                            [{ 'indent': '-1'}, { 'indent': '+1' }],
-                            [{ 'align': [] }],
-                            ['blockquote', 'code-block'],
-                            ['link', 'image'],
-                            ['clean']
-                        ]
-                    }
-                });
+                // Check if Quill is loaded
+                if (typeof Quill === 'undefined') {
+                    console.error('Quill.js is not loaded. Please check your internet connection and CDN availability.');
+                    alert('Failed to load the notes editor. Please refresh the page and try again.');
+                    return;
+                }
 
-                // Character count and limit functionality
-                const MAX_CHARS = 1000;
-                const charCountElement = document.querySelector('.notes-character-count');
+                const editorElement = document.getElementById('notesQuillEditor');
+                if (!editorElement) {
+                    console.error('Notes editor element not found');
+                    return;
+                }
 
-                function updateCharCount() {
-                    if (!quillEditor || !charCountElement) return;
+                try {
+                    console.log('Initializing Quill editor...');
+                    quillEditor = new Quill('#notesQuillEditor', {
+                        theme: 'snow',
+                        placeholder: 'Start writing your notes here...',
+                        modules: {
+                            toolbar: [
+                                [{ 'header': [1, 2, 3, false] }],
+                                ['bold', 'italic', 'underline', 'strike'],
+                                [{ 'color': [] }, { 'background': [] }],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                [{ 'indent': '-1'}, { 'indent': '+1' }],
+                                [{ 'align': [] }],
+                                ['blockquote', 'code-block'],
+                                ['link', 'image'],
+                                ['clean']
+                            ]
+                        }
+                    });
 
-                    const text = quillEditor.getText();
-                    const charCount = text.length;
+                    console.log('Quill editor initialized successfully');
 
-                    charCountElement.textContent = `${charCount}/${MAX_CHARS}`;
+                    // Verify that Quill elements were created
+                    setTimeout(() => {
+                        const toolbar = editorElement.querySelector('.ql-toolbar');
+                        const container = editorElement.querySelector('.ql-container');
+                        const editor = editorElement.querySelector('.ql-editor');
 
-                    // Update styling based on character count
-                    charCountElement.classList.remove('warning', 'error');
+                        console.log('Quill elements check:', {
+                            toolbar: !!toolbar,
+                            container: !!container,
+                            editor: !!editor
+                        });
 
-                    if (charCount > MAX_CHARS * 0.9) {
-                        charCountElement.classList.add('warning');
-                    }
-                    if (charCount > MAX_CHARS) {
-                        charCountElement.classList.add('error');
-                    }
+                        if (!toolbar || !container || !editor) {
+                            console.error('Quill elements not found after initialization');
+                            alert('Notes editor failed to initialize properly. Please refresh the page.');
+                        }
+                    }, 100);
+
+                } catch (error) {
+                    console.error('Error initializing Quill editor:', error);
+                    alert('Failed to initialize the notes editor. Please try refreshing the page.');
                 }
 
                 // Auto-save functionality with character limit
@@ -3212,9 +3290,15 @@
                     
                     // Initialize Quill editor when shown
                     setTimeout(() => {
-                        initializeQuill();
-                        // Initialize character count after Quill is ready
-                        setTimeout(updateCharCount, 200);
+                        // Ensure the element is visible before initializing
+                        const editorSection = document.getElementById('notesEditorSection');
+                        if (editorSection && !editorSection.classList.contains('hidden')) {
+                            initializeQuill();
+                            // Initialize character count after Quill is ready
+                            setTimeout(updateCharCount, 200);
+                        } else {
+                            console.warn('Notes editor section is not visible, skipping Quill initialization');
+                        }
                     }, 100);
                 } else {
                     notesEditorSection.classList.add('hidden');
