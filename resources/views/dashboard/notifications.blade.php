@@ -472,23 +472,31 @@
             color: var(--foreground-muted);
         }
 
-        /* Responsive Design */
+        /* Mobile Layout Reset - Fix left gap issue */
         @media (max-width: 768px) {
+            .main-content {
+                width: 100vw !important;
+                max-width: 100vw !important;
+                margin-left: 0 !important;
+            }
+
             .youtube-sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100vh;
+                z-index: 1200;
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
-                width: 280px;
             }
 
             .youtube-sidebar.mobile-open {
                 transform: translateX(0);
             }
+        }
 
-            .main-content {
-                margin-left: 0;
-                width: 100vw;
-                max-width: 100vw;
-            }
+        /* Responsive Design */
+        @media (max-width: 768px) {
 
             .youtube-sidebar.collapsed ~ .main-content {
                 margin-left: 0;

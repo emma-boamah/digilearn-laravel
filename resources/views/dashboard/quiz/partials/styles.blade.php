@@ -1034,6 +1034,29 @@
       height: 18px;
   }
 
+  /* Mobile Layout Reset - Fix left gap issue */
+  @media (max-width: 768px) {
+      .main-content {
+          width: 100vw !important;
+          max-width: 100vw !important;
+          margin-left: 0 !important;
+      }
+
+      .youtube-sidebar {
+          position: fixed;
+          left: 0;
+          top: 0;
+          height: 100vh;
+          z-index: 1200;
+          transform: translateX(-100%);
+          transition: transform 0.3s ease;
+      }
+
+      .youtube-sidebar.mobile-open {
+          transform: translateX(0);
+      }
+  }
+
   /* Mobile Responsive */
   @media (max-width: 768px) {
       body {
