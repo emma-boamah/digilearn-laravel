@@ -923,25 +923,38 @@
       color: var(--gray-500);
   }
 
-  /* Sidebar Overlay for Mobile */
+  /* Sidebar Overlay for Mobile - Now outside main-container */
   .sidebar-overlay {
       position: fixed;
       top: 0;
-      left: 0;
+      left: 0; /* Full screen since outside main-container */
       right: 0;
       bottom: 0;
       background-color: rgba(0, 0, 0, 0.6);
-      z-index: 1001;
+      z-index: 1999; /* BELOW sidebar (2000) but ABOVE everything else */
       opacity: 0;
       visibility: hidden;
       transition: all 0.3s ease;
-      pointer-events: none;
+      pointer-events: auto; /* Always allow clicks to close */
   }
 
   .sidebar-overlay.active {
       opacity: 1;
       visibility: visible;
-      pointer-events: all;
+  }
+
+  /* CRITICAL FIX: On mobile, overlay should NOT cover sidebar area */
+  @media (max-width: 768px) {
+      .sidebar-overlay {
+          left: 280px; /* Sidebar width - don't block sidebar */
+      }
+  }
+
+  /* Hide overlay on desktop */
+  @media (min-width: 1024px) {
+      .sidebar-overlay {
+          display: none !important;
+      }
   }
 
   /* Mobile Header */
@@ -1047,7 +1060,7 @@
           left: 0;
           top: 0;
           height: 100vh;
-          z-index: 1200;
+          z-index: 2000; /* Much higher than overlay */
           transform: translateX(-100%);
           transition: transform 0.3s ease;
       }
@@ -1067,7 +1080,7 @@
           transform: translateX(-100%);
           transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           width: 280px;
-          z-index: 1002;
+          z-index: 2000; /* Keep consistent high z-index */
       }
 
       .youtube-sidebar.mobile-open {

@@ -66,7 +66,7 @@
             height: 100vh;
             background-color: var(--white);
             border-right: 1px solid var(--gray-200);
-            z-index: 1000;
+            z-index: 2000; /* Much higher than overlay */
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             overflow: hidden;
         }
@@ -1077,7 +1077,7 @@
                 left: 0;
                 top: 0;
                 height: 100vh;
-                z-index: 1200;
+                z-index: 2000; /* Increased to be above overlay (1999) */
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
             }
@@ -1240,23 +1240,38 @@
                 gap: 20px;
             }
 
-            /* Mobile overlay */
+            /* Mobile overlay - Now outside main-container */
             .sidebar-overlay {
-                display: none;
                 position: fixed;
                 top: 0;
                 left: 0;
                 right: 0;
                 bottom: 0;
                 background-color: rgba(0, 0, 0, 0.6);
-                z-index: 999;
+                z-index: 1999; /* BELOW sidebar (2000) but ABOVE content */
                 opacity: 0;
+                visibility: hidden;
                 transition: all 0.3s ease;
+                pointer-events: auto;
             }
 
             .sidebar-overlay.active {
                 opacity: 1;
-                display: block;
+                visibility: visible;
+            }
+
+            /* CRITICAL FIX: On mobile, overlay should NOT cover sidebar area */
+            @media (max-width: 768px) {
+                .sidebar-overlay {
+                    left: var(--sidebar-width-expanded); /* 280px - don't block sidebar */
+                }
+            }
+
+            /* Hide overlay on desktop */
+            @media (min-width: 1024px) {
+                .sidebar-overlay {
+                    display: none !important;
+                }
             }
 
             /* Prevent body scrolling when sidebar is open */
@@ -1456,11 +1471,11 @@
     </style>
 </head>
 <body>
+    <!-- Sidebar Overlay for Mobile - Moved outside main-container -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <div class="main-container">
         @include('components.dashboard-sidebar')
-
-        <!-- Sidebar Overlay for Mobile -->
-        <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -1849,6 +1864,7 @@
             const sidebarOverlay = document.getElementById('sidebarOverlay');
             const body = document.body;
 
+
             function toggleSidebar() {
                 if (window.innerWidth <= 768) {
                     // Mobile behavior - overlay only, no layout changes
@@ -1867,12 +1883,13 @@
 
             // Close sidebar when clicking overlay
             if (sidebarOverlay) {
-                sidebarOverlay.addEventListener('click', function() {
+                sidebarOverlay.addEventListener('click', function(e) {
                     youtubeSidebar.classList.remove('mobile-open');
                     sidebarOverlay.classList.remove('active');
                     body.classList.remove('sidebar-open');
                 });
             }
+
 
             // Handle window resize - ensure proper state transitions
             window.addEventListener('resize', function() {

@@ -14,9 +14,10 @@
     @include('dashboard.quiz.partials.styles')
 </head>
 <body>
+    @include('dashboard.quiz.partials.sidebar-overlay') <!-- Move outside main-container -->
+
     <div class="main-container">
         @include('components.dashboard-sidebar')
-        @include('dashboard.quiz.partials.sidebar-overlay')
 
         <!-- Main Content -->
         <main class="main-content">
