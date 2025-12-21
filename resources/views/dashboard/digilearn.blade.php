@@ -1064,6 +1064,29 @@
             transition: all 0.2s ease;
         }
 
+        /* Mobile Layout Reset - Fix left gap issue */
+        @media (max-width: 768px) {
+            .main-content {
+                width: 100vw !important;
+                max-width: 100vw !important;
+                margin-left: 0 !important;
+            }
+
+            .youtube-sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100vh;
+                z-index: 1200;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .youtube-sidebar.mobile-open {
+                transform: translateX(0);
+            }
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
 
@@ -1096,6 +1119,7 @@
             .main-container {
                 flex-direction: column;
                 overflow: hidden;
+                width: 100vw;
             }
             .youtube-sidebar {
                 transform: translateX(-100%);
@@ -1284,9 +1308,63 @@
             }
         }
 
+        @media (min-width: 640px) {
+            /* Two column layout for small tablets */
+            .content-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .dropdowns-row .custom-dropdown {
+                flex: 1 1 calc(33.333% - 0.5rem);
+            }
+        }
+
+        @media (min-width: 768px) {
+            /* Show desktop layout on tablets and above */
+            .filter-bar {
+                gap: 0.75rem;
+                padding: 0.75rem;
+                overflow-x: visible;
+            }
+
+            .search-box {
+                position: relative;
+                visibility: visible;
+                transform: none;
+                padding: 0;
+                box-shadow: none;
+            }
+
+            .dropdowns-row {
+                flex-wrap: nowrap;
+            }
+
+            .dropdowns-row .custom-dropdown {
+                flex: 0 0 auto;
+                min-width: 120px;
+            }
+
+            .content-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .notification-dropdown-menu {
+                right: 0;
+                width: 380px;
+            }
+        }
+
         @media (min-width: 1024px) {
             .content-grid {
                 grid-template-columns: repeat(3, 1fr);
+                gap: 1.5rem;
+            }
+        }
+
+        @media (min-width: 1280px) {
+            /* Four column layout for large screens */
+            .content-grid {
+                grid-template-columns: repeat(4, 1fr);
             }
         }
 
@@ -1771,18 +1849,20 @@
             const sidebarOverlay = document.getElementById('sidebarOverlay');
             const body = document.body;
 
+            function toggleSidebar() {
+                if (window.innerWidth <= 768) {
+                    // Mobile behavior - overlay only, no layout changes
+                    youtubeSidebar.classList.toggle('mobile-open');
+                    sidebarOverlay.classList.toggle('active');
+                    body.classList.toggle('sidebar-open');
+                } else {
+                    // Desktop behavior - layout changes
+                    youtubeSidebar.classList.toggle('collapsed');
+                }
+            }
+
             if (sidebarToggle) {
-                sidebarToggle.addEventListener('click', function() {
-                    if (window.innerWidth <= 768) {
-                        // Mobile behavior
-                        youtubeSidebar.classList.toggle('mobile-open');
-                        sidebarOverlay.classList.toggle('active');
-                        body.classList.toggle('sidebar-open');
-                    } else {
-                        // Desktop behavior
-                        youtubeSidebar.classList.toggle('collapsed');
-                    }
-                });
+                sidebarToggle.addEventListener('click', toggleSidebar);
             }
 
             // Close sidebar when clicking overlay
@@ -1794,9 +1874,16 @@
                 });
             }
 
-            // Handle window resize
+            // Handle window resize - ensure proper state transitions
             window.addEventListener('resize', function() {
                 if (window.innerWidth > 768) {
+                    // Switching to desktop - remove mobile overlay state
+                    youtubeSidebar.classList.remove('mobile-open');
+                    sidebarOverlay.classList.remove('active');
+                    body.classList.remove('sidebar-open');
+                } else {
+                    // Switching to mobile - ensure sidebar is collapsed (overlay state)
+                    youtubeSidebar.classList.remove('collapsed');
                     youtubeSidebar.classList.remove('mobile-open');
                     sidebarOverlay.classList.remove('active');
                     body.classList.remove('sidebar-open');

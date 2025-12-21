@@ -176,7 +176,7 @@
         }
 
         /* Enhanced Main Layout - YouTube-like */
-        .main-layout {
+        .lesson-page {
             display: grid;
             grid-template-columns: 1fr minmax(300px, 400px);
             gap: 1rem;
@@ -188,11 +188,29 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+        .lesson-main {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            min-width: 0;
+        }
+
+        .lesson-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            width: 100%;
+            min-width: 0;
+            max-width: 400px;
+            position: relative;
+            z-index: 0;
+        }
+
         /* Prevent unwanted dark backgrounds on hover */
         .lesson-page-content:hover,
-        .main-layout:hover,
+        .lesson-page:hover,
         .left-content:hover,
-        .right-sidebar:hover {
+        .lesson-sidebar:hover {
             background-color: transparent !important;
         }
 
@@ -644,6 +662,8 @@
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
+            position: relative;
+            z-index: 1;
         }
 
         .notes-editor-section.hidden {
@@ -1619,19 +1639,20 @@
 
         /* Enhanced Responsive Design */
         @media (max-width: 1200px) {
-            .main-layout {
+            .lesson-page {
                 grid-template-columns: 1fr 350px;
                 gap: 1.5rem;
             }
         }
 
         @media (max-width: 1024px) {
-            .main-layout {
-                grid-template-columns: 1fr;
+            .lesson-page {
+                display: flex;
+                flex-direction: column;
                 gap: 1.5rem;
             }
-            
-            .right-sidebar {
+
+            .lesson-sidebar {
                 order: 0; /* Reset to natural order */
                 max-width: 100%;
             }
@@ -1660,7 +1681,7 @@
 
         /* FIXED: Mobile responsive with NATURAL BLOCK FLOW - No overlapping! */
         @media (max-width: 768px) {
-            .main-layout {
+            .lesson-page {
                 display: flex;
                 flex-direction: column;
                 padding: 0.75rem;
@@ -1792,7 +1813,7 @@
             }
 
             /* Hide the right sidebar container */
-            .right-sidebar {
+            .lesson-sidebar {
                 display: contents; /* Children become direct grid children */
                 width: 100%;
                 min-width: unset;
@@ -1890,7 +1911,7 @@
         }
 
         @media (max-width: 480px) {
-            .main-layout {
+            .lesson-page {
                 padding: 0.5rem;
             }
 
@@ -2051,9 +2072,11 @@
     </div>
 
     <!-- Enhanced Main Layout -->
-    <div class="main-layout">
-        <!-- Enhanced Left Content -->
-        <div class="left-content">
+    <div class="lesson-page">
+        <!-- Main Content Area -->
+        <main class="lesson-main">
+            <!-- Enhanced Left Content -->
+            <div class="left-content">
             @if(isset($course))
                 <!-- Course Content with Tabs -->
                 <div class="course-content-section">
@@ -2147,7 +2170,7 @@
                                         <span class="item-views">{{ number_format($video->views ?? 0) }} views</span>
                                         <span class="item-status {{ $video->status }}">{{ ucfirst($video->status) }}</span>
                                     </div>
-                                </div>
+                                </aside>
                             </div>
                             @empty
                             <div class="empty-tab">
@@ -2408,10 +2431,10 @@
                     </div>
                 </div>
             </div>
-        </div>
-        
+        </main>
+
         <!-- Enhanced Right Sidebar -->
-        <div class="right-sidebar">
+        <aside class="lesson-sidebar">
             <!-- Enhanced Action Buttons -->
             <div class="action-buttons-grid">
                 <button class="action-btn">
@@ -2646,6 +2669,7 @@
             console.log('CSP Nonce available:', !!document.querySelector('meta[name="csp-nonce"]'));
             console.log('CSRF Token available:', !!document.querySelector('meta[name="csrf-token"]'));
 
+
             // Check if Quill scripts are present in DOM
             const quillScripts = document.querySelectorAll('script[src*="quill"]');
             console.log('Quill script tags found:', quillScripts.length);
@@ -2663,7 +2687,6 @@
                 manualScript.src = 'https://cdn.quilljs.com/1.3.7/quill.min.js';
                 manualScript.onload = () => {
                     console.log('Manual Quill load successful');
-                    testQuillBasic();
                     initializeAll();
                 };
                 manualScript.onerror = () => {
@@ -2675,45 +2698,11 @@
                 return;
             } else {
                 console.log('Quill.js already loaded, version:', Quill.version || 'unknown');
-                testQuillBasic();
                 initializeAll();
             }
         });
 
-        // Test basic Quill functionality
-        function testQuillBasic() {
-            try {
-                console.log('Testing basic Quill functionality...');
-                console.log('Quill object:', Quill);
-                console.log('Quill version:', Quill.version);
-                console.log('Quill import function:', typeof Quill.import);
-
-                // Create a temporary test element
-                const testDiv = document.createElement('div');
-                testDiv.id = 'quill-test';
-                testDiv.style.display = 'none';
-                document.body.appendChild(testDiv);
-
-                console.log('Creating test Quill instance...');
-                const testQuill = new Quill('#quill-test', {
-                    theme: 'snow',
-                    placeholder: 'Test'
-                });
-
-                console.log('Test Quill instance created:', testQuill);
-                console.log('Basic Quill test successful');
-
-                // Clean up - dispose of Quill instance properly
-                if (testQuill) {
-                    // Quill doesn't have a destroy method in v1.3.7, just remove from DOM
-                }
-                document.body.removeChild(testDiv);
-            } catch (error) {
-                console.error('Basic Quill test failed:', error);
-                console.error('Error stack:', error.stack);
-                alert('Quill editor test failed. Error: ' + error.message);
-            }
-        }
+        // Test basic Quill functionality (removed to prevent orphaned toolbars)
 
         function initializeAll() {
             // Initialize all functionality
