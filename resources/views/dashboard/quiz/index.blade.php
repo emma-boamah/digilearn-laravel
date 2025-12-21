@@ -20,7 +20,6 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            @include('dashboard.quiz.partials.mobile-header')
             @include('dashboard.quiz.partials.desktop-header')
             @include('dashboard.quiz.partials.filter-bar')
             @include('dashboard.quiz.partials.hero-section')
