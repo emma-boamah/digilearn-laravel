@@ -3,9 +3,21 @@
 @section('title', (isset($course) ? $course->title : ($lesson['title'] ?? 'Lesson')) . ' - ' . config('app.name', 'ShoutOutGh'))
 
 @section('head')
-    <!-- Quill.js Rich Text Editor (Using Cloudflare CDN) -->
+    <!-- Quill.js Rich Text Editor (Using multiple CDN fallbacks) -->
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.snow.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.min.js"></script>
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        // Fallback if primary CDN fails
+        if (typeof Quill === 'undefined') {
+            console.log('Loading Quill fallback from Cloudflare');
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.min.js';
+            script.onload = () => console.log('Quill fallback loaded successfully');
+            script.onerror = () => console.error('All Quill CDNs failed');
+            document.head.appendChild(script);
+        }
+    </script>
 
     <!-- Additional Libraries for Enhanced Functionality -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -438,6 +450,10 @@
             color: var(--gray-900);
         }
 
+        .comment-submit-btn {
+            display: none;
+        }
+
         /* Comments List - Updated */
         .comment {
             display: flex;
@@ -625,6 +641,13 @@
             overflow: hidden;
             margin-bottom: 1.5rem;
             box-shadow: var(--shadow-lg);
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        .notes-editor-section.hidden {
+            display: none !important;
         }
 
         .notes-editor-container {
@@ -785,6 +808,7 @@
             visibility: visible !important;
         }
 
+        /* Consolidated Quill styles */
         .ql-toolbar {
             border: none !important;
             border-bottom: 1px solid var(--gray-200) !important;
@@ -792,6 +816,7 @@
             padding: 1rem 1.25rem !important;
             display: block !important;
             visibility: visible !important;
+            opacity: 1 !important;
         }
 
         .ql-container {
@@ -803,6 +828,7 @@
             line-height: 1.6 !important;
             display: block !important;
             visibility: visible !important;
+            opacity: 1 !important;
         }
 
         .ql-editor {
@@ -811,12 +837,14 @@
             line-height: 1.7 !important;
             display: block !important;
             visibility: visible !important;
+            opacity: 1 !important;
         }
 
         .ql-editor.ql-blank::before {
             color: var(--gray-500) !important;
             font-style: normal !important;
             left: 1.5rem !important;
+            opacity: 1 !important;
         }
 
         .ql-stroke {
@@ -2366,7 +2394,7 @@
                 <div class="comment-input-container">
                     <div class="comment-avatar">{{ substr(auth()->user()->name ?? 'U', 0, 1) }}</div>
                     <input type="text" class="comment-input" id="commentInput" placeholder="Add a comment..." />
-                    <button class="comment-submit-btn" id="commentSubmitBtn" style="display: none;">
+                    <button class="comment-submit-btn" id="commentSubmitBtn">
                         <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
                         </svg>
@@ -2427,30 +2455,31 @@
                 </button>
             </div>
 
-            <!-- Enhanced Rich Text Editor with Quill.js -->
-            <div id="notesEditorSection" class="notes-editor-section hidden">
-                <div class="notes-editor-container">
-                    <div class="notes-editor-header">
-                        <input type="text" class="notes-title-input" placeholder="Enter note title..." />
-                        <div class="notes-editor-actions">
-                            <button class="notes-action-btn save" id="saveNotesBtn">
-                                <i class="fas fa-save"></i>
-                                Save
-                            </button>
-                            <button class="notes-action-btn export" id="exportNotesBtn">
-                                <i class="fas fa-download"></i>
-                                Export
-                            </button>
-                            <button class="notes-action-btn delete" id="deleteNotesBtn">
-                                <i class="fas fa-trash"></i>
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-                    <div class="notes-editor-main">
-                        <div id="notesQuillEditor"></div>
-                    </div>
+            <!-- Notes Wrapper (hidden by default) -->
+            <div id="notesWrapper" style="display: none; margin-top: 1rem;">
+                <!-- Toolbar MUST have its own container -->
+                <div id="notes-toolbar">
+                    <span class="ql-formats">
+                        <button class="ql-bold"></button>
+                        <button class="ql-italic"></button>
+                        <button class="ql-underline"></button>
+                    </span>
+                    <span class="ql-formats">
+                        <button class="ql-list" value="ordered"></button>
+                        <button class="ql-list" value="bullet"></button>
+                    </span>
+                    <span class="ql-formats">
+                        <button class="ql-link"></button>
+                    </span>
                 </div>
+
+                <!-- Editor -->
+                <div id="notes-editor" style="min-height: 150px;"></div>
+
+                <!-- Save Button -->
+                <button id="saveNotesBtn" class="btn btn-success mt-2">
+                    Save Notes
+                </button>
             </div>
 
             <!-- Enhanced Related Videos -->
@@ -2581,13 +2610,7 @@
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         // Global variables for the rich text editor
-        let quillEditor = null;
-        let notesData = {
-            title: '',
-            content: '',
-            lastSaved: null
-        };
-        let notesManager = null;
+        let notesQuill = null;
 
         // Global constants and functions for the rich text editor
         const MAX_CHARS = 1000;
@@ -2619,24 +2642,78 @@
         let scrollThreshold = 100; // Pixels to scroll before triggering compact mode
 
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page loaded, checking Quill availability...');
+            console.log('CSP Nonce available:', !!document.querySelector('meta[name="csp-nonce"]'));
+            console.log('CSRF Token available:', !!document.querySelector('meta[name="csrf-token"]'));
+
+            // Check if Quill scripts are present in DOM
+            const quillScripts = document.querySelectorAll('script[src*="quill"]');
+            console.log('Quill script tags found:', quillScripts.length);
+            quillScripts.forEach((script, index) => {
+                console.log(`Quill script ${index + 1}:`, script.src, 'loaded:', script.complete);
+            });
+
             // Check if Quill is loaded before initializing
             if (typeof Quill === 'undefined') {
                 console.warn('Quill.js not loaded yet, waiting...');
-                // Wait a bit and try again
-                setTimeout(() => {
-                    if (typeof Quill === 'undefined') {
-                        console.error('Quill.js failed to load from CDN');
-                        alert('The notes editor failed to load. Please refresh the page.');
-                        return;
-                    }
-                    console.log('Quill.js loaded successfully');
+
+                // Try loading Quill manually as a test
+                console.log('Attempting manual Quill load...');
+                const manualScript = document.createElement('script');
+                manualScript.src = 'https://cdn.quilljs.com/1.3.7/quill.min.js';
+                manualScript.onload = () => {
+                    console.log('Manual Quill load successful');
+                    testQuillBasic();
                     initializeAll();
-                }, 2000);
+                };
+                manualScript.onerror = () => {
+                    console.error('Manual Quill load failed');
+                    alert('The notes editor failed to load. Please refresh the page.');
+                };
+                document.head.appendChild(manualScript);
+
+                return;
             } else {
-                console.log('Quill.js already loaded');
+                console.log('Quill.js already loaded, version:', Quill.version || 'unknown');
+                testQuillBasic();
                 initializeAll();
             }
         });
+
+        // Test basic Quill functionality
+        function testQuillBasic() {
+            try {
+                console.log('Testing basic Quill functionality...');
+                console.log('Quill object:', Quill);
+                console.log('Quill version:', Quill.version);
+                console.log('Quill import function:', typeof Quill.import);
+
+                // Create a temporary test element
+                const testDiv = document.createElement('div');
+                testDiv.id = 'quill-test';
+                testDiv.style.display = 'none';
+                document.body.appendChild(testDiv);
+
+                console.log('Creating test Quill instance...');
+                const testQuill = new Quill('#quill-test', {
+                    theme: 'snow',
+                    placeholder: 'Test'
+                });
+
+                console.log('Test Quill instance created:', testQuill);
+                console.log('Basic Quill test successful');
+
+                // Clean up - dispose of Quill instance properly
+                if (testQuill) {
+                    // Quill doesn't have a destroy method in v1.3.7, just remove from DOM
+                }
+                document.body.removeChild(testDiv);
+            } catch (error) {
+                console.error('Basic Quill test failed:', error);
+                console.error('Error stack:', error.stack);
+                alert('Quill editor test failed. Error: ' + error.message);
+            }
+        }
 
         function initializeAll() {
             // Initialize all functionality
@@ -2743,21 +2820,55 @@
             const commentsList = document.getElementById('commentsList');
             const loadingComments = document.getElementById('loadingComments');
 
-            if (!lessonId) return;
+            console.log('Loading comments for lesson ID:', lessonId);
 
-            fetch(`/dashboard/lesson/${lessonId}/comments`)
-                .then(response => response.json())
+            if (!lessonId) {
+                console.error('No lesson ID available for comments');
+                return;
+            }
+
+            // Check CSRF token
+            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+            console.log('CSRF token available:', !!csrfToken, 'Value:', csrfToken ? csrfToken.getAttribute('content').substring(0, 10) + '...' : 'none');
+
+            const requestUrl = `/dashboard/lesson/${lessonId}/comments`;
+            console.log('Making request to:', requestUrl);
+
+            fetch(requestUrl, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+                .then(response => {
+                    console.log('Comments response status:', response.status);
+                    console.log('Comments response headers:', Object.fromEntries(response.headers.entries()));
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('Comments data received:', data);
                     if (data.success) {
                         renderComments(data.comments);
                         document.getElementById('commentsCount').textContent = data.total_count;
+                        console.log('Comments loaded successfully, count:', data.total_count);
                     } else {
-                        commentsList.innerHTML = '<div class="error-message">Failed to load comments</div>';
+                        console.error('Comments API returned error:', data);
+                        commentsList.innerHTML = '<div class="error-message">Failed to load comments: ' + (data.message || 'Unknown error') + '</div>';
                     }
                 })
                 .catch(error => {
                     console.error('Error loading comments:', error);
-                    commentsList.innerHTML = '<div class="error-message">Failed to load comments</div>';
+                    console.error('Error details:', {
+                        message: error.message,
+                        stack: error.stack,
+                        lessonId: lessonId,
+                        url: requestUrl
+                    });
+                    commentsList.innerHTML = '<div class="error-message">Failed to load comments: ' + error.message + '</div>';
                 });
         }
 
@@ -3184,365 +3295,67 @@
         // Enhanced Rich Text Editor with Quill.js
         function initializeNotesEditor() {
             const addNotesBtn = document.getElementById('addNotesBtn');
-            const notesEditorSection = document.getElementById('notesEditorSection');
-            const notesTitleInput = document.querySelector('.notes-title-input');
-            const saveNotesBtn = document.getElementById('saveNotesBtn');
-            const exportNotesBtn = document.getElementById('exportNotesBtn');
-            const deleteNotesBtn = document.getElementById('deleteNotesBtn');
+            const notesWrapper = document.getElementById('notesWrapper');
 
-            // Initialize NotesManager
-            notesManager = new NotesManager();
-            notesManager.init();
+            function initNotesEditor() {
+                if (notesQuill) return; // 🔒 idempotent guard
 
-            // Initialize Quill editor
-            function initializeQuill() {
-                if (quillEditor) return;
-
-                // Check if Quill is loaded
-                if (typeof Quill === 'undefined') {
-                    console.error('Quill.js is not loaded. Please check your internet connection and CDN availability.');
-                    alert('Failed to load the notes editor. Please refresh the page and try again.');
-                    return;
-                }
-
-                const editorElement = document.getElementById('notesQuillEditor');
-                if (!editorElement) {
-                    console.error('Notes editor element not found');
-                    return;
-                }
-
-                try {
-                    console.log('Initializing Quill editor...');
-                    quillEditor = new Quill('#notesQuillEditor', {
-                        theme: 'snow',
-                        placeholder: 'Start writing your notes here...',
-                        modules: {
-                            toolbar: [
-                                [{ 'header': [1, 2, 3, false] }],
-                                ['bold', 'italic', 'underline', 'strike'],
-                                [{ 'color': [] }, { 'background': [] }],
-                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                [{ 'indent': '-1'}, { 'indent': '+1' }],
-                                [{ 'align': [] }],
-                                ['blockquote', 'code-block'],
-                                ['link', 'image'],
-                                ['clean']
-                            ]
-                        }
-                    });
-
-                    console.log('Quill editor initialized successfully');
-
-                    // Verify that Quill elements were created
-                    setTimeout(() => {
-                        const toolbar = editorElement.querySelector('.ql-toolbar');
-                        const container = editorElement.querySelector('.ql-container');
-                        const editor = editorElement.querySelector('.ql-editor');
-
-                        console.log('Quill elements check:', {
-                            toolbar: !!toolbar,
-                            container: !!container,
-                            editor: !!editor
-                        });
-
-                        if (!toolbar || !container || !editor) {
-                            console.error('Quill elements not found after initialization');
-                            alert('Notes editor failed to initialize properly. Please refresh the page.');
-                        }
-                    }, 100);
-
-                } catch (error) {
-                    console.error('Error initializing Quill editor:', error);
-                    alert('Failed to initialize the notes editor. Please try refreshing the page.');
-                }
-
-                // Auto-save functionality with character limit
-                quillEditor.on('text-change', function(delta, oldDelta, source) {
-                    if (source === 'user') {
-                        const text = quillEditor.getText();
-
-                        // Prevent typing beyond the limit
-                        if (text.length > MAX_CHARS) {
-                            // Revert the change
-                            quillEditor.history.undo();
-                            return;
-                        }
-
-                        notesData.content = quillEditor.root.innerHTML;
-                        updateCharCount();
-                        debounce(autoSave, 2000)();
+                // Clean up any existing Quill toolbars that are not in our wrapper
+                const existingToolbars = document.querySelectorAll('.ql-toolbar');
+                existingToolbars.forEach(toolbar => {
+                    if (!toolbar.closest('#notesWrapper')) {
+                        toolbar.remove();
                     }
+                });
+
+                notesQuill = new Quill('#notes-editor', {
+                    theme: 'snow',
+                    modules: {
+                        toolbar: '#notes-toolbar'
+                    },
+                    placeholder: 'Write short notes for this video...'
                 });
             }
 
-            // Toggle notes editor
-            function toggleNotesEditor() {
-                if (notesEditorSection.classList.contains('hidden')) {
-                    notesEditorSection.classList.remove('hidden');
-                    addNotesBtn.innerHTML = `
-                        Hide notes
-                        <svg fill="currentColor" viewBox="0 0 24 24" style="transform: rotate(45deg);">
-                            <circle cx="12" cy="12" r="10"/>
-                            <line x1="12" y1="8" x2="12" y2="16"/>
-                            <line x1="8" y1="12" x2="16" y2="12"/>
-                        </svg>
-                    `;
-                    
-                    // Initialize Quill editor when shown
-                    setTimeout(() => {
-                        // Ensure the element is visible before initializing
-                        const editorSection = document.getElementById('notesEditorSection');
-                        if (editorSection && !editorSection.classList.contains('hidden')) {
-                            initializeQuill();
-                            // Initialize character count after Quill is ready
-                            setTimeout(updateCharCount, 200);
-                        } else {
-                            console.warn('Notes editor section is not visible, skipping Quill initialization');
-                        }
-                    }, 100);
+            addNotesBtn.addEventListener('click', () => {
+                const isHidden = notesWrapper.style.display === 'none';
+
+                notesWrapper.style.display = isHidden ? 'block' : 'none';
+
+                if (isHidden) {
+                    initNotesEditor();
                 } else {
-                    notesEditorSection.classList.add('hidden');
-                    addNotesBtn.innerHTML = `
-                        Add notes
-                        <svg fill="currentColor" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="10"/>
-                            <line x1="12" y1="8" x2="12" y2="16"/>
-                            <line x1="8" y1="12" x2="16" y2="12"/>
-                        </svg>
-                    `;
-                }
-            }
-
-            // Auto-save functionality
-            async function autoSave() {
-                if (notesTitleInput.value.trim() || (quillEditor && quillEditor.getText().trim())) {
-                    const title = notesTitleInput.value.trim();
-                    const content = quillEditor ? quillEditor.root.innerHTML : '';
-
-                    try {
-                        // Save locally first
-                        await notesManager.saveNoteLocally({
-                            title: title,
-                            content: content
-                        });
-
-                        notesData.title = title;
-                        notesData.content = content;
-                        notesData.lastSaved = new Date().toISOString();
-
-                        // Update save button to show success
-                        const saveBtn = document.getElementById('saveNotesBtn');
-                        if (saveBtn) {
-                            const originalContent = saveBtn.innerHTML;
-                            saveBtn.innerHTML = '<i class="fas fa-check"></i> Auto-saved!';
-                            saveBtn.style.backgroundColor = '#10b981';
-
-                            setTimeout(() => {
-                                saveBtn.innerHTML = originalContent;
-                                saveBtn.style.backgroundColor = '';
-                            }, 2000);
-                        }
-
-                        console.log('Notes auto-saved locally');
-                    } catch (error) {
-                        console.error('Auto-save error:', error);
+                    // Clean up when hiding
+                    if (notesQuill) {
+                        // Dispose of Quill instance
+                        notesQuill = null;
                     }
+                    // Clean up any orphaned toolbars
+                    const orphanedToolbars = document.querySelectorAll('.ql-toolbar:not(#notes-toolbar)');
+                    orphanedToolbars.forEach(toolbar => toolbar.remove());
                 }
-            }
-
-            // Manual save functionality
-            async function saveNotes() {
-                if (!notesTitleInput.value.trim() && (!quillEditor || !quillEditor.getText().trim())) {
-                    alert('Please add a title or content before saving.');
-                    return;
-                }
-
-                const saveBtn = saveNotesBtn;
-                const originalContent = saveBtn.innerHTML;
-
-                // Show loading state
-                saveBtn.innerHTML = '<div class="loading-spinner"></div> Saving...';
-                saveBtn.disabled = true;
-
-                const title = notesTitleInput.value.trim();
-                const content = quillEditor ? quillEditor.root.innerHTML : '';
-
-                try {
-                    // Save locally first
-                    await notesManager.saveNoteLocally({
-                        title: title,
-                        content: content
-                    });
-
-                    notesData.title = title;
-                    notesData.content = content;
-                    notesData.lastSaved = new Date().toISOString();
-
-                    // Show success state
-                    saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
-                    saveBtn.style.backgroundColor = '#10b981';
-
-                    // Show success message
-                    showSuccessMessage('Notes saved successfully!');
-
-                    setTimeout(() => {
-                        saveBtn.innerHTML = originalContent;
-                        saveBtn.style.backgroundColor = '';
-                        saveBtn.disabled = false;
-                    }, 2000);
-                } catch (error) {
-                    console.error('Save error:', error);
-                    saveBtn.innerHTML = originalContent;
-                    saveBtn.disabled = false;
-                    alert('Failed to save notes. Please try again.');
-                }
-            }
-
-            // Export functionality
-            function exportNotes() {
-                if (!notesTitleInput.value.trim() && (!quillEditor || !quillEditor.getText().trim())) {
-                    alert('No content to export.');
-                    return;
-                }
-
-                const exportBtn = exportNotesBtn;
-                const originalContent = exportBtn.innerHTML;
-                
-                exportBtn.innerHTML = '<div class="loading-spinner"></div> Exporting...';
-                exportBtn.disabled = true;
-
-                setTimeout(() => {
-                    const title = notesTitleInput.value.trim() || 'Lesson Notes';
-                    const content = quillEditor ? quillEditor.root.innerHTML : '';
-                    
-                    // Create HTML content
-                    const htmlContent = `
-                        <!DOCTYPE html>
-                        <html>
-                        <head>
-                            <title>${title}</title>
-                            <style>
-                                body { font-family: 'Inter', sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 2rem; }
-                                h1 { color: #E11E2D; border-bottom: 2px solid #E11E2D; padding-bottom: 0.5rem; }
-                                .meta { color: #6b7280; font-size: 0.875rem; margin-bottom: 2rem; }
-                            </style>
-                        </head>
-                        <body>
-                            <h1>${title}</h1>
-                            <div class="meta">Exported on ${new Date().toLocaleDateString()}</div>
-                            <div>${content}</div>
-                        </body>
-                        </html>
-                    `;
-                    
-                    // Create and download file
-                    const blob = new Blob([htmlContent], { type: 'text/html' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    
-                    exportBtn.innerHTML = '<i class="fas fa-check"></i> Exported!';
-                    exportBtn.style.backgroundColor = '#10b981';
-                    
-                    showSuccessMessage('Notes exported successfully!');
-                    
-                    setTimeout(() => {
-                        exportBtn.innerHTML = originalContent;
-                        exportBtn.style.backgroundColor = '';
-                        exportBtn.disabled = false;
-                    }, 2000);
-                }, 1000);
-            }
-
-            // Delete functionality
-            async function deleteNotes() {
-                if (confirm('Are you sure you want to delete these notes? This action cannot be undone.')) {
-                    try {
-                        // Clear UI
-                        notesTitleInput.value = '';
-                        if (quillEditor) {
-                            quillEditor.setContents([]);
-                        }
-
-                        // Delete from local storage
-                        // Note: NotesManager doesn't have a delete method yet, so we'll clear the UI and let sync handle server deletion
-                        notesData = { title: '', content: '', lastSaved: null };
-
-                        // Optionally delete from server
-                        try {
-                            await fetch(`/dashboard/lesson/{{ $lesson['id'] ?? '' }}/user-notes`, {
-                                method: 'DELETE',
-                                headers: {
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                                }
-                            });
-                        } catch (serverError) {
-                            console.warn('Failed to delete from server:', serverError);
-                        }
-
-                        showSuccessMessage('Notes deleted successfully!');
-                        console.log('Notes deleted');
-                    } catch (error) {
-                        console.error('Error deleting notes:', error);
-                        alert('Failed to delete notes. Please try again.');
-                    }
-                }
-            }
-
-            // Load saved notes
-            function loadSavedNotes() {
-                // Load from database via AJAX
-                fetch(`/dashboard/lesson/{{ $lesson['id'] ?? '' }}/user-notes`, {
-                    method: 'GET',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.note) {
-                        notesTitleInput.value = data.note.title || '';
-                        if (quillEditor && data.note.content) {
-                            quillEditor.root.innerHTML = data.note.content;
-                        }
-                        notesData = {
-                            title: data.note.title || '',
-                            content: data.note.content || '',
-                            lastSaved: data.note.updated_at
-                        };
-                        // Update character count after loading
-                        setTimeout(updateCharCount, 100);
-                        console.log('Notes loaded from database');
-                    } else {
-                        // No notes found, keep empty
-                        notesData = { title: '', content: '', lastSaved: null };
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading saved notes:', error);
-                    // Fallback to empty notes
-                    notesData = { title: '', content: '', lastSaved: null };
-                });
-            }
-
-            // Event listeners
-            addNotesBtn.addEventListener('click', toggleNotesEditor);
-            saveNotesBtn.addEventListener('click', saveNotes);
-            exportNotesBtn.addEventListener('click', exportNotes);
-            deleteNotesBtn.addEventListener('click', deleteNotes);
-            
-            notesTitleInput.addEventListener('input', function() {
-                notesData.title = this.value.trim();
-                debounce(autoSave, 2000)();
             });
 
-            // Load saved notes on page load
-            setTimeout(loadSavedNotes, 500);
+            // Save notes handler
+            document.getElementById('saveNotesBtn').addEventListener('click', () => {
+                if (!notesQuill) return;
+
+                const content = notesQuill.root.innerHTML;
+
+                fetch('/notes/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        content: content,
+                        video_id: '{{ $lesson["id"] ?? "null" }}'
+                    })
+                }).then(() => {
+                    alert('Notes saved');
+                });
+            });
         }
 
         // Share Modal Functionality
