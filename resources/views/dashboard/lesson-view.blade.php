@@ -839,6 +839,77 @@
             opacity: 1 !important;
         }
 
+        /* Fix Quill Editor Container */
+        #notesWrapper {
+            background-color: var(--white);
+            border: 3px solid var(--gray-200);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            display: none; /* Hidden by default */
+        }
+
+        #notesWrapper.active {
+            display: block;
+        }
+
+        #notes-editor-container {
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Ensure Quill toolbar doesn't overlap */
+        .ql-toolbar {
+            position: relative !important;
+            z-index: 100 !important;
+            background: var(--white) !important;
+            border: 1px solid var(--gray-200) !important;
+            border-radius: 0.5rem 0.5rem 0 0 !important;
+            padding: 0.5rem !important;
+        }
+
+        .ql-container {
+            position: relative !important;
+            z-index: 50 !important;
+            min-height: 250px !important;
+            max-height: 400px !important;
+            overflow-y: auto !important;
+            border: 1px solid var(--gray-200) !important;
+            border-top: none !important;
+            border-radius: 0 0 0.5rem 0.5rem !important;
+        }
+
+        .ql-editor {
+            min-height: 250px !important;
+        }
+
+        /* Fix Save Button positioning */
+        #saveNotesBtn {
+            margin: 1rem auto;
+            display: block;
+            padding: 0.75rem 2rem;
+            background-color: var(--secondary-blue);
+            color: var(--white);
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        #saveNotesBtn:hover {
+            background-color: var(--secondary-blue-hover);
+        }
+
+        /* Ensure Related Videos Card has proper spacing */
+        .related-videos-card {
+            margin-top: 1.5rem !important;
+            position: relative;
+            z-index: 10;
+        }
+
         .ql-container {
             border: none !important;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
@@ -849,6 +920,7 @@
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
+            min-height: 150px;
         }
 
         .ql-editor {
@@ -1908,6 +1980,44 @@
             .ql-toolbar {
                 padding: 0.75rem 1rem;
             }
+
+            /* Fix Quill editor on mobile */
+            #notesWrapper {
+                margin: 1rem 0;
+                width: 100%;
+                max-width: 100%;
+                box-sizing: border-box;
+            }
+
+            #notes-editor-container {
+                min-height: 250px;
+            }
+
+            .ql-container {
+                min-height: 200px !important;
+                max-height: 300px !important;
+            }
+
+            .ql-toolbar {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+            }
+
+            /* Ensure save button is visible */
+            #saveNotesBtn {
+                position: relative;
+                z-index: 100;
+                margin: 1rem auto;
+                width: 90%;
+            }
+
+            /* Ensure related videos don't overlap */
+            .related-videos-card {
+                margin-top: 2rem !important;
+                clear: both;
+                position: relative;
+                z-index: 5;
+            }
         }
 
         @media (max-width: 480px) {
@@ -2480,24 +2590,11 @@
 
             <!-- Notes Wrapper (hidden by default) -->
             <div id="notesWrapper" style="display: none; margin-top: 1rem;">
-                <!-- Toolbar MUST have its own container -->
-                <div id="notes-toolbar">
-                    <span class="ql-formats">
-                        <button class="ql-bold"></button>
-                        <button class="ql-italic"></button>
-                        <button class="ql-underline"></button>
-                    </span>
-                    <span class="ql-formats">
-                        <button class="ql-list" value="ordered"></button>
-                        <button class="ql-list" value="bullet"></button>
-                    </span>
-                    <span class="ql-formats">
-                        <button class="ql-link"></button>
-                    </span>
+                <!-- Editor Container -->
+                <div id="notes-editor-container">
+                    <!-- Quill will create its own toolbar inside this div -->
+                    <div id="notes-editor"></div>
                 </div>
-
-                <!-- Editor -->
-                <div id="notes-editor" style="min-height: 150px;"></div>
 
                 <!-- Save Button -->
                 <button id="saveNotesBtn" class="btn btn-success mt-2">
@@ -3287,41 +3384,38 @@
             const notesWrapper = document.getElementById('notesWrapper');
 
             function initNotesEditor() {
-                if (notesQuill) return; // 🔒 idempotent guard
+                if (notesQuill) return; // Already initialized
 
-                // Clean up any existing Quill toolbars that are not in our wrapper
-                const existingToolbars = document.querySelectorAll('.ql-toolbar');
-                existingToolbars.forEach(toolbar => {
-                    if (!toolbar.closest('#notesWrapper')) {
-                        toolbar.remove();
-                    }
-                });
-
+                // Initialize Quill with a simple toolbar
                 notesQuill = new Quill('#notes-editor', {
                     theme: 'snow',
                     modules: {
-                        toolbar: '#notes-toolbar'
+                        toolbar: [
+                            ['bold', 'italic', 'underline'],
+                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                            ['link'],
+                            ['clean']
+                        ]
                     },
-                    placeholder: 'Write short notes for this video...'
+                    placeholder: 'Write your notes here...',
+                    bounds: '#notes-editor-container'
                 });
+
+                console.log('Quill editor initialized');
             }
 
             addNotesBtn.addEventListener('click', () => {
                 const isHidden = notesWrapper.style.display === 'none';
 
-                notesWrapper.style.display = isHidden ? 'block' : 'none';
-
                 if (isHidden) {
-                    initNotesEditor();
+                    notesWrapper.style.display = 'block';
+                    // Small delay to ensure DOM is updated
+                    setTimeout(initNotesEditor, 100);
                 } else {
-                    // Clean up when hiding
+                    notesWrapper.style.display = 'none';
                     if (notesQuill) {
-                        // Dispose of Quill instance
                         notesQuill = null;
                     }
-                    // Clean up any orphaned toolbars
-                    const orphanedToolbars = document.querySelectorAll('.ql-toolbar:not(#notes-toolbar)');
-                    orphanedToolbars.forEach(toolbar => toolbar.remove());
                 }
             });
 
@@ -3330,19 +3424,35 @@
                 if (!notesQuill) return;
 
                 const content = notesQuill.root.innerHTML;
+                const text = notesQuill.getText().trim();
 
-                fetch('/notes/save', {
+                if (!text) {
+                    alert('Please write some notes before saving.');
+                    return;
+                }
+
+                fetch('/dashboard/lesson/{{ $lesson["id"] ?? "" }}/user-notes', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: JSON.stringify({
-                        content: content,
-                        video_id: '{{ $lesson["id"] ?? "null" }}'
+                        title: '', // Optional title
+                        content: content
                     })
-                }).then(() => {
-                    alert('Notes saved');
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Notes saved successfully!');
+                    } else {
+                        alert('Error saving notes: ' + (data.message || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error saving notes:', error);
+                    alert('Failed to save notes. Please try again.');
                 });
             });
         }
