@@ -519,6 +519,8 @@
             width: 100%;
             font-size: 0.875rem;
             padding-right: 3.5rem;
+            background: var(--white);
+            color: var(--gray-900);
         }
 
         .search-input:focus {
@@ -529,14 +531,14 @@
 
         .search-button {
             position: absolute;
-            right: 0;
-            top: 0;
-            height: 100%;
-            width: 2.5rem;
+            right: 1px;
+            top: 1px;
+            height: calc(100% - 2px);
+            width: calc(2.5rem - 1px);
             background-color: var(--secondary-blue);
             border: none;
-            border-top-right-radius: 0.5rem;
-            border-bottom-right-radius: 0.5rem;
+            border-top-right-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1164,18 +1166,17 @@
 
         .mobile-search-toggle {
             display: flex; /* Shown by default, hidden on desktop */
-            background: var(--white);
-            border: 1px solid var(--gray-300);
+            background: var(--secondary-blue);
+            border: none;
             border-radius: 0.5rem;
             padding: 0.75rem;
             cursor: pointer;
             transition: all 0.2s ease;
-            color: #000000; /* Black for better visibility */
+            color: var(--white);
         }
 
         .mobile-search-toggle:hover {
-            background-color: var(--gray-100);
-            border-radius: 0.5rem;
+            background-color: var(--secondary-blue-hover);
         }
 
         /* Mobile Layout Reset - Fix left gap issue */
@@ -1225,28 +1226,26 @@
                 display: none;
             }
 
-            .filter-bar.search-active .search-container {
+            #filterBar.search-active .search-container {
                 display: flex;
                 flex: 1;
-                background: var(--gray-50);
-                border: 1px solid var(--gray-300);
-                border-radius: 0.5rem;
+                min-height: 48px;
+                background: var(--white);
                 padding: 0.5rem;
+                box-shadow: var(--shadow-md);
             }
 
-            .filter-bar.search-active .level-container,
-            .filter-bar.search-active .mobile-search-toggle,
-            .filter-bar.search-active .quiz-container {
+            #filterBar.search-active .search-box {
+                background: var(--gray-100);
+                border-radius: 0.375rem;
+                padding: 0.25rem;
+                width: 100%;
+            }
+
+            #filterBar.search-active .level-container,
+            #filterBar.search-active .mobile-search-toggle,
+            #filterBar.search-active .quiz-container {
                 display: none;
-            }
-
-            .search-box {
-                position: static;
-                visibility: visible;
-                transform: none;
-                min-width: 100%;
-                padding: 0;
-                box-shadow: none;
             }
 
             .search-close {
@@ -1323,29 +1322,6 @@
             }
 
             /* Search box initially hidden on mobile */
-            .search-box {
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                z-index: 100;
-                min-width: 100%;
-                visibility: hidden;
-                transform: translateY(-10px);
-                background: var(--white);
-                padding: 0.75rem;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            }
-
-            .search-box.active {
-                visibility: visible;
-                transform: translateY(0);
-                padding: 0;
-            }
-
-            .search-box.mobile-visible {
-                display: flex;
-            }
             
             .content-section {
                 padding: 1rem 0.5rem;
@@ -1643,8 +1619,8 @@
 
                 <!-- Mobile Search Toggle Button -->
                 <button class="mobile-search-toggle" id="mobileSearchToggle">
-                    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17.5 17.5L12.5001 12.5M14.1667 8.33333C14.1667 11.555 11.555 14.1667 8.33333 14.1667C5.11167 14.1667 2.5 11.555 2.5 8.33333C2.5 5.11167 5.11167 2.5 8.33333 2.5C11.555 2.5 14.1667 5.11167 14.1667 8.33333Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </button>
 
@@ -2017,6 +1993,16 @@
                         searchInput.focus();
                     } else {
                         // Close search if input is empty
+                        filterBar.classList.remove('search-active');
+                    }
+                });
+            }
+
+            // Optional: Enter key to close search
+            if (searchInput && filterBar) {
+                searchInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        // Close search on Enter
                         filterBar.classList.remove('search-active');
                     }
                 });
