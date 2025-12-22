@@ -749,6 +749,114 @@
             opacity: 0.9;
         }
 
+        /* Updated Filter Bar Layout */
+        .filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background-color: var(--white);
+            border-bottom: 1px solid var(--gray-200);
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .level-container {
+            /* Left on desktop */
+        }
+
+        .search-container {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .quiz-container {
+            /* Right on desktop */
+        }
+
+        .level-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background-color: var(--secondary-blue);
+            color: var(--white);
+            border-radius: 2rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            white-space: nowrap;
+        }
+
+        .level-indicator:hover {
+            background-color: var(--secondary-blue-hover);
+            transform: scale(1.05);
+        }
+
+        .level-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        #level-modal-toggle:checked ~ .level-modal {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+
+        .modal-content {
+            position: relative;
+            background: var(--white);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            max-width: 300px;
+            width: 90%;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .modal-content h3 {
+            margin: 0 0 1rem 0;
+            font-size: 1.125rem;
+            color: var(--gray-900);
+        }
+
+        .level-option {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: var(--gray-700);
+            text-decoration: none;
+            border-radius: 0.375rem;
+            transition: background-color 0.2s ease;
+        }
+
+        .level-option:hover {
+            background-color: var(--gray-50);
+        }
+
+        .level-option + .level-option {
+            margin-top: 0.5rem;
+        }
+
         /* Hero Section */
         .hero-section {
             position: relative;
@@ -1055,13 +1163,19 @@
         }
 
         .mobile-search-toggle {
-            display: none; /* Hidden by default */
-            background: var(--secondary-blue);
-            border: none;
-            padding: 0.75rem;
+            display: flex; /* Shown by default, hidden on desktop */
+            background: var(--white);
+            border: 1px solid var(--gray-300);
             border-radius: 0.5rem;
+            padding: 0.75rem;
             cursor: pointer;
             transition: all 0.2s ease;
+            color: #000000; /* Black for better visibility */
+        }
+
+        .mobile-search-toggle:hover {
+            background-color: var(--gray-100);
+            border-radius: 0.5rem;
         }
 
         /* Mobile Layout Reset - Fix left gap issue */
@@ -1089,32 +1203,54 @@
 
         /* Responsive Design */
         @media (max-width: 768px) {
-
-            .filter-bar.search-active {
-                flex-wrap: wrap;
-                padding: 0 1rem;
+            .filter-bar {
+                justify-content: space-between;
             }
 
-            .filter-bar.search-active > *:not(.search-box) {
+            .level-container {
+                display: flex;
+                order: 1;
+            }
+
+            .mobile-search-toggle {
+                display: flex;
+                order: 2;
+            }
+
+            .quiz-container {
+                order: 3;
+            }
+
+            .search-container {
                 display: none;
             }
 
-            .filter-bar.search-active .search-box {
+            .filter-bar.search-active .search-container {
                 display: flex;
-                flex: 1 0 100%;
-                order: -1;
+                flex: 1;
+                background: var(--gray-50);
+                border: 1px solid var(--gray-300);
+                border-radius: 0.5rem;
+                padding: 0.5rem;
+            }
+
+            .filter-bar.search-active .level-container,
+            .filter-bar.search-active .mobile-search-toggle,
+            .filter-bar.search-active .quiz-container {
+                display: none;
+            }
+
+            .search-box {
                 position: static;
                 visibility: visible;
                 transform: none;
                 min-width: 100%;
                 padding: 0;
+                box-shadow: none;
             }
 
-            .filter-bar.search-active .search-close {
+            .search-close {
                 display: flex;
-            }
-            .mobile-search-toggle {
-                display: flex; /* Show on mobile */
             }
             .main-container {
                 flex-direction: column;
@@ -1342,6 +1478,18 @@
                 overflow-x: visible;
             }
 
+            .mobile-search-toggle {
+                display: none;
+            }
+
+            .level-container {
+                display: flex;
+            }
+
+            .search-container {
+                display: flex;
+            }
+
             .search-box {
                 position: relative;
                 visibility: visible;
@@ -1482,46 +1630,58 @@
             @include('components.dashboard-header')
             
             <!-- Search/Filter Bar -->
-            <div class="filter-bar">
-                <!-- Mobile Search Toggle Button (visible only on mobile) -->
+            <div class="filter-bar" id="filterBar">
+                <div class="level-container">
+                    <label for="level-modal-toggle" class="level-indicator">Grade: {{ $selectedLevelGroup ? ([
+                        'primary-lower' => 'Grade 1-3',
+                        'primary-upper' => 'Grade 4-6',
+                        'jhs' => 'Grade 7-9',
+                        'shs' => 'Grade 10-12',
+                        'university' => 'University'
+                    ][$selectedLevelGroup] ?? ucwords(str_replace('-', ' ', $selectedLevelGroup))) : 'Grade 1-3' }}</label>
+                </div>
+
+                <!-- Mobile Search Toggle Button -->
                 <button class="mobile-search-toggle" id="mobileSearchToggle">
                     <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
                 </button>
-                <div class="search-box" id="mobileSearchBox">
-                    <input type="text" class="search-input" placeholder="Search">
-                    <button class="search-button">
-                        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                    </button>
-                    <!-- Close button for mobile search -->
-                    <button class="search-close" id="searchClose">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-                
-                <!-- Custom levels dropdown -->
-                <div class="custom-dropdown">
-                    <button class="dropdown-toggle">
-                        <span>{{ ucwords(str_replace('-', ' ', $selectedLevelGroup ?? 'Grade 1-3')) }}</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="dropdown-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </button>
-                    <div class="dropdown-menu">
-                        <div class="dropdown-option">Grade 1-3</div>
-                        <div class="dropdown-option">Grade 4-6</div>
-                        <div class="dropdown-option">Grade 7-9</div>
-                        <div class="dropdown-option">High School</div>
+
+                <div class="search-container">
+                    <div class="search-box" id="mobileSearchBox">
+                        <input type="text" class="search-input" placeholder="Search">
+                        <button class="search-button">
+                            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </button>
+                        <!-- Close button for mobile search -->
+                        <button class="search-close" id="searchClose">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
-                
-                <button class="filter-button question">Question</button>
-                <a href="{{ route('quiz.index') }}" class="filter-button quiz">Quiz</a>
+
+                <div class="quiz-container">
+                    <a href="{{ route('quiz.index') }}" class="filter-button quiz">Quiz</a>
+                </div>
+
+                <input type="checkbox" id="level-modal-toggle" style="display: none;">
+
+                <div class="level-modal">
+                    <div class="modal-overlay"></div>
+                    <div class="modal-content">
+                        <h3>Select Grade</h3>
+                        <a href="{{ route('dashboard.level-group', ['groupId' => 'primary-lower']) }}" class="level-option">Grade 1-3</a>
+                        <a href="{{ route('dashboard.level-group', ['groupId' => 'primary-upper']) }}" class="level-option">Grade 4-6</a>
+                        <a href="{{ route('dashboard.level-group', ['groupId' => 'jhs']) }}" class="level-option">Grade 7-9</a>
+                        <a href="{{ route('dashboard.level-group', ['groupId' => 'shs']) }}" class="level-option">Grade 10-12</a>
+                        <a href="{{ route('dashboard.level-group', ['groupId' => 'university']) }}" class="level-option">University</a>
+                    </div>
+                </div>
             </div>
 
             <!-- Sepaarate Horizontal Subjects Filter -->
@@ -1814,24 +1974,42 @@
         // Call the new function
         preventBodyScroll();
 
+        // Level modal close handler
+        const levelModalToggle = document.getElementById('level-modal-toggle');
+        const modalOverlay = document.querySelector('.modal-overlay');
+        if (modalOverlay && levelModalToggle) {
+            modalOverlay.addEventListener('click', () => {
+                levelModalToggle.checked = false;
+            });
+        }
+
+        // Close modal when selecting a level option
+        document.querySelectorAll('.level-option').forEach(option => {
+            option.addEventListener('click', () => {
+                if (levelModalToggle) {
+                    levelModalToggle.checked = false;
+                }
+            });
+        });
+
         // Enhanced Mobile UI with search functionality
         function initializeMobileUI() {
             const mobileSearchToggle = document.getElementById('mobileSearchToggle');
             const mobileSearchBox = document.getElementById('mobileSearchBox');
-            const searchInput = mobileSearchBox.querySelector('.search-input');
+            const searchInput = mobileSearchBox ? mobileSearchBox.querySelector('.search-input') : null;
             const searchClose = document.getElementById('searchClose');
-            const filterBar = document.querySelector('.filter-bar');
-            
-            if (mobileSearchToggle && mobileSearchBox) {
+            const filterBar = document.getElementById('filterBar');
+
+            if (mobileSearchToggle && filterBar && searchInput) {
                 mobileSearchToggle.addEventListener('click', function() {
-                    filterBar.classList.toggle('search-active');
+                    filterBar.classList.add('search-active');
                     setTimeout(() => {
                         searchInput.focus();
                     }, 100);
                 });
             }
 
-            if (searchClose) {
+            if (searchClose && searchInput && filterBar) {
                 searchClose.addEventListener('click', function() {
                     if (searchInput.value) {
                         // Clear input if it has content
@@ -1847,11 +2025,11 @@
             // Close search when pressing Escape
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape' && filterBar.classList.contains('search-active')) {
-                    if (searchInput.value) {
+                    if (searchInput && searchInput.value) {
                         searchInput.value = '';
                         searchInput.focus();
                     } else {
-                    filterBar.classList.remove('search-active');
+                        filterBar.classList.remove('search-active');
                     }
                 }
             });
