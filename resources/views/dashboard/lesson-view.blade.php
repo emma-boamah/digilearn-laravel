@@ -651,6 +651,23 @@
             height: 16px;
         }
 
+        /* Active state for notes button */
+        .add-notes-btn.active {
+            background-color: var(--primary-red);
+            border-color: var(--primary-red);
+            color: var(--white);
+        }
+
+        .add-notes-btn.active:hover {
+            background-color: var(--primary-red-hover);
+            border-color: var(--primary-red-hover);
+        }
+
+        /* Transition for button state changes */
+        .add-notes-btn {
+            transition: all 0.3s ease;
+        }
+
         /* Enhanced Rich Text Editor - Modern Implementation */
         .notes-editor-section {
             background-color: var(--white);
@@ -3382,9 +3399,41 @@
         function initializeNotesEditor() {
             const addNotesBtn = document.getElementById('addNotesBtn');
             const notesWrapper = document.getElementById('notesWrapper');
+            const saveNotesBtn = document.getElementById('saveNotesBtn');
+            let notesQuill = null;
+            let isEditorOpen = false;
 
+            // Update button appearance based on state
+            function updateButtonState() {
+                if (isEditorOpen) {
+                    addNotesBtn.innerHTML = `
+                        Close notes editor
+                        <svg fill="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="8" y1="12" x2="16" y2="12"/>
+                        </svg>
+                    `;
+                    addNotesBtn.classList.add('active');
+                } else {
+                    addNotesBtn.innerHTML = `
+                        Add notes
+                        <svg fill="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="16"/>
+                            <line x1="8" y1="12" x2="16" y2="12"/>
+                        </svg>
+                    `;
+                    addNotesBtn.classList.remove('active');
+                }
+            }
+
+            // Initialize Quill editor
             function initNotesEditor() {
-                if (notesQuill) return; // Already initialized
+                if (notesQuill) {
+                    // Editor already exists, just show it
+                    notesWrapper.style.display = 'block';
+                    return;
+                }
 
                 // Initialize Quill with a simple toolbar
                 notesQuill = new Quill('#notes-editor', {
@@ -3404,24 +3453,59 @@
                 console.log('Quill editor initialized');
             }
 
-            addNotesBtn.addEventListener('click', () => {
-                const isHidden = notesWrapper.style.display === 'none';
-
-                if (isHidden) {
-                    notesWrapper.style.display = 'block';
-                    // Small delay to ensure DOM is updated
-                    setTimeout(initNotesEditor, 100);
-                } else {
-                    notesWrapper.style.display = 'none';
-                    if (notesQuill) {
-                        notesQuill = null;
+            // Destroy Quill editor
+            function destroyNotesEditor() {
+                if (notesQuill) {
+                    // Get the container element
+                    const editorContainer = document.getElementById('notes-editor');
+                    if (editorContainer) {
+                        // Remove all child elements (Quill adds its own structure)
+                        while (editorContainer.firstChild) {
+                            editorContainer.removeChild(editorContainer.firstChild);
+                        }
+                        // Reset the container
+                        editorContainer.innerHTML = '<div></div>';
                     }
+                    notesQuill = null;
                 }
-            });
+            }
+
+            // Toggle editor visibility
+            function toggleNotesEditor() {
+                isEditorOpen = !isEditorOpen;
+
+                if (isEditorOpen) {
+                    // Show editor
+                    initNotesEditor();
+                    notesWrapper.style.display = 'block';
+                    // Focus on the editor after a small delay
+                    setTimeout(() => {
+                        if (notesQuill) {
+                            notesQuill.focus();
+                        }
+                    }, 100);
+                } else {
+                    // Hide editor
+                    notesWrapper.style.display = 'none';
+                    // Don't destroy the editor, just hide it
+                    // This preserves the content for next time
+                }
+
+                updateButtonState();
+            }
+
+            // Initialize button state
+            updateButtonState();
+
+            // Handle button click
+            addNotesBtn.addEventListener('click', toggleNotesEditor);
 
             // Save notes handler
-            document.getElementById('saveNotesBtn').addEventListener('click', () => {
-                if (!notesQuill) return;
+            saveNotesBtn.addEventListener('click', () => {
+                if (!notesQuill) {
+                    alert('Please open the notes editor first.');
+                    return;
+                }
 
                 const content = notesQuill.root.innerHTML;
                 const text = notesQuill.getText().trim();
@@ -3430,6 +3514,11 @@
                     alert('Please write some notes before saving.');
                     return;
                 }
+
+                // Show loading state
+                const originalText = saveNotesBtn.textContent;
+                saveNotesBtn.innerHTML = '<div class="loading-spinner"></div> Saving...';
+                saveNotesBtn.disabled = true;
 
                 fetch('/dashboard/lesson/{{ $lesson["id"] ?? "" }}/user-notes', {
                     method: 'POST',
@@ -3445,7 +3534,9 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert('Notes saved successfully!');
+                        showSuccessMessage('Notes saved successfully!');
+                        // Optionally hide the editor after saving
+                        // toggleNotesEditor();
                     } else {
                         alert('Error saving notes: ' + (data.message || 'Unknown error'));
                     }
@@ -3453,7 +3544,20 @@
                 .catch(error => {
                     console.error('Error saving notes:', error);
                     alert('Failed to save notes. Please try again.');
+                })
+                .finally(() => {
+                    // Restore button state
+                    saveNotesBtn.textContent = originalText;
+                    saveNotesBtn.disabled = false;
                 });
+            });
+
+            // Clean up on page unload (optional)
+            window.addEventListener('beforeunload', () => {
+                if (notesQuill) {
+                    // Save notes automatically before leaving?
+                    // You could add auto-save functionality here
+                }
             });
         }
 
