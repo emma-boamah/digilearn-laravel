@@ -24,11 +24,15 @@ class EmailVerificationService
         $this->cacheTtl = (int) env('EMAIL_VERIFICATION_CACHE_TTL', 86400);
     }
 
-    public function verify($email)
+    public function verify(string $email): array
     {
         // Skip verification if disabled or no API key
-        if (!config('services.mailboxlayer.enabled')) {
-            return true;
+        if (!config('services.mailboxlayer.enabled', false)) {
+            return [
+                'valid' => true,
+                'message' => null,
+                'service_disabled' => true
+            ];
         }
 
         // Generate unique cache key for the email
@@ -36,7 +40,12 @@ class EmailVerificationService
 
         // Return cached result if available using tags
         if (Cache::tags([$this->cacheTag])->has($cacheKey)) {
-            return Cache::tags([$this->cacheTag])->get($cacheKey);
+            $cached = Cache::tags([$this->cacheTag])->get($cacheKey);
+            return [
+                'valid' => $cached,
+                'message' => null,
+                'cached' => true
+            ];
         }
 
         try {
@@ -52,9 +61,9 @@ class EmailVerificationService
             $data = json_decode($response->getBody(), true);
 
             // Validate API response
-            $isValid = isset($data['format_valid'], $data['mx_found'], $data['smtp_check']) 
-                        && $data['format_valid'] 
-                        && $data['mx_found'] 
+            $isValid = isset($data['format_valid'], $data['mx_found'], $data['smtp_check'])
+                        && $data['format_valid']
+                        && $data['mx_found']
                         && $data['smtp_check'];
 
             // Cache the result with tags
@@ -64,14 +73,27 @@ class EmailVerificationService
             $this->logVerification($email, $isValid, $data);
 
             // Check if email is valid
-            return $isValid;
+            return [
+                'valid' => $isValid,
+                'message' => $isValid ? null : $this->getErrorMessage($data),
+                'data' => $data
+            ];
         } catch (\Exception $e) {
-            Log::error('Email verification API error: '.$e->getMessage());
+            Log::error('Email verification API error: '.$e->getMessage(), [
+                'email' => $email,
+                'error' => $e->getMessage(),
+                'exception' => get_class($e)
+            ]);
 
             // Cache failures for shorter period using tags
             Cache::tags([$this->cacheTag])->put($cacheKey, true, 3600); // 1 hour
 
-            return true; // Fail open on API errors
+            return [
+                'valid' => true, // Fail open on API errors
+                'message' => null,
+                'service_error' => true,
+                'error' => $e->getMessage()
+            ];
         }
     }
 
@@ -101,5 +123,31 @@ class EmailVerificationService
     public function clearAllCache()
     {
         Cache::tags([$this->cacheTag])->flush();
+    }
+
+    /**
+     * Get error message based on API response
+     */
+    private function getErrorMessage(array $data): ?string
+    {
+        $messages = [
+            'format_invalid' => 'This email address format is invalid.',
+            'mx_not_found' => 'The email domain does not exist or is not configured properly.',
+            'smtp_check_failed' => 'The email server rejected this address.',
+        ];
+
+        if (!$data['format_valid']) {
+            return $messages['format_invalid'];
+        }
+
+        if (!$data['mx_found']) {
+            return $messages['mx_not_found'];
+        }
+
+        if (!$data['smtp_check']) {
+            return $messages['smtp_check_failed'];
+        }
+
+        return 'This email address appears to be invalid or undeliverable.';
     }
 }

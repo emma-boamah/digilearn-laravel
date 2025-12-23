@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Auth\Events\Registered;
@@ -26,6 +27,21 @@ use Illuminate\Support\Facades\Http;
 class AuthController extends Controller
 {
     protected $emailVerifier;
+
+    // Add these constants for clearer error categorization
+    const ERROR_CATEGORIES = [
+        'RATE_LIMIT' => 'rate_limit',
+        'EMAIL_EXISTS' => 'email_exists',
+        'INVALID_CREDENTIALS' => 'invalid_credentials',
+        'ACCOUNT_LOCKED' => 'account_locked',
+        'INVALID_EMAIL' => 'invalid_email',
+        'INVALID_PHONE' => 'invalid_phone',
+        'EMAIL_VERIFICATION_FAILED' => 'email_verification_failed',
+        'PASSWORD_VALIDATION' => 'password_validation',
+        'GOOGLE_AUTH' => 'google_auth',
+        'VALIDATION' => 'validation',
+        'SYSTEM' => 'system'
+    ];
 
     public function __construct()
     {
@@ -121,7 +137,7 @@ class AuthController extends Controller
     {
         // Check if user is already authenticated
         if (Auth::check()) {
-            $this->logSecurityEvent('authenticated_user_accessed_login', $request);
+            $this->logAuthEvent('authenticated_user_accessed_login', 'info', $request);
 
             $user = Auth::user();
 
@@ -156,7 +172,7 @@ class AuthController extends Controller
         $key = $this->throttleKey($request);
         if (RateLimiter::tooManyAttempts($key, self::MAX_LOGIN_ATTEMPTS)) {
             $seconds = RateLimiter::availableIn($key);
-            $this->logSecurityEvent('login_rate_limit_exceeded', $request, [
+            $this->logAuthEvent('login_rate_limit_exceeded', self::ERROR_CATEGORIES['RATE_LIMIT'], $request, [
                 'ip' => get_client_ip(),
                 'user_agent' => $request->userAgent(),
                 'lockout_seconds' => $seconds
@@ -169,24 +185,25 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $key = $this->throttleKey($request);
-        
+
         // Check rate limiting
         if (RateLimiter::tooManyAttempts($key, self::MAX_LOGIN_ATTEMPTS)) {
             $seconds = RateLimiter::availableIn($key);
-            
-            $this->logSecurityEvent('blocked_login_attempt', $request, [
+
+            $this->logAuthEvent('rate_limit_exceeded', self::ERROR_CATEGORIES['RATE_LIMIT'], $request, [
                 'ip' => get_client_ip(),
                 'email' => $request->input('email'),
-                'lockout_seconds' => $seconds
+                'lockout_seconds' => $seconds,
+                'attempts' => RateLimiter::attempts($key)
             ]);
-            
+
             return back()->withErrors([
-                'email' => "Too many login attempts. Please try again in " . ceil($seconds / 60) . " minutes.",
+                'rate_limit' => "Too many login attempts. Please try again in " . ceil($seconds / 60) . " minutes.",
             ])->withInput($request->except('password'));
         }
 
-        // Validate input with enhanced rules
-        $credentials = $request->validate([
+        // Validate input
+        $validator = Validator::make($request->all(), [
             'email' => [
                 'required',
                 'email:rfc,dns',
@@ -199,113 +216,122 @@ class AuthController extends Controller
                 'min:8',
                 'max:255'
             ],
+        ], [
+            'email.email' => 'Please enter a valid email address.',
+            'email.regex' => 'The email format is invalid.',
+            'password.min' => 'Password must be at least 8 characters.',
         ]);
 
-        // Sanitize email
+        if ($validator->fails()) {
+            RateLimiter::hit($key, self::LOCKOUT_DURATION * 60);
+
+            $this->logAuthEvent('validation_failed', self::ERROR_CATEGORIES['VALIDATION'], $request, [
+                'errors' => $validator->errors()->toArray(),
+                'email' => $request->input('email'),
+                'ip' => get_client_ip()
+            ]);
+
+            return back()->withErrors($validator)->withInput($request->except('password'));
+        }
+
+        $credentials = $validator->validated();
         $credentials['email'] = strtolower(trim($credentials['email']));
 
-        // Check if user exists and is active
+        // Check if user exists
         $user = User::where('email', $credentials['email'])->first();
-        
+
         if (!$user) {
             RateLimiter::hit($key, self::LOCKOUT_DURATION * 60);
-            
-            $this->logSecurityEvent('login_attempt_nonexistent_user', $request, [
+
+            $this->logAuthEvent('user_not_found', self::ERROR_CATEGORIES['INVALID_CREDENTIALS'], $request, [
                 'email' => $credentials['email'],
-                'ip' => get_client_ip(), // Use helper function to get client IP
-                'registration_ip' => get_client_ip(), // In signup
+                'ip' => get_client_ip()
             ]);
-            
-            // Generic error message to prevent user enumeration
+
             return back()->withErrors([
-                'email' => 'The provided credentials do not match our records.',
+                'email' => 'No account found with this email address.',
             ])->withInput($request->except('password'));
         }
 
         // Check if user account is locked
         if ($user->locked_until && Carbon::now()->lt($user->locked_until)) {
-            $this->logSecurityEvent('login_attempt_locked_account', $request, [
+            $this->logAuthEvent('account_locked', self::ERROR_CATEGORIES['ACCOUNT_LOCKED'], $request, [
                 'user_id' => $user->id,
                 'email' => $credentials['email'],
-                'locked_until' => $user->locked_until
+                'locked_until' => $user->locked_until,
+                'failed_attempts' => $user->failed_login_attempts
             ]);
-            
+
             return back()->withErrors([
-                'email' => 'Your account has been temporarily locked. Please try again later.',
+                'email' => 'Your account has been temporarily locked due to too many failed attempts. Please try again later or reset your password.',
             ])->withInput($request->except('password'));
         }
 
         // Attempt authentication
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
-            
+
             // Clear rate limiting on successful login
             RateLimiter::clear($key);
-            
+
             // Reset failed login attempts
             $user->update([
                 'failed_login_attempts' => 0,
                 'locked_until' => null,
                 'last_login_at' => Carbon::now(),
                 'last_login_ip' => get_client_ip(),
-                'registration_ip' => get_client_ip(), // From signup
             ]);
 
-            // Log successful login
-            $this->logSecurityEvent('successful_login', $request, [
+            $this->logAuthEvent('successful_login', 'success', $request, [
                 'user_id' => $user->id,
                 'email' => $user->email,
                 'remember_me' => $request->boolean('remember')
             ]);
 
-            // Fire login event
             event(new Login('web', $user, false));
 
             // Check if user is admin and redirect appropriately
             if ($user->is_admin || $user->is_superuser) {
-                // For admin users, check if they were trying to access admin panel
                 $intendedUrl = session('url.intended');
                 if ($intendedUrl && str_contains($intendedUrl, '/admin')) {
                     return redirect()->intended(route('admin.dashboard'));
                 }
-                // If no admin-specific intended URL, go to admin dashboard
                 return redirect()->route('admin.dashboard');
             }
 
-            // For regular users, go to dashboard
             return redirect()->route('dashboard.level-selection');
         }
 
         // Failed login attempt
         RateLimiter::hit($key, self::LOCKOUT_DURATION * 60);
-        
+
         // Increment failed attempts
         $failedAttempts = $user->failed_login_attempts + 1;
         $lockUntil = null;
-        
+
         // Lock account after 5 failed attempts
         if ($failedAttempts >= 5) {
             $lockUntil = Carbon::now()->addMinutes(30);
         }
-        
+
         $user->update([
             'failed_login_attempts' => $failedAttempts,
             'locked_until' => $lockUntil,
             'last_login_ip' => get_client_ip(),
         ]);
 
-        $this->logSecurityEvent('failed_login_attempt', $request, [
+        $this->logAuthEvent('failed_login', self::ERROR_CATEGORIES['INVALID_CREDENTIALS'], $request, [
             'user_id' => $user->id,
             'email' => $credentials['email'],
             'failed_attempts' => $failedAttempts,
-            'ip' => get_client_ip()
+            'ip' => get_client_ip(),
+            'is_locked' => $lockUntil !== null
         ]);
 
-        // Fire failed login event
         event(new Failed('web', $user, $credentials));
 
         return back()->withErrors([
-            'email' => 'The provided credentials do not match our records.',
+            'password' => 'The password you entered is incorrect.',
         ])->withInput($request->except('password'));
     }
 
@@ -333,18 +359,7 @@ class AuthController extends Controller
     
     public function signup(Request $request)
     {
-        // Validating email first to avoid empty email rate limiting
-        $request->validate([
-            'email' => [
-                'required',
-                'string',
-                'email:rfc,dns',
-                'max:255',
-                'unique:users',
-                'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/'
-            ],
-        ]);
-        // Rate limit by email only (safe for public/shared IPs)
+        // Rate limit by email only (safe for public/shared IPs) - check before validation
         $rateLimitKey = 'signup:' . get_client_ip() . '|' . strtolower($request->input('email', ''));
 
         $maxAttempts = 5;
@@ -353,15 +368,22 @@ class AuthController extends Controller
         // Check rate limiting before validation
         if (RateLimiter::tooManyAttempts($rateLimitKey, $maxAttempts)) {
             $seconds = RateLimiter::availableIn($rateLimitKey);
+
+            $this->logAuthEvent('signup_rate_limit', self::ERROR_CATEGORIES['RATE_LIMIT'], $request, [
+                'email' => $request->input('email'),
+                'ip' => get_client_ip(),
+                'lockout_seconds' => $seconds
+            ]);
+
             return back()->withErrors([
-                'email' => "Too many signup attempts. Please try again in " . ceil($seconds / 60) . " minutes.",
+                'rate_limit' => "Too many signup attempts. Please try again in " . ceil($seconds / 60) . " minutes.",
             ])->withInput($request->except('password', 'password_confirmation'));
         }
 
         // (Optional) Validate CAPTCHA here if you add one
 
-        // Validate input
-        $validated = $request->validate([
+        // Validate all inputs
+        $validator = Validator::make($request->all(), [
             'name' => [
                 'required',
                 'string',
@@ -404,18 +426,37 @@ class AuthController extends Controller
                     ->mixedCase()
                     ->numbers()
                     ->symbols()
-                    ->uncompromised()
+                    ->uncompromised(3) // Check against 3 breaches
             ],
         ], [
             'name.regex' => 'Name can only contain letters, spaces, hyphens, apostrophes, and periods.',
-            'email.unique' => 'An account with this email already exists.',
+            'email.unique' => 'An account with this email already exists. Please login or use a different email.',
             'email.regex' => 'Please enter a valid email address.',
-            'phone.unique' => 'This phone number is already registered.',
+            'phone.unique' => 'This phone number is already registered. Please use a different number or login instead.',
             'phone.regex' => 'Please enter a valid phone number.',
             'country.regex' => 'Country name can only contain letters, spaces, and hyphens.',
             'country_code.regex' => 'Please select a valid country code.',
-            'password.uncompromised' => 'The given password has appeared in a data breach. Please choose a different password.',
+            'password.uncompromised' => 'This password has been found in data breaches. Please choose a more secure password.',
+            'password.confirmed' => 'Password confirmation does not match.',
         ]);
+
+        if ($validator->fails()) {
+            RateLimiter::hit($rateLimitKey, $decaySeconds);
+
+            // Extract specific errors for logging
+            $errors = $validator->errors()->toArray();
+            $errorType = $this->determineErrorType($errors);
+
+            $this->logAuthEvent('signup_validation_failed', $errorType, $request, [
+                'errors' => $errors,
+                'email' => $request->input('email'),
+                'ip' => get_client_ip()
+            ]);
+
+            return back()->withErrors($validator)->withInput($request->except('password', 'password_confirmation'));
+        }
+
+        $validated = $validator->validated();
 
         // Sanitize inputs
         $validated['name'] = trim($validated['name']);
@@ -426,10 +467,33 @@ class AuthController extends Controller
             $validated['phone'] = trim($validated['country_code'] . preg_replace('/^\+/', '', trim($validated['phone'])));
         }
 
-        if (!$this->emailVerifier->verify($validated['email'])) {
-            return back()->withErrors([
-                'email' => 'Please provide a valid email address. This email appears to be invalid or disposable.',
-            ])->withInput($request->except('password', 'password_confirmation'));
+        // Email verification service check
+        try {
+            $emailVerificationResult = $this->emailVerifier->verify($validated['email']);
+
+            if (!$emailVerificationResult['valid']) {
+                $this->logAuthEvent('email_verification_failed', self::ERROR_CATEGORIES['EMAIL_VERIFICATION_FAILED'], $request, [
+                    'email' => $validated['email'],
+                    'service_response' => $emailVerificationResult,
+                    'ip' => get_client_ip()
+                ]);
+
+                return back()->withErrors([
+                    'email' => $emailVerificationResult['message'] ?? 'Please provide a valid email address. This email appears to be invalid or disposable.',
+                ])->withInput($request->except('password', 'password_confirmation'));
+            }
+        } catch (\Exception $e) {
+            $this->logAuthEvent('email_service_error', self::ERROR_CATEGORIES['SYSTEM'], $request, [
+                'email' => $validated['email'],
+                'error' => $e->getMessage(),
+                'ip' => get_client_ip()
+            ]);
+
+            // Continue with signup even if email service fails (don't block user)
+            Log::warning('Email verification service unavailable, proceeding with signup', [
+                'email' => $validated['email'],
+                'error' => $e->getMessage()
+            ]);
         }
 
         try {
@@ -448,9 +512,11 @@ class AuthController extends Controller
             // Clear rate limit on success
             RateLimiter::clear($rateLimitKey);
 
-            $this->logSecurityEvent('successful_registration', $request, [
+            $this->logAuthEvent('successful_registration', 'success', $request, [
                 'user_id' => $user->id,
-                'email' => $user->email
+                'email' => $user->email,
+                'country' => $user->country,
+                'has_phone' => !empty($user->phone)
             ]);
 
             event(new Registered($user));
@@ -461,27 +527,36 @@ class AuthController extends Controller
                 return redirect()->route('admin.dashboard');
             }
 
-            // For regular users, go to level selection first
             return redirect()->route('dashboard.level-selection');
 
         } catch (\Exception $e) {
             // Increment rate limiter on error
             RateLimiter::hit($rateLimitKey, $decaySeconds);
 
-            $this->logSecurityEvent('registration_error', $request, [
+            $errorType = $this->determineDatabaseErrorType($e);
+
+            $this->logAuthEvent('registration_database_error', $errorType, $request, [
                 'email' => $validated['email'] ?? null,
-                'error' => $e->getMessage()
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'ip' => get_client_ip()
             ]);
 
-            // Handle duplicate phone number specifically
+            // Handle specific database errors
             if (str_contains($e->getMessage(), 'users_phone_unique')) {
                 return back()->withErrors([
-                    'phone' => 'This phone number is already registered. Please use a different number or skip phone verification.'
+                    'phone' => 'This phone number is already registered. Please use a different number or login instead.'
+                ])->withInput($request->except('password', 'password_confirmation'));
+            }
+
+            if (str_contains($e->getMessage(), 'users_email_unique')) {
+                return back()->withErrors([
+                    'email' => 'An account with this email already exists. Please login instead.'
                 ])->withInput($request->except('password', 'password_confirmation'));
             }
 
             return back()->withErrors([
-                'email' => 'Registration failed. Please try again.',
+                'system' => 'Registration failed due to a system error. Please try again or contact support if the problem persists.',
             ])->withInput($request->except('password', 'password_confirmation'));
         }
     }
@@ -502,7 +577,7 @@ class AuthController extends Controller
         }
         $user = Auth::user();
         
-        $this->logSecurityEvent('user_logout', $request, [
+        $this->logAuthEvent('user_logout', 'info', $request, [
             'user_id' => $user ? $user->id : null,
             'email' => $user ? $user->email : null
         ]);
@@ -528,17 +603,78 @@ class AuthController extends Controller
     }
 
     /**
-     * Log security events
+     * Enhanced logging for authentication events
      */
-    protected function logSecurityEvent(string $event, Request $request, array $context = []): void
+    protected function logAuthEvent(string $event, string $category, Request $request, array $context = []): void
     {
-        Log::channel('security')->info($event, array_merge([
+        $logData = array_merge([
+            'event' => $event,
+            'category' => $category,
             'ip' => get_client_ip(),
             'user_agent' => $request->userAgent(),
             'url' => $request->fullUrl(),
             'timestamp' => Carbon::now()->toISOString(),
             'session_id' => $request->session()->getId(),
-        ], $context));
+        ], $context);
+
+        // Log to security channel for security-related events
+        if (in_array($category, [self::ERROR_CATEGORIES['RATE_LIMIT'],
+                                 self::ERROR_CATEGORIES['ACCOUNT_LOCKED'],
+                                 self::ERROR_CATEGORIES['INVALID_CREDENTIALS']])) {
+            Log::channel('security')->info($event, $logData);
+        }
+
+        // Log to auth channel for authentication events
+        Log::channel('auth')->info($event, $logData);
+
+        // Also log to daily for general tracking
+        Log::info("Auth Event: {$event}", $logData);
+    }
+
+    /**
+     * Determine error type from validation errors
+     */
+    protected function determineErrorType(array $errors): string
+    {
+        if (isset($errors['email']) && in_array('unique', $errors['email'])) {
+            return self::ERROR_CATEGORIES['EMAIL_EXISTS'];
+        }
+
+        if (isset($errors['phone']) && in_array('unique', $errors['phone'])) {
+            return self::ERROR_CATEGORIES['INVALID_PHONE'];
+        }
+
+        if (isset($errors['password'])) {
+            return self::ERROR_CATEGORIES['PASSWORD_VALIDATION'];
+        }
+
+        if (isset($errors['email'])) {
+            return self::ERROR_CATEGORIES['INVALID_EMAIL'];
+        }
+
+        return self::ERROR_CATEGORIES['VALIDATION'];
+    }
+
+    /**
+     * Determine database error type
+     */
+    protected function determineDatabaseErrorType(\Exception $e): string
+    {
+        $message = $e->getMessage();
+
+        if (str_contains($message, 'users_email_unique')) {
+            return self::ERROR_CATEGORIES['EMAIL_EXISTS'];
+        }
+
+        if (str_contains($message, 'users_phone_unique')) {
+            return self::ERROR_CATEGORIES['INVALID_PHONE'];
+        }
+
+        if (str_contains($message, 'Integrity constraint violation')) {
+            return 'database_constraint';
+        }
+
+        return self::ERROR_CATEGORIES['SYSTEM'];
     }
 
     /**

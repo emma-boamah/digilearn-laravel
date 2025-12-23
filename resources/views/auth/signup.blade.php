@@ -635,6 +635,49 @@
             transition: width 1s linear;
         }
 
+        /* Enhanced Error Summary Styles */
+        .error-summary {
+            background: #fef2f2;
+            border: 1px solid #fee2e2;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .error-summary-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #dc2626;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .error-list {
+            margin-left: 1.5rem;
+            color: #7f1d1d;
+        }
+
+        .error-list li {
+            margin-bottom: 0.25rem;
+        }
+
+        /* Button loading state */
+        .btn-loading {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-loading i {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .auth-container {
@@ -710,8 +753,22 @@
                 </div>
             </div>
 
+            <!-- Enhanced Error Display -->
+            @if($errors->any())
+            <div class="error-summary">
+                <div class="error-summary-header">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Please fix the following errors:</span>
+                </div>
+                <ul class="error-list">
+                    @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+            @endif
 
-            <form method="POST" action="{{ route('signup.submit') }}">
+            <form method="POST" action="{{ route('signup.submit') }}" id="signupForm">
                 @csrf
                 <div class="form-group">
                     <label for="name" class="form-label">Name</label>
@@ -911,7 +968,12 @@
                     <div class="error-message">{{ $message }}</div>
                 @enderror
 
-                <button type="submit" class="submit-btn">SIGN UP</button>
+                <button type="submit" class="submit-btn" id="signupBtn">
+                    <span class="btn-text">SIGN UP</span>
+                    <span class="btn-loading" style="display: none;">
+                        <i class="fas fa-spinner fa-spin"></i> Creating Account...
+                    </span>
+                </button>
             </form>
 
             <div class="divider">or sign up with</div>
@@ -1235,6 +1297,38 @@
 
         // Initialize phone input
         initializePhoneInput();
+
+        // Form submission handler
+        const signupForm = document.getElementById('signupForm');
+        const signupBtn = document.getElementById('signupBtn');
+        const btnText = signupBtn ? signupBtn.querySelector('.btn-text') : null;
+        const btnLoading = signupBtn ? signupBtn.querySelector('.btn-loading') : null;
+
+        // Reset button state on page load (in case of redirect with errors)
+        if (signupBtn && btnText && btnLoading) {
+            btnText.style.display = 'inline';
+            btnLoading.style.display = 'none';
+            signupBtn.disabled = false;
+            signupBtn.style.opacity = '1';
+        }
+
+        if (signupForm && signupBtn && btnText && btnLoading) {
+            signupForm.addEventListener('submit', function(e) {
+                // Show loading state
+                btnText.style.display = 'none';
+                btnLoading.style.display = 'inline-flex';
+                signupBtn.disabled = true;
+                signupBtn.style.opacity = '0.7';
+
+                // Add a timeout to re-enable the button in case of issues
+                setTimeout(() => {
+                    btnText.style.display = 'inline';
+                    btnLoading.style.display = 'none';
+                    signupBtn.disabled = false;
+                    signupBtn.style.opacity = '1';
+                }, 10000); // 10 seconds timeout
+            });
+        }
 
         // Set up periodic ping to keep session alive
         setInterval(() => {

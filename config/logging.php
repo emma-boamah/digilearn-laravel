@@ -139,6 +139,22 @@ return [
             'channels' => ['single'],
             'ignore_exceptions' => false,
         ],
+
+        'auth' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/auth.log'),
+            'level' => 'info',
+            'days' => 30,
+            'permission' => 0644,
+        ],
+
+        'google_auth' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/google_auth.log'),
+            'level' => 'info',
+            'days' => 30,
+            'permission' => 0644,
+        ],
     ],
 
 ];

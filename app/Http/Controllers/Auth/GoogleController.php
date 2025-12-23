@@ -13,6 +13,15 @@ use Illuminate\Http\Request;
 
 class GoogleController extends Controller
 {
+    // Reuse error categories from AuthController
+    const ERROR_CATEGORIES = [
+        'INVALID_STATE' => 'invalid_state',
+        'NO_EMAIL' => 'no_email',
+        'GOOGLE_AUTH_FAILED' => 'google_auth_failed',
+        'USER_CREATION_FAILED' => 'user_creation_failed',
+        'SYSTEM' => 'system'
+    ];
+
     public function redirectToGoogle(Request $request)
     {
         $state = Str::random(40);
@@ -31,8 +40,14 @@ class GoogleController extends Controller
             $sessionState = $request->session()->get('oauth_state');
 
             if (!$sessionState || $request->state !== $sessionState) {
+                $this->logGoogleAuthEvent('invalid_state', self::ERROR_CATEGORIES['INVALID_STATE'], $request, [
+                    'session_state' => $sessionState,
+                    'request_state' => $request->state,
+                    'ip' => $request->ip()
+                ]);
+
                 return redirect()->route('login')
-                    ->withErrors(['error' => 'Invalid authentication state.']);
+                    ->withErrors(['error' => 'Security validation failed. Please try logging in again.']);
             }
 
             $request->session()->forget('oauth_state');
@@ -43,38 +58,79 @@ class GoogleController extends Controller
                 ->user();
 
             if (!$googleUser->getEmail()) {
-                throw new \Exception('Google account does not provide an email');
+                $this->logGoogleAuthEvent('no_email_provided', self::ERROR_CATEGORIES['NO_EMAIL'], $request, [
+                    'google_user_id' => $googleUser->getId(),
+                    'google_name' => $googleUser->getName(),
+                    'ip' => $request->ip()
+                ]);
+
+                return redirect()->route('login')->withErrors([
+                    'error' => 'Your Google account doesn\'t provide an email address. Please sign up with email instead.'
+                ]);
             }
 
             // 🔹 Hybrid signup flow
             $user = User::where('email', $googleUser->getEmail())->first();
 
             if (!$user) {
-                // Auto create new user
-                $user = User::create([
-                    'name' => $googleUser->getName(),
-                    'email' => $googleUser->getEmail(),
-                    'avatar' => $googleUser->getAvatar(),
-                    'password' => bcrypt(Str::random(64)),
-                    'google_id' => $googleUser->getId(),
-                    'email_verified_at' => now(),
-                    'registration_ip' => $request->ip(),
-                    'last_login_ip' => $request->ip(),
-                    'last_login_at' => now(),
-                ]);
+                try {
+                    // Auto create new user
+                    $user = User::create([
+                        'name' => $googleUser->getName() ?: 'Google User',
+                        'email' => $googleUser->getEmail(),
+                        'avatar' => $googleUser->getAvatar(),
+                        'password' => bcrypt(Str::random(64)),
+                        'google_id' => $googleUser->getId(),
+                        'email_verified_at' => now(),
+                        'registration_ip' => $request->ip(),
+                        'last_login_ip' => $request->ip(),
+                        'last_login_at' => now(),
+                    ]);
+
+                    $this->logGoogleAuthEvent('new_user_created', 'success', $request, [
+                        'user_id' => $user->id,
+                        'email' => $user->email,
+                        'via_google' => true
+                    ]);
+
+                } catch (\Exception $e) {
+                    $this->logGoogleAuthEvent('user_creation_failed', self::ERROR_CATEGORIES['USER_CREATION_FAILED'], $request, [
+                        'email' => $googleUser->getEmail(),
+                        'error' => $e->getMessage(),
+                        'error_code' => $e->getCode(),
+                        'ip' => $request->ip()
+                    ]);
+
+                    return redirect()->route('login')->withErrors([
+                        'error' => 'Failed to create account. This email might already be registered. Please try logging in with email instead.'
+                    ]);
+                }
             } else {
                 // Update existing user info if missing
-                $user->update([
-                    'google_id' => $googleUser->getId(),
+                $updateData = [
                     'last_login_ip' => $request->ip(),
                     'last_login_at' => now(),
+                ];
+
+                // Only update google_id if not already set
+                if (!$user->google_id) {
+                    $updateData['google_id'] = $googleUser->getId();
+                }
+
+                $user->update($updateData);
+
+                $this->logGoogleAuthEvent('existing_user_login', 'success', $request, [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'had_google_id' => !empty($user->google_id),
+                    'via_google' => true
                 ]);
             }
 
-            Auth::login($user, true); // Always remember Google users
+            Auth::login($user, true);
             $request->session()->regenerate();
 
-            Log::info('Google login successful', [
+            $this->logGoogleAuthEvent('google_login_successful', 'success', $request, [
                 'user_id' => $user->id,
                 'email' => $user->email,
                 'has_remember_token' => !empty($user->remember_token),
@@ -96,13 +152,37 @@ class GoogleController extends Controller
 
             return redirect()->intended(route('dashboard.main'));
 
-        } catch (\Exception $e) {
-            Log::error('Google Auth Error: ' . $e->getMessage(), [
-                'exception' => $e
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            $this->logGoogleAuthEvent('google_service_unavailable', self::ERROR_CATEGORIES['GOOGLE_AUTH_FAILED'], $request, [
+                'error' => $e->getMessage(),
+                'ip' => $request->ip()
             ]);
 
             return redirect()->route('login')->withErrors([
-                'error' => 'Google authentication failed. Please try again.'
+                'error' => 'Google authentication service is temporarily unavailable. Please try again later or sign in with email.'
+            ]);
+
+        } catch (\Laravel\Socialite\Two\InvalidStateException $e) {
+            $this->logGoogleAuthEvent('invalid_state_exception', self::ERROR_CATEGORIES['INVALID_STATE'], $request, [
+                'error' => $e->getMessage(),
+                'ip' => $request->ip()
+            ]);
+
+            return redirect()->route('login')->withErrors([
+                'error' => 'Your session has expired. Please try logging in again.'
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logGoogleAuthEvent('unexpected_error', self::ERROR_CATEGORIES['SYSTEM'], $request, [
+                'error' => $e->getMessage(),
+                'exception' => get_class($e),
+                'error_code' => $e->getCode(),
+                'ip' => $request->ip(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()->route('login')->withErrors([
+                'error' => 'Google authentication failed. Please try again or sign in with email.'
             ]);
         }
     }
@@ -175,5 +255,31 @@ class GoogleController extends Controller
         ];
 
         return $levelMappings[$levelGroup] ?? [];
+    }
+
+    /**
+     * Enhanced logging for Google auth events
+     */
+    private function logGoogleAuthEvent(string $event, string $category, Request $request, array $context = []): void
+    {
+        $logData = array_merge([
+            'event' => $event,
+            'category' => $category,
+            'service' => 'google_auth',
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'timestamp' => now()->toISOString(),
+            'session_id' => $request->session()->getId(),
+        ], $context);
+
+        // Log to appropriate channels
+        if ($category === 'success') {
+            Log::channel('auth')->info($event, $logData);
+        } else {
+            Log::channel('security')->warning($event, $logData);
+        }
+
+        // Always log to daily for tracking
+        Log::info("Google Auth: {$event}", $logData);
     }
 }
