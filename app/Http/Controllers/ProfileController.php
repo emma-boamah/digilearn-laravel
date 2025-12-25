@@ -147,6 +147,9 @@ class ProfileController extends Controller
                     throw new \Exception('Avatar file was not stored successfully: ' . $path);
                 }
 
+                // Generate the full URL for storage
+                $avatarUrl = Storage::url($path);
+
                 // Save only the relative path (e.g. "avatars/xyz.jpg") in DB
                 $user->avatar = $path;
                 $avatarPath   = $path;

@@ -26,3 +26,5 @@ docker-compose.yaml
 /.nova
 /.vscode
 /.zed
+auth_monitor_cron.sh
+laravel_scheduler.sh
