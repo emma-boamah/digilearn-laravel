@@ -229,7 +229,9 @@
 <style>
     .projects-container {
         max-width: 1200px;
-        margin: 0 auto;
+        margin-top: 60px;
+        margin-left: auto;
+        margin-right: auto;
         padding: 0 1rem;
         overflow-x: hidden;
         width: 100%;

@@ -13,7 +13,7 @@
     <!-- Toastr CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 
-    <style>
+    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         :root {
             --primary-red: #E11E2D;
             --primary-red-hover: #c41e2a;
@@ -40,7 +40,7 @@
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
             --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-            --sidebar-width-expanded: 280px;
+            --sidebar-width-expanded: 240px;
             --sidebar-width-collapsed: 72px;
 
             /* Modern UI Variables */
@@ -82,7 +82,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.75rem 1rem;
+            padding: 0.75rem;
+            padding-left: var(--sidebar-width-expanded);
             background-color: var(--white);
             border-bottom: 1px solid var(--gray-200);
             position: sticky;
@@ -145,6 +146,7 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 2rem;
+            margin-top: 60px;
         }
 
         .notifications-title {
@@ -474,10 +476,14 @@
 
         /* Mobile Layout Reset - Fix left gap issue */
         @media (max-width: 768px) {
+            .main-container {
+                position: relative;
+            }
             .main-content {
                 width: 100vw !important;
                 max-width: 100vw !important;
                 margin-left: 0 !important;
+                position: relative;
             }
 
             .youtube-sidebar {
@@ -485,13 +491,44 @@
                 left: 0;
                 top: 0;
                 height: 100vh;
-                z-index: 1200;
+                z-index: 1300; /* Increased z-index */
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
+                background-color: var(--white);
+                width: 280px; /* Fixed width for mobile */
+                max-width: 85vw;
+                box-shadow: var(--shadow-xl);
+                overflow-y: auto;
+                will-change: transform;
             }
 
             .youtube-sidebar.mobile-open {
                 transform: translateX(0);
+                visibility: visible;
+            }
+
+            /* Dark overlay when sidebar is open */
+            .sidebar-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 1299;
+                display: none;
+            }
+
+            .youtube-sidebar.mobile-open + .sidebar-overlay {
+                display: block;
+            }
+
+            .top-header {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                z-index: 1200; /* Lower than sidebar */
             }
         }
 
@@ -761,9 +798,26 @@
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         $(document).ready(function() {
-            // Sidebar toggle functionality
-            $('#sidebarToggle, #sidebarToggleMain').click(function() {
-                $('#youtubeSidebar').toggleClass('collapsed');
+            // Unified sidebar toggle functionality for all screen sizes
+            $('#sidebarToggle, #sidebarToggleMain').click(function(e) {
+                e.stopPropagation();
+                
+                const $sidebar = $('#youtubeSidebar');
+                const isMobile = $(window).width() <= 768;
+                
+                if (isMobile) {
+                    // On mobile: toggle mobile-open class
+                    $sidebar.toggleClass('mobile-open');
+                    
+                    // On mobile, we don't use collapsed class, so remove it if present
+                    $sidebar.removeClass('collapsed');
+                } else {
+                    // On desktop: toggle collapsed class
+                    $sidebar.toggleClass('collapsed');
+                    
+                    // On desktop, we don't use mobile-open class
+                    $sidebar.removeClass('mobile-open');
+                }
             });
 
             // Filter notifications
@@ -781,20 +835,47 @@
                 }
             });
 
-            // Mobile sidebar overlay
+            // Close mobile sidebar when clicking outside
             $(document).click(function(e) {
                 if ($(window).width() <= 768) {
-                    if (!$(e.target).closest('.youtube-sidebar, .sidebar-toggle-btn').length) {
-                        $('#youtubeSidebar').removeClass('mobile-open');
+                    const $sidebar = $('#youtubeSidebar');
+                    const $toggleBtn = $('#sidebarToggle, #sidebarToggleMain');
+                    
+                    // If click is outside sidebar AND not on toggle button, close sidebar
+                    if (!$sidebar.is(e.target) && 
+                        $sidebar.has(e.target).length === 0 && 
+                        !$toggleBtn.is(e.target) && 
+                        $toggleBtn.has(e.target).length === 0) {
+                        $sidebar.removeClass('mobile-open');
                     }
                 }
             });
 
-            // Mobile sidebar toggle
-            $('#sidebarToggle, #sidebarToggleMain').click(function() {
-                if ($(window).width() <= 768) {
-                    $('#youtubeSidebar').toggleClass('mobile-open');
-                }
+            // Prevent sidebar clicks from closing the sidebar
+            $('#youtubeSidebar').click(function(e) {
+                e.stopPropagation();
+            });
+
+            // Handle window resize
+            let resizeTimer;
+            $(window).resize(function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function() {
+                    const isMobile = $(window).width() <= 768;
+                    const $sidebar = $('#youtubeSidebar');
+                    
+                    if (isMobile) {
+                        // On mobile resize, ensure proper classes
+                        $sidebar.removeClass('collapsed');
+                        if (!$sidebar.hasClass('mobile-open')) {
+                            $sidebar.css('transform', 'translateX(-100%)');
+                        }
+                    } else {
+                        // On desktop resize, ensure proper classes
+                        $sidebar.removeClass('mobile-open');
+                        $sidebar.css('transform', '');
+                    }
+                }, 250);
             });
         });
 

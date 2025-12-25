@@ -185,8 +185,8 @@
         .sidebar {
             width: 280px;
             background: var(--white);
+            padding: 6px;
             border-right: 1px solid var(--gray-200);
-            padding: 2rem 0;
             position: sticky;
             top: 64px;
             height: calc(100vh - 64px);
@@ -200,8 +200,8 @@
         }
 
         .profile-avatar {
-            width: 80px;
-            height: 80px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
             background: linear-gradient(135deg, var(--primary-red), var(--secondary-blue));
             display: flex;
@@ -214,11 +214,12 @@
             box-shadow: var(--shadow-lg);
             position: relative;
             overflow: hidden;
+            box-sizing: border-box;
         }
 
         .profile-avatar img {
-            width: 80px;
-            height: 148px;
+            width: 100%;
+            height: 100%;
             object-fit: cover;
             border-radius: 50%;
         }

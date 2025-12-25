@@ -33,7 +33,7 @@
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
             --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-            --sidebar-width-expanded: 280px;
+            --sidebar-width-expanded: 240px;
             --sidebar-width-collapsed: 72px;
         }
 
@@ -134,6 +134,7 @@
         .sidebar-content {
             padding: 1rem 0;
             overflow-y: auto;
+            overflow-x: hidden;
             height: calc(100vh - 64px);
         }
 
@@ -264,7 +265,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.75rem 1rem;
+            padding: 0.75rem;
+            padding-left: var(--sidebar-width-expanded);
             background-color: var(--white);
             border-bottom: 1px solid var(--gray-200);
             position: sticky;
@@ -329,6 +331,7 @@
 
         /* Page Header */
         .page-header {
+            margin-top: 60px;
             padding: 2rem 1rem 1rem;
             background-color: var(--white);
             border-bottom: 1px solid var(--gray-200);
@@ -735,15 +738,14 @@
     <div class="main-container">
         <!-- YouTube-style Sidebar -->
         @include('components.dashboard-sidebar')
+        <!-- Top Header -->
+        @include('components.dashboard-header')
 
         <!-- Sidebar Overlay for Mobile -->
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Top Header -->
-            @include('components.dashboard-header')
-
             <!-- Page Header -->
             <div class="page-header">
                 <h1 class="page-title">Saved Lessons</h1>

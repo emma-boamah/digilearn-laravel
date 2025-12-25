@@ -9,7 +9,7 @@
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <style>
+    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         :root {
             --primary-red: #dc2626;
             --primary-red-hover: #b91c1c;
@@ -153,6 +153,22 @@
             color: var(--primary-red);
             font-size: 0.875rem;
             margin-top: 0.25rem;
+        }
+
+        /* Allow links in error messages */
+        .error-message a {
+            color: var(--primary-blue);
+            text-decoration: underline;
+        }
+
+        .error-message a:hover {
+            text-decoration: none;
+        }
+
+        /* For error summary */
+        .error-list a {
+            color: var(--primary-blue);
+            text-decoration: underline;
         }
 
         .rules-toggle-container {
@@ -635,7 +651,39 @@
             transition: width 1s linear;
         }
 
-        /* Enhanced Error Summary Styles */
+        /* Unified Auth Error Styles */
+        .auth-error-container {
+            background: #fef2f2;
+            border: 1px solid #fee2e2;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .auth-error-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #dc2626;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .auth-error-header svg {
+            color: #dc2626;
+            flex-shrink: 0;
+        }
+
+        .auth-error-message {
+            color: #7f1d1d;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /* Enhanced Error Summary Styles (for field validation only) */
         .error-summary {
             background: #fef2f2;
             border: 1px solid #fee2e2;
@@ -753,8 +801,21 @@
                 </div>
             </div>
 
-            <!-- Enhanced Error Display -->
-            @if($errors->any())
+            <!-- Unified Auth Error Display -->
+            @if ($errors->has('auth_error'))
+            <div class="auth-error-container">
+                <div class="auth-error-header">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <span>Registration Error</span>
+                </div>
+                <p class="auth-error-message">{!! $errors->first('auth_error') !!}</p>
+            </div>
+            @endif
+
+            <!-- Field Validation Errors Summary -->
+            @if($errors->any() && !$errors->has('auth_error'))
             <div class="error-summary">
                 <div class="error-summary-header">
                     <i class="fas fa-exclamation-triangle"></i>
@@ -762,7 +823,7 @@
                 </div>
                 <ul class="error-list">
                     @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
+                    <li>{!! $error !!}</li>
                     @endforeach
                 </ul>
             </div>
@@ -800,7 +861,7 @@
                         autocomplete="email"
                     >
                     @error('email')
-                        <div class="error-message">{{ $message }}</div>
+                        <div class="error-message">{!! $message !!}</div>
                     @enderror
 
                     @error('email_verification')
@@ -883,7 +944,7 @@
                     </div>
                     
                     @error('phone')
-                        <div class="error-message">{{ $message }}</div>
+                        <div class="error-message">{!! $message !!}</div>
                     @enderror
                 </div>
 
@@ -1343,5 +1404,38 @@
             }
         }, 300000); // 5 minutes
     </script>
+
+    <!-- Auto-scroll to errors on page load -->
+    @if ($errors->any())
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        document.addEventListener('DOMContentLoaded', function() {
+            const errorElement = document.querySelector('.auth-error-container') ||
+                               document.querySelector('.error-summary') ||
+                               document.querySelector('.rate-limit-error') ||
+                               document.querySelector('.error-message');
+            if (errorElement) {
+                errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+    </script>
+    @endif
+
+    <!-- Force button reset if there are validation errors -->
+    @if($errors->any())
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        document.addEventListener('DOMContentLoaded', function() {
+            const signupBtn = document.getElementById('signupBtn');
+            const btnText = signupBtn ? signupBtn.querySelector('.btn-text') : null;
+            const btnLoading = signupBtn ? signupBtn.querySelector('.btn-loading') : null;
+
+            if (signupBtn && btnText && btnLoading) {
+                btnText.style.display = 'inline';
+                btnLoading.style.display = 'none';
+                signupBtn.disabled = false;
+                signupBtn.style.opacity = '1';
+            }
+        });
+    </script>
+    @endif
 </body>
 </html>

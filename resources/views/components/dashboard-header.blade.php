@@ -5,13 +5,21 @@
         display: flex;
         align-items: center;
         height: 60px;
-        background-color: var(--white);
-        border-bottom: 1px solid var(--gray-200);
-        position: sticky;
+        background-color: rgba(255, 255, 255, 0.8); /* More transparent */
+        backdrop-filter: blur(12px) saturate(180%); /* Enhanced glassmorphism */
+        -webkit-backdrop-filter: blur(12px) saturate(180%); /* Safari support */
+        border-bottom: 1px solid rgba(229, 231, 235, 0.6);
+        position: fixed;
         top: 0;
+        left: 0; /* Changed to 0 for full width */
+        width: 100vw; /* Full viewport width */
         z-index: 999;
-        backdrop-filter: blur(8px);
-        background-color: rgba(255, 255, 255, 0.95);
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        /* padding-left handled in including files */
+    }
+
+    .youtube-sidebar.collapsed ~ .top-header {
+        padding-left: var(--sidebar-width-collapsed) !important;
     }
 
     .header-left {
@@ -224,6 +232,119 @@
         text-decoration: underline;
     }
 
+    /* User Avatar Dropdown */
+    .user-dropdown {
+        position: relative;
+    }
+
+    .user-avatar-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .user-avatar-btn:hover {
+        background-color: var(--gray-100);
+    }
+
+    .user-dropdown-menu {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        background: var(--white);
+        border-radius: 0.75rem;
+        box-shadow: var(--shadow-xl);
+        border: 1px solid var(--gray-200);
+        width: 260px;
+        max-width: 100vw;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        flex-wrap: wrap;
+        margin: 0.5rem;
+    }
+
+    .user-dropdown-menu.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .user-dropdown-header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--gray-200);
+    }
+
+    .user-info .user-name {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: 0.25rem;
+    }
+
+    .user-info .user-email {
+        font-size: 0.875rem;
+        color: var(--gray-500);
+    }
+
+    .user-dropdown-body {
+        padding: 0.5rem;
+    }
+
+    .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1.5rem;
+        color: var(--gray-700);
+        text-decoration: none;
+        transition: all 0.2s ease;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .dropdown-item:hover {
+        background-color: var(--gray-50);
+        color: var(--gray-900);
+    }
+
+    .dropdown-item-form {
+        margin: 0;
+        padding: 0;
+        background: none;
+        border: none;
+    }
+
+    .logout-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        width: 100%;
+        text-align: left;
+        padding: 0;
+        color: inherit;
+        font: inherit;
+    }
+
+    .logout-btn:hover {
+        background: none;
+        color: inherit;
+    }
+
+    .dropdown-icon {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+        color: var(--gray-500);
+    }
+
     .user-avatar {
         width: 36px;
         height: 36px;
@@ -256,7 +377,22 @@
         border-right: 1px solid var(--gray-200);
         z-index: 1000;
         transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        overflow: hidden;
+        overflow-y: auto;
+    }
+
+    .youtube-sidebar::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .youtube-sidebar::-webkit-scrollbar-thumb {
+        background-color: rgba(232, 237, 253, 0.2);
+        border-radius: 4px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .youtube-sidebar:hover::-webkit-scrollbar-thumb {
+        opacity: 1;
     }
 
     .youtube-sidebar.collapsed {
@@ -322,9 +458,11 @@
 
     .sidebar-content {
         padding: 1rem 0;
-        height: calc(100vh - 64px);
         overflow-y: auto;
-        scrollbar-width: none;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+        height: auto;
+        max-height: 100vh;
     }
 
     .sidebar-content::-webkit-scrollbar {
@@ -457,6 +595,33 @@
         max-width: calc(100vw - var(--sidebar-width-collapsed));
         margin-left: var(--sidebar-width-collapsed);
     }
+
+    /* Mobile adjustments */
+    @media (max-width: 768px) {
+        .top-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            padding: 0.5rem;
+            height: auto;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding-right: 0;
+            padding-left: 0;
+        }
+
+        .main-content{
+            margin-left: 0;
+            max-width: 100vw;
+        
+        }
+    }
 </style>
 
 <!-- Top Header -->
@@ -515,8 +680,66 @@
                 }
             }
         }
+
+        // User dropdown functionality
+        const userDropdownToggle = document.getElementById('userDropdownToggle');
+        const userDropdownMenu = document.getElementById('userDropdownMenu');
+
+        if (userDropdownToggle && userDropdownMenu) {
+            userDropdownToggle.addEventListener('click', function(event) {
+                event.stopPropagation();
+                const isExpanded = userDropdownToggle.getAttribute('aria-expanded') === 'true';
+                userDropdownToggle.setAttribute('aria-expanded', !isExpanded);
+                userDropdownMenu.classList.toggle('active');
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!userDropdownToggle.contains(event.target) && !userDropdownMenu.contains(event.target)) {
+                    userDropdownToggle.setAttribute('aria-expanded', 'false');
+                    userDropdownMenu.classList.remove('active');
+                }
+            });
+
+            // Close dropdown on escape key
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape' && userDropdownMenu.classList.contains('active')) {
+                    userDropdownToggle.setAttribute('aria-expanded', 'false');
+                    userDropdownMenu.classList.remove('active');
+                }
+            });
+        }
     });
     </script>
+
+    <!-- Sidebar and User Dropdown Scripts -->
+    <!-- <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    document.addEventListener('DOMContentLoaded', function() {
+        // Sidebar toggle functionality
+        const sidebar = document.querySelector('.youtube-sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+
+        if (sidebar && sidebarToggle) {
+            function toggleSidebar() {
+                sidebar.classList.toggle('collapsed');
+            }
+
+            sidebarToggle.addEventListener('click', function(event) {
+                event.stopPropagation();
+                toggleSidebar();
+            });
+
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', function(event) {
+                if (window.innerWidth < 769 && !sidebar.classList.contains('collapsed')) {
+                    if (!sidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
+                        sidebar.classList.add('collapsed');
+                    }
+                }
+            });
+        }
+    });
+    </script> -->
 
     <div class="header-right">
         <!-- Dark Mode Toggle -->
@@ -566,6 +789,43 @@
             </div>
         </div>
 
-        <x-user-avatar :user="auth()->user()" :size="36" class="border-2 border-white"/>
+        <!-- User Avatar Dropdown -->
+        <div class="user-dropdown">
+            <button class="user-avatar-btn" id="userDropdownToggle" aria-haspopup="true" aria-expanded="false">
+                @if(auth()->user()->avatar_url)
+                    <img src="{{ auth()->user()->avatar_url }}" alt="Profile" class="user-avatar">
+                @else
+                    <div class="user-avatar">
+                        <span>{{ auth()->user()->getInitialsAttribute() }}</span>
+                    </div>
+                @endif
+            </button>
+
+            <div class="user-dropdown-menu" id="userDropdownMenu">
+                <div class="user-dropdown-header">
+                    <div class="user-info">
+                        <div class="user-name">{{ auth()->user()->name }}</div>
+                        <div class="user-email">{{ auth()->user()->email }}</div>
+                    </div>
+                </div>
+                <div class="user-dropdown-body">
+                    <a href="{{ route('profile.show') }}" class="dropdown-item">
+                        <svg class="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                        Profile
+                    </a>
+                    <form action="{{ route('logout') }}" method="POST" class="dropdown-item-form">
+                        @csrf
+                        <button type="submit" class="dropdown-item logout-btn">
+                            <svg class="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                            </svg>
+                            Logout
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 </div>

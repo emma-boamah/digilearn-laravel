@@ -33,7 +33,7 @@
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
             --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-            --sidebar-width-expanded: 280px;
+            --sidebar-width-expanded: 240px;
             --sidebar-width-collapsed: 72px;
         }
 
@@ -48,31 +48,35 @@
             background-color: var(--gray-25);
             color: var(--gray-900);
             line-height: 1.6;
+            overflow: hidden;
         }
 
         /* Main Layout Container */
         .main-container {
+            height: 100vh;
             display: flex;
-            min-height: 100vh;
-            overflow-x: hidden;
+            flex-direction: column;
         }
 
         /* YouTube-style Sidebar */
         .youtube-sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: var(--sidebar-width-expanded);
-            height: 100vh;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: var(--sidebar-width-expanded) !important;
+            height: 100vh !important; /* Does not grow with content */
+            max-height: 100vh !important; /* Enforce maximum height */
             background-color: var(--white);
             border-right: 1px solid var(--gray-200);
             z-index: 2000; /* Much higher than overlay */
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            overflow: hidden;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
         }
 
         .youtube-sidebar.collapsed {
-            width: var(--sidebar-width-collapsed);
+            width: var(--sidebar-width-collapsed) !important;
         }
 
         .sidebar-header {
@@ -123,7 +127,6 @@
             height: 32px;
             width: auto;
         }
-
         .sidebar-brand {
             font-size: 1.125rem;
             font-weight: 700;
@@ -134,20 +137,73 @@
 
         .sidebar-content {
             padding: 1rem 0;
-            scrollbar-width: none; /* Hide scrollbar for Firefox */
+            flex: 1; /* takes all available space */
+            overflow-y: auto !important; /* force scrollbar */
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            scrollbar-width: thin; /* For Firefox */
+            scrollbar-color: var(--gray-400) transparent; /* For Firefox */
+            scroll-behavior: smooth;
+            max-height: calc(100vh - 64px) !important;
         }
 
+        /* Custom scrollbar for sidebar content */
         .sidebar-content::-webkit-scrollbar {
-            display: none; /* Hide scrollbar for WebKit browsers */
+            width: 4px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
+        .sidebar-content:hover::-webkit-scrollbar {
+            opacity: 1;
+        }
+
+        .sidebar-content::-webkit-scrollbar-track {
+            background: transparent;
+            margin: 8px 0;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb {
+            background: var(--gray-400);
+            border-radius: 4px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb:hover {
+            background: var(--gray-500);
+        }
+
+        /* Ensure sidebar sections distribute space properly */
         .sidebar-section {
-            margin-bottom: 1.5rem;
+            margin-bottom: 0.75rem;
+            flex-shrink: 0; /* Prevents sections from shrinking */
+        }
+
+        /* Account section should stick to the bottom */
+        .sidebar-section:last-of-type {
+            position: relative;
+            margin-top: 0; /* Pushes account section to the bottom */
+            margin-bottom: 1rem; /* Add some bottom spacing */
+            padding-top: 0.75rem; /* Add subtle separation */
+            border-top: 1px solid var(--gray-100); /* Visual Separator */
+        }
+
+        .sidebar-section:nth-last-of-type(2)::after {
+            content: '';
+            display: block;
+            flex-grow: 1;
+            min-height: 1rem; /* Minimum spacing */
+            max-height: 3rem; /* Maximim spacing to prevent excessive gap */
+        }
+
+        .sidebar-section:last-child {
+            padding-bottom: 0.75rem;
         }
 
         .sidebar-section-title {
             font-size: 0.75rem;
             font-weight: 600;
+            line-height: 1.2;
             color: var(--gray-500);
             padding: 0.5rem 1.5rem;
             margin-bottom: 0.5rem;
@@ -162,6 +218,10 @@
             padding: 0;
             margin: 0;
             overflow: hidden;
+        }
+
+        .youtube-sidebar.collapsed .sidebar-section {
+            margin-bottom: 0.5rem;
         }
 
         .sidebar-menu-item {
@@ -255,33 +315,53 @@
         /* Main Content Area */
         .main-content {
             flex: 1;
-            width: calc(100vw - var(--sidebar-width-expanded));
-            max-width: calc(100vw - var(--sidebar-width-expanded));
-            margin-left: var(--sidebar-width-expanded);
+            width: calc(100vw - var(--sidebar-width-expanded)) !important;
+            max-width: calc(100vw - var(--sidebar-width-expanded)) !important;
+            margin-left: var(--sidebar-width-expanded) !important;
+            margin-top: 201.4px !important; /*Account for both headers: 60px header + 56px filter bar */
+            /* padding-top: 1rem !important; Internal padding */
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-sizing: border-box;
             overflow-x: hidden;
+            overflow-y: auto;
+            height: calc(100vh - 201.4px) !important; /* Full height minus headers */
         }
 
         .youtube-sidebar.collapsed ~ .main-content {
-            width: calc(100vw - var(--sidebar-width-collapsed));
-            max-width: calc(100vw - var(--sidebar-width-collapsed));
-            margin-left: var(--sidebar-width-collapsed);
+            width: calc(100vw - var(--sidebar-width-collapsed)) !important;
+            max-width: calc(100vw - var(--sidebar-width-collapsed)) !important;
+            margin-left: var(--sidebar-width-collapsed) !important;
+        }
+
+        .youtube-sidebar,
+        .main-content {
+            will-change: transform, width, margin-left;
         }
 
         /* Top Header */
+        /* Updated top header to span full width and have enhanced glassmorphism */
         .top-header {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important; /* Changed from sidebar-width to 0 for full width */
+            width: 100vw !important; /* Changed to full viewport width */
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.75rem 1rem;
-            background-color: var(--white);
-            border-bottom: 1px solid var(--gray-200);
-            position: sticky;
-            top: 0;
-            z-index: 999;
-            backdrop-filter: blur(8px);
-            background-color: rgba(255, 255, 255, 0.95);
+            padding: 0.75rem;
+            padding-right: 1rem;
+            padding-left: var(--sidebar-width-expanded);
+            background-color: rgba(255, 255, 255, 0.8); /* More transparent for glassmorphism */
+            backdrop-filter: blur(12px) saturate(180%); /* Enhanced blur effect */
+            -webkit-backdrop-filter: blur(12px) saturate(180%); /* Safari support */
+            border-bottom: 1px solid rgba(229, 231, 235, 0.6);
+            z-index: 999 !important;
+            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 60px;
+        }
+
+        .youtube-sidebar.collapsed ~ .top-header {
+            padding-left: var(--sidebar-width-collapsed) !important;
         }
 
         .header-left {
@@ -476,19 +556,35 @@
         }
 
         /* Search/Filter Bar */
+        /* Updated filter bar to span full width with glassmorphism and proper positioning */
         .filter-bar {
+            position: fixed !important;
+            top: 60px !important; /* Directly below the header */
+            left: 0; /* Start from left edge for full width */
+            width: 100vw; /* Full viewport width */
+            padding-left: calc(var(--sidebar-width-expanded) + 0.75rem); /* Account for sidebar */
+            padding-right: 0.75rem;
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+            z-index: 998 !important;
             display: flex;
-            align-items: stretch;
-            gap: 0.75rem; /* Reduced gap for mobile */
-            padding: 0.75rem; /* Reduced padding */
-            background-color: var(--white);
+            align-items: center;
+            gap: 0.75rem;
+            background-color: rgba(255, 255, 255, 0.75); /* Transparent for glassmorphism */
+            backdrop-filter: blur(10px) saturate(160%); /* Glassmorphism effect */
+            -webkit-backdrop-filter: blur(10px) saturate(160%); /* Safari support */
             border-bottom: 1px solid var(--gray-200);
             flex-wrap: wrap;
-            overflow-x: hidden; /* Hide overflow for horizontal scrolling */
-            overflow-y: hidden; /* Hide vertical overflow */
-            width: 100%;
-            max-width: 100%; /* Ensure it doesn't exceed viewport width */
-            box-sizing: border-box; /* Ensure padding is included in width */
+            overflow-x: hidden;
+            overflow-y: hidden;
+            max-width: 100%;
+            box-sizing: border-box;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .youtube-sidebar.collapsed ~ .filter-bar {
+            padding-left: calc(var(--sidebar-width-collapsed) + 0.75rem);
         }
 
         .search-box {
@@ -607,14 +703,26 @@
 
         /* Horizontal Subjects Filter */
         .subjects-filter-container {
-            width: 100%;
-            max-width: 100%;
+            position: fixed !important;
+            left: 0 !important;
+            top: 116px !important;
+            width: 100vw !important;
             background-color: var(--white);
             border-bottom: 1px solid var(--gray-200);
-            padding: 0.75rem 1rem;
+            padding-left: var(--sidebar-width-expanded);
+            padding-right: 1rem;
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
             overflow: hidden; /* Hide overflow on container */
             box-sizing: border-box; /* Ensure padding is included in width */
+            z-index: 997 !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        .youtube-sidebar.collapsed ~ .subjects-filter-container {
+            padding-left: calc(var(--sidebar-width-collapsed) + 0.75rem);
+        }
+
         .subjects-filter {
             display: flex;
             align-items: center;
@@ -749,19 +857,6 @@
 
         .filter-button:hover {
             opacity: 0.9;
-        }
-
-        /* Updated Filter Bar Layout */
-        .filter-bar {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem;
-            background-color: var(--white);
-            border-bottom: 1px solid var(--gray-200);
-            width: 100%;
-            max-width: 100%;
-            box-sizing: border-box;
         }
 
         .level-container {
@@ -928,7 +1023,9 @@
 
         /* Content Section */
         .content-section {
-            padding: 2rem 1rem;
+            flex: 1;
+            min-height: calc(100vh - 172px - 300px); /* viewport - fixed elements - hero */
+            padding: 2rem 1rem 3rem;
             width: 100%;
             max-width: 100%;
             box-sizing: border-box;
@@ -938,6 +1035,8 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 1.5rem;
+            min-height: 400px;
+            padding-bottom: 2rem;
         }
 
         .lesson-card {
@@ -1181,24 +1280,138 @@
 
         /* Mobile Layout Reset - Fix left gap issue */
         @media (max-width: 768px) {
+
+            * {
+                -webkit-tap-highlight-color: transparent;
+            }
+            body {
+                width: 100%;
+                max-width: 100vw;
+                overflow-x: hidden;
+                margin: 0;
+                padding: 0;
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                background-color: #f9fafb;
+                font-size: 16px; /* Prevents iOS zoom on input focus */
+                line-height: 1.5;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                /* Enable smooth scrolling */
+                scroll-behavior: smooth;
+                
+            }
+
+            button, a, input {
+                min-height: 44px; /* Apple's recommended touch target */
+                min-width: 44px;
+            }
             .main-content {
                 width: 100vw !important;
                 max-width: 100vw !important;
                 margin-left: 0 !important;
             }
 
+            .filter-bar {
+                left: 0 !important;
+                width: 100vw !important;
+            }
+
+            .subjects-filter-container {
+                left: 0 !important;
+                width: 100vw !important;
+                padding: 16px 0;
+            }
+
             .youtube-sidebar {
-                position: fixed;
-                left: 0;
-                top: 0;
-                height: 100vh;
-                z-index: 2000; /* Increased to be above overlay (1999) */
+                width: 280px; /* Full width on mobile */
                 transform: translateX(-100%);
-                transition: transform 0.3s ease;
+                transition: transform 0.3s ease, width 0.3s ease;
             }
 
             .youtube-sidebar.mobile-open {
                 transform: translateX(0);
+            }
+
+            /* Larger scrollbar on mobile for better touch */
+            .sidebar-content::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            /* Ensure mobile sidebar does not overflow viewport */
+            .sidebar-content {
+                padding-bottom: env(safe-area-inset-bottom, 1rem); /* Account for mobile notches */
+            }
+        }
+
+        @media (max-height: 600px) {
+            .sidebar-content {
+                padding: 0.5rem 0;
+            }
+
+            .sidebar-menu-item {
+                padding: 0.5rem 1.25rem;
+                min-height: 40px;
+            }
+
+            .youtube-sidebar.collapsed .sidebar-menu-item {
+                padding: 0.625rem;
+            }
+
+            .sidebar-section {
+                margin-bottom: 0.5rem;
+            }
+
+            .sidebar-section-title {
+                padding: 0.375rem 1.5rem;
+                margin-bottom: 0.25rem;
+                font-size: 0.6875rem;
+            }
+
+            .sidebar-menu-icon {
+                width: 18px;
+                height: 18px;
+            }
+
+            /* Minimal spacing on short screens */
+            .sidebar-section:nth-last-of-type(2)::after {
+                min-height: 0.5rem;
+                max-height: 1.5rem;
+            }
+
+            .sidebar-section:last-of-type {
+                padding-top: 0.5rem;
+            }
+        }
+
+        /* Ultra-small screens (foldable phones, small heights) */
+        @media (max-height: 500px) {
+            .sidebar-menu-item {
+                padding: 0.375rem 1rem;
+                min-height: 36px; /* Minimum touch target */
+            }
+
+            .sidebar-menu-icon {
+                width: 18px;
+                height: 18px;
+            }
+
+            .sidebar-menu-text {
+                font-size: 0.8125rem;
+            }
+
+            .sidebar-section-title {
+                font-size: 0.6875rem;
+                padding: 0.25rem 1.25rem;
+            }
+
+            /* Remove spacer on ultra-short screens */
+            .sidebar-section:nth-last-of-type(2)::after {
+                display: none;
+            }
+
+            .sidebar-section:last-of-type {
+                border-top: none;
+                padding-top: 0.25rem;
             }
         }
 
@@ -1253,10 +1466,13 @@
             }
             .main-container {
                 flex-direction: column;
-                overflow: hidden;
+                overflow-y: auto;
+                overflow-x: hidden;
                 width: 100vw;
             }
             .youtube-sidebar {
+                height: 100vh;
+                height: 100dvh; /* Dynamic viewport height for mobile browsers */
                 transform: translateX(-100%);
                 transition: transform 0.3s ease, width 0.3s ease;
                 width: 280px; /* Adjusted width for mobile */
@@ -1276,14 +1492,6 @@
                 margin-left: 0;
                 width: 100vw;
                 max-width: 100vw;
-            }
-
-            /* Hide desktop header on mobile */
-            .top-header {
-                position: sticky;
-                top: 0;
-                z-index: 1000;
-                padding: 0.5rem 1rem;
             }
 
             /* Show mobile header */
@@ -1324,7 +1532,8 @@
             /* Search box initially hidden on mobile */
             
             .content-section {
-                padding: 1rem 0.5rem;
+                min-height: calc(100vh - 60px -120px - 200px);
+                padding: 1rem 0.75rem 2rem;
             }
 
             /* Adjust hero section for mobile */
@@ -1336,7 +1545,7 @@
                 font-size: 24px;
                 margin-bottom: 8px;
             }
-            
+
             .hero-content p {
                 font-size: 16px;
                 margin-bottom: 16px;
@@ -1346,10 +1555,16 @@
                 padding: 0.5rem 1rem;
                 font-size: 0.9rem;
             }
-            
+
+            .content-section {
+                min-height: calc(100vh - 172px - 200px);
+                padding: 1rem 0.75rem 2rem;
+            }
+
             .content-grid {
                 grid-template-columns: 1fr;
                 gap: 20px;
+                padding-bottom: 1.5rem;
             }
 
             /* Mobile overlay - Now outside main-container */
@@ -1367,23 +1582,18 @@
                 pointer-events: auto;
             }
 
+            /* Ensure sidebar sections are well-spaced on mobile */
+            .sidebar-section {
+                margin-bottom: 0.75rem;
+            }
+
+            .sidebar-section:nth-last-of-type(2)::after {
+                max-height: 2.5rem;
+            }
+
             .sidebar-overlay.active {
                 opacity: 1;
                 visibility: visible;
-            }
-
-            /* CRITICAL FIX: On mobile, overlay should NOT cover sidebar area */
-            @media (max-width: 768px) {
-                .sidebar-overlay {
-                    left: var(--sidebar-width-expanded); /* 280px - don't block sidebar */
-                }
-            }
-
-            /* Hide overlay on desktop */
-            @media (min-width: 1024px) {
-                .sidebar-overlay {
-                    display: none !important;
-                }
             }
 
             /* Prevent body scrolling when sidebar is open */
@@ -1435,6 +1645,20 @@
             }
         }
 
+        /* CRITICAL FIX: On mobile, overlay should NOT cover sidebar area */
+        @media (max-width: 768px) {
+            .sidebar-overlay {
+                left: var(--sidebar-width-expanded); /* 280px - don't block sidebar */
+            }
+        }
+
+        /* Hide overlay on desktop */
+        @media (min-width: 1024px) {
+            .sidebar-overlay {
+                display: none !important;
+            }
+        }
+
         @media (min-width: 640px) {
             /* Two column layout for small tablets */
             .content-grid {
@@ -1450,7 +1674,7 @@
             /* Show desktop layout on tablets and above */
             .filter-bar {
                 gap: 0.75rem;
-                padding: 0.75rem;
+                /* padding: 0.75rem; */
                 overflow-x: visible;
             }
 
@@ -1504,6 +1728,20 @@
             /* Four column layout for large screens */
             .content-grid {
                 grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (min-width: 1400px) and (min-height: 800px) {
+            .sidebar-content {
+                padding: 1.5rem 0;
+            }
+
+            .sidebar-menu-item {
+                padding: 0.875rem 2rem;
+            }
+
+            .sidebar-menu-text {
+                font-size: 0.9375rem;
             }
         }
 
@@ -1592,6 +1830,60 @@
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
         }
+
+        @media (min-height: 700px) and (max-height: 900px) {
+            .sidebar-content {
+                padding: 0.75rem 0;
+            }
+
+            .sidebar-section {
+                margin-bottom: 0.5rem;
+            }
+
+            .sidebar-section-title {
+                padding: 0.375rem 1.5rem;
+                margin-bottom: 0.375rem;
+                font-size: 0.7rem;
+            }
+
+            .sidebar-menu-item {
+                padding: 0.625rem 1.5rem;
+            }
+
+            /* Reduce max spacing between sections */
+            .sidebar-section:nth-last-of-type(2)::after {
+                max-height: 2rem;
+            }
+        }
+
+        /* Tall screens - allow more breathing room */
+        @media (min-height: 900px) {
+            .sidebar-section {
+                margin-bottom: 1rem;
+            }
+            
+            .sidebar-section-title {
+                padding: 0.5rem 1.5rem;
+                margin-bottom: 0.5rem;
+            }
+            
+            .sidebar-menu-item {
+                padding: 0.875rem 1.5rem;
+            }
+            
+            /* Allow slightly more space on tall screens */
+            .sidebar-section:nth-last-of-type(2)::after {
+                max-height: 4rem;
+            }
+        }
+
+        /* Fix for Safari mobile to prevent overscroll */
+        @supports (-webkit-touch-callout: none) {
+            .sidebar-content {
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+            }
+        }
     </style>
 </head>
 <body>
@@ -1600,147 +1892,132 @@
 
     <div class="main-container">
         @include('components.dashboard-sidebar')
-
-        <!-- Main Content -->
-        <main class="main-content">
-            @include('components.dashboard-header')
+        @include('components.dashboard-header')
             
-            <!-- Search/Filter Bar -->
-            <div class="filter-bar" id="filterBar">
-                <div class="level-container">
-                    <label for="level-modal-toggle" class="level-indicator">Grade: {{ $selectedLevelGroup ? ([
-                        'primary-lower' => 'Grade 1-3',
-                        'primary-upper' => 'Grade 4-6',
-                        'jhs' => 'Grade 7-9',
-                        'shs' => 'Grade 10-12',
-                        'university' => 'University'
-                    ][$selectedLevelGroup] ?? ucwords(str_replace('-', ' ', $selectedLevelGroup))) : 'Grade 1-3' }}</label>
-                </div>
+        <!-- Search/Filter Bar -->
+        <div class="filter-bar" id="filterBar">
+            <div class="level-container">
+                <label for="level-modal-toggle" class="level-indicator">Grade: {{ $selectedLevelGroup ? ([
+                    'primary-lower' => 'Grade 1-3',
+                    'primary-upper' => 'Grade 4-6',
+                    'jhs' => 'Grade 7-9',
+                    'shs' => 'Grade 10-12',
+                    'university' => 'University'
+                ][$selectedLevelGroup] ?? ucwords(str_replace('-', ' ', $selectedLevelGroup))) : 'Grade 1-3' }}</label>
+            </div>
 
-                <!-- Mobile Search Toggle Button -->
-                <button class="mobile-search-toggle" id="mobileSearchToggle">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M17.5 17.5L12.5001 12.5M14.1667 8.33333C14.1667 11.555 11.555 14.1667 8.33333 14.1667C5.11167 14.1667 2.5 11.555 2.5 8.33333C2.5 5.11167 5.11167 2.5 8.33333 2.5C11.555 2.5 14.1667 5.11167 14.1667 8.33333Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </button>
+            <!-- Mobile Search Toggle Button -->
+            <button class="mobile-search-toggle" id="mobileSearchToggle">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17.5 17.5L12.5001 12.5M14.1667 8.33333C14.1667 11.555 11.555 14.1667 8.33333 14.1667C5.11167 14.1667 2.5 11.555 2.5 8.33333C2.5 5.11167 5.11167 2.5 8.33333 2.5C11.555 2.5 14.1667 5.11167 14.1667 8.33333Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
 
-                <div class="search-container">
-                    <div class="search-box" id="mobileSearchBox">
-                        <input type="text" class="search-input" placeholder="Search">
-                        <button class="search-button">
-                            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                            </svg>
-                        </button>
-                        <!-- Close button for mobile search -->
-                        <button class="search-close" id="searchClose">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="quiz-container">
-                    <a href="{{ route('quiz.index') }}" class="filter-button quiz">Quiz</a>
-                </div>
-
-                <input type="checkbox" id="level-modal-toggle" style="display: none;">
-
-                <div class="level-modal">
-                    <div class="modal-overlay"></div>
-                    <div class="modal-content">
-                        <h3>Select Grade</h3>
-                        <a href="{{ route('dashboard.level-group', ['groupId' => 'primary-lower']) }}" class="level-option">Grade 1-3</a>
-                        <a href="{{ route('dashboard.level-group', ['groupId' => 'primary-upper']) }}" class="level-option">Grade 4-6</a>
-                        <a href="{{ route('dashboard.level-group', ['groupId' => 'jhs']) }}" class="level-option">Grade 7-9</a>
-                        <a href="{{ route('dashboard.level-group', ['groupId' => 'shs']) }}" class="level-option">Grade 10-12</a>
-                        <a href="{{ route('dashboard.level-group', ['groupId' => 'university']) }}" class="level-option">University</a>
-                    </div>
+            <div class="search-container">
+                <div class="search-box" id="mobileSearchBox">
+                    <input type="text" class="search-input" placeholder="Search">
+                    <button class="search-button">
+                        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </button>
+                    <!-- Close button for mobile search -->
+                    <button class="search-close" id="searchClose">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
             </div>
 
-            <!-- Sepaarate Horizontal Subjects Filter -->
-                <div class="subjects-filter-container">
-                    <div class="subjects-filter">
-                        <div class="subject-chip active" data-subject="all">
-                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                            </svg>
-                            All Subjects
-                        </div>
+            <div class="quiz-container">
+                <a href="{{ route('quiz.index') }}" class="filter-button quiz">Quiz</a>
+            </div>
+        </div>
 
-                        <div class="subject-chip" data-subject="mathematics">
-                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                            </svg>
-
-                            Mathematics
-                        </div>
-                        <div class="subject-chip" data-subject="science">
-                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
-                            </svg>
-                            Science
-                        </div>
-                        <div class="subject-chip" data-subject="english">
-                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
-                            </svg>
-                            English
-                        </div>
-                        <div class="subject-chip" data-subject="social-studies">
-                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                            Social Studies
-                        </div>
-                        <div class="subject-chip" data-subject="history">
-                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            History
-                        </div>
-                        <div class="subject-chip" data-subject="chemistry">
-                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
-                            </svg>
-                            Chemistry
-                        </div>
-                        <div class="subject-chip" data-subject="physics">
-                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                            </svg>
-                            Physics
-                        </div>
-                        <div class="subject-chip" data-subject="biology">
-                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-                            </svg>
-                            Biology
-                        </div>
-                        <div class="subject-chip" data-subject="geography">
-                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            Geography
-                        </div>
-                        <div class="subject-chip" data-subject="art">
-                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4 4 4 0 004-4V5z"/>
-                            </svg>
-                            Art
-                        </div>
-                        <div class="subject-chip" data-subject="music">
-                            <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
-                            </svg>
-                            Music
-                        </div>
-                    </div>
+        <!-- Sepaarate Horizontal Subjects Filter -->
+        <div class="subjects-filter-container">
+            <div class="subjects-filter">
+                <div class="subject-chip active" data-subject="all">
+                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                    </svg>
+                    All Subjects
                 </div>
-            
+
+                <div class="subject-chip" data-subject="mathematics">
+                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+
+                    Mathematics
+                </div>
+                <div class="subject-chip" data-subject="science">
+                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                    </svg>
+                    Science
+                </div>
+                <div class="subject-chip" data-subject="english">
+                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+                    </svg>
+                    English
+                </div>
+                <div class="subject-chip" data-subject="social-studies">
+                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    Social Studies
+                </div>
+                <div class="subject-chip" data-subject="history">
+                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    History
+                </div>
+                <div class="subject-chip" data-subject="chemistry">
+                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                    </svg>
+                    Chemistry
+                </div>
+                <div class="subject-chip" data-subject="physics">
+                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    Physics
+                </div>
+                <div class="subject-chip" data-subject="biology">
+                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    </svg>
+                    Biology
+                </div>
+                <div class="subject-chip" data-subject="geography">
+                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Geography
+                </div>
+                <div class="subject-chip" data-subject="art">
+                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4 4 4 0 004-4V5z"/>
+                    </svg>
+                    Art
+                </div>
+                <div class="subject-chip" data-subject="music">
+                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+                    </svg>
+                    Music
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
             <!-- Hero Section with Video Background -->
             <div class="hero-section">
                 <div class="hero-background">
@@ -1911,6 +2188,19 @@
                     @endif
                 </div>
             </div>
+            <input type="checkbox" id="level-modal-toggle" style="display: none;">
+
+            <div class="level-modal">
+                <div class="modal-overlay"></div>
+                <div class="modal-content">
+                    <h3>Select Grade</h3>
+                    <a href="{{ route('dashboard.level-group', ['groupId' => 'primary-lower']) }}" class="level-option">Grade 1-3</a>
+                    <a href="{{ route('dashboard.level-group', ['groupId' => 'primary-upper']) }}" class="level-option">Grade 4-6</a>
+                    <a href="{{ route('dashboard.level-group', ['groupId' => 'jhs']) }}" class="level-option">Grade 7-9</a>
+                    <a href="{{ route('dashboard.level-group', ['groupId' => 'shs']) }}" class="level-option">Grade 10-12</a>
+                    <a href="{{ route('dashboard.level-group', ['groupId' => 'university']) }}" class="level-option">University</a>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -2027,6 +2317,7 @@
             const youtubeSidebar = document.getElementById('youtubeSidebar');
             const sidebarOverlay = document.getElementById('sidebarOverlay');
             const body = document.body;
+            const sidebarContent = document.querySelector('.sidebar-content');
 
 
             function toggleSidebar() {
@@ -2035,11 +2326,63 @@
                     youtubeSidebar.classList.toggle('mobile-open');
                     sidebarOverlay.classList.toggle('active');
                     body.classList.toggle('sidebar-open');
+    
+                    // Reset scroll position when opening sidebar
+                    if (youtubeSidebar.classList.contains('mobile-open') && sidebarContent) {
+                        sidebarContent.scrollTop = 0;
+                    }
                 } else {
                     // Desktop behavior - layout changes
                     youtubeSidebar.classList.toggle('collapsed');
+    
+                    // Update header position
+                    updateHeaderPosition();
+    
+                    // Reset scroll position when collapsing/expanding
+                    if (sidebarContent) {
+                        sidebarContent.scrollTop = 0;
+                    }
                 }
             }
+    
+            // function updateHeaderPosition() {
+            //     const topHeader = document.querySelector('.top-header');
+            //     const filterBar = document.querySelector('.filter-bar');
+            //     const subjectsFilter = document.querySelector('.subjects-filter-container');
+            //     if (window.innerWidth > 768) {
+            //         if (youtubeSidebar.classList.contains('collapsed')) {
+            //             // Header padding-left handled by CSS sibling selector
+            //             if (filterBar) {
+            //                 filterBar.style.left = 'var(--sidebar-width-collapsed)';
+            //                 filterBar.style.width = 'calc(100vw - var(--sidebar-width-collapsed))';
+            //             }
+            //             if (subjectsFilter) {
+            //                 subjectsFilter.style.left = 'var(--sidebar-width-collapsed)';
+            //                 subjectsFilter.style.width = 'calc(100vw - var(--sidebar-width-collapsed))';
+            //             }
+            //         } else {
+            //             // Header padding-left handled by CSS
+            //             if (filterBar) {
+            //                 filterBar.style.left = 'var(--sidebar-width-expanded)';
+            //                 filterBar.style.width = 'calc(100vw - var(--sidebar-width-expanded))';
+            //             }
+            //             if (subjectsFilter) {
+            //                 subjectsFilter.style.left = 'var(--sidebar-width-expanded)';
+            //                 subjectsFilter.style.width = 'calc(100vw - var(--sidebar-width-expanded))';
+            //             }
+            //         }
+            //     } else {
+            //         // Header padding-left handled by CSS
+            //         if (filterBar) {
+            //             filterBar.style.paddingLeft= '0';
+            //             filterBar.style.width = '100vw';
+            //         }
+            //         if (subjectsFilter) {
+            //             subjectsFilter.style.paddingLeft = '0';
+            //             subjectsFilter.style.width = '100vw';
+            //         }
+            //     }
+            // }
 
             if (sidebarToggle) {
                 sidebarToggle.addEventListener('click', toggleSidebar);
@@ -2054,22 +2397,49 @@
                 });
             }
 
+            // Prevent scrolling when sidebar is open on mobile
+            if (youtubeSidebar) {
+                youtubeSidebar.addEventListener('touchmove', function(e) {
+                    if (window.innerWidth <= 768 && this.classList.contains('mobile-open')) {
+                        e.preventDefault();
+                    }
+                }, {passive: false });
+            }
+
 
             // Handle window resize - ensure proper state transitions
-            window.addEventListener('resize', function() {
+            function handleResize() {
                 if (window.innerWidth > 768) {
-                    // Switching to desktop - remove mobile overlay state
+                    // Switching to desktop
                     youtubeSidebar.classList.remove('mobile-open');
                     sidebarOverlay.classList.remove('active');
                     body.classList.remove('sidebar-open');
+
+                    // Reset scroll position
+                    if (sidebarContent) {
+                        sidebarContent.scrollTop = 0;
+                    }
                 } else {
-                    // Switching to mobile - ensure sidebar is collapsed (overlay state)
+                    // Switching to Mobile
                     youtubeSidebar.classList.remove('collapsed');
                     youtubeSidebar.classList.remove('mobile-open');
                     sidebarOverlay.classList.remove('active');
                     body.classList.remove('sidebar-open');
                 }
-            });
+
+                // Adjust sidebar content height
+                if (sidebarContent && window.innerWidth <= 768) {
+                    const viewportHeight = window.innerHeight;
+                    sidebarContent.style.maxHeight = `${viewportHeight - 64}px`; // Subtract header if exists
+                }
+
+                updateHeaderPosition();
+            }
+
+            window.addEventListener('resize', handleResize);
+
+            // Initialize adjustment
+            handleResize();
 
             // Keyboard shortcuts
             document.addEventListener('keydown', function(e) {
@@ -2079,6 +2449,15 @@
                     document.body.style.overflow = '';
                 }
             });
+
+            // Prevent body scroll when sidebar is open on mobile
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('touchmove', function(e) {
+                    if (this.classList.contains('active')) {
+                        e.preventDefault();
+                    }
+                }, { passive: false });
+            }
         }
 
         // Notification dropdown functionality

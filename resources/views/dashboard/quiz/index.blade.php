@@ -18,10 +18,10 @@
 
     <div class="main-container">
         @include('components.dashboard-sidebar')
+        @include('dashboard.quiz.partials.desktop-header')
 
         <!-- Main Content -->
         <main class="main-content">
-            @include('dashboard.quiz.partials.desktop-header')
             @include('dashboard.quiz.partials.filter-bar')
             @include('dashboard.quiz.partials.hero-section')
             
