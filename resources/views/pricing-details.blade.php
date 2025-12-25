@@ -329,254 +329,93 @@
 
         <!-- Pricing Tabs -->
         <div class="pricing-tabs">
-            <button class="pricing-tab active" data-plan="essential">Essential</button>
-            <button class="pricing-tab" data-plan="extra-tuition">Extra Tuition</button>
-            <button class="pricing-tab" data-plan="home-sch">Home Sch</button>
+            @foreach($pricingPlans as $key => $plan)
+                <button class="pricing-tab {{ $loop->first ? 'active' : '' }}" data-plan="{{ $key }}">{{ $plan['name'] }}</button>
+            @endforeach
         </div>
 
         <!-- Pricing Plans with Duration Options -->
         <div class="pricing-plan-container">
-            <!-- Essential Plan -->
-            <div id="essential-plan" class="pricing-plan-wrapper">
-                <div class="pricing-plan-grid">
-                    <div class="plan-features-section">
-                        <div class="plan-header">
-                            <div class="plan-name">{{ $pricingPlans['essential']['name'] }}</div>
+            @foreach($pricingPlans as $key => $plan)
+                <div id="{{ $key }}-plan" class="pricing-plan-wrapper" style="display: {{ $loop->first ? 'block' : 'none' }};">
+                    <div class="pricing-plan-grid">
+                        <div class="plan-features-section">
+                            <div class="plan-header">
+                                <div class="plan-name">{{ $plan['name'] }}</div>
+                            </div>
+
+                            <ul class="plan-features">
+                                @if(is_array($plan['features']))
+                                    @foreach($plan['features'] as $index => $feature)
+                                        <li>
+                                            <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                            </svg>
+                                            <div class="feature-text">
+                                                <div class="feature-title">{{ $feature }}</div>
+                                                <div class="feature-description">Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides</div>
+                                            </div>
+                                        </li>
+                                    @endforeach
+                                @else
+                                    <li>
+                                        <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                        </svg>
+                                        <div class="feature-text">
+                                            <div class="feature-title">{{ $plan['features'] }}</div>
+                                            <div class="feature-description">Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides</div>
+                                        </div>
+                                    </li>
+                                @endif
+                            </ul>
                         </div>
 
-                        <ul class="plan-features">
-                            <li>
-                                <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                </svg>
-                                <div class="feature-text">
-                                    <div class="feature-title">DigiLearn</div>
-                                    <div class="feature-description">Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides</div>
+                        <div class="plan-duration-section">
+                            <form class="duration-form">
+                                <div class="duration-option">
+                                    <input type="radio" id="{{ $key }}-trial" name="{{ $key }}-duration" value="trial" class="duration-radio">
+                                    <label for="{{ $key }}-trial" class="duration-label-wrapper">
+                                        <div class="duration-info">
+                                            <div class="duration-label">{{ $plan['period'] }}</div>
+                                            <div class="duration-price">Free</div>
+                                        </div>
+                                    </label>
                                 </div>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div class="plan-duration-section">
-                        <form class="duration-form">
-                            <div class="duration-option">
-                                <input type="radio" id="essential-trial" name="essential-duration" value="trial" class="duration-radio">
-                                <label for="essential-trial" class="duration-label-wrapper">
-                                    <div class="duration-info">
-                                        <div class="duration-label">7 days free trial</div>
-                                        <div class="duration-price">Free</div>
+                                <div class="duration-option">
+                                    <input type="radio" id="{{ $key }}-month" name="{{ $key }}-duration" value="month" class="duration-radio" checked>
+                                    <label for="{{ $key }}-month" class="duration-label-wrapper">
+                                        <div class="duration-info">
+                                            <div class="duration-label">1 month</div>
+                                            <div class="duration-price">{{ $plan['price'] }}</div>
+                                        </div>
+                                    </label>
+                                </div>
+                                @if(strpos($plan['name'], 'Extra') !== false || strpos($plan['name'], 'Home') !== false)
+                                    <div class="duration-option">
+                                        <input type="radio" id="{{ $key }}-3month" name="{{ $key }}-duration" value="3month" class="duration-radio">
+                                        <label for="{{ $key }}-3month" class="duration-label-wrapper">
+                                            <div class="duration-info">
+                                                <div class="duration-label">3 months</div>
+                                                <div class="duration-price">
+                                                    @if(strpos($plan['name'], 'Extra') !== false)
+                                                        Ghs 500.00
+                                                    @else
+                                                        Ghs 600.00
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </label>
                                     </div>
-                                </label>
-                            </div>
-                            <div class="duration-option">
-                                <input type="radio" id="essential-month" name="essential-duration" value="month" class="duration-radio" checked>
-                                <label for="essential-month" class="duration-label-wrapper">
-                                    <div class="duration-info">
-                                        <div class="duration-label">1 month</div>
-                                        <div class="duration-price">Ghs 50.00</div>
-                                    </div>
-                                </label>
-                            </div>
-                            <button type="submit" class="purchase-btn-main">Purchase</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Extra Tuition Plan -->
-            <div id="extra-tuition-plan" class="pricing-plan-wrapper" style="display: none;">
-                <div class="pricing-plan-grid">
-                    <div class="plan-features-section">
-                        <div class="plan-header">
-                            <div class="plan-name">{{ $pricingPlans['extra-tuition']['name'] }}</div>
+                                @endif
+                                <button type="submit" class="purchase-btn-main">Purchase</button>
+                            </form>
                         </div>
-
-                        <ul class="plan-features">
-                            <li>
-                                <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                </svg>
-                                <div class="feature-text">
-                                    <div class="feature-title">DigiLearn</div>
-                                    <div class="feature-description">Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides</div>
-                                </div>
-                            </li>
-                            <li>
-                                <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                </svg>
-                                <div class="feature-text">
-                                    <div class="feature-title">Join a class</div>
-                                    <div class="feature-description">Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides</div>
-                                </div>
-                            </li>
-                            <li>
-                                <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                </svg>
-                                <div class="feature-text">
-                                    <div class="feature-title">24hr support service</div>
-                                    <div class="feature-description">Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides</div>
-                                </div>
-                            </li>
-                            <li>
-                                <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                </svg>
-                                <div class="feature-text">
-                                    <div class="feature-title">Assessment</div>
-                                    <div class="feature-description">Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides</div>
-                                </div>
-                            </li>
-                            <li>
-                                <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                </svg>
-                                <div class="feature-text">
-                                    <div class="feature-title">Learning Resources</div>
-                                    <div class="feature-description">Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides</div>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div class="plan-duration-section">
-                        <form class="duration-form">
-                            <div class="duration-option">
-                                <input type="radio" id="extra-tuition-trial" name="extra-tuition-duration" value="trial" class="duration-radio">
-                                <label for="extra-tuition-trial" class="duration-label-wrapper">
-                                    <div class="duration-info">
-                                        <div class="duration-label">7 days free trial</div>
-                                        <div class="duration-price">Free</div>
-                                    </div>
-                                </label>
-                            </div>
-                            <div class="duration-option">
-                                <input type="radio" id="extra-tuition-month" name="extra-tuition-duration" value="month" class="duration-radio" checked>
-                                <label for="extra-tuition-month" class="duration-label-wrapper">
-                                    <div class="duration-info">
-                                        <div class="duration-label">1 month</div>
-                                        <div class="duration-price">Ghs 200.00</div>
-                                    </div>
-                                </label>
-                            </div>
-                            <div class="duration-option">
-                                <input type="radio" id="extra-tuition-3month" name="extra-tuition-duration" value="3month" class="duration-radio">
-                                <label for="extra-tuition-3month" class="duration-label-wrapper">
-                                    <div class="duration-info">
-                                        <div class="duration-label">3 months</div>
-                                        <div class="duration-price">Ghs 500.00</div>
-                                    </div>
-                                </label>
-                            </div>
-                            <button type="submit" class="purchase-btn-main">Purchase</button>
-                        </form>
                     </div>
                 </div>
-            </div>
-
-            <!-- Home School Plan -->
-            <div id="home-sch-plan" class="pricing-plan-wrapper" style="display: none;">
-                <div class="pricing-plan-grid">
-                    <div class="plan-features-section">
-                        <div class="plan-header">
-                            <div class="plan-name">{{ $pricingPlans['home-sch']['name'] }}</div>
-                        </div>
-
-                        <ul class="plan-features">
-                            <li>
-                                <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                </svg>
-                                <div class="feature-text">
-                                    <div class="feature-title">DigiLearn</div>
-                                    <div class="feature-description">Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides</div>
-                                </div>
-                            </li>
-                            <li>
-                                <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                </svg>
-                                <div class="feature-text">
-                                    <div class="feature-title">Join a class</div>
-                                    <div class="feature-description">Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides</div>
-                                </div>
-                            </li>
-                            <li>
-                                <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                </svg>
-                                <div class="feature-text">
-                                    <div class="feature-title">24hr support service</div>
-                                    <div class="feature-description">Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides</div>
-                                </div>
-                            </li>
-                            <li>
-                                <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                </svg>
-                                <div class="feature-text">
-                                    <div class="feature-title">Personalized Tuition (1 session)</div>
-                                    <div class="feature-description">Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides</div>
-                                </div>
-                            </li>
-                            <li>
-                                <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                </svg>
-                                <div class="feature-text">
-                                    <div class="feature-title">Learning Resources</div>
-                                    <div class="feature-description">Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides</div>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-
-                    <div class="plan-duration-section">
-                        <form class="duration-form">
-                            <div class="duration-option">
-                                <input type="radio" id="home-sch-trial" name="home-sch-duration" value="trial" class="duration-radio">
-                                <label for="home-sch-trial" class="duration-label-wrapper">
-                                    <div class="duration-info">
-                                        <div class="duration-label">7 days free trial</div>
-                                        <div class="duration-price">Free</div>
-                                    </div>
-                                </label>
-                            </div>
-                            <div class="duration-option">
-                                <input type="radio" id="home-sch-month" name="home-sch-duration" value="month" class="duration-radio" checked>
-                                <label for="home-sch-month" class="duration-label-wrapper">
-                                    <div class="duration-info">
-                                        <div class="duration-label">1 month</div>
-                                        <div class="duration-price">Ghs 200.00</div>
-                                    </div>
-                                </label>
-                            </div>
-                            <div class="duration-option">
-                                <input type="radio" id="home-sch-3month" name="home-sch-duration" value="3month" class="duration-radio">
-                                <label for="home-sch-3month" class="duration-label-wrapper">
-                                    <div class="duration-info">
-                                        <div class="duration-label">3 months</div>
-                                        <div class="duration-price">Ghs 600.00</div>
-                                    </div>
-                                </label>
-                            </div>
-                            <button type="submit" class="purchase-btn-main">Purchase</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
+            @endforeach
         </div>
     </div>
 </section>

@@ -275,7 +275,7 @@
 
         /* Main Content */
         .main-content {
-            padding: 2rem 0;
+            padding: 5rem 0 2rem 0; /* Added top padding for fixed header */
         }
 
         /* Card Styles */
@@ -405,6 +405,7 @@
     </style>
 </head>
 <body>
+    @include('components.dashboard-header')
     @yield('content')
 </body>
 </html>

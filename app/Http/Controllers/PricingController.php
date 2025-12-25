@@ -19,52 +19,32 @@ class PricingController extends Controller
 
     public function show()
     {
-        $pricingPlans = [
-            'essential' => [
-                'name' => 'Essential',
-                'price' => 'Ghs 50.00',
-                'period' => '7 days free trial',
-                'features' => [
-                    'DigiLearn',
-                    'Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides'
-                ]
-            ],
-            'extra-tuition' => [
-                'name' => 'Extra Tuition',
-                'price' => 'Ghs 200.00',
-                'period' => '7 days free trial',
-                'features' => [
-                    'DigiLearn',
-                    'Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides',
-                    'Join a class',
-                    'Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides',
-                    '24hr support service',
-                    'Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides',
-                    'Personalised tuition',
-                    'Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides',
-                    'Learning Resources',
-                    'Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides',
-                ]
-            ],
-            'home-sch' => [
-                'name' => 'Home Sch',
-                'price' => 'Ghs 200.00',
-                'period' => '7 days free trial',
-                'features' => [
-                    'DigiLearn',
-                    'Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides',
-                    'Join a class',
-                    'Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides',
-                    'PPT support service',
-                    'Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides',
-                    'Personalized Tuition (1 session)',
-                    'Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides',
-                    'Learning Resources',
-                    'Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides'
-                ]
-            ]
-        ];
+        // Get only featured pricing plans
+        $featuredPlans = PricingPlan::where('is_active', true)
+            ->where('is_featured', true)
+            ->orderBy('sort_order')
+            ->orderBy('price')
+            ->get();
 
-        return view ('pricing-details', compact('pricingPlans'));
+        // If no featured plans, fall back to all active plans
+        if ($featuredPlans->isEmpty()) {
+            $featuredPlans = PricingPlan::where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('price')
+                ->get();
+        }
+
+        // Transform to the expected array format for the view
+        $pricingPlans = [];
+        foreach ($featuredPlans as $plan) {
+            $pricingPlans[$plan->slug] = [
+                'name' => $plan->name,
+                'price' => $plan->currency . ' ' . number_format($plan->price, 2),
+                'period' => '7 days free trial',
+                'features' => $plan->features ?? ['Access to ' . $plan->name . ' features']
+            ];
+        }
+
+        return view('pricing-details', compact('pricingPlans'));
     }
 }

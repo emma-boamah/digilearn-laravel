@@ -82,6 +82,18 @@
         }
     }
 
+    /* Single card layout */
+    .pricing-cards.single-card {
+        display: flex;
+        justify-content: center;
+        max-width: 400px; /* Limit width for single card */
+    }
+
+    .pricing-cards.single-card .pricing-card {
+        width: 100%;
+        max-width: 370px;
+    }
+
     .pricing-card {
         background-color: var(--white);
         border: 1px solid #e5e7eb;
@@ -213,7 +225,7 @@
             </p>
         </div>
 
-        <div class="pricing-cards">
+        <div class="pricing-cards {{ count($pricingPlans) === 1 ? 'single-card' : '' }}">
             @forelse($pricingPlans as $plan)
             <div class="pricing-card {{ $plan->is_featured ? 'featured' : '' }}">
                 @if($plan->is_featured)

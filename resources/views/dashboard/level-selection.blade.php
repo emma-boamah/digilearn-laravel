@@ -1,39 +1,7 @@
 @extends('layouts.dashboard-simple')
 
 @section('content')
-    <!-- Header -->
-    <header class="header">
-        <div class="container">
-            <div class="header-content">
-                <div class="header-left">
-                    <div class="shoutout-logo">
-                        <svg width="26" height="26" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/>
-                        </svg>
-                        <div class="brand-section sidebar-logo">
-                            <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="header-right">
-                    <svg class="notification-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5z"/>
-                    </svg>
-                    
-                    <div class="header-divider"></div>
-                    
-                    <div class="user-avatar">
-                        {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
-                    </div>
-                </div>
-            </div>
-
-            <h1 class="page-title">Dashboard</h1>
-        </div>
-    </header>
-
-    <!-- Back Button (now above header) -->
+    <!-- Back Button -->
     @if(isset($isChanging) && $isChanging)
         <button class="back-button" id="backToDashboard">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
