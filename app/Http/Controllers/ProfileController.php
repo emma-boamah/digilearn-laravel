@@ -292,7 +292,7 @@ class ProfileController extends Controller
                 'initials' => $user->initials
             ]);
         } catch (\Exception $e) {
-            \Log::error('Failed to get avatar info: ' . $e->getMessage());
+            Log::error('Failed to get avatar info: ' . $e->getMessage());
             
             return response()->json([
                 'success' => false,

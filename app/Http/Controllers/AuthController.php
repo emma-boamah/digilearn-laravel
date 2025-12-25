@@ -359,8 +359,8 @@ class AuthController extends Controller
     
     public function signup(Request $request)
     {
-        // Rate limit by email only (safe for public/shared IPs) - check before validation
-        $rateLimitKey = 'signup:' . get_client_ip() . '|' . strtolower($request->input('email', ''));
+        // Rate limit by IP only (not email) to avoid issues with existing emails
+        $rateLimitKey = 'signup:ip:' . get_client_ip();
 
         $maxAttempts = 5;
         $decaySeconds = 600; // 10 minutes
@@ -376,11 +376,9 @@ class AuthController extends Controller
             ]);
 
             return back()->withErrors([
-                'rate_limit' => "Too many signup attempts. Please try again in " . ceil($seconds / 60) . " minutes.",
+                'auth_error' => "Too many signup attempts. Please try again in " . ceil($seconds / 60) . " minutes.",
             ])->withInput($request->except('password', 'password_confirmation'));
         }
-
-        // (Optional) Validate CAPTCHA here if you add one
 
         // Validate all inputs
         $validator = Validator::make($request->all(), [
@@ -426,13 +424,13 @@ class AuthController extends Controller
                     ->mixedCase()
                     ->numbers()
                     ->symbols()
-                    ->uncompromised(3) // Check against 3 breaches
+                    ->uncompromised(3)
             ],
         ], [
             'name.regex' => 'Name can only contain letters, spaces, hyphens, apostrophes, and periods.',
-            'email.unique' => 'An account with this email already exists. Please login or use a different email.',
+            'email.unique' => 'An account with this email already exists. Please <a href="' . route('login') . '" class="text-primary-blue hover:underline">login</a> or use a different email.',
             'email.regex' => 'Please enter a valid email address.',
-            'phone.unique' => 'This phone number is already registered. Please use a different number or login instead.',
+            'phone.unique' => 'This phone number is already registered. Please use a different number or <a href="' . route('login') . '" class="text-primary-blue hover:underline">login instead</a>.',
             'phone.regex' => 'Please enter a valid phone number.',
             'country.regex' => 'Country name can only contain letters, spaces, and hyphens.',
             'country_code.regex' => 'Please select a valid country code.',
@@ -441,14 +439,11 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            RateLimiter::hit($rateLimitKey, $decaySeconds);
+            // Don't hit rate limiter for validation errors (especially unique constraints)
+            // This prevents legitimate users from being blocked when they accidentally use existing credentials
 
-            // Extract specific errors for logging
-            $errors = $validator->errors()->toArray();
-            $errorType = $this->determineErrorType($errors);
-
-            $this->logAuthEvent('signup_validation_failed', $errorType, $request, [
-                'errors' => $errors,
+            $this->logAuthEvent('signup_validation_failed', $this->determineErrorType($validator->errors()->toArray()), $request, [
+                'errors' => $validator->errors()->toArray(),
                 'email' => $request->input('email'),
                 'ip' => get_client_ip()
             ]);
@@ -479,7 +474,7 @@ class AuthController extends Controller
                 ]);
 
                 return back()->withErrors([
-                    'email' => $emailVerificationResult['message'] ?? 'Please provide a valid email address. This email appears to be invalid or disposable.',
+                    'auth_error' => $emailVerificationResult['message'] ?? 'Please provide a valid email address. This email appears to be invalid or disposable.',
                 ])->withInput($request->except('password', 'password_confirmation'));
             }
         } catch (\Exception $e) {
@@ -505,11 +500,11 @@ class AuthController extends Controller
                 'password' => Hash::make($validated['password']),
                 'email_verified_at' => now(),
                 'registration_ip' => get_client_ip(),
-                'last_login_ip' => get_client_ip(), // Use helper function to get client IP
+                'last_login_ip' => get_client_ip(),
                 'last_login_at' => now(),
             ]);
 
-            // Clear rate limit on success
+            // Clear rate limit on success (only increment on actual success)
             RateLimiter::clear($rateLimitKey);
 
             $this->logAuthEvent('successful_registration', 'success', $request, [
@@ -530,7 +525,7 @@ class AuthController extends Controller
             return redirect()->route('dashboard.level-selection');
 
         } catch (\Exception $e) {
-            // Increment rate limiter on error
+            // Only increment rate limiter on actual database errors (not validation errors)
             RateLimiter::hit($rateLimitKey, $decaySeconds);
 
             $errorType = $this->determineDatabaseErrorType($e);
@@ -545,18 +540,18 @@ class AuthController extends Controller
             // Handle specific database errors
             if (str_contains($e->getMessage(), 'users_phone_unique')) {
                 return back()->withErrors([
-                    'phone' => 'This phone number is already registered. Please use a different number or login instead.'
+                    'phone' => 'This phone number is already registered. Please <a href="' . route('login') . '" class="text-primary-blue hover:underline">login instead</a> or use a different number.'
                 ])->withInput($request->except('password', 'password_confirmation'));
             }
 
             if (str_contains($e->getMessage(), 'users_email_unique')) {
                 return back()->withErrors([
-                    'email' => 'An account with this email already exists. Please login instead.'
+                    'email' => 'An account with this email already exists. Please <a href="' . route('login') . '" class="text-primary-blue hover:underline">login instead</a>.'
                 ])->withInput($request->except('password', 'password_confirmation'));
             }
 
             return back()->withErrors([
-                'system' => 'Registration failed due to a system error. Please try again or contact support if the problem persists.',
+                'auth_error' => 'Registration failed due to a system error. Please try again or contact support if the problem persists.',
             ])->withInput($request->except('password', 'password_confirmation'));
         }
     }

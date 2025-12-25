@@ -28,7 +28,44 @@
                     
                     <div class="header-divider"></div>
                     
-                    <x-user-avatar :user="auth()->user()" :size="30" id="user-avatar" />
+                    <!-- User Avatar Dropdown -->
+                    <div class="user-dropdown">
+                        <button class="user-avatar-btn" id="userDropdownToggle" aria-haspopup="true" aria-expanded="false">
+                            @if(auth()->user()->avatar_url)
+                                <img src="{{ auth()->user()->avatar_url }}" alt="Profile" class="user-avatar">
+                            @else
+                                <div class="user-avatar">
+                                    <span>{{ auth()->user()->getInitialsAttribute() }}</span>
+                                </div>
+                            @endif
+                        </button>
+
+                        <div class="user-dropdown-menu" id="userDropdownMenu">
+                            <div class="user-dropdown-header">
+                                <div class="user-info">
+                                    <div class="user-name">{{ auth()->user()->name }}</div>
+                                    <div class="user-email">{{ auth()->user()->email }}</div>
+                                </div>
+                            </div>
+                            <div class="user-dropdown-body">
+                                <a href="{{ route('profile.show') }}" class="dropdown-item">
+                                    <svg class="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                    Profile
+                                </a>
+                                <form action="{{ route('logout') }}" method="POST" class="dropdown-item-form">
+                                    @csrf
+                                    <button type="submit" class="dropdown-item logout-btn">
+                                        <svg class="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                        </svg>
+                                        Logout
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -98,13 +135,45 @@
     </main>
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-        // Debug function to test route
-        function testDigiLearnRoute() {
-            console.log('DigiLearn route:', '{{ route('dashboard.digilearn') }}');
-            console.log('Current URL:', window.location.href);
-        }
-        
-        // Call debug function
-        testDigiLearnRoute();
+        document.addEventListener('DOMContentLoaded', function() {
+            // User dropdown functionality
+            const userDropdownToggle = document.getElementById('userDropdownToggle');
+            const userDropdownMenu = document.getElementById('userDropdownMenu');
+
+            if (userDropdownToggle && userDropdownMenu) {
+                userDropdownToggle.addEventListener('click', function(event) {
+                    event.stopPropagation();
+                    const isExpanded = userDropdownToggle.getAttribute('aria-expanded') === 'true';
+                    userDropdownToggle.setAttribute('aria-expanded', !isExpanded);
+                    userDropdownMenu.classList.toggle('active');
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(event) {
+                    if (!userDropdownToggle.contains(event.target) && !userDropdownMenu.contains(event.target)) {
+                        userDropdownToggle.setAttribute('aria-expanded', 'false');
+                        userDropdownMenu.classList.remove('active');
+                    }
+                });
+
+                // Close dropdown on escape key
+                document.addEventListener('keydown', function(event) {
+                    if (event.key === 'Escape' && userDropdownMenu.classList.contains('active')) {
+                        userDropdownToggle.setAttribute('aria-expanded', 'false');
+                        userDropdownMenu.classList.remove('active');
+                    }
+                });
+            }
+
+            // Debug function to test route
+            function testDigiLearnRoute() {
+                console.log('DigiLearn route:', '{{ route('dashboard.digilearn') }}');
+                console.log('Current URL:', window.location.href);
+            }
+            
+            // Call debug function
+            testDigiLearnRoute();
+        })
+
     </script>
 @endsection

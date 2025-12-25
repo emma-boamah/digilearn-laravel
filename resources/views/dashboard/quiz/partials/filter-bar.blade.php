@@ -71,6 +71,7 @@
     .filter-bar {
         display: flex;
         align-items: center;
+        margin-top: 60px;
         gap: 0.75rem;
         padding: 0.75rem;
         background-color: var(--white);

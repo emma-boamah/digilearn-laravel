@@ -61,8 +61,12 @@
 @endsection
 
 @push('styles')
-<style>
+<style nonce="{{ request()->attributes->get('csp_nonce') }}">
+    .top-header {
+        padding-left: var(--sidebar-width-expanded);
+    }
     .content-header {
+        margin-top: 60px;
         background-color: var(--white);
         padding: 2rem 2rem 1rem;
         border-bottom: 1px solid var(--gray-200);

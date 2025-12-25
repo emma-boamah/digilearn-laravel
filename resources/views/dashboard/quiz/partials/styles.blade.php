@@ -23,7 +23,7 @@
       --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
       --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
       --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-      --sidebar-width-expanded: 280px;
+      --sidebar-width-expanded: 240px;
       --sidebar-width-collapsed: 72px;
   }
 
@@ -273,7 +273,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0.75rem 1rem;
+      padding: 0.75rem;
+      padding-left: var(--sidebar-width-expanded);
       background-color: var(--white);
       border-bottom: 1px solid var(--gray-200);
       position: sticky;
@@ -946,7 +947,7 @@
   /* CRITICAL FIX: On mobile, overlay should NOT cover sidebar area */
   @media (max-width: 768px) {
       .sidebar-overlay {
-          left: 280px; /* Sidebar width - don't block sidebar */
+          left: 240px; /* Sidebar width - don't block sidebar */
       }
   }
 
@@ -1072,9 +1073,30 @@
 
   /* Mobile Responsive */
   @media (max-width: 768px) {
-      body {
-          overflow-x: hidden;
-      }
+      * {
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            width: 100%;
+            max-width: 100vw;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background-color: #f9fafb;
+            font-size: 16px; /* Prevents iOS zoom on input focus */
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            /* Enable smooth scrolling */
+            scroll-behavior: smooth;
+            
+        }
+
+        button, a, input {
+            min-height: 44px; /* Apple's recommended touch target */
+            min-width: 44px;
+        }
 
       .youtube-sidebar {
           transform: translateX(-100%);

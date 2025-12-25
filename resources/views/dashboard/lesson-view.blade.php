@@ -64,6 +64,7 @@
             background-color: var(--white);
             border-bottom: 1px solid var(--gray-200);
             flex-wrap: wrap;
+            margin-top: 3.9rem;
         }
 
         .back-button {
@@ -1770,6 +1771,30 @@
 
         /* FIXED: Mobile responsive with NATURAL BLOCK FLOW - No overlapping! */
         @media (max-width: 768px) {
+            * {
+                -webkit-tap-highlight-color: transparent;
+            }
+            body {
+                width: 100%;
+                max-width: 100vw;
+                overflow-x: hidden;
+                margin: 0;
+                padding: 0;
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                background-color: #f9fafb;
+                font-size: 16px; /* Prevents iOS zoom on input focus */
+                line-height: 1.5;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                /* Enable smooth scrolling */
+                scroll-behavior: smooth;
+                
+            }
+
+            button, a, input {
+                min-height: 44px; /* Apple's recommended touch target */
+                min-width: 44px;
+            }
             .lesson-page {
                 display: flex;
                 flex-direction: column;
