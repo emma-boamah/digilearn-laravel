@@ -751,6 +751,8 @@ class DashboardController extends Controller
                     ->withErrors(['course' => 'Course not available.']);
             }
 
+            // Increment views for all videos in the course
+            $course->videos()->increment('views');
 
             $stats = $course->getStats();
 
@@ -804,6 +806,14 @@ class DashboardController extends Controller
             if (!$lesson) {
                 return redirect()->route('dashboard.digilearn')
                     ->withErrors(['lesson' => 'Lesson not found.']);
+            }
+
+            // Increment video views for university lessons
+            if (isset($lesson['video_id'])) {
+                $video = Video::find($lesson['video_id']);
+                if ($video) {
+                    $video->increment('views');
+                }
             }
 
             // Related lessons from same course if possible
@@ -863,6 +873,14 @@ class DashboardController extends Controller
         if (!$this->hasLessonAccess($user, $lesson)) {
             return redirect()->route('pricing')
                 ->with('warning', 'Please upgrade your subscription to access this lesson.');
+        }
+
+        // Increment video views
+        if (isset($lesson['video_id'])) {
+            $video = Video::find($lesson['video_id']);
+            if ($video) {
+                $video->increment('views');
+            }
         }
 
         // Get related lessons (exclude current lesson)
@@ -2308,40 +2326,175 @@ class DashboardController extends Controller
     /**
      * Get all user notes (for a dashboard or overview)
      */
-    public function getAllUserNotes()
-    {
-        try {
-            $userId = Auth::id();
+     public function getAllUserNotes()
+     {
+         try {
+             $userId = Auth::id();
 
-            $notes = UserNote::where('user_id', $userId)
-                ->with('video')
-                ->orderBy('updated_at', 'desc')
-                ->get()
-                ->map(function ($note) {
-                    return [
-                        'id' => $note->id,
-                        'video_id' => $note->video_id,
-                        'title' => $note->title ?: 'Untitled Notes',
-                        'content_preview' => substr(strip_tags($note->content), 0, 100) . '...',
-                        'updated_at' => $note->formatted_updated_at,
-                        'video_title' => $note->video ? $note->video->title : 'Unknown Video',
-                    ];
-                });
+             $notes = UserNote::where('user_id', $userId)
+                 ->with('video')
+                 ->orderBy('updated_at', 'desc')
+                 ->get()
+                 ->map(function ($note) {
+                     return [
+                         'id' => $note->id,
+                         'video_id' => $note->video_id,
+                         'title' => $note->title ?: 'Untitled Notes',
+                         'content_preview' => substr(strip_tags($note->content), 0, 100) . '...',
+                         'updated_at' => $note->formatted_updated_at,
+                         'video_title' => $note->video ? $note->video->title : 'Unknown Video',
+                     ];
+                 });
 
-            return response()->json([
-                'success' => true,
-                'notes' => $notes
-            ]);
-        } catch (\Exception $e) {
-            Log::error('get_all_user_notes_error', [
-                'user_id' => Auth::id(),
-                'error' => $e->getMessage()
-            ]);
+             return response()->json([
+                 'success' => true,
+                 'notes' => $notes
+             ]);
+         } catch (\Exception $e) {
+             Log::error('get_all_user_notes_error', [
+                 'user_id' => Auth::id(),
+                 'error' => $e->getMessage()
+             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to load notes.'
-            ], 500);
-        }
-    }
+             return response()->json([
+                 'success' => false,
+                 'message' => 'Failed to load notes.'
+             ], 500);
+         }
+     }
+
+     /**
+      * Search lessons within user's level group (YouTube-like search)
+      */
+     public function searchLessons(Request $request)
+     {
+         $query = $request->get('q', '');
+         $levelGroup = $request->get('level_group', session('selected_level_group'));
+
+         if (!$levelGroup) {
+             return response()->json(['success' => false, 'message' => 'No level group selected'], 400);
+         }
+
+         $user = Auth::user();
+         $gradeLevels = $this->getGradeLevelsForLevelGroup($levelGroup);
+
+         try {
+             // YouTube-like search: split query into words and search each word
+             $videos = Video::approved()
+                 ->whereIn('grade_level', $gradeLevels)
+                 ->where(function($q) use ($query) {
+                     if (empty($query)) {
+                         return; // Return all if no query
+                     }
+
+                     $words = explode(' ', trim($query));
+                     foreach ($words as $word) {
+                         if (!empty(trim($word))) {
+                             $q->where(function($subQ) use ($word) {
+                                 $subQ->where('title', 'LIKE', "%{$word}%")
+                                      ->orWhere('description', 'LIKE', "%{$word}%");
+                             });
+                         }
+                     }
+                 })
+                 ->with(['uploader', 'documents', 'quiz'])
+                 ->orderBy('created_at', 'desc')
+                 ->limit(50) // Limit for performance
+                 ->get();
+
+             // Format results like getLessonsForLevel
+             $lessons = [];
+             foreach ($videos as $video) {
+                 $lesson = [
+                     'id' => $video->id,
+                     'video_id' => $video->id,
+                     'title' => $video->title,
+                     'description' => $video->description,
+                     'duration' => $this->formatDuration($video->duration_seconds),
+                     'video_url' => $video->getVideoUrl(),
+                     'thumbnail' => $video->thumbnail_path ? asset('storage/' . $video->thumbnail_path) : asset('images/video-placeholder.jpg'),
+                     'instructor' => $video->uploader ? $video->uploader->name : 'Unknown',
+                     'subject' => $this->getSubjectFromLevel($this->convertLevelFormatBack($video->grade_level)),
+                     'year' => date('Y'),
+                     'level' => $this->convertLevelFormatBack($video->grade_level),
+                     'level_display' => $this->getLevelDisplayName($this->convertLevelFormatBack($video->grade_level)),
+                     'documents_count' => $video->documents->count(),
+                     'documents' => $video->documents->map(function($doc) {
+                         return [
+                             'id' => $doc->id,
+                             'title' => $doc->title,
+                             'file_path' => $doc->file_path,
+                             'description' => $doc->description,
+                             'uploaded_by' => $doc->uploader ? $doc->uploader->name : 'Unknown',
+                             'views' => $doc->views ?? 0,
+                         ];
+                     }),
+                     'has_quiz' => $video->quiz ? true : false,
+                     'views' => $video->views ?? 0,
+                     'is_featured' => $video->is_featured,
+                 ];
+
+                 $lessons[] = $lesson;
+             }
+
+             // Apply subscription filtering
+             $filteredLessons = $this->filterLessonsBySubscription($user, $lessons);
+
+             Log::info('search_lessons_executed', [
+                 'user_id' => Auth::id(),
+                 'query' => $query,
+                 'level_group' => $levelGroup,
+                 'grade_levels' => $gradeLevels,
+                 'total_videos_found' => $videos->count(),
+                 'filtered_lessons_returned' => count($filteredLessons),
+                 'timestamp' => now()->toISOString()
+             ]);
+
+             return response()->json([
+                 'success' => true,
+                 'lessons' => $filteredLessons,
+                 'query' => $query,
+                 'level_group' => $levelGroup,
+                 'total_results' => count($filteredLessons)
+             ]);
+
+         } catch (\Exception $e) {
+             Log::error('search_lessons_error', [
+                 'user_id' => Auth::id(),
+                 'query' => $query,
+                 'level_group' => $levelGroup,
+                 'error' => $e->getMessage(),
+                 'trace' => $e->getTraceAsString()
+             ]);
+
+             return response()->json([
+                 'success' => false,
+                 'message' => 'Search failed. Please try again.',
+                 'error' => $e->getMessage()
+             ], 500);
+         }
+     }
+
+     /**
+      * Convert grade level back to level format (e.g., "Primary 1" -> "primary-1")
+      */
+     private function convertLevelFormatBack($gradeLevel)
+     {
+         $levelMapping = [
+             'Primary 1' => 'primary-1',
+             'Primary 2' => 'primary-2',
+             'Primary 3' => 'primary-3',
+             'Primary 4' => 'primary-4',
+             'Primary 5' => 'primary-5',
+             'Primary 6' => 'primary-6',
+             'JHS 1' => 'jhs-1',
+             'JHS 2' => 'jhs-2',
+             'JHS 3' => 'jhs-3',
+             'SHS 1' => 'shs-1',
+             'SHS 2' => 'shs-2',
+             'SHS 3' => 'shs-3',
+         ];
+
+         return $levelMapping[$gradeLevel] ?? strtolower(str_replace(' ', '-', $gradeLevel));
+     }
 }

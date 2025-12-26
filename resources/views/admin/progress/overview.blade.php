@@ -612,7 +612,7 @@
                                 <div style="font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem;">{{ $levelGroups[$progress->level_group] ?? $progress->level_group }}</div>
                             </td>
                             <td>{{ $progress->completed_lessons }}/{{ $progress->total_lessons_in_level }}</td>
-                            <td>{{ $progress->completed_quizzes }}/{{ $progress->total_quizzes_in_level }}</td>
+                            <td>{{ min($progress->completed_quizzes, $progress->total_quizzes_in_level) }}/{{ $progress->total_quizzes_in_level }}</td>
                             <td>{{ number_format($progress->average_quiz_score, 1) }}%</td>
                             <td>
                                 <div class="progress-bar">

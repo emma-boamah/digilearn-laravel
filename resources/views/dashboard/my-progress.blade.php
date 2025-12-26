@@ -556,11 +556,11 @@
                         </svg>
                     </div>
                 </div>
-                <div class="progress-value">{{ $progress->completed_quizzes ?? 0 }}/{{ $progress->total_quizzes_in_level ?? 0 }}</div>
+                <div class="progress-value">{{ min($progress->completed_quizzes ?? 0, $progress->total_quizzes_in_level ?? 0) }}/{{ $progress->total_quizzes_in_level ?? 0 }}</div>
                 <div class="progress-label">Quizzes Passed</div>
                 <div class="progress-bar-container">
                     <div class="progress-bar">
-                        <div class="progress-bar-fill" style="--progress-width: {{ $progress->total_quizzes_in_level > 0 ? ($progress->completed_quizzes / $progress->total_quizzes_in_level) * 100 : 0 }}%; width: {{ $progress->total_quizzes_in_level > 0 ? ($progress->completed_quizzes / $progress->total_quizzes_in_level) * 100 : 0 }}%;"></div>
+                        <div class="progress-bar-fill" style="--progress-width: {{ $progress->total_quizzes_in_level > 0 ? (min($progress->completed_quizzes, $progress->total_quizzes_in_level) / $progress->total_quizzes_in_level) * 100 : 0 }}%; width: {{ $progress->total_quizzes_in_level > 0 ? (min($progress->completed_quizzes, $progress->total_quizzes_in_level) / $progress->total_quizzes_in_level) * 100 : 0 }}%;"></div>
                     </div>
                     <div class="progress-percentage">{{ round($progress->average_quiz_score ?? 0, 1) }}% Average Score</div>
                 </div>

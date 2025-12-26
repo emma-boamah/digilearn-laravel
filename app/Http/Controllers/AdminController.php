@@ -27,6 +27,7 @@ use App\Models\ProgressionStandard; // Import the ProgressionStandard model
 use App\Models\UserProgress; // Import the UserProgress model
 use App\Models\QuizAttempt; // Import the QuizAttempt model
 use App\Models\QuizRating; // Import the QuizRating model
+use App\Models\Subject;
 use Illuminate\Support\Facades\Storage; // For file uploads
 
 class AdminController extends Controller
@@ -577,8 +578,8 @@ class AdminController extends Controller
             'new_users_this_week' => User::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
             'verified_users' => User::whereNotNull('email_verified_at')->count(),
             'suspended_users' => User::whereNotNull('suspended_at')->count(),
-            'total_lessons' => 150, // Should be replaced with actual query
-            'total_subjects' => 8,  // Should be replaced with actual query
+            'total_lessons' => Video::count(), // Should be replaced with actual query
+            'total_subjects' => Subject::count(),  // Should be replaced with actual query
             'subscription_plans' => $this->getSubscriptionPlansData(),
             'cookie_consents' => $this->getCookieConsentStats(),
         ];
@@ -1580,7 +1581,9 @@ class AdminController extends Controller
 
         if ($request->has('search')) {
             $query->where('title', 'like', '%' . $request->search . '%')
-                  ->orWhere('subject', 'like', '%' . $request->search . '%');
+                  ->orWhereHas('subject', function($q) use ($request) {
+                      $q->where('name', 'like', '%' . $request->search . '%');
+                  });
         }
 
         if ($request->has('grade_level') && $request->grade_level != '') {
@@ -1608,10 +1611,10 @@ class AdminController extends Controller
         $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3'];
         $videos = Video::select('id', 'title')->get(); // For video course filter
         $uploaders = User::whereHas('quizzes')->select('id', 'name')->get(); // Users who have uploaded quizzes
-        $subjects = Quiz::select('subject', DB::raw('COUNT(*) as count'))
-            ->whereNotNull('subject')
-            ->groupBy('subject')
-            ->orderBy('subject')
+        $subjects = \App\Models\Subject::select('id', 'name', DB::raw('COUNT(quizzes.id) as count'))
+            ->leftJoin('quizzes', 'subjects.id', '=', 'quizzes.subject_id')
+            ->groupBy('subjects.id', 'subjects.name')
+            ->orderBy('subjects.name')
             ->get();
 
         return view('admin.content.quizzes.index', compact('quizzes', 'gradeLevels', 'videos', 'uploaders', 'subjects'));
@@ -1621,7 +1624,7 @@ class AdminController extends Controller
     {
         $request->validate([
             'title' => 'required|string|max:255',
-            'subject' => 'nullable|string|max:255',
+            'subject_id' => 'nullable|exists:subjects,id',
             'video_id' => 'nullable|exists:videos,id',
             'grade_level' => 'nullable|string|max:255',
             'quiz_data' => 'nullable|string', // Or 'json' if you enforce JSON structure
@@ -1630,7 +1633,7 @@ class AdminController extends Controller
 
         Quiz::create([
             'title' => $request->title,
-            'subject' => $request->subject,
+            'subject_id' => $request->subject_id,
             'video_id' => $request->video_id,
             'grade_level' => $request->grade_level,
             'uploaded_by' => Auth::id(),
@@ -1652,7 +1655,7 @@ class AdminController extends Controller
     {
         $request->validate([
             'title' => 'required|string|max:255',
-            'subject' => 'nullable|string|max:255',
+            'subject_id' => 'nullable|exists:subjects,id',
             'video_id' => 'nullable|exists:videos,id',
             'grade_level' => 'nullable|string|max:255',
             'quiz_data' => 'nullable|string',
@@ -1661,7 +1664,7 @@ class AdminController extends Controller
 
         $quiz->update([
             'title' => $request->title,
-            'subject' => $request->subject,
+            'subject_id' => $request->subject_id,
             'video_id' => $request->video_id,
             'grade_level' => $request->grade_level,
             'quiz_data' => $request->quiz_data,
@@ -2017,7 +2020,10 @@ class AdminController extends Controller
             'pending_reviews' => Video::pending()->count(),
         ];
 
-        return view('admin.contents.index', compact('contents', 'stats', 'query', 'type', 'sort'));
+        // Get subjects for the upload modal
+        $subjects = Subject::orderBy('name')->get();
+
+        return view('admin.contents.index', compact('contents', 'stats', 'query', 'type', 'sort', 'subjects'));
     }
 
     /**
@@ -2029,18 +2035,17 @@ class AdminController extends Controller
 
         // Get videos (always included, with attachment counts)
         if ($type === 'all' || $type === 'videos') {
-            $videos = Video::with(['uploader:id,name,email', 'quiz', 'documents', 'quizzes'])
+            $videos = Video::with(['uploader:id,name,email', 'quiz', 'documents', 'quizzes', 'comments', 'subject:id,name'])
                 ->when($query, function($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
                       ->orWhere('description', 'like', "%{$query}%");
                 })
                 ->select([
-                    'id', 'title', 'description', 'thumbnail_path', 'views', 'created_at',
-                    'uploaded_by', 'status', 'grade_level', 'duration_seconds', 'document_path', 'quiz_id',
+                    'id', 'title', 'description', 'thumbnail_path', 'views', 'comments_count', 'created_at',
+                    'uploaded_by', 'status', 'grade_level', 'duration_seconds', 'document_path', 'quiz_id', 'subject_id',
                     DB::raw("'video' as content_type"),
                     DB::raw('0 as likes'),
-                    DB::raw('0 as dislikes'),
-                    DB::raw('0 as comments_count')
+                    DB::raw('0 as dislikes')
                 ]);
 
             $contents = $contents->merge($videos->get()->map(function($item) {
@@ -2048,6 +2053,7 @@ class AdminController extends Controller
                 $item->uploader_name = $item->uploader->name ?? 'Unknown';
                 $item->uploader_email = $item->uploader->email ?? '';
                 $item->duration_formatted = $item->duration_seconds ? gmdate('H:i:s', $item->duration_seconds) : '00:00:00';
+                $item->subject_name = $item->subject->name ?? null;
                 // Add counts manually
                 $item->documents_count = $item->documents->count();
                 $item->quizzes_count = $item->quizzes->count();
@@ -2086,15 +2092,17 @@ class AdminController extends Controller
 
         // Get standalone quizzes (only when specifically filtering for quizzes)
         if ($type === 'quizzes') {
-            $quizzes = Quiz::with(['uploader:id,name,email', 'ratings'])
+            $quizzes = Quiz::with(['uploader:id,name,email', 'ratings', 'subject:id,name'])
                 ->whereNull('video_id') // Only standalone quizzes
                 ->when($query, function($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
-                      ->orWhere('subject', 'like', "%{$query}%");
+                      ->orWhereHas('subject', function($subQ) use ($query) {
+                          $subQ->where('name', 'like', "%{$query}%");
+                      });
                 })
                 ->select([
-                    'id', 'title', 'subject as description', 'created_at', 'uploaded_by',
-                    'grade_level', 'is_featured',
+                    'id', 'title', 'created_at', 'uploaded_by',
+                    'grade_level', 'is_featured', 'subject_id',
                     DB::raw("'quiz' as content_type"),
                     DB::raw('0 as views'),
                     DB::raw('0 as likes'),
@@ -2110,6 +2118,8 @@ class AdminController extends Controller
                 $item->thumbnail_path = null;
                 $item->status = 'approved'; // Quizzes are auto-approved
                 $item->duration_formatted = 'N/A';
+                $item->description = $item->subject->name ?? 'No Subject';
+                $item->subject_name = $item->subject->name ?? null;
 
                 // Add quiz ratings data
                 $ratings = $item->ratings;
@@ -2153,6 +2163,7 @@ class AdminController extends Controller
             if ($request->hasFile('video_file') || $request->filled('external_video_url')) {
                 $videoData = [
                     'title' => $request->title,
+                    'subject_id' => $request->subject_id,
                     'description' => $request->description,
                     'grade_level' => $request->grade_level,
                     'uploaded_by' => auth()->id(),
@@ -2224,9 +2235,15 @@ class AdminController extends Controller
                 $quizData = json_decode($request->quiz_data, true);
 
                 if (!empty($quizData['questions'])) {
+                    // Find or create subject
+                    $subject = \App\Models\Subject::firstOrCreate(
+                        ['name' => $request->title],
+                        ['description' => 'Auto-created subject for quiz']
+                    );
+
                     $quizDataToCreate = [
                         'title' => 'Quiz for: ' . $request->title,
-                        'subject' => $request->title,
+                        'subject_id' => $subject->id,
                         'uploaded_by' => auth()->id(),
                         'grade_level' => $request->grade_level,
                         'video_id' => $video ? $video->id : null,
@@ -2430,6 +2447,186 @@ class AdminController extends Controller
         }
 
         return redirect()->back()->with('error', 'Failed to progress user.');
+    }
+
+    /**
+     * Edit content from unified contents page
+     */
+    public function editContent($contentId)
+    {
+        // Find the content by checking different models
+        $content = null;
+        $contentType = null;
+
+        // Try Video first
+        $content = Video::with(['subject', 'documents', 'quizzes'])->find($contentId);
+        if ($content) {
+            $contentType = 'video';
+        } else {
+            // Try Document
+            $content = Document::find($contentId);
+            if ($content) {
+                $contentType = 'document';
+            } else {
+                // Try Quiz
+                $content = Quiz::find($contentId);
+                if ($content) {
+                    $contentType = 'quiz';
+                }
+            }
+        }
+
+        if (!$content) {
+            return redirect()->route('admin.contents.index')->withErrors(['content' => 'Content not found.']);
+        }
+
+        // For videos, show the unified edit form
+        if ($contentType === 'video') {
+            $subjects = \App\Models\Subject::orderBy('name')->get();
+            $availableQuizzes = \App\Models\Quiz::whereNull('video_id')->orWhere('video_id', $contentId)->get();
+            $availableDocuments = \App\Models\Document::whereNull('video_id')->orWhere('video_id', $contentId)->get();
+
+            return view('admin.contents.edit', compact('content', 'contentType', 'subjects', 'availableQuizzes', 'availableDocuments'));
+        }
+
+        // For other content types, redirect to their specific edit pages
+        switch ($contentType) {
+            case 'document':
+                return redirect()->route('admin.content.documents.edit', $content);
+            case 'quiz':
+                return redirect()->route('admin.content.quizzes.edit', $content);
+            default:
+                return redirect()->route('admin.contents.index')->withErrors(['content' => 'Unknown content type.']);
+        }
+    }
+
+    /**
+     * Update content from unified contents page
+     */
+    public function updateContent(Request $request, $contentId)
+    {
+        $request->validate([
+            'subject_id' => 'required|exists:subjects,id',
+            'grade_level' => 'required|string',
+            'quiz_id' => 'nullable|exists:quizzes,id',
+            'document_ids' => 'nullable|array',
+            'document_ids.*' => 'exists:documents,id',
+            'is_featured' => 'boolean'
+        ]);
+
+        // Find the video
+        $video = Video::findOrFail($contentId);
+
+        try {
+            DB::beginTransaction();
+
+            // Update video basic info
+            $video->update([
+                'subject_id' => $request->subject_id,
+                'grade_level' => $request->grade_level,
+                'is_featured' => $request->has('is_featured'),
+            ]);
+
+            // Update quiz association
+            if ($request->filled('quiz_id')) {
+                $video->quiz_id = $request->quiz_id;
+                $video->save();
+            } else {
+                $video->quiz_id = null;
+                $video->save();
+            }
+
+            // Update document associations
+            if ($request->has('document_ids')) {
+                // Remove existing associations
+                \App\Models\Document::where('video_id', $video->id)->update(['video_id' => null]);
+                // Add new associations
+                \App\Models\Document::whereIn('id', $request->document_ids)->update(['video_id' => $video->id]);
+            } else {
+                // Remove all document associations
+                \App\Models\Document::where('video_id', $video->id)->update(['video_id' => null]);
+            }
+
+            DB::commit();
+
+            return redirect()->route('admin.contents.index')->with('success', 'Content updated successfully!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Content update failed', [
+                'content_id' => $contentId,
+                'error' => $e->getMessage()
+            ]);
+
+            return redirect()->back()->withErrors(['error' => 'Failed to update content: ' . $e->getMessage()])->withInput();
+        }
+    }
+
+    /**
+     * Delete content from unified contents page
+     */
+    public function destroyContent(Request $request, $contentId)
+    {
+        // Find the content by checking different models
+        $content = null;
+        $contentType = null;
+
+        // Try Video first
+        $content = Video::find($contentId);
+        if ($content) {
+            $contentType = 'video';
+        } else {
+            // Try Document
+            $content = Document::find($contentId);
+            if ($content) {
+                $contentType = 'document';
+            } else {
+                // Try Quiz
+                $content = Quiz::find($contentId);
+                if ($content) {
+                    $contentType = 'quiz';
+                }
+            }
+        }
+
+        if (!$content) {
+            return response()->json(['success' => false, 'message' => 'Content not found.'], 404);
+        }
+
+        try {
+            // Delete the content based on type
+            switch ($contentType) {
+                case 'video':
+                    $this->destroyVideo($content);
+                    break;
+                case 'document':
+                    $this->destroyDocument($content);
+                    break;
+                case 'quiz':
+                    $this->destroyQuiz($content);
+                    break;
+                default:
+                    return response()->json(['success' => false, 'message' => 'Unknown content type.'], 400);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => ucfirst($contentType) . ' deleted successfully!'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Content deletion failed', [
+                'content_id' => $contentId,
+                'content_type' => $contentType,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete content: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

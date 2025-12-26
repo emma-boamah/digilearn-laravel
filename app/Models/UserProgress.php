@@ -259,11 +259,27 @@ class UserProgress extends Model
      */
     public function updateCompletionPercentage(): void
     {
-        $totalItems = $this->total_lessons_in_level + $this->total_quizzes_in_level;
-        $completedItems = $this->completed_lessons + $this->completed_quizzes;
-        
-        $percentage = $totalItems > 0 ? ($completedItems / $totalItems) * 100 : 0;
-        
+        // Get progression standards for this level group
+        $standards = \App\Models\ProgressionStandard::getStandardsForLevel($this->level_group);
+
+        // Calculate actual completion rates
+        $lessonCompletionRate = $this->total_lessons_in_level > 0
+            ? ($this->completed_lessons / $this->total_lessons_in_level) * 100
+            : 0;
+
+        $quizCompletionRate = $this->total_quizzes_in_level > 0
+            ? ($this->completed_quizzes / $this->total_quizzes_in_level) * 100
+            : 0;
+
+        // Calculate how close user is to meeting each requirement
+        $lessonProgress = min(100, ($lessonCompletionRate / $standards['required_lesson_completion_percentage']) * 100);
+        $quizProgress = min(100, ($quizCompletionRate / $standards['required_quiz_completion_percentage']) * 100);
+        $scoreProgress = min(100, ($this->average_quiz_score / $standards['required_average_quiz_score']) * 100);
+
+        // Overall completion is the minimum of the three requirements
+        // This ensures 100% only when ALL requirements are met
+        $percentage = min($lessonProgress, $quizProgress, $scoreProgress);
+
         $this->update(['completion_percentage' => $percentage]);
     }
 
@@ -312,31 +328,31 @@ class UserProgress extends Model
     {
         $now = now();
         $today = $now->toDateString();
-
-        // Update last activity
-        $this->last_activity_at = $now;
-
-        // Calculate streak
-        if ($this->last_activity_at && $this->last_activity_at->toDateString() === $today) {
-            // Already recorded today, no change needed
-            return;
-        }
-
         $yesterday = $now->copy()->subDay()->toDateString();
         $lastActivityDate = $this->last_activity_at?->toDateString();
 
-        if ($lastActivityDate === $yesterday) {
-            // Consecutive day, increment streak
-            $this->current_streak_days++;
-        } elseif ($lastActivityDate !== $today) {
-            // Not consecutive, reset streak
-            $this->current_streak_days = 1;
-        }
+        // Always update last activity timestamp
+        $this->last_activity_at = $now;
 
-        // Update longest streak if current is higher
-        if ($this->current_streak_days > $this->longest_streak_days) {
-            $this->longest_streak_days = $this->current_streak_days;
+        // Only update streak logic if this is the first activity today
+        if ($lastActivityDate !== $today) {
+            if ($lastActivityDate === $yesterday) {
+                // Consecutive day, increment streak
+                $this->current_streak_days++;
+            } elseif ($lastActivityDate && $lastActivityDate !== $yesterday) {
+                // Not consecutive, reset streak to 1
+                $this->current_streak_days = 1;
+            } else {
+                // First activity ever or streak was broken, start with 1
+                $this->current_streak_days = 1;
+            }
+
+            // Update longest streak if current is higher
+            if ($this->current_streak_days > $this->longest_streak_days) {
+                $this->longest_streak_days = $this->current_streak_days;
+            }
         }
+        // If already active today, keep the existing streak
 
         $this->save();
     }

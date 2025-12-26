@@ -538,7 +538,7 @@
                 <div class="summary-card-title">Quiz Performance</div>
                 <div class="summary-card-icon">✍️</div>
             </div>
-            <div class="summary-card-value">{{ $currentProgress->completed_quizzes }}/{{ $currentProgress->total_quizzes_in_level }}</div>
+            <div class="summary-card-value">{{ min($currentProgress->completed_quizzes, $currentProgress->total_quizzes_in_level) }}/{{ $currentProgress->total_quizzes_in_level }}</div>
             <div class="summary-card-detail">
                 Average score: <strong>{{ number_format($currentProgress->average_quiz_score, 1) }}%</strong>
             </div>
@@ -629,7 +629,7 @@
                             </div>
                             <div class="history-item-stat">
                                 <div class="history-item-stat-label">Quizzes</div>
-                                <div class="history-item-stat-value">{{ $progress->completed_quizzes }}/{{ $progress->total_quizzes_in_level }}</div>
+                                <div class="history-item-stat-value">{{ min($progress->completed_quizzes, $progress->total_quizzes_in_level) }}/{{ $progress->total_quizzes_in_level }}</div>
                             </div>
                             <div class="history-item-stat">
                                 <div class="history-item-stat-label">Avg Score</div>

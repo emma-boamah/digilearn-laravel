@@ -261,6 +261,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/dashboard/feeds', [App\Http\Controllers\RecommendationController::class, 'getDashboardFeeds'])->name('api.dashboard.feeds');
     Route::get('/api/analytics', [App\Http\Controllers\RecommendationController::class, 'getAnalytics'])->name('api.analytics');
 
+    // Lesson search API
+    Route::get('/api/dashboard/search-lessons', [DashboardController::class, 'searchLessons'])->name('api.dashboard.search-lessons');
+
     // Notifications API
     Route::prefix('api/notifications')->name('api.notifications.')->group(function () {
         Route::get('/', [NotificationController::class, 'index'])->name('index');
@@ -297,6 +300,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/contents', [AdminController::class, 'contents'])->name('contents.index');
     Route::post('/contents', [AdminController::class, 'storeContentPackage'])->name('contents.store');
     Route::delete('/contents/youtube/{contentId}', [AdminController::class, 'destroyYouTubeContent'])->name('contents.youtube.destroy');
+    Route::get('/contents/{contentId}/edit', [AdminController::class, 'editContent'])->name('contents.edit');
+    Route::put('/contents/{contentId}', [AdminController::class, 'updateContent'])->name('contents.update');
+    Route::delete('/contents/{contentId}', [AdminController::class, 'destroyContent'])->name('contents.destroy');
     Route::get('/users', [AdminController::class, 'users'])->name('users');
     Route::get('/users/{id}', [AdminController::class, 'showUser'])->name('users.show');
     Route::post('/users/{id}/toggle-status', [AdminController::class, 'toggleUserStatus'])->name('users.toggle-status');
@@ -349,6 +355,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::delete('/{document}', [AdminController::class, 'destroyDocument'])->name('destroy');
         Route::post('/{document}/toggle-feature', [AdminController::class, 'toggleDocumentFeature'])->name('toggle-feature');
     });
+
+    // Content Management - Subjects
+    Route::resource('subjects', App\Http\Controllers\Admin\SubjectController::class);
 
     // Progress Management
     Route::prefix('progress')->name('progress.')->group(function () {

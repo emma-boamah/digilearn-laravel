@@ -11,7 +11,7 @@ class Quiz extends Model
 
     protected $fillable = [
         'title',
-        'subject',
+        'subject_id',
         'video_id',
         'grade_level',
         'uploaded_by',
@@ -46,6 +46,14 @@ class Quiz extends Model
     public function video()
     {
         return $this->belongsTo(Video::class);
+    }
+
+    /**
+     * Get the subject associated with the quiz.
+     */
+    public function subject()
+    {
+        return $this->belongsTo(Subject::class, 'subject_id');
     }
 
     /**

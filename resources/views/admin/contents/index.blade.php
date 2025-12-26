@@ -656,6 +656,8 @@
                         <input type="checkbox" id="selectAll">
                     </th>
                     <th>Content</th>
+                    <th>Subject</th>
+                    <th>Grade Level</th>
                     <th>Date</th>
                     <th class="stats-cell">Views</th>
                     <th class="stats-cell">Comments</th>
@@ -701,6 +703,20 @@
                                 @endif
                             </div>
                         </div>
+                    </td>
+                    <td>
+                        @if($content->subject_name)
+                            {{ $content->subject_name }}
+                        @else
+                            <span class="text-gray-500">—</span>
+                        @endif
+                    </td>
+                    <td>
+                        @if($content->grade_level)
+                            {{ $content->grade_level }}
+                        @else
+                            <span class="text-gray-500">—</span>
+                        @endif
                     </td>
                     <td class="date-cell">
                         <div class="date-primary">{{ $content->published_date }}</div>
@@ -803,10 +819,10 @@
                     </td>
                     <td class="email-cell">{{ $content->uploader_email ?? $content->uploader_name }}</td>
                     <td class="actions-cell">
-                        <button class="action-btn" title="Edit">
+                        <button class="action-btn edit-btn" title="Edit" data-content-id="{{ $content->id }}" data-content-type="{{ $content->content_type }}">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="action-btn delete" title="Delete" data-content-id="{{ $content->id }}" data-content-type="{{ $content->content_type }}" data-video-source="{{ $content->video_source ?? '' }}">
+                        <button class="action-btn delete delete-btn" title="Delete" data-content-id="{{ $content->id }}" data-content-type="{{ $content->content_type }}" data-video-source="{{ $content->video_source ?? '' }}">
                             <i class="fas fa-trash"></i>
                         </button>
                         <button class="action-btn" title="More">
@@ -959,6 +975,20 @@
                     <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
                     <textarea id="description" rows="3"
                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+
+                <!-- Subject -->
+                <div class="mb-4">
+                    <label for="subject_id" class="block text-sm font-medium text-gray-700 mb-2">Subject <span class="text-red-500">*</span></label>
+                    <select id="subject_id" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select Subject</option>
+                        @if(isset($subjects) && $subjects->count())
+                            @foreach($subjects as $subject)
+                                <option value="{{ $subject->id }}">{{ $subject->name }}</option>
+                            @endforeach
+                        @endif
+                    </select>
                 </div>
 
                 <!-- Grade Level -->
@@ -1115,11 +1145,23 @@
             });
         }
 
+        // Edit functionality
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.action-btn.edit-btn')) {
+                e.preventDefault();
+                const editBtn = e.target.closest('.action-btn.edit-btn');
+                const contentId = editBtn.getAttribute('data-content-id');
+
+                // Redirect to edit page
+                window.location.href = `{{ route("admin.contents.edit", ":contentId") }}`.replace(':contentId', contentId);
+            }
+        });
+
         // Delete functionality
         document.addEventListener('click', function(e) {
-            if (e.target.closest('.action-btn.delete')) {
+            if (e.target.closest('.action-btn.delete-btn')) {
                 e.preventDefault();
-                const deleteBtn = e.target.closest('.action-btn.delete');
+                const deleteBtn = e.target.closest('.action-btn.delete-btn');
                 const contentId = deleteBtn.getAttribute('data-content-id');
                 const contentType = deleteBtn.getAttribute('data-content-type');
                 const videoSource = deleteBtn.getAttribute('data-video-source');
@@ -1132,27 +1174,19 @@
 
         async function deleteContent(contentId, contentType, videoSource) {
             try {
-                let response;
-
-                if (contentType === 'video' && videoSource === 'youtube') {
-                    // Use specific YouTube deletion endpoint
-                    response = await fetch(`{{ route("admin.contents.youtube.destroy", ":contentId") }}`.replace(':contentId', contentId), {
-                        method: 'DELETE',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Content-Type': 'application/json',
-                        }
-                    });
-                } else {
-                    // For other content types, show a different message
-                    alert('Deletion for this content type (' + contentType + ') is not yet implemented. Only YouTube videos can be deleted from this interface.');
-                    return;
-                }
+                // Use unified delete endpoint
+                const response = await fetch(`{{ route("admin.contents.destroy", ":contentId") }}`.replace(':contentId', contentId), {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json',
+                    }
+                });
 
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    alert('Content deleted successfully!');
+                    alert(result.message || 'Content deleted successfully!');
                     window.location.reload();
                 } else {
                     alert('Failed to delete content: ' + (result.message || 'Unknown error'));
@@ -1285,6 +1319,7 @@
             const fileInput = document.getElementById('fileInput');
             const externalVideoUrl = document.getElementById('external_video_url');
             const title = document.getElementById('title');
+            const subjectId = document.getElementById('subject_id');
             const description = document.getElementById('description');
             const gradeLevel = document.getElementById('grade_level');
             const fileUploadArea = document.getElementById('fileUploadArea');
@@ -1292,6 +1327,7 @@
             if (fileInput) fileInput.value = '';
             if (externalVideoUrl) externalVideoUrl.value = '';
             if (title) title.value = '';
+            if (subjectId) subjectId.value = '';
             if (description) description.value = '';
             if (gradeLevel) gradeLevel.value = '';
             if (fileUploadArea) fileUploadArea.innerHTML = `
@@ -1368,14 +1404,16 @@
             switch (currentStep) {
                 case 1:
                     const title = document.getElementById('title');
+                    const subjectId = document.getElementById('subject_id');
                     const gradeLevel = document.getElementById('grade_level');
 
-                    if (!title || !gradeLevel) {
+                    if (!title || !subjectId || !gradeLevel) {
                         console.error('Required form elements not found');
                         return false;
                     }
 
                     const titleValue = title.value.trim();
+                    const subjectIdValue = subjectId.value;
                     const gradeLevelValue = gradeLevel.value;
 
                     if (uploadData.video_source === 'local') {
@@ -1407,6 +1445,10 @@
 
                     if (!titleValue) {
                         alert('Please enter a title.');
+                        return false;
+                    }
+                    if (!subjectIdValue) {
+                        alert('Please select a subject.');
                         return false;
                     }
                     if (!gradeLevelValue) {
@@ -1870,10 +1912,11 @@
         async function submitWizard() {
             try {
                 const title = document.getElementById('title');
+                const subjectId = document.getElementById('subject_id');
                 const description = document.getElementById('description');
                 const gradeLevel = document.getElementById('grade_level');
 
-                if (!title || !description || !gradeLevel) {
+                if (!title || !subjectId || !description || !gradeLevel) {
                     console.error('Required form elements not found for submission');
                     alert('Form elements not found. Please refresh the page and try again.');
                     return;
@@ -1883,6 +1926,7 @@
                     video: {
                         file: uploadData.video,
                         title: title.value.trim(),
+                        subject_id: subjectId.value,
                         description: description.value.trim(),
                         grade_level: gradeLevel.value,
                         video_source: uploadData.video_source,
@@ -1905,6 +1949,7 @@
                 }
 
                 formData.append('title', finalData.video.title);
+                formData.append('subject_id', finalData.video.subject_id);
                 formData.append('description', finalData.video.description);
                 formData.append('grade_level', finalData.video.grade_level);
 

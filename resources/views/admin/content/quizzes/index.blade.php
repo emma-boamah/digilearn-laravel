@@ -21,7 +21,7 @@
                 <ul class="space-y-2 max-h-64 overflow-auto pr-1">
                     @foreach($subjects as $s)
                     <li class="flex items-center justify-between">
-                        <a href="?search={{ urlencode($s->subject) }}" class="text-sm text-gray-700 hover:text-blue-600">{{ $s->subject }}</a>
+                        <a href="?search={{ urlencode($s->name) }}" class="text-sm text-gray-700 hover:text-blue-600">{{ $s->name }}</a>
                         <span class="text-xs text-gray-500">{{ $s->count }}</span>
                     </li>
                     @endforeach
@@ -118,7 +118,7 @@
                                     <div>Video: {{ $quiz->video->title }}</div>
                                     <a href="{{ route('admin.content.videos.index') }}?search={{ urlencode($quiz->video->title) }}" class="text-xs text-blue-600 hover:text-blue-800">Open video</a>
                                 @elseif($quiz->subject)
-                                    Subject: {{ $quiz->subject }}
+                                    Subject: {{ $quiz->subject->name }}
                                 @else
                                     N/A
                                 @endif
@@ -154,7 +154,7 @@
                                 </form>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                               <button onclick="openEditModal(this, {{ $quiz->id }}, '{{ addslashes($quiz->title) }}', '{{ addslashes($quiz->subject) }}', '{{ $quiz->video_id }}', '{{ $quiz->grade_level }}', {{ $quiz->is_featured ? 'true' : 'false' }})" data-quiz-data='@json($quiz->quiz_data)' class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                               <button onclick="openEditModal(this, {{ $quiz->id }}, '{{ addslashes($quiz->title) }}', '{{ $quiz->subject_id }}', '{{ $quiz->video_id }}', '{{ $quiz->grade_level }}', {{ $quiz->is_featured ? 'true' : 'false' }})" data-quiz-data='@json($quiz->quiz_data)' class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
                                 <form action="{{ route('admin.content.quizzes.destroy', $quiz) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this quiz? This action cannot be undone.');">
                                     @csrf
                                     @method('DELETE')
@@ -196,18 +196,15 @@
                 <input type="text" name="title" id="add_title" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
             </div>
             <div class="mb-4">
-                <label for="add_subject" class="block text-sm font-medium text-gray-700">Subject</label>
-                <div class="flex gap-2">
-                    <input type="text" name="subject" id="add_subject" placeholder="e.g., Mathematics" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <label for="add_subject_id" class="block text-sm font-medium text-gray-700">Subject</label>
+                <select name="subject_id" id="add_subject_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="">Select Subject</option>
                     @if(isset($subjects) && $subjects->count())
-                    <select id="subject_select" class="mt-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                        <option value="">Choose existing</option>
                         @foreach($subjects as $s)
-                            <option value="{{ $s->subject }}">{{ $s->subject }}</option>
+                            <option value="{{ $s->id }}">{{ $s->name }}</option>
                         @endforeach
-                    </select>
                     @endif
-                </div>
+                </select>
             </div>
             <div class="mb-4">
                 <label for="add_video_id" class="block text-sm font-medium text-gray-700">Video Course (Optional)</label>
@@ -267,8 +264,15 @@
                 <input type="text" name="title" id="edit_title" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
             </div>
             <div class="mb-4">
-                <label for="edit_subject" class="block text-sm font-medium text-gray-700">Subject (Optional)</label>
-                <input type="text" name="subject" id="edit_subject" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                <label for="edit_subject_id" class="block text-sm font-medium text-gray-700">Subject (Optional)</label>
+                <select name="subject_id" id="edit_subject_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="">Select Subject</option>
+                    @if(isset($subjects) && $subjects->count())
+                        @foreach($subjects as $s)
+                            <option value="{{ $s->id }}">{{ $s->name }}</option>
+                        @endforeach
+                    @endif
+                </select>
             </div>
             <div class="mb-4">
                 <label for="edit_video_id" class="block text-sm font-medium text-gray-700">Video Course (Optional)</label>
@@ -327,7 +331,7 @@
         form.action = `/admin/content/quizzes/${id}`; // Update action URL
 
         document.getElementById('edit_title').value = title;
-        document.getElementById('edit_subject').value = subject;
+        document.getElementById('edit_subject_id').value = subject;
         document.getElementById('edit_video_id').value = videoId;
         document.getElementById('edit_grade_level').value = gradeLevel;
         document.getElementById('edit_is_featured').checked = isFeatured;
@@ -446,20 +450,6 @@
             alert('Please add at least one complete question with 4 options and select a correct answer.');
         }
     });
-    // Handle subject selection for adding quizzes
-    // This will update the hidden input when a subject is selected from the dropdown
-    // This allows the user to select an existing subject from the dropdown
-    // and have it automatically filled in the input field
-    // so they can create a quiz with that subject without typing it again
-    const subjectSelect = document.getElementById('subject_select');
-    if (subjectSelect) {
-        subjectSelect.addEventListener('change', function() {
-            const v = this.value;
-            if (v) {
-                document.getElementById('add_subject').value = v;
-            }
-        });
-    }
 </script>
 @endpush
 @endsection
