@@ -581,6 +581,11 @@
             box-sizing: border-box;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none; /* Allow clicks to pass through glassmorphism layer */
+        }
+
+        .filter-bar * {
+            pointer-events: auto; /* Restore pointer events for interactive elements */
         }
 
         .youtube-sidebar.collapsed ~ .filter-bar {
@@ -593,6 +598,30 @@
             min-width: 200px;
             display: flex;
             transition: all 0.3s ease;
+        }
+
+        .search-box.searching,
+        #mobileSearchBox.searching {
+            border-color: var(--primary-red);
+            box-shadow: 0 0 0 2px rgba(225, 30, 45, 0.2);
+        }
+
+        .search-box.searching::after,
+        #mobileSearchBox.searching::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary-red), var(--secondary-blue));
+            animation: searchProgress 1.5s ease-in-out infinite;
+        }
+
+        @keyframes searchProgress {
+            0% { transform: translateX(-100%); }
+            50% { transform: translateX(0%); }
+            100% { transform: translateX(100%); }
         }
 
         .search-close {
@@ -639,6 +668,8 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            z-index: 20; /* Ensure it's above other elements */
+            pointer-events: auto; /* Ensure it receives click events */
         }
 
         .search-button:hover {
@@ -906,6 +937,7 @@
             opacity: 0;
             visibility: hidden;
             transition: all 0.3s ease;
+            pointer-events: none;
         }
 
         #level-modal-toggle:checked ~ .level-modal {
@@ -921,6 +953,12 @@
             bottom: 0;
         }
 
+        .level-modal .modal-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+        }
+
         .modal-content {
             position: relative;
             background: var(--white);
@@ -929,6 +967,10 @@
             max-width: 300px;
             width: 90%;
             box-shadow: var(--shadow-xl);
+        }
+
+        .level-modal .modal-content {
+            pointer-events: auto;
         }
 
         .modal-content h3 {
@@ -1878,11 +1920,8 @@
         }
 
         /* Fix for Safari mobile to prevent overscroll */
-        @supports (-webkit-touch-callout: none) {
-            .sidebar-content {
-                -webkit-overflow-scrolling: touch;
-                padding-bottom: calc(1rem + env(safe-area-inset-bottom));
-            }
+        .sidebar-content {
+            -webkit-overflow-scrolling: touch;
         }
     </style>
 </head>
@@ -1916,7 +1955,7 @@
             <div class="search-container">
                 <div class="search-box" id="mobileSearchBox">
                     <input type="text" class="search-input" placeholder="Search">
-                    <button class="search-button">
+                    <button type="button" class="search-button">
                         <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
@@ -2205,13 +2244,17 @@
     </div>
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        let isSearching = false;
+
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize all functionality
             initializeMobileUI();
             initializeSidebar();
+            console.log("hellow")
             initializeDropdowns();
             initializeSubjectFilter();
             initializeVideoCards();
+            initializeSearch();
         });
 
         // Add this new function to prevent scrolling on body when sidebar is open
@@ -2432,8 +2475,6 @@
                     const viewportHeight = window.innerHeight;
                     sidebarContent.style.maxHeight = `${viewportHeight - 64}px`; // Subtract header if exists
                 }
-
-                updateHeaderPosition();
             }
 
             window.addEventListener('resize', handleResize);
@@ -2662,6 +2703,311 @@
                     });
                 }
             }, 300000); // 5 minutes
+        }
+
+        // Enhanced search functionality
+        function initializeSearch() {
+            // Check search container first
+            console.log('Initializing search...');
+            const searchContainer = document.querySelector('.search-container');
+            console.log('Search container found:', searchContainer);
+            if (searchContainer) {
+                console.log('Search container display:', window.getComputedStyle(searchContainer).display);
+                console.log('Search container visibility:', window.getComputedStyle(searchContainer).visibility);
+            }
+
+            // Try desktop search first, then mobile
+            let searchBox = document.querySelector('.search-container .search-box');
+            let searchInput = document.querySelector('.search-container .search-input');
+            let searchButton = document.querySelector('.search-container .search-button');
+
+            // If desktop search not found, try mobile search
+            if (!searchInput) {
+                searchBox = document.querySelector('#mobileSearchBox');
+                searchInput = document.querySelector('#mobileSearchBox .search-input');
+                searchButton = document.querySelector('#mobileSearchBox .search-button');
+                console.log('Using mobile search');
+            } else {
+                console.log('Using desktop search');
+            }
+
+            console.log('Search box found:', searchBox);
+            console.log('Search input found:', searchInput);
+            console.log('Search button found:', searchButton);
+
+            if (searchButton) {
+                const rect = searchButton.getBoundingClientRect();
+                console.log('Search button position:', {
+                    top: rect.top,
+                    left: rect.left,
+                    width: rect.width,
+                    height: rect.height,
+                    visible: rect.width > 0 && rect.height > 0
+                });
+                console.log('Search button computed style:', window.getComputedStyle(searchButton));
+            }
+
+            // Add global click listener for debugging
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('search-button')) {
+                    console.log('Search button clicked globally');
+                }
+            });
+
+            // Screen size debugging removed - search now works on both desktop and mobile
+            let searchTimeout;
+            let originalLessonsHTML = ''; // Store original grid content
+            let isSearching = false;
+
+            // Store original content on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                const grid = document.querySelector('.content-grid');
+                if (grid) {
+                    originalLessonsHTML = grid.innerHTML;
+                }
+            });
+
+            // Handle input changes (debounced search)
+            if (searchInput) {
+                console.log('Adding input event listener');
+                searchInput.addEventListener('input', function() {
+                    console.log('Input event triggered, value:', this.value);
+                    clearTimeout(searchTimeout);
+                    const query = this.value.trim();
+
+                    if (query.length === 0) {
+                        // Restore original content
+                        restoreOriginalLessons();
+                        return;
+                    }
+
+                    if (query.length < 2) {
+                        return; // Don't search for very short queries
+                    }
+
+                    searchTimeout = setTimeout(() => {
+                        performSearch(query);
+                    }, 300); // Debounce 300ms
+                });
+
+                // Handle Enter key
+                searchInput.addEventListener('keydown', function(e) {
+                    console.log('Keydown event:', e.key);
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        clearTimeout(searchTimeout);
+                        const query = this.value.trim();
+                        console.log('Enter pressed with query:', query);
+                        if (query.length === 0) {
+                            restoreOriginalLessons();
+                        } else if (query.length >= 2) {
+                            performSearch(query);
+                        }
+                    }
+                });
+            }
+
+            // Handle search button click
+            if (searchButton) {
+                console.log('Adding search button click listener');
+                searchButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('Search button clicked');
+                    clearTimeout(searchTimeout);
+                    const query = searchInput ? searchInput.value.trim() : '';
+                    console.log('Search query:', query);
+                    if (query.length === 0) {
+                        restoreOriginalLessons();
+                    } else {
+                        // Allow any length for button click (for testing)
+                        performSearch(query);
+                    }
+                });
+            } else {
+                console.log('Search button not found, cannot attach listener');
+            }
+        }
+
+        async function performSearch(query) {
+            if (isSearching) return; // Prevent multiple simultaneous searches
+
+            const levelGroup = '{{ $selectedLevelGroup }}';
+            const grid = document.querySelector('.content-grid');
+
+            // Find the active search box (desktop or mobile)
+            let searchBox = document.querySelector('.search-container .search-box');
+            if (!searchBox) {
+                searchBox = document.querySelector('#mobileSearchBox');
+            }
+
+            if (!grid) return;
+
+            isSearching = true;
+            console.log('Starting search for:', query);
+
+            // Add searching indicator
+            if (searchBox) {
+                searchBox.classList.add('searching');
+            }
+
+            // Show loading state
+            grid.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                    <div style="display: inline-block; width: 40px; height: 40px; border: 3px solid rgba(225, 30, 45, 0.3); border-top: 3px solid #E11E2D; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <p style="color: var(--gray-600); margin-top: 1rem;">Searching lessons...</p>
+                </div>
+            `;
+
+            try {
+                console.log('Making API request...');
+                const response = await fetch(`/api/dashboard/search-lessons?q=${encodeURIComponent(query)}&level_group=${levelGroup}`, {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                console.log('API response received:', response.status);
+                const data = await response.json();
+                console.log('API data:', data);
+
+                if (data.success) {
+                    updateLessonGrid(data.lessons, query);
+                } else {
+                    showSearchError(data.message || 'Search failed. Please try again.');
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                showSearchError('Search failed. Please try again.');
+            } finally {
+                isSearching = false;
+                // Remove searching indicator
+                const activeSearchBox = document.querySelector('.search-container .search-box') || document.querySelector('#mobileSearchBox');
+                if (activeSearchBox) {
+                    activeSearchBox.classList.remove('searching');
+                }
+                console.log('Search completed');
+            }
+        }
+
+        function updateLessonGrid(lessons, query) {
+            const grid = document.querySelector('.content-grid');
+
+            if (!grid) return;
+
+            if (!lessons || lessons.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--gray-400); margin-bottom: 1rem;">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                            <line x1="13" x2="9" y1="9" y2="13"></line>
+                            <line x1="9" x2="13" y1="9" y2="13"></line>
+                        </svg>
+                        <h3 style="color: var(--gray-600); margin-bottom: 1rem;">No lessons found</h3>
+                        <p style="color: var(--gray-500);">No lessons match "<strong>${query}</strong>" in your current level.</p>
+                        <p style="color: var(--gray-500); margin-top: 1rem;">Try different keywords or check your level selection.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Render lessons
+            let html = '';
+            lessons.forEach(lesson => {
+                const documentsHtml = lesson.documents_count > 0 ? `
+                    <div class="lesson-documents" style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--gray-500);">
+                        📄 ${lesson.documents_count} document${lesson.documents_count !== 1 ? 's' : ''}
+                    </div>
+                ` : '';
+
+                html += `
+                    <div class="lesson-card hover-video-card" data-lesson-id="${lesson.id}" data-subject="${lesson.subject}" data-title="${lesson.title}">
+                        <div class="lesson-thumbnail">
+                            <video
+                                id="lesson-video-${lesson.id}"
+                                class="lesson-video"
+                                muted
+                                loop
+                                preload="metadata"
+                                poster="${lesson.thumbnail}"
+                            >
+                                <source src="${lesson.video_url}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+
+                            <div class="lesson-fallback-image" style="display: none;">
+                                <img src="${lesson.thumbnail}" alt="${lesson.title}" style="width: 100%; height: 100%; object-fit: cover;">
+                            </div>
+
+                            <div class="lesson-duration">${lesson.duration}</div>
+
+                            <div class="lesson-level-badge">${lesson.level_display}</div>
+
+                            <div class="play-overlay">
+                                <div class="play-button">
+                                    <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="lesson-info">
+                            <h3 class="lesson-title">${lesson.title}</h3>
+                            <div class="lesson-meta">
+                                <span class="lesson-subject">(${lesson.subject})</span>
+                                <span>${lesson.instructor} | ${lesson.year}</span>
+                            </div>
+                            ${documentsHtml}
+                            <div class="lesson-actions">
+                                <a href="/dashboard/lesson/${lesson.id}" class="lesson-action-btn primary">
+                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                    Watch
+                                </a>
+                                <a href="/quiz" class="lesson-action-btn secondary">
+                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    Quiz
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            grid.innerHTML = html;
+
+            // Re-initialize video cards for the new content
+            initializeVideoCards();
+        }
+
+        function restoreOriginalLessons() {
+            const grid = document.querySelector('.content-grid');
+            if (grid && originalLessonsHTML) {
+                grid.innerHTML = originalLessonsHTML;
+                // Re-initialize video cards for restored content
+                initializeVideoCards();
+            }
+        }
+
+        function showSearchError(message) {
+            const grid = document.querySelector('.content-grid');
+            if (grid) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--gray-400); margin-bottom: 1rem;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="m15 9-6 6"></path>
+                            <path d="m9 9 6 6"></path>
+                        </svg>
+                        <h3 style="color: var(--gray-600); margin-bottom: 1rem;">Search Error</h3>
+                        <p style="color: var(--gray-500);">${message}</p>
+                    </div>
+                `;
+            }
         }
     </script>
 </body>

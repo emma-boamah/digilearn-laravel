@@ -36,6 +36,28 @@ class Comment extends Model
     }
 
     /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Increment comments count when comment is created
+        static::created(function ($comment) {
+            if ($comment->video_id) {
+                $comment->video->increment('comments_count');
+            }
+        });
+
+        // Decrement comments count when comment is deleted
+        static::deleted(function ($comment) {
+            if ($comment->video_id) {
+                $comment->video->decrement('comments_count');
+            }
+        });
+    }
+
+    /**
      * Get the video this comment belongs to.
      */
     public function video(): BelongsTo

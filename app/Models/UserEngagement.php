@@ -267,7 +267,7 @@ class UserEngagement extends Model
                         'type' => 'quiz',
                         'id' => $quiz->id,
                         'title' => $quiz->title,
-                        'subject' => $quiz->subject,
+                        'subject' => $quiz->subject?->name,
                         'reason' => 'Practice quiz in your preferred subject',
                         'score' => 7,
                     ];

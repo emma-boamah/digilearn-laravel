@@ -105,7 +105,7 @@ class QuizAttempt extends Model
                     ->where('quiz_level', $level)
                     ->selectRaw('
                         COUNT(DISTINCT quiz_id) as total_quizzes,
-                        SUM(CASE WHEN passed = 1 THEN 1 ELSE 0 END) as passed_quizzes,
+                        COUNT(DISTINCT CASE WHEN passed = 1 THEN quiz_id END) as passed_quizzes,
                         AVG(score_percentage) as avg_score,
                         MAX(score_percentage) as best_score,
                         COUNT(*) as total_attempts
@@ -133,7 +133,7 @@ class QuizAttempt extends Model
                     ->whereIn('quiz_level', $levels)
                     ->selectRaw('
                         COUNT(DISTINCT quiz_id) as total_quizzes,
-                        SUM(CASE WHEN passed = 1 THEN 1 ELSE 0 END) as passed_quizzes,
+                        COUNT(DISTINCT CASE WHEN passed = 1 THEN quiz_id END) as passed_quizzes,
                         AVG(score_percentage) as avg_score,
                         MAX(score_percentage) as best_score,
                         COUNT(*) as total_attempts

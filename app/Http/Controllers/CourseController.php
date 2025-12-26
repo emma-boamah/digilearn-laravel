@@ -321,7 +321,7 @@ class CourseController extends Controller
                 return [
                     'id' => $quiz->id,
                     'title' => $quiz->title,
-                    'subject' => $quiz->subject,
+                    'subject' => $quiz->subject?->name,
                 ];
             }),
         ]);

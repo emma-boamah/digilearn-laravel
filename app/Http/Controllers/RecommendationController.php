@@ -282,8 +282,8 @@ class RecommendationController extends Controller
                 'type' => 'quiz',
                 'id' => $quiz->id,
                 'title' => $quiz->title,
-                'subject' => $quiz->subject,
-                'reason' => 'Practice ' . $quiz->subject,
+                'subject' => $quiz->subject?->name,
+                'reason' => 'Practice ' . ($quiz->subject?->name ?? 'various subjects'),
                 'score' => 6,
                 'strategy' => 'interest_based',
             ];

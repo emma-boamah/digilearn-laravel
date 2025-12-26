@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use App\Services\UrlObfuscator;
+use Illuminate\Support\Facades\Log;
 
 class Video extends Model
 {
@@ -13,6 +14,7 @@ class Video extends Model
 
     protected $fillable = [
         'title',
+        'subject_id',
         'video_path',
         'temp_file_path',
         'thumbnail_path',
@@ -30,6 +32,7 @@ class Video extends Model
         'uploader_ip',
         'uploader_user_agent',
         'views',
+        'comments_count',
         'document_path',
         'quiz_id',
         'video_source',
@@ -85,6 +88,22 @@ class Video extends Model
     public function quiz()
     {
         return $this->belongsTo(Quiz::class, 'quiz_id');
+    }
+
+    /**
+     * Get the primary subject for this video.
+     */
+    public function subject()
+    {
+        return $this->belongsTo(Subject::class, 'subject_id');
+    }
+
+    /**
+     * Get the subjects associated with this video (many-to-many).
+     */
+    public function subjects()
+    {
+        return $this->belongsToMany(Subject::class);
     }
 
     /**
@@ -149,7 +168,7 @@ class Video extends Model
     public function getVideoUrl()
     {
         // Debug logging
-        \Log::info('Video::getVideoUrl called', [
+        Log::info('Video::getVideoUrl called', [
             'video_id' => $this->id,
             'video_source' => $this->video_source,
             'external_video_url' => $this->external_video_url,
@@ -164,7 +183,7 @@ class Video extends Model
 
         // Handle external video sources first
         if ($this->video_source !== 'local' && $this->external_video_url) {
-            \Log::info('Video::getVideoUrl - Using external video URL', [
+            Log::info('Video::getVideoUrl - Using external video URL', [
                 'video_id' => $this->id,
                 'external_video_url' => $this->external_video_url
             ]);
@@ -175,7 +194,7 @@ class Video extends Model
         if ($this->isApproved()) {
             if ($this->mux_playback_id) {
                 $muxUrl = "https://stream.mux.com/{$this->mux_playback_id}.m3u8";
-                \Log::info('Video::getVideoUrl - Using Mux URL', [
+                Log::info('Video::getVideoUrl - Using Mux URL', [
                     'video_id' => $this->id,
                     'mux_url' => $muxUrl
                 ]);
@@ -184,7 +203,7 @@ class Video extends Model
 
             if ($this->vimeo_id) {
                 $vimeoUrl = "https://player.vimeo.com/video/{$this->vimeo_id}";
-                \Log::info('Video::getVideoUrl - Using Vimeo URL', [
+                Log::info('Video::getVideoUrl - Using Vimeo URL', [
                     'video_id' => $this->id,
                     'vimeo_url' => $vimeoUrl
                 ]);
@@ -195,7 +214,7 @@ class Video extends Model
         // Use streaming route for better browser compatibility
         if ($this->temp_file_path && !$this->isTempExpired()) {
             $streamUrl = route('admin.content.videos.stream', $this);
-            \Log::info('Video::getVideoUrl - Using temp file stream URL', [
+            Log::info('Video::getVideoUrl - Using temp file stream URL', [
                 'video_id' => $this->id,
                 'stream_url' => $streamUrl,
                 'temp_file_path' => $this->temp_file_path
@@ -205,7 +224,7 @@ class Video extends Model
 
         if ($this->video_path) {
             $streamUrl = route('admin.content.videos.stream', $this);
-            \Log::info('Video::getVideoUrl - Using video file stream URL', [
+            Log::info('Video::getVideoUrl - Using video file stream URL', [
                 'video_id' => $this->id,
                 'stream_url' => $streamUrl,
                 'video_path' => $this->video_path
@@ -213,7 +232,7 @@ class Video extends Model
             return $streamUrl;
         }
 
-        \Log::warning('Video::getVideoUrl - No valid video URL found', [
+        Log::warning('Video::getVideoUrl - No valid video URL found', [
             'video_id' => $this->id,
             'all_attributes' => $this->toArray()
         ]);

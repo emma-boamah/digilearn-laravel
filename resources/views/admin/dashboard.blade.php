@@ -360,13 +360,22 @@
                                     <p class="text-xs text-gray-500">View and manage user accounts</p>
                                 </div>
                             </a>
-                            <a href="{{ route('admin.content') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                            <a href="{{ route('admin.contents.index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
                                 <div class="bg-purple-100 p-2 rounded-lg mr-3">
                                     <i class="fas fa-book text-purple-600"></i>
                                 </div>
                                 <div>
                                     <p class="text-sm font-medium text-gray-900">Content Management</p>
                                     <p class="text-xs text-gray-500">Manage lessons and content</p>
+                                </div>
+                            </a>
+                            <a href="{{ route('admin.subjects.index') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                                <div class="bg-teal-100 p-2 rounded-lg mr-3">
+                                    <i class="fas fa-tags text-teal-600"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">Manage Subjects</p>
+                                    <p class="text-xs text-gray-500">Organize content by subjects</p>
                                 </div>
                             </a>
                             <a href="{{ route('admin.analytics') }}" class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">

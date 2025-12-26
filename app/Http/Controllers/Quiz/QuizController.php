@@ -101,14 +101,14 @@ class QuizController extends Controller
                 return [
                     'id' => $quiz->id,
                     'title' => $quiz->title,
-                    'subject' => $quiz->subject,
+                    'subject' => $quiz->subject?->name,
                     'grade_level' => $quiz->grade_level,
                     'level_display' => $this->formatGradeLevel($quiz->grade_level),
                     'duration' => $quiz->formatted_time_limit,
                     'time_limit_minutes' => $timeLimitMinutes,
                     'questions_count' => $questionsCount,
                     'difficulty' => $difficultyLevel,
-                    'description' => $quiz->title . ' quiz covering ' . ($quiz->subject ?? 'various topics'),
+                    'description' => $quiz->title . ' quiz covering ' . ($quiz->subject?->name ?? 'various topics'),
                     'is_featured' => $quiz->is_featured,
                     'average_rating' => $quiz->average_rating,
                     'total_ratings' => $quiz->total_ratings,
@@ -434,6 +434,13 @@ class QuizController extends Controller
         $quiz = $this->getQuizById($quizId);
         $duration = is_array($quiz) && isset($quiz['duration']) ? $quiz['duration'] : '3 min';
 
+        // Get user's data for rank and streak
+        $userId = Auth::id();
+        $userTotalQuizzesPassed = \App\Models\UserProgress::where('user_id', $userId)
+            ->sum('completed_quizzes');
+        $rank = $this->calculateUserRank($userId, $userTotalQuizzesPassed);
+        $streak = \App\Models\UserProgress::where('user_id', $userId)->max('current_streak_days') ?? 0;
+
         // Build questions array with user answers for review - safe array access
         $questions = [];
         if (is_array($quiz) && isset($quiz['questions']) && is_array($quiz['questions'])) {
@@ -470,7 +477,7 @@ class QuizController extends Controller
             }
         }
 
-        return view('dashboard.quiz.results', compact('score', 'total', 'percentage', 'quiz', 'duration', 'failedDueToViolation', 'questions'));
+        return view('dashboard.quiz.results', compact('score', 'total', 'percentage', 'quiz', 'duration', 'failedDueToViolation', 'questions', 'rank', 'streak'));
     }
 
     /**
@@ -610,7 +617,7 @@ class QuizController extends Controller
                 $result = [
                     'id' => $quiz->id,
                     'title' => $quiz->title,
-                    'subject' => $quiz->subject,
+                    'subject' => $quiz->subject?->name,
                     'grade_level' => $quiz->grade_level,
                     'duration' => $formattedDuration, // Use actual formatted duration
                     'time_limit_minutes' => $timeLimitMinutes,
@@ -771,7 +778,7 @@ class QuizController extends Controller
                 'user_id' => $currentUserId,
                 'quiz_id' => $quizId,
                 'quiz_title' => $quiz ? $quiz->title : 'Unknown Quiz',
-                'quiz_subject' => $quiz ? $quiz->subject : 'Unknown Subject',
+                'quiz_subject' => $quiz ? ($quiz->subject?->name ?? 'Unknown Subject') : 'Unknown Subject',
                 'quiz_level' => $quiz ? $quiz->grade_level : 'Unknown Level',
                 'total_questions' => $totalQuestions,
                 'correct_answers' => $correctAnswers,
@@ -967,6 +974,19 @@ class QuizController extends Controller
             'message' => 'Rating submitted successfully',
             'rating' => $rating,
         ]);
+    }
+
+    /**
+     * Calculate user's rank based on total quizzes passed
+     */
+    private function calculateUserRank($userId, $userTotalQuizzesPassed)
+    {
+        // Count how many users have more quizzes passed than this user
+        $usersWithHigherScore = \App\Models\UserProgress::where('completed_quizzes', '>', $userTotalQuizzesPassed)
+            ->count();
+
+        // Rank is the number of users with higher score + 1
+        return $usersWithHigherScore + 1;
     }
 
     /**
