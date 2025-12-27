@@ -1382,10 +1382,15 @@ class AdminController extends Controller
     /**
      * Approve video and upload to Vimeo
      */
-    public function approveVideo(Request $request, Video $video)
+    public function approveVideo(Request $request, $id)
     {
+        $video = Video::findOrFail($id);
+
         if (!$video->isPending()) {
             Log::warning('Video approval attempted on non-pending video', ['video_id' => $video->id, 'status' => $video->status]);
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'error' => 'Video is not pending approval.'], 400);
+            }
             return back()->withErrors(['error' => 'Video is not pending approval.']);
         }
 
@@ -1412,6 +1417,9 @@ class AdminController extends Controller
                     'status' => 'rejected',
                     'review_notes' => 'Temporary file expired or not found'
                 ]);
+                if ($request->expectsJson()) {
+                    return response()->json(['success' => false, 'error' => 'Temporary video file has expired or not found.'], 400);
+                }
                 return back()->withErrors(['error' => 'Temporary video file has expired or not found.']);
             }
 
@@ -1425,6 +1433,9 @@ class AdminController extends Controller
                     'status' => 'rejected',
                     'review_notes' => 'Temporary file not found on server'
                 ]);
+                if ($request->expectsJson()) {
+                    return response()->json(['success' => false, 'error' => 'Video file not found on server.'], 400);
+                }
                 return back()->withErrors(['error' => 'Video file not found on server.']);
             }
 
@@ -1436,33 +1447,123 @@ class AdminController extends Controller
                 'is_readable' => is_readable($tempFilePath)
             ]);
 
-            // Upload to Mux
-            $muxService = new \App\Services\MuxService();
-            
-            Log::info('Calling MuxService uploadVideo', [
+            // Determine upload destination based on video_source or upload_destination
+            $uploadDestination = $video->video_source ?? 'mux'; // Default to Mux if not specified
+
+            Log::info('Video upload destination determined', [
                 'video_id' => $video->id,
-                'file_path' => $video->temp_file_path,
-                'title' => $video->title
+                'upload_destination' => $uploadDestination
             ]);
 
-            $result = $muxService->uploadVideo(
-                $video->temp_file_path,
-                $video->title,
-                $video->description
-            );
+            if ($uploadDestination === 'vimeo') {
+                // Upload to Vimeo
+                $vimeoService = new \App\Services\VimeoService();
 
-            Log::info('Mux upload result', ['video_id' => $video->id, 'result' => $result]);
-
-            if ($result['success']) {
-                // ... rest of your existing code ...
-            } else {
-                Log::error('Mux upload failed', [
+                Log::info('Calling VimeoService uploadVideo', [
                     'video_id' => $video->id,
-                    'error' => $result['error'] ?? 'Unknown error'
+                    'file_path' => $video->temp_file_path,
+                    'title' => $video->title
                 ]);
-                
-                $video->update(['status' => 'pending']);
-                return back()->withErrors(['error' => 'Failed to upload to Mux: ' . ($result['error'] ?? 'Unknown error')]);
+
+                $result = $vimeoService->uploadVideo(
+                    $video->temp_file_path,
+                    $video->title,
+                    $video->description
+                );
+
+                Log::info('Vimeo upload result', ['video_id' => $video->id, 'result' => $result]);
+
+                if ($result['success']) {
+                    // Update video with Vimeo information
+                    $video->update([
+                        'video_source' => 'vimeo',
+                        'vimeo_id' => $result['video_id'],
+                        'vimeo_embed_url' => $result['embed_url'],
+                        'status' => 'approved',
+                        'video_path' => null, // Clear local path since it's now on Vimeo
+                    ]);
+
+                    // Clean up temporary file
+                    if ($video->temp_file_path) {
+                        Storage::disk('public')->delete($video->temp_file_path);
+                        $video->update(['temp_file_path' => null, 'temp_expires_at' => null]);
+                    }
+
+                    Log::info('Video approved and uploaded to Vimeo successfully', [
+                        'video_id' => $video->id,
+                        'vimeo_id' => $result['video_id']
+                    ]);
+
+                    if ($request->expectsJson()) {
+                        return response()->json(['success' => true, 'message' => 'Video approved and uploaded to Vimeo successfully!']);
+                    }
+                    return back()->with('success', 'Video approved and uploaded to Vimeo successfully!');
+                } else {
+                    Log::error('Vimeo upload failed', [
+                        'video_id' => $video->id,
+                        'error' => $result['error'] ?? 'Unknown error'
+                    ]);
+
+                    $video->update(['status' => 'pending']);
+                    if ($request->expectsJson()) {
+                        return response()->json(['success' => false, 'error' => 'Failed to upload to Vimeo: ' . ($result['error'] ?? 'Unknown error')], 500);
+                    }
+                    return back()->withErrors(['error' => 'Failed to upload to Vimeo: ' . ($result['error'] ?? 'Unknown error')]);
+                }
+            } else {
+                // Upload to Mux (existing logic)
+                $muxService = new \App\Services\MuxService();
+
+                Log::info('Calling MuxService uploadVideo', [
+                    'video_id' => $video->id,
+                    'file_path' => $video->temp_file_path,
+                    'title' => $video->title
+                ]);
+
+                $result = $muxService->uploadVideo(
+                    $video->temp_file_path,
+                    $video->title,
+                    $video->description
+                );
+
+                Log::info('Mux upload result', ['video_id' => $video->id, 'result' => $result]);
+
+                if ($result['success']) {
+                    // Update video with Mux information
+                    $video->update([
+                        'mux_asset_id' => $result['asset_id'] ?? null,
+                        'mux_playback_id' => $result['playback_id'] ?? null,
+                        'status' => 'approved',
+                        'video_path' => null, // Clear local path since it's now on Mux
+                    ]);
+
+                    // Clean up temporary file
+                    if ($video->temp_file_path) {
+                        Storage::disk('public')->delete($video->temp_file_path);
+                        $video->update(['temp_file_path' => null, 'temp_expires_at' => null]);
+                    }
+
+                    Log::info('Video approved and uploaded to Mux successfully', [
+                        'video_id' => $video->id,
+                        'mux_asset_id' => $result['asset_id'] ?? null
+                    ]);
+
+                    if ($request->expectsJson()) {
+                        return response()->json(['success' => true, 'message' => 'Video approved and uploaded to Mux successfully!']);
+                    }
+                    return back()->with('success', 'Video approved and uploaded to Mux successfully!');
+                } else {
+                    Log::error('Mux upload failed', [
+                        'video_id' => $video->id,
+                        'error' => $result['error'] ?? 'Unknown error'
+                    ]);
+
+                    $video->update(['status' => 'pending']);
+                    if ($request->expectsJson()) {
+                        return response()->json(['success' => false, 'error' => 'Failed to upload to Mux: ' . ($result['error'] ?? 'Unknown error')], 500);
+                    }
+                    return back()->withErrors(['error' => 'Failed to upload to Mux: ' . ($result['error'] ?? 'Unknown error')]);
+                }
             }
 
         } catch (\Exception $e) {
@@ -1473,34 +1574,13 @@ class AdminController extends Controller
             ]);
 
             $video->update(['status' => 'pending']);
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'error' => 'An error occurred while approving the video: ' . $e->getMessage()], 500);
+            }
             return back()->withErrors(['error' => 'An error occurred while approving the video: ' . $e->getMessage()]);
         }
     }
 
-    /**
-     * Reject video
-     */
-    public function rejectVideo(Request $request, Video $video)
-    {
-        if (!$video->isPending()) {
-            return back()->withErrors(['error' => 'Video is not pending approval.']);
-        }
-
-        $video->update([
-            'status' => 'rejected',
-            'reviewed_by' => Auth::id(),
-            'reviewed_at' => now(),
-            'review_notes' => $request->input('review_notes', 'Video rejected.')
-        ]);
-
-        // Delete temporary file
-        if ($video->temp_file_path) {
-            Storage::disk('public')->delete($video->temp_file_path);
-            $video->update(['temp_file_path' => null, 'temp_expires_at' => null]);
-        }
-
-        return back()->with('success', 'Video rejected successfully.');
-    }
 
     /**
      * Get video for preview (AJAX)
@@ -1523,43 +1603,81 @@ class AdminController extends Controller
     }
 
     /**
-     * Verify Mux upload status
+     * Verify video upload status (Mux or Vimeo)
      */
     public function verifyVideoUpload(Request $request, Video $video)
     {
         try {
-            $muxService = new \App\Services\MuxService();
+            if ($video->video_source === 'vimeo') {
+                // Verify Vimeo upload
+                $vimeoService = new \App\Services\VimeoService();
 
-            if (!$video->mux_asset_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No Mux asset ID found for this video'
-                ]);
-            }
+                if (!$video->vimeo_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No Vimeo video ID found for this video'
+                    ]);
+                }
 
-            $assetInfo = $muxService->getAsset($video->mux_asset_id);
+                $videoInfo = $vimeoService->getVideoInfo($video->vimeo_id);
 
-            if ($assetInfo['success']) {
-                // Update video status based on Mux status
-                $muxStatus = $assetInfo['status'];
-                $newStatus = $muxStatus === 'ready' ? 'approved' : 'processing';
+                if ($videoInfo) {
+                    // Update video status based on Vimeo status
+                    $vimeoStatus = $videoInfo['status'] ?? 'unknown';
+                    $newStatus = in_array($vimeoStatus, ['available', 'ready']) ? 'approved' : 'processing';
 
-                $video->update(['status' => $newStatus]);
+                    $video->update(['status' => $newStatus]);
 
-                return response()->json([
-                    'success' => true,
-                    'status' => $newStatus,
-                    'mux_status' => $muxStatus,
-                    'message' => 'Video is ' . $muxStatus . ' on Mux'
-                ]);
+                    return response()->json([
+                        'success' => true,
+                        'status' => $newStatus,
+                        'vimeo_status' => $vimeoStatus,
+                        'message' => 'Video is ' . $vimeoStatus . ' on Vimeo'
+                    ]);
+                } else {
+                    // Video doesn't exist on Vimeo
+                    $video->update(['status' => 'rejected']);
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Video not found on Vimeo'
+                    ]);
+                }
             } else {
-                // Asset doesn't exist on Mux
-                $video->update(['status' => 'rejected']);
+                // Verify Mux upload
+                $muxService = new \App\Services\MuxService();
 
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Video not found on Mux'
-                ]);
+                if (!$video->mux_asset_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No Mux asset ID found for this video'
+                    ]);
+                }
+
+                $assetInfo = $muxService->getAsset($video->mux_asset_id);
+
+                if ($assetInfo['success']) {
+                    // Update video status based on Mux status
+                    $muxStatus = $assetInfo['status'];
+                    $newStatus = $muxStatus === 'ready' ? 'approved' : 'processing';
+
+                    $video->update(['status' => $newStatus]);
+
+                    return response()->json([
+                        'success' => true,
+                        'status' => $newStatus,
+                        'mux_status' => $muxStatus,
+                        'message' => 'Video is ' . $muxStatus . ' on Mux'
+                    ]);
+                } else {
+                    // Asset doesn't exist on Mux
+                    $video->update(['status' => 'rejected']);
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Video not found on Mux'
+                    ]);
+                }
             }
         } catch (\Exception $e) {
             \Log::error('Video verification failed', [
@@ -2034,19 +2152,25 @@ class AdminController extends Controller
         $contents = collect();
 
         // Get videos (always included, with attachment counts)
-        if ($type === 'all' || $type === 'videos') {
-            $videos = Video::with(['uploader:id,name,email', 'quiz', 'documents', 'quizzes', 'comments', 'subject:id,name'])
+        if ($type === 'all' || $type === 'videos' || $type === 'pending') {
+            $videoQuery = Video::with(['uploader:id,name,email', 'quiz', 'documents', 'quizzes', 'comments', 'subject:id,name'])
                 ->when($query, function($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
                       ->orWhere('description', 'like', "%{$query}%");
-                })
-                ->select([
-                    'id', 'title', 'description', 'thumbnail_path', 'views', 'comments_count', 'created_at',
-                    'uploaded_by', 'status', 'grade_level', 'duration_seconds', 'document_path', 'quiz_id', 'subject_id',
-                    DB::raw("'video' as content_type"),
-                    DB::raw('0 as likes'),
-                    DB::raw('0 as dislikes')
-                ]);
+                });
+
+            // Filter for pending videos if type is 'pending'
+            if ($type === 'pending') {
+                $videoQuery->where('status', 'pending');
+            }
+
+            $videos = $videoQuery->select([
+                'id', 'title', 'description', 'thumbnail_path', 'views', 'comments_count', 'created_at',
+                'uploaded_by', 'status', 'grade_level', 'duration_seconds', 'document_path', 'quiz_id', 'subject_id',
+                DB::raw("'video' as content_type"),
+                DB::raw('0 as likes'),
+                DB::raw('0 as dislikes')
+            ]);
 
             $contents = $contents->merge($videos->get()->map(function($item) {
                 $item->published_date = $item->created_at->format('M d, Y');
@@ -2160,7 +2284,7 @@ class AdminController extends Controller
 
             // Step 1: Upload and store the video
             $video = null;
-            if ($request->hasFile('video_file') || $request->filled('external_video_url')) {
+            if ($request->hasFile('video_file') || $request->filled('external_video_url') || $request->filled('vimeo_url')) {
                 $videoData = [
                     'title' => $request->title,
                     'subject_id' => $request->subject_id,
@@ -2171,8 +2295,20 @@ class AdminController extends Controller
                     'status' => 'pending' // Videos need approval
                 ];
 
-                // Handle external video URL
-                if ($request->filled('external_video_url')) {
+                // Handle Vimeo URL input (when Vimeo upload is selected)
+                if ($request->filled('vimeo_url') && $request->video_source === 'vimeo') {
+                    $parsed = \App\Services\VideoSourceService::parseVideoUrl($request->vimeo_url);
+                    if ($parsed && $parsed['source'] === 'vimeo') {
+                        $videoData['external_video_id'] = $parsed['video_id'];
+                        $videoData['external_video_url'] = $parsed['embed_url'];
+                        $videoData['video_source'] = 'vimeo';
+                        $videoData['status'] = 'approved'; // Vimeo URLs are auto-approved
+                    } else {
+                        throw new \Exception('Invalid Vimeo URL provided');
+                    }
+                }
+                // Handle external video URL (for other sources like YouTube)
+                elseif ($request->filled('external_video_url')) {
                     $parsed = \App\Services\VideoSourceService::parseVideoUrl($request->external_video_url);
                     if ($parsed) {
                         $videoData['external_video_id'] = $parsed['video_id'];
@@ -2185,16 +2321,52 @@ class AdminController extends Controller
 
                 $video = Video::create($videoData);
 
-                // Handle local video file upload
+                // Handle local video file upload (for Vimeo upload or local storage)
                 if ($request->hasFile('video_file')) {
                     $videoFile = $request->file('video_file');
                     $filename = time() . '_' . $video->id . '.' . $videoFile->getClientOriginalExtension();
-                    $path = $videoFile->storeAs('videos', $filename, 'public');
-                    $video->update(['video_path' => $path]);
+                    $tempPath = $videoFile->storeAs('temp_videos', $filename, 'public');
+                    $video->update(['temp_file_path' => $tempPath]);
 
                     // If upload destination is specified, set video_source accordingly
                     if ($request->filled('upload_destination')) {
                         $video->update(['video_source' => $request->upload_destination]);
+
+                        // If uploading to Vimeo, do it immediately
+                        if ($request->upload_destination === 'vimeo') {
+                            try {
+                                Log::info('Starting immediate Vimeo upload', ['video_id' => $video->id]);
+
+                                $vimeoService = new \App\Services\VimeoService();
+                                $result = $vimeoService->uploadVideo($tempPath, $video->title, $video->description);
+
+                                if ($result['success']) {
+                                    $video->update([
+                                        'vimeo_id' => $result['video_id'],
+                                        'vimeo_embed_url' => $result['embed_url'],
+                                        'status' => 'approved',
+                                        'temp_file_path' => null, // Clear temp file path
+                                        'temp_expires_at' => null
+                                    ]);
+
+                                    // Clean up temporary file
+                                    Storage::disk('public')->delete($tempPath);
+
+                                    Log::info('Immediate Vimeo upload successful', ['video_id' => $video->id, 'vimeo_id' => $result['video_id']]);
+                                } else {
+                                    Log::error('Immediate Vimeo upload failed', ['video_id' => $video->id, 'error' => $result['error']]);
+                                    $video->update(['status' => 'rejected']);
+                                    throw new \Exception('Failed to upload to Vimeo: ' . ($result['error'] ?? 'Unknown error'));
+                                }
+                            } catch (\Exception $e) {
+                                Log::error('Exception during immediate Vimeo upload', [
+                                    'video_id' => $video->id,
+                                    'error' => $e->getMessage()
+                                ]);
+                                $video->update(['status' => 'rejected']);
+                                throw $e;
+                            }
+                        }
                     }
                 }
 
@@ -2625,6 +2797,54 @@ class AdminController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete content: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Fix Vimeo video privacy settings for embedding
+     */
+    public function fixVimeoPrivacy(Request $request)
+    {
+        try {
+            $vimeoService = new \App\Services\VimeoService();
+            $result = $vimeoService->fixAllVimeoVideoPrivacy();
+
+            if ($result['success']) {
+                Log::channel('security')->info('vimeo_privacy_fix_completed', [
+                    'admin_id' => Auth::id(),
+                    'updated_videos' => $result['updated'],
+                    'failed_videos' => $result['failed'],
+                    'ip' => get_client_ip(),
+                    'user_agent' => $request->userAgent(),
+                    'timestamp' => now()->toISOString()
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => $result['message'],
+                    'updated' => $result['updated'],
+                    'failed' => $result['failed']
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to fix Vimeo privacy settings: ' . ($result['error'] ?? 'Unknown error')
+                ], 500);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('vimeo_privacy_fix_failed', [
+                'admin_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'ip' => get_client_ip(),
+                'timestamp' => now()->toISOString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fix Vimeo privacy settings: ' . $e->getMessage()
             ], 500);
         }
     }

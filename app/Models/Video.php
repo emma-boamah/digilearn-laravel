@@ -190,9 +190,27 @@ class Video extends Model
             return $this->external_video_url;
         }
 
-        // Priority: Mux > Vimeo > Local files
+        // Priority: External sources by video_source > Mux > Vimeo > Local files
         if ($this->isApproved()) {
-            if ($this->mux_playback_id) {
+            // Handle external video sources first
+            if ($this->video_source === 'youtube' && $this->external_video_url) {
+                Log::info('Video::getVideoUrl - Using YouTube URL', [
+                    'video_id' => $this->id,
+                    'youtube_url' => $this->external_video_url
+                ]);
+                return $this->external_video_url;
+            }
+
+            if ($this->video_source === 'vimeo' && $this->vimeo_id) {
+                $vimeoUrl = "https://player.vimeo.com/video/{$this->vimeo_id}";
+                Log::info('Video::getVideoUrl - Using Vimeo URL', [
+                    'video_id' => $this->id,
+                    'vimeo_url' => $vimeoUrl
+                ]);
+                return $vimeoUrl;
+            }
+
+            if ($this->video_source === 'mux' && $this->mux_playback_id) {
                 $muxUrl = "https://stream.mux.com/{$this->mux_playback_id}.m3u8";
                 Log::info('Video::getVideoUrl - Using Mux URL', [
                     'video_id' => $this->id,
@@ -201,9 +219,19 @@ class Video extends Model
                 return $muxUrl;
             }
 
+            // Fallback for legacy videos without video_source set
+            if ($this->mux_playback_id) {
+                $muxUrl = "https://stream.mux.com/{$this->mux_playback_id}.m3u8";
+                Log::info('Video::getVideoUrl - Using Mux URL (legacy)', [
+                    'video_id' => $this->id,
+                    'mux_url' => $muxUrl
+                ]);
+                return $muxUrl;
+            }
+
             if ($this->vimeo_id) {
                 $vimeoUrl = "https://player.vimeo.com/video/{$this->vimeo_id}";
-                Log::info('Video::getVideoUrl - Using Vimeo URL', [
+                Log::info('Video::getVideoUrl - Using Vimeo URL (legacy)', [
                     'video_id' => $this->id,
                     'vimeo_url' => $vimeoUrl
                 ]);
@@ -213,7 +241,7 @@ class Video extends Model
 
         // Use streaming route for better browser compatibility
         if ($this->temp_file_path && !$this->isTempExpired()) {
-            $streamUrl = route('admin.content.videos.stream', $this);
+            $streamUrl = route('admin.content.videos.stream', $this->id);
             Log::info('Video::getVideoUrl - Using temp file stream URL', [
                 'video_id' => $this->id,
                 'stream_url' => $streamUrl,
@@ -223,7 +251,7 @@ class Video extends Model
         }
 
         if ($this->video_path) {
-            $streamUrl = route('admin.content.videos.stream', $this);
+            $streamUrl = route('admin.content.videos.stream', $this->id);
             Log::info('Video::getVideoUrl - Using video file stream URL', [
                 'video_id' => $this->id,
                 'stream_url' => $streamUrl,

@@ -94,7 +94,7 @@ class VimeoService
     /**
      * Create video entry on Vimeo
      */
-    private function createVideoEntry($title, $description = null, $fileSize)
+    private function createVideoEntry($title, $fileSize, $description = null)
     {
         try {
             $response = Http::withHeaders([
@@ -109,7 +109,8 @@ class VimeoService
                 'name' => $title,
                 'description' => $description,
                 'privacy' => [
-                    'view' => 'unlisted'
+                    'view' => 'anybody', // Allow public viewing
+                    'embed' => 'public'  // Allow embedding on any site
                 ]
             ]);
 
@@ -313,6 +314,84 @@ class VimeoService
             'upload' => $videoInfo['upload'] ?? null,
             'embed_url' => $videoInfo['player_embed_url'] ?? null,
         ];
+    }
+
+    /**
+     * Update video privacy settings to allow embedding
+     */
+    public function updateVideoPrivacy($videoId)
+    {
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->accessToken,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/vnd.vimeo.*+json;version=3.4'
+            ])->patch($this->baseUrl . "/videos/{$videoId}", [
+                'privacy' => [
+                    'view' => 'anybody', // Allow public viewing
+                    'embed' => 'public'  // Allow embedding on any site
+                ]
+            ]);
+
+            if ($response->successful()) {
+                Log::info('Successfully updated Vimeo video privacy settings', ['video_id' => $videoId]);
+                return true;
+            }
+
+            Log::error('Failed to update Vimeo video privacy', [
+                'video_id' => $videoId,
+                'status' => $response->status(),
+                'response' => $response->body()
+            ]);
+
+            return false;
+
+        } catch (Exception $e) {
+            Log::error('Exception updating Vimeo video privacy', [
+                'video_id' => $videoId,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Fix privacy settings for all Vimeo videos in the database
+     */
+    public function fixAllVimeoVideoPrivacy()
+    {
+        try {
+            $videos = \App\Models\Video::where('video_source', 'vimeo')
+                ->whereNotNull('vimeo_id')
+                ->get();
+
+            $successCount = 0;
+            $failCount = 0;
+
+            foreach ($videos as $video) {
+                if ($this->updateVideoPrivacy($video->vimeo_id)) {
+                    $successCount++;
+                    Log::info('Fixed privacy for video', ['video_id' => $video->id, 'vimeo_id' => $video->vimeo_id]);
+                } else {
+                    $failCount++;
+                    Log::error('Failed to fix privacy for video', ['video_id' => $video->id, 'vimeo_id' => $video->vimeo_id]);
+                }
+            }
+
+            return [
+                'success' => true,
+                'message' => "Privacy settings updated for {$successCount} videos, {$failCount} failed",
+                'updated' => $successCount,
+                'failed' => $failCount
+            ];
+
+        } catch (Exception $e) {
+            Log::error('Exception fixing Vimeo video privacy', ['error' => $e->getMessage()]);
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
     }
 
     /**
