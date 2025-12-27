@@ -2253,7 +2253,7 @@
             console.log("hellow")
             initializeDropdowns();
             initializeSubjectFilter();
-            initializeVideoCards();
+            initializeVideoCards(); // Re-enabled hover-to-play functionality with fixes
             initializeSearch();
         });
 
@@ -2616,61 +2616,99 @@
         function initializeVideoCards() {
             const videoCards = document.querySelectorAll('.hover-video-card');
             let currentlyPlaying = null;
-            
+            let previewTimeout = null;
+
             videoCards.forEach(card => {
                 const videoId = card.getAttribute('data-video-id') || `lesson-video-${card.getAttribute('data-lesson-id')}`;
                 const video = document.getElementById(videoId);
                 const loadingIndicator = card.querySelector('.video-loading');
-                
+
                 if (!video) return;
-                
+
+                // Ensure video is muted for autoplay compatibility
+                video.muted = true;
+
                 // Handle video loading
                 video.addEventListener('loadstart', function() {
                     if (loadingIndicator) loadingIndicator.style.display = 'flex';
                 });
-                
+
                 video.addEventListener('canplay', function() {
                     if (loadingIndicator) loadingIndicator.style.display = 'none';
                 });
-                
+
                 // Handle video errors
                 video.addEventListener('error', function() {
                     console.log('Video failed to load:', videoId);
                     card.classList.add('video-error');
                     if (loadingIndicator) loadingIndicator.style.display = 'none';
                 });
-                
-                // Play video on hover
+
+                // Play video on hover (Vimeo-like preview)
                 card.addEventListener('mouseenter', function() {
                     if (currentlyPlaying && currentlyPlaying !== video) {
                         currentlyPlaying.pause();
                         currentlyPlaying.currentTime = 0;
                         currentlyPlaying.parentElement.parentElement.classList.remove('playing');
                     }
-                    
+
                     if (video.paused && !card.classList.contains('video-error')) {
-                        if (video.currentTime === video.duration) {
-                            video.currentTime = 0;
-                        }
-                        
-                        const playPromise = video.play();
-                        
-                        if (playPromise !== undefined) {
-                            playPromise
-                                .then(() => {
-                                    card.classList.add('playing');
-                                    currentlyPlaying = video;
-                                })
-                                .catch(error => {
-                                    console.log('Autoplay prevented:', error);
-                                    card.classList.add('video-error');
-                                });
+                        // Check if video has loaded enough data and can potentially play
+                        if (video.readyState >= 1 && video.duration > 0) { // HAVE_METADATA - basic info loaded
+                            // Reset to beginning if at end
+                            if (video.currentTime >= video.duration - 1) {
+                                video.currentTime = 0;
+                            }
+
+                            // Try to play for preview (muted to comply with browser policies)
+                            const playPromise = video.play();
+
+                            if (playPromise !== undefined) {
+                                playPromise
+                                    .then(() => {
+                                        card.classList.add('playing');
+                                        currentlyPlaying = video;
+
+                                        // Auto-pause after 3 seconds for preview
+                                        previewTimeout = setTimeout(() => {
+                                            if (!video.paused && currentlyPlaying === video) {
+                                                video.pause();
+                                                video.currentTime = 0;
+                                                card.classList.remove('playing');
+                                                currentlyPlaying = null;
+                                                previewTimeout = null;
+                                            }
+                                        }, 3000);
+                                    })
+                                    .catch(error => {
+                                        // Browser prevented autoplay - this is expected behavior
+                                        // Add a subtle hover effect instead
+                                        card.style.transform = 'scale(1.02)';
+                                        card.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.2)';
+                                        console.log('Hover preview blocked by browser policy - showing hover effect instead');
+                                    });
+                            }
+                        } else {
+                            // Video not ready - add hover effect as fallback
+                            card.style.transform = 'scale(1.02)';
+                            card.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.2)';
+                            console.log('Video not ready - showing hover effect');
                         }
                     }
                 });
-                
-                // Pause video when mouse leaves
+
+                // Pause video when mouse leaves and ensure poster is visible
                 card.addEventListener('mouseleave', function() {
+                    // Clear any pending preview timeout
+                    if (previewTimeout) {
+                        clearTimeout(previewTimeout);
+                        previewTimeout = null;
+                    }
+
+                    // Reset hover effects
+                    card.style.transform = '';
+                    card.style.boxShadow = '';
+
                     if (!video.paused) {
                         video.pause();
                         video.currentTime = 0;
@@ -2679,15 +2717,36 @@
                             currentlyPlaying = null;
                         }
                     }
+                    // Ensure poster is visible by briefly setting currentTime to 0
+                    // This helps browsers show the poster again
+                    setTimeout(() => {
+                        if (video.paused && video.currentTime === 0) {
+                            video.load(); // Reload to ensure poster shows
+                        }
+                    }, 10);
                 });
-                
+
                 // Handle video end
                 video.addEventListener('ended', function() {
+                    // Clear preview timeout if video ended naturally
+                    if (previewTimeout) {
+                        clearTimeout(previewTimeout);
+                        previewTimeout = null;
+                    }
+
+                    // Reset hover effects
+                    card.style.transform = '';
+                    card.style.boxShadow = '';
+
                     this.currentTime = 0;
                     card.classList.remove('playing');
                     if (currentlyPlaying === video) {
                         currentlyPlaying = null;
                     }
+                    // Ensure poster shows after video ends
+                    setTimeout(() => {
+                        this.load();
+                    }, 10);
                 });
             });
 

@@ -422,6 +422,144 @@ class Video extends Model
     }
 
     /**
+     * Get the thumbnail URL with fallback to video-generated thumbnail
+     */
+    public function getThumbnailUrl()
+    {
+        // First, check for custom uploaded thumbnail
+        if ($this->thumbnail_path) {
+            return asset('storage/' . $this->thumbnail_path);
+        }
+
+        // Fallback to video-generated thumbnail based on source
+        if ($this->video_source === 'mux' && $this->mux_playback_id) {
+            return "https://image.mux.com/{$this->mux_playback_id}/thumbnail.jpg?time=10";
+        }
+
+        if ($this->video_source === 'vimeo' && $this->vimeo_id) {
+            return $this->getVimeoThumbnailUrl();
+        }
+
+        if ($this->video_source === 'youtube' && $this->external_video_id) {
+            return $this->getYouTubeThumbnailUrl();
+        }
+
+        if ($this->video_source === 'local' || (!$this->video_source && ($this->video_path || $this->temp_file_path))) {
+            return $this->getLocalVideoThumbnailUrl();
+        }
+
+        // Default placeholder
+        return asset('images/video-placeholder.jpg');
+    }
+
+    /**
+     * Get Vimeo thumbnail URL
+     */
+    private function getVimeoThumbnailUrl()
+    {
+        if (!$this->vimeo_id) {
+            return asset('images/video-placeholder.jpg');
+        }
+
+        try {
+            $vimeoService = app(\App\Services\VimeoService::class);
+            $videoInfo = $vimeoService->getVideoInfo($this->vimeo_id);
+
+            if ($videoInfo && isset($videoInfo['pictures']['sizes'])) {
+                // Get the largest thumbnail
+                $sizes = $videoInfo['pictures']['sizes'];
+                $largest = end($sizes); // Last one is usually largest
+                return $largest['link'] ?? asset('images/video-placeholder.jpg');
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to get Vimeo thumbnail', [
+                'video_id' => $this->id,
+                'vimeo_id' => $this->vimeo_id,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        return asset('images/video-placeholder.jpg');
+    }
+
+    /**
+     * Get YouTube thumbnail URL
+     */
+    private function getYouTubeThumbnailUrl()
+    {
+        if (!$this->external_video_id) {
+            return asset('images/video-placeholder.jpg');
+        }
+
+        // Try max resolution first, then fallback to default
+        $maxResUrl = "https://img.youtube.com/vi/{$this->external_video_id}/maxresdefault.jpg";
+
+        // For now, just return the maxres URL - in production you might want to check if it exists
+        // YouTube thumbnails are publicly accessible without API calls
+        return $maxResUrl;
+    }
+
+    /**
+     * Get local video thumbnail URL (generate if needed)
+     */
+    private function getLocalVideoThumbnailUrl()
+    {
+        $videoPath = $this->video_path ?: $this->temp_file_path;
+
+        if (!$videoPath) {
+            return asset('images/video-placeholder.jpg');
+        }
+
+        // Check if thumbnail already exists
+        $thumbnailPath = 'thumbnails/' . md5($videoPath) . '.jpg';
+        $fullThumbnailPath = storage_path('app/public/' . $thumbnailPath);
+
+        if (file_exists($fullThumbnailPath)) {
+            return asset('storage/' . $thumbnailPath);
+        }
+
+        // Generate thumbnail
+        try {
+            $fullVideoPath = storage_path('app/public/' . $videoPath);
+
+            if (!file_exists($fullVideoPath)) {
+                return asset('images/video-placeholder.jpg');
+            }
+
+            // Ensure thumbnails directory exists
+            $thumbnailDir = dirname($fullThumbnailPath);
+            if (!is_dir($thumbnailDir)) {
+                mkdir($thumbnailDir, 0755, true);
+            }
+
+            // Use FFmpeg to generate thumbnail at 10 seconds
+            $command = "ffmpeg -i " . escapeshellarg($fullVideoPath) . " -ss 00:00:10 -vframes 1 -q:v 2 " . escapeshellarg($fullThumbnailPath) . " 2>&1";
+
+            exec($command, $output, $returnCode);
+
+            if ($returnCode === 0 && file_exists($fullThumbnailPath)) {
+                return asset('storage/' . $thumbnailPath);
+            } else {
+                Log::warning('FFmpeg thumbnail generation failed', [
+                    'video_id' => $this->id,
+                    'video_path' => $videoPath,
+                    'command' => $command,
+                    'output' => implode("\n", $output),
+                    'return_code' => $returnCode
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to generate local video thumbnail', [
+                'video_id' => $this->id,
+                'video_path' => $videoPath,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        return asset('images/video-placeholder.jpg');
+    }
+
+    /**
      * Set video source from URL
      */
     public function setVideoSourceFromUrl($url)

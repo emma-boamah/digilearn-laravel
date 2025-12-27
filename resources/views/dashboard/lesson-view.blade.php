@@ -2303,7 +2303,7 @@
                             @forelse($course->videos as $video)
                             <div class="course-item video-item">
                                 <div class="item-thumbnail">
-                                    <video class="item-video" muted preload="metadata" poster="{{ secure_asset($video->thumbnail_path) }}">
+                                    <video class="item-video" muted preload="metadata" poster="{{ secure_asset($video->getThumbnailUrl()) }}">
                                         <source src="{{ secure_asset($video->video_path) }}" type="video/mp4">
                                     </video>
                                     <div class="play-overlay">
