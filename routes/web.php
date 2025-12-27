@@ -299,6 +299,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/dashboard/stats', [AdminController::class, 'getDashboardStatsAjax'])->name('dashboard.stats');
     Route::get('/contents', [AdminController::class, 'contents'])->name('contents.index');
     Route::post('/contents', [AdminController::class, 'storeContentPackage'])->name('contents.store');
+    Route::post('/fix-vimeo-privacy', [AdminController::class, 'fixVimeoPrivacy'])->name('fix-vimeo-privacy');
     Route::delete('/contents/youtube/{contentId}', [AdminController::class, 'destroyYouTubeContent'])->name('contents.youtube.destroy');
     Route::get('/contents/{contentId}/edit', [AdminController::class, 'editContent'])->name('contents.edit');
     Route::put('/contents/{contentId}', [AdminController::class, 'updateContent'])->name('contents.update');
@@ -335,10 +336,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/{video}/toggle-feature', [AdminController::class, 'toggleVideoFeature'])->name('toggle-feature');
         
         // Video review workflow
-        Route::post('/{video}/approve', [AdminController::class, 'approveVideo'])->name('approve');
-        Route::post('/{video}/reject', [AdminController::class, 'rejectVideo'])->name('reject');
-        Route::get('/{video}/preview', [AdminController::class, 'previewVideo'])->name('preview');
-        Route::get('/{video}/stream', [App\Http\Controllers\VideoStreamController::class, 'stream'])->name('stream');
+        Route::post('/{id}/approve', [AdminController::class, 'approveVideo'])->name('approve')->where('id', '[0-9]+');
+        Route::post('/{id}/reject', [AdminController::class, 'rejectVideo'])->name('reject')->where('id', '[0-9]+');
+        Route::get('/{id}/preview', [AdminController::class, 'previewVideo'])->name('preview')->where('id', '[0-9]+');
+        Route::get('/{id}/stream', [App\Http\Controllers\VideoStreamController::class, 'stream'])->name('stream')->where('id', '[0-9]+');
 
         // Video verification route
         Route::post('/{video}/verify', [AdminController::class, 'verifyVideoUpload'])

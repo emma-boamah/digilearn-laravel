@@ -50,48 +50,54 @@ class VideoStreamController extends Controller
     /**
      * Stream video file with proper headers for browser playback
      */
-    public function stream(Video $video, Request $request)
+    public function stream($id, Request $request)
     {
+        $video = Video::findOrFail($id);
+
         // Check if user has permission to view this video
         if (!Auth::check()) {
             abort(403, 'Unauthorized');
         }
 
-        // Log video watching activity
-        \App\Models\ActivityLog::log(
-            'video_watch',
-            'User watched video: ' . $video->title,
-            'info',
-            Auth::id(),
-            Auth::user()->email,
-            $request->ip(),
-            $request->userAgent(),
-            [
-                'video_id' => $video->id,
-                'video_title' => $video->title,
-                'grade_level' => $video->grade_level,
-                'duration_seconds' => $video->duration_seconds,
-                'subject' => $video->subject ?? 'General',
-                'action_type' => 'stream_start'
-            ],
-            $video
-        );
+        // Skip logging for admin preview to avoid errors
+        $isAdmin = Auth::user()->is_admin || Auth::user()->is_superuser;
+        if (!$isAdmin) {
+            // Log video watching activity
+            \App\Models\ActivityLog::log(
+                'video_watch',
+                'User watched video: ' . $video->title,
+                'info',
+                Auth::id(),
+                Auth::user()->email,
+                $request->ip(),
+                $request->userAgent(),
+                [
+                    'video_id' => $video->id,
+                    'video_title' => $video->title,
+                    'grade_level' => $video->grade_level,
+                    'duration_seconds' => $video->duration_seconds,
+                    'subject' => $video->subject ?? 'General',
+                    'action_type' => 'stream_start'
+                ],
+                $video
+            );
 
-        // Record detailed engagement for recommendation system
-        \App\Models\UserEngagement::record(
-            Auth::id(),
-            'video',
-            $video->id,
-            'view',
-            0, // duration will be tracked separately
-            [
-                'title' => $video->title,
-                'subject' => $video->subject ?? 'General',
-                'grade_level' => $video->grade_level,
-                'duration_seconds' => $video->duration_seconds,
-                'action_type' => 'stream_start'
-            ]
-        );
+            // Record detailed engagement for recommendation system
+            \App\Models\UserEngagement::record(
+                Auth::id(),
+                'video',
+                $video->id,
+                'view',
+                0, // duration will be tracked separately
+                [
+                    'title' => $video->title,
+                    'subject' => $video->subject ?? 'General',
+                    'grade_level' => $video->grade_level,
+                    'duration_seconds' => $video->duration_seconds,
+                    'action_type' => 'stream_start'
+                ]
+            );
+        }
 
 
         // Get the video file path
@@ -102,8 +108,26 @@ class VideoStreamController extends Controller
             $filePath = $video->video_path;
         }
 
-        if (!$filePath || !Storage::disk('public')->exists($filePath)) {
-            abort(404, 'Video file not found');
+        if (!$filePath) {
+            Log::error('Video stream failed: No file path available', [
+                'video_id' => $video->id,
+                'temp_file_path' => $video->temp_file_path,
+                'video_path' => $video->video_path,
+                'is_temp_expired' => $video->isTempExpired(),
+                'status' => $video->status
+            ]);
+            abort(404, 'Video file not found - no file path available');
+        }
+
+        if (!Storage::disk('public')->exists($filePath)) {
+            Log::error('Video stream failed: File does not exist in storage', [
+                'video_id' => $video->id,
+                'file_path' => $filePath,
+                'full_path' => Storage::disk('public')->path($filePath),
+                'file_exists' => file_exists(Storage::disk('public')->path($filePath)),
+                'status' => $video->status
+            ]);
+            abort(404, 'Video file not found - file does not exist in storage');
         }
 
         $fullPath = Storage::disk('public')->path($filePath);

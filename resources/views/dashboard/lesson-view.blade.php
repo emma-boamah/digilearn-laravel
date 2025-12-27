@@ -2453,7 +2453,15 @@
                                      </div>
                                  @elseif($lesson->video_source === 'vimeo')
                                      <div class="video-player" style="width: 100%; height: 100%; position: relative; padding-bottom: 56.25%; /* 16:9 aspect ratio */">
-                                         {!! $embedHtml !!}
+                                         <iframe src="{{ $videoUrl }}" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen
+                                                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                         </iframe>
+                                         <div style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #666; font-size: 14px;">
+                                             <div style="margin-bottom: 10px;">🎬</div>
+                                             <div>Video is processing...</div>
+                                             <div style="font-size: 12px; margin-top: 5px;">Please check back in a few minutes</div>
+                                         </div>
                                      </div>
                                  @elseif($lesson->video_source === 'mux')
                                      {!! $embedHtml !!}
@@ -2491,15 +2499,45 @@
                                  Poster Src Secure: {{ $posterSrc }}<br>
                                  Available Keys: {{ implode(', ', array_keys($lesson)) }}
                              </div> -->
-                             @if(strpos($lesson['video_url'] ?? '', 'youtube.com/embed') !== false)
-                                 <div class="video-player" style="width: 100%; height: 100%; position: relative; padding-bottom: 56.25%; /* 16:9 aspect ratio */">
-                                     <iframe src="{{ $lesson['video_url'] }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
-                                 </div>
+                             @if(!empty($lesson['video_url']))
+                                 @if(strpos($lesson['video_url'] ?? '', 'youtube.com/embed') !== false || strpos($lesson['video_url'] ?? '', 'vimeo.com') !== false)
+                                         <div class="video-player" style="width: 100%; height: 100%; position: relative; padding-bottom: 56.25%; /* 16:9 aspect ratio */">
+                                             @if(strpos($lesson['video_url'] ?? '', 'vimeo.com') !== false)
+                                                 @php
+                                                     // Convert Vimeo URL to embed URL if needed
+                                                     $vimeoUrl = $lesson['video_url'];
+                                                     if (strpos($vimeoUrl, 'player.vimeo.com') === false) {
+                                                         // Extract video ID from Vimeo URL
+                                                         preg_match('/vimeo\.com\/(\d+)/', $vimeoUrl, $matches);
+                                                         if (isset($matches[1])) {
+                                                             $vimeoUrl = 'https://player.vimeo.com/video/' . $matches[1];
+                                                         }
+                                                     }
+                                                 @endphp
+                                                 <iframe src="{{ $vimeoUrl }}" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen
+                                                         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+                                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                                 </iframe>
+                                                 <div style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #666; font-size: 14px;">
+                                                     <div style="margin-bottom: 10px;">🎬</div>
+                                                     <div>Video is processing...</div>
+                                                     <div style="font-size: 12px; margin-top: 5px;">Please check back in a few minutes</div>
+                                                 </div>
+                                             @else
+                                                 <iframe src="{{ $lesson['video_url'] }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
+                                             @endif
+                                         </div>
+                                     @else
+                                         <video controls class="video-player" poster="{{ $posterSrc }}">
+                                             <source src="{{ $videoSrc }}" type="video/mp4">
+                                             Your browser does not support the video tag.
+                                         </video>
+                                     @endif
                              @else
-                                 <video controls class="video-player" poster="{{ $posterSrc }}">
-                                     <source src="{{ $videoSrc }}" type="video/mp4">
-                                     Your browser does not support the video tag.
-                                 </video>
+                                 <div style="background: #ffebee; padding: 20px; border: 1px solid #f44336; border-radius: 5px; text-align: center;">
+                                     <strong>Video Unavailable</strong>
+                                     <br>This video is currently being processed or is unavailable.
+                                 </div>
                              @endif
                          @endif
                     </div>

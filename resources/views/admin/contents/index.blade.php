@@ -579,6 +579,12 @@
         min-width: 1400px;
     }
 
+    /* Video Preview Modal Styles */
+    #videoPreviewModal video {
+        max-height: 70vh;
+        object-fit: contain;
+    }
+
     /* Responsive adjustments */
     @media (max-width: 768px) {
         .content-table {
@@ -588,6 +594,14 @@
         .actions-cell {
             min-width: 120px;
             white-space: nowrap;
+        }
+
+        #videoPreviewModal .aspect-video {
+            aspect-ratio: 16/9;
+        }
+
+        #videoPreviewModal video {
+            max-height: 50vh;
         }
     }
 </style>
@@ -619,6 +633,13 @@
     <div class="filter-tabs">
         <a href="{{ route('admin.contents.index', ['q' => $query, 'sort' => $sort]) }}"
            class="filter-tab {{ $type === 'all' ? 'active' : '' }}">All</a>
+        <a href="{{ route('admin.contents.index', ['q' => $query, 'type' => 'pending', 'sort' => $sort]) }}"
+           class="filter-tab {{ $type === 'pending' ? 'active' : '' }}">
+           Pending Review
+           @if($stats['pending_reviews'] > 0)
+               <span class="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">{{ $stats['pending_reviews'] }}</span>
+           @endif
+        </a>
         <a href="{{ route('admin.contents.index', ['q' => $query, 'type' => 'videos', 'sort' => $sort]) }}"
            class="filter-tab {{ $type === 'videos' ? 'active' : '' }}">Videos</a>
         <a href="{{ route('admin.contents.index', ['q' => $query, 'type' => 'documents', 'sort' => $sort]) }}"
@@ -819,15 +840,27 @@
                     </td>
                     <td class="email-cell">{{ $content->uploader_email ?? $content->uploader_name }}</td>
                     <td class="actions-cell">
-                        <button class="action-btn edit-btn" title="Edit" data-content-id="{{ $content->id }}" data-content-type="{{ $content->content_type }}">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="action-btn delete delete-btn" title="Delete" data-content-id="{{ $content->id }}" data-content-type="{{ $content->content_type }}" data-video-source="{{ $content->video_source ?? '' }}">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                        <button class="action-btn" title="More">
-                            <i class="fas fa-ellipsis-v"></i>
-                        </button>
+                        @if($type === 'pending' && $content->content_type === 'video')
+                            <button class="action-btn preview-btn" title="Preview Video" data-video-id="{{ $content->id }}" data-video-title="{{ $content->title }}" data-video-url="{{ route('admin.content.videos.stream', $content->id) }}" style="color: #3b82f6;">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button class="action-btn approve-btn" title="Approve" data-video-id="{{ $content->id }}" style="color: #10b981;">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="action-btn reject-btn" title="Reject" data-video-id="{{ $content->id }}" style="color: #ef4444;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        @else
+                            <button class="action-btn edit-btn" title="Edit" data-content-id="{{ $content->id }}" data-content-type="{{ $content->content_type }}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn delete delete-btn" title="Delete" data-content-id="{{ $content->id }}" data-content-type="{{ $content->content_type }}" data-video-source="{{ $content->video_source ?? '' }}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            <button class="action-btn" title="More">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                        @endif
                     </td>
                 </tr>
                 @endforeach
@@ -924,7 +957,7 @@
                                     <i class="fab fa-vimeo text-2xl text-blue-600 mr-3"></i>
                                     <div>
                                         <div class="font-medium text-gray-900">Vimeo</div>
-                                        <div class="text-sm text-gray-500">Paste Vimeo video URL</div>
+                                        <div class="text-sm text-gray-500">Upload file or paste Vimeo URL</div>
                                     </div>
                                 </div>
                             </div>
@@ -944,6 +977,32 @@
                     </div>
                 </div>
 
+                <!-- Upload Destination (for Local Upload) -->
+                <div class="mb-4 hidden" id="uploadDestinationSection">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Upload Destination</label>
+                    <select id="upload_destination" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="local">Store Locally</option>
+                        <option value="vimeo">Upload to Vimeo</option>
+                        <option value="mux">Upload to Mux</option>
+                    </select>
+                    <p class="text-sm text-gray-500 mt-1">Choose where to upload your video file</p>
+                </div>
+
+                <!-- Vimeo Upload Options -->
+                <div class="mb-4 hidden" id="vimeoUploadOptions">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Vimeo Upload Method</label>
+                    <div class="space-y-3">
+                        <label class="flex items-center">
+                            <input type="radio" name="vimeo_method" value="file" class="mr-2">
+                            <span class="text-sm">Upload video file to Vimeo</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="vimeo_method" value="url" class="mr-2" checked>
+                            <span class="text-sm">Use existing Vimeo URL</span>
+                        </label>
+                    </div>
+                </div>
+
                 <!-- Local File Upload Area -->
                 <div class="mb-4" id="localUploadSection">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Video File</label>
@@ -958,8 +1017,8 @@
                 <!-- External URL Input -->
                 <div class="mb-4 hidden" id="externalUrlSection">
                     <label for="external_video_url" class="block text-sm font-medium text-gray-700 mb-2">Video URL</label>
-                    <input type="url" id="external_video_url" placeholder="https://youtube.com/watch?v=..."
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="url" id="external_video_url" placeholder="https://vimeo.com/123456789 or https://youtube.com/watch?v=..."
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <p class="text-sm text-gray-500 mt-1">Paste the full URL of your video from the selected platform</p>
                 </div>
 
@@ -1117,6 +1176,36 @@
     </div>
 </div>
 
+<!-- Video Preview Modal -->
+<div id="videoPreviewModal" class="upload-modal">
+    <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+        <div class="flex justify-between items-center p-4 border-b">
+            <h3 class="text-lg font-semibold text-gray-900" id="previewModalTitle">Video Preview</h3>
+            <button id="closePreviewModal" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="p-4">
+            <div class="aspect-video bg-black rounded-lg overflow-hidden mb-4">
+                <video id="previewVideoPlayer" controls class="w-full h-full" preload="metadata">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button id="previewApproveBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                    <i class="fas fa-check mr-2"></i>Approve
+                </button>
+                <button id="previewRejectBtn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                    <i class="fas fa-times mr-2"></i>Reject
+                </button>
+                <button id="previewCloseBtn" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
     // Multi-step upload wizard and table functionality
     document.addEventListener('DOMContentLoaded', function() {
@@ -1172,6 +1261,53 @@
             }
         });
 
+        // Preview video functionality
+        document.addEventListener('click', function(e) {
+            console.log('Click event:', e.target);
+            if (e.target.closest('.action-btn.preview-btn')) {
+                e.preventDefault();
+                console.log('Preview button found');
+                const previewBtn = e.target.closest('.action-btn.preview-btn');
+                const videoId = previewBtn.getAttribute('data-video-id');
+                const videoTitle = previewBtn.getAttribute('data-video-title');
+                const videoUrl = previewBtn.getAttribute('data-video-url');
+
+                console.log('Preview button clicked:', { videoId, videoTitle, videoUrl });
+
+                if (!videoUrl || videoUrl === 'null') {
+                    alert('Video URL is not available. The video file may have expired or been deleted.');
+                    return;
+                }
+
+                openVideoPreview(videoId, videoTitle, videoUrl);
+            }
+        });
+
+        // Approve video functionality
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.action-btn.approve-btn')) {
+                e.preventDefault();
+                const approveBtn = e.target.closest('.action-btn.approve-btn');
+                const videoId = approveBtn.getAttribute('data-video-id');
+
+                if (confirm('Are you sure you want to approve this video? It will be uploaded to the selected platform.')) {
+                    approveVideo(videoId);
+                }
+            }
+        });
+
+        // Reject video functionality
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.action-btn.reject-btn')) {
+                e.preventDefault();
+                const rejectBtn = e.target.closest('.action-btn.reject-btn');
+                const videoId = rejectBtn.getAttribute('data-video-id');
+
+                const reason = prompt('Please provide a reason for rejection (optional):');
+                rejectVideo(videoId, reason);
+            }
+        });
+
         async function deleteContent(contentId, contentType, videoSource) {
             try {
                 // Use unified delete endpoint
@@ -1195,6 +1331,125 @@
                 console.error('Delete error:', error);
                 alert('An error occurred while deleting the content.');
             }
+        }
+
+        async function approveVideo(videoId) {
+            try {
+                const response = await fetch(`{{ route("admin.content.videos.approve", ":videoId") }}`.replace(':videoId', videoId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        review_notes: 'Approved from contents page'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert(result.message || 'Video approved successfully!');
+                    window.location.reload();
+                } else {
+                    alert('Failed to approve video: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Approve error:', error);
+                alert('An error occurred while approving the video.');
+            }
+        }
+
+        async function rejectVideo(videoId, reason = '') {
+            try {
+                const response = await fetch(`{{ route("admin.content.videos.reject", ":videoId") }}`.replace(':videoId', videoId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        review_notes: reason || 'Rejected from contents page'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert(result.message || 'Video rejected successfully!');
+                    window.location.reload();
+                } else {
+                    alert('Failed to reject video: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Reject error:', error);
+                alert('An error occurred while rejecting the video.');
+            }
+        }
+
+        function openVideoPreview(videoId, videoTitle, videoUrl) {
+            console.log('Opening video preview:', { videoId, videoTitle, videoUrl });
+
+            const modal = document.getElementById('videoPreviewModal');
+            const modalTitle = document.getElementById('previewModalTitle');
+            const videoPlayer = document.getElementById('previewVideoPlayer');
+            const approveBtn = document.getElementById('previewApproveBtn');
+            const rejectBtn = document.getElementById('previewRejectBtn');
+            const closeBtn = document.getElementById('previewCloseBtn');
+            const closeModalBtn = document.getElementById('closePreviewModal');
+
+            console.log('Modal elements found:', { modal, modalTitle, videoPlayer });
+
+            if (!modal || !modalTitle || !videoPlayer) {
+                alert('Video preview modal not found. Please refresh the page.');
+                return;
+            }
+
+            // Set modal title
+            modalTitle.textContent = `Preview: ${videoTitle}`;
+
+            // Set video source
+            videoPlayer.src = videoUrl;
+            videoPlayer.load();
+
+            // Set up button handlers
+            approveBtn.onclick = () => {
+                if (confirm('Are you sure you want to approve this video? It will be uploaded to the selected platform.')) {
+                    modal.classList.remove('show');
+                    approveVideo(videoId);
+                }
+            };
+
+            rejectBtn.onclick = () => {
+                const reason = prompt('Please provide a reason for rejection (optional):');
+                modal.classList.remove('show');
+                rejectVideo(videoId, reason);
+            };
+
+            closeBtn.onclick = () => {
+                modal.classList.remove('show');
+                videoPlayer.pause();
+                videoPlayer.src = '';
+            };
+
+            closeModalBtn.onclick = () => {
+                modal.classList.remove('show');
+                videoPlayer.pause();
+                videoPlayer.src = '';
+            };
+
+            // Close modal when clicking outside
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('show');
+                    videoPlayer.pause();
+                    videoPlayer.src = '';
+                }
+            });
+
+            // Show modal
+            modal.classList.add('show');
+            console.log('Modal should now be visible');
         }
 
         // Ping functionality to keep session alive
@@ -1312,7 +1567,12 @@
             if (localRadio) localRadio.checked = true;
             uploadData.video_source = 'local';
             uploadData.external_video_url = '';
-            uploadData.upload_destination = 'vimeo'; // Default to Vimeo
+            uploadData.upload_destination = 'local'; // Default to local
+
+            // Reset Vimeo method to URL
+            const vimeoUrlRadio = document.querySelector('input[name="vimeo_method"][value="url"]');
+            if (vimeoUrlRadio) vimeoUrlRadio.checked = true;
+
             toggleVideoSourceSections('local');
 
             // Clear video step
@@ -1420,6 +1680,35 @@
                         if (!uploadData.video) {
                             alert('Please upload a video file.');
                             return false;
+                        }
+                    } else if (uploadData.video_source === 'vimeo') {
+                        // Check Vimeo method
+                        const vimeoMethod = document.querySelector('input[name="vimeo_method"]:checked');
+                        if (vimeoMethod && vimeoMethod.value === 'file') {
+                            if (!uploadData.video) {
+                                alert('Please upload a video file.');
+                                return false;
+                            }
+                        } else {
+                            const externalVideoUrl = document.getElementById('external_video_url');
+                            if (!externalVideoUrl) {
+                                console.error('External video URL element not found');
+                                return false;
+                            }
+
+                            const externalUrl = externalVideoUrl.value.trim();
+                            if (!externalUrl) {
+                                alert('Please enter a Vimeo video URL.');
+                                return false;
+                            }
+                            // Basic URL validation
+                            try {
+                                new URL(externalUrl);
+                            } catch {
+                                alert('Please enter a valid URL.');
+                                return false;
+                            }
+                            uploadData.external_video_url = externalUrl;
                         }
                     } else {
                         const externalVideoUrl = document.getElementById('external_video_url');
@@ -1880,32 +2169,76 @@
             const localSection = document.getElementById('localUploadSection');
             const externalSection = document.getElementById('externalUrlSection');
             const uploadDestinationSection = document.getElementById('uploadDestinationSection');
+            const vimeoUploadOptions = document.getElementById('vimeoUploadOptions');
             const externalVideoUrl = document.getElementById('external_video_url');
             const fileInput = document.getElementById('fileInput');
             const videoPreviewContainer = document.getElementById('videoPreviewContainer');
 
+            // Hide all sections first
+            if (localSection) localSection.classList.add('hidden');
+            if (externalSection) externalSection.classList.add('hidden');
+            if (uploadDestinationSection) uploadDestinationSection.classList.add('hidden');
+            if (vimeoUploadOptions) vimeoUploadOptions.classList.add('hidden');
+
             if (source === 'local') {
                 if (localSection) localSection.classList.remove('hidden');
-                if (externalSection) externalSection.classList.add('hidden');
                 if (uploadDestinationSection) uploadDestinationSection.classList.remove('hidden');
                 // Clear external URL
                 if (externalVideoUrl) externalVideoUrl.value = '';
                 uploadData.external_video_url = '';
-            } else if (source === 'youtube') {
-                if (localSection) localSection.classList.add('hidden');
+            } else if (source === 'vimeo') {
+                // Show Vimeo-specific options
+                if (vimeoUploadOptions) vimeoUploadOptions.classList.remove('hidden');
+                // Initialize Vimeo method handling
+                handleVimeoMethodSelection();
+            } else if (source === 'youtube' || source === 'mux') {
                 if (externalSection) externalSection.classList.remove('hidden');
-                if (uploadDestinationSection) uploadDestinationSection.classList.add('hidden');
                 // Clear local file
                 if (fileInput) fileInput.value = '';
                 uploadData.video = null;
                 // Hide video preview
                 if (videoPreviewContainer) videoPreviewContainer.classList.add('hidden');
-            } else {
-                // Vimeo or Mux - hide both sections for now (could be extended)
+            }
+        }
+
+        function handleVimeoMethodSelection() {
+            const vimeoMethodRadios = document.querySelectorAll('input[name="vimeo_method"]');
+            const localSection = document.getElementById('localUploadSection');
+            const externalSection = document.getElementById('externalUrlSection');
+            const externalVideoUrl = document.getElementById('external_video_url');
+            const fileInput = document.getElementById('fileInput');
+            const videoPreviewContainer = document.getElementById('videoPreviewContainer');
+
+            function updateVimeoSections() {
+                const selectedMethod = document.querySelector('input[name="vimeo_method"]:checked').value;
+
+                // Hide both sections first
                 if (localSection) localSection.classList.add('hidden');
                 if (externalSection) externalSection.classList.add('hidden');
-                if (uploadDestinationSection) uploadDestinationSection.classList.add('hidden');
+
+                if (selectedMethod === 'file') {
+                    if (localSection) localSection.classList.remove('hidden');
+                    // Clear external URL
+                    if (externalVideoUrl) externalVideoUrl.value = '';
+                    uploadData.external_video_url = '';
+                    uploadData.upload_destination = 'vimeo'; // Set destination to Vimeo
+                } else if (selectedMethod === 'url') {
+                    if (externalSection) externalSection.classList.remove('hidden');
+                    // Clear local file
+                    if (fileInput) fileInput.value = '';
+                    uploadData.video = null;
+                    // Hide video preview
+                    if (videoPreviewContainer) videoPreviewContainer.classList.add('hidden');
+                }
             }
+
+            // Set initial state
+            updateVimeoSections();
+
+            // Add event listeners
+            vimeoMethodRadios.forEach(radio => {
+                radio.addEventListener('change', updateVimeoSections);
+            });
         }
 
         // Final submission
@@ -1944,7 +2277,18 @@
                 if (finalData.video.video_source === 'local') {
                     formData.append('video_file', finalData.video.file);
                     formData.append('upload_destination', finalData.video.upload_destination);
+                } else if (finalData.video.video_source === 'vimeo') {
+                    // Check if uploading file to Vimeo or using URL
+                    const vimeoMethod = document.querySelector('input[name="vimeo_method"]:checked');
+                    if (vimeoMethod && vimeoMethod.value === 'file') {
+                        formData.append('video_file', finalData.video.file);
+                        formData.append('upload_destination', 'vimeo');
+                    } else {
+                        formData.append('vimeo_url', finalData.video.external_video_url);
+                    }
                 } else if (finalData.video.video_source === 'youtube') {
+                    formData.append('external_video_url', finalData.video.external_video_url);
+                } else if (finalData.video.video_source === 'mux') {
                     formData.append('external_video_url', finalData.video.external_video_url);
                 }
 

@@ -1067,6 +1067,17 @@
             margin: 0 auto;
         }
 
+        /* Center single pricing card when only one plan is active */
+        .pricing-grid.single-card {
+            display: flex;
+            justify-content: center;
+        }
+
+        .pricing-grid.single-card .pricing-card {
+            max-width: 370px;
+            width: 100%;
+        }
+
         .feature-disabled {
             color: #b0b0b0 !important;
             text-decoration: line-through;
@@ -1076,6 +1087,16 @@
         @media (min-width: 48rem) {
             .pricing-grid {
                 grid-template-columns: repeat(3, 1fr);
+            }
+
+            /* Reset centering on larger screens with multiple cards */
+            .pricing-grid:not(:has(.pricing-card:only-child)) {
+                justify-items: start;
+            }
+
+            .pricing-grid:has(.pricing-card:only-child) .pricing-card {
+                max-width: none;
+                width: auto;
             }
         }
 
@@ -1123,6 +1144,8 @@
 
         .pricing-body {
             padding: 2.5rem 2rem 2rem 2rem; /* Increased top padding */
+            max-width: 370px;
+            width: auto;
         }
 
         .pricing-description {
@@ -2403,7 +2426,7 @@
                 </header>
 
                 <!-- Pricing Cards -->
-                <div class="pricing-grid" @if($pricingPlans->count() > 0) role="list" aria-label="Available pricing plans" @endif>
+                <div class="pricing-grid {{ $pricingPlans->count() === 1 ? 'single-card' : '' }}" @if($pricingPlans->count() > 0) role="list" aria-label="Available pricing plans" @endif>
                     @forelse($pricingPlans as $plan)
                         <article class="pricing-card" role="listitem" itemscope itemtype="https://schema.org/Product">
                             <meta itemprop="name" content="{{ $plan->name }} Plan">

@@ -98,6 +98,7 @@ class VideoSourceService
             'video_id_field' => $videoId,
             'embed_url' => $embedUrl,
             'mux_playback_id' => $video->mux_playback_id ?? 'none',
+            'vimeo_id' => $video->vimeo_id ?? 'none',
             'status' => $video->status ?? 'unknown'
         ]);
 
@@ -113,12 +114,15 @@ class VideoSourceService
                 break;
 
             case self::SOURCE_VIMEO:
-                if ($videoId) {
+                // Check both external_video_id and vimeo_id for Vimeo videos
+                $vimeoVideoId = $videoId ?: $video->vimeo_id;
+                if ($vimeoVideoId) {
                     Log::info('VideoSourceService::getEmbedHtml - Vimeo video', [
                         'video_id' => $video->id,
-                        'vimeo_video_id' => $videoId
+                        'vimeo_video_id' => $vimeoVideoId,
+                        'source_field' => $videoId ? 'external_video_id' : 'vimeo_id'
                     ]);
-                    return self::getVimeoEmbedHtml($videoId);
+                    return self::getVimeoEmbedHtml($vimeoVideoId);
                 }
                 break;
 
@@ -149,6 +153,7 @@ class VideoSourceService
             'video_id' => $video->id ?? 'unknown',
             'source' => $source,
             'video_id_field' => $videoId,
+            'vimeo_id' => $video->vimeo_id ?? 'none',
             'embed_url' => $embedUrl
         ]);
         return null;
@@ -167,7 +172,7 @@ class VideoSourceService
      */
     private static function getVimeoEmbedHtml($videoId)
     {
-        return '<iframe src="https://player.vimeo.com/video/' . $videoId . '" width="560" height="315" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>';
+        return '<iframe src="https://player.vimeo.com/video/' . $videoId . '" width="560" height="315" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>';
     }
 
     /**
@@ -218,7 +223,9 @@ class VideoSourceService
                 return $videoId ? "https://www.youtube.com/watch?v={$videoId}" : null;
 
             case self::SOURCE_VIMEO:
-                return $videoId ? "https://vimeo.com/{$videoId}" : null;
+                // Check both external_video_id and vimeo_id for Vimeo videos
+                $vimeoVideoId = $videoId ?: $video->vimeo_id;
+                return $vimeoVideoId ? "https://vimeo.com/{$vimeoVideoId}" : null;
 
             case self::SOURCE_MUX:
                 return $video->mux_playback_id ? "https://stream.mux.com/{$video->mux_playback_id}" : null;
