@@ -261,6 +261,88 @@ class AdminController extends Controller
     }
 
     /**
+     * Toggle user status (suspend/unsuspend) via AJAX
+     */
+    public function toggleUserStatus(Request $request, $id)
+    {
+        try {
+            $user = User::findOrFail($id);
+            $reason = $request->input('reason');
+
+            // Log the attempt
+            Log::info('Toggle user status attempt', [
+                'admin_id' => Auth::id(),
+                'target_user_id' => $user->id,
+                'target_user_email' => $user->email,
+                'current_status' => $user->isSuspended() ? 'suspended' : 'active',
+                'action' => $user->isSuspended() ? 'unsuspend' : 'suspend',
+                'reason' => $reason,
+                'ip' => get_client_ip(),
+                'timestamp' => now()->toISOString()
+            ]);
+
+            if ($user->isSuspended()) {
+                // Unsuspend the user
+                $user->update([
+                    'suspended_at' => null,
+                    'suspension_reason' => null
+                ]);
+
+                Log::channel('security')->info('user_unsuspended_via_toggle', [
+                    'admin_id' => Auth::id(),
+                    'user_id' => $user->id,
+                    'user_email' => $user->email,
+                    'ip' => get_client_ip(),
+                    'user_agent' => $request->userAgent(),
+                    'timestamp' => now()->toISOString()
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'User unsuspended successfully.',
+                    'action' => 'unsuspended'
+                ]);
+            } else {
+                // Suspend the user
+                $user->update([
+                    'suspended_at' => now(),
+                    'suspension_reason' => $reason ?: 'Suspended by admin'
+                ]);
+
+                Log::channel('security')->warning('user_suspended_via_toggle', [
+                    'admin_id' => Auth::id(),
+                    'user_id' => $user->id,
+                    'user_email' => $user->email,
+                    'reason' => $reason ?: 'Suspended by admin',
+                    'ip' => get_client_ip(),
+                    'user_agent' => $request->userAgent(),
+                    'timestamp' => now()->toISOString()
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'User suspended successfully.',
+                    'action' => 'suspended'
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('toggle_user_status_error', [
+                'admin_id' => Auth::id(),
+                'user_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'ip' => get_client_ip(),
+                'timestamp' => now()->toISOString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while updating user status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Bulk user operations
      */
     public function bulkUserAction(Request $request)

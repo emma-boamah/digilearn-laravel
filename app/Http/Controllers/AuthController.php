@@ -267,6 +267,20 @@ class AuthController extends Controller
             ])->withInput($request->except('password'));
         }
 
+        // Check if user account is suspended
+        if ($user->isSuspended()) {
+            $this->logAuthEvent('account_suspended', 'account_suspended', $request, [
+                'user_id' => $user->id,
+                'email' => $credentials['email'],
+                'suspended_at' => $user->suspended_at,
+                'suspension_reason' => $user->suspension_reason
+            ]);
+
+            return back()->withErrors([
+                'email' => 'Your account has been suspended. Please contact support for assistance.',
+            ])->withInput($request->except('password'));
+        }
+
         // Attempt authentication
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();

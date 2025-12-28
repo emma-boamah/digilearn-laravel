@@ -244,28 +244,39 @@
         if (!confirm(`Are you sure you want to ${action} this user?`)) {
             return;
         }
-        
+
         const reason = action === 'suspend' ? prompt('Reason for suspension (optional):') : null;
-        
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (!csrfToken) {
+            alert('CSRF token not found. Please refresh the page.');
+            return;
+        }
+
         fetch(`/admin/users/${userId}/toggle-status`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                'X-CSRF-TOKEN': csrfToken.getAttribute('content')
             },
             body: JSON.stringify({ reason: reason })
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 location.reload();
             } else {
-                alert('Error: ' + data.message);
+                alert('Error: ' + (data.message || 'Unknown error'));
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred. Please try again.');
+            alert('An error occurred: ' + error.message + '. Please try again.');
         });
     }
 

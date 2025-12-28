@@ -14,6 +14,7 @@ use App\Http\Middleware\TrackUsersActivity;
 use App\Http\Middleware\RealIpMiddleware;
 use App\Http\Middleware\ThrottleRequestsWithRedirect;
 use App\Http\Middleware\CookieConsentMiddleware;
+use App\Http\Middleware\CheckSuspended;
 
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // Add web-specific middleware here if needed
             ShareErrorsFromSession::class,
             CookieConsentMiddleware::class,
+            CheckSuspended::class,
         ]);
         // Global middleware (applies to all requests)
         $middleware->append(RealIpMiddleware::class);
@@ -49,6 +51,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'check.lock' => CheckWebsiteLock::class,
             'superuser' => SuperuserMiddleware::class,
             'throttle.redirect' => ThrottleRequestsWithRedirect::class,
+            'check.suspended' => CheckSuspended::class,
         ]);
 
         // Rate limiting configuration
