@@ -136,8 +136,9 @@ class GoogleController extends Controller
                     'suspension_reason' => $user->suspension_reason
                 ]);
 
-                return redirect()->route('login')->withErrors([
-                    'error' => 'Your account has been suspended. Please contact support for assistance.'
+                return redirect()->route('auth.suspended', [
+                    'email' => $user->email,
+                    'reason' => $user->suspension_reason
                 ]);
             }
 
