@@ -85,12 +85,13 @@ class EmailVerificationService
                 'exception' => get_class($e)
             ]);
 
+            // On API errors, reject the email to prevent abuse
             // Cache failures for shorter period using tags
-            Cache::tags([$this->cacheTag])->put($cacheKey, true, 3600); // 1 hour
+            Cache::tags([$this->cacheTag])->put($cacheKey, false, 3600); // 1 hour
 
             return [
-                'valid' => true, // Fail open on API errors
-                'message' => null,
+                'valid' => false, // Fail closed on API errors
+                'message' => 'Email verification service is temporarily unavailable. Please try again later or contact support.',
                 'service_error' => true,
                 'error' => $e->getMessage()
             ];

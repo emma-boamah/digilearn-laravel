@@ -169,6 +169,11 @@ class DashboardController extends Controller
         $selectedLevelGroup = session('selected_level_group');
         $user = Auth::user();
 
+        if (!$this->hasAccessToLevelGroup($user, $selectedLevelGroup)) {
+            session()->forget('selected_level_group');
+            return redirect()->route('pricing')->with('warning', 'Please upgrade your subscription to access this content.');
+        }
+
         // University is now handled directly in digilearn view
         // No special redirect needed
 

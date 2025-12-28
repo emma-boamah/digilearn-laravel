@@ -111,7 +111,15 @@ class ProfileController extends Controller
             'subjects.*.in' => 'Invalid subject selected.',
         ]);
 
-        try {
+    // Check grade access
+    if (isset($validated['grade']) && !empty($validated['grade'])) {
+        $levelGroup = $this->getLevelGroupForGrade($validated['grade']);
+        if ($levelGroup && !$this->hasAccessToLevelGroup($user, $levelGroup)) {
+            return back()->withErrors(['grade' => 'You do not have access to this grade level. Please upgrade your subscription.']);
+        }
+    }
+
+    try {
             $avatarUpdated = false;
             $avatarPath = null;
 
@@ -1124,5 +1132,53 @@ class ProfileController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Successfully upgraded to ' . $newPlan->name . '!');
+    }
+
+    private function getLevelGroupForGrade($grade)
+    {
+        $mappings = [
+            'Primary 1' => 'primary-lower',
+            'Primary 2' => 'primary-lower',
+            'Primary 3' => 'primary-lower',
+            'Primary 4' => 'primary-upper',
+            'Primary 5' => 'primary-upper',
+            'Primary 6' => 'primary-upper',
+            'JHS 1' => 'jhs',
+            'JHS 2' => 'jhs',
+            'JHS 3' => 'jhs',
+            'SHS 1' => 'shs',
+            'SHS 2' => 'shs',
+            'SHS 3' => 'shs',
+            'University Year 1' => 'university',
+            'University Year 2' => 'university',
+            'University Year 3' => 'university',
+            'University Year 4' => 'university',
+            'University Year 5' => 'university',
+            'University Year 6' => 'university',
+        ];
+        return $mappings[$grade] ?? null;
+    }
+
+    private function hasAccessToLevelGroup($user, $groupId)
+    {
+        // Superuser has access to all groups
+        if ($user->is_superuser) {
+            return true;
+        }
+
+        // Free access to primary-lower for all users
+        if ($groupId === 'primary-lower') {
+            return true;
+        }
+
+        // Check if user has active subscription or trial
+        $currentSubscription = $user->currentSubscription;
+
+        if (!$currentSubscription) {
+            return false;
+        }
+
+        // All plans have access to all content during active subscription or trial
+        return $currentSubscription->isActive() || $currentSubscription->isInTrial();
     }
 }
