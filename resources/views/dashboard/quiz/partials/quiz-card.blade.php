@@ -1,4 +1,4 @@
-<div class="quiz-card" data-quiz-id="{{ $quiz['id'] }}" data-open-quiz>
+<div class="quiz-card" data-quiz-id="{{ $quiz['id'] }}">
     <!-- Quiz Header with Icon and Badge -->
     <div class="quiz-header">
         <div class="quiz-icon-container">
@@ -55,23 +55,13 @@
             </div>
         </div>
 
-        <!-- Quiz Rating Section -->
-        @if(($quiz['total_ratings'] ?? 0) > 0 || ($quiz['average_rating'] ?? 0) > 0)
-        <div class="quiz-rating-section">
-            <div class="rating-display">
-                <div class="rating-stars">
-                    @php
-                        $rating = round($quiz['average_rating'] ?? 0);
-                    @endphp
-                    @for($i = 1; $i <= 5; $i++)
-                        <svg class="star {{ $i <= $rating ? 'filled' : '' }}" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                        </svg>
-                    @endfor
-                </div>
-                <span class="rating-score">{{ number_format($quiz['average_rating'] ?? 0, 1) }}</span>
-                <span class="rating-count">({{ $quiz['total_ratings'] ?? 0 }} ratings)</span>
-            </div>
+        <!-- Reviews Link -->
+        @if(($quiz['total_ratings'] ?? 0) > 0)
+        <div class="quiz-reviews-link">
+            <a href="#" onclick="openReviewsModal({{ $quiz['id'] }}); return false;" class="reviews-link">
+                <i class="fas fa-star"></i>
+                See reviews
+            </a>
         </div>
         @endif
 
@@ -94,7 +84,13 @@
                 <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.01M15 10h1.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                {{ isset($quiz['user_progress']) && $quiz['user_progress'] > 0 ? 'Continue Quiz' : 'Start Quiz' }}
+                @if(isset($quiz['user_progress']) && $quiz['user_progress'] == 100)
+                    Retake Quiz
+                @elseif(isset($quiz['user_progress']) && $quiz['user_progress'] > 0)
+                    Continue Quiz
+                @else
+                    Start Quiz
+                @endif
             </button>
             @if(($quiz['attempts_count'] ?? 0) > 0)
                 <button class="quiz-preview-btn">
@@ -102,7 +98,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20h9"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
                     </svg>
-                    Revise Notes
+                    Revise Quiz
                 </button>
             @endif
         </div>
@@ -119,10 +115,10 @@
                 @endif
             </span>
             <span class="quiz-rating">
-                @if(isset($quiz['rating']) && $quiz['rating'] > 0)
+                @if(isset($quiz['user_rating']) && $quiz['user_rating'] > 0)
                     <div class="rating-stars">
                         @for($i = 1; $i <= 5; $i++)
-                            <svg class="star {{ $i <= $quiz['rating'] ? 'filled' : '' }}" fill="currentColor" viewBox="0 0 24 24">
+                            <svg class="star {{ $i <= $quiz['user_rating'] ? 'filled' : '' }}" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                             </svg>
                         @endfor
@@ -131,6 +127,24 @@
                     <span class="no-rating">Not rated</span>
                 @endif
             </span>
+        </div>
+    </div>
+
+    <!-- Reviews Modal -->
+    <div class="reviews-modal-overlay" id="reviewsModal-{{ $quiz['id'] }}">
+        <div class="reviews-modal">
+            <div class="reviews-modal-header">
+                <h3>Reviews for {{ $quiz['title'] }}</h3>
+                <button class="reviews-modal-close" onclick="closeReviewsModal({{ $quiz['id'] }})">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="reviews-modal-content" id="reviewsContent-{{ $quiz['id'] }}">
+                <div class="reviews-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading reviews...</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>

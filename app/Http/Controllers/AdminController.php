@@ -2282,9 +2282,16 @@ class AdminController extends Controller
         try {
             DB::beginTransaction();
 
-            // Step 1: Upload and store the video
+            $responseData = [
+                'video_id' => null,
+                'documents_count' => 0,
+                'quiz_id' => null,
+                'questions_count' => 0
+            ];
+
+            // Step 1: Upload and store the video (only if video data is provided)
             $video = null;
-            if ($request->hasFile('video_file') || $request->filled('external_video_url') || $request->filled('vimeo_url')) {
+            if ($request->hasFile('video_file') || $request->filled('external_video_url') || $request->filled('vimeo_url') || $request->filled('title')) {
                 $videoData = [
                     'title' => $request->title,
                     'subject_id' => $request->subject_id,
@@ -2320,6 +2327,7 @@ class AdminController extends Controller
                 }
 
                 $video = Video::create($videoData);
+                $responseData['video_id'] = $video->id;
 
                 // Handle local video file upload (for Vimeo upload or local storage)
                 if ($request->hasFile('video_file')) {
@@ -2379,9 +2387,9 @@ class AdminController extends Controller
                 }
             }
 
-            // Step 2: Upload documents (optional)
+            // Step 2: Upload documents (optional) - only if documents are provided and video_id is set
             $documents = [];
-            if ($request->hasFile('documents')) {
+            if ($request->hasFile('documents') && $video) {
                 foreach ($request->file('documents') as $docFile) {
                     // Handle document file upload first
                     $filename = time() . '_' . uniqid() . '.' . $docFile->getClientOriginalExtension();
@@ -2390,7 +2398,7 @@ class AdminController extends Controller
                     $docData = [
                         'title' => pathinfo($docFile->getClientOriginalName(), PATHINFO_FILENAME),
                         'file_path' => $path,
-                        'description' => 'Related document for video: ' . $request->title,
+                        'description' => 'Related document for video: ' . ($video ? $video->title : 'Unknown'),
                         'uploaded_by' => auth()->id(),
                         'video_id' => $video ? $video->id : null,
                         'grade_level' => $request->grade_level
@@ -2399,31 +2407,34 @@ class AdminController extends Controller
                     $document = Document::create($docData);
                     $documents[] = $document;
                 }
+                $responseData['documents_count'] = count($documents);
             }
 
-            // Step 3: Create quiz (optional)
+            // Step 3: Create quiz (optional) - only if quiz data is provided and video_id is set
             $quiz = null;
-            if ($request->filled('quiz_data')) {
+            if ($request->filled('quiz_data') && $video) {
                 $quizData = json_decode($request->quiz_data, true);
 
                 if (!empty($quizData['questions'])) {
                     // Find or create subject
                     $subject = \App\Models\Subject::firstOrCreate(
-                        ['name' => $request->title],
+                        ['name' => $video->title],
                         ['description' => 'Auto-created subject for quiz']
                     );
 
                     $quizDataToCreate = [
-                        'title' => 'Quiz for: ' . $request->title,
+                        'title' => 'Quiz for: ' . $video->title,
                         'subject_id' => $subject->id,
                         'uploaded_by' => auth()->id(),
                         'grade_level' => $request->grade_level,
-                        'video_id' => $video ? $video->id : null,
+                        'video_id' => $video->id,
                         'quiz_data' => json_encode($quizData),
                         'is_featured' => false
                     ];
 
                     $quiz = Quiz::create($quizDataToCreate);
+                    $responseData['quiz_id'] = $quiz->id;
+                    $responseData['questions_count'] = $quiz->questions()->count();
                 }
             }
 
@@ -2432,12 +2443,7 @@ class AdminController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Content package uploaded successfully!',
-                'data' => [
-                    'video_id' => $video ? $video->id : null,
-                    'documents_count' => count($documents),
-                    'quiz_id' => $quiz ? $quiz->id : null,
-                    'questions_count' => $quiz ? $quiz->questions()->count() : 0
-                ]
+                'data' => $responseData
             ]);
 
         } catch (\Exception $e) {
@@ -2767,7 +2773,60 @@ class AdminController extends Controller
         }
 
         try {
-            // Delete the content based on type
+            $vimeoDeletionSuccess = true;
+            $vimeoDeletionError = null;
+
+            // Special handling for video deletion based on source
+            if ($contentType === 'video') {
+                // For Vimeo videos, delete from both database and Vimeo
+                if ($content->video_source === 'vimeo' && $content->vimeo_id) {
+                    Log::info('Preparing to delete Vimeo video from both database and Vimeo', [
+                        'video_id' => $content->id,
+                        'vimeo_id' => $content->vimeo_id,
+                        'admin_id' => Auth::id()
+                    ]);
+
+                    // Attempt to delete from Vimeo first
+                    try {
+                        $vimeoService = new \App\Services\VimeoService();
+                        $vimeoDeletionSuccess = $vimeoService->deleteVideo($content->vimeo_id);
+
+                        if ($vimeoDeletionSuccess) {
+                            Log::info('Successfully deleted video from Vimeo', [
+                                'video_id' => $content->id,
+                                'vimeo_id' => $content->vimeo_id,
+                                'admin_id' => Auth::id()
+                            ]);
+                        } else {
+                            Log::warning('Failed to delete video from Vimeo, but proceeding with database deletion', [
+                                'video_id' => $content->id,
+                                'vimeo_id' => $content->vimeo_id,
+                                'admin_id' => Auth::id()
+                            ]);
+                            $vimeoDeletionError = 'Failed to delete from Vimeo, but video removed from database';
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('Exception deleting video from Vimeo, proceeding with database deletion', [
+                            'video_id' => $content->id,
+                            'vimeo_id' => $content->vimeo_id,
+                            'admin_id' => Auth::id(),
+                            'error' => $e->getMessage()
+                        ]);
+                        $vimeoDeletionSuccess = false;
+                        $vimeoDeletionError = 'Error deleting from Vimeo: ' . $e->getMessage() . ', but video removed from database';
+                    }
+                }
+                // For YouTube videos, we only delete from database (as requested)
+                elseif ($content->video_source === 'youtube') {
+                    Log::info('Deleting YouTube video from database only', [
+                        'video_id' => $content->id,
+                        'youtube_video_id' => $content->external_video_id,
+                        'admin_id' => Auth::id()
+                    ]);
+                }
+            }
+
+            // Delete the content from database
             switch ($contentType) {
                 case 'video':
                     $this->destroyVideo($content);
@@ -2782,9 +2841,23 @@ class AdminController extends Controller
                     return response()->json(['success' => false, 'message' => 'Unknown content type.'], 400);
             }
 
+            // Prepare response message based on deletion results
+            if ($contentType === 'video' && $content->video_source === 'vimeo') {
+                if ($vimeoDeletionSuccess) {
+                    $message = 'Video deleted successfully from both database and Vimeo!';
+                } else {
+                    $message = $vimeoDeletionError ?: 'Video deleted from database, but Vimeo deletion failed.';
+                }
+            } elseif ($contentType === 'video' && $content->video_source === 'youtube') {
+                $message = 'Video deleted successfully from database (YouTube video remains unchanged)!';
+            } else {
+                $message = ucfirst($contentType) . ' deleted successfully!';
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => ucfirst($contentType) . ' deleted successfully!'
+                'message' => $message,
+                'vimeo_deletion_success' => $contentType === 'video' && $content->video_source === 'vimeo' ? $vimeoDeletionSuccess : null
             ]);
 
         } catch (\Exception $e) {
@@ -2845,6 +2918,274 @@ class AdminController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fix Vimeo privacy settings: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Upload video component only
+     */
+    public function uploadVideoComponent(Request $request)
+    {
+        try {
+            $request->validate([
+                'title' => 'required|string',
+                'subject_id' => 'required|exists:subjects,id',
+                'description' => 'nullable|string',
+                'grade_level' => 'required|string',
+                'video_source' => 'required|string',
+                'video_file' => 'nullable|file',
+                'thumbnail_file' => 'nullable|image',
+                'external_video_url' => 'nullable|url',
+                'vimeo_url' => 'nullable|url',
+                'upload_destination' => 'nullable|string'
+            ]);
+
+            DB::beginTransaction();
+
+            $videoData = [
+                'title' => $request->title,
+                'subject_id' => $request->subject_id,
+                'description' => $request->description,
+                'grade_level' => $request->grade_level,
+                'uploaded_by' => auth()->id(),
+                'video_source' => $request->video_source ?? 'local',
+                'status' => 'pending'
+            ];
+
+            // Handle different video sources
+            if ($request->filled('vimeo_url') && $request->video_source === 'vimeo') {
+                $parsed = \App\Services\VideoSourceService::parseVideoUrl($request->vimeo_url);
+                if ($parsed && $parsed['source'] === 'vimeo') {
+                    $videoData['external_video_id'] = $parsed['video_id'];
+                    $videoData['external_video_url'] = $parsed['embed_url'];
+                    $videoData['video_source'] = 'vimeo';
+                    $videoData['status'] = 'approved';
+                } else {
+                    throw new \Exception('Invalid Vimeo URL provided');
+                }
+            } elseif ($request->filled('external_video_url')) {
+                $parsed = \App\Services\VideoSourceService::parseVideoUrl($request->external_video_url);
+                if ($parsed) {
+                    $videoData['external_video_id'] = $parsed['video_id'];
+                    $videoData['external_video_url'] = $parsed['embed_url'];
+                    $videoData['status'] = 'approved';
+                } else {
+                    throw new \Exception('Invalid video URL provided');
+                }
+            }
+
+            $video = Video::create($videoData);
+
+            // Handle file upload
+            if ($request->hasFile('video_file')) {
+                $videoFile = $request->file('video_file');
+                $filename = time() . '_' . $video->id . '.' . $videoFile->getClientOriginalExtension();
+                $tempPath = $videoFile->storeAs('temp_videos', $filename, 'public');
+                $video->update(['temp_file_path' => $tempPath]);
+
+                if ($request->filled('upload_destination')) {
+                    $video->update(['video_source' => $request->upload_destination]);
+
+                    if ($request->upload_destination === 'vimeo') {
+                        $vimeoService = new \App\Services\VimeoService();
+                        $result = $vimeoService->uploadVideo($tempPath, $video->title, $video->description);
+
+                        if ($result['success']) {
+                            $video->update([
+                                'vimeo_id' => $result['video_id'],
+                                'vimeo_embed_url' => $result['embed_url'],
+                                'status' => 'approved',
+                                'temp_file_path' => null,
+                                'temp_expires_at' => null
+                            ]);
+                            Storage::disk('public')->delete($tempPath);
+                        } else {
+                            $video->update(['status' => 'rejected']);
+                            throw new \Exception('Failed to upload to Vimeo: ' . ($result['error'] ?? 'Unknown error'));
+                        }
+                    }
+                }
+            }
+
+            // Handle thumbnail
+            if ($request->hasFile('thumbnail_file')) {
+                $thumbnailFile = $request->file('thumbnail_file');
+                $thumbnailFilename = time() . '_thumb_' . $video->id . '.' . $thumbnailFile->getClientOriginalExtension();
+                $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailFilename, 'public');
+                $video->update(['thumbnail_path' => $thumbnailPath]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Video uploaded successfully',
+                'data' => ['video_id' => $video->id]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Video upload failed', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Upload documents component only
+     */
+    public function uploadDocumentsComponent(Request $request)
+    {
+        try {
+            $request->validate([
+                'video_id' => 'required|exists:videos,id',
+                'documents' => 'required|array',
+                'documents.*' => 'file|max:20480' // 20MB max
+            ]);
+
+            $video = Video::findOrFail($request->video_id);
+            $documents = [];
+
+            foreach ($request->file('documents') as $docFile) {
+                $filename = time() . '_' . uniqid() . '.' . $docFile->getClientOriginalExtension();
+                $path = $docFile->storeAs('documents', $filename, 'public');
+
+                $docData = [
+                    'title' => pathinfo($docFile->getClientOriginalName(), PATHINFO_FILENAME),
+                    'file_path' => $path,
+                    'description' => 'Related document for video: ' . $video->title,
+                    'uploaded_by' => auth()->id(),
+                    'video_id' => $video->id,
+                    'grade_level' => $video->grade_level
+                ];
+
+                $document = Document::create($docData);
+                $documents[] = $document;
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => count($documents) . ' documents uploaded successfully',
+                'data' => ['documents_count' => count($documents)]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Documents upload failed', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Upload quiz component only
+     */
+    public function uploadQuizComponent(Request $request)
+    {
+        try {
+            $request->validate([
+                'video_id' => 'required|exists:videos,id',
+                'quiz_data' => 'required|string',
+                'difficulty_level' => 'required|string',
+                'time_limit_minutes' => 'required|integer|min:1'
+            ]);
+
+            $video = Video::findOrFail($request->video_id);
+            $quizData = json_decode($request->quiz_data, true);
+
+            if (empty($quizData['questions'])) {
+                throw new \Exception('No questions found in quiz data');
+            }
+
+            // Find or create subject
+            $subject = \App\Models\Subject::firstOrCreate(
+                ['name' => $video->title],
+                ['description' => 'Auto-created subject for quiz']
+            );
+
+            $quizDataToCreate = [
+                'title' => 'Quiz for: ' . $video->title,
+                'subject_id' => $subject->id,
+                'uploaded_by' => auth()->id(),
+                'grade_level' => $video->grade_level,
+                'video_id' => $video->id,
+                'quiz_data' => json_encode($quizData),
+                'is_featured' => false
+            ];
+
+            $quiz = Quiz::create($quizDataToCreate);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Quiz uploaded successfully',
+                'data' => [
+                    'quiz_id' => $quiz->id,
+                    'questions_count' => $quiz->questions()->count()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Quiz upload failed', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Delete video from Vimeo only (called after database deletion)
+     */
+    public function destroyVimeoVideo(Request $request)
+    {
+        $request->validate([
+            'vimeo_id' => 'required|string',
+            'video_id' => 'required|integer'
+        ]);
+
+        $vimeoId = $request->vimeo_id;
+        $videoId = $request->video_id;
+
+        try {
+            Log::info('Attempting to delete video from Vimeo only', [
+                'video_id' => $videoId,
+                'vimeo_id' => $vimeoId,
+                'admin_id' => Auth::id()
+            ]);
+
+            $vimeoService = new \App\Services\VimeoService();
+            $deletionSuccess = $vimeoService->deleteVideo($vimeoId);
+
+            if ($deletionSuccess) {
+                Log::info('Successfully deleted video from Vimeo', [
+                    'video_id' => $videoId,
+                    'vimeo_id' => $vimeoId,
+                    'admin_id' => Auth::id()
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Video successfully deleted from Vimeo!'
+                ]);
+            } else {
+                Log::warning('Failed to delete video from Vimeo', [
+                    'video_id' => $videoId,
+                    'vimeo_id' => $vimeoId,
+                    'admin_id' => Auth::id()
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to delete video from Vimeo. It may have already been deleted or you may not have permission.'
+                ], 500);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Exception deleting video from Vimeo', [
+                'video_id' => $videoId,
+                'vimeo_id' => $vimeoId,
+                'admin_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while deleting from Vimeo: ' . $e->getMessage()
             ], 500);
         }
     }

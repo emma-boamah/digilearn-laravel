@@ -81,6 +81,3 @@ Create a comprehensive method that:
 - Vimeo API rate limits
 - Performance impact of on-demand thumbnail generation
 - Storage space for generated thumbnails
-
-## Next Steps
-Switch to Code mode to implement the changes outlined above.

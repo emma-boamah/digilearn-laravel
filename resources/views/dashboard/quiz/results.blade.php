@@ -241,9 +241,28 @@
 
         .section-header {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
             margin-bottom: 1.5rem;
+        }
+
+        .section-header > div:first-child {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .time-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            font-weight: 500;
+        }
+
+        .time-info i {
+            color: var(--warning-yellow);
         }
 
         .section-title {
@@ -617,6 +636,28 @@
             100% { transform: translateY(-1000px) rotateZ(720deg); opacity: 0; }
         }
 
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
         .animate-fade-in-up {
             animation: fadeInUp 0.6s ease-out;
         }
@@ -627,6 +668,261 @@
             height: 10px;
             background: var(--primary-red);
             animation: confetti 3s ease-out infinite;
+        }
+
+        /* Quiz Rating Modal */
+        .rating-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .rating-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .rating-modal {
+            background: var(--white);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            transform: scale(0.9) translateY(20px);
+            transition: all 0.3s ease;
+            border: 2px solid rgba(225, 30, 45, 0.1);
+        }
+
+        .rating-modal-overlay.active .rating-modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .rating-modal::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-red), var(--secondary-blue));
+            border-radius: 1rem 1rem 0 0;
+        }
+
+        .rating-modal-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .rating-modal-header .modal-close {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray-400);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .rating-modal-header .modal-close:hover {
+            background: var(--gray-100);
+            color: var(--gray-600);
+        }
+
+        .rating-prompt-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .rating-prompt-header i {
+            font-size: 2rem;
+            color: var(--warning-yellow);
+            margin-bottom: 1rem;
+        }
+
+        .rating-prompt-header h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 0.5rem;
+        }
+
+        .rating-prompt-header p {
+            color: var(--gray-600);
+            font-size: 0.875rem;
+        }
+
+        .rating-stars-input {
+            margin-bottom: 1.5rem;
+        }
+
+        .rating-stars-input label {
+            display: block;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        .stars-container {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .stars-container input[type="radio"] {
+            display: none;
+        }
+
+        .star-label {
+            font-size: 2rem;
+            color: var(--gray-300);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            padding: 0.25rem;
+        }
+
+        .star-label {
+            font-size: 2rem;
+            color: var(--gray-300);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            padding: 0.25rem;
+        }
+
+        .star-label:hover,
+        .star-label.filled {
+            color: var(--warning-yellow);
+        }
+
+        .rating-review {
+            margin-bottom: 2rem;
+        }
+
+        .rating-review label {
+            display: block;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        .rating-review textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid var(--gray-300);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--gray-900);
+            resize: vertical;
+            min-height: 80px;
+            transition: all 0.2s ease;
+        }
+
+        .rating-review textarea:focus {
+            outline: none;
+            border-color: var(--primary-red);
+            box-shadow: 0 0 0 3px rgba(225, 30, 45, 0.1);
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 0.75rem;
+            color: var(--gray-500);
+            margin-top: 0.25rem;
+        }
+
+        .rating-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        /* Mobile responsive for rating modal */
+        @media (max-width: 768px) {
+            .rating-modal {
+                padding: 1.5rem;
+                margin: 1rem;
+                max-width: calc(100vw - 2rem);
+            }
+
+            .rating-modal-header h3 {
+                font-size: 1.125rem;
+            }
+
+            .stars-container {
+                gap: 0.25rem;
+            }
+
+            .star-label {
+                font-size: 1.75rem;
+            }
+
+            .rating-actions {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .skip-rating,
+            .submit-rating {
+                width: 100%;
+                padding: 0.875rem 1rem;
+                font-size: 0.875rem;
+            }
+        }
+
+        .skip-rating,
+        .submit-rating {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .skip-rating {
+            background: var(--gray-100);
+            color: var(--gray-700);
+        }
+
+        .skip-rating:hover {
+            background: var(--gray-200);
+            transform: translateY(-2px);
+        }
+
+        .submit-rating {
+            background: var(--primary-red);
+            color: var(--white);
+        }
+
+        .submit-rating:hover {
+            background: var(--primary-red-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
 
         /* Responsive Design */
@@ -730,6 +1026,53 @@
                                 <p>Time allocated</p> {{-- Changed text --}}
                             </div>
                         </div>
+            
+                        <!-- Quiz Rating Modal -->
+                        @if(!$hasRated)
+                        <div class="rating-modal-overlay" id="ratingModal">
+                            <div class="rating-modal">
+                                <div class="rating-modal-header">
+                                    <i class="fas fa-star"></i>
+                                    <h3>How was this quiz?</h3>
+                                    <p>Your feedback helps us improve our content!</p>
+                                    <button class="modal-close" onclick="closeRatingModal()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+            
+                                <form id="ratingForm" method="POST" action="{{ route('quiz.rate', $quiz['id'] ?? 1) }}">
+                                    @csrf
+                                    <div class="rating-stars-input">
+                                        <label>Rate this quiz:</label>
+                                        <div class="stars-container">
+                                            @for($i = 1; $i <= 5; $i++)
+                                                <input type="radio" id="star{{ $i }}" name="rating" value="{{ $i }}" required>
+                                                <label for="star{{ $i }}" class="star-label">
+                                                    <i class="fas fa-star"></i>
+                                                </label>
+                                            @endfor
+                                        </div>
+                                    </div>
+            
+                                    <div class="rating-review">
+                                        <label for="review">Share your thoughts (optional):</label>
+                                        <textarea id="review" name="review" rows="3" placeholder="What did you like or dislike about this quiz? Any suggestions for improvement?" maxlength="500"></textarea>
+                                        <div class="char-count">
+                                            <span id="charCount">0</span>/500 characters
+                                        </div>
+                                    </div>
+            
+                                    <div class="rating-actions">
+                                        <button type="button" class="skip-rating" onclick="closeRatingModal()">Maybe Later</button>
+                                        <button type="submit" class="submit-rating">
+                                            <i class="fas fa-paper-plane"></i>
+                                            Submit Rating
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        @endif
                     </div>
                 </div>
                 
@@ -748,7 +1091,15 @@
             <!-- Question Review -->
             <div class="question-review animate-fade-in-up">
                 <div class="section-header">
-                    <h2 class="section-title">Question Review</h2>
+                    <div>
+                        <h2 class="section-title">Question Review</h2>
+                        @if($timeTaken > 0)
+                            <div class="time-info">
+                                <i class="fas fa-clock"></i>
+                                <span>Completed in {{ floor($timeTaken / 60) }}:{{ str_pad($timeTaken % 60, 2, '0', STR_PAD_LEFT) }}</span>
+                            </div>
+                        @endif
+                    </div>
                     <button class="toggle-button" id="toggleReview">
                         <i class="fas fa-eye"></i> Show Details
                     </button>
@@ -1010,6 +1361,145 @@
                 closeShareModal();
             }
         });
+
+        // Close rating modal when clicking outside
+        document.getElementById('ratingModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeRatingModal();
+            }
+        });
+
+        // Rating Modal Functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeRatingForm();
+
+            // Auto-open rating modal after a delay for better UX
+            @if(!$hasRated)
+                setTimeout(() => {
+                    openRatingModal();
+                }, 2000); // 2 second delay
+            @endif
+        });
+
+        function openRatingModal() {
+            const modal = document.getElementById('ratingModal');
+            if (modal) {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            }
+        }
+
+        function closeRatingModal() {
+            const modal = document.getElementById('ratingModal');
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = ''; // Restore scrolling
+            }
+        }
+
+        function initializeRatingForm() {
+            // Character counter for review textarea
+            const reviewTextarea = document.getElementById('review');
+            const charCount = document.getElementById('charCount');
+
+            if (reviewTextarea && charCount) {
+                reviewTextarea.addEventListener('input', function() {
+                    charCount.textContent = this.value.length;
+                });
+            }
+
+            // Star rating interaction
+            const starInputs = document.querySelectorAll('.stars-container input[type="radio"]');
+            starInputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    // Remove filled class from all stars
+                    document.querySelectorAll('.star-label').forEach(label => {
+                        label.classList.remove('filled');
+                    });
+
+                    // Add filled class to selected and previous stars
+                    const selectedValue = parseInt(this.value);
+                    for (let i = 1; i <= selectedValue; i++) {
+                        document.querySelector(`label[for="star${i}"]`).classList.add('filled');
+                    }
+                });
+            });
+
+            // Form submission handling
+            const ratingForm = document.getElementById('ratingForm');
+            if (ratingForm) {
+                ratingForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+
+                    const formData = new FormData(this);
+                    const submitButton = this.querySelector('.submit-rating');
+                    const originalText = submitButton.innerHTML;
+
+                    // Disable button and show loading
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Close the modal and show success message
+                            closeRatingModal();
+                            showNotification('Thank you for your feedback!', 'success');
+                        } else {
+                            throw new Error(data.message || 'Failed to submit rating');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Rating submission error:', error);
+                        showNotification('Failed to submit rating. Please try again.', 'error');
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalText;
+                    });
+                });
+            }
+        }
+
+        function skipRating() {
+            closeRatingModal();
+        }
+
+        function showNotification(message, type) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? 'var(--success-green)' : 'var(--error-red)'};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 0.5rem;
+                box-shadow: var(--shadow-lg);
+                z-index: 10000;
+                font-weight: 500;
+                animation: slideInRight 0.3s ease;
+            `;
+            notification.textContent = message;
+
+            document.body.appendChild(notification);
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
     </script>
 </body>
 </html>
