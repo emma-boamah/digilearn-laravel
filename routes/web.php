@@ -61,6 +61,7 @@ Route::post('/signup', [AuthController::class, 'signup'])->name('signup.submit')
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::get('/unlock', [AuthController::class, 'showUnlock'])->name('unlock');
 Route::post('/unlock', [AuthController::class, 'unlock'])->name('unlock.submit');
+Route::get('/suspended', [AuthController::class, 'showSuspended'])->name('auth.suspended');
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])
     ->middleware('throttle.redirect:'.config('services.google.rate_limit', 5).',1')
     ->name('auth.google');

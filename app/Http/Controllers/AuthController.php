@@ -62,6 +62,14 @@ class AuthController extends Controller
         return view('auth.unlock');
     }
 
+    public function showSuspended(Request $request)
+    {
+        $userEmail = $request->query('email');
+        $suspensionReason = $request->query('reason');
+
+        return view('auth.suspended', compact('userEmail', 'suspensionReason'));
+    }
+
     public function unlock(Request $request)
     {
         $request->validate([
@@ -276,9 +284,11 @@ class AuthController extends Controller
                 'suspension_reason' => $user->suspension_reason
             ]);
 
-            return back()->withErrors([
-                'email' => 'Your account has been suspended. Please contact support for assistance.',
-            ])->withInput($request->except('password'));
+            // Redirect to suspended account page with user details
+            return redirect()->route('auth.suspended', [
+                'email' => $credentials['email'],
+                'reason' => $user->suspension_reason
+            ]);
         }
 
         // Attempt authentication
