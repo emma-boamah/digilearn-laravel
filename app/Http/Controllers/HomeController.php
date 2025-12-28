@@ -97,6 +97,10 @@ class HomeController extends Controller
             [
                 'question' => 'Are certificates provided upon course completion?',
                 'answer' => 'Yes, we provide certificates of completion for most of our courses. These certificates can be added to your resume or LinkedIn profile to showcase your new skills.'
+            ],
+            [
+                'question' => 'What happens if my account gets suspended?',
+                'answer' => 'Account suspension occurs when community guidelines are violated. Learn more about our suspension policies, appeal process, and prevention tips in our <a href="' . route('guidelines.account-suspension') . '" style="color: #3b82f6; text-decoration: underline;">Account Suspension Guidelines</a>.'
             ]
         ];
 

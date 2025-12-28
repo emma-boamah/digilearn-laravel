@@ -413,7 +413,7 @@
                             </div>
                         </a>
 
-                        <a href="{{ route('contact') }}" class="help-option">
+                        <a href="{{ route('guidelines.account-suspension') }}" class="help-option">
                             <div class="help-icon">
                                 <i class="fas fa-question-circle"></i>
                             </div>

@@ -46,6 +46,9 @@ Route::get('/session-test', function (Request $request) {
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', [AboutController::class, 'index'])->name('about');
 Route::get('/contact', [ContactController::class, 'index'])->name('contact');
+Route::get('/guidelines/account-suspension', function () {
+    return view('guidelines.account-suspension');
+})->name('guidelines.account-suspension');
 Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
 Route::get('/pricing/pricing-details', [PricingController::class, 'show'])->name('pricing-details');
 
