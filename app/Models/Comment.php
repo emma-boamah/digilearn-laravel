@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\CommentUserLike;
 
 class Comment extends Model
 {
@@ -79,6 +80,30 @@ class Comment extends Model
     public function replies(): HasMany
     {
         return $this->hasMany(Comment::class, 'parent_id')->with(['user', 'replies']);
+    }
+
+    /**
+     * Get the user likes/dislikes for this comment.
+     */
+    public function userLikes(): HasMany
+    {
+        return $this->hasMany(CommentUserLike::class);
+    }
+
+    /**
+     * Check if a user has liked this comment.
+     */
+    public function isLikedBy($userId): bool
+    {
+        return $this->userLikes()->where('user_id', $userId)->where('type', 'like')->exists();
+    }
+
+    /**
+     * Check if a user has disliked this comment.
+     */
+    public function isDislikedBy($userId): bool
+    {
+        return $this->userLikes()->where('user_id', $userId)->where('type', 'dislike')->exists();
     }
 
     /**
