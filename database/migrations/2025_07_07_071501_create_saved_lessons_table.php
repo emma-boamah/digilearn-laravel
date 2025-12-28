@@ -21,11 +21,11 @@ return new class extends Migration
             $table->string('lesson_year');
             $table->string('lesson_duration');
             $table->string('lesson_thumbnail');
-            $table->string('lesson_video_url');
+            $table->string('lesson_video_url', 1000); // Increased to allow longer URLs
             $table->string('selected_level');
             $table->timestamp('saved_at');
             $table->timestamps();
-            
+
             // Ensuring a user can't save the same lesson twice
             $table->unique(['user_id', 'lesson_id']);
         });

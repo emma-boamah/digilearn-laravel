@@ -1189,11 +1189,31 @@ class DashboardController extends Controller
             'lesson_year' => 'required|string|max:4',
             'lesson_duration' => 'required|string|max:20',
             'lesson_thumbnail' => 'required|string|max:500',
-            'lesson_video_url' => 'required|string|max:500',
+            'lesson_video_url' => 'required|string|max:1000',
             'selected_level' => 'required|string|max:50',
         ]);
 
         try {
+            // Log the incoming data for debugging
+            Log::info('lesson_save_attempt', [
+                'user_id' => Auth::id(),
+                'lesson_id' => $lessonId,
+                'data_lengths' => [
+                    'title' => strlen($request->lesson_title ?? ''),
+                    'subject' => strlen($request->lesson_subject ?? ''),
+                    'instructor' => strlen($request->lesson_instructor ?? ''),
+                    'year' => strlen($request->lesson_year ?? ''),
+                    'duration' => strlen($request->lesson_duration ?? ''),
+                    'thumbnail' => strlen($request->lesson_thumbnail ?? ''),
+                    'video_url' => strlen($request->lesson_video_url ?? ''),
+                    'selected_level' => strlen($request->selected_level ?? ''),
+                ],
+                'data_preview' => [
+                    'title' => substr($request->lesson_title ?? '', 0, 50),
+                    'video_url' => substr($request->lesson_video_url ?? '', 0, 100),
+                ]
+            ]);
+
             SavedLesson::create([
                 'user_id' => Auth::id(),
                 'lesson_id' => $lessonId,
@@ -1208,7 +1228,7 @@ class DashboardController extends Controller
                 'saved_at' => now(),
             ]);
 
-            Log::info('lesson_saved', [
+            Log::info('lesson_saved_success', [
                 'user_id' => Auth::id(),
                 'lesson_id' => $lessonId,
                 'subscription_plan' => Auth::user()->currentSubscription?->pricingPlan?->name ?? 'Free',
@@ -1220,8 +1240,27 @@ class DashboardController extends Controller
                 'message' => 'Lesson saved successfully!',
                 'saved' => true
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('lesson_save_validation_error', [
+                'user_id' => Auth::id(),
+                'lesson_id' => $lessonId,
+                'errors' => $e->errors(),
+                'data' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid data provided. Please refresh the page and try again.',
+                'saved' => false
+            ], 422);
         } catch (\Exception $e) {
             if ($e->getCode() === '23000') { // Duplicate entry
+                Log::info('lesson_save_duplicate', [
+                    'user_id' => Auth::id(),
+                    'lesson_id' => $lessonId,
+                    'error' => $e->getMessage()
+                ]);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Lesson is already saved!',
@@ -1232,7 +1271,10 @@ class DashboardController extends Controller
             Log::error('lesson_save_error', [
                 'user_id' => Auth::id(),
                 'lesson_id' => $lessonId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'trace' => $e->getTraceAsString(),
+                'data' => $request->all()
             ]);
 
             return response()->json([

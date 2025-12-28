@@ -2322,7 +2322,7 @@
                                         <span class="item-views">{{ number_format($video->views ?? 0) }} views</span>
                                         <span class="item-status {{ $video->status }}">{{ ucfirst($video->status) }}</span>
                                     </div>
-                                </aside>
+                                </div>
                             </div>
                             @empty
                             <div class="empty-tab">
@@ -3730,14 +3730,37 @@
             });
         }
 
+        // Lesson data for saving functionality
+        @php
+        $lessonDataArray = [
+            'id' => $lesson['id'] ?? null,
+            'title' => $lesson['title'] ?? '',
+            'subject' => $lesson['subject'] ?? '',
+            'instructor' => $lesson['instructor'] ?? '',
+            'year' => $lesson['year'] ?? '',
+            'duration' => $lesson['duration'] ?? '',
+            'thumbnail' => $lesson['thumbnail'] ?? '',
+            'video_url' => $lesson['video_url'] ?? '',
+            'selected_level' => $selectedLevelGroup ?? ''
+        ];
+        @endphp
+        const lessonData = @json($lessonDataArray);
+
         // Enhanced save lesson functionality
         function initializeSaveLesson() {
             const saveButton = document.querySelector('.action-btn-primary');
-            
+
             if (saveButton && saveButton.textContent.trim().includes('Save Lesson')) {
                 // Check if lesson is already saved
-                const lessonId = '{{ $lesson["id"] ?? "" }}';
-                
+                const lessonId = lessonData.id;
+
+                // Only proceed if we have a valid lesson ID
+                if (!lessonId) {
+                    console.error('No lesson ID available for save functionality');
+                    saveButton.style.display = 'none';
+                    return;
+                }
+
                 // Check saved status on page load
                 fetch(`/dashboard/lesson/${lessonId}/check-saved`)
                     .then(response => response.json())
@@ -3745,34 +3768,49 @@
                         updateSaveButton(saveButton, data.saved);
                     })
                     .catch(error => console.error('Error checking save status:', error));
-                
+
                 saveButton.addEventListener('click', function(e) {
                     e.preventDefault();
-                    
+
                     const isSaved = this.dataset.saved === 'true';
                     const originalContent = this.innerHTML;
-                    
+
                     // Show loading state
                     this.innerHTML = '<div class="loading-spinner"></div> ' + (isSaved ? 'Removing...' : 'Saving...');
                     this.disabled = true;
-                    
-                    const url = isSaved ? 
-                        `/dashboard/lesson/${lessonId}/unsave` : 
+
+                    const url = isSaved ?
+                        `/dashboard/lesson/${lessonId}/unsave` :
                         `/dashboard/lesson/${lessonId}/save`;
-                    
+
                     const method = isSaved ? 'DELETE' : 'POST';
-                    
+
+                    // Prepare data with validation
                     const requestData = isSaved ? {} : {
-                        lesson_title: '{{ $lesson["title"] ?? "" }}',
-                        lesson_subject: '{{ $lesson["subject"] ?? "" }}',
-                        lesson_instructor: '{{ $lesson["instructor"] ?? "" }}',
-                        lesson_year: '{{ $lesson["year"] ?? "" }}',
-                        lesson_duration: '{{ $lesson["duration"] ?? "" }}',
-                        lesson_thumbnail: '{{ $lesson["thumbnail"] ?? "" }}',
-                        lesson_video_url: '{{ $lesson["video_url"] ?? "" }}',
-                        selected_level: '{{ $selectedLevel ?? "" }}'
+                        lesson_title: lessonData.title,
+                        lesson_subject: lessonData.subject,
+                        lesson_instructor: lessonData.instructor,
+                        lesson_year: lessonData.year,
+                        lesson_duration: lessonData.duration,
+                        lesson_thumbnail: lessonData.thumbnail,
+                        lesson_video_url: lessonData.video_url,
+                        selected_level: lessonData.selected_level
                     };
-                    
+
+                    // Validate required fields
+                    const requiredFields = ['lesson_title', 'lesson_subject', 'lesson_instructor', 'lesson_year', 'lesson_duration', 'lesson_thumbnail', 'lesson_video_url', 'selected_level'];
+                    const missingFields = requiredFields.filter(field => !requestData[field] || requestData[field].trim() === '');
+
+                    if (!isSaved && missingFields.length > 0) {
+                        console.error('Missing required fields:', missingFields);
+                        this.innerHTML = originalContent;
+                        this.disabled = false;
+                        alert('Unable to save lesson: Missing lesson information. Please refresh the page and try again.');
+                        return;
+                    }
+
+                    console.log('Saving lesson with data:', requestData);
+
                     fetch(url, {
                         method: method,
                         headers: {
@@ -3781,8 +3819,12 @@
                         },
                         body: JSON.stringify(requestData)
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        console.log('Save response status:', response.status);
+                        return response.json();
+                    })
                     .then(data => {
+                        console.log('Save response data:', data);
                         if (data.success) {
                             updateSaveButton(this, data.saved);
                             showSuccessMessage(data.message);
@@ -3793,7 +3835,7 @@
                         }
                     })
                     .catch(error => {
-                        console.error('Error:', error);
+                        console.error('Save lesson error:', error);
                         this.innerHTML = originalContent;
                         this.disabled = false;
                         alert('Failed to save lesson. Please try again.');
