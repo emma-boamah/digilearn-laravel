@@ -12,6 +12,7 @@ use App\Models\Comment;
 use App\Models\Video;
 use App\Models\UserNote;
 use App\Models\Course;
+use App\Models\CommentUserLike;
 
 class DashboardController extends Controller
 {
@@ -1037,7 +1038,8 @@ class DashboardController extends Controller
         try {
             $comments = Comment::forVideo($video->id)->get();
 
-            $formattedComments = $comments->map(function ($comment) {
+            $userId = Auth::id();
+            $formattedComments = $comments->map(function ($comment) use ($userId) {
                 return [
                     'id' => $comment->id,
                     'content' => $comment->content,
@@ -1049,7 +1051,8 @@ class DashboardController extends Controller
                     'time_ago' => $comment->time_ago,
                     'likes_count' => $comment->likes_count,
                     'dislikes_count' => $comment->dislikes_count,
-                    'replies' => $comment->replies->map(function ($reply) {
+                    'user_action' => $this->getUserActionOnComment($comment->id, $userId),
+                    'replies' => $comment->replies->map(function ($reply) use ($userId) {
                         return [
                             'id' => $reply->id,
                             'content' => $reply->content,
@@ -1061,6 +1064,7 @@ class DashboardController extends Controller
                             'time_ago' => $reply->time_ago,
                             'likes_count' => $reply->likes_count,
                             'dislikes_count' => $reply->dislikes_count,
+                            'user_action' => $this->getUserActionOnComment($reply->id, $userId),
                         ];
                     }),
                 ];
@@ -1089,35 +1093,80 @@ class DashboardController extends Controller
     public function likeComment(Request $request, $commentId)
     {
         $request->validate([
-            'action' => 'required|in:like,dislike,unlike,undislike'
+            'action' => 'required|in:like,dislike'
         ]);
 
         try {
+            $userId = Auth::id();
             $comment = Comment::findOrFail($commentId);
 
-            switch ($request->action) {
-                case 'like':
+            // Check if user already has an interaction with this comment
+            $existingInteraction = CommentUserLike::where('user_id', $userId)
+                ->where('comment_id', $commentId)
+                ->first();
+
+            if ($existingInteraction) {
+                // User has already interacted with this comment
+                if ($existingInteraction->type === $request->action) {
+                    // User is clicking the same action again - remove the interaction
+                    $existingInteraction->delete();
+
+                    // Decrement the appropriate count
+                    if ($request->action === 'like') {
+                        $comment->decrement('likes_count');
+                    } else {
+                        $comment->decrement('dislikes_count');
+                    }
+                } else {
+                    // User is switching from like to dislike or vice versa
+                    $existingInteraction->update(['type' => $request->action]);
+
+                    // Update counts accordingly
+                    if ($request->action === 'like') {
+                        $comment->increment('likes_count');
+                        $comment->decrement('dislikes_count');
+                    } else {
+                        $comment->increment('dislikes_count');
+                        $comment->decrement('likes_count');
+                    }
+                }
+            } else {
+                // User hasn't interacted with this comment yet
+                CommentUserLike::create([
+                    'user_id' => $userId,
+                    'comment_id' => $commentId,
+                    'type' => $request->action
+                ]);
+
+                // Increment the appropriate count
+                if ($request->action === 'like') {
                     $comment->increment('likes_count');
-                    break;
-                case 'dislike':
+                } else {
                     $comment->increment('dislikes_count');
-                    break;
-                case 'unlike':
-                    $comment->decrement('likes_count');
-                    break;
-                case 'undislike':
-                    $comment->decrement('dislikes_count');
-                    break;
+                }
             }
 
             return response()->json([
                 'success' => true,
                 'likes_count' => $comment->likes_count,
-                'dislikes_count' => $comment->dislikes_count
+                'dislikes_count' => $comment->dislikes_count,
+                'user_action' => $this->getUserActionOnComment($commentId, $userId)
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Failed to update comment'], 500);
         }
+    }
+
+    /**
+     * Get the current user's action on a comment (like, dislike, or null)
+     */
+    private function getUserActionOnComment($commentId, $userId)
+    {
+        $interaction = CommentUserLike::where('user_id', $userId)
+            ->where('comment_id', $commentId)
+            ->first();
+
+        return $interaction ? $interaction->type : null;
     }
 
     /**

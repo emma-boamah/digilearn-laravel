@@ -546,6 +546,15 @@
             margin-left: 0.25rem;
         }
 
+        .comment-action.active {
+            color: var(--primary-red);
+            font-weight: 600;
+        }
+
+        .comment-action.active i {
+            color: var(--primary-red);
+        }
+
         /* Enhanced Right Sidebar */
         .right-sidebar {
             display: flex;
@@ -3057,11 +3066,11 @@
                         </div>
                         <p class="comment-text">${comment.content}</p>
                         <div class="comment-actions">
-                            <button class="comment-action like-btn" data-action="like" data-comment-id="${comment.id}">
+                            <button class="comment-action like-btn ${comment.user_action === 'like' ? 'active' : ''}" data-action="like" data-comment-id="${comment.id}">
                                 <i class="fas fa-thumbs-up"></i>
                                 <span class="comment-like-count">${comment.likes_count}</span>
                             </button>
-                            <button class="comment-action dislike-btn" data-action="dislike" data-comment-id="${comment.id}">
+                            <button class="comment-action dislike-btn ${comment.user_action === 'dislike' ? 'active' : ''}" data-action="dislike" data-comment-id="${comment.id}">
                                 <i class="fas fa-thumbs-down"></i>
                                 <span class="comment-dislike-count">${comment.dislikes_count}</span>
                             </button>
@@ -3081,11 +3090,11 @@
                                             </div>
                                             <p class="comment-text">${reply.content}</p>
                                             <div class="comment-actions">
-                                                <button class="comment-action like-btn" data-action="like" data-comment-id="${reply.id}">
+                                                <button class="comment-action like-btn ${reply.user_action === 'like' ? 'active' : ''}" data-action="like" data-comment-id="${reply.id}">
                                                     <i class="fas fa-thumbs-up"></i>
                                                     <span class="comment-like-count">${reply.likes_count}</span>
                                                 </button>
-                                                <button class="comment-action dislike-btn" data-action="dislike" data-comment-id="${reply.id}">
+                                                <button class="comment-action dislike-btn ${reply.user_action === 'dislike' ? 'active' : ''}" data-action="dislike" data-comment-id="${reply.id}">
                                                     <i class="fas fa-thumbs-down"></i>
                                                     <span class="comment-dislike-count">${reply.dislikes_count}</span>
                                                 </button>
@@ -3159,6 +3168,9 @@
                 btn.addEventListener('click', function() {
                     const commentId = this.dataset.commentId;
                     const action = this.dataset.action;
+                    const commentElement = this.closest('.comment');
+                    const likeBtn = commentElement.querySelector('.like-btn');
+                    const dislikeBtn = commentElement.querySelector('.dislike-btn');
 
                     fetch(`/dashboard/comment/${commentId}/like`, {
                         method: 'POST',
@@ -3172,16 +3184,20 @@
                     .then(data => {
                         if (data.success) {
                             // Update the counts
-                            const likeCount = this.querySelector('.comment-like-count');
-                            const dislikeCount = this.querySelector('.comment-dislike-count');
+                            const likeCount = likeBtn.querySelector('.comment-like-count');
+                            const dislikeCount = dislikeBtn.querySelector('.comment-dislike-count');
 
                             if (likeCount) likeCount.textContent = data.likes_count;
                             if (dislikeCount) dislikeCount.textContent = data.dislikes_count;
 
+                            // Update active states based on user action
+                            likeBtn.classList.toggle('active', data.user_action === 'like');
+                            dislikeBtn.classList.toggle('active', data.user_action === 'dislike');
+
                             // Visual feedback
-                            this.style.color = 'var(--primary-red)';
+                            this.style.transform = 'scale(1.1)';
                             setTimeout(() => {
-                                this.style.color = '';
+                                this.style.transform = '';
                             }, 200);
                         }
                     })
