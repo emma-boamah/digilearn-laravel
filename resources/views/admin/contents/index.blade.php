@@ -1206,6 +1206,118 @@
     </div>
 </div>
 
+<!-- Vimeo Deletion Confirmation Modal -->
+<div id="vimeoDeletionModal" class="upload-modal">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="flex justify-between items-center p-4 border-b">
+            <h3 class="text-lg font-semibold text-gray-900">Delete from Vimeo</h3>
+            <button id="closeVimeoModal" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="p-6">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-exclamation-triangle text-yellow-500 text-2xl mr-3"></i>
+                <div>
+                    <p class="text-gray-900 font-medium">Video deleted from database</p>
+                    <p class="text-gray-600 text-sm">Do you also want to delete this video from Vimeo?</p>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button id="vimeoDeleteNo" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                    No, keep on Vimeo
+                </button>
+                <button id="vimeoDeleteYes" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                    <i class="fas fa-trash mr-2"></i>Yes, delete from Vimeo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Progress Modal -->
+<div id="uploadProgressModal" class="upload-modal">
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
+        <div class="flex justify-between items-center p-4 border-b">
+            <h3 class="text-lg font-semibold text-gray-900">Uploading Content</h3>
+            <button id="closeProgressModal" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="p-6">
+            <div class="space-y-6">
+                <!-- Video Upload Progress -->
+                <div id="videoProgressSection" class="hidden">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-medium text-gray-900">Video Upload</span>
+                        <span id="videoProgressText" class="text-sm text-gray-600">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="videoProgressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p id="videoProgressStatus" class="text-sm text-gray-600 mt-1">Preparing upload...</p>
+                </div>
+
+                <!-- Document Upload Progress -->
+                <div id="documentProgressSection" class="hidden">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-medium text-gray-900">Document Upload</span>
+                        <span id="documentProgressText" class="text-sm text-gray-600">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="documentProgressBar" class="bg-green-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p id="documentProgressStatus" class="text-sm text-gray-600 mt-1">Preparing documents...</p>
+                </div>
+
+                <!-- Quiz Upload Progress -->
+                <div id="quizProgressSection" class="hidden">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-medium text-gray-900">Quiz Upload</span>
+                        <span id="quizProgressText" class="text-sm text-gray-600">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="quizProgressBar" class="bg-purple-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p id="quizProgressStatus" class="text-sm text-gray-600 mt-1">Preparing quiz...</p>
+                </div>
+
+                <!-- Overall Progress -->
+                <div class="border-t pt-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-medium text-gray-900">Overall Progress</span>
+                        <span id="overallProgressText" class="text-sm text-gray-600">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div id="overallProgressBar" class="bg-indigo-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <p id="overallProgressStatus" class="text-sm text-gray-600 mt-1">Starting upload process...</p>
+                </div>
+
+                <!-- Error Messages -->
+                <div id="uploadErrors" class="hidden">
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+                            <span class="font-medium text-red-900">Upload Errors</span>
+                        </div>
+                        <ul id="errorList" class="text-sm text-red-700 space-y-1"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end mt-6">
+                <button id="cancelUploadBtn" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 mr-2">
+                    Cancel
+                </button>
+                <button id="closeUploadBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 hidden">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
     // Multi-step upload wizard and table functionality
     document.addEventListener('DOMContentLoaded', function() {
@@ -1255,7 +1367,15 @@
                 const contentType = deleteBtn.getAttribute('data-content-type');
                 const videoSource = deleteBtn.getAttribute('data-video-source');
 
-                if (confirm('Are you sure you want to delete this content? This action cannot be undone.')) {
+                let confirmMessage = 'Are you sure you want to delete this content? This action cannot be undone.';
+
+                if (contentType === 'video' && videoSource === 'vimeo') {
+                    confirmMessage = 'Are you sure you want to delete this video? This will permanently delete the video from both the database AND Vimeo. This action cannot be undone.';
+                } else if (contentType === 'video' && videoSource === 'youtube') {
+                    confirmMessage = 'Are you sure you want to delete this video? This will only delete the video from the database (YouTube videos cannot be deleted remotely). This action cannot be undone.';
+                }
+
+                if (confirm(confirmMessage)) {
                     deleteContent(contentId, contentType, videoSource);
                 }
             }
@@ -1322,8 +1442,13 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    alert(result.message || 'Content deleted successfully!');
-                    window.location.reload();
+                    // Check if we need to show Vimeo deletion modal
+                    if (result.show_vimeo_modal && result.vimeo_id) {
+                        showVimeoDeletionModal(result.vimeo_id, result.video_id);
+                    } else {
+                        alert(result.message || 'Content deleted successfully!');
+                        window.location.reload();
+                    }
                 } else {
                     alert('Failed to delete content: ' + (result.message || 'Unknown error'));
                 }
@@ -1331,6 +1456,60 @@
                 console.error('Delete error:', error);
                 alert('An error occurred while deleting the content.');
             }
+        }
+
+        function showVimeoDeletionModal(vimeoId, videoId) {
+            const modal = document.getElementById('vimeoDeletionModal');
+            const closeBtn = document.getElementById('closeVimeoModal');
+            const noBtn = document.getElementById('vimeoDeleteNo');
+            const yesBtn = document.getElementById('vimeoDeleteYes');
+
+            // Set up event handlers
+            const closeModal = () => {
+                modal.classList.remove('show');
+                window.location.reload(); // Refresh to show the deletion
+            };
+
+            closeBtn.addEventListener('click', closeModal);
+            noBtn.addEventListener('click', closeModal);
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+
+            yesBtn.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('{{ route("admin.contents.vimeo.delete") }}', {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            vimeo_id: vimeoId,
+                            video_id: videoId
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        alert(result.message || 'Video deleted from Vimeo successfully!');
+                    } else {
+                        alert('Failed to delete from Vimeo: ' + (result.message || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('Vimeo delete error:', error);
+                    alert('An error occurred while deleting from Vimeo.');
+                }
+
+                closeModal();
+            });
+
+            // Show modal
+            modal.classList.add('show');
         }
 
         async function approveVideo(videoId) {
@@ -2241,7 +2420,7 @@
             });
         }
 
-        // Final submission
+        // Final submission with progress tracking
         async function submitWizard() {
             try {
                 const title = document.getElementById('title');
@@ -2270,6 +2449,138 @@
                     quiz: uploadData.quiz
                 };
 
+                // Show progress modal and start upload process
+                showUploadProgressModal();
+                await performStepByStepUpload(finalData);
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                showUploadError('Upload failed. Please try again.');
+            }
+        }
+
+        function showUploadProgressModal() {
+            const modal = document.getElementById('uploadProgressModal');
+            const closeBtn = document.getElementById('closeProgressModal');
+            const cancelBtn = document.getElementById('cancelUploadBtn');
+            const closeUploadBtn = document.getElementById('closeUploadBtn');
+
+            // Hide all progress sections initially
+            document.getElementById('videoProgressSection').classList.add('hidden');
+            document.getElementById('documentProgressSection').classList.add('hidden');
+            document.getElementById('quizProgressSection').classList.add('hidden');
+            document.getElementById('uploadErrors').classList.add('hidden');
+
+            // Reset progress bars
+            updateProgress('video', 0, 'Preparing...');
+            updateProgress('document', 0, 'Preparing...');
+            updateProgress('quiz', 0, 'Preparing...');
+            updateOverallProgress(0, 'Starting upload process...');
+
+            // Setup event handlers
+            closeBtn.addEventListener('click', () => {
+                if (confirm('Are you sure you want to cancel the upload?')) {
+                    modal.classList.remove('show');
+                    resetWizard();
+                }
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                if (confirm('Are you sure you want to cancel the upload?')) {
+                    modal.classList.remove('show');
+                    resetWizard();
+                }
+            });
+
+            closeUploadBtn.addEventListener('click', () => {
+                modal.classList.remove('show');
+                resetWizard();
+                window.location.href = '{{ route("admin.contents.index") }}';
+            });
+
+            modal.classList.add('show');
+        }
+
+        async function performStepByStepUpload(finalData) {
+            const errors = [];
+            let overallProgress = 0;
+            const totalSteps = 3; // video, documents, quiz
+
+            try {
+                // Step 1: Upload Video
+                updateOverallProgress(10, 'Uploading video...');
+                document.getElementById('videoProgressSection').classList.remove('hidden');
+
+                const videoResult = await uploadVideo(finalData);
+                if (videoResult.success) {
+                    updateProgress('video', 100, 'Video uploaded successfully');
+                    overallProgress += 30;
+                    updateOverallProgress(overallProgress, 'Video uploaded, processing documents...');
+                } else {
+                    errors.push(`Video upload failed: ${videoResult.error}`);
+                    updateProgress('video', 100, 'Failed', true);
+                }
+
+                // Step 2: Upload Documents
+                if (finalData.documents.length > 0) {
+                    updateOverallProgress(overallProgress + 10, 'Uploading documents...');
+                    document.getElementById('documentProgressSection').classList.remove('hidden');
+
+                    const documentResult = await uploadDocuments(finalData);
+                    if (documentResult.success) {
+                        updateProgress('document', 100, `${finalData.documents.length} documents uploaded successfully`);
+                        overallProgress += 30;
+                        updateOverallProgress(overallProgress, 'Documents uploaded, processing quiz...');
+                    } else {
+                        errors.push(`Document upload failed: ${documentResult.error}`);
+                        updateProgress('document', 100, 'Failed', true);
+                    }
+                } else {
+                    overallProgress += 30;
+                    updateOverallProgress(overallProgress, 'No documents to upload, processing quiz...');
+                }
+
+                // Step 3: Upload Quiz
+                if (finalData.quiz.questions.length > 0) {
+                    updateOverallProgress(overallProgress + 10, 'Uploading quiz...');
+                    document.getElementById('quizProgressSection').classList.remove('hidden');
+
+                    const quizResult = await uploadQuiz(finalData);
+                    if (quizResult.success) {
+                        updateProgress('quiz', 100, 'Quiz uploaded successfully');
+                        overallProgress += 30;
+                        updateOverallProgress(100, 'All uploads completed successfully!');
+                    } else {
+                        errors.push(`Quiz upload failed: ${quizResult.error}`);
+                        updateProgress('quiz', 100, 'Failed', true);
+                    }
+                } else {
+                    overallProgress += 30;
+                    updateOverallProgress(100, 'All uploads completed successfully!');
+                }
+
+                // Show results
+                if (errors.length > 0) {
+                    showUploadErrors(errors);
+                    updateOverallProgress(100, 'Upload completed with errors');
+                } else {
+                    updateOverallProgress(100, 'All uploads completed successfully!');
+                    setTimeout(() => {
+                        document.getElementById('closeUploadBtn').classList.remove('hidden');
+                        document.getElementById('cancelUploadBtn').classList.add('hidden');
+                    }, 1000);
+                }
+
+            } catch (error) {
+                console.error('Upload process error:', error);
+                showUploadError('Upload process failed: ' + error.message);
+            }
+        }
+
+        async function uploadVideo(finalData) {
+            try {
+                updateProgress('video', 10, 'Preparing video data...');
+
                 const formData = new FormData();
                 formData.append('_token', '{{ csrf_token() }}');
                 formData.append('video_source', finalData.video.video_source);
@@ -2278,11 +2589,11 @@
                     formData.append('video_file', finalData.video.file);
                     formData.append('upload_destination', finalData.video.upload_destination);
                 } else if (finalData.video.video_source === 'vimeo') {
-                    // Check if uploading file to Vimeo or using URL
                     const vimeoMethod = document.querySelector('input[name="vimeo_method"]:checked');
                     if (vimeoMethod && vimeoMethod.value === 'file') {
                         formData.append('video_file', finalData.video.file);
                         formData.append('upload_destination', 'vimeo');
+                        updateProgress('video', 30, 'Uploading to Vimeo...');
                     } else {
                         formData.append('vimeo_url', finalData.video.external_video_url);
                     }
@@ -2301,20 +2612,46 @@
                     formData.append('thumbnail_file', uploadData.thumbnail);
                 }
 
-                finalData.documents.forEach((doc, index) => {
-                    formData.append(`documents[${index}]`, doc);
+                updateProgress('video', 50, 'Sending to server...');
+
+                const response = await fetch('{{ route("admin.contents.upload.video") }}', {
+                    method: 'POST',
+                    body: formData
                 });
 
-                if (finalData.quiz.questions.length > 0) {
-                    const quizData = {
-                        questions: finalData.quiz.questions,
-                        difficulty_level: finalData.quiz.difficulty_level,
-                        time_limit_minutes: finalData.quiz.time_limit_minutes
-                    };
-                    formData.append('quiz_data', JSON.stringify(quizData));
-                    formData.append('difficulty_level', finalData.quiz.difficulty_level);
-                    formData.append('time_limit_minutes', finalData.quiz.time_limit_minutes);
+                if (response.ok) {
+                    const result = await response.json();
+                    updateProgress('video', 90, 'Processing...');
+
+                    // Store video ID for later use
+                    if (result.data && result.data.video_id) {
+                        window.uploadedVideoId = result.data.video_id;
+                    }
+
+                    return { success: true };
+                } else {
+                    const error = await response.json();
+                    return { success: false, error: error.message || 'Unknown error' };
                 }
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function uploadDocuments(finalData) {
+            try {
+                updateProgress('document', 20, 'Preparing documents...');
+
+                const formData = new FormData();
+                formData.append('_token', '{{ csrf_token() }}');
+                formData.append('video_id', window.uploadedVideoId || '');
+
+                finalData.documents.forEach((doc, index) => {
+                    formData.append(`documents[${index}]`, doc);
+                    updateProgress('document', 40 + (index * 10), `Uploading ${doc.name}...`);
+                });
+
+                updateProgress('document', 80, 'Sending to server...');
 
                 const response = await fetch('{{ route("admin.contents.store") }}', {
                     method: 'POST',
@@ -2322,17 +2659,94 @@
                 });
 
                 if (response.ok) {
-                    uploadModal.classList.remove('show');
-                    resetWizard();
-                    window.location.href = '{{ route("admin.contents.index") }}';
+                    return { success: true };
                 } else {
                     const error = await response.json();
-                    alert('Upload failed: ' + (error.message || 'Unknown error'));
+                    return { success: false, error: error.message || 'Unknown error' };
                 }
             } catch (error) {
-                console.error('Upload error:', error);
-                alert('Upload failed. Please try again.');
+                return { success: false, error: error.message };
             }
+        }
+
+        async function uploadQuiz(finalData) {
+            try {
+                updateProgress('quiz', 20, 'Preparing quiz data...');
+
+                const formData = new FormData();
+                formData.append('_token', '{{ csrf_token() }}');
+                formData.append('video_id', window.uploadedVideoId || '');
+
+                const quizData = {
+                    questions: finalData.quiz.questions,
+                    difficulty_level: finalData.quiz.difficulty_level,
+                    time_limit_minutes: finalData.quiz.time_limit_minutes
+                };
+
+                formData.append('quiz_data', JSON.stringify(quizData));
+                formData.append('difficulty_level', finalData.quiz.difficulty_level);
+                formData.append('time_limit_minutes', finalData.quiz.time_limit_minutes);
+
+                updateProgress('quiz', 60, 'Sending quiz to server...');
+
+                const response = await fetch('{{ route("admin.contents.store") }}', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    return { success: true };
+                } else {
+                    const error = await response.json();
+                    return { success: false, error: error.message || 'Unknown error' };
+                }
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        function updateProgress(type, percentage, status, isError = false) {
+            const progressBar = document.getElementById(`${type}ProgressBar`);
+            const progressText = document.getElementById(`${type}ProgressText`);
+            const progressStatus = document.getElementById(`${type}ProgressStatus`);
+
+            if (progressBar) {
+                progressBar.style.width = `${percentage}%`;
+                if (isError) {
+                    progressBar.classList.remove('bg-blue-600', 'bg-green-600', 'bg-purple-600');
+                    progressBar.classList.add('bg-red-600');
+                }
+            }
+            if (progressText) progressText.textContent = `${percentage}%`;
+            if (progressStatus) progressStatus.textContent = status;
+        }
+
+        function updateOverallProgress(percentage, status) {
+            const progressBar = document.getElementById('overallProgressBar');
+            const progressText = document.getElementById('overallProgressText');
+            const progressStatus = document.getElementById('overallProgressStatus');
+
+            if (progressBar) progressBar.style.width = `${percentage}%`;
+            if (progressText) progressText.textContent = `${percentage}%`;
+            if (progressStatus) progressStatus.textContent = status;
+        }
+
+        function showUploadErrors(errors) {
+            const errorSection = document.getElementById('uploadErrors');
+            const errorList = document.getElementById('errorList');
+
+            errorList.innerHTML = '';
+            errors.forEach(error => {
+                const li = document.createElement('li');
+                li.textContent = error;
+                errorList.appendChild(li);
+            });
+
+            errorSection.classList.remove('hidden');
+        }
+
+        function showUploadError(message) {
+            showUploadErrors([message]);
         }
     });
 </script>

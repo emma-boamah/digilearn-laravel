@@ -114,7 +114,8 @@ class QuizController extends Controller
                     'total_ratings' => $quiz->total_ratings,
                     'total_attempts_count' => $quiz->total_attempts_count,
                     'user_rating' => $userRating ? $userRating->rating : null,
-                    'user_attempts_count' => $userAttempts->count(),
+                    'user_review' => $userRating ? $userRating->review : null,
+                    'attempts_count' => $userAttempts->count(),
                     'user_progress' => $userAttempts->isNotEmpty() ? (int) round($userAttempts->first()->score_percentage) : 0,
                     'last_result' => $userAttempts->isNotEmpty() ? [
                         'score' => (int) ($userAttempts->first()->correct_answers ?? 0),
@@ -441,8 +442,14 @@ class QuizController extends Controller
         $rank = $this->calculateUserRank($userId, $userTotalQuizzesPassed);
         $streak = \App\Models\UserProgress::where('user_id', $userId)->max('current_streak_days') ?? 0;
 
+        // Check if user has already rated this quiz
+        $hasRated = \App\Models\QuizRating::where('quiz_id', $quizId)
+            ->where('user_id', $userId)
+            ->exists();
+
         // Build questions array with user answers for review - safe array access
         $questions = [];
+        $timeTaken = 0;
         if (is_array($quiz) && isset($quiz['questions']) && is_array($quiz['questions'])) {
             // Get the user's last attempt for this quiz
             $lastAttempt = \App\Models\QuizAttempt::where('user_id', Auth::id())
@@ -451,6 +458,7 @@ class QuizController extends Controller
                 ->first();
 
             $userAnswers = $lastAttempt ? json_decode($lastAttempt->answers ?? '[]', true) : [];
+            $timeTaken = $lastAttempt ? $lastAttempt->time_taken_seconds : 0;
 
             foreach ($quiz['questions'] as $index => $question) {
                 if (!is_array($question)) {
@@ -477,7 +485,7 @@ class QuizController extends Controller
             }
         }
 
-        return view('dashboard.quiz.results', compact('score', 'total', 'percentage', 'quiz', 'duration', 'failedDueToViolation', 'questions', 'rank', 'streak'));
+        return view('dashboard.quiz.results', compact('score', 'total', 'percentage', 'quiz', 'duration', 'failedDueToViolation', 'questions', 'rank', 'streak', 'timeTaken', 'hasRated'));
     }
 
     /**
@@ -987,6 +995,51 @@ class QuizController extends Controller
 
         // Rank is the number of users with higher score + 1
         return $usersWithHigherScore + 1;
+    }
+
+    /**
+     * Get reviews for a quiz (API endpoint)
+     */
+    public function getReviews($quizId)
+    {
+        try {
+            $quiz = \App\Models\Quiz::find($quizId);
+            if (!$quiz) {
+                return response()->json(['success' => false, 'message' => 'Quiz not found'], 404);
+            }
+
+            $reviews = $quiz->ratings()
+                ->with('user:id,name')
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($rating) {
+                    return [
+                        'id' => $rating->id,
+                        'rating' => $rating->rating,
+                        'review' => $rating->review,
+                        'user_name' => $rating->user ? $rating->user->name : 'Anonymous',
+                        'created_at' => $rating->created_at,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'reviews' => $reviews,
+                'average_rating' => (float) ($quiz->average_rating ?? 0),
+                'total_ratings' => (int) ($quiz->total_ratings ?? 0),
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error fetching quiz reviews', [
+                'quiz_id' => $quizId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load reviews'
+            ], 500);
+        }
     }
 
     /**

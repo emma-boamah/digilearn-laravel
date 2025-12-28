@@ -49,6 +49,14 @@ class QuizAttempt extends Model
     }
 
     /**
+     * Get the quiz that owns the attempt.
+     */
+    public function quiz(): BelongsTo
+    {
+        return $this->belongsTo(Quiz::class);
+    }
+
+    /**
      * Record a quiz attempt
      */
     public static function recordAttempt($userId, $quizData, $answers, $timeTaken)

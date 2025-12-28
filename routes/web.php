@@ -211,6 +211,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/results', [QuizController::class, 'results'])->name('results');
     });
 
+    // API endpoints
+    Route::get('/api/quiz/{quizId}/reviews', [QuizController::class, 'getReviews'])->name('api.quiz.reviews');
+
     // Virtual classroom
     Route::get('/dashboard/join-class', [DashboardController::class, 'joinClass'])->name('dashboard.join-class');
     Route::get('/dashboard/classroom/{roomId}', [DashboardController::class, 'showClassroom'])->name('dashboard.classroom.show');
@@ -304,6 +307,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/contents/{contentId}/edit', [AdminController::class, 'editContent'])->name('contents.edit');
     Route::put('/contents/{contentId}', [AdminController::class, 'updateContent'])->name('contents.update');
     Route::delete('/contents/{contentId}', [AdminController::class, 'destroyContent'])->name('contents.destroy');
+    Route::delete('/contents/vimeo/delete', [AdminController::class, 'destroyVimeoVideo'])->name('contents.vimeo.delete');
+    Route::post('/contents/upload/video', [AdminController::class, 'uploadVideoComponent'])->name('contents.upload.video');
+    Route::post('/contents/upload/documents', [AdminController::class, 'uploadDocumentsComponent'])->name('contents.upload.documents');
+    Route::post('/contents/upload/quiz', [AdminController::class, 'uploadQuizComponent'])->name('contents.upload.quiz');
     Route::get('/users', [AdminController::class, 'users'])->name('users');
     Route::get('/users/{id}', [AdminController::class, 'showUser'])->name('users.show');
     Route::post('/users/{id}/toggle-status', [AdminController::class, 'toggleUserStatus'])->name('users.toggle-status');

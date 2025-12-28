@@ -34,11 +34,7 @@
                 return;
             }
 
-            // Click on card anywhere opens quiz
-            if (card.hasAttribute('data-open-quiz')) {
-                e.preventDefault();
-                openQuiz(quizId);
-            }
+            // Card is no longer clickable - only specific buttons work
         });
 
         console.log('Sidebar elements:', {
@@ -268,6 +264,156 @@
         console.log('Filtering by subject:', subject);
         // Implement subject filtering logic here
     }
+
+    // Reviews Modal Functions
+    function openReviewsModal(quizId) {
+        const modal = document.getElementById(`reviewsModal-${quizId}`);
+        const content = document.getElementById(`reviewsContent-${quizId}`);
+
+        if (modal && content) {
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            // Load reviews
+            loadReviews(quizId);
+        }
+    }
+
+    function closeReviewsModal(quizId) {
+        const modal = document.getElementById(`reviewsModal-${quizId}`);
+        if (modal) {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    }
+
+    function loadReviews(quizId) {
+        const content = document.getElementById(`reviewsContent-${quizId}`);
+        if (!content) return;
+
+        // Show loading
+        content.innerHTML = `
+            <div class="reviews-loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading reviews...</p>
+            </div>
+        `;
+
+        // Fetch reviews from API
+        fetch(`/api/quiz/${quizId}/reviews`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayReviews(quizId, data.reviews, data.average_rating, data.total_ratings);
+                } else {
+                    content.innerHTML = `
+                        <div class="reviews-error">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>Failed to load reviews. Please try again.</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading reviews:', error);
+                content.innerHTML = `
+                    <div class="reviews-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Failed to load reviews. Please try again.</p>
+                    </div>
+                `;
+            });
+    }
+
+    function displayReviews(quizId, reviews, averageRating, totalRatings) {
+        const content = document.getElementById(`reviewsContent-${quizId}`);
+        if (!content) return;
+
+        let html = '';
+
+        // Overall rating summary
+        if (totalRatings > 0) {
+            html += `
+                <div class="reviews-summary">
+                    <div class="summary-rating">
+                        <div class="rating-stars">
+                            ${generateStars(averageRating)}
+                        </div>
+                        <span class="rating-score">${averageRating.toFixed(1)}</span>
+                        <span class="rating-count">(${totalRatings} ${totalRatings === 1 ? 'review' : 'reviews'})</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Individual reviews
+        if (reviews && reviews.length > 0) {
+            html += '<div class="reviews-list">';
+            reviews.forEach(review => {
+                html += `
+                    <div class="review-item">
+                        <div class="review-header">
+                            <div class="reviewer-info">
+                                <div class="reviewer-avatar">
+                                    ${review.user_name ? review.user_name.charAt(0).toUpperCase() : 'U'}
+                                </div>
+                                <div class="reviewer-details">
+                                    <span class="reviewer-name">${review.user_name || 'Anonymous'}</span>
+                                    <div class="review-rating">
+                                        ${generateStars(review.rating)}
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="review-date">${formatDate(review.created_at)}</span>
+                        </div>
+                        ${review.review ? `<div class="review-text">${review.review}</div>` : ''}
+                    </div>
+                `;
+            });
+            html += '</div>';
+        } else {
+            html += `
+                <div class="no-reviews">
+                    <i class="fas fa-comment-slash"></i>
+                    <p>No reviews yet. Be the first to review this quiz!</p>
+                </div>
+            `;
+        }
+
+        content.innerHTML = html;
+    }
+
+    function generateStars(rating) {
+        let stars = '';
+        for (let i = 1; i <= 5; i++) {
+            stars += `<i class="fas fa-star ${i <= rating ? 'filled' : ''}"></i>`;
+        }
+        return stars;
+    }
+
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+
+    // Close modal when clicking outside
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('reviews-modal-overlay')) {
+            const quizId = e.target.id.replace('reviewsModal-', '');
+            closeReviewsModal(quizId);
+        }
+    });
 
     // Add CSS animation for spinning
     const style = document.createElement('style');
