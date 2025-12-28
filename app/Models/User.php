@@ -49,6 +49,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'is_superuser',
         'last_activity_at',
         'is_verified',
+        'suspended_at',
+        'suspension_reason',
     ];
 
     /**
@@ -82,6 +84,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'is_superuser' => 'boolean',
         'last_activity_at' => 'datetime',
         'is_verified' => 'boolean',
+        'suspended_at' => 'datetime',
     ];
 
     /**
@@ -124,6 +127,14 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isLocked(): bool
     {
         return $this->locked_until && $this->locked_until->isFuture();
+    }
+
+    /**
+     * Check if user account is suspended
+     */
+    public function isSuspended(): bool
+    {
+        return !is_null($this->suspended_at);
     }
 
     /**

@@ -127,6 +127,20 @@ class GoogleController extends Controller
                 ]);
             }
 
+            // Check if user account is suspended
+            if ($user->isSuspended()) {
+                $this->logGoogleAuthEvent('account_suspended', 'account_suspended', $request, [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'suspended_at' => $user->suspended_at,
+                    'suspension_reason' => $user->suspension_reason
+                ]);
+
+                return redirect()->route('login')->withErrors([
+                    'error' => 'Your account has been suspended. Please contact support for assistance.'
+                ]);
+            }
+
             Auth::login($user, true);
             $request->session()->regenerate();
 
