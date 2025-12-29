@@ -100,12 +100,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/change-level', [DashboardController::class, 'changeLevelSelection'])->name('dashboard.change-level');
 
     // Lessons
-    Route::get('/dashboard/lesson/{lessonId}', [DashboardController::class, 'viewLesson'])->name('dashboard.lesson.view');
-    Route::post('/dashboard/lesson/{lessonId}/notes', [DashboardController::class, 'saveNotes'])->name('dashboard.lesson.notes');
-    Route::post('/dashboard/lesson/{lessonId}/comment', [DashboardController::class, 'postComment'])->name('dashboard.lesson.comment');
-    Route::get('/dashboard/lesson/{lessonId}/check-saved', [DashboardController::class, 'checkLessonSaved'])->name('dashboard.lesson.check-saved');
-    Route::post('/dashboard/lesson/{lessonId}/save', [DashboardController::class, 'saveLesson'])->name('dashboard.lesson.save');
-    Route::delete('/dashboard/lesson/{lessonId}/unsave', [DashboardController::class, 'unsaveLesson'])->name('dashboard.lesson.unsave');
+    Route::middleware(['decode.obfuscated'])->group(function () {
+        Route::get('/dashboard/lesson/{lessonId}', [DashboardController::class, 'viewLesson'])->name('dashboard.lesson.view');
+        Route::post('/dashboard/lesson/{lessonId}/notes', [DashboardController::class, 'saveNotes'])->name('dashboard.lesson.notes');
+        Route::post('/dashboard/lesson/{lessonId}/comment', [DashboardController::class, 'postComment'])->name('dashboard.lesson.comment');
+        Route::get('/dashboard/lesson/{lessonId}/check-saved', [DashboardController::class, 'checkLessonSaved'])->name('dashboard.lesson.check-saved');
+        Route::post('/dashboard/lesson/{lessonId}/save', [DashboardController::class, 'saveLesson'])->name('dashboard.lesson.save');
+        Route::delete('/dashboard/lesson/{lessonId}/unsave', [DashboardController::class, 'unsaveLesson'])->name('dashboard.lesson.unsave');
+    });
 
     // User Notes for Videos
     Route::post('/dashboard/lesson/{videoId}/user-notes', [DashboardController::class, 'saveUserNotes'])->name('dashboard.lesson.user-notes.save');
@@ -143,8 +145,10 @@ Route::middleware(['auth'])->group(function () {
 
     // Progress
     Route::get('/dashboard/my-progress', [ProgressController::class, 'index'])->name('dashboard.my-progress');
-    Route::post('/dashboard/lesson/{lessonId}/progress', [ProgressController::class, 'recordLessonProgress'])->name('dashboard.lesson.progress');
-    Route::post('/dashboard/quiz/{quizId}/attempt', [ProgressController::class, 'recordQuizAttempt'])->name('dashboard.quiz.attempt');
+    Route::middleware(['decode.obfuscated'])->group(function () {
+        Route::post('/dashboard/lesson/{lessonId}/progress', [ProgressController::class, 'recordLessonProgress'])->name('dashboard.lesson.progress');
+        Route::post('/dashboard/quiz/{quizId}/attempt', [ProgressController::class, 'recordQuizAttempt'])->name('dashboard.quiz.attempt');
+    });
     Route::get('/dashboard/progress/check/{level}', [ProgressController::class, 'checkProgression'])->name('dashboard.progress.check');
     Route::post('/dashboard/progress/manual/{userId}/{toLevel}', [ProgressController::class, 'manualProgression'])->name('dashboard.progress.manual');
 
@@ -203,7 +207,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/dashboard/comment/{commentId}/like', [DashboardController::class, 'likeComment'])->name('dashboard.comment.like');
 
     // Quiz
-    Route::prefix('quiz')->name('quiz.')->group(function () {
+    Route::prefix('quiz')->name('quiz.')->middleware(['decode.obfuscated'])->group(function () {
         Route::get('/', [QuizController::class, 'index'])->name('index');
         Route::get('/{quizId}/instructions', [QuizController::class, 'instructions'])->name('instructions');
         Route::get('/{quizId}/take', [QuizController::class, 'take'])->name('take');
@@ -215,8 +219,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/results', [QuizController::class, 'results'])->name('results');
     });
 
-    // API endpoints
-    Route::get('/api/quiz/{quizId}/reviews', [QuizController::class, 'getReviews'])->name('api.quiz.reviews');
+    // Quiz API endpoints (outside the quiz prefix to match JavaScript calls)
+    Route::middleware(['decode.obfuscated'])->group(function () {
+        Route::get('/api/quiz/{quizId}/reviews', [QuizController::class, 'getReviews'])->name('api.quiz.reviews');
+    });
 
     // Virtual classroom
     Route::get('/dashboard/join-class', [DashboardController::class, 'joinClass'])->name('dashboard.join-class');

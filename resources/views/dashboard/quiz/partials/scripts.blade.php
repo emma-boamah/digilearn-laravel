@@ -17,20 +17,21 @@
             if (!card) return;
 
             const quizId = card.getAttribute('data-quiz-id');
+            const encodedQuizId = card.getAttribute('data-encoded-quiz-id');
             const startBtn = e.target.closest('.quiz-start-btn');
             const reviseBtn = e.target.closest('.quiz-preview-btn');
 
             if (startBtn) {
                 e.preventDefault();
                 e.stopPropagation();
-                openQuiz(quizId);
+                openQuiz(encodedQuizId);
                 return;
             }
 
             if (reviseBtn) {
                 e.preventDefault();
                 e.stopPropagation();
-                reviseNotes(quizId);
+                reviseNotes(encodedQuizId);
                 return;
             }
 
@@ -178,9 +179,9 @@
         });
     }
 
-    function openQuiz(quizId) {
+    function openQuiz(encodedQuizId) {
         // Add visual feedback
-        const card = document.querySelector(`[data-quiz-id="${quizId}"]`);
+        const card = document.querySelector(`[data-encoded-quiz-id="${encodedQuizId}"]`);
         if (card) {
             card.style.opacity = '0.7';
             card.style.transform = 'scale(0.98)';
@@ -199,13 +200,13 @@
 
         // Navigate to quiz instructions page with proper route
         setTimeout(() => {
-            window.location.href = `/quiz/${quizId}/instructions`;
+            window.location.href = `/quiz/${encodedQuizId}/instructions`;
         }, 500);
     }
 
-    function reviseNotes(quizId) {
+    function reviseNotes(encodedQuizId) {
         // Add visual feedback
-        const card = document.querySelector(`[data-quiz-id="${quizId}"]`);
+        const card = document.querySelector(`[data-encoded-quiz-id="${encodedQuizId}"]`);
         if (card) {
             const btn = card.querySelector('.quiz-preview-btn');
             if (btn) {
@@ -222,7 +223,7 @@
         setTimeout(() => {
             const params = new URLSearchParams(window.location.search);
             // Ideally, fetch the last attempt details via API; fallback to results route with quiz id only
-            window.location.href = `/quiz/results?quiz=${quizId}`;
+            window.location.href = `/quiz/results?quiz=${encodedQuizId}`;
         }, 300);
     }
 
@@ -266,29 +267,29 @@
     }
 
     // Reviews Modal Functions
-    function openReviewsModal(quizId) {
-        const modal = document.getElementById(`reviewsModal-${quizId}`);
-        const content = document.getElementById(`reviewsContent-${quizId}`);
+    function openReviewsModal(encodedQuizId) {
+        const modal = document.getElementById(`reviewsModal-${encodedQuizId}`);
+        const content = document.getElementById(`reviewsContent-${encodedQuizId}`);
 
         if (modal && content) {
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
 
             // Load reviews
-            loadReviews(quizId);
+            loadReviews(encodedQuizId);
         }
     }
 
-    function closeReviewsModal(quizId) {
-        const modal = document.getElementById(`reviewsModal-${quizId}`);
+    function closeReviewsModal(encodedQuizId) {
+        const modal = document.getElementById(`reviewsModal-${encodedQuizId}`);
         if (modal) {
             modal.classList.remove('active');
             document.body.style.overflow = '';
         }
     }
 
-    function loadReviews(quizId) {
-        const content = document.getElementById(`reviewsContent-${quizId}`);
+    function loadReviews(encodedQuizId) {
+        const content = document.getElementById(`reviewsContent-${encodedQuizId}`);
         if (!content) return;
 
         // Show loading
@@ -300,7 +301,7 @@
         `;
 
         // Fetch reviews from API
-        fetch(`/api/quiz/${quizId}/reviews`, {
+        fetch(`/api/quiz/${encodedQuizId}/reviews`, {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
@@ -311,7 +312,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    displayReviews(quizId, data.reviews, data.average_rating, data.total_ratings);
+                    displayReviews(encodedQuizId, data.reviews, data.average_rating, data.total_ratings);
                 } else {
                     content.innerHTML = `
                         <div class="reviews-error">
@@ -410,8 +411,8 @@
     // Close modal when clicking outside
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('reviews-modal-overlay')) {
-            const quizId = e.target.id.replace('reviewsModal-', '');
-            closeReviewsModal(quizId);
+            const encodedQuizId = e.target.id.replace('reviewsModal-', '');
+            closeReviewsModal(encodedQuizId);
         }
     });
 

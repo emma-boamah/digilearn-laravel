@@ -16,6 +16,13 @@ class ProgressionStandard extends Model
         'required_average_quiz_score',
         'minimum_quiz_score',
         'lesson_watch_threshold_percentage',
+        'individual_level_lesson_threshold',
+        'individual_level_quiz_threshold',
+        'individual_level_score_threshold',
+        'required_number_of_lessons_individual',
+        'required_number_of_quizzes_individual',
+        'required_number_of_lessons_group',
+        'required_number_of_quizzes_group',
         'is_active',
     ];
 
@@ -25,6 +32,9 @@ class ProgressionStandard extends Model
         'required_average_quiz_score' => 'decimal:2',
         'minimum_quiz_score' => 'decimal:2',
         'lesson_watch_threshold_percentage' => 'decimal:2',
+        'individual_level_lesson_threshold' => 'decimal:2',
+        'individual_level_quiz_threshold' => 'decimal:2',
+        'individual_level_score_threshold' => 'decimal:2',
         'is_active' => 'boolean',
     ];
 
@@ -49,6 +59,10 @@ class ProgressionStandard extends Model
             'required_average_quiz_score' => 70.00,
             'minimum_quiz_score' => 70.00,
             'lesson_watch_threshold_percentage' => 90.00,
+            'required_number_of_lessons_individual' => 10,
+            'required_number_of_quizzes_individual' => 5,
+            'required_number_of_lessons_group' => 20,
+            'required_number_of_quizzes_group' => 10,
             // Individual level progression thresholds (within level groups)
             'individual_level_lesson_threshold' => 75.00, // 75% for within-group progression
             'individual_level_quiz_threshold' => 60.00,    // 60% for within-group progression
@@ -70,6 +84,13 @@ class ProgressionStandard extends Model
                 'required_average_quiz_score',
                 'minimum_quiz_score',
                 'lesson_watch_threshold_percentage',
+                'individual_level_lesson_threshold',
+                'individual_level_quiz_threshold',
+                'individual_level_score_threshold',
+                'required_number_of_lessons_individual',
+                'required_number_of_quizzes_individual',
+                'required_number_of_lessons_group',
+                'required_number_of_quizzes_group',
             ]);
         }
 

@@ -1040,7 +1040,7 @@
                                     </button>
                                 </div>
             
-                                <form id="ratingForm" method="POST" action="{{ route('quiz.rate', $quiz['id'] ?? 1) }}">
+                                <form id="ratingForm" method="POST" action="{{ route('quiz.rate', $quiz['encoded_id'] ?? \App\Services\UrlObfuscator::encode(1)) }}">
                                     @csrf
                                     <div class="rating-stars-input">
                                         <label>Rate this quiz:</label>
@@ -1166,7 +1166,7 @@
             <!-- Actions Card -->
             <div class="actions-card animate-fade-in-up">
                 <h3 class="section-title">Actions</h3>
-                <a href="{{ route('quiz.take', $quiz['id'] ?? 1) }}" class="action-button primary">
+                <a href="{{ route('quiz.take', $quiz['encoded_id'] ?? \App\Services\UrlObfuscator::encode(1)) }}" class="action-button primary">
                     <i class="fas fa-redo"></i>
                     Retake Quiz
                 </a>

@@ -66,6 +66,9 @@ class ProgressController extends Controller
         // Get detailed analytics
         $analytics = $progress->getDetailedAnalytics();
 
+        // Get progression standards for the current level group
+        $standards = \App\Models\ProgressionStandard::getStandardsForLevel($currentLevel);
+
         return view('dashboard.my-progress', compact(
             'progress',
             'lessonStats',
@@ -75,7 +78,8 @@ class ProgressController extends Controller
             'recentQuizzes',
             'progressionStatus',
             'currentLevel',
-            'analytics'
+            'analytics',
+            'standards'
         ));
     }
 

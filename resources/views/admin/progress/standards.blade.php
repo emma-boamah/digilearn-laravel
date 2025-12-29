@@ -454,6 +454,7 @@
                     <th>Level Group</th>
                     <th>Group Progression</th>
                     <th>Individual Progression</th>
+                    <th>Lessons/Quizzes Required</th>
                     <th>Min Quiz Score</th>
                     <th>Watch Threshold</th>
                     <th>Status</th>
@@ -480,6 +481,12 @@
                                 <div><strong>Avg:</strong> {{ $standard->individual_level_score_threshold ?? 65 }}%</div>
                             </div>
                         </td>
+                        <td>
+                            <div style="font-size: 0.75rem; line-height: 1.5;">
+                                <div><strong>Individual:</strong> {{ $standard->required_number_of_lessons_individual ?? 10 }}L / {{ $standard->required_number_of_quizzes_individual ?? 5 }}Q</div>
+                                <div><strong>Group:</strong> {{ $standard->required_number_of_lessons_group ?? 20 }}L / {{ $standard->required_number_of_quizzes_group ?? 10 }}Q</div>
+                            </div>
+                        </td>
                         <td>{{ $standard->minimum_quiz_score }}%</td>
                         <td>{{ $standard->lesson_watch_threshold_percentage }}%</td>
                         <td>
@@ -490,7 +497,7 @@
                         </td>
                         <td>
                             <div class="action-buttons">
-                                <button class="action-btn action-btn-edit edit-standard-btn" data-standard-id="{{ $standard->id }}" data-level-group="{{ $standard->level_group }}" data-lesson-req="{{ $standard->required_lesson_completion_percentage }}" data-quiz-req="{{ $standard->required_quiz_completion_percentage }}" data-avg-score="{{ $standard->required_average_quiz_score }}" data-min-score="{{ $standard->minimum_quiz_score }}" data-watch-threshold="{{ $standard->lesson_watch_threshold_percentage }}" data-individual-lesson="{{ $standard->individual_level_lesson_threshold ?? 75 }}" data-individual-quiz="{{ $standard->individual_level_quiz_threshold ?? 60 }}" data-individual-score="{{ $standard->individual_level_score_threshold ?? 65 }}">
+                                <button class="action-btn action-btn-edit edit-standard-btn" data-standard-id="{{ $standard->id }}" data-level-group="{{ $standard->level_group }}" data-lesson-req="{{ $standard->required_lesson_completion_percentage }}" data-quiz-req="{{ $standard->required_quiz_completion_percentage }}" data-avg-score="{{ $standard->required_average_quiz_score }}" data-min-score="{{ $standard->minimum_quiz_score }}" data-watch-threshold="{{ $standard->lesson_watch_threshold_percentage }}" data-individual-lesson="{{ $standard->individual_level_lesson_threshold ?? 75 }}" data-individual-quiz="{{ $standard->individual_level_quiz_threshold ?? 60 }}" data-individual-score="{{ $standard->individual_level_score_threshold ?? 65 }}" data-lessons-individual="{{ $standard->required_number_of_lessons_individual ?? 10 }}" data-quizzes-individual="{{ $standard->required_number_of_quizzes_individual ?? 5 }}" data-lessons-group="{{ $standard->required_number_of_lessons_group ?? 20 }}" data-quizzes-group="{{ $standard->required_number_of_quizzes_group ?? 10 }}">
                                     Edit
                                 </button>
                                 <form action="{{ route('admin.progress.standards.toggle', $standard) }}" method="POST" style="display: inline;">
@@ -505,7 +512,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" style="text-align: center; padding: 2rem;">
+                        <td colspan="8" style="text-align: center; padding: 2rem;">
                             <div style="color: var(--gray-500);">
                                 <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 0.5rem; display: block;"></i>
                                 <p style="margin: 0;">No progression standards configured yet.</p>
@@ -679,6 +686,41 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Number-Based Progression Section -->
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <svg class="form-section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        <div>
+                            <h4 class="form-section-title">Number-Based Progression Settings</h4>
+                            <p class="form-section-description">Set the number of lessons and quizzes required for progression</p>
+                        </div>
+                    </div>
+                    <div class="form-grid cols-2">
+                        <div class="form-group">
+                            <label class="form-label">Lessons (Individual)</label>
+                            <input type="number" name="required_number_of_lessons_individual" min="1" value="10" class="form-input" required>
+                            <div class="form-input-hint">Number of lessons to complete for individual progression</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Quizzes (Individual)</label>
+                            <input type="number" name="required_number_of_quizzes_individual" min="1" value="5" class="form-input" required>
+                            <div class="form-input-hint">Number of quizzes to complete for individual progression</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Lessons (Group)</label>
+                            <input type="number" name="required_number_of_lessons_group" min="1" value="20" class="form-input" required>
+                            <div class="form-input-hint">Number of lessons to complete for group progression</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Quizzes (Group)</label>
+                            <input type="number" name="required_number_of_quizzes_group" min="1" value="10" class="form-input" required>
+                            <div class="form-input-hint">Number of quizzes to complete for group progression</div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="modal-footer">
@@ -774,6 +816,41 @@
                         <div class="form-group">
                             <label class="form-label">Score Threshold (%)</label>
                             <input type="number" name="individual_level_score_threshold" id="edit_individual_level_score_threshold" min="0" max="100" class="form-input" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Number-Based Progression Section -->
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <svg class="form-section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        <div>
+                            <h4 class="form-section-title">Number-Based Progression Settings</h4>
+                            <p class="form-section-description">Set the number of lessons and quizzes required for progression</p>
+                        </div>
+                    </div>
+                    <div class="form-grid cols-2">
+                        <div class="form-group">
+                            <label class="form-label">Lessons (Individual)</label>
+                            <input type="number" name="required_number_of_lessons_individual" id="edit_required_number_of_lessons_individual" min="1" class="form-input" required>
+                            <div class="form-input-hint">Number of lessons to complete for individual progression</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Quizzes (Individual)</label>
+                            <input type="number" name="required_number_of_quizzes_individual" id="edit_required_number_of_quizzes_individual" min="1" class="form-input" required>
+                            <div class="form-input-hint">Number of quizzes to complete for individual progression</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Lessons (Group)</label>
+                            <input type="number" name="required_number_of_lessons_group" id="edit_required_number_of_lessons_group" min="1" class="form-input" required>
+                            <div class="form-input-hint">Number of lessons to complete for group progression</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Quizzes (Group)</label>
+                            <input type="number" name="required_number_of_quizzes_group" id="edit_required_number_of_quizzes_group" min="1" class="form-input" required>
+                            <div class="form-input-hint">Number of quizzes to complete for group progression</div>
                         </div>
                     </div>
                 </div>
@@ -875,6 +952,10 @@
                 const individualLesson = this.dataset.individualLesson;
                 const individualQuiz = this.dataset.individualQuiz;
                 const individualScore = this.dataset.individualScore;
+                const lessonsIndividual = this.dataset.lessonsIndividual;
+                const quizzesIndividual = this.dataset.quizzesIndividual;
+                const lessonsGroup = this.dataset.lessonsGroup;
+                const quizzesGroup = this.dataset.quizzesGroup;
 
                 // Populate form fields
                 document.getElementById('edit_level_group_display').value = levelGroups[levelGroup] || levelGroup;
@@ -886,6 +967,10 @@
                 document.getElementById('edit_individual_level_lesson_threshold').value = individualLesson;
                 document.getElementById('edit_individual_level_quiz_threshold').value = individualQuiz;
                 document.getElementById('edit_individual_level_score_threshold').value = individualScore;
+                document.getElementById('edit_required_number_of_lessons_individual').value = lessonsIndividual;
+                document.getElementById('edit_required_number_of_quizzes_individual').value = quizzesIndividual;
+                document.getElementById('edit_required_number_of_lessons_group').value = lessonsGroup;
+                document.getElementById('edit_required_number_of_quizzes_group').value = quizzesGroup;
 
                 // Set form action
                 editStandardForm.action = `/admin/progress/standards/${standardId}`;
