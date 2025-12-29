@@ -33,14 +33,14 @@
                 <div class="timer"><i class="fas fa-clock"></i> <span id="countdown"></span></div>
             </div>
             <div class="content">
-                <form method="POST" action="{{ route('quiz.essay.submit', $quiz['id']) }}" data-quiz-form>
+                <form method="POST" action="{{ route('quiz.essay.submit', $quiz['encoded_id']) }}" data-quiz-form>
                     @csrf
                     <label for="essay" class="sr-only">Your Essay Answer</label>
                     <textarea id="essay" name="essay" placeholder="Type your answer here..." required></textarea>
                     <input type="hidden" name="time_spent" id="time_spent" value="0">
                     <p class="muted"><i class="fas fa-shield-alt"></i> Anti‑cheat active: screenshots, copy, and tab switching will fail the quiz.</p>
                     <div class="actions">
-                        <a href="{{ route('quiz.instructions', $quiz['id']) }}" class="btn secondary"><i class="fas fa-arrow-left"></i> Back</a>
+                        <a href="{{ route('quiz.instructions', $quiz['encoded_id']) }}" class="btn secondary"><i class="fas fa-arrow-left"></i> Back</a>
                         <button type="submit" class="btn primary"><i class="fas fa-paper-plane"></i> Submit Essay</button>
                     </div>
                 </form>

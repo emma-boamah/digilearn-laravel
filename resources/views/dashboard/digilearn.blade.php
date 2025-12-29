@@ -2134,7 +2134,7 @@
                                 </p>
                                 @endif
                                 <div class="lesson-actions">
-                                    <a href="{{ route('dashboard.lesson.view', ['lessonId' => $course['id'], 'course_id' => $course['id']]) }}" class="lesson-action-btn primary">
+                                    <a href="{{ route('dashboard.lesson.view', ['lessonId' => App\Services\UrlObfuscator::encode($course['id']), 'course_id' => App\Services\UrlObfuscator::encode($course['id'])]) }}" class="lesson-action-btn primary">
                                         <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
                                             <path d="M8 5v14l11-7z"/>
                                         </svg>
@@ -2203,7 +2203,7 @@
                                 <span>{{ $lesson['instructor'] }} | {{ $lesson['year'] }}</span>
                             </div>
                             <div class="lesson-actions">
-                                <a href="{{ route('dashboard.lesson.view', ['lessonId' => $lesson['id']]) }}" class="lesson-action-btn primary">
+                                <a href="{{ route('dashboard.lesson.view', ['lessonId' => App\Services\UrlObfuscator::encode($lesson['id'])]) }}" class="lesson-action-btn primary">
                                     <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M8 5v14l11-7z"/>
                                     </svg>
@@ -2750,6 +2750,18 @@
                 });
             });
 
+            // Handle lesson link clicks
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.lesson-link')) {
+                    e.preventDefault();
+                    const link = e.target.closest('.lesson-link');
+                    const lessonId = link.getAttribute('data-lesson-id');
+                    if (lessonId) {
+                        window.location.href = `/dashboard/lesson/${lessonId}`;
+                    }
+                }
+            });
+    
             // Set periodic ping to keep session alive
             setInterval(() => {
                 if (document.visibilityState === 'visible') {
@@ -3019,7 +3031,7 @@
                             </div>
                             ${documentsHtml}
                             <div class="lesson-actions">
-                                <a href="/dashboard/lesson/${lesson.id}" class="lesson-action-btn primary">
+                                <a href="#" data-lesson-id="{{ App\Services\UrlObfuscator::encode($lesson['id']) }}" class="lesson-action-btn primary lesson-link">
                                     <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M8 5v14l11-7z"/>
                                     </svg>

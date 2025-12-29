@@ -537,13 +537,13 @@
                         </svg>
                     </div>
                 </div>
-                <div class="progress-value">{{ $progress->completed_lessons ?? 0 }}/{{ $progress->total_lessons_in_level ?? 0 }}</div>
-                <div class="progress-label">Lessons Completed</div>
+                <div class="progress-value">{{ $progress->completed_lessons ?? 0 }}/{{ $standards['required_number_of_lessons_individual'] ?? 10 }}</div>
+                <div class="progress-label">Lessons to Complete</div>
                 <div class="progress-bar-container">
                     <div class="progress-bar">
-                        <div class="progress-bar-fill" style="--progress-width: {{ $progress->total_lessons_in_level > 0 ? ($progress->completed_lessons / $progress->total_lessons_in_level) * 100 : 0 }}%; width: {{ $progress->total_lessons_in_level > 0 ? ($progress->completed_lessons / $progress->total_lessons_in_level) * 100 : 0 }}%;"></div>
+                        <div class="progress-bar-fill" style="--progress-width: {{ ($standards['required_number_of_lessons_individual'] ?? 10) > 0 ? min(($progress->completed_lessons / ($standards['required_number_of_lessons_individual'] ?? 10)) * 100, 100) : 0 }}%; width: {{ ($standards['required_number_of_lessons_individual'] ?? 10) > 0 ? min(($progress->completed_lessons / ($standards['required_number_of_lessons_individual'] ?? 10)) * 100, 100) : 0 }}%;"></div>
                     </div>
-                    <div class="progress-percentage">{{ $progress->total_lessons_in_level > 0 ? round(($progress->completed_lessons / $progress->total_lessons_in_level) * 100, 1) : 0 }}% Complete</div>
+                    <div class="progress-percentage">{{ ($standards['required_number_of_lessons_individual'] ?? 10) > 0 ? round(min(($progress->completed_lessons / ($standards['required_number_of_lessons_individual'] ?? 10)) * 100, 100), 1) : 0 }}% Complete</div>
                 </div>
             </div>
 
@@ -556,11 +556,11 @@
                         </svg>
                     </div>
                 </div>
-                <div class="progress-value">{{ min($progress->completed_quizzes ?? 0, $progress->total_quizzes_in_level ?? 0) }}/{{ $progress->total_quizzes_in_level ?? 0 }}</div>
-                <div class="progress-label">Quizzes Passed</div>
+                <div class="progress-value">{{ $progress->completed_quizzes ?? 0 }}/{{ $standards['required_number_of_quizzes_individual'] ?? 5 }}</div>
+                <div class="progress-label">Quizzes to Pass</div>
                 <div class="progress-bar-container">
                     <div class="progress-bar">
-                        <div class="progress-bar-fill" style="--progress-width: {{ $progress->total_quizzes_in_level > 0 ? (min($progress->completed_quizzes, $progress->total_quizzes_in_level) / $progress->total_quizzes_in_level) * 100 : 0 }}%; width: {{ $progress->total_quizzes_in_level > 0 ? (min($progress->completed_quizzes, $progress->total_quizzes_in_level) / $progress->total_quizzes_in_level) * 100 : 0 }}%;"></div>
+                        <div class="progress-bar-fill" style="--progress-width: {{ ($standards['required_number_of_quizzes_individual'] ?? 5) > 0 ? min(($progress->completed_quizzes / ($standards['required_number_of_quizzes_individual'] ?? 5)) * 100, 100) : 0 }}%; width: {{ ($standards['required_number_of_quizzes_individual'] ?? 5) > 0 ? min(($progress->completed_quizzes / ($standards['required_number_of_quizzes_individual'] ?? 5)) * 100, 100) : 0 }}%;"></div>
                     </div>
                     <div class="progress-percentage">{{ round($progress->average_quiz_score ?? 0, 1) }}% Average Score</div>
                 </div>

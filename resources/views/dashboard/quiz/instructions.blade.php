@@ -409,7 +409,7 @@
             </div>
 
             <button class="start-button" id="btnStartQuiz">Start</button>
-            <a href="{{ route('quiz.essay', $quiz['id']) }}" class="action-button secondary">
+            <a href="{{ route('quiz.essay', $quiz['encoded_id']) }}" class="action-button secondary">
                 <i class="fas fa-pen-nib"></i>
                 Essay Questions
             </a>
@@ -427,7 +427,7 @@
                     startBtn.disabled = true;
                     startBtn.textContent = 'Loading...';
                     setTimeout(() => {
-                        window.location.href = `{{ route('quiz.take', $quiz['id']) }}`;
+                        window.location.href = `{{ route('quiz.take', $quiz['encoded_id']) }}`;
                     }, 300);
                 });
             }

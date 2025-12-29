@@ -2634,6 +2634,13 @@ class AdminController extends Controller
             'required_average_quiz_score' => 'required|numeric|min:0|max:100',
             'minimum_quiz_score' => 'required|numeric|min:0|max:100',
             'lesson_watch_threshold_percentage' => 'required|numeric|min:0|max:100',
+            'individual_level_lesson_threshold' => 'required|numeric|min:0|max:100',
+            'individual_level_quiz_threshold' => 'required|numeric|min:0|max:100',
+            'individual_level_score_threshold' => 'required|numeric|min:0|max:100',
+            'required_number_of_lessons_individual' => 'required|integer|min:1',
+            'required_number_of_quizzes_individual' => 'required|integer|min:1',
+            'required_number_of_lessons_group' => 'required|integer|min:1',
+            'required_number_of_quizzes_group' => 'required|integer|min:1',
         ]);
 
         // Deactivate existing standard for this level group
@@ -2648,6 +2655,13 @@ class AdminController extends Controller
             'required_average_quiz_score' => $request->required_average_quiz_score,
             'minimum_quiz_score' => $request->minimum_quiz_score,
             'lesson_watch_threshold_percentage' => $request->lesson_watch_threshold_percentage,
+            'individual_level_lesson_threshold' => $request->individual_level_lesson_threshold,
+            'individual_level_quiz_threshold' => $request->individual_level_quiz_threshold,
+            'individual_level_score_threshold' => $request->individual_level_score_threshold,
+            'required_number_of_lessons_individual' => $request->required_number_of_lessons_individual,
+            'required_number_of_quizzes_individual' => $request->required_number_of_quizzes_individual,
+            'required_number_of_lessons_group' => $request->required_number_of_lessons_group,
+            'required_number_of_quizzes_group' => $request->required_number_of_quizzes_group,
             'is_active' => true,
         ]);
 
@@ -2662,6 +2676,13 @@ class AdminController extends Controller
             'required_average_quiz_score' => 'required|numeric|min:0|max:100',
             'minimum_quiz_score' => 'required|numeric|min:0|max:100',
             'lesson_watch_threshold_percentage' => 'required|numeric|min:0|max:100',
+            'individual_level_lesson_threshold' => 'required|numeric|min:0|max:100',
+            'individual_level_quiz_threshold' => 'required|numeric|min:0|max:100',
+            'individual_level_score_threshold' => 'required|numeric|min:0|max:100',
+            'required_number_of_lessons_individual' => 'required|integer|min:1',
+            'required_number_of_quizzes_individual' => 'required|integer|min:1',
+            'required_number_of_lessons_group' => 'required|integer|min:1',
+            'required_number_of_quizzes_group' => 'required|integer|min:1',
         ]);
 
         $standard->update($request->only([
@@ -2670,6 +2691,13 @@ class AdminController extends Controller
             'required_average_quiz_score',
             'minimum_quiz_score',
             'lesson_watch_threshold_percentage',
+            'individual_level_lesson_threshold',
+            'individual_level_quiz_threshold',
+            'individual_level_score_threshold',
+            'required_number_of_lessons_individual',
+            'required_number_of_quizzes_individual',
+            'required_number_of_lessons_group',
+            'required_number_of_quizzes_group',
         ]));
 
         return redirect()->back()->with('success', 'Progression standard updated successfully!');

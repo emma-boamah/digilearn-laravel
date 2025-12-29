@@ -15,6 +15,7 @@ use App\Http\Middleware\RealIpMiddleware;
 use App\Http\Middleware\ThrottleRequestsWithRedirect;
 use App\Http\Middleware\CookieConsentMiddleware;
 use App\Http\Middleware\CheckSuspended;
+use App\Http\Middleware\DecodeObfuscatedIds;
 
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -52,6 +53,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'superuser' => SuperuserMiddleware::class,
             'throttle.redirect' => ThrottleRequestsWithRedirect::class,
             'check.suspended' => CheckSuspended::class,
+            'decode.obfuscated' => DecodeObfuscatedIds::class,
         ]);
 
         // Rate limiting configuration

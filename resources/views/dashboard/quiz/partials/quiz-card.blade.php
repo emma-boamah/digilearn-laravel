@@ -1,4 +1,4 @@
-<div class="quiz-card" data-quiz-id="{{ $quiz['id'] }}">
+<div class="quiz-card" data-quiz-id="{{ $quiz['id'] }}" data-encoded-quiz-id="{{ $quiz['encoded_id'] }}">
     <!-- Quiz Header with Icon and Badge -->
     <div class="quiz-header">
         <div class="quiz-icon-container">
@@ -58,7 +58,7 @@
         <!-- Reviews Link -->
         @if(($quiz['total_ratings'] ?? 0) > 0)
         <div class="quiz-reviews-link">
-            <a href="#" onclick="openReviewsModal({{ $quiz['id'] }}); return false;" class="reviews-link">
+            <a href="#" onclick="openReviewsModal('{{ $quiz['encoded_id'] }}'); return false;" class="reviews-link">
                 <i class="fas fa-star"></i>
                 See reviews
             </a>
@@ -131,15 +131,15 @@
     </div>
 
     <!-- Reviews Modal -->
-    <div class="reviews-modal-overlay" id="reviewsModal-{{ $quiz['id'] }}">
+    <div class="reviews-modal-overlay" id="reviewsModal-{{ $quiz['encoded_id'] }}">
         <div class="reviews-modal">
             <div class="reviews-modal-header">
                 <h3>Reviews for {{ $quiz['title'] }}</h3>
-                <button class="reviews-modal-close" onclick="closeReviewsModal({{ $quiz['id'] }})">
+                <button class="reviews-modal-close" onclick="closeReviewsModal('{{ $quiz['encoded_id'] }}')">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="reviews-modal-content" id="reviewsContent-{{ $quiz['id'] }}">
+            <div class="reviews-modal-content" id="reviewsContent-{{ $quiz['encoded_id'] }}">
                 <div class="reviews-loading">
                     <i class="fas fa-spinner fa-spin"></i>
                     <p>Loading reviews...</p>

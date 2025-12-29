@@ -100,6 +100,7 @@ class QuizController extends Controller
 
                 return [
                     'id' => $quiz->id,
+                    'encoded_id' => \App\Services\UrlObfuscator::encode($quiz->id),
                     'title' => $quiz->title,
                     'subject' => $quiz->subject?->name,
                     'grade_level' => $quiz->grade_level,
@@ -137,11 +138,14 @@ class QuizController extends Controller
     {
         // Get quiz data - replace with actual database query
         $quiz = $this->getQuizById($quizId);
-        
+
         if (!$quiz) {
             return redirect()->route('quiz.index')->with('error', 'Quiz not found.');
         }
-        
+
+        // Add encoded ID for URL generation
+        $quiz['encoded_id'] = \App\Services\UrlObfuscator::encode($quizId);
+
         return view('dashboard.quiz.instructions', compact('quiz'));
     }
     
@@ -161,17 +165,20 @@ class QuizController extends Controller
     {
         // Get quiz data and questions - replace with actual database queries
         $quiz = $this->getQuizById($quizId);
-        
+
         if (!$quiz) {
             return redirect()->route('quiz.index')->with('error', 'Quiz not found.');
         }
 
+        // Add encoded ID for URL generation
+        $quiz['encoded_id'] = \App\Services\UrlObfuscator::encode($quizId);
+
         // Convert duration to seconds - safe array access
         $seconds = (is_array($quiz) && isset($quiz['time_limit_minutes']) ? $quiz['time_limit_minutes'] : 3) * 60;
-        
+
         // Check if user has already taken this quiz
          $hasAttempted = $this->checkUserAttempt($quizId, Auth::id());
-        
+
         return view('dashboard.quiz.take', compact('quiz', 'seconds', 'hasAttempted'));
     }
 
@@ -184,6 +191,10 @@ class QuizController extends Controller
         if (!$quiz) {
             return redirect()->route('quiz.index')->with('error', 'Quiz not found.');
         }
+
+        // Add encoded ID for URL generation
+        $quiz['encoded_id'] = \App\Services\UrlObfuscator::encode($quizId);
+
         $seconds = $this->convertDurationToSeconds(is_array($quiz) && isset($quiz['duration']) ? $quiz['duration'] : '3 min');
         $hasAttempted = $this->checkUserAttempt($quizId, Auth::id());
         return view('dashboard.quiz.essay', compact('quiz', 'seconds', 'hasAttempted'));
@@ -203,7 +214,7 @@ class QuizController extends Controller
         $timeSpent = (int) $request->input('time_spent', 0);
         // Placeholder: essay not auto-scored; show submitted status
         return redirect()->route('quiz.results', [
-            'quiz' => $quizId,
+            'quiz' => \App\Services\UrlObfuscator::encode($quizId),
             'score' => 0,
             'total' => 0,
             'percentage' => 0,
@@ -413,7 +424,7 @@ class QuizController extends Controller
         Log::info('About to redirect to results page');
 
         return redirect()->route('quiz.results', [
-            'quiz' => $quizId,
+            'quiz' => \App\Services\UrlObfuscator::encode($quizId),
             'score' => is_array($result) && isset($result['score']) ? $result['score'] : 0,
             'total' => is_array($result) && isset($result['total']) ? $result['total'] : 0,
             'percentage' => is_array($result) && isset($result['percentage']) ? $result['percentage'] : 0,

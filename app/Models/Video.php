@@ -560,6 +560,110 @@ class Video extends Model
     }
 
     /**
+     * Get video duration in seconds from various sources
+     */
+    public function getDuration()
+    {
+        // If duration is already stored, return it
+        if ($this->duration_seconds) {
+            return $this->duration_seconds;
+        }
+
+        // Fetch duration based on source
+        switch ($this->video_source) {
+            case 'vimeo':
+                return $this->getVimeoDuration();
+
+            case 'youtube':
+                return $this->getYouTubeDuration();
+
+            case 'mux':
+                return $this->getMuxDuration();
+
+            case 'local':
+            default:
+                // For local videos, duration should be stored in duration_seconds
+                // If not, return null
+                return null;
+        }
+    }
+
+    /**
+     * Get Vimeo video duration
+     */
+    private function getVimeoDuration()
+    {
+        if (!$this->vimeo_id) {
+            return null;
+        }
+
+        try {
+            $vimeoService = app(\App\Services\VimeoService::class);
+            $videoInfo = $vimeoService->getVideoInfo($this->vimeo_id);
+
+            if ($videoInfo && isset($videoInfo['duration'])) {
+                $duration = (int) $videoInfo['duration'];
+                // Cache the duration
+                $this->update(['duration_seconds' => $duration]);
+                return $duration;
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to get Vimeo duration', [
+                'video_id' => $this->id,
+                'vimeo_id' => $this->vimeo_id,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        return null;
+    }
+
+    /**
+     * Get YouTube video duration
+     */
+    private function getYouTubeDuration()
+    {
+        // For now, return null as YouTube API requires authentication
+        // In production, implement YouTube Data API v3 call
+        Log::info('YouTube duration fetch not implemented - requires API key', [
+            'video_id' => $this->id,
+            'youtube_id' => $this->external_video_id
+        ]);
+
+        return null;
+    }
+
+    /**
+     * Get Mux video duration
+     */
+    private function getMuxDuration()
+    {
+        if (!$this->mux_asset_id) {
+            return null;
+        }
+
+        try {
+            $muxService = app(\App\Services\MuxService::class);
+            $assetInfo = $muxService->getAsset($this->mux_asset_id);
+
+            if ($assetInfo['success'] && isset($assetInfo['duration'])) {
+                $duration = (float) $assetInfo['duration'];
+                // Cache the duration
+                $this->update(['duration_seconds' => $duration]);
+                return $duration;
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to get Mux duration', [
+                'video_id' => $this->id,
+                'mux_asset_id' => $this->mux_asset_id,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        return null;
+    }
+
+    /**
      * Set video source from URL
      */
     public function setVideoSourceFromUrl($url)
