@@ -109,7 +109,7 @@
         <div class="quiz-meta">
             <span class="quiz-attempts">
                 @if(isset($quiz['attempts_count']) && $quiz['attempts_count'] > 0)
-                    {{ $quiz['attempts_count'] }} attempt{{ $quiz['attempts_count'] > 1 ? 's' : '' }}
+                    You have made {{ $quiz['attempts_count'] }} attempt{{ $quiz['attempts_count'] > 1 ? 's' : '' }}
                 @else
                     Not attempted
                 @endif

@@ -10,7 +10,10 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
+    <!-- Vimeo Player API for hover-to-play functionality -->
+    <script src="https://player.vimeo.com/api/player.js"></script>
+
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         :root {
             --primary-red: #E11E2D;
@@ -1110,6 +1113,17 @@
             pointer-events: none;
         }
 
+        .lesson-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
         .lesson-fallback-image {
             width: 100%;
             height: 100%;
@@ -1117,6 +1131,12 @@
             position: absolute;
             top: 0;
             left: 0;
+        }
+
+        .video-thumb {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .lesson-duration {
@@ -2082,35 +2102,23 @@
                     @if(isset($universityCourses))
                         {{-- Display University Courses --}}
                         @forelse($universityCourses as $course)
-                        <div class="lesson-card hover-video-card" data-lesson-id="{{ \App\Services\UrlObfuscator::encode($course['id']) }}" data-subject="{{ $course['subject'] }}" data-title="{{ $course['title'] }}">
+                        <div class="lesson-card hover-video-card" data-lesson-id="{{ \App\Services\UrlObfuscator::encode($course['id']) }}" data-video-id="{{ $course['id'] }}" data-subject="{{ $course['subject'] }}" data-title="{{ $course['title'] }}" data-video-source="{{ $course['video_source'] ?? 'local' }}" data-vimeo-id="{{ $course['vimeo_id'] ?? '' }}" data-external-video-id="{{ $course['external_video_id'] ?? '' }}" data-mux-playback-id="{{ $course['mux_playback_id'] ?? '' }}" data-loaded="false">
                             <div class="lesson-thumbnail">
-                                <!-- Video element for hover-to-play functionality -->
-                                <video 
-                                    id="lesson-video-{{ $course['id'] }}" 
-                                    class="lesson-video" 
-                                    muted 
-                                    loop 
-                                    preload="metadata"
-                                    poster="{{ secure_asset($course['thumbnail']) }}"
-                                >
-                                    <source src="{{ secure_asset($course['video_url']) }}" type="video/mp4">
-                                    Your browser does not support the video tag.
-                                </video>
-                                
-                                <!-- Fallback image if video fails to load -->
-                                <img 
-                                    src="{{ secure_asset($course['thumbnail']) }}" 
-                                    alt="{{ $course['title'] }}" 
-                                    class="lesson-fallback-image"
-                                    style="display: none;"
+                                <img
+                                    src="{{ secure_asset($course['thumbnail']) }}"
+                                    alt="{{ $course['title'] }}"
+                                    class="video-thumb"
+                                    loading="lazy"
                                     onerror="this.src='https://via.placeholder.com/400x225/E11E2D/ffffff?text=Course+Video'"
-                                >
-                                
+                                />
+
+                                <div class="video-preview"></div>
+
                                 <div class="lesson-duration">{{ $course['duration'] }}</div>
-                                
+
                                 <!-- Level badge -->
                                 <div class="lesson-level-badge">{{ $course['level_display'] ?? 'Course' }}</div>
-                                
+
                                 <!-- Play overlay that appears on hover -->
                                 <div class="play-overlay">
                                     <div class="play-button">
@@ -2161,35 +2169,23 @@
                     @else
                         {{-- Display Regular Lessons --}}
                         @forelse($lessons ?? [] as $lesson)
-                    <div class="lesson-card hover-video-card" data-lesson-id="{{ \App\Services\UrlObfuscator::encode($lesson['id']) }}" data-subject="{{ $lesson['subject'] }}" data-title="{{ $lesson['title'] }}">
+                    <div class="lesson-card hover-video-card" data-lesson-id="{{ \App\Services\UrlObfuscator::encode($lesson['id']) }}" data-video-id="{{ $lesson['id'] }}" data-subject="{{ $lesson['subject'] }}" data-title="{{ $lesson['title'] }}" data-video-source="{{ $lesson['video_source'] ?? 'local' }}" data-vimeo-id="{{ $lesson['vimeo_id'] ?? '' }}" data-external-video-id="{{ $lesson['external_video_id'] ?? '' }}" data-mux-playback-id="{{ $lesson['mux_playback_id'] ?? '' }}" data-loaded="false">
                         <div class="lesson-thumbnail">
-                            <!-- Video element for hover-to-play functionality -->
-                            <video 
-                                id="lesson-video-{{ $lesson['id'] }}" 
-                                class="lesson-video" 
-                                muted 
-                                loop 
-                                preload="metadata"
-                                poster="{{ secure_asset($lesson['thumbnail']) }}"
-                            >
-                                <source src="{{ secure_asset($lesson['video_url']) }}" type="video/mp4">
-                                Your browser does not support the video tag.
-                            </video>
-                            
-                            <!-- Fallback image if video fails to load -->
-                            <img 
-                                src="{{ secure_asset($lesson['thumbnail']) }}" 
-                                alt="{{ $lesson['title'] }}" 
-                                class="lesson-fallback-image"
-                                style="display: none;"
+                            <img
+                                src="{{ secure_asset($lesson['thumbnail']) }}"
+                                alt="{{ $lesson['title'] }}"
+                                class="video-thumb"
+                                loading="lazy"
                                 onerror="this.src='https://via.placeholder.com/400x225/E11E2D/ffffff?text=Video+Lesson'"
-                            >
-                            
+                            />
+
+                            <div class="video-preview"></div>
+
                             <div class="lesson-duration">{{ $lesson['duration'] }}</div>
-                            
+
                             <!-- Level badge -->
                             <div class="lesson-level-badge">{{ $lesson['level_display'] ?? 'Level' }}</div>
-                            
+
                             <!-- Play overlay that appears on hover -->
                             <div class="play-overlay">
                                 <div class="play-button">
@@ -2615,143 +2611,117 @@
             });
         }
 
-        // Updated the playLesson function and video card click handling
+        // Optimized hover-to-play functionality following YouTube/Netflix pattern
         function initializeVideoCards() {
-            const videoCards = document.querySelectorAll('.hover-video-card');
-            let currentlyPlaying = null;
-            let previewTimeout = null;
+            let hoverTimer = null;
+            let activePlayer = null;
+            let hasPreconnected = false;
 
-            videoCards.forEach(card => {
-                const videoId = card.getAttribute('data-video-id') || `lesson-video-${card.getAttribute('data-lesson-id')}`;
-                const video = document.getElementById(videoId);
-                const loadingIndicator = card.querySelector('.video-loading');
+            // Mobile detection
+            const isMobile = 'ontouchstart' in window;
 
-                if (!video) return;
+            document.querySelectorAll('.hover-video-card').forEach(card => {
+                const videoPreview = card.querySelector('.video-preview');
 
-                // Ensure video is muted for autoplay compatibility
-                video.muted = true;
+                if (isMobile) {
+                    // Mobile: use click instead of hover
+                    card.addEventListener('click', function(e) {
+                        // Don't trigger if clicking on action buttons
+                        if (e.target.closest('.lesson-action-btn')) return;
 
-                // Handle video loading
-                video.addEventListener('loadstart', function() {
-                    if (loadingIndicator) loadingIndicator.style.display = 'flex';
-                });
-
-                video.addEventListener('canplay', function() {
-                    if (loadingIndicator) loadingIndicator.style.display = 'none';
-                });
-
-                // Handle video errors
-                video.addEventListener('error', function() {
-                    console.log('Video failed to load:', videoId);
-                    card.classList.add('video-error');
-                    if (loadingIndicator) loadingIndicator.style.display = 'none';
-                });
-
-                // Play video on hover (Vimeo-like preview)
-                card.addEventListener('mouseenter', function() {
-                    if (currentlyPlaying && currentlyPlaying !== video) {
-                        currentlyPlaying.pause();
-                        currentlyPlaying.currentTime = 0;
-                        currentlyPlaying.parentElement.parentElement.classList.remove('playing');
-                    }
-
-                    if (video.paused && !card.classList.contains('video-error')) {
-                        // Check if video has loaded enough data and can potentially play
-                        if (video.readyState >= 1 && video.duration > 0) { // HAVE_METADATA - basic info loaded
-                            // Reset to beginning if at end
-                            if (video.currentTime >= video.duration - 1) {
-                                video.currentTime = 0;
-                            }
-
-                            // Try to play for preview (muted to comply with browser policies)
-                            const playPromise = video.play();
-
-                            if (playPromise !== undefined) {
-                                playPromise
-                                    .then(() => {
-                                        card.classList.add('playing');
-                                        currentlyPlaying = video;
-
-                                        // Auto-pause after 3 seconds for preview
-                                        previewTimeout = setTimeout(() => {
-                                            if (!video.paused && currentlyPlaying === video) {
-                                                video.pause();
-                                                video.currentTime = 0;
-                                                card.classList.remove('playing');
-                                                currentlyPlaying = null;
-                                                previewTimeout = null;
-                                            }
-                                        }, 3000);
-                                    })
-                                    .catch(error => {
-                                        // Browser prevented autoplay - this is expected behavior
-                                        // Add a subtle hover effect instead
-                                        card.style.transform = 'scale(1.02)';
-                                        card.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.2)';
-                                        console.log('Hover preview blocked by browser policy - showing hover effect instead');
-                                    });
-                            }
-                        } else {
-                            // Video not ready - add hover effect as fallback
-                            card.style.transform = 'scale(1.02)';
-                            card.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.2)';
-                            console.log('Video not ready - showing hover effect');
+                        e.preventDefault();
+                        if (card.dataset.loaded === 'false') {
+                            activatePreview(card);
                         }
-                    }
-                });
+                    });
+                } else {
+                    // Desktop: hover with debounce
+                    card.addEventListener('mouseenter', () => {
+                        hoverTimer = setTimeout(() => {
+                            activatePreview(card);
+                        }, 250); // prevents accidental hover
+                    });
 
-                // Pause video when mouse leaves and ensure poster is visible
-                card.addEventListener('mouseleave', function() {
-                    // Clear any pending preview timeout
-                    if (previewTimeout) {
-                        clearTimeout(previewTimeout);
-                        previewTimeout = null;
-                    }
-
-                    // Reset hover effects
-                    card.style.transform = '';
-                    card.style.boxShadow = '';
-
-                    if (!video.paused) {
-                        video.pause();
-                        video.currentTime = 0;
-                        card.classList.remove('playing');
-                        if (currentlyPlaying === video) {
-                            currentlyPlaying = null;
-                        }
-                    }
-                    // Ensure poster is visible by briefly setting currentTime to 0
-                    // This helps browsers show the poster again
-                    setTimeout(() => {
-                        if (video.paused && video.currentTime === 0) {
-                            video.load(); // Reload to ensure poster shows
-                        }
-                    }, 10);
-                });
-
-                // Handle video end
-                video.addEventListener('ended', function() {
-                    // Clear preview timeout if video ended naturally
-                    if (previewTimeout) {
-                        clearTimeout(previewTimeout);
-                        previewTimeout = null;
-                    }
-
-                    // Reset hover effects
-                    card.style.transform = '';
-                    card.style.boxShadow = '';
-
-                    this.currentTime = 0;
-                    card.classList.remove('playing');
-                    if (currentlyPlaying === video) {
-                        currentlyPlaying = null;
-                    }
-                    // Ensure poster shows after video ends
-                    setTimeout(() => {
-                        this.load();
-                    }, 10);
-                });
+                    card.addEventListener('mouseleave', () => {
+                        clearTimeout(hoverTimer);
+                        deactivatePreview(card);
+                    });
+                }
             });
+
+            function activatePreview(card) {
+                if (card.dataset.loaded === 'true') return;
+
+                // Kill previous preview
+                if (activePlayer) {
+                    activePlayer.pause();
+                    activePlayer = null;
+                    document.querySelectorAll('.video-preview').forEach(p => p.innerHTML = '');
+                    document.querySelectorAll('.hover-video-card').forEach(c => c.dataset.loaded = 'false');
+                }
+
+                const videoId = card.dataset.vimeoId || card.dataset.externalVideoId;
+                const videoSource = card.dataset.videoSource;
+                const preview = card.querySelector('.video-preview');
+
+                if (!videoId) return; // No video to preview
+
+                // Preconnect to Vimeo on first hover
+                if (!hasPreconnected && (videoSource === 'vimeo' || videoSource === 'youtube')) {
+                    const link = document.createElement('link');
+                    link.rel = 'preconnect';
+                    link.href = videoSource === 'vimeo' ? 'https://player.vimeo.com' : 'https://www.youtube.com';
+                    document.head.appendChild(link);
+                    hasPreconnected = true;
+                }
+
+                if (videoSource === 'vimeo') {
+                    const iframe = document.createElement('iframe');
+                    iframe.src = `https://player.vimeo.com/video/${videoId}?autoplay=1&muted=1&background=1`;
+                    iframe.allow = 'autoplay';
+                    iframe.loading = 'lazy';
+                    iframe.frameBorder = '0';
+                    iframe.style.width = '100%';
+                    iframe.style.height = '100%';
+                    iframe.style.position = 'absolute';
+                    iframe.style.top = '0';
+                    iframe.style.left = '0';
+
+                    preview.appendChild(iframe);
+
+                    activePlayer = new Vimeo.Player(iframe);
+                } else if (videoSource === 'youtube') {
+                    const iframe = document.createElement('iframe');
+                    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&loop=1&playlist=${videoId}`;
+                    iframe.allow = 'autoplay';
+                    iframe.loading = 'lazy';
+                    iframe.frameBorder = '0';
+                    iframe.style.width = '100%';
+                    iframe.style.height = '100%';
+                    iframe.style.position = 'absolute';
+                    iframe.style.top = '0';
+                    iframe.style.left = '0';
+
+                    preview.appendChild(iframe);
+
+                    // For YouTube, we can't easily get a player instance, so we'll handle cleanup differently
+                    activePlayer = { pause: () => {}, element: iframe };
+                }
+
+                card.dataset.loaded = 'true';
+            }
+
+            function deactivatePreview(card) {
+                card.dataset.loaded = 'false';
+
+                const preview = card.querySelector('.video-preview');
+                preview.innerHTML = ''; // destroy iframe
+
+                if (activePlayer) {
+                    activePlayer.pause();
+                    activePlayer = null;
+                }
+            }
 
             // Handle lesson link clicks
             document.addEventListener('click', function(e) {
@@ -2764,7 +2734,7 @@
                     }
                 }
             });
-    
+
             // Set periodic ping to keep session alive
             setInterval(() => {
                 if (document.visibilityState === 'visible') {
@@ -2996,23 +2966,16 @@
                 ` : '';
 
                 html += `
-                    <div class="lesson-card hover-video-card" data-lesson-id="${lesson.id}" data-subject="${lesson.subject}" data-title="${lesson.title}">
+                    <div class="lesson-card hover-video-card" data-lesson-id="${lesson.encoded_id}" data-video-id="${lesson.id}" data-subject="${lesson.subject}" data-title="${lesson.title}" data-video-source="${lesson.video_source || 'local'}" data-vimeo-id="${lesson.vimeo_id || ''}" data-external-video-id="${lesson.external_video_id || ''}" data-mux-playback-id="${lesson.mux_playback_id || ''}" data-loaded="false">
                         <div class="lesson-thumbnail">
-                            <video
-                                id="lesson-video-${lesson.id}"
-                                class="lesson-video"
-                                muted
-                                loop
-                                preload="metadata"
-                                poster="${lesson.thumbnail}"
-                            >
-                                <source src="${lesson.video_url}" type="video/mp4">
-                                Your browser does not support the video tag.
-                            </video>
+                            <img
+                                src="${lesson.thumbnail}"
+                                alt="${lesson.title}"
+                                class="video-thumb"
+                                loading="lazy"
+                            />
 
-                            <div class="lesson-fallback-image" style="display: none;">
-                                <img src="${lesson.thumbnail}" alt="${lesson.title}" style="width: 100%; height: 100%; object-fit: cover;">
-                            </div>
+                            <div class="video-preview"></div>
 
                             <div class="lesson-duration">${lesson.duration}</div>
 
@@ -3034,7 +2997,7 @@
                             </div>
                             ${documentsHtml}
                             <div class="lesson-actions">
-                                <a href="#" data-lesson-id="{{ App\Services\UrlObfuscator::encode($lesson['id']) }}" class="lesson-action-btn primary lesson-link">
+                                <a href="#" data-lesson-id="${lesson.encoded_id}" class="lesson-action-btn primary lesson-link">
                                     <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M8 5v14l11-7z"/>
                                     </svg>
