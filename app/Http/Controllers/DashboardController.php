@@ -467,6 +467,10 @@ class DashboardController extends Controller
                     'year' => date('Y'),
                     'level' => $level,
                     'level_display' => $this->getLevelDisplayName($level),
+                    'video_source' => $video->video_source,
+                    'vimeo_id' => $video->vimeo_id,
+                    'external_video_id' => $video->external_video_id,
+                    'mux_playback_id' => $video->mux_playback_id,
                     'documents_count' => $video->documents->count(),
                     'documents' => $video->documents->map(function($doc) {
                         return [
@@ -1846,6 +1850,10 @@ class DashboardController extends Controller
                     'instructor' => $video->uploader ? $video->uploader->name : 'Unknown',
                     'week' => ceil(($index + 1) / 3), // Assuming 3 lessons per week
                     'order' => $index + 1,
+                    'video_source' => $video->video_source,
+                    'vimeo_id' => $video->vimeo_id,
+                    'external_video_id' => $video->external_video_id,
+                    'mux_playback_id' => $video->mux_playback_id,
                     'documents_count' => $video->documents->count(),
                     'documents' => $video->documents->map(function($doc) {
                         return [
@@ -2503,6 +2511,7 @@ class DashboardController extends Controller
              foreach ($videos as $video) {
                  $lesson = [
                      'id' => $video->id,
+                     'encoded_id' => \App\Services\UrlObfuscator::encode($video->id),
                      'video_id' => $video->id,
                      'title' => $video->title,
                      'description' => $video->description,
@@ -2514,6 +2523,10 @@ class DashboardController extends Controller
                      'year' => date('Y'),
                      'level' => $this->convertLevelFormatBack($video->grade_level),
                      'level_display' => $this->getLevelDisplayName($this->convertLevelFormatBack($video->grade_level)),
+                     'video_source' => $video->video_source,
+                     'vimeo_id' => $video->vimeo_id,
+                     'external_video_id' => $video->external_video_id,
+                     'mux_playback_id' => $video->mux_playback_id,
                      'documents_count' => $video->documents->count(),
                      'documents' => $video->documents->map(function($doc) {
                          return [

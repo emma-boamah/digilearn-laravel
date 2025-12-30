@@ -22,6 +22,9 @@
     <!-- Additional Libraries for Enhanced Functionality -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- Vimeo Player API for hover-to-play functionality -->
+    <script src="https://player.vimeo.com/api/player.js"></script>
 @endsection
 
 @section('content')
@@ -2709,10 +2712,11 @@
                 
                 @if(isset($relatedLessons))
                     @foreach($relatedLessons as $relatedLesson)
-                    <div class="video-item related-video-item" data-href="/dashboard/lesson/{{ \App\Services\UrlObfuscator::encode($relatedLesson['id']) }}">
+                    <div class="video-item related-video-item hover-video-card" data-href="/dashboard/lesson/{{ \App\Services\UrlObfuscator::encode($relatedLesson['id']) }}" data-lesson-id="{{ \App\Services\UrlObfuscator::encode($relatedLesson['id']) }}" data-video-id="{{ $relatedLesson['id'] }}" data-subject="{{ $relatedLesson['subject'] ?? 'General' }}" data-title="{{ $relatedLesson['title'] ?? 'Lesson' }}" data-video-source="{{ $relatedLesson['video_source'] ?? 'local' }}" data-vimeo-id="{{ $relatedLesson['vimeo_id'] ?? '' }}" data-external-video-id="{{ $relatedLesson['external_video_id'] ?? '' }}" data-mux-playback-id="{{ $relatedLesson['mux_playback_id'] ?? '' }}" data-loaded="false">
                         <div class="video-thumbnail">
                             <img src="{{ secure_asset($relatedLesson['thumbnail'] ?? '') }}" alt="{{ $relatedLesson['title'] ?? 'Lesson' }}"
                                  onerror="this.src='/placeholder.svg?height=78&width=140'">
+                            <div class="video-preview"></div>
                             <div class="play-overlay">
                                 <svg class="play-icon" fill="currentColor" viewBox="0 0 24 24">
                                     <polygon points="5 3 19 12 5 21 5 3"/>
@@ -2735,9 +2739,10 @@
                 @else
                     <!-- Sample related videos for demo -->
                     @for($i = 1; $i <= 8; $i++)
-                    <div class="video-item">
+                    <div class="video-item hover-video-card" data-lesson-id="demo-{{ $i }}" data-video-id="demo-{{ $i }}" data-subject="Science" data-title="Living and non-living organisms" data-video-source="vimeo" data-vimeo-id="76979871" data-external-video-id="" data-mux-playback-id="" data-loaded="false">
                         <div class="video-thumbnail">
                             <img src="/placeholder.svg?height=78&width=140" alt="Related Lesson {{ $i }}">
+                            <div class="video-preview"></div>
                             <div class="play-overlay">
                                 <svg class="play-icon" fill="currentColor" viewBox="0 0 24 24">
                                     <polygon points="5 3 19 12 5 21 5 3"/>
@@ -2912,6 +2917,7 @@
             initializeSaveLesson();
             initializeSearch();
             initializeVideoItems();
+            initializeVideoCards(); // Add hover-to-play functionality
             initializeKeyboardShortcuts();
             initializeNavigation();
             initializeCommentsToggle();
@@ -2921,28 +2927,166 @@
             initializeVideoProgressTracking();
         }
 
+        // Optimized hover-to-play functionality following YouTube/Netflix pattern
+        function initializeVideoCards() {
+            let hoverTimer = null;
+            let activePlayer = null;
+            let hasPreconnected = false;
+
+            // Mobile detection
+            const isMobile = 'ontouchstart' in window;
+
+            document.querySelectorAll('.hover-video-card').forEach(card => {
+                const videoPreview = card.querySelector('.video-preview');
+
+                if (isMobile) {
+                    // Mobile: use click instead of hover
+                    card.addEventListener('click', function(e) {
+                        // Don't trigger if clicking on action buttons
+                        if (e.target.closest('.lesson-action-btn')) return;
+
+                        e.preventDefault();
+                        if (card.dataset.loaded === 'false') {
+                            activatePreview(card);
+                        }
+                    });
+                } else {
+                    // Desktop: hover with debounce
+                    card.addEventListener('mouseenter', () => {
+                        hoverTimer = setTimeout(() => {
+                            activatePreview(card);
+                        }, 250); // prevents accidental hover
+                    });
+
+                    card.addEventListener('mouseleave', () => {
+                        clearTimeout(hoverTimer);
+                        deactivatePreview(card);
+                    });
+                }
+            });
+
+            function activatePreview(card) {
+                if (card.dataset.loaded === 'true') return;
+
+                // Kill previous preview
+                if (activePlayer) {
+                    activePlayer.pause();
+                    activePlayer = null;
+                    document.querySelectorAll('.video-preview').forEach(p => p.innerHTML = '');
+                    document.querySelectorAll('.hover-video-card').forEach(c => c.dataset.loaded = 'false');
+                }
+
+                const videoId = card.dataset.vimeoId || card.dataset.externalVideoId;
+                const videoSource = card.dataset.videoSource;
+                const preview = card.querySelector('.video-preview');
+
+                if (!videoId) return; // No video to preview
+
+                // Preconnect to Vimeo on first hover
+                if (!hasPreconnected && (videoSource === 'vimeo' || videoSource === 'youtube')) {
+                    const link = document.createElement('link');
+                    link.rel = 'preconnect';
+                    link.href = videoSource === 'vimeo' ? 'https://player.vimeo.com' : 'https://www.youtube.com';
+                    document.head.appendChild(link);
+                    hasPreconnected = true;
+                }
+
+                if (videoSource === 'vimeo') {
+                    const iframe = document.createElement('iframe');
+                    iframe.src = `https://player.vimeo.com/video/${videoId}?autoplay=1&muted=1&background=1`;
+                    iframe.allow = 'autoplay';
+                    iframe.loading = 'lazy';
+                    iframe.frameBorder = '0';
+                    iframe.style.width = '100%';
+                    iframe.style.height = '100%';
+                    iframe.style.position = 'absolute';
+                    iframe.style.top = '0';
+                    iframe.style.left = '0';
+
+                    preview.appendChild(iframe);
+
+                    activePlayer = new Vimeo.Player(iframe);
+                } else if (videoSource === 'youtube') {
+                    const iframe = document.createElement('iframe');
+                    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&loop=1&playlist=${videoId}`;
+                    iframe.allow = 'autoplay';
+                    iframe.loading = 'lazy';
+                    iframe.frameBorder = '0';
+                    iframe.style.width = '100%';
+                    iframe.style.height = '100%';
+                    iframe.style.position = 'absolute';
+                    iframe.style.top = '0';
+                    iframe.style.left = '0';
+
+                    preview.appendChild(iframe);
+
+                    // For YouTube, we can't easily get a player instance, so we'll handle cleanup differently
+                    activePlayer = { pause: () => {}, element: iframe };
+                }
+
+                card.dataset.loaded = 'true';
+            }
+
+            function deactivatePreview(card) {
+                card.dataset.loaded = 'false';
+
+                const preview = card.querySelector('.video-preview');
+                preview.innerHTML = ''; // destroy iframe
+
+                if (activePlayer) {
+                    activePlayer.pause();
+                    activePlayer = null;
+                }
+            }
+
+            // Handle lesson link clicks
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.lesson-link')) {
+                    e.preventDefault();
+                    const link = e.target.closest('.lesson-link');
+                    const lessonId = link.getAttribute('data-lesson-id');
+                    if (lessonId) {
+                        window.location.href = `/dashboard/lesson/${lessonId}`;
+                    }
+                }
+            });
+
+            // Set periodic ping to keep session alive
+            setInterval(() => {
+                if (document.visibilityState === 'visible') {
+                    fetch('/ping', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        }
+                    });
+                }
+            }, 300000); // 5 minutes
+        }
+
         // Enhanced mobile video scroll functionality
         function initializeMobileVideoScroll() {
             if (window.innerWidth <= 768) {
                 const stickyVideoSection = document.getElementById('stickyVideoSection');
-                
+
                 window.addEventListener('scroll', function() {
                     const currentScrollY = window.scrollY;
                     isScrollingDown = currentScrollY > lastScrollY;
-                    
+
                     // Add compact class when scrolling down past threshold
                     if (currentScrollY > scrollThreshold && isScrollingDown) {
                         stickyVideoSection.classList.add('compact');
-                    } 
+                    }
                     // Remove compact class when scrolling back to top
                     else if (currentScrollY <= scrollThreshold) {
                         stickyVideoSection.classList.remove('compact');
                     }
-                    
+
                     lastScrollY = currentScrollY;
                 }, { passive: true });
             }
-            
+
             // Re-initialize on window resize
             window.addEventListener('resize', function() {
                 if (window.innerWidth > 768) {
