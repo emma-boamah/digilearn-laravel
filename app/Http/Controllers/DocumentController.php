@@ -45,7 +45,7 @@ class DocumentController extends Controller
             $lesson = [
                 'id' => $lesson->id,
                 'title' => $lesson->title,
-                'subject' => $lesson->subject,
+                'subject' => $lesson->subject->name ?? 'Subject',
                 'duration' => $lesson->duration ?? 'Unknown',
                 'instructor' => $lesson->instructor ?? 'Unknown',
                 'year' => $lesson->year ?? '2025',
@@ -99,7 +99,7 @@ class DocumentController extends Controller
             $lesson = [
                 'id' => $lesson->id,
                 'title' => $lesson->title,
-                'subject' => $lesson->subject,
+                'subject' => $lesson->subject->name ?? 'Subject',
                 'duration' => $lesson->duration ?? 'Unknown',
                 'instructor' => $lesson->instructor ?? 'Unknown',
                 'year' => $lesson->year ?? '2025',
@@ -294,7 +294,7 @@ class DocumentController extends Controller
             $lesson = [
                 'id' => $lesson->id,
                 'title' => $lesson->title,
-                'subject' => $lesson->subject,
+                'subject' => $lesson->subject->name ?? 'Subject',
                 'duration' => $lesson->duration ?? 'Unknown',
                 'instructor' => $lesson->instructor ?? 'Unknown',
                 'year' => $lesson->year ?? '2025',

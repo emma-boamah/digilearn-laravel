@@ -18,6 +18,8 @@ class Document extends Model
         'video_id',
         'is_featured',
         'views',
+        'file_type',
+        'file_size_bytes',
     ];
 
     /**
@@ -34,5 +36,22 @@ class Document extends Model
     public function video()
     {
         return $this->belongsTo(Video::class, 'video_id');
+    }
+
+    /**
+     * Get formatted file size
+     */
+    public function getFormattedFileSize()
+    {
+        if (!$this->file_size_bytes) return 'Unknown';
+
+        $bytes = $this->file_size_bytes;
+        $units = ['B', 'KB', 'MB', 'GB'];
+
+        for ($i = 0; $bytes >= 1024 && $i < 3; $i++) {
+            $bytes /= 1024;
+        }
+
+        return round($bytes, 2) . ' ' . $units[$i];
     }
 }

@@ -2363,7 +2363,7 @@
                                     </div>
                                 </div>
                                 <div class="item-actions">
-                                    <a href="{{ route('dashboard.lesson.document', ['lessonId' => $document->id, 'type' => 'pdf']) }}" class="action-btn-small">
+                                    <a href="{{ route('dashboard.lesson.document', ['lessonId' => \App\Services\UrlObfuscator::encode($document->id), 'type' => 'pdf']) }}" class="action-btn-small">
                                         <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
                                             <path d="M14 3v4a1 1 0 001 1h4"/>
                                             <path d="M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/>
@@ -2642,7 +2642,7 @@
                     </svg>
                     Test
                 </button>
-                <button class="action-btn action-navigate-btn" data-href="{{ route('dashboard.lesson.document', ['lessonId' => $lesson['id'], 'type' => 'pdf']) }}" data-document-type="pdf">
+                <button class="action-btn action-navigate-btn" data-href="{{ route('dashboard.lesson.document', ['lessonId' => \App\Services\UrlObfuscator::encode($lesson['id']), 'type' => 'pdf']) }}" data-document-type="pdf">
                     <svg fill="currentColor" viewBox="0 0 24 24">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                         <polyline points="14,2 14,8 20,8"/>
@@ -2652,7 +2652,7 @@
                         <i class="fas fa-check"></i>
                     </div>
                 </button>
-                <button class="action-btn action-navigate-btn" data-href="{{ route('dashboard.lesson.document', ['lessonId' => $lesson['id'], 'type' => 'ppt']) }}" data-document-type="ppt">
+                <button class="action-btn action-navigate-btn" data-href="{{ route('dashboard.lesson.document', ['lessonId' => \App\Services\UrlObfuscator::encode($lesson['id']), 'type' => 'ppt']) }}" data-document-type="ppt">
                     <svg fill="currentColor" viewBox="0 0 24 24">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                         <line x1="9" y1="9" x2="15" y2="9"/>
@@ -2697,9 +2697,9 @@
                 
                 @if(isset($relatedLessons))
                     @foreach($relatedLessons as $relatedLesson)
-                    <div class="video-item related-video-item" data-href="/dashboard/lesson/{{ $relatedLesson['id'] ?? '#' }}">
+                    <div class="video-item related-video-item" data-href="/dashboard/lesson/{{ \App\Services\UrlObfuscator::encode($relatedLesson['id']) }}">
                         <div class="video-thumbnail">
-                            <img src="{{ secure_asset($relatedLesson['thumbnail'] ?? '') }}" alt="{{ $relatedLesson['title'] ?? 'Lesson' }}" 
+                            <img src="{{ secure_asset($relatedLesson['thumbnail'] ?? '') }}" alt="{{ $relatedLesson['title'] ?? 'Lesson' }}"
                                  onerror="this.src='/placeholder.svg?height=78&width=140'">
                             <div class="play-overlay">
                                 <svg class="play-icon" fill="currentColor" viewBox="0 0 24 24">

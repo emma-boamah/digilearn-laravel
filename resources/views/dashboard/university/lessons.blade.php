@@ -247,7 +247,7 @@
 
             <div class="lessons-grid">
                 @forelse($lessons as $lesson)
-                <div class="lesson-card" data-lesson-id="{{ $lesson['id'] }}">
+                <div class="lesson-card" data-lesson-id="{{ $lesson['id'] }}" data-encoded-id="{{ \App\Services\UrlObfuscator::encode($lesson['id']) }}">
                     <div class="lesson-thumbnail">
                         <i class="fas fa-play-circle"></i>
                         <div class="lesson-duration">{{ $lesson['duration'] }}</div>
@@ -285,9 +285,9 @@
             const lessonCards = document.querySelectorAll('.lesson-card');
             lessonCards.forEach(function(card) {
                 card.addEventListener('click', function() {
-                    const lessonId = this.getAttribute('data-lesson-id');
-                    if (lessonId) {
-                        window.location.href = '{{ route("dashboard.lesson.view", ":lessonId") }}'.replace(':lessonId', lessonId);
+                    const encodedId = this.getAttribute('data-encoded-id');
+                    if (encodedId) {
+                        window.location.href = '{{ route("dashboard.lesson.view", ":lessonId") }}'.replace(':lessonId', encodedId);
                     }
                 });
             });

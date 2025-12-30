@@ -18,17 +18,17 @@
         @if(isset($notes) && count($notes) > 0)
             <div class="notes-grid">
                 @foreach($notes as $note)
-                <div class="note-card" data-note-id="{{ $note['id'] }}">
+                <div class="note-card" data-note-id="{{ $note['id'] }}" data-encoded-id="{{ $note['encoded_id'] }}">
                     <h3 class="note-title">{{ $note['title'] }}</h3>
                     <p class="note-subject">{{ $note['subject'] }}</p>
                     <p class="note-date">{{ $note['created_at'] }}</p>
 
                     <div class="note-actions">
-                        <button class="note-action-btn open" onclick="window.location.href='{{ route('dashboard.notes.view', $note['id']) }}'">
+                        <button class="note-action-btn open" onclick="window.location.href='{{ route('dashboard.notes.view', $note['encoded_id']) }}'">
                             <i class="fas fa-eye"></i>
                             Open
                         </button>
-                        <button class="note-action-btn delete" onclick="deleteNote({{ $note['id'] }})">
+                        <button class="note-action-btn delete" onclick="deleteNote({{ $note['id'] }}, '{{ $note['encoded_id'] }}')">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -39,17 +39,17 @@
             <!-- Sample notes for demo -->
             <div class="notes-grid">
                 @for($i = 1; $i <= 12; $i++)
-                <div class="note-card" data-note-id="{{ $i }}">
+                <div class="note-card" data-note-id="{{ $i }}" data-encoded-id="{{ \App\Services\UrlObfuscator::encode($i) }}">
                     <h3 class="note-title">Living and Non Living organism</h3>
                     <p class="note-subject">(Science -Note G1-3)</p>
                     <p class="note-date">April 2025</p>
 
                     <div class="note-actions">
-                        <button class="note-action-btn open" onclick="window.location.href='{{ route('dashboard.notes.view', $i) }}'">
+                        <button class="note-action-btn open" onclick="window.location.href='{{ route('dashboard.notes.view', \App\Services\UrlObfuscator::encode($i)) }}'">
                             <i class="fas fa-eye"></i>
                             Open
                         </button>
-                        <button class="note-action-btn delete" onclick="deleteNote({{ $i }})">
+                        <button class="note-action-btn delete" onclick="deleteNote({{ $i }}, '{{ \App\Services\UrlObfuscator::encode($i) }}')">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -267,8 +267,8 @@
                     return;
                 }
 
-                const noteId = this.dataset.noteId;
-                window.location.href = `/dashboard/notes/${noteId}`;
+                const encodedId = this.dataset.encodedId;
+                window.location.href = `/dashboard/notes/${encodedId}`;
             });
         });
     }

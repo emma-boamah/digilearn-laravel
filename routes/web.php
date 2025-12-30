@@ -107,6 +107,17 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard/lesson/{lessonId}/check-saved', [DashboardController::class, 'checkLessonSaved'])->name('dashboard.lesson.check-saved');
         Route::post('/dashboard/lesson/{lessonId}/save', [DashboardController::class, 'saveLesson'])->name('dashboard.lesson.save');
         Route::delete('/dashboard/lesson/{lessonId}/unsave', [DashboardController::class, 'unsaveLesson'])->name('dashboard.lesson.unsave');
+
+        // Documents
+        Route::get('/dashboard/lesson/{lessonId}/document/{type}', [DocumentController::class, 'viewDocument'])
+            ->name('dashboard.lesson.document')->where('type', 'pdf|ppt');
+        Route::get('/dashboard/lesson/{lessonId}/document/{type}/content', [DocumentController::class, 'viewDocumentContent'])
+            ->name('dashboard.lesson.document.content')->where('type', 'pdf|ppt');
+        Route::post('/dashboard/lesson/{lessonId}/document/{type}/save', [DocumentController::class, 'saveDocumentChanges'])
+            ->name('dashboard.lesson.document.save')->where('type', 'pdf|ppt');
+        Route::get('/dashboard/lesson/{lessonId}/ppt/create', [DocumentController::class, 'createPpt'])->name('dashboard.lesson.ppt.create');
+        Route::post('/dashboard/lesson/{lessonId}/ppt/store', [DocumentController::class, 'storePpt'])->name('dashboard.lesson.ppt.store');
+        Route::post('/dashboard/lesson/{lessonId}/ppt/{pptId}/update', [DocumentController::class, 'updatePpt'])->name('dashboard.lesson.ppt.update');
     });
 
     // User Notes for Videos
@@ -183,23 +194,15 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/api/subscribe', [ProfileController::class, 'subscribeToPlan'])->name('api.subscribe');
     Route::post('/api/cancel-subscription', [ProfileController::class, 'cancelSubscription'])->name('api.cancel-subscription');
 
-    // Documents
-    Route::get('/dashboard/lesson/{lessonId}/document/{type}', [DocumentController::class, 'viewDocument'])
-        ->name('dashboard.lesson.document')->where('type', 'pdf|ppt');
-    Route::get('/dashboard/lesson/{lessonId}/document/{type}/content', [DocumentController::class, 'viewDocumentContent'])
-        ->name('dashboard.lesson.document.content')->where('type', 'pdf|ppt');
-    Route::post('/dashboard/lesson/{lessonId}/document/{type}/save', [DocumentController::class, 'saveDocumentChanges'])
-        ->name('dashboard.lesson.document.save')->where('type', 'pdf|ppt');
-    Route::get('/dashboard/lesson/{lessonId}/ppt/create', [DocumentController::class, 'createPpt'])->name('dashboard.lesson.ppt.create');
-    Route::post('/dashboard/lesson/{lessonId}/ppt/store', [DocumentController::class, 'storePpt'])->name('dashboard.lesson.ppt.store');
-    Route::post('/dashboard/lesson/{lessonId}/ppt/{pptId}/update', [DocumentController::class, 'updatePpt'])->name('dashboard.lesson.ppt.update');
 
     // Notes
-    Route::get('/dashboard/notes', [NotesController::class, 'index'])->name('dashboard.notes');
-    Route::get('/dashboard/notes/{id}', [NotesController::class, 'view'])->name('dashboard.notes.view');
-    Route::post('/dashboard/notes', [NotesController::class, 'store'])->name('dashboard.notes.store');
-    Route::put('/dashboard/notes/{id}', [NotesController::class, 'update'])->name('dashboard.notes.update');
-    Route::delete('/dashboard/notes/{id}', [NotesController::class, 'destroy'])->name('dashboard.notes.destroy');
+    Route::middleware(['decode.obfuscated'])->group(function () {
+        Route::get('/dashboard/notes', [NotesController::class, 'index'])->name('dashboard.notes');
+        Route::get('/dashboard/notes/{id}', [NotesController::class, 'view'])->name('dashboard.notes.view');
+        Route::post('/dashboard/notes', [NotesController::class, 'store'])->name('dashboard.notes.store');
+        Route::put('/dashboard/notes/{id}', [NotesController::class, 'update'])->name('dashboard.notes.update');
+        Route::delete('/dashboard/notes/{id}', [NotesController::class, 'destroy'])->name('dashboard.notes.destroy');
+    });
 
     // Comments
     Route::get('/dashboard/lesson/{lessonId}/comments', [DashboardController::class, 'getComments'])->name('dashboard.lesson.comments');
