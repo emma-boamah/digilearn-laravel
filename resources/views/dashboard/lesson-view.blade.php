@@ -269,6 +269,9 @@
             letter-spacing: -0.025em;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             word-wrap: break-word;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .lesson-meta {
@@ -1863,6 +1866,9 @@
             .lesson-title {
                 font-size: 1.25rem;
                 line-height: 1.4;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             .lesson-info-card {
@@ -2082,6 +2088,9 @@
 
             .lesson-title {
                 font-size: 1.125rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             .lesson-info-card {
@@ -2189,6 +2198,9 @@
 
             .lesson-title {
                 font-size: 1.125rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
         }
     </style>
