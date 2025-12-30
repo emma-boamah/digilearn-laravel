@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\UserNote;
+use App\Services\UrlObfuscator;
 
 class NotesController extends Controller
 {
@@ -19,6 +20,7 @@ class NotesController extends Controller
             ->map(function ($note) {
                 return [
                     'id' => $note->id,
+                    'encoded_id' => UrlObfuscator::encode($note->id),
                     'title' => $note->title ?: 'Untitled Notes',
                     'subject' => $note->video ? $note->video->title : 'Unknown Video',
                     'content' => substr(strip_tags($note->content), 0, 150) . '...',
@@ -47,6 +49,7 @@ class NotesController extends Controller
 
         $noteData = [
             'id' => $note->id,
+            'encoded_id' => UrlObfuscator::encode($note->id),
             'title' => $note->title ?: 'Untitled Notes',
             'subject' => $note->video ? $note->video->title : 'Unknown Video',
             'content' => $note->content,

@@ -960,7 +960,7 @@
                                 <span>{{ $course['instructor'] }} | {{ $course['year'] }}</span>
                             </div>
                             <div class="course-actions">
-                                <a href="{{ route('dashboard.lesson.view', ['lessonId' => $course['id']]) }}" class="course-action-btn primary">
+                                <a href="{{ route('dashboard.lesson.view', ['lessonId' => \App\Services\UrlObfuscator::encode($course['id'])]) }}" class="course-action-btn primary">
                                     <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M8 5v14l11-7z"/>
                                     </svg>

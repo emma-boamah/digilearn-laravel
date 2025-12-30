@@ -108,7 +108,7 @@
     <div class="content-section">
         <div class="content-grid">
             @foreach($lessons as $lesson)
-            <div class="lesson-card hover-video-card" data-video-id="lesson-video-{{ $lesson['id'] }}">
+            <div class="lesson-card hover-video-card" data-video-id="lesson-video-{{ $lesson['id'] }}" data-encoded-id="{{ \App\Services\UrlObfuscator::encode($lesson['id']) }}">
                 <div class="lesson-thumbnail">
                     <!-- Video element for hover-to-play functionality -->
                     <video 
@@ -462,7 +462,8 @@
                                 .catch(error => {
                                     console.log('Autoplay prevented on touch:', error);
                                     // On mobile, if autoplay fails, just open the lesson
-                                    playLesson(videoId.replace('lesson-video-', ''));
+                                    const encodedId = card.getAttribute('data-encoded-id');
+                                    playLesson(encodedId);
                                 });
                         }
                     } else if (!video.paused) {
@@ -472,7 +473,8 @@
                         currentlyPlaying = null;
                     } else {
                         // If video error or other issues, just open the lesson
-                        playLesson(videoId.replace('lesson-video-', ''));
+                        const encodedId = card.getAttribute('data-encoded-id');
+                        playLesson(encodedId);
                     }
                 });
                 
@@ -488,8 +490,8 @@
                 // Handle click to play full lesson
                 card.addEventListener('click', function(e) {
                     // Always navigate to lesson view when card is clicked
-                    const lessonId = videoId.replace('lesson-video-', '');
-                    playLesson(lessonId);
+                    const encodedId = this.getAttribute('data-encoded-id');
+                    playLesson(encodedId);
                 });
             });
             
@@ -544,10 +546,10 @@
             });
         });
         
-        function playLesson(lessonId) {
-            console.log('Playing full lesson:', lessonId);
+        function playLesson(encodedId) {
+            console.log('Playing full lesson:', encodedId);
             // Redirect to the lesson view page
-            window.location.href = `/dashboard/lesson/${lessonId}`;
+            window.location.href = `/dashboard/lesson/${encodedId}`;
         }
         
         // Mobile sidebar toggle
