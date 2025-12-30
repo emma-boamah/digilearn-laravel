@@ -485,6 +485,9 @@
             color: var(--gray-900);
             margin-bottom: 0.5rem;
             line-height: 1.4;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .lesson-meta {
