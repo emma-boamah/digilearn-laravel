@@ -742,7 +742,7 @@ class DashboardController extends Controller
         $courseId = $request->get('course_id');
         if ($courseId) {
             // Load course content instead of individual lesson
-            $course = \App\Models\Course::with([
+            $course = Course::with([
                 'creator',
                 'videos' => function($query) {
                     $query->orderBy('course_videos.order');

@@ -167,6 +167,180 @@
             </div>
         </div>
 
+        <!-- Storage Monitoring Dashboard -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-900">Storage Monitoring</h2>
+                <div class="flex items-center space-x-2">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        @if(isset($systemHealth['storage_usage']['issues']) && !empty($systemHealth['storage_usage']['issues']))
+                            bg-red-100 text-red-800
+                        @else
+                            bg-green-100 text-green-800
+                        @endif">
+                        @if(isset($systemHealth['storage_usage']['issues']) && !empty($systemHealth['storage_usage']['issues']))
+                            <i class="fas fa-exclamation-triangle mr-1"></i>Issues Detected
+                        @else
+                            <i class="fas fa-check-circle mr-1"></i>Healthy
+                        @endif
+                    </span>
+                    <button id="storageDetailsBtn" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                        View Details <i class="fas fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <!-- Overall Storage Usage -->
+                <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-semibold text-blue-900">Storage Usage</h3>
+                            <p class="text-xl font-bold text-blue-800">{{ $systemHealth['storage_usage']['used_percentage'] ?? 'N/A' }}</p>
+                            <p class="text-xs text-blue-700">
+                                {{ $systemHealth['storage_usage']['total_used'] ?? 'N/A' }} used of {{ $systemHealth['storage_usage']['total_capacity'] ?? 'N/A' }}
+                            </p>
+                        </div>
+                        <div class="text-blue-600">
+                            <i class="fas fa-hdd text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Storage Status -->
+                <div class="bg-gradient-to-r
+                    @if($systemHealth['storage_usage']['status'] === 'critical') from-red-50 to-red-100 border-red-200
+                    @elseif($systemHealth['storage_usage']['status'] === 'warning') from-yellow-50 to-yellow-100 border-yellow-200
+                    @elseif($systemHealth['storage_usage']['status'] === 'caution') from-orange-50 to-orange-100 border-orange-200
+                    @else from-green-50 to-green-100 border-green-200
+                    @endif rounded-lg p-4 border">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-semibold
+                                @if($systemHealth['storage_usage']['status'] === 'critical') text-red-900
+                                @elseif($systemHealth['storage_usage']['status'] === 'warning') text-yellow-900
+                                @elseif($systemHealth['storage_usage']['status'] === 'caution') text-orange-900
+                                @else text-green-900
+                                @endif">Status</h3>
+                            <p class="text-xl font-bold
+                                @if($systemHealth['storage_usage']['status'] === 'critical') text-red-800
+                                @elseif($systemHealth['storage_usage']['status'] === 'warning') text-yellow-800
+                                @elseif($systemHealth['storage_usage']['status'] === 'caution') text-orange-800
+                                @else text-green-800
+                                @endif">{{ ucfirst($systemHealth['storage_usage']['status'] ?? 'Unknown') }}</p>
+                        </div>
+                        <div class="
+                            @if($systemHealth['storage_usage']['status'] === 'critical') text-red-600
+                            @elseif($systemHealth['storage_usage']['status'] === 'warning') text-yellow-600
+                            @elseif($systemHealth['storage_usage']['status'] === 'caution') text-orange-600
+                            @else text-green-600
+                            @endif">
+                            @if($systemHealth['storage_usage']['status'] === 'critical')
+                                <i class="fas fa-exclamation-triangle text-2xl"></i>
+                            @elseif($systemHealth['storage_usage']['status'] === 'warning')
+                                <i class="fas fa-exclamation-circle text-2xl"></i>
+                            @elseif($systemHealth['storage_usage']['status'] === 'caution')
+                                <i class="fas fa-exclamation text-2xl"></i>
+                            @else
+                                <i class="fas fa-check-circle text-2xl"></i>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Alerts -->
+                <div class="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-semibold text-purple-900">Recent Alerts</h3>
+                            <p class="text-xl font-bold text-purple-800">{{ \App\Models\StorageAlert::recent(24)->count() }}</p>
+                            <p class="text-xs text-purple-700">Last 24 hours</p>
+                        </div>
+                        <div class="text-purple-600">
+                            <i class="fas fa-bell text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Growth Rate -->
+                <div class="bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-lg p-4 border border-indigo-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-semibold text-indigo-900">Growth Trend</h3>
+                            <p class="text-xl font-bold text-indigo-800">
+                                @php
+                                    $latestAnalytics = \App\Models\StorageAnalytic::forPath(storage_path())->latest('measured_at')->first();
+                                    $growthRate = $latestAnalytics ? $latestAnalytics->growth_rate_percentage : 0;
+                                @endphp
+                                @if($growthRate > 0)
+                                    <span class="text-red-600">+{{ number_format($growthRate, 1) }}%</span>
+                                @elseif($growthRate < 0)
+                                    <span class="text-green-600">{{ number_format($growthRate, 1) }}%</span>
+                                @else
+                                    <span>0.0%</span>
+                                @endif
+                            </p>
+                            <p class="text-xs text-indigo-700">Per hour</p>
+                        </div>
+                        <div class="text-indigo-600">
+                            @if($growthRate > 0)
+                                <i class="fas fa-arrow-up text-2xl"></i>
+                            @elseif($growthRate < 0)
+                                <i class="fas fa-arrow-down text-2xl"></i>
+                            @else
+                                <i class="fas fa-minus text-2xl"></i>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Storage Usage Progress Bar -->
+            <div class="mb-4">
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-gray-600">Storage Capacity</span>
+                    <span class="text-gray-900">{{ $systemHealth['storage_usage']['used_percentage'] ?? 'N/A' }}</span>
+                </div>
+                <div class="bg-gray-200 rounded-full h-3">
+                    @php
+                        $percentage = str_replace('%', '', $systemHealth['storage_usage']['used_percentage'] ?? '0');
+                        $percentage = min(100, max(0, floatval($percentage)));
+                    @endphp
+                    <div class="h-3 rounded-full transition-all duration-300
+                        @if($percentage >= 95) bg-red-600
+                        @elseif($percentage >= 85) bg-yellow-500
+                        @elseif($percentage >= 75) bg-orange-500
+                        @else bg-green-600
+                        @endif" style="width: {{ $percentage }}%"></div>
+                </div>
+                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>{{ $systemHealth['storage_usage']['total_used'] ?? 'N/A' }} used</span>
+                    <span>{{ $systemHealth['storage_usage']['total_capacity'] ?? 'N/A' }} total</span>
+                </div>
+            </div>
+
+            <!-- Issues Alert -->
+            @if(isset($systemHealth['storage_usage']['issues']) && !empty($systemHealth['storage_usage']['issues']))
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-red-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">Storage Issues Detected</h3>
+                        <div class="mt-2 text-sm text-red-700">
+                            <ul class="list-disc pl-5 space-y-1">
+                                @foreach($systemHealth['storage_usage']['issues'] as $issue)
+                                    <li>{{ $issue }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+        </div>
+
         <!-- Main Content Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         </div>

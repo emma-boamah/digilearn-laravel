@@ -7,6 +7,7 @@ use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 
 class NotificationController extends Controller
@@ -51,7 +52,8 @@ class NotificationController extends Controller
                 'message' => 'Notification marked as read',
                 'unread_count' => $this->notificationService->getUnreadCount($user),
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            report($e);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to mark notification as read',
@@ -74,7 +76,8 @@ class NotificationController extends Controller
                 'message' => 'All notifications marked as read',
                 'unread_count' => 0,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            report($e);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to mark notifications as read',
@@ -146,7 +149,8 @@ class NotificationController extends Controller
                 'success' => true,
                 'message' => 'Notification preferences updated successfully',
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            report($e);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update preferences',
@@ -164,7 +168,7 @@ class NotificationController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'message' => 'required|string|max:1000',
-            'url' => 'nullable|url',
+            'url' => 'nullable|string|regex:/^\/.*/',
             'channels' => 'array',
             'channels.*' => 'in:database,mail,broadcast',
         ]);
@@ -181,7 +185,8 @@ class NotificationController extends Controller
                 'success' => true,
                 'message' => 'System announcement sent successfully',
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            report($e);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to send system announcement',
@@ -199,7 +204,7 @@ class NotificationController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'message' => 'required|string|max:1000',
-            'url' => 'nullable|url',
+            'url' => 'nullable|string|regex:/^\/.*/',
             'criteria' => 'required|array',
             'criteria.country' => 'nullable|string',
             'criteria.grade' => 'nullable|string',
@@ -228,7 +233,8 @@ class NotificationController extends Controller
                 'success' => true,
                 'message' => 'Targeted notification sent successfully',
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            report($e);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to send targeted notification',
@@ -251,7 +257,8 @@ class NotificationController extends Controller
                 'success' => true,
                 'message' => 'Notification deleted successfully',
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            report($e);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete notification',
@@ -264,20 +271,26 @@ class NotificationController extends Controller
      */
     public function adminIndex(Request $request)
     {
-        // Gate::authorize('admin');
-
         $notificationTypes = $this->notificationService->getActiveNotificationTypes();
         $recentNotifications = $this->notificationService->getRecentNotifications(10);
 
-        // Get statistics
+        // Get statistics with caching
         $stats = [
-            'total_notifications' => \App\Models\Notification::count(),
+            'total_notifications' => Cache::remember('admin_stats_total_notifications', 300, fn() => \App\Models\Notification::count()),
             'active_types' => $notificationTypes->count(),
-            'system_announcements' => \App\Models\Notification::where('type', 'system')->count(),
-            'unread_count' => \App\Models\Notification::whereNull('read_at')->count(),
+            'system_announcements' => Cache::remember('admin_stats_system_announcements', 300, fn() => \App\Models\Notification::where('type', 'system')->count()),
+            'unread_count' => Cache::remember('admin_stats_unread_count', 300, fn() => \App\Models\Notification::whereNull('read_at')->count()),
         ];
 
         return view('admin.notifications.index', compact('notificationTypes', 'recentNotifications', 'stats'));
+    }
+
+    /**
+     * Admin show notification details.
+     */
+    public function adminShow(\App\Models\Notification $notification)
+    {
+        return view('admin.notifications.show', compact('notification'));
     }
 
     /**
@@ -291,7 +304,7 @@ class NotificationController extends Controller
             'notification_type_id' => 'required|exists:notification_types,id',
             'title' => 'required|string|max:255',
             'message' => 'required|string|max:1000',
-            'url' => 'nullable|url',
+            'url' => 'nullable|string|regex:/^\/.*/',
             'send_type' => 'required|in:all,criteria,specific',
             'user_ids' => 'nullable|array',
             'user_ids.*' => 'integer|exists:users,id',
@@ -337,10 +350,11 @@ class NotificationController extends Controller
                 'success' => true,
                 'message' => 'Notification sent successfully',
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            report($e);
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to send notification: ' . $e->getMessage(),
+                'message' => 'Failed to send notification',
             ], 500);
         }
     }
@@ -386,7 +400,8 @@ class NotificationController extends Controller
                 'message' => 'Notification type created successfully',
                 'type' => $type,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            report($e);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create notification type',
@@ -420,7 +435,8 @@ class NotificationController extends Controller
                 'message' => 'Notification type updated successfully',
                 'type' => $type,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            report($e);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update notification type',
@@ -450,7 +466,8 @@ class NotificationController extends Controller
                 'success' => true,
                 'message' => 'Notification type deleted successfully',
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            report($e);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete notification type',
@@ -473,7 +490,8 @@ class NotificationController extends Controller
                 'message' => 'Notification type ' . ($type->is_active ? 'activated' : 'deactivated') . ' successfully',
                 'is_active' => $type->is_active,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            report($e);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to toggle notification type',

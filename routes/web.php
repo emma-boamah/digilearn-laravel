@@ -281,7 +281,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/dashboard/search-lessons', [DashboardController::class, 'searchLessons'])->name('api.dashboard.search-lessons');
 
     // Notifications API
-    Route::prefix('api/notifications')->name('api.notifications.')->group(function () {
+    Route::middleware(['decode.obfuscated'])->prefix('api/notifications')->name('api.notifications.')->group(function () {
         Route::get('/', [NotificationController::class, 'index'])->name('index');
         Route::get('/unread-count', [NotificationController::class, 'getUnreadCount'])->name('unread-count');
         Route::put('/{notificationId}/read', [NotificationController::class, 'markAsRead'])->name('mark-read');
@@ -290,19 +290,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/preferences', [NotificationController::class, 'getPreferences'])->name('preferences');
         Route::put('/preferences', [NotificationController::class, 'updatePreferences'])->name('preferences.update');
     });
-
-    // // Admin Notification Routes
-    // Route::middleware(['admin'])->prefix('admin/notifications')->name('admin.notifications.')->group(function () {
-    //     Route::get('/', [App\Http\Controllers\NotificationController::class, 'adminIndex'])->name('index');
-    //     Route::post('/send', [App\Http\Controllers\NotificationController::class, 'sendNotification'])->name('send');
-    //     Route::post('/system-announcement', [App\Http\Controllers\NotificationController::class, 'sendSystemAnnouncement'])->name('system-announcement');
-    //     Route::post('/targeted', [App\Http\Controllers\NotificationController::class, 'sendTargetedNotification'])->name('targeted');
-    //     Route::get('/types', [App\Http\Controllers\NotificationController::class, 'getNotificationTypes'])->name('types');
-    //     Route::post('/types', [App\Http\Controllers\NotificationController::class, 'createNotificationType'])->name('types.create');
-    //     Route::put('/types/{type}', [App\Http\Controllers\NotificationController::class, 'updateNotificationType'])->name('types.update');
-    //     Route::delete('/types/{type}', [App\Http\Controllers\NotificationController::class, 'deleteNotificationType'])->name('types.delete');
-    //     Route::post('/types/{type}/toggle', [App\Http\Controllers\NotificationController::class, 'toggleNotificationType'])->name('types.toggle');
-    // });
 });
 
 /*
@@ -406,6 +393,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     });
 
     Route::get('notifications/', [NotificationController::class, 'adminIndex'])->name('notifications.index');
+    Route::get('notifications/{notification}', [NotificationController::class, 'adminShow'])->name('notifications.show');
         Route::post('notifications/send', [NotificationController::class, 'sendNotification'])->name('notifications.send');
         Route::post('notifications/system-announcement', [NotificationController::class, 'sendSystemAnnouncement'])->name('notifications.system-announcement');
         Route::post('notifications/targeted', [NotificationController::class, 'sendTargetedNotification'])->name('notifications.targeted');
@@ -417,6 +405,17 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     // Cookie Analytics
     Route::get('/cookie-stats', [CookieController::class, 'adminStatsPage'])->name('cookie-stats');
+
+    // Storage Monitoring
+    Route::prefix('storage')->name('storage.')->group(function () {
+        Route::get('/', [AdminController::class, 'storageDashboard'])->name('dashboard');
+        Route::get('/analytics', [AdminController::class, 'storageAnalytics'])->name('analytics');
+        Route::get('/alerts', [AdminController::class, 'storageAlerts'])->name('alerts');
+        Route::get('/settings', [AdminController::class, 'storageSettings'])->name('settings');
+        Route::post('/settings', [AdminController::class, 'updateStorageSettings'])->name('settings.update');
+        Route::get('/api/analytics/{days}', [AdminController::class, 'getStorageAnalytics'])->name('api.analytics');
+        Route::get('/api/alerts', [AdminController::class, 'getStorageAlerts'])->name('api.alerts');
+    });
 });
 
 /*

@@ -612,10 +612,6 @@
                             <i class="fas fa-check-double"></i>
                             Mark All Read
                         </button>
-                        <button type="button" class="btn btn-danger" onclick="clearAllNotifications()">
-                            <i class="fas fa-trash"></i>
-                            Clear All
-                        </button>
                     </div>
                 </div>
 
@@ -711,8 +707,8 @@
                     @if(isset($notifications) && $notifications->count() > 0)
                         @foreach($notifications as $notification)
                         <div class="notification-item {{ $notification->read_at ? '' : 'unread' }}"
-                             data-id="{{ $notification->id }}"
-                             data-type="{{ $notification->notificationType?->slug ?? 'general' }}">
+                        data-id="{{ $notification->id }}"
+                        data-type="{{ $notification->notificationType?->slug ?? 'general' }}">
                             
                             <div class="notification-icon-wrapper" 
                                  style="background-color: {{ $notification->notificationType?->color ?? 'rgba(59, 130, 246, 0.1)' }};">
@@ -746,24 +742,44 @@
 
                             <div class="notification-actions">
                                 @if($notification->data['url'] ?? false)
-                                    <a href="{{ $notification->data['url'] }}" 
-                                       class="notification-action-btn" 
-                                       target="_blank" 
+                                    @php
+                                        $url = $notification->data['url'];
+                                        if (\Illuminate\Support\Str::startsWith($url, 'http')) {
+                                            $finalUrl = $url;
+                                        } else {
+                                            // Normalize relative URLs
+                                            if (!\Illuminate\Support\Str::startsWith($url, '/')) {
+                                                $parsed = parse_url($url);
+                                                $path = $parsed['path'] ?? '/';
+                                                // Handle malformed URLs like 'localhost/admin'
+                                                if (\Illuminate\Support\Str::contains($path, 'localhost/')) {
+                                                    $path = '/' . \Illuminate\Support\Str::after($path, 'localhost/');
+                                                } elseif (\Illuminate\Support\Str::startsWith($path, 'localhost')) {
+                                                    $path = '/' . \Illuminate\Support\Str::after($path, 'localhost');
+                                                }
+                                                $url = $path;
+                                            }
+                                            $finalUrl = url($url);
+                                        }
+                                    @endphp
+                                    <a href="{{ $finalUrl }}"
+                                       class="notification-action-btn"
+                                       target="_blank"
                                        title="Open Link">
                                         <i class="fas fa-external-link-alt"></i>
                                     </a>
                                 @endif
                                 @if(!$notification->read_at)
-                                    <button type="button" 
-                                            class="notification-action-btn" 
-                                            onclick="markAsRead({{ $notification->id }})"
+                                    <button type="button"
+                                            class="notification-action-btn"
+                                            onclick="markAsRead('{{ $notification->id }}')"
                                             title="Mark as Read">
                                         <i class="fas fa-check"></i>
                                     </button>
                                 @endif
-                                <button type="button" 
-                                        class="notification-action-btn" 
-                                        onclick="deleteNotification({{ $notification->id }})"
+                                <button type="button"
+                                        class="notification-action-btn"
+                                        onclick="deleteNotification('{{ $notification->id }}')"
                                         title="Delete">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -912,8 +928,8 @@
 
         function markAsRead(notificationId) {
             $.ajax({
-                url: `/notifications/${notificationId}/read`,
-                method: 'POST',
+                url: `/api/notifications/${notificationId}/read`,
+                method: 'PUT',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
@@ -937,8 +953,8 @@
             if (!confirm('Mark all notifications as read?')) return;
 
             $.ajax({
-                url: '/notifications/mark-all-read',
-                method: 'POST',
+                url: '/api/notifications/mark-all-read',
+                method: 'PUT',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
@@ -962,7 +978,7 @@
             if (!confirm('Delete this notification?')) return;
 
             $.ajax({
-                url: `/notifications/${notificationId}`,
+                url: `/api/notifications/${notificationId}`,
                 method: 'DELETE',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -982,37 +998,6 @@
             });
         }
 
-        function clearAllNotifications() {
-            if (!confirm('Clear all notifications? This action cannot be undone.')) return;
-
-            $.ajax({
-                url: '/notifications/clear-all',
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                success: function(data) {
-                    if (data.success) {
-                        $('.notification-item').fadeOut(300, function() {
-                            $('#notificationsContainer').html(`
-                                <div class="empty-state">
-                                    <div class="empty-state-icon">
-                                        <i class="fas fa-bell fa-2x"></i>
-                                    </div>
-                                    <h3 class="empty-state-title">No notifications yet</h3>
-                                    <p class="empty-state-message">You'll receive notifications about important updates and activities here.</p>
-                                </div>
-                            `);
-                        });
-                        updateNotificationCount();
-                        toastr.success('All notifications cleared');
-                    }
-                },
-                error: function() {
-                    toastr.error('Failed to clear all notifications');
-                }
-            });
-        }
 
         function updateNotificationCount() {
             const unreadCount = $('.notification-item.unread').length;

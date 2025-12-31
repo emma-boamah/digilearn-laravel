@@ -2449,7 +2449,7 @@
                              @php
                                  $videoUrl = $lesson->getVideoUrl();
                                  $embedHtml = $lesson->getEmbedHtml();
-                                 \Log::info('Video Debug - Model Instance', [
+                                 Log::info('Video Debug - Model Instance', [
                                      'lesson_id' => $lesson->id,
                                      'video_url' => $videoUrl,
                                      'embed_html_length' => strlen($embedHtml),

@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use App\Models\StorageMonitoringSetting;
+use App\Models\StorageAlert;
 use App\Models\SuperuserRecoveryCode;
 use App\Models\User;
 use App\Models\WebsiteLockSetting;
@@ -28,10 +30,18 @@ use App\Models\UserProgress; // Import the UserProgress model
 use App\Models\QuizAttempt; // Import the QuizAttempt model
 use App\Models\QuizRating; // Import the QuizRating model
 use App\Models\Subject;
+use App\Models\Comment;
 use Illuminate\Support\Facades\Storage; // For file uploads
+use App\Services\NotificationService;
 
 class AdminController extends Controller
 {
+    protected NotificationService $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
     public function toggleLock(Request $request)
     {
         // Check recovery codes before locking
@@ -922,7 +932,7 @@ class AdminController extends Controller
     private function getSecurityLogs()
     {
         // Get real activity logs from database
-        $logs = \App\Models\ActivityLog::with('user')
+        $logs = ActivityLog::with('user')
             ->orderBy('created_at', 'desc')
             ->limit(50)
             ->get();
@@ -1047,16 +1057,171 @@ class AdminController extends Controller
      */
     private function checkStorageHealth()
     {
+        try {
+            // Get default storage monitoring settings
+            $settings = StorageMonitoringSetting::active()->default()->first();
+
+            if (!$settings) {
+                // Fallback to basic check if no settings configured
+                return $this->basicStorageCheck();
+            }
+
+            $monitoredPaths = $settings->monitored_paths ?? [storage_path()];
+            $totalUsage = 0;
+            $totalCapacity = 0;
+            $issues = [];
+
+            foreach ($monitoredPaths as $path) {
+                $storageInfo = $this->getStorageInfo($path);
+
+                if ($storageInfo) {
+                    $totalUsage += $storageInfo['used_space_bytes'];
+                    $totalCapacity += $storageInfo['total_space_bytes'];
+
+                    // Check for alerts
+                    $alertType = $settings->getAlertLevel($storageInfo['usage_percentage']);
+                    if ($alertType) {
+                        // Check throttling
+                        if (!$settings->shouldThrottleAlert($alertType, $path)) {
+                            $this->sendStorageAlert($settings, $alertType, $path, $storageInfo);
+                            $issues[] = "Path {$path}: {$alertType} alert triggered";
+                        }
+                    }
+                }
+            }
+
+            if ($totalCapacity > 0) {
+                $overallUsage = round(($totalUsage / $totalCapacity) * 100, 2);
+                $status = $this->getStorageStatus($overallUsage);
+
+                return [
+                    'status' => $status,
+                    'used_percentage' => $overallUsage . '%',
+                    'message' => "Storage {$overallUsage}% used" . (!empty($issues) ? ' - ' . implode(', ', $issues) : ''),
+                    'total_used' => $this->formatBytes($totalUsage),
+                    'total_capacity' => $this->formatBytes($totalCapacity),
+                    'issues' => $issues
+                ];
+            }
+
+            return $this->basicStorageCheck();
+
+        } catch (\Exception $e) {
+            Log::error('Storage health check failed', ['error' => $e->getMessage()]);
+            return [
+                'status' => 'error',
+                'used_percentage' => 'N/A',
+                'message' => 'Unable to check storage health'
+            ];
+        }
+    }
+
+    /**
+     * Basic storage check fallback
+     */
+    private function basicStorageCheck()
+    {
         $freeSpace = disk_free_space(storage_path());
         $totalSpace = disk_total_space(storage_path());
         $usedPercentage = (($totalSpace - $freeSpace) / $totalSpace) * 100;
         $usedPercentage = round($usedPercentage, 2);
 
+        // Legacy alert check
+        if ($usedPercentage >= 85) {
+            $this->sendStorageAlertNotification($usedPercentage, $this->formatBytes($totalSpace - $freeSpace), $this->formatBytes($totalSpace));
+        }
+
         return [
             'status' => $usedPercentage < 90 ? 'healthy' : 'warning',
-            'used_percentage' => $usedPercentage . '%', // Now returns with percentage sign
+            'used_percentage' => $usedPercentage . '%',
             'message' => "Storage {$usedPercentage}% used"
         ];
+    }
+
+    /**
+     * Get storage information for a path
+     */
+    private function getStorageInfo(string $path): ?array
+    {
+        try {
+            $totalSpace = disk_total_space($path);
+            $freeSpace = disk_free_space($path);
+
+            if ($totalSpace === false || $freeSpace === false || $totalSpace == 0) {
+                return null;
+            }
+
+            $usedSpace = $totalSpace - $freeSpace;
+            $usagePercentage = round(($usedSpace / $totalSpace) * 100, 2);
+
+            return [
+                'total_space_bytes' => $totalSpace,
+                'used_space_bytes' => $usedSpace,
+                'free_space_bytes' => $freeSpace,
+                'usage_percentage' => $usagePercentage
+            ];
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Get storage status based on usage percentage
+     */
+    private function getStorageStatus(float $percentage): string
+    {
+        if ($percentage >= 98) return 'critical';
+        if ($percentage >= 95) return 'warning';
+        if ($percentage >= 90) return 'caution';
+        return 'healthy';
+    }
+
+    /**
+     * Send storage alert using new system
+     */
+    private function sendStorageAlert(\App\Models\StorageMonitoringSetting $settings, string $alertType, string $path, array $storageInfo)
+    {
+        try {
+            $adminUsers = User::where('is_admin', true)->get();
+
+            if ($adminUsers->isEmpty()) {
+                Log::warning('No admin users found to send storage alert');
+                return;
+            }
+
+            $notification = new \App\Notifications\StorageAlertNotification(
+                $storageInfo['usage_percentage'],
+                $this->formatBytes($storageInfo['used_space_bytes']),
+                $this->formatBytes($storageInfo['total_space_bytes']),
+                $alertType,
+                $path
+            );
+
+            $this->notificationService->sendToUsers($adminUsers, $notification, ['database', 'mail']);
+
+            // Record the alert
+            StorageAlert::create([
+                'alert_type' => $alertType,
+                'path' => $path,
+                'usage_percentage' => $storageInfo['usage_percentage'],
+                'used_space_bytes' => $storageInfo['used_space_bytes'],
+                'total_space_bytes' => $storageInfo['total_space_bytes'],
+                'admin_users_notified' => $adminUsers->pluck('id')->toArray(),
+                'alert_sent_at' => now()
+            ]);
+
+            Log::info("Storage alert sent: {$alertType} for {$path}", [
+                'usage_percentage' => $storageInfo['usage_percentage'],
+                'admin_count' => $adminUsers->count()
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to send storage alert', [
+                'alert_type' => $alertType,
+                'path' => $path,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     /**
@@ -1066,6 +1231,58 @@ class AdminController extends Controller
     {
         // This is a basic check - you might want to implement more sophisticated queue monitoring
         return ['status' => 'healthy', 'message' => 'Queue system operational'];
+    }
+
+    /**
+     * Send storage alert notification to all admin users
+     */
+    private function sendStorageAlertNotification(float $usagePercentage, string $usedSpace, string $totalSpace)
+    {
+        try {
+            // Get all admin users
+            $adminUsers = User::where('is_admin', true)->get();
+
+            if ($adminUsers->isEmpty()) {
+                Log::warning('No admin users found to send storage alert notification');
+                return;
+            }
+
+            // Create and send notification
+            $notification = new \App\Notifications\StorageAlertNotification(
+                $usagePercentage,
+                $usedSpace,
+                $totalSpace
+            );
+
+            $this->notificationService->sendToUsers($adminUsers, $notification, ['database', 'mail']);
+
+            Log::info('Storage alert notification sent', [
+                'usage_percentage' => $usagePercentage,
+                'used_space' => $usedSpace,
+                'total_space' => $totalSpace,
+                'admin_count' => $adminUsers->count()
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to send storage alert notification', [
+                'error' => $e->getMessage(),
+                'usage_percentage' => $usagePercentage
+            ]);
+        }
+    }
+
+    /**
+     * Format bytes into human readable format
+     */
+    private function formatBytes($bytes)
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
+        $bytes /= (1 << (10 * $pow));
+
+        return round($bytes, 2) . ' ' . $units[$pow];
     }
 
     /**
@@ -1762,7 +1979,7 @@ class AdminController extends Controller
                 }
             }
         } catch (\Exception $e) {
-            \Log::error('Video verification failed', [
+            Log::error('Video verification failed', [
                 'video_id' => $video->id,
                 'error' => $e->getMessage()
             ]);
@@ -1811,7 +2028,7 @@ class AdminController extends Controller
         $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3'];
         $videos = Video::select('id', 'title')->get(); // For video course filter
         $uploaders = User::whereHas('quizzes')->select('id', 'name')->get(); // Users who have uploaded quizzes
-        $subjects = \App\Models\Subject::select('id', 'name', DB::raw('COUNT(quizzes.id) as count'))
+        $subjects = Subject::select('id', 'name', DB::raw('COUNT(quizzes.id) as count'))
             ->leftJoin('quizzes', 'subjects.id', '=', 'quizzes.subject_id')
             ->groupBy('subjects.id', 'subjects.name')
             ->orderBy('subjects.name')
@@ -2499,7 +2716,7 @@ class AdminController extends Controller
 
                 if (!empty($quizData['questions'])) {
                     // Find or create subject
-                    $subject = \App\Models\Subject::firstOrCreate(
+                    $subject = Subject::firstOrCreate(
                         ['name' => $video->title],
                         ['description' => 'Auto-created subject for quiz']
                     );
@@ -2770,9 +2987,9 @@ class AdminController extends Controller
 
         // For videos, show the unified edit form
         if ($contentType === 'video') {
-            $subjects = \App\Models\Subject::orderBy('name')->get();
-            $availableQuizzes = \App\Models\Quiz::whereNull('video_id')->orWhere('video_id', $contentId)->get();
-            $availableDocuments = \App\Models\Document::whereNull('video_id')->orWhere('video_id', $contentId)->get();
+            $subjects = Subject::orderBy('name')->get();
+            $availableQuizzes = Quiz::whereNull('video_id')->orWhere('video_id', $contentId)->get();
+            $availableDocuments = Document::whereNull('video_id')->orWhere('video_id', $contentId)->get();
 
             return view('admin.contents.edit', compact('content', 'contentType', 'subjects', 'availableQuizzes', 'availableDocuments'));
         }
@@ -2827,12 +3044,12 @@ class AdminController extends Controller
             // Update document associations
             if ($request->has('document_ids')) {
                 // Remove existing associations
-                \App\Models\Document::where('video_id', $video->id)->update(['video_id' => null]);
+                Document::where('video_id', $video->id)->update(['video_id' => null]);
                 // Add new associations
-                \App\Models\Document::whereIn('id', $request->document_ids)->update(['video_id' => $video->id]);
+                Document::whereIn('id', $request->document_ids)->update(['video_id' => $video->id]);
             } else {
                 // Remove all document associations
-                \App\Models\Document::where('video_id', $video->id)->update(['video_id' => null]);
+                Document::where('video_id', $video->id)->update(['video_id' => null]);
             }
 
             DB::commit();
@@ -3206,7 +3423,7 @@ class AdminController extends Controller
             }
 
             // Find or create subject
-            $subject = \App\Models\Subject::firstOrCreate(
+            $subject = Subject::firstOrCreate(
                 ['name' => $video->title],
                 ['description' => 'Auto-created subject for quiz']
             );

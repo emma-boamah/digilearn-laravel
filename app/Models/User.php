@@ -340,7 +340,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function notifications()
     {
-        return $this->morphMany(\Illuminate\Notifications\DatabaseNotification::class, 'notifiable');
+        return $this->morphMany(Notification::class, 'notifiable');
     }
 
     /**
