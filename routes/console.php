@@ -33,3 +33,20 @@ Schedule::command('cleanup:invalid-avatars')
         ->at('04:00')
         ->withoutOverlapping()
         ->runInBackground();
+
+// Monitor storage usage every hour
+Schedule::command('storage:monitor')
+        ->hourly()
+        ->withoutOverlapping()
+        ->runInBackground();
+
+// Monitor storage usage with more frequent checks during peak hours (9 AM - 6 PM)
+Schedule::command('storage:monitor')
+        ->daily()
+        ->when(function () {
+            $hour = now()->hour;
+            return $hour >= 9 && $hour <= 18; // 9 AM to 6 PM
+        })
+        ->everyFifteenMinutes()
+        ->withoutOverlapping()
+        ->runInBackground();

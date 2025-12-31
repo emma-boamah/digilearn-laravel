@@ -110,6 +110,11 @@ class DecodeObfuscatedIds
             return false;
         }
 
+        // Should not be a UUID (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value)) {
+            return false;
+        }
+
         return true;
     }
 }

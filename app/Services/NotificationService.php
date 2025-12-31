@@ -52,7 +52,7 @@ class NotificationService
     {
         $users = User::where('is_verified', true)->get();
 
-        $notification = new \App\Notifications\SystemAnnouncementNotification($title, $message, $url);
+        $notification = new \App\Notifications\SystemAnnouncementNotification($title, $message, $this->normalizeUrl($url));
 
         $this->sendToUsers($users, $notification, $channels);
 
@@ -347,5 +347,25 @@ class NotificationService
             ->latest()
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * Normalize URL to ensure it's a relative path only.
+     */
+    protected function normalizeUrl(?string $url): ?string
+    {
+        if (!$url) {
+            return null;
+        }
+
+        // Already relative
+        if (str_starts_with($url, '/')) {
+            return $url;
+        }
+
+        // Strip protocol + host if someone bypasses validation
+        $parsed = parse_url($url);
+
+        return $parsed['path'] ?? '/';
     }
 }

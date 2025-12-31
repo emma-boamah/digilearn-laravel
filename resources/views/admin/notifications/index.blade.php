@@ -292,10 +292,14 @@
         padding: 1rem 1.5rem;
         border-bottom: 1px solid var(--gray-200);
         transition: background-color 0.2s ease;
+        text-decoration: none;
+        color: inherit;
     }
 
     .notification-item:hover {
         background: var(--gray-50);
+        text-decoration: none;
+        color: inherit;
     }
 
     .notification-item:last-child {
@@ -681,7 +685,7 @@
         @if(isset($recentNotifications) && $recentNotifications->count() > 0)
             <div class="notification-list">
                 @foreach($recentNotifications as $notification)
-                <div class="notification-item">
+                <a href="{{ route('admin.notifications.show', $notification) }}" class="notification-item">
                     <div class="notification-avatar notification-avatar-bg">
                         <i class="{{ $notification->notificationType?->icon ?? 'fas fa-bell' }}"></i>
                     </div>
@@ -696,7 +700,7 @@
                             </span>
                         </div>
                     </div>
-                </div>
+                </a>
                 @endforeach
             </div>
         @else
@@ -805,154 +809,154 @@
 
 @push('scripts')
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-document.addEventListener('DOMContentLoaded', function() {
-    // Update preview when notification type changes
-    const notificationTypeSelect = document.getElementById('notificationTypeSelect');
-    if (notificationTypeSelect) {
-        notificationTypeSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            const channels = selectedOption.getAttribute('data-channels');
-            
-            if (channels) {
-                try {
-                    const channelArray = JSON.parse(channels);
-                    console.log('Selected channels:', channelArray);
-                } catch (e) {
-                    console.error('Error parsing channels:', e);
+    document.addEventListener('DOMContentLoaded', function() {
+        // Update preview when notification type changes
+        const notificationTypeSelect = document.getElementById('notificationTypeSelect');
+        if (notificationTypeSelect) {
+            notificationTypeSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const channels = selectedOption.getAttribute('data-channels');
+                
+                if (channels) {
+                    try {
+                        const channelArray = JSON.parse(channels);
+                        console.log('Selected channels:', channelArray);
+                    } catch (e) {
+                        console.error('Error parsing channels:', e);
+                    }
                 }
-            }
-        });
-    }
-
-    // Show/hide criteria group based on send type
-    const sendTypeSelect = document.getElementById('sendTypeSelect');
-    const criteriaGroup = document.getElementById('criteriaGroup');
-    
-    if (sendTypeSelect && criteriaGroup) {
-        sendTypeSelect.addEventListener('change', function() {
-            criteriaGroup.style.display = this.value === 'criteria' ? 'block' : 'none';
-        });
-    }
-
-    // Handle form submission
-    const sendNotificationForm = document.getElementById('sendNotificationForm');
-    if (sendNotificationForm) {
-        sendNotificationForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            
-            fetch('{{ route("admin.notifications.send") }}', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification('Notification sent successfully!', 'success');
-                    closeSendNotificationModal();
-                    sendNotificationForm.reset();
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    showNotification(data.message || 'Failed to send notification', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('An error occurred while sending the notification', 'error');
             });
-        });
+        }
+
+        // Show/hide criteria group based on send type
+        const sendTypeSelect = document.getElementById('sendTypeSelect');
+        const criteriaGroup = document.getElementById('criteriaGroup');
+        
+        if (sendTypeSelect && criteriaGroup) {
+            sendTypeSelect.addEventListener('change', function() {
+                criteriaGroup.style.display = this.value === 'criteria' ? 'block' : 'none';
+            });
+        }
+
+        // Handle form submission
+        const sendNotificationForm = document.getElementById('sendNotificationForm');
+        if (sendNotificationForm) {
+            sendNotificationForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                
+                fetch('{{ route("admin.notifications.send") }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Notification sent successfully!', 'success');
+                        closeSendNotificationModal();
+                        sendNotificationForm.reset();
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showNotification(data.message || 'Failed to send notification', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showNotification('An error occurred while sending the notification', 'error');
+                });
+            });
+        }
+    });
+
+    function openSendNotificationModal() {
+        const modal = document.getElementById('sendNotificationModal');
+        if (modal) {
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
     }
-});
 
-function openSendNotificationModal() {
-    const modal = document.getElementById('sendNotificationModal');
-    if (modal) {
-        modal.classList.add('show');
-        document.body.style.overflow = 'hidden';
+    function closeSendNotificationModal() {
+        const modal = document.getElementById('sendNotificationModal');
+        if (modal) {
+            modal.classList.remove('show');
+            document.body.style.overflow = '';
+        }
     }
-}
 
-function closeSendNotificationModal() {
-    const modal = document.getElementById('sendNotificationModal');
-    if (modal) {
-        modal.classList.remove('show');
-        document.body.style.overflow = '';
+    function openBulkNotificationModal() {
+        showNotification('Bulk notification feature coming soon!', 'info');
     }
-}
 
-function openBulkNotificationModal() {
-    showNotification('Bulk notification feature coming soon!', 'info');
-}
+    function openCreateTypeModal() {
+        showNotification('Create notification type feature coming soon!', 'info');
+    }
 
-function openCreateTypeModal() {
-    showNotification('Create notification type feature coming soon!', 'info');
-}
+    function editNotificationType(typeId) {
+        showNotification('Edit notification type feature coming soon!', 'info');
+    }
 
-function editNotificationType(typeId) {
-    showNotification('Edit notification type feature coming soon!', 'info');
-}
+    function toggleNotificationType(typeId) {
+        showNotification('Toggle notification type feature coming soon!', 'info');
+    }
 
-function toggleNotificationType(typeId) {
-    showNotification('Toggle notification type feature coming soon!', 'info');
-}
-
-function showNotification(message, type = 'info') {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `notification-toast ${type}`;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        z-index: 1001;
-        transform: translateX(100%);
-        transition: transform 0.3s ease;
-        max-width: 400px;
-        font-size: 0.875rem;
-        font-weight: 500;
-    `;
-    notification.textContent = message;
-    
-    document.body.appendChild(notification);
-    
-    // Animate in
-    setTimeout(() => {
-        notification.style.transform = 'translateX(0)';
-    }, 100);
-    
-    // Remove after 3 seconds
-    setTimeout(() => {
-        notification.style.transform = 'translateX(100%)';
+    function showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification-toast ${type}`;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1001;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            max-width: 400px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        `;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Animate in
         setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 300);
-    }, 3000);
-}
-
-// Close modal when clicking outside
-document.addEventListener('click', function(e) {
-    const modal = document.getElementById('sendNotificationModal');
-    if (modal && e.target === modal) {
-        closeSendNotificationModal();
+            notification.style.transform = 'translateX(0)';
+        }, 100);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
     }
-});
 
-// Close modal with Escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeSendNotificationModal();
-    }
-});
+    // Close modal when clicking outside
+    document.addEventListener('click', function(e) {
+        const modal = document.getElementById('sendNotificationModal');
+        if (modal && e.target === modal) {
+            closeSendNotificationModal();
+        }
+    });
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeSendNotificationModal();
+        }
+    });
 </script>
 @endpush

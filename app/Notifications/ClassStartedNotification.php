@@ -56,7 +56,7 @@ class ClassStartedNotification extends Notification
             'grade_level' => $this->virtualClass->grade_level,
             'topic' => $this->virtualClass->topic,
             'message' => 'A new class for your grade level is starting!',
-            'url' => route('dashboard.classroom.show', $this->virtualClass->room_id),
+            'url' => 'dashboard/classroom/' . $this->virtualClass->room_id,
         ];
     }
 }

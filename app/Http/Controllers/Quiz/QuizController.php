@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use \App\Models\Quiz;
 
 class QuizController extends Controller
 {
@@ -440,10 +441,12 @@ class QuizController extends Controller
         $score = $request->input('score', session('score', 0));
         $total = $request->input('total', session('total', 10));
         $percentage = $request->input('percentage', session('percentage', 0));
-        $quizId = $request->input('quiz', session('quiz_id'));
+        $encodedQuizId = $request->input('quiz', session('quiz_id'));
+        $quizId = \App\Services\UrlObfuscator::decode($encodedQuizId) ?? $encodedQuizId;
         $failedDueToViolation = $request->input('failed_due_to_violation', session('failed_due_to_violation', false));
 
         $quiz = $this->getQuizById($quizId);
+        $quiz['encoded_id'] = \App\Services\UrlObfuscator::encode($quizId);
         $duration = is_array($quiz) && isset($quiz['duration']) ? $quiz['duration'] : '3 min';
 
         // Get user's data for rank and streak
@@ -1014,7 +1017,7 @@ class QuizController extends Controller
     public function getReviews($quizId)
     {
         try {
-            $quiz = \App\Models\Quiz::find($quizId);
+            $quiz = Quiz::find($quizId);
             if (!$quiz) {
                 return response()->json(['success' => false, 'message' => 'Quiz not found'], 404);
             }

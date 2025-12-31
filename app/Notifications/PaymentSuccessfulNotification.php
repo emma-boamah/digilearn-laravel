@@ -58,7 +58,7 @@ class PaymentSuccessfulNotification extends Notification implements ShouldQueue
             'type' => 'payment_successful',
             'icon' => 'fas fa-check-circle',
             'color' => '#10b981',
-            'url' => route('profile.show'),
+            'url' => 'profile',
         ];
     }
 }
