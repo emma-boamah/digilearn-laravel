@@ -1436,6 +1436,7 @@
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                     }
                 });
 
@@ -1486,6 +1487,7 @@
                         headers: {
                             'X-CSRF-TOKEN': '{{ csrf_token() }}',
                             'Content-Type': 'application/json',
+                            'Accept': 'application/json',
                         },
                         body: JSON.stringify({
                             vimeo_id: vimeoId,
@@ -1519,6 +1521,7 @@
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                     },
                     body: JSON.stringify({
                         review_notes: 'Approved from contents page'
@@ -1546,6 +1549,7 @@
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                     },
                     body: JSON.stringify({
                         review_notes: reason || 'Rejected from contents page'
@@ -2616,6 +2620,9 @@
 
                 const response = await fetch('{{ route("admin.contents.upload.video") }}', {
                     method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                    },
                     body: formData
                 });
 
@@ -2653,8 +2660,11 @@
 
                 updateProgress('document', 80, 'Sending to server...');
 
-                const response = await fetch('{{ route("admin.contents.store") }}', {
+                const response = await fetch('{{ route("admin.contents.upload.documents") }}', {
                     method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                    },
                     body: formData
                 });
 
@@ -2689,8 +2699,11 @@
 
                 updateProgress('quiz', 60, 'Sending quiz to server...');
 
-                const response = await fetch('{{ route("admin.contents.store") }}', {
+                const response = await fetch('{{ route("admin.contents.upload.quiz") }}', {
                     method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                    },
                     body: formData
                 });
 
