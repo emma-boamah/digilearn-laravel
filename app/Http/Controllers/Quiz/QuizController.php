@@ -113,7 +113,7 @@ class QuizController extends Controller
                     'description' => $quiz->title . ' quiz covering ' . ($quiz->subject?->name ?? 'various topics'),
                     'is_featured' => $quiz->is_featured,
                     'average_rating' => $quiz->average_rating,
-                    'total_ratings' => $quiz->total_ratings,
+                    'total_ratings' => $quiz->ratings->count(),
                     'total_attempts_count' => $quiz->total_attempts_count,
                     'user_rating' => $userRating ? $userRating->rating : null,
                     'user_review' => $userRating ? $userRating->review : null,

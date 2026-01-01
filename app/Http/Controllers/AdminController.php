@@ -1880,6 +1880,78 @@ class AdminController extends Controller
         }
     }
 
+    /**
+     * Reject video and clean up temporary files
+     */
+    public function rejectVideo(Request $request, $id)
+    {
+        $video = Video::findOrFail($id);
+
+        if (!$video->isPending()) {
+            Log::warning('Video rejection attempted on non-pending video', ['video_id' => $video->id, 'status' => $video->status]);
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'error' => 'Video is not pending approval.'], 400);
+            }
+            return back()->withErrors(['error' => 'Video is not pending approval.']);
+        }
+
+        try {
+            Log::info('Starting video rejection process', ['video_id' => $video->id, 'title' => $video->title]);
+
+            // Update video status to rejected
+            $video->update([
+                'status' => 'rejected',
+                'reviewed_by' => Auth::id(),
+                'reviewed_at' => now(),
+                'review_notes' => $request->input('review_notes')
+            ]);
+
+            // Clean up temporary file if it exists
+            if ($video->temp_file_path) {
+                $tempFilePath = storage_path('app/public/' . $video->temp_file_path);
+                if (file_exists($tempFilePath)) {
+                    Storage::disk('public')->delete($video->temp_file_path);
+                    Log::info('Temporary video file deleted during rejection', ['video_id' => $video->id, 'file_path' => $video->temp_file_path]);
+                }
+                $video->update(['temp_file_path' => null, 'temp_expires_at' => null]);
+            }
+
+            // Clean up thumbnail if it exists and was temporary
+            if ($video->thumbnail_path && !preg_match('/^https?:\/\//', $video->thumbnail_path)) {
+                $thumbnailPath = storage_path('app/public/' . $video->thumbnail_path);
+                if (file_exists($thumbnailPath)) {
+                    Storage::disk('public')->delete($video->thumbnail_path);
+                    Log::info('Thumbnail file deleted during rejection', ['video_id' => $video->id, 'thumbnail_path' => $video->thumbnail_path]);
+                }
+                $video->update(['thumbnail_path' => null]);
+            }
+
+            Log::info('Video rejected successfully', [
+                'video_id' => $video->id,
+                'reviewed_by' => Auth::id(),
+                'review_notes' => $request->input('review_notes')
+            ]);
+
+            if ($request->expectsJson()) {
+                return response()->json(['success' => true, 'message' => 'Video rejected successfully!']);
+            }
+            return back()->with('success', 'Video rejected successfully!');
+
+        } catch (\Exception $e) {
+            Log::error('Video rejection failed with exception', [
+                'video_id' => $video->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            $video->update(['status' => 'pending']);
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'error' => 'An error occurred while rejecting the video: ' . $e->getMessage()], 500);
+            }
+            return back()->withErrors(['error' => 'An error occurred while rejecting the video: ' . $e->getMessage()]);
+        }
+    }
+
 
     /**
      * Get video for preview (AJAX)
@@ -2732,6 +2804,11 @@ class AdminController extends Controller
                     ];
 
                     $quiz = Quiz::create($quizDataToCreate);
+
+                    // Update video's quiz_id for consistency
+                    $video->quiz_id = $quiz->id;
+                    $video->save();
+
                     $responseData['quiz_id'] = $quiz->id;
                     $responseData['questions_count'] = $quiz->questions()->count();
                 }
@@ -3439,6 +3516,10 @@ class AdminController extends Controller
             ];
 
             $quiz = Quiz::create($quizDataToCreate);
+
+            // Update video's quiz_id for consistency
+            $video->quiz_id = $quiz->id;
+            $video->save();
 
             return response()->json([
                 'success' => true,

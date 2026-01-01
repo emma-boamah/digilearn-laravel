@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Services\UrlObfuscator;
 
 class Quiz extends Model
 {
@@ -149,5 +150,52 @@ class Quiz extends Model
     {
         $quizData = json_decode($this->quiz_data, true);
         return collect($quizData['questions'] ?? []);
+    }
+
+    /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName()
+    {
+        return 'seo_url';
+    }
+
+    /**
+     * Get the SEO-friendly URL attribute.
+     */
+    public function getSeoUrlAttribute()
+    {
+        return UrlObfuscator::createSeoUrl($this->id, $this->title);
+    }
+
+    /**
+     * Get the slug for SEO URLs.
+     */
+    public function getSlugAttribute()
+    {
+        return UrlObfuscator::generateSlug($this->title);
+    }
+
+    /**
+     * Resolve route binding using SEO URL (encrypted_id-slug).
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        $parsed = UrlObfuscator::parseSeoUrl($value);
+
+        if (!$parsed) {
+            return null;
+        }
+
+        // Find the quiz by ID
+        $quiz = $this->where('id', $parsed['id'])->first();
+
+        // Optional: Verify slug matches for SEO purposes
+        if ($quiz && $parsed['slug'] !== UrlObfuscator::generateSlug($quiz->title)) {
+            // Slug doesn't match, but we still return the quiz for flexibility
+            // In production, you might want to redirect to the correct URL
+        }
+
+        return $quiz;
     }
 }
