@@ -1105,6 +1105,7 @@
             position: relative;
             aspect-ratio: 16/9;
             overflow: hidden;
+            flex: 1;
         }
 
         .lesson-video {
@@ -1249,7 +1250,7 @@
 
         .lesson-info {
             flex: 1;
-            padding: 1.25rem;
+            padding: 1rem;
             display: flex;
             flex-direction: column;
             justify-content: space-evenly;
@@ -2158,7 +2159,7 @@
                                         </svg>
                                         Start Course
                                     </a>
-                                    <a href="{{ route('quiz.index') }}" class="lesson-action-btn secondary">
+                                    <a href="{{ $lesson['quiz_id'] ? route('quiz.instructions', ['quizId' => $lesson['encoded_quiz_id']]) : route('quiz.index') }}" class="lesson-action-btn secondary">
                                         <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
                                             <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                         </svg>
@@ -2215,7 +2216,7 @@
                                     </svg>
                                     Watch
                                 </a>
-                                <a href="{{ route('quiz.index') }}" class="lesson-action-btn secondary">
+                                <a href="{{ $lesson['quiz_id'] ? route('quiz.instructions', ['quizId' => $lesson['encoded_quiz_id']]) : route('quiz.index') }}" class="lesson-action-btn secondary">
                                     <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                     </svg>
@@ -3010,7 +3011,7 @@
                                     </svg>
                                     Watch
                                 </a>
-                                <a href="/quiz" class="lesson-action-btn secondary">
+                                <a href="${lesson.encoded_quiz_id ? `/quiz/${lesson.encoded_quiz_id}/instructions` : '/quiz'}" class="lesson-action-btn secondary">
                                     <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                     </svg>

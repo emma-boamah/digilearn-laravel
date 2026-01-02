@@ -464,7 +464,7 @@ class DashboardController extends Controller
                     'thumbnail' => $video->getThumbnailUrl(),
                     'instructor' => $video->uploader ? $video->uploader->name : 'Unknown',
                     'subject' => $this->getSubjectFromLevel($level),
-                    'year' => date('Y'),
+                    'year' => $video->created_at->format('Y'),
                     'level' => $level,
                     'level_display' => $this->getLevelDisplayName($level),
                     'video_source' => $video->video_source,
@@ -483,6 +483,8 @@ class DashboardController extends Controller
                         ];
                     }),
                     'has_quiz' => $video->quiz ? true : false,
+                    'quiz_id' => $video->quiz ? $video->quiz->id : null,
+                    'encoded_quiz_id' => $video->quiz ? \App\Services\UrlObfuscator::encode($video->quiz->id) : null,
                     'views' => $video->views ?? 0,
                     'is_featured' => $video->is_featured,
                 ];
@@ -588,6 +590,12 @@ class DashboardController extends Controller
                     'lessons_count' => $stats['videos_count'],
                     'documents_count' => $stats['documents_count'],
                     'quizzes_count' => $stats['quizzes_count'],
+                    'quizzes' => $course->quizzes->map(function($quiz) {
+                        return [
+                            'id' => $quiz->id,
+                            'title' => $quiz->title,
+                        ];
+                    }),
                     'total_content' => $stats['total_content'],
                     'first_lesson_id' => $this->getFirstLessonId($course),
                 ];
@@ -798,7 +806,8 @@ class DashboardController extends Controller
                         // Attach helpful metadata to lesson (subject, instructor, year, level_display)
                         $ul['subject'] = $course['name'] ?? ($course['code'] ?? '');
                         $ul['instructor'] = $course['instructor'] ?? ($ul['instructor'] ?? '');
-                        $ul['year'] = date('Y');
+                        $video = Video::find($ul['video_id']);
+                        $ul['year'] = $video ? $video->created_at->format('Y') : date('Y');
                         $ul['level_display'] = $course['code'] ?? ($course['id'] ?? '');
                         $allLessons[] = $ul;
                     }
@@ -1866,6 +1875,8 @@ class DashboardController extends Controller
                         ];
                     }),
                     'has_quiz' => $video->quiz ? true : false,
+                    'quiz_id' => $video->quiz ? $video->quiz->id : null,
+                    'encoded_quiz_id' => $video->quiz ? \App\Services\UrlObfuscator::encode($video->quiz->id) : null,
                 ];
 
                 $lessons[] = $lesson;
@@ -2520,7 +2531,7 @@ class DashboardController extends Controller
                      'thumbnail' => $video->getThumbnailUrl(),
                      'instructor' => $video->uploader ? $video->uploader->name : 'Unknown',
                      'subject' => $this->getSubjectFromLevel($this->convertLevelFormatBack($video->grade_level)),
-                     'year' => date('Y'),
+                     'year' => $video->created_at->format('Y'),
                      'level' => $this->convertLevelFormatBack($video->grade_level),
                      'level_display' => $this->getLevelDisplayName($this->convertLevelFormatBack($video->grade_level)),
                      'video_source' => $video->video_source,
@@ -2539,6 +2550,8 @@ class DashboardController extends Controller
                          ];
                      }),
                      'has_quiz' => $video->quiz ? true : false,
+                     'quiz_id' => $video->quiz ? $video->quiz->id : null,
+                     'encoded_quiz_id' => $video->quiz ? \App\Services\UrlObfuscator::encode($video->quiz->id) : null,
                      'views' => $video->views ?? 0,
                      'is_featured' => $video->is_featured,
                  ];
