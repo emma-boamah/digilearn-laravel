@@ -1085,6 +1085,8 @@
         }
 
         .lesson-card {
+            display: flex;
+            flex-direction: column;
             background-color: var(--white);
             border-radius: 0.75rem;
             overflow: hidden;
@@ -1246,7 +1248,11 @@
         }
 
         .lesson-info {
+            flex: 1;
             padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
         }
 
         .lesson-title {
@@ -1262,8 +1268,9 @@
 
         .lesson-meta {
             display: flex;
+            flex-direction: column;
             justify-content: space-between;
-            align-items: center;
+            align-items: baseline;
             color: var(--gray-500);
             font-size: 0.875rem;
         }
