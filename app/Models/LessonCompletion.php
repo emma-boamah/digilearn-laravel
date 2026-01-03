@@ -71,9 +71,10 @@ class LessonCompletion extends Model
         );
 
         // Update watch time - only accumulate if this watch session exceeds the previous maximum
-        $previousMaxWatchTime = $completion->watch_time_seconds;
-        $previousMaxWatchTime = max($previousMaxWatchTime, $watchTimeSeconds);
-        $completion->completion_percentage = min(100, ($previousMaxWatchTime / $totalDurationSeconds) * 100);
+        $previousMaxWatchTime = $completion->watch_time_seconds ?? 0;
+        $newMaxWatchTime = max($previousMaxWatchTime, $watchTimeSeconds);
+        $completion->watch_time_seconds = $newMaxWatchTime;
+        $completion->completion_percentage = min(100, ($newMaxWatchTime / $totalDurationSeconds) * 100);
 
         // Get the watch threshold from standards
         $standards = \App\Models\ProgressionStandard::getStandardsForLevel($levelGroup);
