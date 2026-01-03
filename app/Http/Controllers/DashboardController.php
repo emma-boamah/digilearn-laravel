@@ -850,7 +850,10 @@ class DashboardController extends Controller
                 'timestamp' => Carbon::now()->toISOString()
             ]);
 
-            return view('dashboard.lesson-view', compact('lesson', 'selectedLevelGroup', 'relatedLessons'));
+            // Fetch user notes for the lesson
+            $note = UserNote::forUserAndVideo(Auth::id(), $lesson['id'])->first();
+
+            return view('dashboard.lesson-view', compact('lesson', 'selectedLevelGroup', 'relatedLessons', 'note'));
         }
 
         // Get all lessons from the level group (non-university)
@@ -908,6 +911,9 @@ class DashboardController extends Controller
         });
         $relatedLessons = array_slice($relatedLessons, 0, 8);
 
+        // Fetch user notes for the lesson
+        $note = UserNote::forUserAndVideo(Auth::id(), $lesson['id'])->first();
+
         Log::channel('security')->info('lesson_viewed', [
             'user_id' => Auth::id(),
             'lesson_id' => $lessonId,
@@ -918,7 +924,7 @@ class DashboardController extends Controller
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
-        return view('dashboard.lesson-view', compact('lesson', 'selectedLevelGroup', 'relatedLessons'));
+        return view('dashboard.lesson-view', compact('lesson', 'selectedLevelGroup', 'relatedLessons', 'note'));
     }
 
     /**
@@ -2311,25 +2317,35 @@ class DashboardController extends Controller
         $request->validate([
             'title' => 'nullable|string|max:255',
             'content' => 'required|string|max:1000',
+            'update_mode' => 'nullable|in:replace,append',
         ]);
 
         try {
             $userId = Auth::id();
+            $mode = $request->input('update_mode', 'replace');
 
             // Check if notes already exist for this user and video
             $existingNote = UserNote::forUserAndVideo($userId, $videoId)->first();
 
             if ($existingNote) {
-                // Update existing note
+                // Update existing note based on mode
+                $content = match ($mode) {
+                    'append' => trim($existingNote->content . "\n\n" . $request->content),
+                    default => $request->content, // replace
+                };
+
                 $existingNote->update([
-                    'title' => $request->title,
-                    'content' => $request->content,
+                    'title' => $request->title ?? $existingNote->title,
+                    'content' => $content,
                 ]);
 
                 return response()->json([
                     'success' => true,
-                    'message' => 'Notes updated successfully!',
-                    'action' => 'updated'
+                    'message' => $mode === 'append'
+                        ? 'Notes updated (content appended).'
+                        : 'Notes replaced successfully.',
+                    'action' => 'updated',
+                    'mode' => $mode
                 ]);
             } else {
                 // Create new note

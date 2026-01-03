@@ -639,6 +639,28 @@
             margin-bottom: 1.5rem;
         }
 
+        .existing-note {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background-color: var(--white);
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-200);
+        }
+
+        .existing-note h4 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 0.5rem;
+        }
+
+        .existing-note p {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            margin: 0;
+        }
+
         .add-notes-btn {
             display: inline-flex;
             align-items: center;
@@ -772,6 +794,33 @@
             flex-wrap: wrap;
             margin-top: 1rem;
             width: 100%;
+        }
+
+        .update-mode-selector {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            background-color: var(--gray-50);
+            border-radius: 0.5rem;
+            border: 1px solid var(--gray-200);
+        }
+
+        .update-mode-selector label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--gray-700);
+            cursor: pointer;
+        }
+
+        .update-mode-selector input[type="radio"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--secondary-blue);
         }
 
         .notes-action-btn {
@@ -1347,6 +1396,204 @@
 
         .share-copy-btn.copied {
             background-color: #10b981;
+        }
+
+        /* Notes Education Modal */
+        .notes-education-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(4px);
+        }
+
+        .notes-education-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .notes-education-modal {
+            transform: scale(0.9) translateY(20px);
+            background-color: var(--white);
+            border-radius: 1.5rem;
+            box-shadow: var(--shadow-xl);
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .notes-education-modal-overlay.active .notes-education-modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .notes-education-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2rem 2rem 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .notes-education-modal-icon {
+            color: var(--secondary-blue);
+            background-color: rgba(38, 119, 184, 0.1);
+            border-radius: 50%;
+            width: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .notes-education-modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin: 0 1.5rem;
+            flex: 1;
+        }
+
+        .notes-education-modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            color: var(--gray-500);
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .notes-education-modal-close:hover {
+            background-color: var(--gray-100);
+            color: var(--gray-900);
+        }
+
+        .notes-education-modal-body {
+            padding: 2rem;
+        }
+
+        .notes-education-modal-description {
+            font-size: 1rem;
+            color: var(--gray-700);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .notes-education-modal-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .notes-education-option {
+            padding: 1.25rem;
+            border: 2px solid var(--gray-200);
+            border-radius: 0.75rem;
+            background-color: var(--gray-50);
+            transition: all 0.2s ease;
+        }
+
+        .notes-education-option:hover {
+            border-color: var(--secondary-blue);
+            background-color: rgba(38, 119, 184, 0.05);
+        }
+
+        .notes-education-option-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .notes-education-option-header input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--secondary-blue);
+        }
+
+        .notes-education-option-header strong {
+            font-size: 1rem;
+            color: var(--gray-900);
+        }
+
+        .notes-education-option p {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .notes-education-modal-tip {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 1rem;
+            background-color: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--gray-700);
+        }
+
+        .notes-education-modal-tip svg {
+            color: #22c55e;
+            flex-shrink: 0;
+            margin-top: 0.125rem;
+        }
+
+        .notes-education-modal-tip kbd {
+            background-color: var(--gray-200);
+            border: 1px solid var(--gray-300);
+            border-radius: 0.25rem;
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
+            color: var(--gray-700);
+            font-family: monospace;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.125rem 0.375rem;
+            margin: 0 0.125rem;
+        }
+
+        .notes-education-modal-footer {
+            padding: 1.5rem 2rem 2rem;
+            border-top: 1px solid var(--gray-200);
+            text-align: center;
+        }
+
+        .notes-education-modal-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.875rem 2rem;
+            background: linear-gradient(135deg, var(--secondary-blue), var(--secondary-blue-hover));
+            color: var(--white);
+            border: none;
+            border-radius: 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .notes-education-modal-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
         }
 
         /* Loading and Success States */
@@ -2682,8 +2929,14 @@
 
             <!-- Enhanced Notes Section -->
             <div class="notes-section">
+                @if(isset($note) && $note)
+                    <div class="existing-note">
+                        <h4>{{ $note->title ?: 'My Notes' }}</h4>
+                        <p>Last updated: {{ $note->formatted_updated_at }}</p>
+                    </div>
+                @endif
                 <button class="add-notes-btn" id="addNotesBtn">
-                    Add notes
+                    {{ isset($note) && $note ? 'Edit notes' : 'Add notes' }}
                     <svg fill="currentColor" viewBox="0 0 24 24">
                         <circle cx="12" cy="12" r="10"/>
                         <line x1="12" y1="8" x2="12" y2="16"/>
@@ -2694,6 +2947,18 @@
 
             <!-- Notes Wrapper (hidden by default) -->
             <div id="notesWrapper" style="display: none; margin-top: 1rem;">
+                <!-- Update Mode Selector -->
+                <div class="update-mode-selector">
+                    <label>
+                        <input type="radio" name="update_mode" value="replace" checked>
+                        Replace existing notes
+                    </label>
+                    <label>
+                        <input type="radio" name="update_mode" value="append">
+                        Add to existing notes
+                    </label>
+                </div>
+
                 <!-- Editor Container -->
                 <div id="notes-editor-container">
                     <!-- Quill will create its own toolbar inside this div -->
@@ -2766,6 +3031,62 @@
             </div>
         </div>
     </div>
+    </div>
+
+    <!-- Notes Update Mode Education Modal -->
+    <div class="notes-education-modal-overlay" id="notesEducationModalOverlay">
+        <div class="notes-education-modal">
+            <div class="notes-education-modal-header">
+                <div class="notes-education-modal-icon">
+                    <svg width="48" height="48" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                </div>
+                <h3 class="notes-education-modal-title">Smart Notes Saving</h3>
+                <button class="notes-education-modal-close" id="notesEducationModalClose">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="notes-education-modal-body">
+                <p class="notes-education-modal-description">
+                    Choose how you want to save your notes for this lesson:
+                </p>
+
+                <div class="notes-education-modal-options">
+                    <div class="notes-education-option">
+                        <div class="notes-education-option-header">
+                            <input type="radio" disabled checked>
+                            <strong>Replace existing notes</strong>
+                        </div>
+                        <p>Completely replace your current notes with new content. Use this when you want to start fresh.</p>
+                    </div>
+
+                    <div class="notes-education-option">
+                        <div class="notes-education-option-header">
+                            <input type="radio" disabled>
+                            <strong>Add to existing notes</strong>
+                        </div>
+                        <p>Append new content to your existing notes. Perfect for adding more thoughts or continuing where you left off.</p>
+                    </div>
+                </div>
+
+                <div class="notes-education-modal-tip">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <span><strong>Pro tip:</strong> You can always edit your notes later, and this choice only affects how new content is added. Use <kbd>Ctrl+S</kbd> to quickly save!</span>
+                </div>
+            </div>
+
+            <div class="notes-education-modal-footer">
+                <button class="notes-education-modal-btn" id="notesEducationModalGotIt">
+                    Got it, let's start writing!
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Share Modal -->
@@ -3635,8 +3956,13 @@
             const addNotesBtn = document.getElementById('addNotesBtn');
             const notesWrapper = document.getElementById('notesWrapper');
             const saveNotesBtn = document.getElementById('saveNotesBtn');
+            const notesEducationModalOverlay = document.getElementById('notesEducationModalOverlay');
+            const notesEducationModalClose = document.getElementById('notesEducationModalClose');
+            const notesEducationModalGotIt = document.getElementById('notesEducationModalGotIt');
             let notesQuill = null;
             let isEditorOpen = false;
+            let hasExistingNotes = false;
+            let hasShownEducationModal = localStorage.getItem('notesEducationModalShown') === 'true';
 
             // Update button appearance based on state
             function updateButtonState() {
@@ -3650,8 +3976,9 @@
                     `;
                     addNotesBtn.classList.add('active');
                 } else {
+                    const buttonText = hasExistingNotes ? 'Edit notes' : 'Add notes';
                     addNotesBtn.innerHTML = `
-                        Add notes
+                        ${buttonText}
                         <svg fill="currentColor" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="10"/>
                             <line x1="12" y1="8" x2="12" y2="16"/>
@@ -3662,30 +3989,72 @@
                 }
             }
 
+            // Load existing notes from server
+            function loadExistingNotes() {
+                const lessonId = '{{ $lesson["id"] ?? "" }}';
+                if (!lessonId) return Promise.resolve(null);
+
+                return fetch(`/dashboard/lesson/${lessonId}/user-notes`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.note) {
+                        hasExistingNotes = true;
+                        return data.note;
+                    }
+                    hasExistingNotes = false;
+                    return null;
+                })
+                .catch(error => {
+                    console.error('Error loading existing notes:', error);
+                    hasExistingNotes = false;
+                    return null;
+                });
+            }
+
             // Initialize Quill editor
             function initNotesEditor() {
                 if (notesQuill) {
                     // Editor already exists, just show it
                     notesWrapper.style.display = 'block';
-                    return;
+                    return Promise.resolve();
                 }
 
-                // Initialize Quill with a simple toolbar
-                notesQuill = new Quill('#notes-editor', {
-                    theme: 'snow',
-                    modules: {
-                        toolbar: [
-                            ['bold', 'italic', 'underline'],
-                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                            ['link'],
-                            ['clean']
-                        ]
-                    },
-                    placeholder: 'Write your notes here...',
-                    bounds: '#notes-editor-container'
-                });
+                return new Promise((resolve) => {
+                    // Initialize Quill with a simple toolbar
+                    notesQuill = new Quill('#notes-editor', {
+                        theme: 'snow',
+                        modules: {
+                            toolbar: [
+                                ['bold', 'italic', 'underline'],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                ['link'],
+                                ['clean']
+                            ]
+                        },
+                        placeholder: 'Write your notes here...',
+                        bounds: '#notes-editor-container'
+                    });
 
-                console.log('Quill editor initialized');
+                    console.log('Quill editor initialized');
+
+                    // Load existing notes into the editor
+                    loadExistingNotes().then(existingNote => {
+                        if (existingNote && existingNote.content) {
+                            notesQuill.root.innerHTML = existingNote.content;
+                            hasExistingNotes = true;
+                        } else {
+                            hasExistingNotes = false;
+                        }
+                        updateButtonState();
+                        resolve();
+                    });
+                });
             }
 
             // Destroy Quill editor
@@ -3705,20 +4074,51 @@
                 }
             }
 
+            // Clear all notes
+            function clearAllNotes() {
+                if (notesQuill) {
+                    notesQuill.setContents([]);
+                    hasExistingNotes = false;
+                    updateButtonState();
+                    showSuccessMessage('Notes cleared. You can now start fresh!');
+                }
+            }
+
+            // Show education modal
+            function showEducationModal() {
+                if (!hasShownEducationModal) {
+                    notesEducationModalOverlay.classList.add('active');
+                    hasShownEducationModal = true;
+                    localStorage.setItem('notesEducationModalShown', 'true');
+                }
+            }
+
+            // Hide education modal
+            function hideEducationModal() {
+                notesEducationModalOverlay.classList.remove('active');
+            }
+
             // Toggle editor visibility
             function toggleNotesEditor() {
                 isEditorOpen = !isEditorOpen;
 
                 if (isEditorOpen) {
-                    // Show editor
-                    initNotesEditor();
-                    notesWrapper.style.display = 'block';
-                    // Focus on the editor after a small delay
-                    setTimeout(() => {
-                        if (notesQuill) {
-                            notesQuill.focus();
-                        }
-                    }, 100);
+                    // Show editor and load existing notes
+                    initNotesEditor().then(() => {
+                        notesWrapper.style.display = 'block';
+
+                        // Show education modal for first-time users
+                        setTimeout(() => {
+                            showEducationModal();
+                        }, 500); // Small delay to let the editor render first
+
+                        // Focus on the editor after modal interaction
+                        setTimeout(() => {
+                            if (notesQuill && !hasShownEducationModal) {
+                                notesQuill.focus();
+                            }
+                        }, 100);
+                    });
                 } else {
                     // Hide editor
                     notesWrapper.style.display = 'none';
@@ -3734,6 +4134,67 @@
 
             // Handle button click
             addNotesBtn.addEventListener('click', toggleNotesEditor);
+
+            // Handle education modal events
+            if (notesEducationModalClose) {
+                notesEducationModalClose.addEventListener('click', hideEducationModal);
+            }
+
+            if (notesEducationModalGotIt) {
+                notesEducationModalGotIt.addEventListener('click', function() {
+                    hideEducationModal();
+                    // Focus on the editor after closing modal
+                    setTimeout(() => {
+                        if (notesQuill) {
+                            notesQuill.focus();
+                        }
+                    }, 300);
+                });
+            }
+
+            // Close modal when clicking overlay
+            if (notesEducationModalOverlay) {
+                notesEducationModalOverlay.addEventListener('click', function(e) {
+                    if (e.target === notesEducationModalOverlay) {
+                        hideEducationModal();
+                        // Focus on the editor after closing modal
+                        setTimeout(() => {
+                            if (notesQuill) {
+                                notesQuill.focus();
+                            }
+                        }, 300);
+                    }
+                });
+            }
+
+            // Close modal on Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && notesEducationModalOverlay.classList.contains('active')) {
+                    hideEducationModal();
+                    // Focus on the editor after closing modal
+                    setTimeout(() => {
+                        if (notesQuill) {
+                            notesQuill.focus();
+                        }
+                    }, 300);
+                }
+            });
+
+            // Add clear all button to the notes editor actions
+            const notesEditorActions = document.querySelector('.notes-editor-actions');
+            if (notesEditorActions) {
+                const clearBtn = document.createElement('button');
+                clearBtn.type = 'button';
+                clearBtn.className = 'notes-action-btn clear';
+                clearBtn.innerHTML = `
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                    Clear All
+                `;
+                clearBtn.addEventListener('click', clearAllNotes);
+                notesEditorActions.appendChild(clearBtn);
+            }
 
             // Save notes handler
             saveNotesBtn.addEventListener('click', () => {
@@ -3755,6 +4216,9 @@
                 saveNotesBtn.innerHTML = '<div class="loading-spinner"></div> Saving...';
                 saveNotesBtn.disabled = true;
 
+                // Get selected update mode
+                const updateMode = document.querySelector('input[name="update_mode"]:checked').value;
+
                 fetch('/dashboard/lesson/{{ $lesson["id"] ?? "" }}/user-notes', {
                     method: 'POST',
                     headers: {
@@ -3763,12 +4227,15 @@
                     },
                     body: JSON.stringify({
                         title: '', // Optional title
-                        content: content
+                        content: content,
+                        update_mode: updateMode
                     })
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
+                        hasExistingNotes = true; // Now we have notes saved
+                        updateButtonState();
                         showSuccessMessage('Notes saved successfully!');
                         // Optionally hide the editor after saving
                         // toggleNotesEditor();
@@ -4060,14 +4527,17 @@
         // Keyboard shortcuts
         function initializeKeyboardShortcuts() {
             document.addEventListener('keydown', function(e) {
-                // Ctrl/Cmd + S to save notes
+                // Ctrl/Cmd + S to save notes (when notes editor is open)
                 if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                     e.preventDefault();
-                    if (!document.getElementById('notesEditorSection').classList.contains('hidden')) {
-                        document.getElementById('saveNotesBtn').click();
+                    const notesWrapper = document.getElementById('notesWrapper');
+                    const saveNotesBtn = document.getElementById('saveNotesBtn');
+                    if (notesWrapper && notesWrapper.style.display !== 'none' && saveNotesBtn) {
+                        saveNotesBtn.click();
+                        showSuccessMessage('Notes saved with Ctrl+S! 💾');
                     }
                 }
-                
+
                 // Ctrl/Cmd + E to export notes
                 if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
                     e.preventDefault();
@@ -4075,7 +4545,7 @@
                         document.getElementById('exportNotesBtn').click();
                     }
                 }
-                
+
                 // Ctrl/Cmd + N to toggle notes editor
                 if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
                     e.preventDefault();
