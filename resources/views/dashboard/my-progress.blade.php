@@ -556,7 +556,7 @@
                         </svg>
                     </div>
                 </div>
-                <div class="progress-value">{{ $progress->completed_quizzes ?? 0 }}/{{ $standards['required_number_of_quizzes_individual'] ?? 5 }}</div>
+                <div class="progress-value">{{ min($progress->completed_quizzes ?? 0, $standards['required_number_of_quizzes_individual'] ?? 5) }}/{{ $standards['required_number_of_quizzes_individual'] ?? 5 }}</div>
                 <div class="progress-label">Quizzes to Pass</div>
                 <div class="progress-bar-container">
                     <div class="progress-bar">

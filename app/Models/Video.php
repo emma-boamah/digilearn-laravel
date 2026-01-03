@@ -623,12 +623,26 @@ class Video extends Model
      */
     private function getYouTubeDuration()
     {
-        // For now, return null as YouTube API requires authentication
-        // In production, implement YouTube Data API v3 call
-        Log::info('YouTube duration fetch not implemented - requires API key', [
-            'video_id' => $this->id,
-            'youtube_id' => $this->external_video_id
-        ]);
+        if (!$this->external_video_id) {
+            return null;
+        }
+
+        try {
+            $youtubeService = app(\App\Services\YouTubeService::class);
+            $duration = $youtubeService->getVideoDuration($this->external_video_id);
+
+            if ($duration) {
+                // Cache the duration
+                $this->update(['duration_seconds' => $duration]);
+                return $duration;
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to get YouTube duration', [
+                'video_id' => $this->id,
+                'youtube_id' => $this->external_video_id,
+                'error' => $e->getMessage()
+            ]);
+        }
 
         return null;
     }

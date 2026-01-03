@@ -91,6 +91,10 @@ return [
         'temp_expiry_hours' => env('VIMEO_TEMP_EXPIRY_HOURS', 72), // 3 days
     ],
 
+    'youtube' => [
+        'api_key' => env('YOUTUBE_API_KEY'),
+    ],
+
     'mux' => [
         'token_id' => env('MUX_TOKEN_ID'),
         'token_secret' => env('MUX_TOKEN_SECRET'),

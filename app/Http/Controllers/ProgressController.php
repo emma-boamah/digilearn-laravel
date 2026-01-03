@@ -90,7 +90,7 @@ class ProgressController extends Controller
     {
         $request->validate([
             'watch_time' => 'required|integer|min:0',
-            'total_duration' => 'required|integer|min:1',
+            'total_duration' => 'nullable|integer|min:1',
             'lesson_data' => 'required|array',
         ]);
 
@@ -102,12 +102,24 @@ class ProgressController extends Controller
             $lessonData['level_group'] = $this->getLevelGroup($lessonData['level']);
         }
 
+        // Get total duration - fetch from API if not provided for external videos
+        $totalDuration = $request->total_duration;
+        if (!$totalDuration && isset($lessonData['video_id'])) {
+            $video = \App\Models\Video::find($lessonData['video_id']);
+            if ($video) {
+                $totalDuration = $video->getDuration();
+            }
+        }
+
+        // Fallback to provided duration or default
+        $totalDuration = $totalDuration ?: $request->total_duration ?: 0;
+
         // Record the lesson completion
         $completion = LessonCompletion::recordWatchProgress(
             $userId,
             $lessonData,
             $request->watch_time,
-            $request->total_duration
+            $totalDuration
         );
 
         // Update user progress using level group
