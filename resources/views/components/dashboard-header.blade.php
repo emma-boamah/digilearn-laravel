@@ -473,11 +473,13 @@
         border-right: 1px solid var(--gray-200);
         z-index: 1000;
         transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        overflow-y: scroll;
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
+    /* Hide vertical scrollbar on chrome/firefox */
     .youtube-sidebar::-webkit-scrollbar {
-        width: 0;
+        width: 0px;
         background: transparent
     }
 
@@ -488,9 +490,13 @@
         transition: opacity 0.3s ease;
     }
 
+    .youtube-sidebar:hover::-webkit-scrollbar {
+        width: 2px;
+    }
+
     .youtube-sidebar:hover::-webkit-scrollbar-thumb {
-        width: 8px;
-        background: var(--gray-100);
+        width: 2px;
+        background: var(--gray-200);
     }
 
     .youtube-sidebar.collapsed {
@@ -556,11 +562,10 @@
 
     .sidebar-content {
         padding: 1rem 0;
-        overflow-y: auto;
+        overflow-y: visible;
         overflow-x: hidden;
         scrollbar-width: thin;
         height: auto;
-        max-height: 100vh;
     }
 
     .sidebar-content::-webkit-scrollbar {
