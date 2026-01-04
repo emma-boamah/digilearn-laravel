@@ -139,7 +139,7 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="reviews-modal-content" id="reviewsContent-{{ $quiz['encoded_id'] }}">
+            <div class="reviews-modal-content" id="reviewsContent-{{ $quiz['encoded_id'] }}" style="max-height: 400px; overflow-y: auto;">
                 <div class="reviews-loading">
                     <i class="fas fa-spinner fa-spin"></i>
                     <p>Loading reviews...</p>

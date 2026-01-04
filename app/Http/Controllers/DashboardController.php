@@ -1236,6 +1236,15 @@ class DashboardController extends Controller
     }
 
     /**
+     * Get video title by video ID
+     */
+    private function getVideoTitle($videoId)
+    {
+        $video = Video::find($videoId);
+        return $video ? $video->title : 'Notes';
+    }
+
+    /**
      * Show saved lessons page
      */
     public function savedLessons()
@@ -2314,14 +2323,54 @@ class DashboardController extends Controller
      */
     public function saveUserNotes(Request $request, $videoId)
     {
-        $request->validate([
-            'title' => 'nullable|string|max:255',
-            'content' => 'required|string|max:1000',
-            'update_mode' => 'nullable|in:replace,append',
-        ]);
-
         try {
             $userId = Auth::id();
+
+            // Custom validation for title
+            $title = trim($request->input('title', ''));
+            $errors = [];
+
+            // Title validation rules
+            if (empty($title)) {
+                // If no title provided, use slug fallback
+                $title = \Illuminate\Support\Str::slug($this->getVideoTitle($videoId));
+            } else {
+                // Check minimum length
+                if (strlen($title) < 3) {
+                    $errors['title'] = 'Title must be at least 3 characters long.';
+                }
+                // Check maximum length
+                elseif (strlen($title) > 100) {
+                    $errors['title'] = 'Title cannot exceed 100 characters.';
+                }
+                // Check uniqueness per user
+                else {
+                    $existingTitle = UserNote::where('user_id', $userId)
+                        ->where('title', $title)
+                        ->where('video_id', '!=', $videoId) // Allow same title for same video
+                        ->exists();
+
+                    if ($existingTitle) {
+                        $errors['title'] = 'You already have a note with this title. Please choose a different title.';
+                    }
+                }
+            }
+
+            // Validate other fields
+            $request->validate([
+                'content' => 'required|string|max:1000',
+                'update_mode' => 'nullable|in:replace,append',
+            ]);
+
+            // If there are title validation errors, return them
+            if (!empty($errors)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed.',
+                    'errors' => $errors
+                ], 422);
+            }
+
             $mode = $request->input('update_mode', 'replace');
 
             // Check if notes already exist for this user and video
@@ -2335,7 +2384,7 @@ class DashboardController extends Controller
                 };
 
                 $existingNote->update([
-                    'title' => $request->title ?? $existingNote->title,
+                    'title' => $title,
                     'content' => $content,
                 ]);
 
@@ -2352,7 +2401,7 @@ class DashboardController extends Controller
                 UserNote::create([
                     'user_id' => $userId,
                     'video_id' => $videoId,
-                    'title' => $request->title,
+                    'title' => $title,
                     'content' => $request->content,
                 ]);
 
@@ -2362,6 +2411,12 @@ class DashboardController extends Controller
                     'action' => 'created'
                 ]);
             }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed.',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
             Log::error('save_user_notes_error', [
                 'user_id' => Auth::id(),

@@ -9,6 +9,10 @@
         <p class="page-subtitle">Manage your saved lesson notes</p>
 
         <div class="filter-tabs">
+            <div class="search-container">
+                <input type="text" id="notes-search" placeholder="Search notes..." class="search-input">
+                <i class="fas fa-search search-icon"></i>
+            </div>
             <button class="filter-tab active" data-filter="all">All</button>
             <button class="filter-tab" data-filter="dates">Dates</button>
         </div>
@@ -18,7 +22,7 @@
         @if(isset($notes) && count($notes) > 0)
             <div class="notes-grid">
                 @foreach($notes as $note)
-                <div class="note-card" data-note-id="{{ $note['id'] }}" data-encoded-id="{{ $note['encoded_id'] }}">
+                <div class="note-card" data-note-id="{{ $note['id'] }}" data-encoded-id="{{ $note['encoded_id'] }}" data-title="{{ $note['title'] }}" data-content="{{ $note['content'] }}">
                     <h3 class="note-title">{{ $note['title'] }}</h3>
                     <p class="note-subject">{{ $note['subject'] }}</p>
                     <p class="note-date">{{ $note['created_at'] }}</p>
@@ -39,7 +43,7 @@
             <!-- Sample notes for demo -->
             <div class="notes-grid">
                 @for($i = 1; $i <= 12; $i++)
-                <div class="note-card" data-note-id="{{ $i }}" data-encoded-id="{{ \App\Services\UrlObfuscator::encode($i) }}">
+                <div class="note-card" data-note-id="{{ $i }}" data-encoded-id="{{ \App\Services\UrlObfuscator::encode($i) }}" data-title="Living and Non Living organism" data-content="Detailed notes about living and non-living organisms...">
                     <h3 class="note-title">Living and Non Living organism</h3>
                     <p class="note-subject">(Science -Note G1-3)</p>
                     <p class="note-date">April 2025</p>
@@ -89,6 +93,38 @@
         display: flex;
         gap: 0.5rem;
         margin-top: 1.5rem;
+        align-items: center;
+    }
+
+    .search-container {
+        position: relative;
+        flex: 1;
+        max-width: 300px;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 0.75rem 1rem 0.75rem 2.5rem;
+        border: 2px solid var(--gray-200);
+        border-radius: 2rem;
+        font-size: 0.875rem;
+        background-color: var(--white);
+        transition: all 0.2s ease;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--secondary-blue);
+        box-shadow: 0 0 0 3px rgba(38, 162, 220, 0.1);
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--gray-400);
+        font-size: 0.875rem;
     }
 
     .filter-tab {
@@ -105,9 +141,9 @@
     }
 
     .filter-tab.active {
-        background-color: var(--primary-red);
+        background-color: var(--secondary-blue);
         color: var(--white);
-        border-color: var(--primary-red);
+        border-color: var(--secondary-blue);
     }
 
     .filter-tab:hover:not(.active) {
@@ -219,14 +255,23 @@
         .filter-tabs {
             flex-wrap: wrap;
         }
+
+        .search-container {
+            flex-basis: 100%;
+            margin-bottom: 1rem;
+        }
     }
 </style>
 @endpush
 
 @push('scripts')
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    let currentSearchTerm = '';
+    let currentFilter = 'all';
+
     document.addEventListener('DOMContentLoaded', function() {
         initializeFilterTabs();
+        initializeSearch();
         initializeNoteActions();
     });
 
@@ -238,22 +283,43 @@
                 filterTabs.forEach(t => t.classList.remove('active'));
                 this.classList.add('active');
 
-                const filter = this.dataset.filter;
-                filterNotes(filter);
+                currentFilter = this.dataset.filter;
+                filterNotes(currentSearchTerm, currentFilter);
             });
         });
     }
 
-    function filterNotes(filter) {
+    function initializeSearch() {
+        const searchInput = document.getElementById('notes-search');
+
+        searchInput.addEventListener('input', function() {
+            currentSearchTerm = this.value.trim().toLowerCase();
+            filterNotes(currentSearchTerm, currentFilter);
+        });
+    }
+
+    function filterNotes(searchTerm, filter) {
         const noteCards = document.querySelectorAll('.note-card');
 
         noteCards.forEach(card => {
-            if (filter === 'all') {
-                card.style.display = 'block';
-            } else if (filter === 'dates') {
-                // Implement date-based filtering logic here
-                card.style.display = 'block';
+            const title = card.dataset.title.toLowerCase();
+            const content = card.dataset.content.toLowerCase();
+            const date = card.querySelector('.note-date').textContent.toLowerCase();
+
+            // Check search match
+            const matchesSearch = !searchTerm ||
+                title.includes(searchTerm) ||
+                content.includes(searchTerm);
+
+            // Check filter match
+            let matchesFilter = true;
+            if (filter === 'dates') {
+                // For now, show all for dates - can implement date filtering later
+                matchesFilter = true;
             }
+
+            // Show card if both search and filter match
+            card.style.display = (matchesSearch && matchesFilter) ? 'block' : 'none';
         });
     }
 
