@@ -233,6 +233,9 @@ Route::middleware(['auth'])->group(function () {
 
     // Notifications
     Route::get('/dashboard/notifications', [NotificationController::class, 'dashboardIndex'])->name('dashboard.notifications');
+    Route::middleware(['decode.obfuscated'])->group(function () {
+        Route::get('/dashboard/notifications/{notificationId}', [NotificationController::class, 'show'])->name('dashboard.notification.show');
+    });
 
     //
     Route::post('/ping', function ($request) {

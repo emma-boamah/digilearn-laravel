@@ -10,7 +10,7 @@ class UrlObfuscator
     /**
      * Encode an ID using Laravel Crypt + URL-safe encoding
      *
-     * @param int $id
+     * @param string|int $id
      * @return string
      */
     public static function encode($id)
@@ -33,7 +33,7 @@ class UrlObfuscator
      * Decode an encrypted ID from URL
      *
      * @param string $encoded
-     * @return int|null
+     * @return string|null
      */
     public static function decode($encoded)
     {
@@ -49,7 +49,7 @@ class UrlObfuscator
             $decrypted = base64_decode($encoded);
             $id = Crypt::decryptString($decrypted);
 
-            return (int) $id;
+            return $id;
         } catch (\Exception $e) {
             // Try fallback decoding
             return self::simpleDecode($encoded);
@@ -145,7 +145,7 @@ class UrlObfuscator
      * Fallback simple decoding
      *
      * @param string $encoded
-     * @return int|null
+     * @return string|null
      */
     public static function simpleDecode($encoded)
     {
@@ -175,6 +175,6 @@ class UrlObfuscator
             return null;
         }
 
-        return $id;
+        return (string) $id;
     }
 }

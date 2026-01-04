@@ -1,5 +1,27 @@
 <!-- Dashboard Header Styles -->
 <style nonce="{{ request()->attributes->get('csp_nonce') }}">
+    body::-webkit-scrollbar {
+        width: 0;
+        background: transparent;
+    }
+
+    body:hover::-webkit-scrollbar {
+        width: 8px;
+        background: var(--grey-100);
+    }
+
+    body::-webkit-scrollbar-thumb {
+        background: var(--grey-50);
+        border-radius: 4px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    body::-webkit-scrollbar-thumb:hover {
+        background: var(--grey-100);
+        opacity: 0.5;
+    }
+    
     /* Top Header */
     .top-header {
         display: flex;
@@ -183,6 +205,80 @@
     .notification-time {
         font-size: 0.75rem;
         color: var(--gray-500);
+    }
+
+    /* Enhanced notification styles for different content types */
+    .notification-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .notification-badge {
+        padding: 0.125rem 0.5rem;
+        border-radius: 0.75rem;
+        font-size: 0.625rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+
+    .video-badge {
+        background-color: var(--primary-red);
+        color: var(--white);
+    }
+
+    .document-badge {
+        background-color: var(--secondary-blue);
+        color: var(--white);
+    }
+
+    .quiz-badge {
+        background-color: var(--gray-600);
+        color: var(--white);
+    }
+
+    .notification-subject {
+        font-size: 0.75rem;
+        color: var(--gray-500);
+        font-weight: 500;
+    }
+
+    .notification-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin: 0 0 0.25rem 0;
+        line-height: 1.3;
+    }
+
+    .notification-message {
+        font-size: 0.8125rem;
+        color: var(--gray-700);
+        margin: 0 0 0.5rem 0;
+        line-height: 1.4;
+    }
+
+    .notification-meta {
+        display: flex;
+        gap: 0.75rem;
+        font-size: 0.75rem;
+        color: var(--gray-600);
+        margin-bottom: 0.25rem;
+    }
+
+    .notification-instructor,
+    .notification-lesson,
+    .notification-questions,
+    .notification-difficulty,
+    .notification-duration,
+    .notification-size {
+        color: var(--gray-600);
+    }
+
+    .notification-item.unread .notification-title {
+        color: var(--primary-red);
     }
 
     .notification-icon {
@@ -377,11 +473,12 @@
         border-right: 1px solid var(--gray-200);
         z-index: 1000;
         transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        overflow-y: auto;
+        overflow-y: scroll;
     }
 
     .youtube-sidebar::-webkit-scrollbar {
-        width: 8px;
+        width: 0;
+        background: transparent
     }
 
     .youtube-sidebar::-webkit-scrollbar-thumb {
@@ -392,7 +489,8 @@
     }
 
     .youtube-sidebar:hover::-webkit-scrollbar-thumb {
-        opacity: 1;
+        width: 8px;
+        background: var(--gray-100);
     }
 
     .youtube-sidebar.collapsed {
@@ -709,6 +807,370 @@
                 }
             });
         }
+
+        // Notification dropdown functionality
+        const notificationButton = document.getElementById('notificationButton');
+        const notificationDropdown = document.getElementById('notificationDropdown');
+        const notificationList = document.getElementById('notificationList');
+        const markAllReadButton = document.querySelector('.mark-all-read');
+        const notificationBadge = document.querySelector('.notification-badge');
+
+        let notificationsLoaded = false;
+
+        if (notificationButton && notificationDropdown) {
+            notificationButton.addEventListener('click', function(event) {
+                event.stopPropagation();
+                const isActive = notificationDropdown.classList.contains('active');
+                notificationDropdown.classList.toggle('active');
+
+                if (!isActive && !notificationsLoaded) {
+                    loadNotifications();
+                }
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!notificationButton.contains(event.target) && !notificationDropdown.contains(event.target)) {
+                    notificationDropdown.classList.remove('active');
+                }
+            });
+
+            // Close dropdown on escape key
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape' && notificationDropdown.classList.contains('active')) {
+                    notificationDropdown.classList.remove('active');
+                }
+            });
+        }
+
+        // Mark all as read functionality
+        if (markAllReadButton) {
+            markAllReadButton.addEventListener('click', function(event) {
+                event.preventDefault();
+                markAllNotificationsAsRead();
+            });
+        }
+
+        function loadNotifications() {
+            fetch('/api/notifications?per_page=5', {
+                method: 'GET',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+                    'Accept': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    renderNotifications(data.notifications.data);
+                    updateBadge(data.unread_count);
+                    notificationsLoaded = true;
+                } else {
+                    showNotificationError('Failed to load notifications');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading notifications:', error);
+                showNotificationError('Failed to load notifications');
+            });
+        }
+
+        function renderNotifications(notifications) {
+            const loadingItem = document.getElementById('loadingNotifications');
+            if (loadingItem) {
+                loadingItem.remove();
+            }
+
+            if (notifications.length === 0) {
+                notificationList.innerHTML = `
+                    <div class="notification-item">
+                        <div class="notification-content">
+                            <p>No notifications yet</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const notificationHtml = notifications.map(notification => {
+                const isUnread = !notification.read_at;
+                const unreadClass = isUnread ? 'unread' : '';
+                const timeAgo = formatTimeAgo(new Date(notification.created_at));
+                const contentType = notification.content_type || 'system';
+                const icon = getNotificationIcon(notification.type, contentType);
+
+                let notificationContent = '';
+
+                switch (contentType) {
+                    case 'video':
+                        notificationContent = renderVideoNotification(notification, timeAgo);
+                        break;
+                    case 'document':
+                        notificationContent = renderDocumentNotification(notification, timeAgo);
+                        break;
+                    case 'quiz':
+                        notificationContent = renderQuizNotification(notification, timeAgo);
+                        break;
+                    default:
+                        notificationContent = renderSystemNotification(notification, timeAgo);
+                }
+
+                return `
+                    <div class="notification-item ${unreadClass}" data-id="${notification.id}" data-url="${notification.url || ''}" data-content-type="${contentType}">
+                        <div class="notification-icon">
+                            <i class="${icon}"></i>
+                        </div>
+                        ${notificationContent}
+                    </div>
+                `;
+            }).join('');
+
+            notificationList.innerHTML = notificationHtml;
+
+            // Add click handlers for individual notifications
+            document.querySelectorAll('.notification-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const notificationId = this.getAttribute('data-id');
+                    const contentType = this.getAttribute('data-content-type');
+                    const url = this.getAttribute('data-url');
+
+                    if (notificationId && this.classList.contains('unread')) {
+                        markAsRead(notificationId);
+                    }
+
+                    // Handle access control and redirection
+                    if (url) {
+                        handleNotificationClick(url, contentType);
+                    }
+                });
+            });
+        }
+
+        function renderVideoNotification(notification, timeAgo) {
+            return `
+                <div class="notification-content">
+                    <div class="notification-header">
+                        <span class="notification-badge video-badge">Video</span>
+                        <span class="notification-subject">${notification.subject || 'General'}</span>
+                    </div>
+                    <p class="notification-title">${notification.title}</p>
+                    <p class="notification-message">${notification.message}</p>
+                    <div class="notification-meta">
+                        <span class="notification-instructor">${notification.instructor || 'DigiLearn Team'}</span>
+                        <span class="notification-duration">${notification.duration || ''}</span>
+                    </div>
+                    <span class="notification-time">${timeAgo}</span>
+                </div>
+            `;
+        }
+
+        function renderDocumentNotification(notification, timeAgo) {
+            return `
+                <div class="notification-content">
+                    <div class="notification-header">
+                        <span class="notification-badge document-badge">${notification.document_type || 'Document'}</span>
+                        <span class="notification-subject">${notification.subject || 'General'}</span>
+                    </div>
+                    <p class="notification-title">${notification.title}</p>
+                    <p class="notification-message">${notification.message}</p>
+                    <div class="notification-meta">
+                        <span class="notification-lesson">${notification.lesson_title || 'Related Lesson'}</span>
+                        ${notification.file_size ? `<span class="notification-size">${notification.file_size}</span>` : ''}
+                    </div>
+                    <span class="notification-time">${timeAgo}</span>
+                </div>
+            `;
+        }
+
+        function renderQuizNotification(notification, timeAgo) {
+            return `
+                <div class="notification-content">
+                    <div class="notification-header">
+                        <span class="notification-badge quiz-badge">Quiz</span>
+                        <span class="notification-subject">${notification.subject || 'General'}</span>
+                    </div>
+                    <p class="notification-title">${notification.title}</p>
+                    <p class="notification-message">${notification.message}</p>
+                    <div class="notification-meta">
+                        <span class="notification-questions">${notification.question_count || 0} questions</span>
+                        <span class="notification-difficulty">${notification.difficulty || 'Mixed'}</span>
+                        <span class="notification-duration">${notification.duration || 'No limit'}</span>
+                    </div>
+                    <span class="notification-time">${timeAgo}</span>
+                </div>
+            `;
+        }
+
+        function renderSystemNotification(notification, timeAgo) {
+            return `
+                <div class="notification-content">
+                    <p class="notification-title">${notification.title}</p>
+                    <p class="notification-message">${notification.message}</p>
+                    <span class="notification-time">${timeAgo}</span>
+                </div>
+            `;
+        }
+
+        function handleNotificationClick(url, contentType) {
+            // Check access before redirecting
+            checkAccessAndRedirect(url, contentType);
+        }
+
+        function checkAccessAndRedirect(url, contentType) {
+            // Check access based on content type
+            switch (contentType) {
+                case 'video':
+                case 'document':
+                case 'quiz':
+                    // Check if user has subscription or content is free
+                    checkSubscriptionAccess(url, contentType);
+                    break;
+                default:
+                    // System notifications - always allow
+                    window.location.href = url;
+            }
+        }
+
+        function checkSubscriptionAccess(url, contentType) {
+            // Check if user has active subscription
+            fetch('/api/current-subscription', {
+                method: 'GET',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+                    'Accept': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.subscription && data.subscription.status === 'active') {
+                    // User has active subscription - allow access
+                    window.location.href = url;
+                } else {
+                    // No active subscription - show upgrade prompt
+                    showUpgradePrompt(url, contentType);
+                }
+            })
+            .catch(error => {
+                console.error('Error checking subscription:', error);
+                // On error, show upgrade prompt to be safe
+                showUpgradePrompt(url, contentType);
+            });
+        }
+
+        function showUpgradePrompt(url, contentType) {
+            const contentName = contentType.charAt(0).toUpperCase() + contentType.slice(1);
+            const confirmed = confirm(`${contentName} access requires an active subscription. Would you like to upgrade your plan to access this content?`);
+
+            if (confirmed) {
+                // Redirect to pricing page
+                window.location.href = '/pricing';
+            }
+            // If cancelled, stay on current page
+        }
+
+        function markAsRead(notificationId) {
+            fetch(`/api/notifications/${notificationId}/read`, {
+                method: 'PUT',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+                    'Accept': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateBadge(data.unread_count);
+                    // Update UI
+                    const item = document.querySelector(`[data-id="${notificationId}"]`);
+                    if (item) {
+                        item.classList.remove('unread');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error marking notification as read:', error);
+            });
+        }
+
+        function markAllNotificationsAsRead() {
+            fetch('/api/notifications/mark-all-read', {
+                method: 'PUT',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+                    'Accept': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateBadge(0);
+                    // Update UI
+                    document.querySelectorAll('.notification-item.unread').forEach(item => {
+                        item.classList.remove('unread');
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error marking all notifications as read:', error);
+            });
+        }
+
+        function updateBadge(count) {
+            if (notificationBadge) {
+                if (count > 0) {
+                    notificationBadge.textContent = count > 99 ? '99+' : count;
+                    notificationBadge.style.display = 'flex';
+                } else {
+                    notificationBadge.style.display = 'none';
+                }
+            }
+        }
+
+        function showNotificationError(message) {
+            notificationList.innerHTML = `
+                <div class="notification-item">
+                    <div class="notification-content">
+                        <p>${message}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function formatTimeAgo(date) {
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+
+            if (diffInSeconds < 60) return 'Just now';
+            if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+            if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+            return `${Math.floor(diffInSeconds / 86400)}d ago`;
+        }
+
+        function getNotificationIcon(type, contentType) {
+            // First try content type specific icons
+            switch (contentType) {
+                case 'video':
+                    return 'fas fa-play-circle';
+                case 'document':
+                    return 'fas fa-file-alt';
+                case 'quiz':
+                    return 'fas fa-brain';
+            }
+
+            // Fallback to type-specific icons
+            const iconMap = {
+                'App\\Notifications\\SystemAnnouncementNotification': 'fas fa-bullhorn',
+                'App\\Notifications\\PaymentSuccessfulNotification': 'fas fa-credit-card',
+                'App\\Notifications\\ClassStartedNotification': 'fas fa-chalkboard-teacher',
+                'App\\Notifications\\QuizCompletedNotification': 'fas fa-trophy',
+                'App\\Notifications\\LessonCompletedNotification': 'fas fa-check-circle',
+                'App\\Notifications\\MessageReceivedNotification': 'fas fa-envelope',
+                'App\\Notifications\\NewVideoNotification': 'fas fa-play-circle',
+                'App\\Notifications\\NewDocumentNotification': 'fas fa-file-alt',
+                'App\\Notifications\\NewQuizNotification': 'fas fa-brain',
+            };
+            return iconMap[type] || 'fas fa-bell';
+        }
     });
     </script>
 
@@ -762,24 +1224,11 @@
                     <h3>Notifications</h3>
                     <button class="mark-all-read">Mark all as read</button>
                 </div>
-                <div class="notification-list">
-                    <!-- Notifications will be populated here -->
-                    <div class="notification-item unread">
-                        <div class="notification-icon">
-                            <i class="fas fa-user-plus"></i>
-                        </div>
+                <div class="notification-list" id="notificationList">
+                    <!-- Notifications will be populated here via AJAX -->
+                    <div class="notification-item" id="loadingNotifications">
                         <div class="notification-content">
-                            <p>New follower: John Doe started following you</p>
-                            <span class="notification-time">2 hours ago</span>
-                        </div>
-                    </div>
-                    <div class="notification-item">
-                        <div class="notification-icon">
-                            <i class="fas fa-trophy"></i>
-                        </div>
-                        <div class="notification-content">
-                            <p>Congratulations! You completed the Math challenge</p>
-                            <span class="notification-time">1 day ago</span>
+                            <p>Loading notifications...</p>
                         </div>
                     </div>
                 </div>

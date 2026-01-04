@@ -5,6 +5,9 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\NotificationType;
 use App\Models\UserNotificationPreference;
+use App\Models\Video;
+use App\Models\Document;
+use App\Models\Quiz;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
@@ -188,12 +191,25 @@ class NotificationService
     /**
      * Get user's notifications with pagination.
      */
-    public function getUserNotifications(User $user, int $perPage = 20, bool $onlyUnread = false)
+    public function getUserNotifications(User $user, int $perPage = 20, bool $onlyUnread = false, ?string $type = null)
     {
         $query = $user->notifications();
 
         if ($onlyUnread) {
             $query->whereNull('read_at');
+        }
+
+        if ($type) {
+            if ($type === 'announcement') {
+                $query->where(function ($q) {
+                    $q->where('type', 'like', '%SystemAnnouncement%')
+                      ->orWhere('type', 'like', '%AdminNotification%')
+                      ->orWhere('type', 'like', '%StorageAlert%')
+                      ->orWhere('type', 'like', '%ClassStarted%');
+                });
+            } else {
+                $query->where('type', 'like', "%{$type}%");
+            }
         }
 
         return $query->latest()->paginate($perPage);
@@ -347,6 +363,75 @@ class NotificationService
             ->latest()
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * Send notification for new video content.
+     */
+    public function notifyNewVideo(Video $video): void
+    {
+        $users = User::where('is_verified', true)->get();
+
+        $notification = new \App\Notifications\NewVideoNotification($video);
+
+        foreach ($users as $user) {
+            // Check user preferences before sending
+            if ($this->shouldSendToUser($user, 'lesson_completed', 'database')) {
+                $this->sendToUser($user, $notification);
+            }
+        }
+
+        Log::info('New video notification sent', [
+            'video_id' => $video->id,
+            'video_title' => $video->title,
+            'user_count' => $users->count(),
+        ]);
+    }
+
+    /**
+     * Send notification for new document content.
+     */
+    public function notifyNewDocument(Document $document): void
+    {
+        $users = User::where('is_verified', true)->get();
+
+        $notification = new \App\Notifications\NewDocumentNotification($document);
+
+        foreach ($users as $user) {
+            // Check user preferences before sending
+            if ($this->shouldSendToUser($user, 'lesson_completed', 'database')) {
+                $this->sendToUser($user, $notification);
+            }
+        }
+
+        Log::info('New document notification sent', [
+            'document_id' => $document->id,
+            'document_title' => $document->title,
+            'user_count' => $users->count(),
+        ]);
+    }
+
+    /**
+     * Send notification for new quiz content.
+     */
+    public function notifyNewQuiz(Quiz $quiz): void
+    {
+        $users = User::where('is_verified', true)->get();
+
+        $notification = new \App\Notifications\NewQuizNotification($quiz);
+
+        foreach ($users as $user) {
+            // Check user preferences before sending
+            if ($this->shouldSendToUser($user, 'quiz_completed', 'database')) {
+                $this->sendToUser($user, $notification);
+            }
+        }
+
+        Log::info('New quiz notification sent', [
+            'quiz_id' => $quiz->id,
+            'quiz_title' => $quiz->title,
+            'user_count' => $users->count(),
+        ]);
     }
 
     /**
