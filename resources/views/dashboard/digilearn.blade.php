@@ -676,7 +676,7 @@
         }
 
         .search-button:hover {
-            background-color: #c41e2a;
+            background-color: var(--secondary-blue-hover);
         }
 
         .search-icon {
@@ -1317,23 +1317,23 @@
         }
 
         .lesson-action-btn.primary {
-            background-color: var(--primary-red);
+            background-color: var(--secondary-blue);
             color: var(--white);
         }
 
         .lesson-action-btn.primary:hover {
-            background-color: var(--primary-red-hover);
+            background-color: var(--secondary-blue-hover);
         }
 
         .lesson-action-btn.secondary {
             background-color: var(--white);
-            color: var(--secondary-blue);
-            border: 1px solid var(--secondary-blue);
+            color: var(--gray-900);
+            border: 1px solid var(--primary-red);
         }
 
         .lesson-action-btn.secondary:hover {
-            background-color: var(--secondary-blue);
-            color: var(--white);
+            background-color: #fceaed;
+            color: var(--primary-red);
         }
 
         .mobile-search-toggle {

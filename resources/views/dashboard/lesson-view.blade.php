@@ -1398,6 +1398,200 @@
             background-color: #10b981;
         }
 
+        /* Notes Title Modal */
+        .notes-title-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(4px);
+        }
+
+        .notes-title-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .notes-title-modal {
+            transform: scale(0.9) translateY(20px);
+            background-color: var(--white);
+            border-radius: 1.5rem;
+            box-shadow: var(--shadow-xl);
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .notes-title-modal-overlay.active .notes-title-modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .notes-title-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2rem 2rem 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .notes-title-modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin: 0;
+        }
+
+        .notes-title-modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            color: var(--gray-500);
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .notes-title-modal-close:hover {
+            background-color: var(--gray-100);
+            color: var(--gray-900);
+        }
+
+        .notes-title-modal-body {
+            padding: 2rem;
+        }
+
+        .notes-title-modal-description {
+            font-size: 1rem;
+            color: var(--gray-700);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .notes-title-input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .notes-title-input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 2px solid var(--gray-200);
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-weight: 500;
+            background-color: var(--white);
+            color: var(--gray-900);
+            transition: all 0.2s ease;
+            margin-bottom: 1rem;
+        }
+
+        .notes-title-input:focus {
+            outline: none;
+            border-color: var(--secondary-blue);
+            box-shadow: 0 0 0 3px rgba(38, 119, 184, 0.1);
+        }
+
+        .notes-title-input::placeholder {
+            color: var(--gray-500);
+            font-weight: 400;
+        }
+
+        .notes-title-suggestions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .notes-title-suggestion-btn {
+            padding: 0.5rem 1rem;
+            background-color: var(--gray-100);
+            color: var(--gray-700);
+            border: 1px solid var(--gray-200);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .notes-title-suggestion-btn:hover {
+            background-color: var(--gray-200);
+            border-color: var(--gray-300);
+        }
+
+        .notes-title-modal-tip {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 1rem;
+            background-color: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--gray-700);
+        }
+
+        .notes-title-modal-tip svg {
+            color: #22c55e;
+            flex-shrink: 0;
+            margin-top: 0.125rem;
+        }
+
+        .notes-title-modal-footer {
+            padding: 1.5rem 2rem 2rem;
+            border-top: 1px solid var(--gray-200);
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .notes-title-modal-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .notes-title-modal-btn.secondary {
+            background-color: var(--gray-100);
+            color: var(--gray-700);
+        }
+
+        .notes-title-modal-btn.secondary:hover {
+            background-color: var(--gray-200);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .notes-title-modal-btn.primary {
+            background: linear-gradient(135deg, var(--secondary-blue), var(--secondary-blue-hover));
+            color: var(--white);
+        }
+
+        .notes-title-modal-btn.primary:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
         /* Notes Education Modal */
         .notes-education-modal-overlay {
             position: fixed;
@@ -2945,6 +3139,51 @@
                 </button>
             </div>
 
+            <!-- Notes Title Modal -->
+            <div class="notes-title-modal-overlay" id="notesTitleModalOverlay">
+                <div class="notes-title-modal">
+                    <div class="notes-title-modal-header">
+                        <h3 class="notes-title-modal-title">Name Your Notes</h3>
+                        <button class="notes-title-modal-close" id="notesTitleModalClose">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="notes-title-modal-body">
+                        <p class="notes-title-modal-description">
+                            Give your notes a custom title to help you organize and find them later.
+                        </p>
+
+                        <div class="notes-title-input-group">
+                            <input type="text" class="notes-title-input" id="notesTitleInput" placeholder="Enter notes title..." maxlength="255">
+                            <div class="notes-title-suggestions">
+                                <button class="notes-title-suggestion-btn" data-title="{{ Str::slug($lesson['title'] ?? '') }}">
+                                    Use video title: "{{ Str::limit($lesson['title'] ?? 'Lesson', 30) }}"
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="notes-title-modal-tip">
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                            <span>You can change this title anytime by editing your notes.</span>
+                        </div>
+                    </div>
+
+                    <div class="notes-title-modal-footer">
+                        <button class="notes-title-modal-btn secondary" id="notesTitleModalSkip">
+                            Skip & Continue
+                        </button>
+                        <button class="notes-title-modal-btn primary" id="notesTitleModalContinue">
+                            Continue with Title
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Notes Wrapper (hidden by default) -->
             <div id="notesWrapper" style="display: none; margin-top: 1rem;">
                 <!-- Update Mode Selector -->
@@ -3157,6 +3396,7 @@
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         // Global variables for the rich text editor
+        const defaultNoteTitle = '{{ \Illuminate\Support\Str::slug($lesson["title"] ?? "") }}';
         let notesQuill = null;
 
         // Global constants and functions for the rich text editor
@@ -3956,13 +4196,22 @@
             const addNotesBtn = document.getElementById('addNotesBtn');
             const notesWrapper = document.getElementById('notesWrapper');
             const saveNotesBtn = document.getElementById('saveNotesBtn');
+            const notesTitleModalOverlay = document.getElementById('notesTitleModalOverlay');
+            const notesTitleModalClose = document.getElementById('notesTitleModalClose');
+            const notesTitleModalSkip = document.getElementById('notesTitleModalSkip');
+            const notesTitleModalContinue = document.getElementById('notesTitleModalContinue');
+            const notesTitleInput = document.getElementById('notesTitleInput');
+            const notesTitleSuggestionBtns = document.querySelectorAll('.notes-title-suggestion-btn');
             const notesEducationModalOverlay = document.getElementById('notesEducationModalOverlay');
             const notesEducationModalClose = document.getElementById('notesEducationModalClose');
             const notesEducationModalGotIt = document.getElementById('notesEducationModalGotIt');
             let notesQuill = null;
             let isEditorOpen = false;
             let hasExistingNotes = false;
+            let hasCustomTitle = false;
+            let hasSeenTitleModal = localStorage.getItem('notesTitleModalShown') === 'true';
             let hasShownEducationModal = localStorage.getItem('notesEducationModalShown') === 'true';
+            let pendingTitle = null;
 
             // Update button appearance based on state
             function updateButtonState() {
@@ -4005,9 +4254,11 @@
                 .then(data => {
                     if (data.success && data.note) {
                         hasExistingNotes = true;
+                        hasCustomTitle = data.note.title !== defaultNoteTitle;
                         return data.note;
                     }
                     hasExistingNotes = false;
+                    hasCustomTitle = false;
                     return null;
                 })
                 .catch(error => {
@@ -4048,8 +4299,21 @@
                         if (existingNote && existingNote.content) {
                             notesQuill.root.innerHTML = existingNote.content;
                             hasExistingNotes = true;
+                            // Set the title in the title input
+                            const titleInput = document.querySelector('.notes-title-input');
+                            if (titleInput && existingNote.title) {
+                                titleInput.value = existingNote.title;
+                            }
                         } else {
                             hasExistingNotes = false;
+                            // Set default title if creating new notes
+                            if (pendingTitle) {
+                                const titleInput = document.querySelector('.notes-title-input');
+                                if (titleInput) {
+                                    titleInput.value = pendingTitle;
+                                }
+                                pendingTitle = null;
+                            }
                         }
                         updateButtonState();
                         resolve();
@@ -4084,6 +4348,21 @@
                 }
             }
 
+            // Show title modal
+            function showTitleModal() {
+                notesTitleInput.value = '';
+                notesTitleModalOverlay.classList.add('active');
+                setTimeout(() => notesTitleInput.focus(), 300);
+                // Mark as seen
+                localStorage.setItem('notesTitleModalShown', 'true');
+                hasSeenTitleModal = true;
+            }
+
+            // Hide title modal
+            function hideTitleModal() {
+                notesTitleModalOverlay.classList.remove('active');
+            }
+
             // Show education modal
             function showEducationModal() {
                 if (!hasShownEducationModal) {
@@ -4103,22 +4382,28 @@
                 isEditorOpen = !isEditorOpen;
 
                 if (isEditorOpen) {
-                    // Show editor and load existing notes
-                    initNotesEditor().then(() => {
-                        notesWrapper.style.display = 'block';
-
-                        // Show education modal for first-time users
-                        setTimeout(() => {
-                            showEducationModal();
-                        }, 500); // Small delay to let the editor render first
-
-                        // Focus on the editor after modal interaction
-                        setTimeout(() => {
-                            if (notesQuill && !hasShownEducationModal) {
-                                notesQuill.focus();
-                            }
-                        }, 100);
-                    });
+                    if (hasExistingNotes && hasCustomTitle) {
+                        // Show editor directly for existing notes with custom title
+                        initNotesEditor().then(() => {
+                            notesWrapper.style.display = 'block';
+                            // Show education modal for first-time users
+                            setTimeout(() => {
+                                showEducationModal();
+                            }, 500);
+                        });
+                    } else if (!hasSeenTitleModal) {
+                        // Show title modal for first time
+                        showTitleModal();
+                    } else {
+                        // Show editor, user has seen modal before
+                        initNotesEditor().then(() => {
+                            notesWrapper.style.display = 'block';
+                            // Show education modal for first-time users
+                            setTimeout(() => {
+                                showEducationModal();
+                            }, 500);
+                        });
+                    }
                 } else {
                     // Hide editor
                     notesWrapper.style.display = 'none';
@@ -4128,6 +4413,78 @@
 
                 updateButtonState();
             }
+
+            // Handle title modal suggestion buttons
+            notesTitleSuggestionBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const suggestedTitle = this.dataset.title;
+                    notesTitleInput.value = suggestedTitle;
+                });
+            });
+
+            // Handle title modal skip button
+            notesTitleModalSkip.addEventListener('click', function() {
+                pendingTitle = '{{ Str::slug($lesson["title"] ?? "notes") }}'; // Use slug as fallback
+                hideTitleModal();
+                proceedToEditor();
+            });
+
+            // Handle title modal continue button
+            notesTitleModalContinue.addEventListener('click', function() {
+                const title = notesTitleInput.value.trim();
+                if (title) {
+                    pendingTitle = title;
+                } else {
+                    pendingTitle = '{{ Str::slug($lesson["title"] ?? "notes") }}'; // Use slug as fallback
+                }
+                hideTitleModal();
+                proceedToEditor();
+            });
+
+            // Proceed to editor after title selection
+            function proceedToEditor() {
+                isEditorOpen = true;
+                initNotesEditor().then(() => {
+                    notesWrapper.style.display = 'block';
+                    // Show education modal for first-time users
+                    setTimeout(() => {
+                        showEducationModal();
+                    }, 500);
+                    // Focus on the editor after modal interaction
+                    setTimeout(() => {
+                        if (notesQuill && !hasShownEducationModal) {
+                            notesQuill.focus();
+                        }
+                    }, 100);
+                });
+                updateButtonState();
+            }
+
+            // Handle title modal close button
+            notesTitleModalClose.addEventListener('click', function() {
+                hideTitleModal();
+                // Don't proceed to editor if cancelled
+                isEditorOpen = false;
+                updateButtonState();
+            });
+
+            // Close title modal on overlay click
+            notesTitleModalOverlay.addEventListener('click', function(e) {
+                if (e.target === notesTitleModalOverlay) {
+                    hideTitleModal();
+                    isEditorOpen = false;
+                    updateButtonState();
+                }
+            });
+
+            // Close title modal on Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && notesTitleModalOverlay.classList.contains('active')) {
+                    hideTitleModal();
+                    isEditorOpen = false;
+                    updateButtonState();
+                }
+            });
 
             // Initialize button state
             updateButtonState();
@@ -4205,6 +4562,8 @@
 
                 const content = notesQuill.root.innerHTML;
                 const text = notesQuill.getText().trim();
+                const titleInput = document.querySelector('.notes-title-input');
+                const title = titleInput ? titleInput.value.trim() : '';
 
                 if (!text) {
                     alert('Please write some notes before saving.');
@@ -4226,7 +4585,7 @@
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: JSON.stringify({
-                        title: '', // Optional title
+                        title: title || '{{ Str::slug($lesson["title"] ?? "notes") }}', // Use title or fallback to slug
                         content: content,
                         update_mode: updateMode
                     })
@@ -4240,7 +4599,12 @@
                         // Optionally hide the editor after saving
                         // toggleNotesEditor();
                     } else {
-                        alert('Error saving notes: ' + (data.message || 'Unknown error'));
+                        // Handle validation errors
+                        if (data.errors && data.errors.title) {
+                            alert('Title Error: ' + data.errors.title);
+                        } else {
+                            alert('Error saving notes: ' + (data.message || 'Unknown error'));
+                        }
                     }
                 })
                 .catch(error => {
