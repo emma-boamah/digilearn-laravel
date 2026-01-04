@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "description": "Digital educational platform with SCSS styling",
     "scripts": {
-        "build": "npm run sass: build && vite build",
+        "build": "npm run sass:build && vite build && cp public/build/.vite/manifest.json public/build/manifest.json",
         "dev": "concurrently \"vite\" \"npm run sass:watch\"",
         "sass:watch": "sass --watch resources/scss:public/css --style=expanded --source-map",
         "sass:build": "sass resources/scss:public/css --style=compressed --no-source-map",

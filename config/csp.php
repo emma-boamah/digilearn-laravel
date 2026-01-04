@@ -37,6 +37,7 @@ return [
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
             'https://cdnjs.cloudflare.com',
             'https://cdn.quilljs.com',
+            'https://cdn.tailwindcss.com'
         ],
         'font-src' => [
             "'self'",

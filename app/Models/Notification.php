@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use App\Models\User;
 
 class Notification extends Model
 {
@@ -24,6 +25,12 @@ class Notification extends Model
     protected $casts = [
         'data' => 'array',
         'read_at' => 'datetime',
+    ];
+
+    protected $appends = [
+        'title',
+        'message',
+        'url',
     ];
 
     /**
@@ -122,5 +129,97 @@ class Notification extends Model
     public function scopeOfType($query, string $type)
     {
         return $query->where('type', $type);
+    }
+
+    /**
+     * Get the content type from notification data.
+     */
+    public function getContentTypeAttribute(): ?string
+    {
+        return $this->data['content_type'] ?? null;
+    }
+
+    /**
+     * Get the content ID from notification data.
+     */
+    public function getContentIdAttribute(): ?int
+    {
+        return $this->data['content_id'] ?? null;
+    }
+
+    /**
+     * Check if user has access to the notification content.
+     */
+    public function userHasAccess(User $user): bool
+    {
+        $contentType = $this->content_type;
+        $contentId = $this->content_id;
+
+        if (!$contentType || !$contentId) {
+            return true; // System notifications don't need access control
+        }
+
+        switch ($contentType) {
+            case 'video':
+                return $this->checkVideoAccess($user, $contentId);
+            case 'document':
+                return $this->checkDocumentAccess($user, $contentId);
+            case 'quiz':
+                return $this->checkQuizAccess($user, $contentId);
+            default:
+                return true;
+        }
+    }
+
+    /**
+     * Check if user has access to a video.
+     */
+    private function checkVideoAccess(User $user, int $videoId): bool
+    {
+        $video = \App\Models\Video::find($videoId);
+        if (!$video) return false;
+
+        // Check if user has active subscription or if video is free
+        return $user->currentSubscription || $video->is_free;
+    }
+
+    /**
+     * Check if user has access to a document.
+     */
+    private function checkDocumentAccess(User $user, int $documentId): bool
+    {
+        $document = \App\Models\Document::find($documentId);
+        if (!$document) return false;
+
+        // Documents are typically tied to videos, so check video access
+        if ($document->video_id) {
+            return $this->checkVideoAccess($user, $document->video_id);
+        }
+
+        return true; // If not tied to video, assume accessible
+    }
+
+    /**
+     * Check if user has access to a quiz.
+     */
+    private function checkQuizAccess(User $user, int $quizId): bool
+    {
+        $quiz = \App\Models\Quiz::find($quizId);
+        if (!$quiz) return false;
+
+        // Check if user has active subscription or if quiz is free
+        return $user->currentSubscription || $quiz->is_free;
+    }
+
+    /**
+     * Get the secure URL for the notification content.
+     */
+    public function getSecureUrl(): ?string
+    {
+        $url = $this->url;
+        if (!$url) return null;
+
+        // URLs are already obfuscated in the notification classes
+        return $url;
     }
 }

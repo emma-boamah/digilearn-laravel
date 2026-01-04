@@ -73,7 +73,7 @@
             border-right: 1px solid var(--gray-200);
             z-index: 2000; /* Much higher than overlay */
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            overflow-y: auto;
+            overflow-y: scroll;
             display: flex;
             flex-direction: column;
         }
@@ -2508,48 +2508,6 @@
             }
         }
 
-        // Notification dropdown functionality
-        const notificationButton = document.getElementById('notificationButton');
-        const notificationDropdown = document.getElementById('notificationDropdown');
-
-        if (notificationButton && notificationDropdown) {
-            notificationButton.addEventListener('click', function(e) {
-                e.stopPropagation();
-                notificationDropdown.classList.toggle('active');
-                
-                // Close user dropdown if open
-                const userDropdown = document.getElementById('userDropdownMenu');
-                if (userDropdown) {
-                    userDropdown.classList.remove('active');
-                }
-            });
-
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!notificationButton.contains(e.target) && !notificationDropdown.contains(e.target)) {
-                    notificationDropdown.classList.remove('active');
-                }
-            });
-
-            // Mark all as read functionality
-            const markAllReadBtn = notificationDropdown.querySelector('.mark-all-read');
-            if (markAllReadBtn) {
-                markAllReadBtn.addEventListener('click', function() {
-                    const unreadNotifications = notificationDropdown.querySelectorAll('.notification-item.unread');
-                    unreadNotifications.forEach(notification => {
-                        notification.classList.remove('unread');
-                    });
-                    
-                    // Update badge count
-                    const badge = notificationButton.querySelector('.notification-badge');
-                    if (badge) {
-                        badge.style.display = 'none';
-                    }
-                    
-                    showNotification('All notifications marked as read', 'success');
-                });
-            }
-        }
 
         // Custom dropdown functionality
         function initializeDropdowns() {

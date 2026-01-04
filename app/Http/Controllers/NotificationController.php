@@ -500,6 +500,57 @@ class NotificationController extends Controller
     }
 
     /**
+     * Show a specific notification detail page.
+     */
+    public function show(Request $request, string $notificationId)
+    {
+        $user = Auth::user();
+
+        try {
+            // Find the notification belonging to the user
+            $notification = $user->notifications()->findOrFail($notificationId);
+
+            // Check if it's a text-based notification (not related to video, document, or quiz)
+            if (!$this->isTextBasedNotification($notification)) {
+                abort(404, 'Notification not found or not accessible.');
+            }
+
+            // Mark as read if not already
+            if (!$notification->isRead()) {
+                $notification->markAsRead();
+            }
+
+            return view('dashboard.notifications.show', compact('notification'));
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            abort(404, 'Notification not found.');
+        } catch (\Throwable $e) {
+            report($e);
+            abort(500, 'An error occurred while loading the notification.');
+        }
+    }
+
+    /**
+     * Check if a notification is text-based (not related to content uploads).
+     */
+    private function isTextBasedNotification(\App\Models\Notification $notification): bool
+    {
+        $type = $notification->type;
+
+        // Text-based notifications are system announcements and targeted notifications
+        // Exclude notifications related to new videos, documents, quizzes
+        $textBasedTypes = [
+            'App\\Notifications\\SystemAnnouncementNotification',
+            'App\\Notifications\\TargetedNotification',
+            'App\\Notifications\\AdminNotification',
+            'App\\Notifications\\PaymentSuccessfulNotification',
+            'App\\Notifications\\StorageAlertNotification',
+            'App\\Notifications\\ClassStartedNotification',
+        ];
+
+        return in_array($type, $textBasedTypes);
+    }
+
+    /**
      * Dashboard notifications page.
      */
     public function dashboardIndex(Request $request)
@@ -507,10 +558,11 @@ class NotificationController extends Controller
         $user = Auth::user();
         $perPage = $request->get('per_page', 20);
         $onlyUnread = $request->boolean('unread_only', false);
+        $type = $request->get('type');
 
-        $notifications = $this->notificationService->getUserNotifications($user, $perPage, $onlyUnread);
+        $notifications = $this->notificationService->getUserNotifications($user, $perPage, $onlyUnread, $type);
         $unreadCount = $this->notificationService->getUnreadCount($user);
 
-        return view('dashboard.notifications', compact('notifications', 'unreadCount'));
+        return view('dashboard.notifications.index', compact('notifications', 'unreadCount'));
     }
 }
