@@ -2088,7 +2088,7 @@ class DashboardController extends Controller
                 ]
             ],
             'jhs' => [
-                'title' => 'Grade/JHS 7-9',
+                'title' => 'Grade 7-9/JHS 1-3',
                 'description' => 'Junior High School or Middle school',
                 'has_illustration' => true,
                 'levels' => [
@@ -2107,7 +2107,7 @@ class DashboardController extends Controller
                 ]
             ],
             'shs' => [
-                'title' => 'Grade/SHS 1-3',
+                'title' => 'SHS 1-3',
                 'description' => 'High school or Senior High School',
                 'has_illustration' => false,
                 'levels' => [
