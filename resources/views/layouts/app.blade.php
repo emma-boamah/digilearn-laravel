@@ -23,7 +23,7 @@
             --primary-red: #E11E2D;
             --primary-red-hover: #b91c1c;
             --secondary-blue: #2677B8;
-            --secondary-blue-hover: #1e40af;
+            --secondary-blue-hover: #1e58afff;
             --white: #ffffff;
             --black: #000000;
             --red:#ffefef;
@@ -271,8 +271,8 @@
 
         .btn-outline {
             display: none;
-            border: 1px solid var(--primary-red);
-            color: var(--primary-red);
+            border: 1px solid var(--secondary-blue);
+            color: var(--secondary-blue);
             background-color: transparent;
         }
 
@@ -283,11 +283,11 @@
         }
 
         .btn-outline:hover {
-            background-color:rgb(255, 239, 239);
+            background-color:rgba(239, 245, 255, 1);
         }
 
         .btn-primary {
-            background-color: var(--primary-red);
+            background-color: var(--secondary-blue);
             color: var(--white);
             padding: 0.75rem 2rem;
             font-weight: 600;
@@ -295,7 +295,7 @@
         }
 
         .btn-primary:hover {
-            background-color: var(--primary-red-hover);
+            background-color: var(--secondary-blue-hover);
         }
 
         .btn-white {

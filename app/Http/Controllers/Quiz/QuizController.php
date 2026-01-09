@@ -55,6 +55,13 @@ class QuizController extends Controller
 
             $quizzes = $query->orderBy('created_at', 'desc')->get();
 
+            // Filter quizzes based on user's subscription access
+            $user = Auth::user();
+            $allowedGradeLevels = \App\Services\SubscriptionAccessService::getAllowedGradeLevels($user);
+            $quizzes = $quizzes->filter(function ($quiz) use ($allowedGradeLevels) {
+                return in_array($quiz->grade_level, $allowedGradeLevels);
+            });
+
             // Debug logging
             Log::info("Quiz filtering debug", [
                 'selectedLevelGroup' => $selectedLevelGroup,
@@ -64,6 +71,7 @@ class QuizController extends Controller
                 'sample_quiz_titles' => $quizzes->take(3)->pluck('title')->toArray(),
                 'session_selected_level_group' => session('selected_level_group'),
                 'user_id' => $userId,
+                'allowed_grade_levels' => $allowedGradeLevels,
                 'query_sql' => $query->toSql(),
                 'query_bindings' => $query->getBindings(),
                 'filtered_quizzes_count' => $quizzes->count(),

@@ -2,6 +2,13 @@
 
 use Illuminate\Http\Request;
 
+// Polyfill for mb_split removed in PHP 8.2
+if (!function_exists('mb_split')) {
+    function mb_split($pattern, $string, $limit = -1) {
+        return preg_split('/' . preg_quote($pattern, '/') . '/u', $string, $limit);
+    }
+}
+
 if (!function_exists('get_client_ip')) {
     function get_client_ip(): string
     {

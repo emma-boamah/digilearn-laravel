@@ -362,7 +362,7 @@
 
         .hero-btn {
             /* width: 14rem; */
-            background-color: var(--primary-red);
+            background-color: var(--secondary-blue);
             color: var(--white);
             margin-top: 3rem;
             padding: 1.25rem 3rem;
@@ -377,7 +377,7 @@
         }
 
         .hero-btn:hover {
-            background-color: var(--primary-red-hover);
+            background-color: var(--secondary-blue-hover);
         }
 
         .hero-btn svg {
@@ -1115,12 +1115,12 @@
             left: 50%;
             transform: translateX(-50%);
             padding: 0.75rem 2rem;
-            background-color: var(--primary-red);
+            background-color: var(--secondary-blue);
             color: var(--white);
             font-weight: 600;
             font-size: 0.875rem;
             border-radius: 50px;
-            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+            box-shadow: 0 4px 12px rgba(38, 138, 220, 1);
             z-index: 10;
             white-space: nowrap;
             border: 2px solid var(--white);
@@ -1131,15 +1131,15 @@
         }
 
         .pricing-badge.essential {
-            background-color: var(--primary-red);
+            background-color: var(--secondary-blue);
         }
 
         .pricing-badge.extra-tuition {
-            background-color: var(--primary-red);
+            background-color: var(--secondary-blue);
         }
 
         .pricing-badge.home-school {
-            background-color: var(--primary-red);
+            background-color: var(--secondary-blue);
         }
 
         .pricing-body {
@@ -1187,21 +1187,24 @@
         }
 
         .pricing-btn-new {
+            display: flex;
+            justify-content: center;
             width: 100%;
             padding: 0.75rem 1.5rem;
-            border: 1px solid var(--primary-red);
-            color: var(--primary-red);
+            border: 1px solid var(--secondary-blue);
+            color: var(--secondary-blue);
             background-color: transparent;
             border-radius: var(--border-radius-md);
             font-weight: 500;
             font-size: 1.15rem;
             transition: all 0.2s ease;
             cursor: pointer;
+            text-decoration: none;
         }
 
         .pricing-btn-new:hover {
-            background-color: var(--primary-red);
-            color: var(--white);
+            background-color: rgba(198, 222, 250, 1);
+            color: var(--secondary-blue-hover);
         }
 
         /* Responsive adjustments */
@@ -2210,12 +2213,12 @@
                     <span class="hero-title-emphasis">DigiLearn</span>
                 </h1>
                 <div class="hero-description">
-                    <a href="{{ route('login') }}" class="hero-btn" aria-label="Start learning now on DigiLearn">
+                    <!-- <a href="{{ route('login') }}" class="hero-btn" aria-label="Start learning now on DigiLearn">
                         Start now
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M5 12h14M12 5l7 7-7 7"/>
                         </svg>
-                    </a>
+                    </a> -->
                 </div>
             </div>
         </div>
@@ -2415,7 +2418,7 @@
                             <h2 id="pricing-title" class="pricing-main-title" itemprop="name">Choose Your Learning Plan</h2>
                             <p class="pricing-subtitle">Select your membership plan tailored to your needs.<br>customize your subscription for a seamless fit.</p>
                             <div class="pricing-monthly-section">
-                                <button class="monthly-btn" aria-label="Switch to monthly billing">Monthly</button>
+                                <button class="monthly-btn" aria-label="Switch to monthly billing">Annually</button>
                                 <span class="save-text">save more than 10%</span>
                             </div>
                         </div>
@@ -2463,7 +2466,7 @@
                                         </li>
                                     @endif
                                 </ul>
-                                <button class="pricing-btn-new" aria-label="Get started with {{ $plan->name }} plan">Get Started</button>
+                                <a href="{{ route('pricing-details') }}" class="pricing-btn-new" aria-label="Get started with {{ $plan->name }} plan">Get Started</a>
                             </div>
                         </article>
                     @empty

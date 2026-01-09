@@ -82,8 +82,8 @@ class UserSubscription extends Model
         if (!$this->expires_at) {
             return null;
         }
-        
-        return max(0, now()->diffInDays($this->expires_at, false));
+
+        return max(0, round(now()->diffInDays($this->expires_at, true)));
     }
 
     /**
@@ -94,8 +94,8 @@ class UserSubscription extends Model
         if (!$this->trial_ends_at) {
             return null;
         }
-        
-        return max(0, now()->diffInDays($this->trial_ends_at, false));
+
+        return max(0, round(now()->diffInDays($this->trial_ends_at, true)));
     }
 
     /**
