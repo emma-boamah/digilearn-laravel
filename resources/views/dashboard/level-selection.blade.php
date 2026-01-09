@@ -45,26 +45,14 @@
                             <h3 class="level-title">{{ $level['title'] }}</h3>
                         </div>
                         <div class="level-image-container">
-                            @if($level['has_illustration'] && $level['id'] === 'jhs')
-                                <div class="level-illustration">
-                                    <!-- Illustration matching the mockup -->
-                                    <svg width="120" height="80" viewBox="0 0 120 80" fill="none">
-                                        <!-- Computer/Chart illustration -->
-                                        <rect x="20" y="15" width="80" height="50" rx="4" fill="#E5E7EB" stroke="#9CA3AF"/>
-                                        <rect x="25" y="20" width="70" height="35" fill="#F3F4F6"/>
-                                        <!-- Chart elements -->
-                                        <rect x="30" y="35" width="8" height="15" fill="#3B82F6"/>
-                                        <rect x="42" y="30" width="8" height="20" fill="#EF4444"/>
-                                        <rect x="54" y="25" width="8" height="25" fill="#10B981"/>
-                                        <circle cx="75" r="8" fill="#F59E0B"/>
-                                        <path d="M67 40 L83 40 L75 32 Z" fill="#8B5CF6"/>
-                                        <!-- Person figure -->
-                                        <circle cx="85" cy="45" r="6" fill="#F97316"/>
-                                        <rect x="82" y="52" width="6" height="12" fill="#F97316"/>
-                                        <rect x="79" y="58" width="4" height="8" fill="#1F2937"/>
-                                        <rect x="87" y="58" width="4" height="8" fill="#1F2937"/>
-                                    </svg>
-                                </div>
+                            @if($level['id'] === 'jhs')
+                                <img src="{{ asset('images/jhs.jpeg') }}" alt="JHS" class="level-jhs-image">
+                            @elseif($level['id'] === 'shs')
+                                <img src="{{ asset('images/SHS.png') }}" alt="SHS" class="level-shs-image">
+                            @elseif($level['id'] === 'primary-upper')
+                                <img src="{{ asset('images/g4-6.jpeg') }}" alt="Grade 4-6" class="level-g4-6-image">
+                            @elseif($level['id'] === 'university')
+                                <img src="{{ asset('images/university.jpeg') }}" alt="University" class="level-university-image">
                             @else
                                 <div class="level-placeholder-image"></div>
                             @endif
@@ -206,6 +194,35 @@
             border-radius: 8px;
         }
 
+        .level-jhs-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .level-shs-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+            object-position: 50% 25%;
+        }
+
+        .level-g4-6-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .level-university-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
         .level-illustration {
             display: flex;
             align-items: center;
@@ -225,7 +242,7 @@
         }
 
         .level-select-btn {
-            background-color: #DC2626;
+            background-color: #2677B8;
             color: white;
             border: none;
             padding: 0.75rem 2rem;
@@ -238,7 +255,7 @@
         }
 
         .level-select-btn:hover {
-            background-color: #B91C1C;
+            background-color: #1e5a8a;
         }
 
         @media (max-width: 768px) {
