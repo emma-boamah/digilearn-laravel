@@ -126,10 +126,18 @@ class PaymentController extends Controller
 
             if ($paystackResponse['data']['status'] === 'success') {
                 $this->handleSuccessfulPayment($payment, $paystackResponse['data']);
-                return redirect()->route('payment.success');
+                if (Auth::check()) {
+                    return redirect()->route('payment.success');
+                } else {
+                    return redirect()->route('login')->with('success', 'Payment successful! Please login to access your account.');
+                }
             } else {
                 $payment->update(['status' => 'failed']);
-                return redirect()->route('payment.cancel')->withErrors(['error' => 'Payment was not successful']);
+                if (Auth::check()) {
+                    return redirect()->route('payment.cancel')->withErrors(['error' => 'Payment was not successful']);
+                } else {
+                    return redirect()->route('pricing')->withErrors(['error' => 'Payment was not successful. Please try again.']);
+                }
             }
         } catch (\Exception $e) {
             Log::error('Payment verification failed', [

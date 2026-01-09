@@ -57,8 +57,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/payment/initiate', [App\Http\Controllers\PaymentController::class, 'initiatePayment'])->name('payment.initiate');
     Route::get('/payment/success', [App\Http\Controllers\PaymentController::class, 'success'])->name('payment.success');
     Route::get('/payment/cancel', [App\Http\Controllers\PaymentController::class, 'cancel'])->name('payment.cancel');
-    Route::get('/payment/callback', [App\Http\Controllers\PaymentController::class, 'callback'])->name('payment.callback');
 });
+
+// Paystack callback (NO auth - must be public for redirects)
+Route::get('/payment/callback', [App\Http\Controllers\PaymentController::class, 'callback'])
+    ->name('payment.callback');
 
 // Paystack webhook (no CSRF, no auth)
 Route::post('/webhooks/paystack', [App\Http\Controllers\PaymentController::class, 'webhook'])
