@@ -16,6 +16,40 @@
         border: 1px solid var(--gray-200);
     }
 
+    .tabs {
+        display: flex;
+        border-bottom: 1px solid var(--gray-200);
+        margin-bottom: 2rem;
+    }
+
+    .tab-button {
+        padding: 0.75rem 1.5rem;
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--gray-600);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .tab-button.active {
+        color: var(--primary-blue);
+        border-bottom-color: var(--primary-blue);
+    }
+
+    .tab-button:hover {
+        color: var(--primary-blue);
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
     .form-section {
         margin-bottom: 2rem;
         padding-bottom: 2rem;
@@ -253,8 +287,15 @@
     <form method="POST" action="{{ route('admin.pricing.store') }}">
         @csrf
 
+        <!-- Tabs Navigation -->
+        <div class="tabs">
+            <button type="button" class="tab-button active" onclick="switchTab('basic')">Basic Information</button>
+            <button type="button" class="tab-button" onclick="switchTab('discounts')">Discount Tiers</button>
+        </div>
+
         <!-- Basic Information -->
-        <div class="form-section">
+                <div id="basic-tab" class="tab-content active">
+                <div class="form-section">
             <h3 class="section-title">Basic Information</h3>
 
             <div class="form-grid">
@@ -331,6 +372,7 @@
                     <div class="form-error">{{ $message }}</div>
                 @enderror
             </div>
+
         </div>
 
         <!-- Features -->
@@ -421,8 +463,52 @@
                 </label>
             </div>
         </div>
-
-        <!-- Form Actions -->
+                </div>
+                
+                        <div id="discounts-tab" class="tab-content">
+                        <!-- Discount Tiers -->
+                        <div class="form-section">
+                            <h3 class="section-title">Discount Tiers</h3>
+                            <p style="color: var(--gray-600); font-size: 0.875rem; margin-bottom: 1rem;">
+                                Define discount pricing for different subscription durations.
+                            </p>
+                            <div class="features-section">
+                                <div id="discount-tiers-list" class="features-list">
+                                    <div class="feature-item">
+                                        <div style="display: flex; gap: 1rem; align-items: center; flex: 1;">
+                                            <div style="flex: 1;">
+                                                <label style="font-size: 0.75rem; color: var(--gray-600);">Duration (Months)</label>
+                                                <input type="number" name="discount_tiers[0][duration_months]" class="form-input" placeholder="3" min="1" required>
+                                            </div>
+                                            <div style="flex: 1;">
+                                                <label style="font-size: 0.75rem; color: var(--gray-600);">Discount Percentage (%)</label>
+                                                <input type="number" name="discount_tiers[0][discount_percentage]" class="form-input" placeholder="10" step="0.01" min="0" max="100" required>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="feature-remove" onclick="removeDiscountTier(this)">
+                                            <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <button type="button" class="add-feature-btn" onclick="addDiscountTier()">
+                                    <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                    Add Discount Tier
+                                </button>
+                            </div>
+                            @error('discount_tiers')
+                                <div class="form-error">{{ $message }}</div>
+                            @enderror
+                            @error('discount_tiers.*')
+                                <div class="form-error">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        </div>
+                
+                        <!-- Form Actions -->
         <div class="form-actions">
             <a href="{{ route('admin.pricing.index') }}" class="btn-secondary">
                 <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -476,7 +562,7 @@ function removeFeature(button) {
 }
 
 // Auto-generate slug from name
-document.getElementById('name').addEventListener('input', function() {
+    document.getElementById('name').addEventListener('input', function() {
     const name = this.value;
     const slug = name.toLowerCase()
         .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
@@ -486,5 +572,52 @@ document.getElementById('name').addEventListener('input', function() {
 
     document.getElementById('slug').value = slug;
 });
+
+function switchTab(tab) {
+    const tabs = document.querySelectorAll('.tab-button');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(t => t.classList.remove('active'));
+    contents.forEach(c => c.classList.remove('active'));
+    document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
+    document.getElementById(`${tab}-tab`).classList.add('active');
+}
+
+function addDiscountTier() {
+    const list = document.getElementById('discount-tiers-list');
+    const index = list.children.length;
+    const item = document.createElement('div');
+    item.className = 'feature-item';
+    item.innerHTML = `
+        <div style="display: flex; gap: 1rem; align-items: center; flex: 1;">
+            <div style="flex: 1;">
+                <label style="font-size: 0.75rem; color: var(--gray-600);">Duration (Months)</label>
+                <input type="number" name="discount_tiers[${index}][duration_months]" class="form-input" placeholder="3" min="1" required>
+            </div>
+            <div style="flex: 1;">
+                <label style="font-size: 0.75rem; color: var(--gray-600);">Discount Percentage (%)</label>
+                <input type="number" name="discount_tiers[${index}][discount_percentage]" class="form-input" placeholder="10" step="0.01" min="0" max="100" required>
+            </div>
+        </div>
+        <button type="button" class="feature-remove" onclick="removeDiscountTier(this)">
+            <svg style="width: 1rem; height: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    `;
+    list.appendChild(item);
+}
+
+function removeDiscountTier(button) {
+    const item = button.closest('.feature-item');
+    const list = document.getElementById('discount-tiers-list');
+    const items = list.querySelectorAll('.feature-item');
+    if (items.length > 1) {
+        item.remove();
+    } else {
+        const inputs = item.querySelectorAll('input');
+        inputs.forEach(input => input.value = '');
+        inputs[0].focus();
+    }
+}
 </script>
 @endsection

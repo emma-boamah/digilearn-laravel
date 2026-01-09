@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class DocumentController extends Controller
 {
@@ -92,6 +93,14 @@ class DocumentController extends Controller
         // Get lesson data from database (similar to DashboardController approach)
         $gradeLevels = $this->getGradeLevelForLevelGroup($selectedLevelGroup);
         $videos = \App\Models\Video::approved()->whereIn('grade_level', $gradeLevels)->with('documents')->get();
+
+        // Filter videos based on user's subscription access
+        $user = Auth::user();
+        $allowedGradeLevels = \App\Services\SubscriptionAccessService::getAllowedGradeLevels($user);
+        $videos = $videos->filter(function ($video) use ($allowedGradeLevels) {
+            return in_array($video->grade_level, $allowedGradeLevels);
+        });
+
         $lesson = $videos->firstWhere('id', (int)$lessonId);
 
         // Convert to array format expected by the view
@@ -122,9 +131,9 @@ class DocumentController extends Controller
         }
 
         // Record document view engagement for recommendation system
-        if (auth()->check()) {
+        if (Auth::check()) {
             \App\Models\UserEngagement::record(
-                auth()->id(),
+                Auth::id(),
                 'document',
                 $lessonId,
                 'view',

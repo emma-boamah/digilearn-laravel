@@ -2052,9 +2052,9 @@
                                 </span>
                             </p>
                             @if($user->currentSubscription->is_in_trial)
-                                <p id="currentPlanTrialInfoDisplay">Your trial expires in {{ now()->diffInDays($user->currentSubscription->trial_ends_at) }} days on {{ $user->currentSubscription->trial_ends_at->format('M d, Y') }}</p>
+                                <p id="currentPlanTrialInfoDisplay">Your trial expires in {{ round(now()->diffInDays($user->currentSubscription->trial_ends_at, true)) }} days on {{ $user->currentSubscription->trial_ends_at->format('M d, Y') }}</p>
                             @elseif($user->currentSubscription->expires_at)
-                                <p id="currentPlanExpiryDisplay">Next Billing Date: {{ $user->currentSubscription->expires_at->format('M d, Y') }} ({{ now()->diffInDays($user->currentSubscription->expires_at) }} days)</p>
+                                <p id="currentPlanExpiryDisplay">Next Billing Date: {{ $user->currentSubscription->expires_at->format('M d, Y') }} ({{ round(now()->diffInDays($user->currentSubscription->expires_at, true)) }} days)</p>
                             @endif
                             <button type="button" class="btn btn-primary btn-sm subscription-btn-margin" id="manageSubscriptionBtn">
                                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">

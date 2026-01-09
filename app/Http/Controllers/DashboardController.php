@@ -261,11 +261,23 @@ class DashboardController extends Controller
             }
         }
 
-        // Regular users must have Extra Tuition plan
-        if (!$user->hasExtraTuitionPlan()) {
-            return redirect()->route('pricing')
-                ->with('warning', 'Please subscribe to the "Extra Tuition" plan to join a class.');
-        }
+        // Regular users must have access to live classes
+         if (!$user->canJoinLiveClasses()) {
+             Log::info('Class join denied: no live classes access', [
+                 'user_id' => $user->id,
+                 'current_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'none',
+                 'features' => $user->currentSubscription?->pricingPlan?->features ?? [],
+                 'timestamp' => now()->toISOString()
+             ]);
+             return redirect()->route('pricing')
+                 ->with('warning', 'Please upgrade your subscription to access live classes.');
+         }
+
+         Log::info('Class join allowed: has live classes access', [
+             'user_id' => $user->id,
+             'current_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'none',
+             'timestamp' => now()->toISOString()
+         ]);
 
         $userGrade = $user->grade;
 
@@ -365,61 +377,74 @@ class DashboardController extends Controller
 
     /**
      * Check if user has access to a level group based on subscription
-     */
-    private function hasAccessToLevelGroup($user, $groupId)
-    {
-        // Superuser has access to all groups
-        if ($user->is_superuser) {
-            return true;
-        }
+      */
+     private function hasAccessToLevelGroup($user, $groupId)
+     {
+         // Superuser has access to all groups
+         if ($user->is_superuser) {
+             Log::info('Level group access granted: superuser', [
+                 'user_id' => $user->id,
+                 'group_id' => $groupId,
+                 'timestamp' => now()->toISOString()
+             ]);
+             return true;
+         }
 
-        // Free access to primary-lower for all users
-        if ($groupId === 'primary-lower') {
-            return true;
-        }
+         // Use the subscription access service
+         $hasAccess = \App\Services\SubscriptionAccessService::canAccessLevelGroup($user, $groupId);
 
-        // Check if user has active subscription or trial
-        $currentSubscription = $user->currentSubscription;
-        
-        if (!$currentSubscription) {
-            return false;
-        }
+         Log::info('Level group access check', [
+             'user_id' => $user->id,
+             'group_id' => $groupId,
+             'has_access' => $hasAccess,
+             'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'none',
+             'timestamp' => now()->toISOString()
+         ]);
 
-        // All plans have access to all content during active subscription or trial
-        return $currentSubscription->isActive() || $currentSubscription->isInTrial();
-    }
+         return $hasAccess;
+     }
 
     /**
      * Filter lessons based on user's subscription
-     */
-    private function filterLessonsBySubscription($user, $lessons)
-    {
-        $currentSubscription = $user->currentSubscription;
-        
-        // If no subscription, limit to first 2 lessons per level
-        if (!$currentSubscription || (!$currentSubscription->isActive() && !$currentSubscription->isInTrial())) {
-            return array_slice($lessons, 0, 2);
-        }
+      */
+     private function filterLessonsBySubscription($user, $lessons)
+     {
+         // If user has unlimited content access, return all lessons
+         if ($user->hasUnlimitedContentAccess()) {
+             Log::info('Full lesson access granted', [
+                 'user_id' => $user->id,
+                 'total_lessons' => count($lessons),
+                 'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'none',
+                 'timestamp' => now()->toISOString()
+             ]);
+             return $lessons;
+         }
 
-        // Full access for subscribed users
-        return $lessons;
-    }
+         // Limit free users to first 2 lessons
+         $filteredLessons = array_slice($lessons, 0, 2);
+         Log::info('Lessons filtered for limited user', [
+             'user_id' => $user->id,
+             'total_lessons' => count($lessons),
+             'filtered_to' => count($filteredLessons),
+             'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'none',
+             'timestamp' => now()->toISOString()
+         ]);
+         return $filteredLessons;
+     }
 
     /**
      * Filter courses based on user's subscription
-     */
-    private function filterCoursesBySubscription($user, $courses)
-    {
-        $currentSubscription = $user->currentSubscription;
-        
-        // If no subscription, limit to first 2 courses
-        if (!$currentSubscription || (!$currentSubscription->isActive() && !$currentSubscription->isInTrial())) {
-            return array_slice($courses, 0, 2);
-        }
+      */
+     private function filterCoursesBySubscription($user, $courses)
+     {
+         // If user has unlimited content access, return all courses
+         if ($user->hasUnlimitedContentAccess()) {
+             return $courses;
+         }
 
-        // Full access for subscribed users
-        return $courses;
-    }
+         // Limit free users to first 2 courses
+         return array_slice($courses, 0, 2);
+     }
 
     /**
      * Get lessons for a specific level (grade level)
@@ -677,18 +702,11 @@ class DashboardController extends Controller
 
     /**
      * Check if user has access to personalized learning
-     */
-    private function hasPersonalizedAccess($user)
-    {
-        // Superuser has access to personalized learning
-        if ($user->is_superuser) {
-            return true;
-        }
-
-        $currentSubscription = $user->currentSubscription;
-        // Example: Only users with active subscription or trial have access
-        return $currentSubscription && ($currentSubscription->isActive() || $currentSubscription->isInTrial());
-    }
+      */
+     private function hasPersonalizedAccess($user)
+     {
+         return $user->hasPersonalizedLearningAccess();
+     }
 
     /**
      * Show shop page

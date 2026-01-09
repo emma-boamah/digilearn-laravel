@@ -101,7 +101,7 @@
         padding: 2rem;
         text-align: center;
         position: relative;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 6px rgb(105, 158, 236);
         transition: transform 0.3s ease;
         width: 370px;
     }
@@ -116,7 +116,7 @@
         left: 50%;
         transform: translateX(-50%);
         padding: 0.75rem 2rem;
-        background-color: var(--primary-red);
+        background-color: var(--secondary-blue);
         color: var(--white);
         font-weight: 600;
         font-size: 0.875rem;
@@ -170,7 +170,7 @@
     }
 
     .pricing-features svg {
-        color: var(--primary-red);
+        color: var(--secondary-blue);
         flex-shrink: 0;
         width: 16px;
         height: 16px;
@@ -180,8 +180,8 @@
         width: 100%;
         padding: 0.75rem 1.5rem;
         background-color: transparent;
-        border: 1px solid var(--primary-red);
-        color: var(--primary-red);
+        border: 1px solid var(--secondary-blue);
+        color: var(--secondary-blue);
         border-radius: 0.375rem;
         text-decoration: none;
         font-weight: 500;
@@ -192,7 +192,7 @@
     }
 
     .pricing-btn:hover {
-        background-color: var(--primary-red);
+        background-color: var(--secondary-blue);
         color: var(--white);
     }
 
@@ -259,7 +259,7 @@
                             </li>
                         @endif
                     </ul>
-                    <a href="{{ route('pricing-details') }}" class="pricing-btn">Get Started</a>
+                    <a href="{{ route('pricing-details', ['planId' => App\Services\UrlObfuscator::encode($plan->id)]) }}" class="pricing-btn">Get Started</a>
                 </div>
             </div>
             @empty

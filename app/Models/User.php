@@ -173,15 +173,80 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Check if user has the 'Extra Tuition' plan
-     */
-    public function hasExtraTuitionPlan(): bool
-    {
-        if ($this->is_superuser) {
-            return true; // Superusers always have access to all plans
-        }
-        $subscription = $this->currentSubscription;
-        return $subscription && $subscription->isActive() && $subscription->pricingPlan->name === 'Extra Tuition';
-    }
+      */
+     public function hasExtraTuitionPlan(): bool
+     {
+         if ($this->is_superuser) {
+             return true; // Superusers always have access to all plans
+         }
+         $subscription = $this->currentSubscription;
+         return $subscription && $subscription->isActive() && $subscription->pricingPlan->name === 'Extra Tuition';
+     }
+
+     /**
+      * Check if user has access to a specific feature
+      */
+     public function hasFeature(string $feature): bool
+     {
+         if ($this->is_superuser) {
+             return true; // Superusers have access to all features
+         }
+
+         $subscription = $this->currentSubscription;
+         if (!$subscription || (!$subscription->isActive() && !$subscription->isInTrial())) {
+             return false;
+         }
+
+         $features = $subscription->pricingPlan->features ?? [];
+         return in_array($feature, $features);
+     }
+
+     /**
+      * Check if user has access to level groups beyond primary-lower
+      */
+     public function hasAdvancedLevelAccess(): bool
+     {
+         if ($this->is_superuser) {
+             return true;
+         }
+
+         $subscription = $this->currentSubscription;
+         return $subscription && ($subscription->isActive() || $subscription->isInTrial());
+     }
+
+     /**
+      * Check if user has unlimited content access
+      */
+     public function hasUnlimitedContentAccess(): bool
+     {
+         if ($this->is_superuser) {
+             return true;
+         }
+
+         $subscription = $this->currentSubscription;
+         return $subscription && ($subscription->isActive() || $subscription->isInTrial());
+     }
+
+     /**
+      * Check if user can join live classes
+      */
+     public function canJoinLiveClasses(): bool
+     {
+         return $this->hasFeature('Join live classes');
+     }
+
+     /**
+      * Check if user has access to personalized learning
+      */
+     public function hasPersonalizedLearningAccess(): bool
+     {
+         if ($this->is_superuser) {
+             return true;
+         }
+
+         $subscription = $this->currentSubscription;
+         return $subscription && ($subscription->isActive() || $subscription->isInTrial());
+     }
 
     /**
      * Get the user's full name parts

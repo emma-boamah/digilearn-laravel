@@ -17,34 +17,62 @@ class PricingController extends Controller
         return view('pricing', compact('pricingPlans'));
     }
 
-    public function show()
+    public function show(Request $request)
     {
-        // Get only featured pricing plans
-        $featuredPlans = PricingPlan::where('is_active', true)
-            ->where('is_featured', true)
-            ->orderBy('sort_order')
-            ->orderBy('price')
-            ->get();
+        $planId = $request->query('planId');
 
-        // If no featured plans, fall back to all active plans
-        if ($featuredPlans->isEmpty()) {
-            $featuredPlans = PricingPlan::where('is_active', true)
+        if ($planId) {
+            // Decode the planId
+            $decodedPlanId = \App\Services\UrlObfuscator::decode($planId);
+            if ($decodedPlanId) {
+                $plan = PricingPlan::where('id', $decodedPlanId)->where('is_active', true)->first();
+                if ($plan) {
+                    $plans = collect([$plan]);
+                } else {
+                    // Fallback to featured plans if plan not found
+                    $plans = PricingPlan::where('is_active', true)
+                        ->where('is_featured', true)
+                        ->orderBy('sort_order')
+                        ->orderBy('price')
+                        ->get();
+                    if ($plans->isEmpty()) {
+                        $plans = PricingPlan::where('is_active', true)
+                            ->orderBy('sort_order')
+                            ->orderBy('price')
+                            ->get();
+                    }
+                }
+            } else {
+                // Fallback if decoding fails
+                $plans = PricingPlan::where('is_active', true)
+                    ->where('is_featured', true)
+                    ->orderBy('sort_order')
+                    ->orderBy('price')
+                    ->get();
+                if ($plans->isEmpty()) {
+                    $plans = PricingPlan::where('is_active', true)
+                        ->orderBy('sort_order')
+                        ->orderBy('price')
+                        ->get();
+                }
+            }
+        } else {
+            // Get only featured pricing plans
+            $plans = PricingPlan::where('is_active', true)
+                ->where('is_featured', true)
                 ->orderBy('sort_order')
                 ->orderBy('price')
                 ->get();
+
+            // If no featured plans, fall back to all active plans
+            if ($plans->isEmpty()) {
+                $plans = PricingPlan::where('is_active', true)
+                    ->orderBy('sort_order')
+                    ->orderBy('price')
+                    ->get();
+            }
         }
 
-        // Transform to the expected array format for the view
-        $pricingPlans = [];
-        foreach ($featuredPlans as $plan) {
-            $pricingPlans[$plan->slug] = [
-                'name' => $plan->name,
-                'price' => $plan->currency . ' ' . number_format($plan->price, 2),
-                'period' => '7 days free trial',
-                'features' => $plan->features ?? ['Access to ' . $plan->name . ' features']
-            ];
-        }
-
-        return view('pricing-details', compact('pricingPlans'));
+        return view('pricing-details', compact('plans'));
     }
 }
