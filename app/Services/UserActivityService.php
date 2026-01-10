@@ -25,17 +25,14 @@ class UserActivityService
         ?int $userId = null,
         ?string $ipAddress = null,
         ?string $userAgent = null
-    ): ?UserActivity {
+    ): void {
         try {
             $userId = $userId ?? Auth::id();
             $ipAddress = $ipAddress ?? request()->ip();
             $userAgent = $userAgent ?? request()->userAgent();
 
-            // Sanitize inputs
-            $description = trim($description);
-            $ipAddress = filter_var($ipAddress, FILTER_VALIDATE_IP) ? $ipAddress : null;
-
-            $activity = UserActivity::create([
+            // Dispatch job for queued processing
+            \App\Jobs\LogUserActivityJob::dispatch([
                 'user_id' => $userId,
                 'type' => $type,
                 'description' => $description,
@@ -44,21 +41,14 @@ class UserActivityService
                 'user_agent' => $userAgent,
             ]);
 
-            // Clear relevant caches
-            self::clearActivityCaches($userId, $type);
-
-            return $activity;
         } catch (\Exception $e) {
             // Log error but don't throw to avoid breaking user flow
-            Log::error('Failed to log user activity', [
+            Log::error('Failed to dispatch user activity logging job', [
                 'type' => $type,
                 'description' => $description,
                 'user_id' => $userId,
                 'error' => $e->getMessage()
             ]);
-
-            // Return null on failure
-            return null;
         }
     }
 

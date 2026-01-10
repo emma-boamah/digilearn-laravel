@@ -52,7 +52,7 @@ class TestActivity extends Command
         } else {
             $this->info('Recent activities:');
             foreach ($activities as $activity) {
-                $this->line("- {$activity->activity_type} at {$activity->created_at}");
+                $this->line("- {$activity->type}: {$activity->description} at {$activity->created_at}");
             }
         }
 
