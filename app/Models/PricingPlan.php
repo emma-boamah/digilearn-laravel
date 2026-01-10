@@ -16,7 +16,6 @@ class PricingPlan extends Model
         'currency',
         'period',
         'description',
-        'duration_days',
         'features',
         'discount_tiers',
         'is_active',

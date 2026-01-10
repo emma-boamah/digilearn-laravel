@@ -321,10 +321,14 @@ class PaymentController extends Controller
      */
     private function calculateExpiryDate(string $duration): ?\Carbon\Carbon
     {
+        $daysInMonth = now()->daysInMonth;
+
         return match ($duration) {
             'trial' => now()->addDays(7),
-            'month' => now()->addMonth(),
-            '3month' => now()->addMonths(3),
+            'month' => now()->addDays($daysInMonth),
+            '3month' => now()->addDays(3 * $daysInMonth),
+            '6month' => now()->addDays(6 * $daysInMonth),
+            '12month' => now()->addDays(12 * $daysInMonth),
             default => null,
         };
     }

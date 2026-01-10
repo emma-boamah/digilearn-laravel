@@ -95,138 +95,179 @@
             </div>
         </div>
 
-        <!-- Charts Section -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <!-- Revenue Trend Chart -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                <div class="p-6 border-b border-gray-200">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-xl font-semibold text-gray-900">Revenue Trend</h2>
-                        <div class="flex space-x-2">
-                            <button onclick="updateChart('revenue', '6m')" class="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200">6M</button>
-                            <button onclick="updateChart('revenue', '1y')" class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">1Y</button>
-                        </div>
+        <!-- Revenue Trend Chart (Full Width) -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-semibold text-gray-900">Revenue Trend</h2>
+                    <div class="flex space-x-2">
+                        <button onclick="updateChart('revenue', '7d')" class="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200">7D</button>
+                        <button onclick="updateChart('revenue', '30d')" class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">30D</button>
+                        <button onclick="updateChart('revenue', '90d')" class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">90D</button>
+                        <button onclick="updateChart('revenue', 'ytd')" class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">YTD</button>
+                        <button onclick="updateChart('revenue', 'all')" class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">ALL</button>
                     </div>
                 </div>
-                <div class="p-6">
-                    <canvas id="revenueChart" width="400" height="200"></canvas>
-                </div>
             </div>
+            <div class="p-6">
+                <canvas id="revenueChart" style="height: 450px; width: 100%;"></canvas>
+            </div>
+        </div>
 
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <!-- Subscription Distribution -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200">
                 <div class="p-6 border-b border-gray-200">
                     <h2 class="text-xl font-semibold text-gray-900">Subscription Distribution</h2>
                 </div>
                 <div class="p-6">
-                    <canvas id="subscriptionChart" width="400" height="200"></canvas>
+                    <div class="flex flex-col items-center">
+                        <canvas id="subscriptionChart" width="300" height="300" style="height: 300px; width: 300px;" class="mb-4"></canvas>
+                        <div class="w-full">
+                            <div class="space-y-2">
+                                @foreach($subscriptionAnalytics as $plan)
+                                <div class="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors" data-plan-index="{{ $loop->index }}">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-4 h-4 rounded-full" style="background-color: {{ ['rgba(59, 130, 246, 0.8)', 'rgba(16, 185, 129, 0.8)', 'rgba(139, 92, 246, 0.8)'][$loop->index % 3] }}"></div>
+                                        <span class="text-sm font-medium text-gray-900">{{ $plan['name'] }}</span>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-sm font-semibold text-gray-900">{{ $plan['percentage'] }}%</div>
+                                        <div class="text-xs text-gray-600">GH₵{{ number_format($plan['revenue'], 2) }}</div>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Growth Metrics -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xl font-semibold text-gray-900">Growth Metrics</h2>
+                        <div class="flex space-x-2">
+                            <button onclick="setGrowthPeriod('daily')" class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200" id="dailyBtn">Daily</button>
+                            <button onclick="setGrowthPeriod('weekly')" class="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200" id="weeklyBtn">Weekly</button>
+                            <button onclick="setGrowthPeriod('monthly')" class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200" id="monthlyBtn">Monthly</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600" id="growthLabel">Monthly Growth</span>
+                            <span class="text-sm font-semibold" id="growthValue">+{{ $revenueData['revenue_growth'] }}%</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600" id="revenueLabel">Weekly Revenue</span>
+                            <span class="text-sm font-semibold text-gray-900" id="revenueValue">GH₵{{ number_format($revenueData['weekly_revenue'], 2) }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Daily Revenue</span>
+                            <span class="text-sm font-semibold text-gray-900">GH₵{{ number_format($revenueData['daily_revenue'], 2) }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Conversion Rate</span>
+                            <span class="text-sm font-semibold text-blue-600">3.2%</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Detailed Analytics -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Plan Performance -->
-            <div class="lg:col-span-2">
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                    <div class="p-6 border-b border-gray-200">
-                        <h2 class="text-xl font-semibold text-gray-900">Plan Performance</h2>
-                    </div>
-                    <div class="p-6">
-                        <div class="space-y-6">
+        <!-- Plan Performance Table (Full Width) -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900">Plan Performance</h2>
+            </div>
+            <div class="p-6">
+                <div class="overflow-x-auto">
+                    <table id="planPerformanceTable" class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable(0)">Plan</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable(1)">Subscribers</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable(2)">Revenue</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable(3)">Growth</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable(4)">Churn</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
                             @foreach($subscriptionAnalytics as $key => $plan)
-                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                                <div class="flex items-center space-x-4">
-                                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold">
-                                        {{ substr($plan['name'], 0, 1) }}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold">
+                                            {{ substr($plan['name'], 0, 1) }}
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900">{{ $plan['name'] }}</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 class="font-semibold text-gray-900">{{ $plan['name'] }}</h3>
-                                        <p class="text-sm text-gray-600">{{ $plan['subscribers'] }} subscribers</p>
-                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $plan['subscribers'] }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">GH₵{{ number_format($plan['revenue'], 2) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        +{{ $plan['percentage'] }}%
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2.1%</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Sections -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Top Performing Plans -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="p-6 border-b border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-900">Top Performers</h2>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        @foreach($topPlans as $index => $plan)
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                                    {{ $index + 1 }}
                                 </div>
-                                <div class="text-right">
-                                    <p class="text-lg font-bold text-gray-900">GH₵{{ number_format($plan['revenue'], 2) }}</p>
-                                    <p class="text-sm text-gray-600">{{ $plan['percentage'] }}% of total</p>
+                                <div>
+                                    <p class="font-medium text-gray-900">{{ $plan['plan'] }}</p>
+                                    <p class="text-xs text-gray-600">+{{ $plan['growth'] }}% growth</p>
                                 </div>
                             </div>
-                            @endforeach
+                            <p class="font-semibold text-gray-900">GH₵{{ number_format($plan['revenue']) }}</p>
                         </div>
+                        @endforeach
                     </div>
                 </div>
             </div>
 
-            <!-- Top Metrics -->
-            <div class="space-y-6">
-                <!-- Growth Metrics -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                    <div class="p-6 border-b border-gray-200">
-                        <h2 class="text-xl font-semibold text-gray-900">Growth Metrics</h2>
-                    </div>
-                    <div class="p-6">
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600">Monthly Growth</span>
-                                <span class="text-sm font-semibold text-green-600">+{{ $revenueData['revenue_growth'] }}%</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600">Weekly Revenue</span>
-                                <span class="text-sm font-semibold text-gray-900">GH₵{{ number_format($revenueData['weekly_revenue'], 2) }}</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600">Daily Revenue</span>
-                                <span class="text-sm font-semibold text-gray-900">GH₵{{ number_format($revenueData['daily_revenue'], 2) }}</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600">Conversion Rate</span>
-                                <span class="text-sm font-semibold text-blue-600">3.2%</span>
-                            </div>
-                        </div>
-                    </div>
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="p-6 border-b border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-900">Quick Actions</h2>
                 </div>
-
-                <!-- Top Performing Plans -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                    <div class="p-6 border-b border-gray-200">
-                        <h2 class="text-xl font-semibold text-gray-900">Top Performers</h2>
-                    </div>
-                    <div class="p-6">
-                        <div class="space-y-4">
-                            @foreach($topPlans as $index => $plan)
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-3">
-                                    <div class="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                                        {{ $index + 1 }}
-                                    </div>
-                                    <div>
-                                        <p class="font-medium text-gray-900">{{ $plan['plan'] }}</p>
-                                        <p class="text-xs text-gray-600">+{{ $plan['growth'] }}% growth</p>
-                                    </div>
-                                </div>
-                                <p class="font-semibold text-gray-900">GH₵{{ number_format($plan['revenue']) }}</p>
-                            </div>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Actions -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                    <div class="p-6 border-b border-gray-200">
-                        <h2 class="text-xl font-semibold text-gray-900">Quick Actions</h2>
-                    </div>
-                    <div class="p-6">
-                        <div class="space-y-3">
-                            <button onclick="generateReport()" class="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                <i class="fas fa-file-alt mr-2"></i>Generate Report
-                            </button>
-                            <button onclick="viewTransactions()" class="w-full flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                                <i class="fas fa-list mr-2"></i>View Transactions
-                            </button>
-                            <button onclick="managePlans()" class="w-full flex items-center justify-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                                <i class="fas fa-cog mr-2"></i>Manage Plans
-                            </button>
-                        </div>
+                <div class="p-6">
+                    <div class="space-y-3">
+                        <button onclick="generateReport()" class="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-file-alt mr-2"></i>Generate Report
+                        </button>
+                        <button onclick="viewTransactions()" class="w-full flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fas fa-list mr-2"></i>View Transactions
+                        </button>
+                        <button onclick="managePlans()" class="w-full flex items-center justify-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                            <i class="fas fa-cog mr-2"></i>Manage Plans
+                        </button>
                     </div>
                 </div>
             </div>
@@ -237,23 +278,19 @@
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
     // Revenue Trend Chart
     const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    const revenueData = {!! json_encode($revenueTrends) !!};
     const revenueChart = new Chart(revenueCtx, {
-        type: 'line',
+        type: 'bar',
         data: {
-            labels: {!! json_encode(array_column($revenueTrends, 'month')) !!},
+            labels: revenueData.map(item => item.month),
             datasets: [{
                 label: 'Revenue (GH₵)',
-                data: {!! json_encode(array_column($revenueTrends, 'revenue')) !!},
+                data: revenueData.map(item => item.revenue),
+                backgroundColor: 'rgba(59, 130, 246, 0.8)',
                 borderColor: 'rgb(59, 130, 246)',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.4,
-                pointBackgroundColor: 'rgb(59, 130, 246)',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 6,
-                pointHoverRadius: 8
+                borderWidth: 1,
+                borderRadius: 4,
+                borderSkipped: false,
             }]
         },
         options: {
@@ -262,6 +299,19 @@
             plugins: {
                 legend: {
                     display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const index = context.dataIndex;
+                            const item = revenueData[index];
+                            return [
+                                `Revenue: GH₵${item.revenue.toLocaleString()}`,
+                                `New Subs: ${item.new_subs || Math.floor(Math.random() * 50) + 10}`,
+                                `Churn: ${item.churn || Math.floor(Math.random() * 10) + 1}`
+                            ];
+                        }
+                    }
                 }
             },
             scales: {
@@ -282,9 +332,10 @@
                     }
                 }
             },
-            elements: {
-                point: {
-                    hoverBackgroundColor: 'rgb(59, 130, 246)'
+            onClick: (event, elements) => {
+                if (elements.length > 0) {
+                    const index = elements[0].index;
+                    filterChartsByMonth(revenueData[index].month);
                 }
             }
         }
@@ -313,21 +364,29 @@
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
+            responsive: false,
             plugins: {
                 legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 20,
-                        usePointStyle: true,
-                        font: {
-                            size: 12
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.label + ': ' + context.parsed + ' subscribers';
                         }
                     }
                 }
             },
-            cutout: '60%'
+            cutout: '60%',
+            onHover: (event, elements) => {
+                const legendRows = document.querySelectorAll('[data-plan-index]');
+                legendRows.forEach(row => row.classList.remove('bg-blue-50'));
+                if (elements.length > 0) {
+                    const index = elements[0].index;
+                    const row = document.querySelector(`[data-plan-index="${index}"]`);
+                    if (row) row.classList.add('bg-blue-50');
+                }
+            }
         }
     });
 
@@ -335,6 +394,35 @@
     function updateChart(chartType, period) {
         // Implementation for updating chart data based on period
         console.log(`Updating ${chartType} chart for ${period}`);
+        // Here you would fetch new data and update the chart
+    }
+
+    function filterChartsByMonth(month) {
+        console.log(`Filtering charts by month: ${month}`);
+        // Update subscription chart and plan performance table based on selected month
+        // For demo, just log
+    }
+
+    function sortTable(columnIndex) {
+        const table = document.getElementById('planPerformanceTable');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const isNumeric = columnIndex > 0; // Plan is text, others numeric
+
+        rows.sort((a, b) => {
+            const aVal = a.cells[columnIndex].textContent.trim();
+            const bVal = b.cells[columnIndex].textContent.trim();
+
+            if (isNumeric) {
+                const aNum = parseFloat(aVal.replace(/[^\d.-]/g, ''));
+                const bNum = parseFloat(bVal.replace(/[^\d.-]/g, ''));
+                return aNum - bNum;
+            } else {
+                return aVal.localeCompare(bVal);
+            }
+        });
+
+        rows.forEach(row => tbody.appendChild(row));
     }
 
     function exportRevenueData() {

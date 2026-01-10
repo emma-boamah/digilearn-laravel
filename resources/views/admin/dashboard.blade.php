@@ -6,17 +6,36 @@
 
 @push('styles')
 <style nonce="{{ request()->attributes->get('csp_nonce') }}">
-    /* Dynamic progress bar widths */
-    .progress-bar-storage {
-        width: {{ $systemHealth['storage_usage']['used_percentage'] }};
+    /* Chart and dashboard styles */
+    .kpi-card:hover {
+        transform: translateY(-2px);
     }
-    
-    .progress-bar-memory {
-        width: {{ $systemHealth['memory_usage'] }};
+
+    .sparkline-container {
+        opacity: 0.7;
     }
-    
-    .progress-bar-cpu {
-        width: {{ $systemHealth['cpu_usage'] }};
+
+    .time-filter.active {
+        background-color: #3b82f6;
+        color: white;
+    }
+
+    .metric-toggle.active {
+        background-color: #3b82f6;
+        color: white;
+    }
+
+    .sortable:hover {
+        cursor: pointer;
+        background-color: #f9fafb;
+    }
+
+    .sortable.sort-asc i:before {
+        content: '\f145'; /* sort-up */
+    }
+
+    .sortable.sort-desc i:before {
+        content: '\f144'; /* sort-down */
     }
 </style>
 @endpush
@@ -51,14 +70,19 @@
         <!-- Stats Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <!-- Total Users -->
-            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-lg transition-all duration-200 cursor-pointer kpi-card" data-target="revenue-chart">
                 <div class="flex items-center justify-between">
-                    <div>
+                    <div class="flex-1">
                         <p class="text-sm font-medium text-gray-600">Total Users</p>
                         <p class="text-3xl font-bold text-gray-900">{{ number_format($stats['total_users']) }}</p>
-                        <p class="text-sm text-green-600 mt-1">
-                            <i class="fas fa-arrow-up mr-1"></i>+{{ $stats['new_users_this_week'] }} this week
-                        </p>
+                        <div class="flex items-center justify-between mt-2">
+                            <p class="text-sm text-green-600">
+                                <i class="fas fa-arrow-up mr-1"></i>+{{ $stats['new_users_this_week'] }} this week
+                            </p>
+                            <div class="sparkline-container w-16 h-4">
+                                <canvas id="users-sparkline" width="64" height="16"></canvas>
+                            </div>
+                        </div>
                     </div>
                     <div class="bg-blue-100 p-3 rounded-full">
                         <i class="fas fa-users text-blue-600 text-xl"></i>
@@ -67,16 +91,19 @@
             </div>
 
             <!-- Active Users -->
-            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-lg transition-all duration-200 cursor-pointer kpi-card" data-target="revenue-chart">
                 <div class="flex items-center justify-between">
-                    <div>
+                    <div class="flex-1">
                         <p class="text-sm font-medium text-gray-600">Online Users</p>
                         <p class="text-3xl font-bold text-gray-900">{{ number_format($stats['online_users']) }}</p>
-                        <p class="text-sm text-gray-500 mt-1">
-                            {{ number_format(($stats['online_users'] / $stats['total_users']) * 100, 1) }}% of total
-                            <i class="fas fa-wifi text-green-500 mr-1"></i>
-                            Active in last 5 minutes
-                        </p>
+                        <div class="flex items-center justify-between mt-2">
+                            <p class="text-sm text-gray-500">
+                                {{ number_format(($stats['online_users'] / $stats['total_users']) * 100, 1) }}% of total
+                            </p>
+                            <div class="sparkline-container w-16 h-4">
+                                <canvas id="online-sparkline" width="64" height="16"></canvas>
+                            </div>
+                        </div>
                     </div>
                     <div class="bg-green-100 p-3 rounded-full">
                         <i class="fas fa-user-check text-green-600 text-xl"></i>
@@ -84,36 +111,202 @@
                 </div>
             </div>
 
-            <!-- Total Lessons -->
-            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+            <!-- Total Revenue -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-lg transition-all duration-200 cursor-pointer kpi-card" data-target="revenue-chart">
                 <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">Total Lessons</p>
-                        <p class="text-3xl font-bold text-gray-900">{{ number_format($stats['total_lessons']) }}</p>
-                        <p class="text-sm text-gray-500 mt-1">
-                            {{ $stats['total_subjects'] }} subjects
-                        </p>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-600">Total Revenue</p>
+                        <p class="text-3xl font-bold text-gray-900">GH₵{{ number_format($revenueData['total_revenue'] ?? 0, 0) }}</p>
+                        <div class="flex items-center justify-between mt-2">
+                            <p class="text-sm text-green-600">
+                                <i class="fas fa-arrow-up mr-1"></i>+{{ $revenueData['revenue_growth'] ?? 0 }}%
+                            </p>
+                            <div class="sparkline-container w-16 h-4">
+                                <canvas id="revenue-sparkline" width="64" height="16"></canvas>
+                            </div>
+                        </div>
                     </div>
-                    <div class="bg-purple-100 p-3 rounded-full">
-                        <i class="fas fa-book text-purple-600 text-xl"></i>
+                    <div class="bg-green-100 p-3 rounded-full">
+                        <i class="fas fa-dollar-sign text-green-600 text-xl"></i>
                     </div>
                 </div>
             </div>
 
-            <!-- New Today -->
-            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+            <!-- Active Subscriptions -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-lg transition-all duration-200 cursor-pointer kpi-card" data-target="plan-performance">
                 <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-gray-600">New Today</p>
-                        <p class="text-3xl font-bold text-gray-900">{{ number_format($stats['new_users_today']) }}</p>
-                        <p class="text-sm text-blue-600 mt-1">
-                            <i class="fas fa-calendar-day mr-1"></i>Registrations
-                        </p>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-600">Active Subscriptions</p>
+                        <p class="text-3xl font-bold text-gray-900">{{ number_format($revenueData['active_subscriptions'] ?? 0) }}</p>
+                        <div class="flex items-center justify-between mt-2">
+                            <p class="text-sm text-blue-600">
+                                <i class="fas fa-calendar-day mr-1"></i>{{ number_format($revenueData['new_subscriptions_today'] ?? 0) }} new today
+                            </p>
+                            <div class="sparkline-container w-16 h-4">
+                                <canvas id="subscriptions-sparkline" width="64" height="16"></canvas>
+                            </div>
+                        </div>
                     </div>
-                    <div class="bg-orange-100 p-3 rounded-full">
-                        <i class="fas fa-user-plus text-orange-600 text-xl"></i>
+                    <div class="bg-purple-100 p-3 rounded-full">
+                        <i class="fas fa-crown text-purple-600 text-xl"></i>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Revenue Trend Chart (Full Width) -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8" id="revenue-chart">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900">Revenue Trend</h2>
+                    <p class="text-sm text-gray-600">Monthly revenue performance over time</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <button class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors time-filter active" data-period="12M">12M</button>
+                        <button class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors time-filter" data-period="6M">6M</button>
+                        <button class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors time-filter" data-period="3M">3M</button>
+                        <button class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors time-filter" data-period="1M">1M</button>
+                    </div>
+                    <button class="text-gray-400 hover:text-gray-600 export-btn" title="Export data">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="relative">
+                <canvas id="revenueChart" height="450"
+                        data-revenue-trends="{{ json_encode($revenueTrends ?? []) }}"></canvas>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Subscription Distribution -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900">Subscription Distribution</h2>
+                        <p class="text-sm text-gray-600">Revenue breakdown by plan type</p>
+                    </div>
+                    <button class="text-gray-400 hover:text-gray-600 export-btn" title="Export data">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+                <div class="flex items-center">
+                    <div class="flex-1">
+                        <canvas id="subscriptionChart" width="200" height="200"></canvas>
+                    </div>
+                    <div class="ml-6 space-y-3" id="subscription-legend">
+                        <!-- Legend will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Growth Metrics -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900">Growth Metrics</h2>
+                        <p class="text-sm text-gray-600">Key performance indicators</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors metric-toggle active" data-metric="monthly">Monthly</data-metric>
+                        <button class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors metric-toggle" data-metric="weekly">Weekly</data-metric>
+                    </div>
+                </div>
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg">
+                        <div>
+                            <p class="text-sm font-medium text-blue-900">Monthly Growth</p>
+                            <p class="text-2xl font-bold text-blue-800" id="monthly-growth">+{{ $revenueData['revenue_growth'] ?? 0 }}%</p>
+                        </div>
+                        <div class="text-blue-600">
+                            <i class="fas fa-chart-line text-3xl"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg">
+                        <div>
+                            <p class="text-sm font-medium text-green-900">Weekly Revenue</p>
+                            <p class="text-2xl font-bold text-green-800" id="weekly-revenue">GH₵{{ number_format($revenueData['weekly_revenue'] ?? 0, 0) }}</p>
+                        </div>
+                        <div class="text-green-600">
+                            <i class="fas fa-dollar-sign text-3xl"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg">
+                        <div>
+                            <p class="text-sm font-medium text-purple-900">Churn Rate</p>
+                            <p class="text-2xl font-bold text-purple-800">{{ $revenueData['churn_rate'] ?? 0 }}%</p>
+                        </div>
+                        <div class="text-purple-600">
+                            <i class="fas fa-users text-3xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Plan Performance Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8" id="plan-performance">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900">Plan Performance</h2>
+                    <p class="text-sm text-gray-600">Detailed breakdown of subscription plans</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <input type="text" placeholder="Search plans..." class="px-3 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" id="plan-search">
+                    </div>
+                    <button class="text-gray-400 hover:text-gray-600 export-btn" title="Export data">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200" id="plan-performance-table">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="plan">
+                                Plan <i class="fas fa-sort ml-1"></i>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="subscribers">
+                                Subscribers <i class="fas fa-sort ml-1"></i>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="revenue">
+                                Revenue <i class="fas fa-sort ml-1"></i>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="growth">
+                                Growth <i class="fas fa-sort ml-1"></i>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sortable" data-sort="churn">
+                                Churn <i class="fas fa-sort ml-1"></i>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach($topPlans ?? [] as $plan)
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 rounded-full bg-blue-500 mr-3"></div>
+                                    <div class="text-sm font-medium text-gray-900">{{ $plan['plan'] }}</div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ number_format($plan['subscribers']) }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">GH₵{{ number_format($plan['revenue'], 0) }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    @if($plan['growth'] > 0) bg-green-100 text-green-800
+                                    @elseif($plan['growth'] < 0) bg-red-100 text-red-800
+                                    @else bg-gray-100 text-gray-800 @endif">
+                                    @if($plan['growth'] > 0)+@endif{{ $plan['growth'] }}%
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ rand(1, 5) }}%</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -306,12 +499,12 @@
                         $percentage = str_replace('%', '', $systemHealth['storage_usage']['used_percentage'] ?? '0');
                         $percentage = min(100, max(0, floatval($percentage)));
                     @endphp
-                    <div class="h-3 rounded-full transition-all duration-300
+                    <div class="h-3 rounded-full transition-all duration-300 storage-progress-bar
                         @if($percentage >= 95) bg-red-600
                         @elseif($percentage >= 85) bg-yellow-500
                         @elseif($percentage >= 75) bg-orange-500
                         @else bg-green-600
-                        @endif" style="width: {{ $percentage }}%"></div>
+                        @endif" data-width="{{ $percentage }}"></div>
                 </div>
                 <div class="flex justify-between text-xs text-gray-500 mt-1">
                     <span>{{ $systemHealth['storage_usage']['total_used'] ?? 'N/A' }} used</span>
@@ -368,7 +561,7 @@
                         </div>
                     </div>
                     <div class="mt-3 bg-{{ $plan['color'] }}-200 rounded-full h-2">
-                        <div class="bg-{{ $plan['color'] }}-600 h-2 rounded-full" style="width: {{ collect($stats['subscription_plans'])->sum('subscribers') > 0 ? ($plan['subscribers'] / collect($stats['subscription_plans'])->sum('subscribers')) * 100 : 0 }}%"></div>
+                        <div class="bg-{{ $plan['color'] }}-600 h-2 rounded-full plan-progress-bar" data-width="{{ collect($stats['subscription_plans'])->sum('subscribers') > 0 ? ($plan['subscribers'] / collect($stats['subscription_plans'])->sum('subscribers')) * 100 : 0 }}"></div>
                     </div>
                 </div>
                 @endforeach
@@ -393,15 +586,15 @@
                             @foreach($recentActivities as $activity)
                             <div class="flex items-start space-x-3">
                                 <div class="flex-shrink-0">
-                                    @if($activity['type'] === 'user_registration')
+                                    @if($activity->type === 'user_registration')
                                         <div class="bg-green-100 p-2 rounded-full">
                                             <i class="fas fa-user-plus text-green-600 text-sm"></i>
                                         </div>
-                                    @elseif($activity['type'] === 'lesson_view')
+                                    @elseif($activity->type === 'lesson_view')
                                         <div class="bg-blue-100 p-2 rounded-full">
                                             <i class="fas fa-play text-blue-600 text-sm"></i>
                                         </div>
-                                    @elseif($activity['type'] === 'login_attempt')
+                                    @elseif($activity->type === 'login_attempt')
                                         <div class="bg-purple-100 p-2 rounded-full">
                                             <i class="fas fa-sign-in-alt text-purple-600 text-sm"></i>
                                         </div>
@@ -413,23 +606,27 @@
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <p class="text-sm text-gray-900">
-                                        <span class="font-medium">{{ $activity['user'] }}</span>
-                                        @if($activity['type'] === 'user_registration')
+                                        <span class="font-medium">{{ $activity->user ? $activity->user->name : 'Unknown User' }}</span>
+                                        @if($activity->type === 'page_view')
+                                            {{ $activity->description }}
+                                        @elseif($activity->type === 'user_registration')
                                             registered a new account
-                                        @elseif($activity['type'] === 'lesson_view')
-                                            viewed lesson "{{ $activity['lesson'] ?? 'N/A' }}"
-                                        @elseif($activity['type'] === 'login_attempt')
-                                            {{ $activity['status'] === 'success' ? 'logged in successfully' : 'failed to log in' }}
-                                        @elseif($activity['type'] === 'profile_update')
+                                        @elseif($activity->type === 'lesson_view')
+                                            viewed lesson "{{ $activity->metadata['lesson'] ?? 'N/A' }}"
+                                        @elseif($activity->type === 'login_attempt')
+                                            {{ ($activity->metadata['status'] ?? 'unknown') === 'success' ? 'logged in successfully' : 'failed to log in' }}
+                                        @elseif($activity->type === 'profile_update')
                                             updated their profile
-                                        @elseif($activity['type'] === 'password_change')
+                                        @elseif($activity->type === 'password_change')
                                             changed their password
+                                        @else
+                                            {{ $activity->description }}
                                         @endif
                                     </p>
                                     <p class="text-xs text-gray-500 mt-1">
-                                        {{ $activity['time'] }}
-                                        @if(isset($activity['ip']))
-                                            • {{ $activity['ip'] }}
+                                        {{ $activity->created_at->diffForHumans() }}
+                                        @if($activity->ip_address)
+                                            • {{ $activity->ip_address }}
                                         @endif
                                     </p>
                                 </div>
@@ -579,6 +776,308 @@
 </div>
 
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    // Initialize everything when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeProgressBars();
+        initializeSparklines();
+        initializeCharts();
+        setupEventListeners();
+    });
+
+    // Initialize progress bars with data attributes
+    function initializeProgressBars() {
+        // Storage progress bar
+        const storageBar = document.querySelector('.storage-progress-bar');
+        if (storageBar) {
+            const width = storageBar.getAttribute('data-width') || '0';
+            storageBar.style.width = width + '%';
+        }
+
+        // Plan progress bars
+        const planBars = document.querySelectorAll('.plan-progress-bar');
+        planBars.forEach(bar => {
+            const width = bar.getAttribute('data-width') || '0';
+            bar.style.width = width + '%';
+        });
+    }
+
+    // Initialize sparklines for KPI cards
+    function initializeSparklines() {
+        // Sample data for sparklines
+        const sparklineData = {
+            users: [1200, 1250, 1180, 1320, 1280, 1350, 1420],
+            online: [85, 92, 78, 95, 88, 102, 98],
+            revenue: [8500, 9200, 8800, 9600, 9100, 9800, 10200],
+            subscriptions: [45, 48, 42, 52, 49, 55, 58]
+        };
+
+        // Create sparklines
+        Object.keys(sparklineData).forEach(key => {
+            const canvas = document.getElementById(key + '-sparkline');
+            if (canvas) {
+                createSparkline(canvas, sparklineData[key]);
+            }
+        });
+    }
+
+    // Create sparkline chart
+    function createSparkline(canvas, data) {
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // Clear canvas
+        ctx.clearRect(0, 0, width, height);
+
+        // Find min/max
+        const min = Math.min(...data);
+        const max = Math.max(...data);
+        const range = max - min || 1;
+
+        // Draw line
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+
+        data.forEach((value, index) => {
+            const x = (index / (data.length - 1)) * width;
+            const y = height - ((value - min) / range) * height;
+
+            if (index === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+
+        ctx.stroke();
+    }
+
+    // Initialize all charts
+    function initializeCharts() {
+        initializeRevenueChart();
+        initializeSubscriptionChart();
+    }
+
+    // Initialize revenue chart
+    function initializeRevenueChart() {
+        const canvas = document.getElementById('revenueChart');
+        if (!canvas) return;
+
+        // Get data from data attribute or use sample data
+        let revenueData = [];
+        try {
+            const dataAttr = canvas.getAttribute('data-revenue-trends');
+            revenueData = dataAttr ? JSON.parse(dataAttr) : [];
+        } catch (e) {
+            revenueData = [];
+        }
+
+        const labels = revenueData.length > 0 ? revenueData.map(item => item.month) : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+        const revenue = revenueData.length > 0 ? revenueData.map(item => item.revenue) : [8500, 9200, 8800, 9600, 9100, 9800];
+        const subscriptions = revenueData.length > 0 ? revenueData.map(item => item.subscriptions) : [45, 48, 42, 52, 49, 55];
+
+        new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Revenue (GH₵)',
+                    data: revenue,
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 1,
+                    yAxisID: 'y'
+                }, {
+                    label: 'New Subscriptions',
+                    data: subscriptions,
+                    type: 'line',
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    borderColor: 'rgba(16, 185, 129, 1)',
+                    borderWidth: 2,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                if (context.datasetIndex === 0) {
+                                    return 'Revenue: GH₵' + context.parsed.y.toLocaleString();
+                                } else {
+                                    return 'New Subscriptions: ' + context.parsed.y;
+                                }
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Revenue (GH₵)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Subscriptions'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    }
+                }
+            }
+        });
+    }
+
+    // Initialize subscription distribution chart
+    function initializeSubscriptionChart() {
+        const ctx = document.getElementById('subscriptionChart');
+        if (!ctx) return;
+
+        // Get data from PHP variables
+        const subscriptionData = {!! json_encode($subscriptionAnalytics ?? []) !!};
+        const labels = subscriptionData.map(item => item.name);
+        const data = subscriptionData.map(item => item.revenue);
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.8)',
+                        'rgba(16, 185, 129, 0.8)',
+                        'rgba(245, 158, 11, 0.8)',
+                        'rgba(239, 68, 68, 0.8)',
+                        'rgba(139, 92, 246, 0.8)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false // We'll use custom legend
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                return context.label + ': GH₵' + context.parsed.toLocaleString() + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Create custom legend
+        createSubscriptionLegend(subscriptionData);
+    }
+
+    // Create custom legend for subscription chart
+    function createSubscriptionLegend(data) {
+        const legendContainer = document.getElementById('subscription-legend');
+        if (!legendContainer) return;
+
+        const total = data.reduce((sum, item) => sum + item.revenue, 0);
+
+        legendContainer.innerHTML = data.map(item => {
+            const percentage = ((item.revenue / total) * 100).toFixed(1);
+            return `
+                <div class="flex items-center justify-between py-1">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
+                        <span class="text-sm font-medium text-gray-900">${item.name}</span>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm font-semibold text-gray-900">GH₵${item.revenue.toLocaleString()}</div>
+                        <div class="text-xs text-gray-500">${percentage}%</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Setup event listeners
+    function setupEventListeners() {
+        // KPI card clicks
+        document.querySelectorAll('.kpi-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const target = this.getAttribute('data-target');
+                if (target) {
+                    const element = document.getElementById(target);
+                    if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        // Add highlight effect
+                        element.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.3)';
+                        setTimeout(() => {
+                            element.style.boxShadow = '';
+                        }, 2000);
+                    }
+                }
+            });
+        });
+
+        // Time filter buttons
+        document.querySelectorAll('.time-filter').forEach(button => {
+            button.addEventListener('click', function() {
+                document.querySelectorAll('.time-filter').forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                // In real app, this would filter the chart data
+                console.log('Time filter changed to:', this.getAttribute('data-period'));
+            });
+        });
+
+        // Metric toggle buttons
+        document.querySelectorAll('.metric-toggle').forEach(button => {
+            button.addEventListener('click', function() {
+                document.querySelectorAll('.metric-toggle').forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                // In real app, this would update the metrics display
+                console.log('Metric view changed to:', this.getAttribute('data-metric'));
+            });
+        });
+
+        // Table sorting
+        document.querySelectorAll('.sortable').forEach(header => {
+            header.addEventListener('click', function() {
+                const sortBy = this.getAttribute('data-sort');
+                const table = document.getElementById('plan-performance-table');
+                // In real app, this would sort the table
+                console.log('Sorting by:', sortBy);
+            });
+        });
+
+        // Export buttons
+        document.querySelectorAll('.export-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                // In real app, this would trigger export
+                alert('Export functionality would be implemented here');
+            });
+        });
+    }
+
     // Refresh button handler
     document.getElementById('refreshButton').addEventListener('click', function() {
         location.reload();

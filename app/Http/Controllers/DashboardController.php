@@ -100,10 +100,44 @@ class DashboardController extends Controller
         // Set the user's grade to the lowest level in the selected group
         $lowestGrade = $this->getLowestGradeForLevelGroup($groupId);
         $user->update(['grade' => $lowestGrade]);
+
+        // Deactivate previous active progress
+        \App\Models\UserProgress::where('user_id', $user->id)
+            ->where('is_active', true)
+            ->update(['is_active' => false]);
+
+        // Create or update new progress record
+        $progress = \App\Models\UserProgress::updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'level_group' => $groupId,
+                'current_level' => $lowestGrade
+            ],
+            [
+                'is_active' => true,
+                'last_accessed_at' => now(),
+                'level_started_at' => now()
+            ]
+        );
+
+        // Keep session for backward compatibility (optional)
         session(['selected_level_group' => $groupId]);
 
-        // Initialize user progress for the selected level group
-        $this->initializeUserProgressForLevelGroup($user, $groupId);
+        // Log in LevelProgression model
+        \App\Models\LevelProgression::create([
+            'user_id' => $user->id,
+            'from_level_group' => $user->activeProgress?->level_group ?? $groupId,
+            'to_level_group' => $groupId,
+            'from_level' => $user->activeProgress?->current_level ?? $lowestGrade,
+            'to_level' => $lowestGrade,
+            'final_score' => 0.00,
+            'lessons_completed' => 0,
+            'quizzes_passed' => 0,
+            'average_quiz_score' => 0.00,
+            'progression_criteria' => ['method' => 'user_selection'],
+            'auto_progressed' => false,
+            'progressed_at' => now()
+        ]);
 
         Log::channel('security')->info('level_group_selected', [
             'user_id' => Auth::id(),
@@ -123,13 +157,17 @@ class DashboardController extends Controller
      */
     public function main()
     {
-        // Check if user has selected a level group
-        if (!session('selected_level_group')) {
-            return redirect()->route('dashboard.level-selection');
-        }
-
-        $selectedLevelGroup = session('selected_level_group');
         $user = Auth::user();
+        $selectedLevelGroup = $user->current_level_group;
+
+        // Check if user has selected a level group
+        if (!$selectedLevelGroup) {
+            // Fallback to session for backward compatibility
+            $selectedLevelGroup = session('selected_level_group');
+            if (!$selectedLevelGroup) {
+                return redirect()->route('dashboard.level-selection');
+            }
+        }
 
         // Get subscription info for dashboard display
         $currentSubscription = $user->currentSubscription;
@@ -163,12 +201,16 @@ class DashboardController extends Controller
      */
     public function digilearn()
     {
-        if (!session('selected_level_group')) {
-            return redirect()->route('dashboard.level-selection');
-        }
-
-        $selectedLevelGroup = session('selected_level_group');
         $user = Auth::user();
+        $selectedLevelGroup = $user->current_level_group;
+
+        if (!$selectedLevelGroup) {
+            // Fallback to session for backward compatibility
+            $selectedLevelGroup = session('selected_level_group');
+            if (!$selectedLevelGroup) {
+                return redirect()->route('dashboard.level-selection');
+            }
+        }
 
         if (!$this->hasAccessToLevelGroup($user, $selectedLevelGroup)) {
             session()->forget('selected_level_group');
@@ -757,12 +799,16 @@ class DashboardController extends Controller
      */
     public function viewLesson($lessonId, Request $request)
     {
-        if (!session('selected_level_group')) {
-            return redirect()->route('dashboard.level-selection');
-        }
-
-        $selectedLevelGroup = session('selected_level_group');
         $user = Auth::user();
+        $selectedLevelGroup = $user->current_level_group;
+
+        if (!$selectedLevelGroup) {
+            // Fallback to session for backward compatibility
+            $selectedLevelGroup = session('selected_level_group');
+            if (!$selectedLevelGroup) {
+                return redirect()->route('dashboard.level-selection');
+            }
+        }
 
         // Check if this is a course view (when course_id is passed)
         $courseId = $request->get('course_id');
@@ -2107,7 +2153,7 @@ class DashboardController extends Controller
                 ]
             ],
             'shs' => [
-                'title' => 'SHS 1-3',
+                'title' => 'Grade 10-12/SHS 1-3',
                 'description' => 'High school or Senior High School',
                 'has_illustration' => false,
                 'levels' => [
@@ -2169,6 +2215,8 @@ class DashboardController extends Controller
                     'average_quiz_score' => 0,
                     'completion_percentage' => 0,
                     'level_started_at' => now(),
+                    'is_active' => true, // Set as active for the selected group
+                    'last_accessed_at' => now(),
                 ]);
 
                 Log::info('Initialized user progress for level group', [
@@ -2178,6 +2226,9 @@ class DashboardController extends Controller
                     'total_lessons' => $totalLessons,
                     'total_quizzes' => $totalQuizzes
                 ]);
+            } else {
+                // If exists, ensure it's active
+                $existingProgress->update(['is_active' => true, 'last_accessed_at' => now()]);
             }
         } catch (\Exception $e) {
             Log::error('Failed to initialize user progress for level group', [
@@ -2238,6 +2289,113 @@ class DashboardController extends Controller
         } else {
             return sprintf('%d sec', $remainingSeconds);
         }
+    }
+
+    /**
+     * Track level activity and update time spent
+     */
+    public function trackLevelActivity($levelGroup = null, $level = null)
+    {
+        $user = Auth::user();
+        $levelGroup = $levelGroup ?? $user->current_level_group;
+        $level = $level ?? $user->current_level;
+
+        if ($levelGroup && $level) {
+            \App\Models\UserProgress::where('user_id', $user->id)
+                ->where('level_group', $levelGroup)
+                ->where('current_level', $level)
+                ->increment('time_spent_seconds', 60); // Increment by 1 minute
+
+            // Also update last_accessed_at
+            \App\Models\UserProgress::where('user_id', $user->id)
+                ->where('level_group', $levelGroup)
+                ->where('current_level', $level)
+                ->update(['last_accessed_at' => now()]);
+        }
+    }
+
+    /**
+     * Check and auto-progress user based on completion criteria
+     */
+    public function checkAndProgressUser($userId)
+    {
+        $user = \App\Models\User::with('activeProgress')->find($userId);
+        $currentProgress = $user->activeProgress;
+
+        if (!$currentProgress) return;
+
+        // Calculate completion metrics
+        $completionRate = $this->getTotalLessonsInLevel($currentProgress->current_level) > 0
+            ? ($currentProgress->completed_lessons / $this->getTotalLessonsInLevel($currentProgress->current_level)) * 100
+            : 0;
+        $quizPerformance = $currentProgress->average_quiz_score ?? 0;
+
+        // Check progression criteria (example thresholds)
+        if ($completionRate >= 80 && $quizPerformance >= 70) {
+            $nextLevel = $this->getNextLevel($currentProgress->level_group, $currentProgress->current_level);
+
+            if ($nextLevel) {
+                // Record progression
+                \App\Models\LevelProgression::create([
+                    'user_id' => $user->id,
+                    'from_level' => $currentProgress->current_level,
+                    'to_level' => $nextLevel,
+                    'from_level_group' => $currentProgress->level_group,
+                    'to_level_group' => $currentProgress->level_group,
+                    'final_score' => $quizPerformance,
+                    'lessons_completed' => $currentProgress->completed_lessons,
+                    'quizzes_passed' => $currentProgress->completed_quizzes,
+                    'average_quiz_score' => $quizPerformance,
+                    'progression_criteria' => [
+                        'completion_rate' => $completionRate,
+                        'quiz_performance' => $quizPerformance,
+                        'auto_progressed' => true
+                    ],
+                    'auto_progressed' => true,
+                    'progressed_at' => now()
+                ]);
+
+                // Update user's level
+                $this->updateUserLevel($user, $nextLevel);
+            }
+        }
+    }
+
+    /**
+     * Get total lessons in a level
+     */
+    private function getTotalLessonsInLevel($level)
+    {
+        return \App\Models\Video::approved()->where('grade_level', $level)->count();
+    }
+
+    /**
+     * Get next level in progression
+     */
+    private function getNextLevel($levelGroup, $currentLevel)
+    {
+        $progression = [
+            'primary-lower' => ['Primary 1' => 'Primary 2', 'Primary 2' => 'Primary 3'],
+            'primary-upper' => ['Primary 4' => 'Primary 5', 'Primary 5' => 'Primary 6'],
+            'jhs' => ['JHS 1' => 'JHS 2', 'JHS 2' => 'JHS 3'],
+            'shs' => ['SHS 1' => 'SHS 2', 'SHS 2' => 'SHS 3'],
+        ];
+
+        return $progression[$levelGroup][$currentLevel] ?? null;
+    }
+
+    /**
+     * Update user's level and progress
+     */
+    private function updateUserLevel($user, $newLevel)
+    {
+        $user->update(['grade' => $newLevel]);
+
+        // Update active progress
+        $user->activeProgress->update([
+            'current_level' => $newLevel,
+            'last_accessed_at' => now()
+        ]);
     }
 
 

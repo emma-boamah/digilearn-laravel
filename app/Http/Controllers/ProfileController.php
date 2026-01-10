@@ -18,6 +18,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use App\Models\UserPreference;
+use App\Services\UserActivityService;
 
 class ProfileController extends Controller
 {

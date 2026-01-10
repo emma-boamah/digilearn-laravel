@@ -31,6 +31,10 @@ class UserProgress extends Model
         'current_streak_days',
         'longest_streak_days',
         'performance_metrics',
+        'is_active',
+        'last_accessed_at',
+        'time_spent_seconds',
+        'metadata',
     ];
 
     protected $casts = [
@@ -45,6 +49,10 @@ class UserProgress extends Model
         'total_time_spent_seconds' => 'integer',
         'current_streak_days' => 'integer',
         'longest_streak_days' => 'integer',
+        'is_active' => 'boolean',
+        'last_accessed_at' => 'datetime',
+        'time_spent_seconds' => 'integer',
+        'metadata' => 'array',
     ];
 
     /**

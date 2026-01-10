@@ -33,6 +33,7 @@ use App\Models\Subject;
 use App\Models\Comment;
 use Illuminate\Support\Facades\Storage; // For file uploads
 use App\Services\NotificationService;
+use App\Services\UserActivityService;
 
 class AdminController extends Controller
 {
@@ -103,6 +104,18 @@ class AdminController extends Controller
         // Get popular lessons
         $popularLessons = $this->getPopularLessons();
 
+        // Get revenue data
+        $revenueData = $this->getRevenueData();
+
+        // Get revenue trends
+        $revenueTrends = $this->getRevenueTrends();
+
+        // Get top performing plans
+        $topPlans = $this->getTopPerformingPlans();
+
+        // Get subscription analytics
+        $subscriptionAnalytics = $this->getSubscriptionAnalytics();
+
         // Check if website is locked
         $websiteLocked = WebsiteLockSetting::first()->is_locked ?? false;
 
@@ -113,7 +126,7 @@ class AdminController extends Controller
             'timestamp' => now()->toISOString()
         ]);
 
-        return view('admin.dashboard', compact('stats', 'recentActivities', 'systemHealth', 'popularLessons', 'websiteLocked'));
+        return view('admin.dashboard', compact('stats', 'recentActivities', 'systemHealth', 'popularLessons', 'revenueData', 'revenueTrends', 'topPlans', 'subscriptionAnalytics', 'websiteLocked'));
     }
 
     /**
@@ -449,6 +462,14 @@ class AdminController extends Controller
     }
 
     /**
+     * Show user activities page
+     */
+    public function activities()
+    {
+        return view('admin.activities.index');
+    }
+
+    /**
      * Get security data via AJAX
      */
     public function getSecurityDataAjax()
@@ -759,13 +780,100 @@ class AdminController extends Controller
      */
     private function getRecentActivities()
     {
-        // This would typically come from an activity log table
-        return [
-            ['type' => 'user_registration', 'user' => 'john@example.com', 'time' => '2 minutes ago'],
-            ['type' => 'lesson_view', 'user' => 'Jane@example.com', 'lesson' => "Basic Mathematics", 'time' => '5 minutes ago'],
-            ['type' => 'user_suspension', 'user' => 'User suspended: spam@example.com', 'time' => '10 minutes ago'],
-            ['type' => 'system_update', 'user' => 'System settings updated', 'time' => '1 hour ago'],
-        ];
+        return UserActivityService::getRecentActivities(10);
+    }
+
+    /**
+     * API endpoint for paginated user activities
+     */
+    public function getUserActivitiesApi(Request $request)
+    {
+        $request->validate([
+            'per_page' => 'nullable|integer|min:10|max:100',
+            'user_id' => 'nullable|exists:users,id',
+            'type' => 'nullable|string|max:255',
+            'ip_address' => 'nullable|ip',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+            'search' => 'nullable|string|max:255',
+        ]);
+
+        $filters = $request->only([
+            'user_id', 'type', 'ip_address', 'date_from', 'date_to', 'search'
+        ]);
+
+        $perPage = $request->input('per_page', 20);
+
+        try {
+            $activities = UserActivityService::getPaginatedActivities($filters, $perPage);
+
+            // Add formatted timestamps and user info
+            $activities->getCollection()->transform(function ($activity) {
+                $activity->formatted_created_at = $activity->created_at->format('M d, Y H:i:s');
+                $activity->time_ago = $activity->created_at->diffForHumans();
+                $activity->user_name = $activity->user->name ?? 'Unknown';
+                $activity->user_email = $activity->user->email ?? '';
+                return $activity;
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $activities,
+                'stats' => UserActivityService::getActivityStats(
+                    $filters['user_id'] ?? null,
+                    30 // Last 30 days
+                ),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('User activities API error', [
+                'error' => $e->getMessage(),
+                'filters' => $filters,
+                'admin_id' => Auth::id(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load user activities',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Get activity statistics for dashboard
+     */
+    public function getActivityStatsApi(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'nullable|exists:users,id',
+            'days' => 'nullable|integer|min:1|max:365',
+        ]);
+
+        $userId = $request->input('user_id');
+        $days = $request->input('days', 30);
+
+        try {
+            $stats = UserActivityService::getActivityStats($userId, $days);
+
+            return response()->json([
+                'success' => true,
+                'stats' => $stats,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Activity stats API error', [
+                'error' => $e->getMessage(),
+                'user_id' => $userId,
+                'days' => $days,
+                'admin_id' => Auth::id(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load activity statistics',
+            ], 500);
+        }
     }
 
     /**
@@ -2417,17 +2525,65 @@ class AdminController extends Controller
      */
     private function getRevenueData()
     {
-        // This would typically come from your subscriptions/payments table
+        // Get total revenue from successful payments
+        $totalRevenue = \App\Models\Payment::where('status', 'success')->sum('amount');
+
+        // Get current month revenue
+        $monthlyRevenue = \App\Models\Payment::where('status', 'success')
+            ->whereYear('paid_at', now()->year)
+            ->whereMonth('paid_at', now()->month)
+            ->sum('amount');
+
+        // Get current week revenue
+        $weeklyRevenue = \App\Models\Payment::where('status', 'success')
+            ->whereBetween('paid_at', [now()->startOfWeek(), now()->endOfWeek()])
+            ->sum('amount');
+
+        // Get today's revenue
+        $dailyRevenue = \App\Models\Payment::where('status', 'success')
+            ->whereDate('paid_at', today())
+            ->sum('amount');
+
+        // Calculate revenue growth (current month vs previous month)
+        $previousMonthRevenue = \App\Models\Payment::where('status', 'success')
+            ->whereYear('paid_at', now()->subMonth()->year)
+            ->whereMonth('paid_at', now()->subMonth()->month)
+            ->sum('amount');
+
+        $revenueGrowth = $previousMonthRevenue > 0
+            ? (($monthlyRevenue - $previousMonthRevenue) / $previousMonthRevenue) * 100
+            : 0;
+
+        // Get active subscriptions count
+        $activeSubscriptions = \App\Models\UserSubscription::active()->count();
+
+        // Get new subscriptions today
+        $newSubscriptionsToday = \App\Models\UserSubscription::whereDate('created_at', today())->count();
+
+        // Calculate churn rate (simplified: expired subscriptions in last 30 days / total active subscriptions)
+        $expiredSubscriptionsLastMonth = \App\Models\UserSubscription::where('status', 'expired')
+            ->where('expires_at', '>=', now()->subMonth())
+            ->where('expires_at', '<=', now())
+            ->count();
+
+        $churnRate = $activeSubscriptions > 0
+            ? ($expiredSubscriptionsLastMonth / ($activeSubscriptions + $expiredSubscriptionsLastMonth)) * 100
+            : 0;
+
+        // Calculate average revenue per user (total revenue / users who made payments)
+        $usersWithPayments = \App\Models\Payment::where('status', 'success')->distinct('user_id')->count('user_id');
+        $averageRevenuePerUser = $usersWithPayments > 0 ? $totalRevenue / $usersWithPayments : 0;
+
         return [
-            'total_revenue' => 125000.00,
-            'monthly_revenue' => 15000.00,
-            'weekly_revenue' => 3500.00,
-            'daily_revenue' => 500.00,
-            'revenue_growth' => 12.5,
-            'active_subscriptions' => 450,
-            'new_subscriptions_today' => 8,
-            'churn_rate' => 2.3,
-            'average_revenue_per_user' => 277.78
+            'total_revenue' => (float) $totalRevenue,
+            'monthly_revenue' => (float) $monthlyRevenue,
+            'weekly_revenue' => (float) $weeklyRevenue,
+            'daily_revenue' => (float) $dailyRevenue,
+            'revenue_growth' => round($revenueGrowth, 1),
+            'active_subscriptions' => $activeSubscriptions,
+            'new_subscriptions_today' => $newSubscriptionsToday,
+            'churn_rate' => round($churnRate, 1),
+            'average_revenue_per_user' => round($averageRevenuePerUser, 2)
         ];
     }
 
@@ -2436,26 +2592,27 @@ class AdminController extends Controller
      */
     private function getSubscriptionAnalytics()
     {
-        return [
-            'essential' => [
-                'name' => 'Essential',
-                'subscribers' => 180,
-                'revenue' => 9000.00,
-                'percentage' => 40.0
-            ],
-            'extra_tuition' => [
-                'name' => 'Extra Tuition',
-                'subscribers' => 200,
-                'revenue' => 40000.00,
-                'percentage' => 44.4
-            ],
-            'home_school' => [
-                'name' => 'Home Sch',
-                'subscribers' => 70,
-                'revenue' => 14000.00,
-                'percentage' => 15.6
-            ]
-        ];
+        $plans = \App\Models\PricingPlan::active()->ordered()->get();
+        $totalRevenue = \App\Models\Payment::where('status', 'success')->sum('amount');
+
+        $analytics = [];
+        foreach ($plans as $plan) {
+            $activeSubscribers = $plan->activeSubscriptions()->count();
+            $planRevenue = $plan->subscriptions()
+                ->where('status', 'active')
+                ->sum('amount_paid');
+
+            $percentage = $totalRevenue > 0 ? ($planRevenue / $totalRevenue) * 100 : 0;
+
+            $analytics[$plan->slug] = [
+                'name' => $plan->name,
+                'subscribers' => $activeSubscribers,
+                'revenue' => (float) $planRevenue,
+                'percentage' => round($percentage, 1)
+            ];
+        }
+
+        return $analytics;
     }
 
     /**
@@ -2466,11 +2623,22 @@ class AdminController extends Controller
         $data = [];
         for ($i = 11; $i >= 0; $i--) {
             $date = now()->subMonths($i);
-            $revenue = rand(8000, 18000); // Sample data - replace with actual query
+
+            // Get revenue for this month
+            $revenue = \App\Models\Payment::where('status', 'success')
+                ->whereYear('paid_at', $date->year)
+                ->whereMonth('paid_at', $date->month)
+                ->sum('amount');
+
+            // Get subscription count for this month
+            $subscriptions = \App\Models\UserSubscription::whereYear('created_at', $date->year)
+                ->whereMonth('created_at', $date->month)
+                ->count();
+
             $data[] = [
                 'month' => $date->format('M Y'),
-                'revenue' => $revenue,
-                'subscriptions' => rand(30, 80)
+                'revenue' => (float) $revenue,
+                'subscriptions' => $subscriptions
             ];
         }
         return $data;
@@ -2481,11 +2649,45 @@ class AdminController extends Controller
      */
     private function getTopPerformingPlans()
     {
-        return [
-            ['plan' => 'Extra Tuition', 'revenue' => 40000, 'growth' => 15.2],
-            ['plan' => 'Home School', 'revenue' => 14000, 'growth' => 8.7],
-            ['plan' => 'Essential', 'revenue' => 9000, 'growth' => 5.3]
-        ];
+        $plans = \App\Models\PricingPlan::active()->with(['subscriptions' => function($query) {
+            $query->where('status', 'active');
+        }])->get();
+
+        $planData = [];
+        foreach ($plans as $plan) {
+            $currentRevenue = $plan->subscriptions->sum('amount_paid');
+
+            // Calculate growth (compare current month to previous month revenue for this plan)
+            $currentMonthRevenue = $plan->subscriptions()
+                ->where('status', 'active')
+                ->whereYear('created_at', now()->year)
+                ->whereMonth('created_at', now()->month)
+                ->sum('amount_paid');
+
+            $previousMonthRevenue = $plan->subscriptions()
+                ->where('status', 'active')
+                ->whereYear('created_at', now()->subMonth()->year)
+                ->whereMonth('created_at', now()->subMonth()->month)
+                ->sum('amount_paid');
+
+            $growth = $previousMonthRevenue > 0
+                ? (($currentMonthRevenue - $previousMonthRevenue) / $previousMonthRevenue) * 100
+                : 0;
+
+            $planData[] = [
+                'plan' => $plan->name,
+                'subscribers' => $plan->subscriptions->count(),
+                'revenue' => (float) $currentRevenue,
+                'growth' => round($growth, 1)
+            ];
+        }
+
+        // Sort by revenue descending and return top 3
+        usort($planData, function($a, $b) {
+            return $b['revenue'] <=> $a['revenue'];
+        });
+
+        return array_slice($planData, 0, 3);
     }
 
     /**
