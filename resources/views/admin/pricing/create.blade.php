@@ -351,17 +351,6 @@
                     @enderror
                 </div>
 
-                <div class="form-group">
-                    <label for="duration_days" class="form-label">Duration (Days)</label>
-                    <input type="number" name="duration_days" id="duration_days" value="{{ old('duration_days') }}"
-                           min="1" class="form-input" placeholder="e.g., 30 for monthly">
-                    <small style="color: var(--gray-500); font-size: 0.75rem; margin-top: 0.25rem; display: block;">
-                        Optional: Number of days this plan is valid for
-                    </small>
-                    @error('duration_days')
-                        <div class="form-error">{{ $message }}</div>
-                    @enderror
-                </div>
             </div>
 
             <div class="form-group">

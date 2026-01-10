@@ -423,4 +423,36 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(UserNotificationPreference::class);
     }
+
+    /**
+     * Get user's progress records
+     */
+    public function progress()
+    {
+        return $this->hasMany(UserProgress::class);
+    }
+
+    /**
+     * Get user's active progress record
+     */
+    public function activeProgress()
+    {
+        return $this->hasOne(UserProgress::class)->where('is_active', true);
+    }
+
+    /**
+     * Get current level group from active progress
+     */
+    public function getCurrentLevelGroupAttribute()
+    {
+        return $this->activeProgress?->level_group;
+    }
+
+    /**
+     * Get current level from active progress
+     */
+    public function getCurrentLevelAttribute()
+    {
+        return $this->activeProgress?->current_level;
+    }
 }

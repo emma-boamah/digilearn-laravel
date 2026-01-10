@@ -33,12 +33,23 @@
                     @empty
                         <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
                             <div style="background-color: var(--white); border-radius: 1rem; padding: 3rem; box-shadow: var(--shadow-sm);">
-                                <svg style="width: 80px; height: 80px; color: var(--gray-400); margin: 0 auto 1.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                <h3 style="color: var(--gray-600); margin-bottom: 1rem; font-size: 1.25rem; font-weight: 600;">No quizzes available</h3>
-                                <p style="color: var(--gray-500); font-size: 1rem;">Quizzes for {{ ucwords(str_replace('-', ' ', $selectedLevelGroup ?? 'this level')) }} are coming soon!</p>
-                                <p style="color: var(--gray-400); font-size: 0.875rem; margin-top: 0.5rem;">Check back later or try a different grade level.</p>
+                                @if($requiresSubscription ?? false)
+                                    <svg style="width: 80px; height: 80px; color: var(--primary-500); margin: 0 auto 1.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                    </svg>
+                                    <h3 style="color: var(--gray-600); margin-bottom: 1rem; font-size: 1.25rem; font-weight: 600;">Unlock Premium Quizzes</h3>
+                                    <p style="color: var(--gray-500); font-size: 1rem; margin-bottom: 1.5rem;">Subscribe to access quizzes for {{ ucwords(str_replace('-', ' ', $selectedLevelGroup ?? 'this level')) }} and many more!</p>
+                                    <a href="{{ route('pricing') }}" style="display: inline-block; background-color: var(--primary-500); color: white; padding: 0.75rem 2rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600; transition: background-color 0.2s;">
+                                        View Subscription Plans
+                                    </a>
+                                @else
+                                    <svg style="width: 80px; height: 80px; color: var(--gray-400); margin: 0 auto 1.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    <h3 style="color: var(--gray-600); margin-bottom: 1rem; font-size: 1.25rem; font-weight: 600;">No quizzes available</h3>
+                                    <p style="color: var(--gray-500); font-size: 1rem;">Quizzes for {{ ucwords(str_replace('-', ' ', $selectedLevelGroup ?? 'this level')) }} are coming soon!</p>
+                                    <p style="color: var(--gray-400); font-size: 0.875rem; margin-top: 0.5rem;">Check back later or try a different grade level.</p>
+                                @endif
                             </div>
                         </div>
                     @endforelse

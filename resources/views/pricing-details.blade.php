@@ -666,6 +666,38 @@
             text-align: center;
         }
     }
+
+    /* Disable hover effects on touch devices (mobile) */
+    @media (hover: none) {
+        .pricing-tab:hover:not(.active) {
+            background-color: transparent;
+        }
+
+        .duration-option:hover {
+            border-color: #e5e7eb;
+        }
+
+        .purchase-btn-main:hover {
+            background-color: var(--secondary-blue);
+        }
+
+        .modal-close-btn:hover {
+            color: var(--gray-600);
+        }
+
+        .modal-duration-option:hover {
+            border-color: #c1d3f8ff;
+            background-color: var(--gray-50);
+        }
+
+        .modal-purchase-btn:hover {
+            background-color: var(--secondary-blue);
+        }
+
+        .footer-links a:hover {
+            color: var(--gray-600);
+        }
+    }
 </style>
 
 <!-- Hero Section -->
@@ -970,7 +1002,7 @@ $plansJson = $plans->map(function($plan) {
         modalTabs.forEach(tab => {
             tab.addEventListener('click', function() {
                 const targetTab = this.getAttribute('data-tab');
-                
+
                 modalTabs.forEach(t => t.classList.remove('active'));
                 this.classList.add('active');
 
@@ -987,6 +1019,25 @@ $plansJson = $plans->map(function($plan) {
             if (event.key === 'Escape' && modal.classList.contains('active')) {
                 closeModal();
             }
+        });
+
+        // Reset button states when page is shown (handles back button navigation)
+        window.addEventListener('pageshow', function(event) {
+            // Reset modal purchase button
+            const modalBtn = document.querySelector('.modal-purchase-btn');
+            if (modalBtn && modalBtn.disabled) {
+                modalBtn.disabled = false;
+                modalBtn.textContent = 'Next: View Pricing';
+            }
+
+            // Reset desktop purchase buttons
+            const purchaseBtns = document.querySelectorAll('.purchase-btn-main');
+            purchaseBtns.forEach(btn => {
+                if (btn.disabled) {
+                    btn.disabled = false;
+                    btn.textContent = 'Purchase';
+                }
+            });
         });
     });
 

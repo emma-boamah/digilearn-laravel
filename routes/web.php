@@ -341,6 +341,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/analytics', [AdminController::class, 'analytics'])->name('analytics');
     Route::get('/security', [AdminController::class, 'security'])->name('security');
     Route::get('/security/data', [AdminController::class, 'getSecurityDataAjax'])->name('security.data');
+    Route::get('/activities', [AdminController::class, 'activities'])->name('activities');
+    Route::get('/user-activities', [AdminController::class, 'getUserActivitiesApi'])->name('user-activities');
+    Route::get('/activity-stats', [AdminController::class, 'getActivityStatsApi'])->name('activity-stats');
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
     Route::post('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
     Route::get('/export', [AdminController::class, 'exportUsers'])->name('export');

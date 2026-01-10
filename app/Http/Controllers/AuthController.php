@@ -22,6 +22,7 @@ use App\Models\WebsiteLockSetting;
 use App\Models\SuperuserRecoveryCode;
 use Carbon\Carbon;
 use App\Services\EmailVerificationService;
+use App\Services\UserActivityService;
 use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
@@ -312,6 +313,19 @@ class AuthController extends Controller
                 'remember_me' => $request->boolean('remember')
             ]);
 
+            // Log user activity
+            UserActivityService::logActivity(
+                'user_login',
+                'User logged in successfully',
+                [
+                    'remember_me' => $request->boolean('remember'),
+                    'login_method' => 'email'
+                ],
+                $user->id,
+                get_client_ip(),
+                $request->userAgent()
+            );
+
             event(new Login('web', $user, false));
 
             // Check if user is admin and redirect appropriately
@@ -600,6 +614,21 @@ class AuthController extends Controller
             'user_id' => $user ? $user->id : null,
             'email' => $user ? $user->email : null
         ]);
+
+        // Log user activity
+        if ($user) {
+            UserActivityService::logActivity(
+                'user_logout',
+                'User logged out',
+                [
+                    'logout_method' => 'manual',
+                    'session_duration' => $user->last_login_at ? now()->diffInMinutes($user->last_login_at) : null
+                ],
+                $user->id,
+                get_client_ip(),
+                $request->userAgent()
+            );
+        }
 
         // Fire logout event
         if ($user) {

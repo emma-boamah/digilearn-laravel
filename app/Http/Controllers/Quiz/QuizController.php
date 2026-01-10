@@ -57,12 +57,22 @@ class QuizController extends Controller
 
             // Filter quizzes based on user's subscription access
             $user = Auth::user();
-            $allowedGradeLevels = \App\Services\SubscriptionAccessService::getAllowedGradeLevels($user);
-            $quizzes = $quizzes->filter(function ($quiz) use ($allowedGradeLevels) {
-                return in_array($quiz->grade_level, $allowedGradeLevels);
-            });
+            $requiresSubscription = false;
+            if (!$user || !$user->is_superuser) {
+                $allowedGradeLevels = \App\Services\SubscriptionAccessService::getAllowedGradeLevels($user);
+                if (empty($allowedGradeLevels)) {
+                    $requiresSubscription = true;
+                    $quizzes = collect(); // No quizzes if no access
+                } else {
+                    $quizzes = $quizzes->filter(function ($quiz) use ($allowedGradeLevels) {
+                        return in_array($quiz->grade_level, $allowedGradeLevels);
+                    });
+                }
+            }
+            // Super users have access to all quizzes regardless of subscription
 
             // Debug logging
+            $allowedGradeLevels = $user && !$user->is_superuser ? \App\Services\SubscriptionAccessService::getAllowedGradeLevels($user) : ['all'];
             Log::info("Quiz filtering debug", [
                 'selectedLevelGroup' => $selectedLevelGroup,
                 'cacheKey' => "quizzes.{$selectedLevelGroup}",
@@ -71,7 +81,9 @@ class QuizController extends Controller
                 'sample_quiz_titles' => $quizzes->take(3)->pluck('title')->toArray(),
                 'session_selected_level_group' => session('selected_level_group'),
                 'user_id' => $userId,
+                'user_is_superuser' => $user ? $user->is_superuser : false,
                 'allowed_grade_levels' => $allowedGradeLevels,
+                'requires_subscription' => $requiresSubscription,
                 'query_sql' => $query->toSql(),
                 'query_bindings' => $query->getBindings(),
                 'filtered_quizzes_count' => $quizzes->count(),
@@ -137,7 +149,7 @@ class QuizController extends Controller
             });
         });
 
-        return view('dashboard.quiz.index', compact('quizzes', 'selectedLevelGroup'));
+        return view('dashboard.quiz.index', compact('quizzes', 'selectedLevelGroup', 'requiresSubscription'));
     }
 
     /**

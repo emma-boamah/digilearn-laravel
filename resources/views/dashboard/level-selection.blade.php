@@ -199,6 +199,7 @@
             height: 100%;
             object-fit: cover;
             border-radius: 8px;
+            object-position: 50% 30%;
         }
 
         .level-shs-image {
@@ -206,7 +207,7 @@
             height: 100%;
             object-fit: cover;
             border-radius: 8px;
-            object-position: 50% 25%;
+            object-position: 50% 10%;
         }
 
         .level-g4-6-image {
@@ -221,6 +222,7 @@
             height: 100%;
             object-fit: cover;
             border-radius: 8px;
+            object-position: 50% 40%;
         }
 
         .level-illustration {
