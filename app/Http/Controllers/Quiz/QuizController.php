@@ -34,12 +34,23 @@ class QuizController extends Controller
         $selectedLevelGroup = session('selected_level_group', 'grade-1-3');
         $userId = Auth::id();
 
+        // Determine subscription access outside cache
+        $user = Auth::user();
+        $requiresSubscription = false;
+        $allowedGradeLevels = [];
+        if (!$user || !$user->is_superuser) {
+            $allowedGradeLevels = \App\Services\SubscriptionAccessService::getAllowedGradeLevels($user);
+            if (empty($allowedGradeLevels)) {
+                $requiresSubscription = true;
+            }
+        }
+
         // Cache key for base quiz data (changes less frequently)
         $cacheKey = "quizzes.{$selectedLevelGroup}";
         $cacheDuration = 300; // 5 minutes
 
         // Get base quiz data with caching
-        $baseQuizzes = Cache::remember($cacheKey, $cacheDuration, function () use ($selectedLevelGroup, $userId) {
+        $baseQuizzes = Cache::remember($cacheKey, $cacheDuration, function () use ($selectedLevelGroup, $userId, $allowedGradeLevels, $requiresSubscription, $user) {
             $query = \App\Models\Quiz::with(['uploader', 'ratings', 'attempts']);
 
             // Filter by grade level if specified
@@ -56,23 +67,17 @@ class QuizController extends Controller
             $quizzes = $query->orderBy('created_at', 'desc')->get();
 
             // Filter quizzes based on user's subscription access
-            $user = Auth::user();
-            $requiresSubscription = false;
-            if (!$user || !$user->is_superuser) {
-                $allowedGradeLevels = \App\Services\SubscriptionAccessService::getAllowedGradeLevels($user);
-                if (empty($allowedGradeLevels)) {
-                    $requiresSubscription = true;
-                    $quizzes = collect(); // No quizzes if no access
-                } else {
-                    $quizzes = $quizzes->filter(function ($quiz) use ($allowedGradeLevels) {
-                        return in_array($quiz->grade_level, $allowedGradeLevels);
-                    });
-                }
+            if (!$requiresSubscription && !empty($allowedGradeLevels)) {
+                $quizzes = $quizzes->filter(function ($quiz) use ($allowedGradeLevels) {
+                    return in_array($quiz->grade_level, $allowedGradeLevels);
+                });
+            } elseif ($requiresSubscription) {
+                $quizzes = collect(); // No quizzes if no access
             }
             // Super users have access to all quizzes regardless of subscription
 
             // Debug logging
-            $allowedGradeLevels = $user && !$user->is_superuser ? \App\Services\SubscriptionAccessService::getAllowedGradeLevels($user) : ['all'];
+            $debugAllowedGradeLevels = $user && !$user->is_superuser ? \App\Services\SubscriptionAccessService::getAllowedGradeLevels($user) : ['all'];
             Log::info("Quiz filtering debug", [
                 'selectedLevelGroup' => $selectedLevelGroup,
                 'cacheKey' => "quizzes.{$selectedLevelGroup}",
@@ -82,7 +87,7 @@ class QuizController extends Controller
                 'session_selected_level_group' => session('selected_level_group'),
                 'user_id' => $userId,
                 'user_is_superuser' => $user ? $user->is_superuser : false,
-                'allowed_grade_levels' => $allowedGradeLevels,
+                'allowed_grade_levels' => $debugAllowedGradeLevels,
                 'requires_subscription' => $requiresSubscription,
                 'query_sql' => $query->toSql(),
                 'query_bindings' => $query->getBindings(),
