@@ -164,9 +164,7 @@ class DashboardController extends Controller
         if (!$selectedLevelGroup) {
             // Fallback to session for backward compatibility
             $selectedLevelGroup = session('selected_level_group');
-            if (!$selectedLevelGroup) {
-                return redirect()->route('dashboard.level-selection');
-            }
+            // Allow access even without selected level group
         }
 
         // Get subscription info for dashboard display
