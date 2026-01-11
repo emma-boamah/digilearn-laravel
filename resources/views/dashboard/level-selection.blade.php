@@ -3,12 +3,12 @@
 @section('content')
     <!-- Back Button -->
     @if(isset($isChanging) && $isChanging)
-        <button class="back-button" id="backToDashboard">
+        <a href="{{ route('dashboard.main') }}" class="back-button" id="backToDashboard">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
             </svg>
             Back to Dashboard
-        </button>
+        </a>
     @else
         <button class="back-button" id="backButton">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -76,7 +76,11 @@
         </div>
     </main>
 
-    <style>
+    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
+
+        a {
+            text-decoration: none;
+        }
 
         /* New header structure styles */
         .header-content {
@@ -290,14 +294,6 @@
         if (backButton) {
             backButton.addEventListener('click', function() {
                 window.history.back();
-            });
-        }
-
-        // Handle dashboard back navigation
-        const backToDashboard = document.getElementById('backToDashboard');
-        if (backToDashboard) {
-            backToDashboard.addEventListener('click', function() {
-                window.location.href = '{{ route("dashboard.main") }}';
             });
         }
     });

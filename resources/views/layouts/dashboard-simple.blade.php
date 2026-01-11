@@ -78,6 +78,7 @@
             padding: 1rem;
             width: 100%;
             justify-content: flex-start;
+            margin-top: 4rem;
         }
 
         .back-button:hover {
@@ -273,9 +274,16 @@
             cursor: pointer;
         }
 
+        .level-info-container {
+            background-color: var(--gray-50);
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--gray-200);
+            margin-top: 3.8rem;
+        }
+
         /* Main Content */
         .main-content {
-            padding: 5rem 0 2rem 0; /* Added top padding for fixed header */
+            padding: 1rem 0 2rem 0; /* Added top padding for fixed header */
         }
 
         /* Card Styles */
