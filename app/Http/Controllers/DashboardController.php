@@ -889,6 +889,32 @@ class DashboardController extends Controller
                     ->withErrors(['lesson' => 'Lesson not found.']);
             }
 
+            // CRITICAL: Get actual video duration from database
+            $videoDuration = null;
+            if (isset($lesson['id'])) {
+                $video = \App\Models\Video::find($lesson['id']);
+                if ($video) {
+                    // Try to get actual duration from video source
+                    $videoDuration = $video->getDuration();
+                    
+                    Log::info('Video duration retrieved', [
+                        'video_id' => $lesson['id'],
+                        'duration' => $videoDuration,
+                        'video_source' => $video->video_source
+                    ]);
+                }
+            }
+            // Add duration to lesson array
+            $lesson['total_duration'] = $videoDuration ?: 300; // Fallback to 300 if not found
+            $lesson['duration_seconds'] = $videoDuration ?: 300;
+            $lesson['level_group'] = $this->getLevelGroup($lesson['level'] ?? 'primary-lower');
+
+            Log::info('University lesson prepared for view', [
+                'lesson_id' => $lessonId,
+                'total_duration' => $lesson['total_duration'] ?? 0,
+                'video_source' => $lesson['video_source'] ?? 'unknown'
+            ]);
+
             // Increment video views for university lessons
             if (isset($lesson['video_id'])) {
                 $video = Video::find($lesson['video_id']);
@@ -952,6 +978,32 @@ class DashboardController extends Controller
             return redirect()->route('dashboard.digilearn')
                 ->withErrors(['lesson' => 'Lesson not found.']);
         }
+
+        // CRITICAL: Get actual video duration from database
+        $videoDuration = null;
+        if (isset($lesson['id'])) {
+            $video = \App\Models\Video::find($lesson['id']);
+            if ($video) {
+                // Try to get actual duration from video source
+                $videoDuration = $video->getDuration();
+                
+                Log::info('Video duration retrieved', [
+                    'video_id' => $lesson['id'],
+                    'duration' => $videoDuration,
+                    'video_source' => $video->video_source
+                ]);
+            }
+        }
+        // Add duration to lesson array
+        $lesson['total_duration'] = $videoDuration ?: 300; // Fallback to 300 if not found
+        $lesson['duration_seconds'] = $videoDuration ?: 300;
+        $lesson['level_group'] = $this->getLevelGroup($lesson['level'] ?? 'primary-lower');
+
+        Log::info('Non-university lesson prepared for view', [
+            'lesson_id' => $lessonId,
+            'total_duration' => $lesson['total_duration'] ?? 0,
+            'video_source' => $lesson['video_source'] ?? 'unknown'
+        ]);
 
         // Check if user has access to this specific lesson
         if (!$this->hasLessonAccess($user, $lesson)) {
@@ -2864,4 +2916,27 @@ class DashboardController extends Controller
 
          return $levelMapping[$gradeLevel] ?? strtolower(str_replace(' ', '-', $gradeLevel));
      }
+
+   /**
+    * Get level group for a given level
+    */
+   private function getLevelGroup($level)
+   {
+       $mappings = [
+           'primary-1' => 'primary-lower',
+           'primary-2' => 'primary-lower',
+           'primary-3' => 'primary-lower',
+           'primary-4' => 'primary-upper',
+           'primary-5' => 'primary-upper',
+           'primary-6' => 'primary-upper',
+           'jhs-1' => 'jhs',
+           'jhs-2' => 'jhs',
+           'jhs-3' => 'jhs',
+           'shs-1' => 'shs',
+           'shs-2' => 'shs',
+           'shs-3' => 'shs',
+           'university' => 'university',
+       ];
+       return $mappings[$level] ?? 'primary-lower';
+   }
 }

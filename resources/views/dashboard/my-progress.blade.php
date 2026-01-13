@@ -755,7 +755,7 @@
                     <h3 class="activity-title">Recent Lessons</h3>
                 </div>
                 @if($recentLessons && $recentLessons->count() > 0)
-                    <div class="activity-list">
+                    <div class="activity-list" data-recent-lessons>
                         @foreach($recentLessons as $lesson)
                         <div class="activity-item">
                             <div class="activity-icon lesson">
@@ -788,7 +788,7 @@
                     <h3 class="activity-title">Recent Quizzes</h3>
                 </div>
                 @if($recentQuizzes && $recentQuizzes->count() > 0)
-                    <div class="activity-list">
+                    <div class="activity-list" data-recent-quizzes>
                         @foreach($recentQuizzes as $quiz)
                         <div class="activity-item">
                             <div class="activity-icon quiz">
@@ -969,6 +969,138 @@
             }
         `;
         document.head.appendChild(style);
+    </script>
+
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        // Listen for progress updates from lesson view
+        window.addEventListener('progressUpdated', function(event) {
+            console.log('Progress updated, reloading recent activities...');
+            updateRecentActivities();
+        });
+
+        // Listen for messages from iframe
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'PROGRESS_UPDATED') {
+                console.log('Lesson completed:', event.data.lessonId);
+                updateRecentActivities();
+            }
+        });
+
+        function updateRecentActivities() {
+            fetch('/dashboard/my-progress/refresh', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update DOM with new data
+                    updateRecentLessonsDOM(data.recent_lessons);
+                    updateRecentQuizzesDOM(data.recent_quizzes);
+                    console.log('Recent activities updated successfully');
+                }
+            })
+            .catch(error => console.error('Error updating activities:', error));
+        }
+
+        function updateRecentLessonsDOM(lessons) {
+            const container = document.querySelector('.activity-section .activity-list');
+            if (!container) return;
+
+            let html = '';
+            if (lessons && lessons.length > 0) {
+                lessons.forEach(lesson => {
+                    const completionStatus = lesson.fully_completed ? 'Completed' : Math.round(lesson.completion_percentage) + '%';
+                    const badgeClass = lesson.fully_completed ? 'completed' : '';
+                    html += `
+                        <div class="activity-item">
+                            <div class="activity-icon lesson">
+                                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-name">${lesson.lesson_title}</div>
+                                <div class="activity-meta">${lesson.lesson_subject} • ${formatDate(lesson.last_watched_at)}</div>
+                            </div>
+                            <div class="activity-score ${badgeClass}">
+                                ${completionStatus}
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                html = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📚</div>
+                        <div class="empty-state-title">No lessons yet</div>
+                        <div class="empty-state-description">Start watching lessons to see your progress here</div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function updateRecentQuizzesDOM(quizzes) {
+            // Find the quizzes section (second activity-section)
+            const sections = document.querySelectorAll('.activity-section');
+            const quizSection = sections[1]; // Second section is quizzes
+            if (!quizSection) return;
+
+            const container = quizSection.querySelector('.activity-list');
+            if (!container) return;
+
+            let html = '';
+            if (quizzes && quizzes.length > 0) {
+                quizzes.forEach(quiz => {
+                    const badgeClass = quiz.passed ? 'passed' : 'failed';
+                    html += `
+                        <div class="activity-item">
+                            <div class="activity-icon quiz">
+                                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-name">${quiz.quiz_title}</div>
+                                <div class="activity-meta">${quiz.quiz_subject} • ${formatDate(quiz.completed_at)}</div>
+                            </div>
+                            <div class="activity-score ${badgeClass}">
+                                ${Math.round(quiz.score_percentage)}%
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                html = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <div class="empty-state-title">No quizzes yet</div>
+                        <div class="empty-state-description">Take quizzes to test your knowledge and track progress</div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 0) return 'Today';
+            if (diffDays === 1) return 'Yesterday';
+            if (diffDays < 7) return `${diffDays} days ago`;
+            if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+            return `${Math.floor(diffDays / 30)} months ago`;
+        }
     </script>
 </body>
 </html>

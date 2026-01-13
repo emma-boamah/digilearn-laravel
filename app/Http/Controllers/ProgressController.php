@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use App\Models\UserProgress;
 use App\Models\LessonCompletion;
 use App\Models\QuizAttempt;
@@ -49,7 +50,7 @@ class ProgressController extends Controller
 
         // Get recent activities
         $recentLessons = LessonCompletion::where('user_id', $userId)
-            ->where('lesson_level', $currentLevel)
+            ->where('lesson_level_group', $currentLevel)
             ->orderBy('last_watched_at', 'desc')
             ->limit(5)
             ->get();
@@ -90,7 +91,7 @@ class ProgressController extends Controller
     {
         $request->validate([
             'watch_time' => 'required|integer|min:0',
-            'total_duration' => 'nullable|integer|min:1',
+            'total_duration' => 'nullable|numeric|min:1',
             'lesson_data' => 'required|array',
         ]);
 
@@ -102,17 +103,51 @@ class ProgressController extends Controller
             $lessonData['level_group'] = $this->getLevelGroup($lessonData['level']);
         }
 
-        // Get total duration - fetch from API if not provided for external videos
-        $totalDuration = $request->total_duration;
-        if (!$totalDuration && isset($lessonData['video_id'])) {
-            $video = \App\Models\Video::find($lessonData['video_id']);
+        // CRITICAL: Get accurate total duration from video source
+        $totalDuration = null;
+
+        if (isset($lessonData['id'])) {
+            $video = \App\Models\Video::find($lessonData['id']);
             if ($video) {
-                $totalDuration = $video->getDuration();
+                // Try to get actual duration from the video source
+                $videoDuration = $video->getDuration();
+
+                if ($videoDuration && $videoDuration > 0) {
+                    $totalDuration = $videoDuration;
+                    Log::info('Using video source duration', [
+                        'video_id' => $lessonData['id'],
+                        'duration' => $totalDuration,
+                        'source' => $video->video_source
+                    ]);
+                } else {
+                    // Fallback to requested duration or default
+                    $totalDuration = $request->total_duration ?: 300;
+                    Log::warning('Could not get video duration, using fallback', [
+                        'video_id' => $lessonData['id'],
+                        'fallback_duration' => $totalDuration,
+                        'video_source' => $video->video_source
+                    ]);
+                }
+            } else {
+                // Video not found
+                $totalDuration = $request->total_duration ?: 300;
+                Log::warning('Video not found for lesson', [
+                    'lesson_id' => $lessonId,
+                    'video_id' => $lessonData['id']
+                ]);
             }
+        } else {
+            // No video ID provided
+            $totalDuration = $request->total_duration ?: 300;
         }
 
-        // Fallback to provided duration or default
-        $totalDuration = $totalDuration ?: $request->total_duration ?: 0;
+        Log::info('recordLessonProgress - Duration Summary', [
+            'lesson_id' => $lessonId,
+            'video_id' => $lessonData['id'] ?? null,
+            'requested_duration' => $request->total_duration,
+            'final_duration' => $totalDuration,
+            'watch_time' => $request->watch_time
+        ]);
 
         // Record the lesson completion
         $completion = LessonCompletion::recordWatchProgress(
@@ -647,5 +682,81 @@ class ProgressController extends Controller
         ];
         
         return $progression[$currentLevel] ?? null;
+    }
+
+    /**
+     * Refresh recent lessons and quizzes data
+     */
+    public function refreshRecentLessons(Request $request)
+    {
+        $user = auth()->user();
+        $currentLevel = session('selected_level_group', 'primary-lower');
+
+        // Get FRESH recent lessons with current progress
+        $recentLessons = LessonCompletion::where('user_id', $user->id)
+            ->where('lesson_level_group', $currentLevel)
+            ->select(
+                'id',
+                'lesson_id',
+                'lesson_title',
+                'lesson_subject',
+                'completion_percentage',
+                'fully_completed',
+                'last_watched_at'
+            )
+            ->orderBy('last_watched_at', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function($lesson) {
+                return [
+                    'id' => $lesson->id,
+                    'lesson_id' => $lesson->lesson_id,
+                    'lesson_title' => $lesson->lesson_title,
+                    'lesson_subject' => $lesson->lesson_subject,
+                    'completion_percentage' => round($lesson->completion_percentage, 1),
+                    'fully_completed' => $lesson->fully_completed,
+                    'last_watched_at' => $lesson->last_watched_at,
+                ];
+            });
+
+        // Get FRESH recent quizzes with current progress
+        $recentQuizzes = QuizAttempt::where('user_id', $user->id)
+            ->where('quiz_level', $currentLevel)
+            ->select(
+                'id',
+                'quiz_id',
+                'quiz_title',
+                'quiz_subject',
+                'score_percentage',
+                'passed',
+                'completed_at'
+            )
+            ->orderBy('completed_at', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function($quiz) {
+                return [
+                    'id' => $quiz->id,
+                    'quiz_id' => $quiz->quiz_id,
+                    'quiz_title' => $quiz->quiz_title,
+                    'quiz_subject' => $quiz->quiz_subject,
+                    'score_percentage' => round($quiz->score_percentage, 1),
+                    'passed' => $quiz->passed,
+                    'completed_at' => $quiz->completed_at,
+                ];
+            });
+
+        Log::info('Recent lessons/quizzes refreshed', [
+            'user_id' => $user->id,
+            'level_group' => $currentLevel,
+            'recent_lessons_count' => $recentLessons->count(),
+            'recent_quizzes_count' => $recentQuizzes->count(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'recent_lessons' => $recentLessons,
+            'recent_quizzes' => $recentQuizzes
+        ]);
     }
 }
