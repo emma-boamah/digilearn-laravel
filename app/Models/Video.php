@@ -564,27 +564,95 @@ class Video extends Model
      */
     public function getDuration()
     {
-        // If duration is already stored, return it
-        if ($this->duration_seconds) {
-            return $this->duration_seconds;
-        }
+        try {
+            // 1. Check if duration is already stored in database
+            if ($this->duration_seconds && $this->duration_seconds > 0) {
+                Log::info('Using stored duration', [
+                    'video_id' => $this->id,
+                    'duration' => $this->duration_seconds,
+                    'source' => 'database'
+                ]);
+                return $this->duration_seconds;
+            }
 
-        // Fetch duration based on source
-        switch ($this->video_source) {
-            case 'vimeo':
-                return $this->getVimeoDuration();
+            // 2. Try to get duration from Vimeo
+            if ($this->video_source === 'vimeo' && $this->vimeo_id) {
+                $duration = $this->getVimeoDuration();
+                if ($duration && $duration > 0) {
+                    // Cache it in database
+                    $this->update(['duration_seconds' => $duration]);
+                    Log::info('Retrieved duration from Vimeo', [
+                        'video_id' => $this->id,
+                        'vimeo_id' => $this->vimeo_id,
+                        'duration' => $duration
+                    ]);
+                    return $duration;
+                }
+            }
 
-            case 'youtube':
-                return $this->getYouTubeDuration();
+            // 3. Try to get duration from YouTube
+            if ($this->video_source === 'youtube' && $this->external_video_id) {
+                $duration = $this->getYouTubeDuration();
+                if ($duration && $duration > 0) {
+                    // Cache it in database
+                    $this->update(['duration_seconds' => $duration]);
+                    Log::info('Retrieved duration from YouTube', [
+                        'video_id' => $this->id,
+                        'youtube_id' => $this->external_video_id,
+                        'duration' => $duration
+                    ]);
+                    return $duration;
+                }
+            }
 
-            case 'mux':
-                return $this->getMuxDuration();
+            // 4. Try to get duration from Mux
+            if ($this->video_source === 'mux' && $this->mux_playback_id) {
+                $duration = $this->getMuxDuration();
+                if ($duration && $duration > 0) {
+                    // Cache it in database
+                    $this->update(['duration_seconds' => $duration]);
+                    Log::info('Retrieved duration from Mux', [
+                        'video_id' => $this->id,
+                        'mux_playback_id' => $this->mux_playback_id,
+                        'duration' => $duration
+                    ]);
+                    return $duration;
+                }
+            }
 
-            case 'local':
-            default:
-                // For local videos, duration should be stored in duration_seconds
-                // If not, return null
-                return null;
+            // 5. Try to get duration from local video file
+            if ($this->video_source === 'local' && $this->video_path) {
+                $duration = $this->getLocalVideoDuration();
+                if ($duration && $duration > 0) {
+                    // Cache it in database
+                    $this->update(['duration_seconds' => $duration]);
+                    Log::info('Retrieved duration from local file', [
+                        'video_id' => $this->id,
+                        'video_path' => $this->video_path,
+                        'duration' => $duration
+                    ]);
+                    return $duration;
+                }
+            }
+
+            // If all else fails, return null (controller will use what it has)
+            Log::warning('Could not determine video duration from any source', [
+                'video_id' => $this->id,
+                'video_source' => $this->video_source,
+                'vimeo_id' => $this->vimeo_id,
+                'youtube_id' => $this->external_video_id,
+                'mux_playback_id' => $this->mux_playback_id,
+                'video_path' => $this->video_path
+            ]);
+
+            return null;
+
+        } catch (\Exception $e) {
+            Log::error('Error getting video duration', [
+                'video_id' => $this->id,
+                'error' => $e->getMessage()
+            ]);
+            return null;
         }
     }
 
@@ -652,29 +720,61 @@ class Video extends Model
      */
     private function getMuxDuration()
     {
-        if (!$this->mux_asset_id) {
-            return null;
-        }
-
         try {
-            $muxService = app(\App\Services\MuxService::class);
-            $assetInfo = $muxService->getAsset($this->mux_asset_id);
-
-            if ($assetInfo['success'] && isset($assetInfo['duration'])) {
-                $duration = (float) $assetInfo['duration'];
-                // Cache the duration
-                $this->update(['duration_seconds' => $duration]);
-                return $duration;
-            }
-        } catch (\Exception $e) {
-            Log::warning('Failed to get Mux duration', [
+            // Note: Mux API requires asset_id, not playback_id
+            // For now, we cannot get duration from Mux without asset_id
+            // This would need to be implemented by storing asset_id in the video table
+            Log::warning('Cannot get Mux duration - asset_id not available', [
                 'video_id' => $this->id,
-                'mux_asset_id' => $this->mux_asset_id,
+                'mux_playback_id' => $this->mux_playback_id
+            ]);
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Error getting Mux duration', [
+                'mux_playback_id' => $this->mux_playback_id,
                 'error' => $e->getMessage()
             ]);
+            return null;
         }
+    }
 
-        return null;
+    /**
+     * Get local video file duration using ffprobe
+     */
+    private function getLocalVideoDuration()
+    {
+        try {
+            $fullPath = storage_path('app/public/' . $this->video_path);
+
+            if (!file_exists($fullPath)) {
+                Log::warning('Local video file not found', ['path' => $fullPath]);
+                return null;
+            }
+
+            // Use ffprobe if available
+            if (shell_exec('which ffprobe')) {
+                $command = sprintf(
+                    'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1:noinherit=1 "%s"',
+                    escapeshellarg($fullPath)
+                );
+
+                $duration = shell_exec($command);
+                $duration = (int)floatval(trim($duration));
+
+                if ($duration > 0) {
+                    return $duration;
+                }
+            }
+
+            return null;
+
+        } catch (\Exception $e) {
+            Log::error('Error getting local video duration', [
+                'video_path' => $this->video_path,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
     }
 
     /**

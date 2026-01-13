@@ -27,11 +27,14 @@ return [
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
             // "'unsafe-eval'", // Only enable if absolutely required
             'https://player.vimeo.com/api/player.js',
-            'https://js.paystack.co'
+            'https://www.youtube.com',
+            'https://s.ytimg.com',
+            'https://js.paystack.co',
         ],
         'style-src' => [
             "'self'",
             "'nonce-{nonce}'", // Nonce placeholder for inline styles
+            "'unsafe-inline'", // Allow inline styles for YouTube player
             'https://fonts.googleapis.com',
             'https://fonts.bunny.net',
             'https://cdn.jsdelivr.net',
@@ -60,6 +63,8 @@ return [
             'https://ui-avatars.com', // For user avatars
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
             'https://i.ytimg.com',
+            'https://i.vimeocdn.com',
+            'https://img.youtube.com',
         ],
         'media-src' => [
             "'self'",

@@ -25,6 +25,9 @@
 
     <!-- Vimeo Player API for hover-to-play functionality -->
     <script src="https://player.vimeo.com/api/player.js"></script>
+
+    <!-- YouTube IFrame Player API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
 @endsection
 
 @section('content')
@@ -2913,20 +2916,14 @@
                                      Video URL: {{ $videoUrl }}
                                  </div>
                                  @if($lesson->video_source === 'youtube')
-                                     <div class="video-player" style="width: 100%; height: 100%; position: relative; padding-bottom: 56.25%; /* 16:9 aspect ratio */">
-                                         {!! $embedHtml !!}
+                                     <!-- YouTube Player Container -->
+                                     <div id="youtube-player-container" class="video-player" style="width: 100%; height: 100%; position: relative;">
+                                         <div id="youtube-player" style="width: 100%; height: 100%;"></div>
                                      </div>
                                  @elseif($lesson->video_source === 'vimeo')
-                                     <div class="video-player" style="width: 100%; height: 100%; position: relative; padding-bottom: 56.25%; /* 16:9 aspect ratio */">
-                                         <iframe src="{{ $videoUrl }}" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen
-                                                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
-                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                         </iframe>
-                                         <div style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #666; font-size: 14px;">
-                                             <div style="margin-bottom: 10px;">🎬</div>
-                                             <div>Video is processing...</div>
-                                             <div style="font-size: 12px; margin-top: 5px;">Please check back in a few minutes</div>
-                                         </div>
+                                     <!-- Vimeo Player Container -->
+                                     <div id="vimeo-player-container" class="video-player" style="width: 100%; height: 100%; position: relative;">
+                                         <div id="vimeo-player" style="width: 100%; height: 100%;"></div>
                                      </div>
                                  @elseif($lesson->video_source === 'mux')
                                      {!! $embedHtml !!}
@@ -4733,118 +4730,113 @@
             });
         }
 
-        // Lesson data for saving functionality
-        @php
-        $lessonDataArray = [
-            'id' => $lesson['id'] ?? null,
-            'title' => $lesson['title'] ?? '',
-            'subject' => $lesson['subject'] ?? '',
-            'instructor' => $lesson['instructor'] ?? '',
-            'year' => $lesson['year'] ?? '',
-            'duration' => $lesson['duration'] ?? '',
-            'thumbnail' => $lesson['thumbnail'] ?? '',
-            'video_url' => $lesson['video_url'] ?? '',
-            'selected_level' => $selectedLevelGroup ?? ''
-        ];
-        @endphp
-        const lessonData = @json($lessonDataArray);
+        // Lesson data is now handled within the video progress tracking functions
 
         // Enhanced save lesson functionality
         function initializeSaveLesson() {
             const saveButton = document.querySelector('.action-btn-primary');
 
-            if (saveButton && saveButton.textContent.trim().includes('Save Lesson')) {
-                // Check if lesson is already saved
-                const lessonId = lessonData.id;
-
-                // Only proceed if we have a valid lesson ID
-                if (!lessonId) {
-                    console.error('No lesson ID available for save functionality');
-                    saveButton.style.display = 'none';
-                    return;
-                }
-
-                // Check saved status on page load
-                fetch(`/dashboard/lesson/${lessonId}/check-saved`)
-                    .then(response => response.json())
-                    .then(data => {
-                        updateSaveButton(saveButton, data.saved);
-                    })
-                    .catch(error => console.error('Error checking save status:', error));
-
-                saveButton.addEventListener('click', function(e) {
-                    e.preventDefault();
-
-                    const isSaved = this.dataset.saved === 'true';
-                    const originalContent = this.innerHTML;
-
-                    // Show loading state
-                    this.innerHTML = '<div class="loading-spinner"></div> ' + (isSaved ? 'Removing...' : 'Saving...');
-                    this.disabled = true;
-
-                    const url = isSaved ?
-                        `/dashboard/lesson/${lessonId}/unsave` :
-                        `/dashboard/lesson/${lessonId}/save`;
-
-                    const method = isSaved ? 'DELETE' : 'POST';
-
-                    // Prepare data with validation
-                    const requestData = isSaved ? {} : {
-                        lesson_title: lessonData.title,
-                        lesson_subject: lessonData.subject,
-                        lesson_instructor: lessonData.instructor,
-                        lesson_year: lessonData.year,
-                        lesson_duration: lessonData.duration,
-                        lesson_thumbnail: lessonData.thumbnail,
-                        lesson_video_url: lessonData.video_url,
-                        selected_level: lessonData.selected_level
-                    };
-
-                    // Validate required fields
-                    const requiredFields = ['lesson_title', 'lesson_subject', 'lesson_instructor', 'lesson_year', 'lesson_duration', 'lesson_thumbnail', 'lesson_video_url', 'selected_level'];
-                    const missingFields = requiredFields.filter(field => !requestData[field] || requestData[field].trim() === '');
-
-                    if (!isSaved && missingFields.length > 0) {
-                        console.error('Missing required fields:', missingFields);
-                        this.innerHTML = originalContent;
-                        this.disabled = false;
-                        alert('Unable to save lesson: Missing lesson information. Please refresh the page and try again.');
-                        return;
-                    }
-
-                    console.log('Saving lesson with data:', requestData);
-
-                    fetch(url, {
-                        method: method,
-                        headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(requestData)
-                    })
-                    .then(response => {
-                        console.log('Save response status:', response.status);
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('Save response data:', data);
-                        if (data.success) {
-                            updateSaveButton(this, data.saved);
-                            showSuccessMessage(data.message);
-                        } else {
-                            this.innerHTML = originalContent;
-                            this.disabled = false;
-                            alert(data.message || 'An error occurred');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Save lesson error:', error);
-                        this.innerHTML = originalContent;
-                        this.disabled = false;
-                        alert('Failed to save lesson. Please try again.');
-                    });
-                });
+            if (!saveButton || !saveButton.textContent.includes('Save Lesson')) {
+                console.log('Save button not found or not visible');
+                return;
             }
+
+            const lessonId = '{{ $lesson["id"] ?? "" }}';
+
+            // Validate lesson ID exists
+            if (!lessonId) {
+                console.error('No lesson ID available for save functionality');
+                saveButton.style.display = 'none';
+                return;
+            }
+
+            console.log('Save lesson functionality initialized for lesson:', lessonId);
+
+            // Check saved status on page load
+            fetch(`/dashboard/lesson/${lessonId}/check-saved`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Save status check response:', data);
+                updateSaveButton(saveButton, data.saved);
+            })
+            .catch(error => console.error('Error checking save status:', error));
+
+            // Add click event listener
+            saveButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                console.log('Save button clicked');
+
+                const isSaved = this.dataset.saved === 'true';
+                const originalContent = this.innerHTML;
+
+                // Show loading state
+                this.innerHTML = '<div class="loading-spinner"></div> ' + (isSaved ? 'Removing...' : 'Saving...');
+                this.disabled = true;
+
+                const url = isSaved ?
+                    `/dashboard/lesson/${lessonId}/unsave` :
+                    `/dashboard/lesson/${lessonId}/save`;
+
+                const method = isSaved ? 'DELETE' : 'POST';
+
+                // Prepare lesson data from page
+                const lessonData = {
+                    lesson_title: '{{ $lesson["title"] ?? "Unknown Lesson" }}',
+                    lesson_subject: '{{ $lesson["subject"] ?? "General" }}',
+                    lesson_instructor: '{{ $lesson["instructor"] ?? "Unknown" }}',
+                    lesson_year: '{{ $lesson["year"] ?? date("Y") }}',
+                    lesson_duration: {{ $lesson["total_duration"] ?? 300 }},
+                    lesson_thumbnail: '{{ $lesson["thumbnail"] ?? "" }}',
+                    lesson_video_url: '{{ $lesson["video_url"] ?? "" }}',
+                    selected_level: '{{ $selectedLevel ?? "primary-lower" }}'
+                };
+
+                console.log('Saving lesson with data:', lessonData);
+
+                const requestData = isSaved ? {} : lessonData;
+
+                fetch(url, {
+                    method: method,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                })
+                .then(response => {
+                    console.log('Save response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Save response data:', data);
+                    if (data.success) {
+                        updateSaveButton(this, data.saved);
+                        showSuccessMessage(data.message || (isSaved ? 'Lesson removed from saved' : 'Lesson saved successfully'));
+                    } else {
+                        this.innerHTML = originalContent;
+                        this.disabled = false;
+                        alert(data.message || 'An error occurred while saving');
+                    }
+                })
+                .catch(error => {
+                    console.error('Save lesson error:', error);
+                    this.innerHTML = originalContent;
+                    this.disabled = false;
+                    alert('Failed to save lesson. Please try again. Error: ' + error.message);
+                });
+            });
         }
 
         function updateSaveButton(button, isSaved) {
@@ -5294,6 +5286,7 @@
 
         // Course tabs functionality
         function initializeCourseTabs() {
+            console.log('testcoursecards')
             const tabButtons = document.querySelectorAll('.tab-btn');
             const tabContents = document.querySelectorAll('.tab-content');
 
@@ -5322,190 +5315,579 @@
 
         // Initialize video progress tracking
         function initializeVideoProgressTracking() {
-            // Look for iframe elements within video-player containers
-            const videoElement = document.querySelector('.video-player iframe') ||
-                                document.querySelector('.video-player video') ||
-                                document.querySelector('iframe[src*="youtube.com"]') ||
-                                document.querySelector('iframe[src*="vimeo.com"]');
-            const lessonId = '{{ $lesson["id"] ?? "" }}';
+            console.log('=== Starting Video Progress Tracking Initialization ===');
 
-            if (!videoElement || !lessonId) {
-                console.log('Video element or lesson ID not found, skipping progress tracking');
-                console.log('Available video elements:', document.querySelectorAll('iframe, video'));
+            // Get lesson data from page - INCLUDING DURATION
+            const lessonId = '{{ $lesson["id"] ?? "" }}';
+            const lessonTitle = '{{ $lesson["title"] ?? "Unknown" }}';
+            const lessonSubject = '{{ $lesson["subject"] ?? "General" }}';
+            const lessonLevel = '{{ $lesson["level"] ?? "unknown" }}';
+            const lessonLevelGroup = '{{ $lesson["level_group"] ?? "primary-lower" }}';
+            
+            // CRITICAL: Get actual duration from backend
+            const totalDuration = {{ $lesson["total_duration"] ?? 300 }};
+            
+            console.log('Lesson Data with Duration:', {
+                lessonId,
+                lessonTitle,
+                lessonSubject,
+                lessonLevel,
+                lessonLevelGroup,
+                totalDuration
+            });
+
+            if (!lessonId) {
+                console.warn('No lesson ID found - skipping progress tracking');
                 return;
             }
 
-            console.log('Found video element:', videoElement);
-            videoProgressTracker = new VideoProgressTracker(videoElement, lessonId);
-            videoProgressTracker.init();
+            // Find video element
+            let videoElement = null;
+            const selectors = [
+                '.video-container video',
+                '.video-container iframe',
+                '.video-player video',
+                '.video-player iframe',
+                'video[controls]',
+                'iframe[src*="youtube.com"]',
+                'iframe[src*="vimeo.com"]',
+                'iframe[src*="mux.com"]'
+            ];
+
+            for (const selector of selectors) {
+                const found = document.querySelector(selector);
+                if (found) {
+                    videoElement = found;
+                    console.log('Found video element with selector:', selector);
+                    break;
+                }
+            }
+
+            if (!videoElement) {
+                console.warn('No video element found with any selector');
+                return;
+            }
+
+            console.log('Video element found:', {
+                tagName: videoElement.tagName,
+                src: videoElement.src || videoElement.getAttribute('src'),
+                type: videoElement.getAttribute('type') || 'iframe'
+            });
+
+            // Initialize tracker with proper error handling
+            try {
+                const lessonData = {
+                    id: lessonId,
+                    title: lessonTitle,
+                    subject: lessonSubject,
+                    level: lessonLevel,
+                    level_group: lessonLevelGroup
+                };
+
+                videoProgressTracker = new VideoProgressTracker(
+                    videoElement,
+                    lessonId,
+                    lessonData,
+                    totalDuration  // Pass actual duration here
+                );
+                videoProgressTracker.init();
+                console.log('VideoProgressTracker initialized successfully');
+            } catch (error) {
+                console.error('Failed to initialize VideoProgressTracker:', error);
+            }
         }
 
         class VideoProgressTracker {
-            constructor(videoElement, lessonId) {
+            constructor(videoElement, lessonId, lessonData, providedDuration) {
                 this.videoElement = videoElement;
                 this.lessonId = lessonId;
+                this.lessonData = lessonData;
                 this.watchTime = 0;
-                this.lastUpdateTime = Date.now();
-                this.totalDuration = 0;
+                this.lastUpdateTime = null;
+                this.totalDuration = providedDuration || 300; // Use provided duration
                 this.progressInterval = null;
                 this.isTracking = false;
+                this.isPlaying = false;
                 this.lastReportedProgress = 0;
-                this.csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                this.csrfToken = this.getCsrfToken();
+                this.reportThreshold = 10; // Report every 10 seconds
+                this.lastReportTime = 0;
+                this.youtubePlayer = null; // For YouTube API player instance
+
+                console.log('VideoProgressTracker constructor:', {
+                    videoElement: this.videoElement.tagName,
+                    lessonId: this.lessonId,
+                    providedDuration: providedDuration,
+                    totalDuration: this.totalDuration,
+                    csrfTokenAvailable: !!this.csrfToken
+                });
+            }
+
+            getCsrfToken() {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                if (!token) {
+                    console.warn('CSRF token not found in meta tags');
+                }
+                return token;
             }
 
             init() {
-                console.log('Initializing video progress tracking for lesson:', this.lessonId);
+                console.log('Initializing VideoProgressTracker with duration:', this.totalDuration);
 
-                // Handle different video types (HTML5 video vs iframe)
                 if (this.videoElement.tagName === 'VIDEO') {
+                    console.log('Detected HTML5 video element');
                     this.initHTML5Video();
                 } else if (this.videoElement.tagName === 'IFRAME') {
+                    console.log('Detected iframe element');
                     this.initIframeVideo();
+                    // IMPORTANT: Don't call startPeriodicTracking() here!
+                    // It will be called only when video actually starts playing
                 }
 
-                // Track page visibility to pause/resume tracking
+                // Track page visibility
                 document.addEventListener('visibilitychange', () => {
+                    console.log('Page visibility changed:', {
+                        hidden: document.hidden,
+                        isPlaying: this.isPlaying
+                    });
+
                     if (document.hidden) {
                         this.pauseTracking();
-                    } else {
+                    } else if (this.isPlaying) {
                         this.resumeTracking();
                     }
                 });
 
-                // Track before page unload
+                // Report progress before unload
                 window.addEventListener('beforeunload', () => {
-                    this.reportProgress(true);
+                    console.log('Page unloading - reporting final progress');
+                    if (this.watchTime > 0) {
+                        this.reportProgress(true);
+                    }
                 });
+
+                console.log('VideoProgressTracker initialization complete');
             }
 
             initHTML5Video() {
                 console.log('Setting up HTML5 video tracking');
 
                 this.videoElement.addEventListener('loadedmetadata', () => {
-                    this.totalDuration = this.videoElement.duration;
-                    console.log('Video duration loaded:', this.totalDuration);
+                    const elementDuration = this.videoElement.duration;
+                    console.log('Video metadata loaded:', {
+                        elementDuration: elementDuration,
+                        providedDuration: this.totalDuration,
+                        usingDuration: elementDuration || this.totalDuration
+                    });
+
+                    // Use element duration if available and different from provided
+                    if (elementDuration && elementDuration > 0) {
+                        this.totalDuration = elementDuration;
+                    }
                 });
 
+                // ONLY track on actual play event
                 this.videoElement.addEventListener('play', () => {
-                    console.log('Video started playing');
+                    console.log('✓ Video started playing - STARTING TRACKER');
+                    this.isPlaying = true;
                     this.startTracking();
                 });
 
                 this.videoElement.addEventListener('pause', () => {
-                    console.log('Video paused');
+                    console.log('Video paused - STOPPING TRACKER');
+                    this.isPlaying = false;
                     this.pauseTracking();
                     this.reportProgress();
                 });
 
                 this.videoElement.addEventListener('ended', () => {
-                    console.log('Video ended');
+                    console.log('Video ended - reporting final progress');
+                    this.isPlaying = false;
                     this.pauseTracking();
                     this.reportProgress(true);
                 });
 
-                // Periodic progress updates during playback
                 this.videoElement.addEventListener('timeupdate', () => {
-                    if (this.isTracking) {
+                    if (this.isTracking && this.isPlaying) {
                         const currentTime = Date.now();
-                        const timeDiff = (currentTime - this.lastUpdateTime) / 1000; // Convert to seconds
-                        this.watchTime += timeDiff;
+
+                        if (this.lastUpdateTime) {
+                            const timeDiff = (currentTime - this.lastUpdateTime) / 1000;
+                            this.watchTime += timeDiff;
+                        }
+
                         this.lastUpdateTime = currentTime;
 
-                        // Report progress every 10 seconds or when significant progress is made
-                        const currentProgress = (this.videoElement.currentTime / this.totalDuration) * 100;
-                        if (Math.abs(currentProgress - this.lastReportedProgress) >= 5 || this.watchTime >= 10) {
+                        // Report periodically
+                        if (currentTime - this.lastReportTime >= (this.reportThreshold * 1000)) {
                             this.reportProgress();
+                            this.lastReportTime = currentTime;
                         }
                     }
                 });
             }
 
             initIframeVideo() {
-                console.log('Setting up iframe video tracking (limited functionality)');
+                console.log('Setting up iframe video tracking with duration:', this.totalDuration);
 
-                // For iframe videos (YouTube, Vimeo), we can only track basic events
-                // More advanced tracking would require their APIs
+                const iframeSrc = this.videoElement.getAttribute('src') || '';
 
-                // Simulate progress tracking for iframe videos
-                // This is a basic implementation - real iframe tracking needs platform-specific APIs
-                let playStartTime = null;
+                console.log('Iframe source detected:', iframeSrc);
 
-                // Listen for iframe messages if available
-                window.addEventListener('message', (event) => {
-                    // Handle YouTube API messages if implemented
-                    if (event.origin.includes('youtube.com') || event.origin.includes('vimeo.com')) {
-                        try {
-                            const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+                if (iframeSrc.includes('vimeo.com')) {
+                    this.initVimeoTracking();
+                } else if (iframeSrc.includes('youtube.com') || iframeSrc.includes('youtu.be')) {
+                    this.initYouTubeTracking();
+                } else if (iframeSrc.includes('mux.com')) {
+                    this.initMuxTracking();
+                } else {
+                    console.warn('Unknown iframe video source, using periodic tracking');
+                    this.initGenericIframeTracking();
+                }
+            }
 
-                            if (data.event === 'onStateChange') {
-                                if (data.info === 1) { // Playing
-                                    this.startTracking();
-                                } else if (data.info === 2 || data.info === 0) { // Paused or ended
-                                    this.pauseTracking();
-                                    this.reportProgress(data.info === 0); // true if ended
-                                }
+            initVimeoTracking() {
+                console.log('Setting up Vimeo API tracking');
+
+                try {
+                    // Use Vimeo Player API
+                    const player = new Vimeo.Player(this.videoElement);
+
+                    player.on('play', () => {
+                        console.log('✓ Vimeo video PLAYING - STARTING TRACKER');
+                        this.isPlaying = true;
+                        this.startTracking();
+                    });
+
+                    player.on('pause', () => {
+                        console.log('Vimeo video PAUSED - STOPPING TRACKER');
+                        this.isPlaying = false;
+                        this.pauseTracking();
+                        this.reportProgress();
+                    });
+
+                    player.on('ended', () => {
+                        console.log('Vimeo video ENDED - reporting final progress');
+                        this.isPlaying = false;
+                        this.pauseTracking();
+                        this.reportProgress(true);
+                    });
+
+                    player.on('timeupdate', (data) => {
+                        if (this.isTracking && this.isPlaying) {
+                            const currentTime = Date.now();
+
+                            if (this.lastUpdateTime) {
+                                const timeDiff = (currentTime - this.lastUpdateTime) / 1000;
+                                this.watchTime += timeDiff;
                             }
-                        } catch (e) {
-                            // Ignore parsing errors
+
+                            this.lastUpdateTime = currentTime;
+
+                            // Report periodically
+                            if (currentTime - this.lastReportTime >= (this.reportThreshold * 1000)) {
+                                console.log('Vimeo timeupdate:', {
+                                    currentSeconds: data.seconds,
+                                    duration: data.duration,
+                                    watchTime: this.watchTime
+                                });
+                                this.reportProgress();
+                                this.lastReportTime = currentTime;
+                            }
                         }
+                    });
+
+                    // Get actual duration from Vimeo
+                    player.getDuration().then(duration => {
+                        console.log('Vimeo actual duration:', duration);
+                        this.totalDuration = duration;
+                    }).catch(error => {
+                        console.error('Error getting Vimeo duration:', error);
+                    });
+
+                } catch (error) {
+                    console.error('Vimeo API initialization failed:', error);
+                    console.log('Falling back to periodic tracking');
+                    this.initGenericIframeTracking();
+                }
+            }
+
+            initYouTubeTracking() {
+                console.log('Setting up YouTube IFrame API tracking');
+
+                // Extract video ID from iframe src
+                const src = this.videoElement.getAttribute('src') || '';
+                const videoIdMatch = src.match(/embed\/([^?&]+)/);
+                const videoId = videoIdMatch ? videoIdMatch[1] : null;
+
+                if (!videoId) {
+                    console.error('Could not extract YouTube video ID');
+                    this.initGenericIframeTracking();
+                    return;
+                }
+
+                console.log('YouTube video ID:', videoId);
+
+                // CRITICAL: Replace the iframe with a div container for YouTube API
+                const videoContainer = this.videoElement.parentElement;
+                const playerDiv = document.createElement('div');
+                playerDiv.id = 'youtube-player-' + videoId; // Unique ID for this player
+                playerDiv.style.width = '100%';
+                playerDiv.style.height = '100%';
+                playerDiv.style.position = 'absolute';
+                playerDiv.style.top = '0';
+                playerDiv.style.left = '0';
+
+                // Replace the iframe with the div
+                this.videoElement.parentElement.replaceChild(playerDiv, this.videoElement);
+                console.log('Replaced iframe with player div');
+
+                // Wait for YouTube IFrame API to be ready
+                const checkYTReady = () => {
+                    if (typeof YT !== 'undefined' && YT.Player) {
+                        console.log('YouTube API ready, creating player');
+                        this.createYouTubePlayer(videoId, playerDiv.id);
+                    } else {
+                        console.log('Waiting for YouTube API...');
+                        setTimeout(checkYTReady, 100);
+                    }
+                };
+
+                checkYTReady();
+            }
+
+            createYouTubePlayer(videoId, containerId) {
+                console.log('Creating YouTube player for video:', videoId, 'in container:', containerId);
+
+                try {
+                    const player = new YT.Player(containerId, {
+                        width: '100%',
+                        height: '100%',
+                        videoId: videoId, // Use videoId parameter instead of relying on iframe
+                        playerVars: {
+                            autoplay: 0, // Don't autoplay
+                            controls: 1,
+                            modestbranding: 1,
+                            rel: 0,
+                            showinfo: 0,
+                            fs: 1,
+                            iv_load_policy: 3
+                        },
+                        events: {
+                            'onReady': (event) => {
+                                console.log('✓ YouTube player ready');
+                                // Get actual duration
+                                const duration = event.target.getDuration();
+                                if (duration > 0) {
+                                    this.totalDuration = duration;
+                                    console.log('YouTube actual duration:', duration);
+                                }
+                            },
+                            'onStateChange': (event) => {
+                                // -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (cued)
+                                const state = event.data;
+                                const stateNames = {
+                                    '-1': 'unstarted',
+                                    '0': 'ended',
+                                    '1': 'playing',
+                                    '2': 'paused',
+                                    '3': 'buffering',
+                                    '5': 'cued'
+                                };
+
+                                console.log('YouTube state changed to:', stateNames[state] + ' (' + state + ')');
+
+                                if (state === YT.PlayerState.PLAYING) {
+                                    console.log('✓ YouTube video PLAYING - STARTING TRACKER');
+                                    this.isPlaying = true;
+                                    this.startTracking();
+                                } else if (state === YT.PlayerState.PAUSED) {
+                                    console.log('YouTube video PAUSED - STOPPING TRACKER');
+                                    this.isPlaying = false;
+                                    this.pauseTracking();
+                                    this.reportProgress();
+                                } else if (state === YT.PlayerState.ENDED) {
+                                    console.log('YouTube video ENDED - reporting final progress');
+                                    this.isPlaying = false;
+                                    this.pauseTracking();
+                                    this.reportProgress(true);
+                                }
+                            },
+                            'onError': (event) => {
+                                console.error('YouTube player error:', event.data);
+                                // Fallback to generic tracking on error
+                                this.initGenericIframeTracking();
+                            }
+                        }
+                    });
+
+                    // Store player instance for periodic checks
+                    this.youtubePlayer = player;
+
+                    // Add periodic progress check for YouTube
+                    setInterval(() => {
+                        if (this.youtubePlayer && this.isPlaying && this.isTracking) {
+                            try {
+                                const currentTime = this.youtubePlayer.getCurrentTime();
+                                const duration = this.youtubePlayer.getDuration();
+
+                                if (duration > 0) {
+                                    this.totalDuration = duration;
+                                }
+
+                                const currentTime_Date = Date.now();
+
+                                if (this.lastUpdateTime) {
+                                    const timeDiff = (currentTime_Date - this.lastUpdateTime) / 1000;
+                                    this.watchTime += timeDiff;
+                                }
+
+                                this.lastUpdateTime = currentTime_Date;
+
+                                // Report periodically
+                                if (currentTime_Date - this.lastReportTime >= (this.reportThreshold * 1000)) {
+                                    console.log('YouTube progress:', {
+                                        currentSeconds: Math.round(currentTime),
+                                        duration: Math.round(duration),
+                                        watchTime: this.watchTime,
+                                        completion: ((this.watchTime / duration) * 100).toFixed(1) + '%'
+                                    });
+                                    this.reportProgress();
+                                    this.lastReportTime = currentTime_Date;
+                                }
+                            } catch (error) {
+                                console.error('Error updating YouTube progress:', error);
+                            }
+                        }
+                    }, 1000); // Check every second
+
+                    console.log('YouTube player created successfully');
+
+                } catch (error) {
+                    console.error('YouTube player initialization failed:', error);
+                    console.log('Falling back to generic iframe tracking');
+                    this.initGenericIframeTracking();
+                }
+            }
+
+            initMuxTracking() {
+                console.log('Setting up Mux tracking');
+
+                // Mux uses standard video events if loaded correctly
+                // Check if it has a video element inside
+                const innerVideo = this.videoElement.querySelector('video');
+
+                if (innerVideo) {
+                    // Use HTML5 tracking for the inner video
+                    this.videoElement = innerVideo;
+                    this.initHTML5Video();
+                } else {
+                    console.log('Mux iframe without inner video, using periodic tracking');
+                    this.initGenericIframeTracking();
+                }
+            }
+
+            initGenericIframeTracking() {
+                console.log('Setting up generic iframe tracking (periodic method)');
+
+                // For unknown iframe sources, use periodic tracking
+                // but only when page is visible and user has interacted
+                let isUserFocused = false;
+
+                this.videoElement.addEventListener('mouseenter', () => {
+                    isUserFocused = true;
+                    if (!this.isPlaying) {
+                        console.log('User focused on video iframe');
+                        this.isPlaying = true;
+                        this.startTracking();
+                        this.startPeriodicTracking();
                     }
                 });
 
-                // Fallback: Track based on visibility and time spent on page
-                // Start tracking immediately for iframe videos since we can't detect play events
-                this.startTracking();
-                this.startPeriodicTracking();
+                this.videoElement.addEventListener('mouseleave', () => {
+                    isUserFocused = false;
+                });
+
+                // Detect via page focus (user clicking in iframe triggers focus)
+                this.videoElement.addEventListener('focus', () => {
+                    if (!this.isPlaying) {
+                        console.log('Video iframe gained focus - assuming playback');
+                        this.isPlaying = true;
+                        this.startTracking();
+                        this.startPeriodicTracking();
+                    }
+                });
+
+                // Listen for visibility changes
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden && this.isPlaying && !this.progressInterval) {
+                        this.startPeriodicTracking();
+                    }
+                });
             }
 
             startPeriodicTracking() {
-                // For iframe videos without API access, track periodically
+                // Only start if we've confirmed the video is playing
+                if (!this.isPlaying) {
+                    console.log('Not starting periodic tracking - video not playing yet');
+                    return;
+                }
+
+                console.log('Starting periodic tracking with duration:', this.totalDuration);
                 this.progressInterval = setInterval(() => {
-                    if (!document.hidden && this.isTracking) {
-                        this.watchTime += 5; // Add 5 seconds every interval
+                    if (!document.hidden && this.isPlaying) {
+                        this.watchTime += 5;
+                        console.log('Periodic watch time update:', {
+                            watchTime: this.watchTime,
+                            totalDuration: this.totalDuration,
+                            isPlaying: this.isPlaying,
+                            completion: ((this.watchTime / this.totalDuration) * 100).toFixed(1) + '%'
+                        });
                         this.reportProgress();
+                    } else if (document.hidden) {
+                        console.log('Page hidden, pausing periodic tracking');
+                        if (this.progressInterval) {
+                            clearInterval(this.progressInterval);
+                            this.progressInterval = null;
+                        }
                     }
-                }, 5000); // Every 5 seconds
+                }, 5000);
             }
 
             startTracking() {
-                if (!this.isTracking) {
+                if (!this.isTracking && this.isPlaying) {
                     this.isTracking = true;
                     this.lastUpdateTime = Date.now();
-                    console.log('Started tracking video progress');
+                    this.lastReportTime = Date.now();
+                    console.log('✓✓ Started tracking video progress with duration:', this.totalDuration);
                 }
             }
 
             pauseTracking() {
                 this.isTracking = false;
-                if (this.progressInterval) {
-                    clearInterval(this.progressInterval);
-                    this.progressInterval = null;
-                }
+                console.log('Paused tracking video progress');
             }
 
             resumeTracking() {
-                if (!this.isTracking && !document.hidden) {
+                if (this.isPlaying && !this.isTracking) {
                     this.startTracking();
+                    console.log('Resumed tracking video progress');
                 }
             }
 
             async reportProgress(forceComplete = false) {
-                if (this.watchTime < 1) return; // Don't report if less than 1 second watched
+                if (this.watchTime < 1 && !forceComplete) {
+                    return; // Don't report if less than 1 second watched
+                }
 
                 try {
                     const progressData = {
                         watch_time: Math.floor(this.watchTime),
-                        total_duration: Math.floor(this.totalDuration) || 300, // Default 5 minutes if unknown
-                        lesson_data: {
-                            id: this.lessonId,
-                            title: '{{ $lesson["title"] ?? "Unknown Lesson" }}',
-                            subject: '{{ $lesson["subject"] ?? "General" }}',
-                            level: '{{ $selectedLevel ?? "primary-lower" }}',
-                            level_group: '{{ $selectedLevel ?? "primary-lower" }}'
-                        }
+                        total_duration: this.totalDuration, // Use actual duration
+                        lesson_data: this.lessonData
                     };
 
-                    console.log('Reporting progress:', progressData);
+                    console.log('Reporting progress to backend:', progressData);
 
                     const response = await fetch(`/dashboard/lesson/${this.lessonId}/progress`, {
                         method: 'POST',
@@ -5519,14 +5901,21 @@
 
                     const result = await response.json();
 
-                    if (result.success) {
-                        console.log('Progress reported successfully:', result);
-                        this.lastReportedProgress = result.completion_percentage || 0;
-                        this.watchTime = 0; // Reset watch time after successful report
+                    console.log('Progress report response:', result);
 
-                        // Show completion message if lesson is fully completed
+                    if (result.success) {
+                        this.lastReportedProgress = result.completion_percentage || 0;
+                        this.watchTime = 0; // Reset after successful report
+                        this.lastUpdateTime = Date.now();
+
                         if (result.fully_completed) {
-                            showSuccessMessage('Lesson completed! 🎉');
+                            console.log('🎉 Lesson completed!');
+                            if (typeof showSuccessMessage === 'function') {
+                                showSuccessMessage('Lesson completed! 🎉');
+                            }
+
+                            // CRITICAL: Refresh progress dashboard after lesson completes
+                            this.refreshProgressDashboard();
                         }
                     } else {
                         console.error('Failed to report progress:', result);
@@ -5536,11 +5925,63 @@
                 }
             }
 
+            // Add this new method to refresh the dashboard
+            refreshProgressDashboard() {
+                console.log('Refreshing progress dashboard...');
+
+                // Send signal to parent window if in iframe
+                if (window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'PROGRESS_UPDATED',
+                        lessonId: this.lessonId
+                    }, '*');
+                }
+
+                // Also try direct refresh of my-progress page if it's open
+                try {
+                    fetch('/dashboard/my-progress/refresh', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': this.csrfToken,
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Progress dashboard refresh successful');
+                        // Trigger custom event for other pages to listen to
+                        window.dispatchEvent(new CustomEvent('progressUpdated', { detail: data }));
+                    })
+                    .catch(error => console.error('Error refreshing dashboard:', error));
+                } catch (error) {
+                    console.error('Dashboard refresh error:', error);
+                }
+            }
+
             destroy() {
                 this.pauseTracking();
-                this.reportProgress(true); // Final report on destroy
+                if (this.watchTime > 0) {
+                    this.reportProgress(true);
+                }
             }
         }
+
+        // Initialize on DOM ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM Content Loaded - initializing video progress tracking');
+            initializeVideoProgressTracking();
+        });
+
+        // Also try to initialize after a short delay
+        window.addEventListener('load', function() {
+            console.log('Window loaded - checking video progress tracking');
+            if (!videoProgressTracker) {
+                setTimeout(() => {
+                    initializeVideoProgressTracking();
+                }, 1000);
+            }
+        });
 
         // Add smooth scrolling for better UX
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {

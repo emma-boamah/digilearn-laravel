@@ -178,6 +178,7 @@ Route::middleware(['auth'])->group(function () {
     });
     Route::get('/dashboard/progress/check/{level}', [ProgressController::class, 'checkProgression'])->name('dashboard.progress.check');
     Route::post('/dashboard/progress/manual/{userId}/{toLevel}', [ProgressController::class, 'manualProgression'])->name('dashboard.progress.manual');
+    Route::post('/dashboard/my-progress/refresh', [ProgressController::class, 'refreshRecentLessons'])->name('dashboard.my-progress.refresh');
 
     // Projects
     Route::get('/dashboard/my-projects', [ProjectController::class, 'index'])->name('dashboard.my-projects');
