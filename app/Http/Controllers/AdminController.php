@@ -3538,18 +3538,30 @@ class AdminController extends Controller
             $videoMaxSize = $uploadConfig['video']['max_size'] / 1024; // Convert bytes to KB
             $thumbnailMaxSize = $uploadConfig['thumbnail']['max_size'] / 1024; // Convert bytes to KB
             
-            $request->validate([
+            // Determine if this is a chunked upload or direct upload
+            $isChunkedUpload = $request->filled('upload_id');
+            
+            $validationRules = [
                 'title' => 'required|string',
                 'subject_id' => 'required|exists:subjects,id',
                 'description' => 'nullable|string',
                 'grade_level' => 'required|string',
                 'video_source' => 'required|string',
-                'video_file' => 'nullable|file|mimes:' . implode(',', $uploadConfig['video']['mimes']) . '|max:' . $videoMaxSize,
                 'thumbnail_file' => 'nullable|image|mimes:' . implode(',', $uploadConfig['thumbnail']['mimes']) . '|max:' . $thumbnailMaxSize,
                 'external_video_url' => 'nullable|url',
                 'vimeo_url' => 'nullable|url',
                 'upload_destination' => 'nullable|string'
-            ], [
+            ];
+            
+            if (!$isChunkedUpload) {
+                // Only require video_file for direct uploads
+                $validationRules['video_file'] = 'nullable|file|mimes:' . implode(',', $uploadConfig['video']['mimes']) . '|max:' . $videoMaxSize;
+            } else {
+                // For chunked uploads, require upload_id
+                $validationRules['upload_id'] = 'required|string';
+            }
+            
+            $request->validate($validationRules, [
                 'video_file.max' => 'Video file size cannot exceed ' . $uploadConfig['video']['max_size_display'] . '.',
                 'video_file.mimes' => 'Video must be one of: ' . implode(', ', $uploadConfig['video']['mimes']) . '.',
                 'thumbnail_file.max' => 'Thumbnail size cannot exceed ' . $uploadConfig['thumbnail']['max_size_display'] . '.',
@@ -3592,8 +3604,45 @@ class AdminController extends Controller
 
             $video = Video::create($videoData);
 
-            // Handle file upload
-            if ($request->hasFile('video_file')) {
+            // Handle file upload - either chunked or direct
+            if ($isChunkedUpload) {
+                // Handle chunked upload - file is already assembled in temp_videos
+                $uploadId = $request->input('upload_id');
+                $chunkFilename = $request->input('filename', 'video');
+                $tempFilename = $uploadId . '_' . $chunkFilename;
+                $tempPath = 'temp_videos/' . $tempFilename;
+                
+                // Verify the file exists
+                if (!Storage::disk('public')->exists($tempPath)) {
+                    throw new \Exception('Reassembled file not found. Upload may have failed.');
+                }
+                
+                $video->update(['temp_file_path' => $tempPath]);
+
+                if ($request->filled('upload_destination')) {
+                    $video->update(['video_source' => $request->upload_destination]);
+
+                    if ($request->upload_destination === 'vimeo') {
+                        $vimeoService = new \App\Services\VimeoService();
+                        $result = $vimeoService->uploadVideo('storage/public/' . $tempPath, $video->title, $video->description);
+
+                        if ($result['success']) {
+                            $video->update([
+                                'vimeo_id' => $result['video_id'],
+                                'vimeo_embed_url' => $result['embed_url'],
+                                'status' => 'approved',
+                                'temp_file_path' => null,
+                                'temp_expires_at' => null
+                            ]);
+                            Storage::disk('public')->delete($tempPath);
+                        } else {
+                            $video->update(['status' => 'rejected']);
+                            throw new \Exception('Failed to upload to Vimeo: ' . ($result['error'] ?? 'Unknown error'));
+                        }
+                    }
+                }
+            } elseif ($request->hasFile('video_file')) {
+                // Handle direct upload
                 $videoFile = $request->file('video_file');
                 $filename = time() . '_' . $video->id . '.' . $videoFile->getClientOriginalExtension();
                 $tempPath = $videoFile->storeAs('temp_videos', $filename, 'public');
@@ -3927,9 +3976,14 @@ class AdminController extends Controller
         try {
             $uploadConfig = config('uploads');
             $uploadId = $request->input('upload_id');
-            $chunkIndex = $request->input('chunk_index');
-            $totalChunks = $request->input('total_chunks');
+            $chunkIndex = (int) $request->input('chunk_index', 0);
+            $totalChunks = (int) $request->input('total_chunks', 0);
             $filename = $request->input('filename');
+            
+            // Validate inputs
+            if (empty($uploadId) || empty($filename) || $totalChunks <= 0) {
+                throw new \Exception('Missing required fields: upload_id, filename, or total_chunks');
+            }
             
             // Create temporary storage directory for chunks
             $tempDir = storage_path('app/temp_chunks/' . $uploadId);
@@ -3939,6 +3993,10 @@ class AdminController extends Controller
             
             // Store the chunk
             $chunkFile = $request->file('chunk');
+            if (!$chunkFile) {
+                throw new \Exception('No chunk file provided');
+            }
+            
             $chunkPath = $tempDir . '/chunk_' . $chunkIndex;
             $chunkFile->move($tempDir, 'chunk_' . $chunkIndex);
             
