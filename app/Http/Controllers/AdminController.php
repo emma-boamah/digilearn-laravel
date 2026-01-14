@@ -3985,10 +3985,10 @@ class AdminController extends Controller
                 throw new \Exception('Missing required fields: upload_id, filename, or total_chunks');
             }
             
-            // Create temporary storage directory for chunks
-            $tempDir = storage_path('app/temp_chunks/' . $uploadId);
-            if (!file_exists($tempDir)) {
-                mkdir($tempDir, 0755, true);
+            // Create temporary storage directory for chunks using public disk
+            $tempChunksDir = storage_path('app/public/temp_chunks/' . $uploadId);
+            if (!file_exists($tempChunksDir)) {
+                mkdir($tempChunksDir, 0755, true);
             }
             
             // Store the chunk
@@ -3997,15 +3997,19 @@ class AdminController extends Controller
                 throw new \Exception('No chunk file provided');
             }
             
-            $chunkPath = $tempDir . '/chunk_' . $chunkIndex;
-            $chunkFile->move($tempDir, 'chunk_' . $chunkIndex);
+            $chunkPath = $tempChunksDir . '/chunk_' . $chunkIndex;
+            $chunkFile->move($tempChunksDir, 'chunk_' . $chunkIndex);
             
             // Check if all chunks are uploaded
-            $uploadedChunks = count(glob($tempDir . '/chunk_*'));
+            $uploadedChunks = count(glob($tempChunksDir . '/chunk_*'));
             
             if ($uploadedChunks === $totalChunks) {
                 // All chunks uploaded, reassemble the file
-                $finalPath = storage_path('app/temp_videos/' . $uploadId . '_' . $filename);
+                $tempVideosDir = storage_path('app/public/temp_videos');
+                if (!file_exists($tempVideosDir)) {
+                    mkdir($tempVideosDir, 0755, true);
+                }
+                $finalPath = $tempVideosDir . '/' . $uploadId . '_' . $filename;
                 $finalDir = dirname($finalPath);
                 
                 if (!file_exists($finalDir)) {
@@ -4020,7 +4024,7 @@ class AdminController extends Controller
                 
                 // Reassemble chunks in order
                 for ($i = 0; $i < $totalChunks; $i++) {
-                    $chunkPath = $tempDir . '/chunk_' . $i;
+                    $chunkPath = $tempChunksDir . '/chunk_' . $i;
                     if (!file_exists($chunkPath)) {
                         throw new \Exception('Missing chunk ' . $i);
                     }
@@ -4033,8 +4037,8 @@ class AdminController extends Controller
                 fclose($finalFile);
                 
                 // Clean up temp directory
-                if (file_exists($tempDir)) {
-                    rmdir($tempDir);
+                if (file_exists($tempChunksDir)) {
+                    rmdir($tempChunksDir);
                 }
                 
                 return response()->json([
