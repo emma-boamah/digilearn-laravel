@@ -2692,9 +2692,10 @@
                     const chunkFormData = new FormData();
                     chunkFormData.append('_token', '{{ csrf_token() }}');
                     chunkFormData.append('upload_id', uploadId);
-                    chunkFormData.append('chunk_number', chunkIndex);
+                    chunkFormData.append('chunk_index', chunkIndex);
                     chunkFormData.append('total_chunks', totalChunks);
-                    chunkFormData.append('chunk_file', chunk);
+                    chunkFormData.append('chunk', chunk);
+                    chunkFormData.append('filename', videoFile.name);
 
                     const response = await fetch('{{ route("admin.contents.upload.video-chunk") }}', {
                         method: 'POST',
@@ -2751,6 +2752,7 @@
                 const finalFormData = new FormData();
                 finalFormData.append('_token', '{{ csrf_token() }}');
                 finalFormData.append('upload_id', uploadId);
+                finalFormData.append('filename', videoFile.name);
                 finalFormData.append('title', finalData.video.title);
                 finalFormData.append('subject_id', finalData.video.subject_id);
                 finalFormData.append('description', finalData.video.description);
