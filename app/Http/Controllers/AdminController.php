@@ -3534,17 +3534,26 @@ class AdminController extends Controller
     public function uploadVideoComponent(Request $request)
     {
         try {
+            $uploadConfig = config('uploads');
+            $videoMaxSize = $uploadConfig['video']['max_size'] / 1024; // Convert bytes to KB
+            $thumbnailMaxSize = $uploadConfig['thumbnail']['max_size'] / 1024; // Convert bytes to KB
+            
             $request->validate([
                 'title' => 'required|string',
                 'subject_id' => 'required|exists:subjects,id',
                 'description' => 'nullable|string',
                 'grade_level' => 'required|string',
                 'video_source' => 'required|string',
-                'video_file' => 'nullable|file',
-                'thumbnail_file' => 'nullable|image',
+                'video_file' => 'nullable|file|mimes:' . implode(',', $uploadConfig['video']['mimes']) . '|max:' . $videoMaxSize,
+                'thumbnail_file' => 'nullable|image|mimes:' . implode(',', $uploadConfig['thumbnail']['mimes']) . '|max:' . $thumbnailMaxSize,
                 'external_video_url' => 'nullable|url',
                 'vimeo_url' => 'nullable|url',
                 'upload_destination' => 'nullable|string'
+            ], [
+                'video_file.max' => 'Video file size cannot exceed ' . $uploadConfig['video']['max_size_display'] . '.',
+                'video_file.mimes' => 'Video must be one of: ' . implode(', ', $uploadConfig['video']['mimes']) . '.',
+                'thumbnail_file.max' => 'Thumbnail size cannot exceed ' . $uploadConfig['thumbnail']['max_size_display'] . '.',
+                'thumbnail_file.mimes' => 'Thumbnail must be one of: ' . implode(', ', $uploadConfig['thumbnail']['mimes']) . '.',
             ]);
 
             DB::beginTransaction();
@@ -3643,10 +3652,16 @@ class AdminController extends Controller
     public function uploadDocumentsComponent(Request $request)
     {
         try {
+            $uploadConfig = config('uploads');
+            $documentMaxSize = $uploadConfig['document']['max_size'] / 1024; // Convert bytes to KB
+            
             $request->validate([
                 'video_id' => 'required|exists:videos,id',
                 'documents' => 'required|array',
-                'documents.*' => 'file|max:20480' // 20MB max
+                'documents.*' => 'file|mimes:' . implode(',', $uploadConfig['document']['mimes']) . '|max:' . $documentMaxSize
+            ], [
+                'documents.*.max' => 'Each document cannot exceed ' . $uploadConfig['document']['max_size_display'] . '.',
+                'documents.*.mimes' => 'Documents must be one of: ' . implode(', ', $uploadConfig['document']['mimes']) . '.',
             ]);
 
             $video = Video::findOrFail($request->video_id);
@@ -3899,6 +3914,103 @@ class AdminController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete YouTube content: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Handle chunked video upload (for large files)
+     * Uploads video in chunks to overcome server size limits
+     */
+    public function uploadVideoChunk(\App\Http\Requests\ChunkedVideoUploadRequest $request)
+    {
+        try {
+            $uploadConfig = config('uploads');
+            $uploadId = $request->input('upload_id');
+            $chunkIndex = $request->input('chunk_index');
+            $totalChunks = $request->input('total_chunks');
+            $filename = $request->input('filename');
+            
+            // Create temporary storage directory for chunks
+            $tempDir = storage_path('app/temp_chunks/' . $uploadId);
+            if (!file_exists($tempDir)) {
+                mkdir($tempDir, 0755, true);
+            }
+            
+            // Store the chunk
+            $chunkFile = $request->file('chunk');
+            $chunkPath = $tempDir . '/chunk_' . $chunkIndex;
+            $chunkFile->move($tempDir, 'chunk_' . $chunkIndex);
+            
+            // Check if all chunks are uploaded
+            $uploadedChunks = count(glob($tempDir . '/chunk_*'));
+            
+            if ($uploadedChunks === $totalChunks) {
+                // All chunks uploaded, reassemble the file
+                $finalPath = storage_path('app/temp_videos/' . $uploadId . '_' . $filename);
+                $finalDir = dirname($finalPath);
+                
+                if (!file_exists($finalDir)) {
+                    mkdir($finalDir, 0755, true);
+                }
+                
+                $finalFile = fopen($finalPath, 'wb');
+                
+                if (!$finalFile) {
+                    throw new \Exception('Could not create final video file');
+                }
+                
+                // Reassemble chunks in order
+                for ($i = 0; $i < $totalChunks; $i++) {
+                    $chunkPath = $tempDir . '/chunk_' . $i;
+                    if (!file_exists($chunkPath)) {
+                        throw new \Exception('Missing chunk ' . $i);
+                    }
+                    
+                    $chunkContent = file_get_contents($chunkPath);
+                    fwrite($finalFile, $chunkContent);
+                    unlink($chunkPath); // Delete chunk after writing
+                }
+                
+                fclose($finalFile);
+                
+                // Clean up temp directory
+                if (file_exists($tempDir)) {
+                    rmdir($tempDir);
+                }
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'All chunks uploaded successfully',
+                    'data' => [
+                        'upload_id' => $uploadId,
+                        'completed' => true,
+                        'temp_path' => 'temp_videos/' . $uploadId . '_' . $filename
+                    ]
+                ]);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Chunk ' . $chunkIndex . ' uploaded successfully',
+                'data' => [
+                    'upload_id' => $uploadId,
+                    'chunk_index' => $chunkIndex,
+                    'uploaded_chunks' => $uploadedChunks,
+                    'total_chunks' => $totalChunks,
+                    'completed' => false
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Chunked video upload failed', [
+                'error' => $e->getMessage(),
+                'upload_id' => $request->input('upload_id') ?? 'unknown'
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
             ], 500);
         }
     }

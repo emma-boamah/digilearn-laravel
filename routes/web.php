@@ -329,6 +329,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::delete('/contents/{contentId}', [AdminController::class, 'destroyContent'])->name('contents.destroy');
     Route::delete('/contents/vimeo/delete', [AdminController::class, 'destroyVimeoVideo'])->name('contents.vimeo.delete');
     Route::post('/contents/upload/video', [AdminController::class, 'uploadVideoComponent'])->name('contents.upload.video');
+    Route::post('/contents/upload/video-chunk', [AdminController::class, 'uploadVideoChunk'])->name('contents.upload.video-chunk');
     Route::post('/contents/upload/documents', [AdminController::class, 'uploadDocumentsComponent'])->name('contents.upload.documents');
     Route::post('/contents/upload/quiz', [AdminController::class, 'uploadQuizComponent'])->name('contents.upload.quiz');
     Route::get('/users', [AdminController::class, 'users'])->name('users');

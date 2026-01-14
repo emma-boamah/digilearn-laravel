@@ -16,6 +16,7 @@ use App\Http\Middleware\ThrottleRequestsWithRedirect;
 use App\Http\Middleware\CookieConsentMiddleware;
 use App\Http\Middleware\CheckSuspended;
 use App\Http\Middleware\DecodeObfuscatedIds;
+use App\Http\Middleware\HandleJsonRequestErrors;
 
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -39,6 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(SecurityHeaders::class);
         $middleware->append(CheckWebsiteLock::class);
         $middleware->append(TrackUsersActivity::class);
+        $middleware->append(HandleJsonRequestErrors::class);
         
         // API middleware group
         $middleware->api(append: [
