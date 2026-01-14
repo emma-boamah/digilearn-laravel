@@ -22,13 +22,17 @@ class StoreVideoRequest extends FormRequest
      */
     public function rules(): array
     {
+        $uploadConfig = config('uploads');
+        $videoMaxSize = $uploadConfig['video']['max_size'] / 1024; // Convert bytes to KB for Laravel validation
+        $thumbnailMaxSize = $uploadConfig['thumbnail']['max_size'] / 1024; // Convert bytes to KB
+
         return [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
             'video_source' => 'required|in:local,youtube,vimeo,mux',
             'external_video_url' => 'required_if:video_source,youtube,vimeo,mux|nullable|url',
-            'video_path' => 'required_if:video_source,local|nullable|file|mimes:mp4,mov,avi,mkv,webm,3gp,mpeg,ogg|max:102400', // 100MB max
-            'thumbnail_path' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
+            'video_path' => "required_if:video_source,local|nullable|file|mimes:" . implode(',', $uploadConfig['video']['mimes']) . "|max:{$videoMaxSize}",
+            'thumbnail_path' => "nullable|image|mimes:" . implode(',', $uploadConfig['thumbnail']['mimes']) . "|max:{$thumbnailMaxSize}",
             'grade_level' => 'nullable|string|max:50',
             'duration_seconds' => 'nullable|integer|min:1|max:36000', // Max 10 hours
             'is_featured' => 'boolean',
@@ -41,6 +45,7 @@ class StoreVideoRequest extends FormRequest
      */
     public function messages(): array
     {
+        $uploadConfig = config('uploads');
         return [
             'title.required' => 'Video title is required.',
             'title.max' => 'Video title cannot exceed 255 characters.',
@@ -50,11 +55,11 @@ class StoreVideoRequest extends FormRequest
             'external_video_url.url' => 'Please provide a valid video URL.',
             'video_path.required_if' => 'Video file is required for local uploads.',
             'video_path.file' => 'The uploaded file must be a valid video file.',
-            'video_path.mimes' => 'Supported video formats: MP4, MOV, AVI, MKV, WebM, 3GP, MPEG, OGG.',
-            'video_path.max' => 'Video file size cannot exceed 100MB.',
+            'video_path.mimes' => 'Supported video formats: ' . implode(', ', array_map('strtoupper', $uploadConfig['video']['mimes'])) . '.',
+            'video_path.max' => 'Video file size cannot exceed ' . $uploadConfig['video']['max_size_display'] . '.',
             'thumbnail_path.image' => 'Thumbnail must be a valid image file.',
-            'thumbnail_path.mimes' => 'Supported thumbnail formats: JPEG, PNG, JPG, GIF.',
-            'thumbnail_path.max' => 'Thumbnail file size cannot exceed 5MB.',
+            'thumbnail_path.mimes' => 'Supported thumbnail formats: ' . implode(', ', array_map('strtoupper', $uploadConfig['thumbnail']['mimes'])) . '.',
+            'thumbnail_path.max' => 'Thumbnail file size cannot exceed ' . $uploadConfig['thumbnail']['max_size_display'] . '.',
             'grade_level.max' => 'Grade level cannot exceed 50 characters.',
             'duration_seconds.integer' => 'Duration must be a valid number.',
             'duration_seconds.min' => 'Duration must be at least 1 second.',
