@@ -61,16 +61,57 @@
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Enhanced Filter Bar */
+        /* Search/Filter Bar */
+        /* Updated filter bar to span full width with glassmorphism and proper positioning */
         .filter-bar {
+            position: fixed !important;
+            top: 60px !important; /* Directly below the header */
+            left: 0; /* Start from left edge for full width */
+            width: 100vw; /* Full viewport width */
+            padding-left: calc(var(--sidebar-width-expanded) + 0.75rem); /* Account for sidebar */
+            padding-right: 0.75rem;
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+            z-index: 998 !important;
             display: flex;
             align-items: center;
-            gap: 1rem;
-            padding: 1rem 0.5rem;
-            background-color: var(--white);
+            gap: 0.75rem;
+            background-color: rgba(255, 255, 255, 0.75); /* Transparent for glassmorphism */
+            backdrop-filter: blur(10px) saturate(160%); /* Glassmorphism effect */
+            -webkit-backdrop-filter: blur(10px) saturate(160%); /* Safari support */
             border-bottom: 1px solid var(--gray-200);
             flex-wrap: wrap;
-            margin-top: 3.9rem;
+            overflow-x: hidden;
+            overflow-y: hidden;
+            max-width: 100%;
+            box-sizing: border-box;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none; /* Allow clicks to pass through glassmorphism layer */
+        }
+
+        .filter-bar * {
+            pointer-events: auto; /* Restore pointer events for interactive elements */
+        }
+
+        .youtube-sidebar.collapsed ~ .filter-bar {
+            padding-left: calc(var(--sidebar-width-collapsed) + 0.75rem);
+        }
+
+        /* Mobile: Reduce padding and gap on filter bar */
+        @media (max-width: 768px) {
+            .filter-bar {
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+                padding-top: 0.5rem;
+                padding-bottom: 0.5rem;
+                gap: 0.5rem;
+                flex-wrap: nowrap;
+            }
+
+            .youtube-sidebar.collapsed ~ .filter-bar {
+                padding-left: 0.5rem;
+            }
         }
 
         .back-button {
@@ -92,6 +133,18 @@
             color: var(--gray-900);
         }
 
+        /* Mobile: Compact back button */
+        @media (max-width: 768px) {
+            .back-button {
+                padding: 0.5rem;
+            }
+
+            .back-button svg {
+                width: 18px;
+                height: 18px;
+            }
+        }
+
         /* Made search box fully responsive with flexible sizing */
         .search-box {
             position: relative;
@@ -99,6 +152,68 @@
             max-width: 500px;
             min-width: 0; /* changed from 300px to allow fully flexibility */
             width: 100%;
+        }
+
+        /* Mobile: Search toggle button */
+        .search-toggle-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--gray-600);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .search-toggle-btn:hover {
+            background-color: var(--gray-100);
+            color: var(--gray-900);
+        }
+
+        /* Mobile: Compact search box */
+        @media (max-width: 768px) {
+            .filter-bar.search-active {
+                flex-wrap: wrap;
+            }
+
+            /* Show search toggle button on mobile */
+            .search-toggle-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            /* Hide search box by default on mobile */
+            .search-box {
+                display: none;
+                max-width: none;
+                min-width: 0;
+                width: 100%;
+                order: 10;
+                flex: 1 1 100%;
+            }
+
+            /* Show search box when search is active */
+            .filter-bar.search-active .search-box {
+                display: flex;
+            }
+
+            /* Hide level indicator and quiz when search active */
+            .filter-bar.search-active .level-container,
+            .filter-bar.search-active .quiz-container {
+                display: none;
+            }
+
+            .search-input {
+                padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+                font-size: 0.75rem;
+            }
+
+            .search-icon {
+                left: 0.75rem;
+            }
         }
 
         .search-icon {
@@ -171,6 +286,15 @@
             transition: all 0.2s ease;
         }
 
+        /* Mobile: Compact quiz button */
+        @media (max-width: 768px) {
+            .filter-button {
+                padding: 0.75rem 1rem;
+                font-size: 0.75rem;
+                flex-shrink: 0;
+            }
+        }
+
         .filter-button:hover {
             border-color: var(--primary-red);
             color: var(--primary-red);
@@ -190,6 +314,7 @@
             padding: 1rem 1.5rem;
             max-width: 100%;
             margin: 0;
+            margin-top: 130px;
             overflow-x: hidden;
             box-sizing: border-box;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -2259,6 +2384,7 @@
                 flex-direction: column;
                 padding: 0.75rem;
                 margin: 0;
+                margin-top: 130px;
                 gap: 1.5rem;
                 overflow: hidden;
                 width: 100%;
@@ -2292,17 +2418,26 @@
                 max-width: 100%;
             }
 
-            /* FIXED: Simple compact state - video only */
+            /* FIXED: Simple compact state - video only at bottom-right */
             .sticky-video-section.compact {
+                position: fixed;
+                bottom: 1.5rem;
+                right: 1.5rem;
+                width: 300px;
+                height: auto;
+                z-index: 1000;
                 box-shadow: var(--shadow-xl);
+                border-radius: 0.75rem;
+                overflow: hidden;
             }
 
             .sticky-video-section.compact .video-container {
                 aspect-ratio: 16/9;
-                transform: scale(0.4);
-                transform-origin: top left;
-                border-radius: 0.5rem;
-                margin-bottom: -60%;
+                width: 100%;
+                height: auto;
+                border-radius: 0.75rem;
+                overflow: hidden;
+                transform: none;
             }
 
             /* FIXED: Hide lesson info completely in compact mode */
@@ -2627,9 +2762,15 @@
             }
 
             /* FIXED: Smaller compact video for very small screens */
+            .sticky-video-section.compact {
+                width: 250px;
+                bottom: 1rem;
+                right: 1rem;
+            }
+
             .sticky-video-section.compact .video-container {
-                transform: scale(0.35);
-                margin-bottom: -65%;
+                transform: none;
+                margin-bottom: 0;
             }
         }
 
@@ -2650,45 +2791,248 @@
                 text-overflow: ellipsis;
             }
         }
+
+        /* ===== LEVEL MODAL STYLES (From DigiLearn) ===== */
+        #level-modal-toggle {
+            display: none;
+        }
+
+        .level-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #level-modal-toggle:checked ~ .level-modal {
+            display: flex;
+        }
+
+        .level-modal {
+            pointer-events: none;
+        }
+
+        #level-modal-toggle:checked ~ .level-modal {
+            pointer-events: auto;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #level-modal-toggle:checked ~ .level-modal .modal-overlay {
+            opacity: 1;
+        }
+
+        .modal-content {
+            position: relative;
+            background-color: var(--white);
+            border-radius: 1.5rem;
+            box-shadow: var(--shadow-xl);
+            padding: 2rem;
+            z-index: 1000;
+            min-width: 300px;
+            max-width: 450px;
+            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(0);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #level-modal-toggle:not(:checked) ~ .level-modal .modal-content {
+            animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(20px);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+        }
+
+        .modal-content h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin: 0 0 1.5rem 0;
+            line-height: 1.3;
+        }
+
+        .level-option {
+            display: block;
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.75rem;
+            background-color: var(--gray-50);
+            border: 2px solid var(--gray-200);
+            border-radius: 0.75rem;
+            color: var(--gray-700);
+            font-size: 0.9375rem;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+
+        .level-option:hover {
+            background-color: var(--white);
+            border-color: var(--secondary-blue);
+            color: var(--secondary-blue);
+            transform: translateX(4px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .level-option:active {
+            transform: translateX(2px);
+        }
+
+        .level-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .level-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.25rem;
+            background-color: var(--white);
+            border: 2px solid var(--gray-200);
+            border-radius: 0.75rem;
+            color: var(--gray-700);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            min-width: 140px;
+        }
+
+        /* Mobile: Compact level indicator */
+        @media (max-width: 768px) {
+            .level-indicator {
+                padding: 0.75rem 0.75rem;
+                font-size: 0.7rem;
+                min-width: 80px;
+                gap: 0.25rem;
+            }
+
+            .level-indicator::after {
+                font-size: 0.5rem;
+                margin-left: 0.25rem;
+            }
+        }
+
+        .level-indicator:hover {
+            border-color: var(--secondary-blue);
+            background-color: rgba(38, 119, 184, 0.05);
+            color: var(--secondary-blue);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .level-indicator::after {
+            content: '▼';
+            font-size: 0.65rem;
+            margin-left: 0.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        #level-modal-toggle:checked ~ * .level-indicator::after {
+            transform: rotate(180deg);
+        }
+
+        /* ===== END LEVEL MODAL STYLES ===== */
     </style>
 
-    <!-- Enhanced Filter Bar -->
-    <div class="filter-bar">
+    @php
+        $selectedLevel = $lesson['level_group'] ?? 'primary-lower';
+    @endphp
+
+    <!-- Enhanced Filter Bar - Matching DigiLearn Layout -->
+    <div class="filter-bar" id="filterBar">
         <button class="back-button" id="backButton">
             <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
         </button>
-        
-        <div class="search-box">
+
+        <!-- Level Indicator (Left) -->
+        <div class="level-container">
+            <label for="level-modal-toggle" class="level-indicator">
+                Grade: {{ $selectedLevel ? ([
+                    'primary-lower' => 'Grade 1-3',
+                    'primary-upper' => 'Grade 4-6',
+                    'jhs' => 'Grade 7-9',
+                    'shs' => 'Grade 10-12',
+                    'university' => 'University'
+                ][$selectedLevel] ?? ucwords(str_replace('-', ' ', $selectedLevel))) : 'Grade 1-3' }}
+            </label>
+        </div>
+
+        <!-- Search Box (Middle) -->
+        <div class="search-box" id="searchBox">
             <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
-            <input type="text" class="search-input" placeholder="Search lessons, subjects, or topics...">
+            <input type="text" class="search-input" id="searchInput" placeholder="Search lessons, subjects, or topics...">
         </div>
-        
-        <div
 
-        <div class="filter-dropdown">
-            <button class="dropdown-button">
-                <span>{{ ucwords(str_replace('-', ' ', $selectedLevel ?? 'Level')) }}</span>
-                <svg class="dropdown-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                </svg>
-            </button>
+        <!-- Search Toggle Button (Mobile only) -->
+        <button class="search-toggle-btn" id="searchToggleBtn">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+        </button>
+
+        <!-- Quiz Button (Right) -->
+        <div class="quiz-container">
+            <a href="{{ route('quiz.index') }}" class="filter-button quiz">Quiz</a>
         </div>
-        
-        <div class="filter-dropdown">
-            <button class="dropdown-button">
-                <span>Subjects</span>
-                <svg class="dropdown-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                </svg>
-            </button>
+    </div>
+
+    <!-- Level Modal (Keep this for level selection) -->
+    <input type="checkbox" id="level-modal-toggle" style="display: none;">
+    <div class="level-modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <h3>Select Grade</h3>
+            <a href="{{ route('dashboard.level-group', ['groupId' => 'primary-lower']) }}" class="level-option">Grade 1-3</a>
+            <a href="{{ route('dashboard.level-group', ['groupId' => 'primary-upper']) }}" class="level-option">Grade 4-6</a>
+            <a href="{{ route('dashboard.level-group', ['groupId' => 'jhs']) }}" class="level-option">Grade 7-9</a>
+            <a href="{{ route('dashboard.level-group', ['groupId' => 'shs']) }}" class="level-option">Grade 10-12</a>
+            <a href="{{ route('dashboard.level-group', ['groupId' => 'university']) }}" class="level-option">University</a>
         </div>
-        
-        <button class="filter-button">Question</button>
-        <button class="filter-button">Quiz</button>
     </div>
 
     <!-- Enhanced Main Layout -->
@@ -3423,7 +3767,7 @@
         // Scroll tracking variables for mobile video section
         let lastScrollY = 0;
         let isScrollingDown = false;
-        let scrollThreshold = 100; // Pixels to scroll before triggering compact mode
+        let scrollThreshold = 130; // Pixels to scroll before triggering compact mode (matches filter bar height)
 
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Page loaded, checking Quill availability...');
@@ -3465,6 +3809,98 @@
 
         // Test basic Quill functionality (removed to prevent orphaned toolbars)
 
+        // Initialize Mobile Search Toggle
+        function initializeSearchToggle() {
+            const filterBar = document.getElementById('filterBar');
+            const searchToggleBtn = document.getElementById('searchToggleBtn');
+            const searchInput = document.getElementById('searchInput');
+            const searchBox = document.getElementById('searchBox');
+
+            if (!searchToggleBtn) return;
+
+            // Toggle search on button click
+            searchToggleBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                filterBar.classList.toggle('search-active');
+                
+                // Focus search input when opened
+                if (filterBar.classList.contains('search-active')) {
+                    setTimeout(() => {
+                        searchInput?.focus();
+                    }, 100);
+                }
+            });
+
+            // Close search when clicking outside
+            document.addEventListener('click', (e) => {
+                if (filterBar.classList.contains('search-active')) {
+                    const isClickInSearchBox = searchBox?.contains(e.target);
+                    const isClickOnToggle = searchToggleBtn.contains(e.target);
+                    
+                    if (!isClickInSearchBox && !isClickOnToggle) {
+                        filterBar.classList.remove('search-active');
+                    }
+                }
+            });
+
+            // Close search on Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && filterBar.classList.contains('search-active')) {
+                    filterBar.classList.remove('search-active');
+                }
+            });
+        }
+
+        // Initialize Level Modal with proper close handlers
+        function initializeLevelModal() {
+            const levelModalToggle = document.getElementById('level-modal-toggle');
+            const modalOverlay = document.querySelector('.modal-overlay');
+            const levelIndicator = document.querySelector('.level-indicator');
+
+            // Close on overlay click
+            if (modalOverlay && levelModalToggle) {
+                modalOverlay.addEventListener('click', (e) => {
+                    if (e.target === modalOverlay) {
+                        levelModalToggle.checked = false;
+                    }
+                });
+            }
+
+            // Close on Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && levelModalToggle && levelModalToggle.checked) {
+                    levelModalToggle.checked = false;
+                }
+            });
+
+            // Close on outside click
+            document.addEventListener('click', (e) => {
+                const modalContent = document.querySelector('.modal-content');
+                const isClickInsideModal = modalContent?.contains(e.target);
+                const isClickOnToggle = levelIndicator?.contains(e.target);
+                if (!isClickInsideModal && !isClickOnToggle && levelModalToggle && levelModalToggle.checked) {
+                    levelModalToggle.checked = false;
+                }
+            });
+
+            // Close modal when selecting a level option
+            document.querySelectorAll('.level-option').forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (levelModalToggle) {
+                        levelModalToggle.checked = false;
+                    }
+                    // The href will navigate after a short delay to allow animation
+                    const href = option.getAttribute('href');
+                    if (href) {
+                        setTimeout(() => {
+                            window.location.href = href;
+                        }, 150);
+                    }
+                });
+            });
+        }
+
         function initializeAll() {
             // Initialize all functionality
             initializeFilters();
@@ -3483,6 +3919,8 @@
             initializeCourseTabs();
             checkDocumentAvailability();
             initializeVideoProgressTracking();
+            initializeLevelModal(); // Initialize level modal handlers
+            initializeSearchToggle(); // Initialize mobile search toggle
         }
 
         // Optimized hover-to-play functionality following YouTube/Netflix pattern

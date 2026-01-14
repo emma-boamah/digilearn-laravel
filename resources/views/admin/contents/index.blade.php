@@ -1009,7 +1009,7 @@
                     <div id="fileUploadArea" class="file-upload-area">
                         <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
                         <p class="text-gray-600">Click to upload or drag and drop</p>
-                        <p class="text-sm text-gray-500">MP4, MOV, AVI up to 600MB</p>
+                        <p class="text-sm text-gray-500">MP4, MOV, AVI up to 32GB</p>
                     </div>
                     <input type="file" id="fileInput" class="hidden" accept=".mp4,.mov,.avi">
                 </div>
@@ -1074,7 +1074,7 @@
                     <div class="file-upload-area" id="thumbnailUploadArea">
                         <i class="fas fa-image text-3xl text-gray-400 mb-2"></i>
                         <p class="text-gray-600">Click to upload thumbnail</p>
-                        <p class="text-sm text-gray-500">JPG, PNG, GIF up to 2MB</p>
+                        <p class="text-sm text-gray-500">JPG, PNG, GIF up to 5MB</p>
                     </div>
                     <input type="file" id="thumbnail_file" class="hidden" accept="image/jpeg,image/png,image/gif">
                 </div>
@@ -1083,7 +1083,7 @@
             <!-- Step 2: Documents Upload -->
             <div class="step-pane" id="step2">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Add Related Documents <span class="text-sm text-gray-500">(Optional)</span></h3>
-                <p class="text-gray-600 mb-4">Upload PDF, DOC, or DOCX files related to this video lesson.</p>
+                <p class="text-gray-600 mb-4">Upload PDF, DOC, or DOCX files related to this video lesson. Max file size: 32GB per document.</p>
 
                 <div id="documentsList" class="space-y-3 mb-4">
                     <!-- Documents will be added here -->
