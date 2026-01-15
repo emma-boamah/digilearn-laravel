@@ -2440,6 +2440,12 @@
         // Final submission with progress tracking
         async function submitWizard() {
             try {
+                // Validate that a video has been selected
+                if (!uploadData.video) {
+                    alert('Please select a video file first.');
+                    return;
+                }
+
                 const title = document.getElementById('title');
                 const subjectId = document.getElementById('subject_id');
                 const description = document.getElementById('description');
@@ -2448,6 +2454,22 @@
                 if (!title || !subjectId || !description || !gradeLevel) {
                     console.error('Required form elements not found for submission');
                     alert('Form elements not found. Please refresh the page and try again.');
+                    return;
+                }
+
+                // Validate that all required fields have values
+                if (!title.value.trim()) {
+                    alert('Please enter a title for the video.');
+                    return;
+                }
+
+                if (!subjectId.value) {
+                    alert('Please select a subject.');
+                    return;
+                }
+
+                if (!gradeLevel.value) {
+                    alert('Please select a grade level.');
                     return;
                 }
 
@@ -2703,8 +2725,13 @@
                     });
 
                     if (!response.ok) {
-                        const error = await response.json();
-                        return { success: false, error: error.message || 'Chunk upload failed' };
+                        try {
+                            const errorData = await response.json();
+                            const errorMessage = errorData.message || JSON.stringify(errorData);
+                            return { success: false, error: errorMessage };
+                        } catch (e) {
+                            return { success: false, error: 'Chunk upload failed with status ' + response.status };
+                        }
                     }
 
                     uploadedBytes = end;
@@ -2779,14 +2806,19 @@
                         totalBytes: totalSize
                     });
 
-                    if (result.data && result.data.video_id) {
+                    if (result && result.data && result.data.video_id) {
                         window.uploadedVideoId = result.data.video_id;
                     }
 
                     return { success: true };
                 } else {
-                    const error = await finalResponse.json();
-                    return { success: false, error: error.message || 'Upload finalization failed' };
+                    try {
+                        const errorData = await finalResponse.json();
+                        const errorMessage = errorData.message || JSON.stringify(errorData);
+                        return { success: false, error: errorMessage };
+                    } catch (e) {
+                        return { success: false, error: 'Upload finalization failed with status ' + finalResponse.status };
+                    }
                 }
             } catch (error) {
                 return { success: false, error: error.message };
@@ -2863,14 +2895,19 @@
                     });
 
                     // Store video ID for later use
-                    if (result.data && result.data.video_id) {
+                    if (result && result.data && result.data.video_id) {
                         window.uploadedVideoId = result.data.video_id;
                     }
 
                     return { success: true };
                 } else {
-                    const error = await response.json();
-                    return { success: false, error: error.message || 'Unknown error' };
+                    try {
+                        const errorData = await response.json();
+                        const errorMessage = errorData.message || JSON.stringify(errorData);
+                        return { success: false, error: errorMessage };
+                    } catch (e) {
+                        return { success: false, error: 'Upload failed with status ' + response.status };
+                    }
                 }
             } catch (error) {
                 return { success: false, error: error.message };
@@ -2928,8 +2965,13 @@
                     });
                     return { success: true };
                 } else {
-                    const error = await response.json();
-                    return { success: false, error: error.message || 'Unknown error' };
+                    try {
+                        const errorData = await response.json();
+                        const errorMessage = errorData.message || JSON.stringify(errorData);
+                        return { success: false, error: errorMessage };
+                    } catch (e) {
+                        return { success: false, error: 'Documents upload failed with status ' + response.status };
+                    }
                 }
             } catch (error) {
                 return { success: false, error: error.message };
@@ -2974,8 +3016,13 @@
                     });
                     return { success: true };
                 } else {
-                    const error = await response.json();
-                    return { success: false, error: error.message || 'Unknown error' };
+                    try {
+                        const errorData = await response.json();
+                        const errorMessage = errorData.message || JSON.stringify(errorData);
+                        return { success: false, error: errorMessage };
+                    } catch (e) {
+                        return { success: false, error: 'Quiz upload failed with status ' + response.status };
+                    }
                 }
             } catch (error) {
                 return { success: false, error: error.message };
