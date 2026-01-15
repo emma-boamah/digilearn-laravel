@@ -254,11 +254,14 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard/notifications/{notificationId}', [NotificationController::class, 'show'])->name('dashboard.notification.show');
     });
 
-    //
+    // Activity ping endpoint - update user's last activity time
     Route::post('/ping', function ($request) {
-        $request->user()->update(['last_activity_at' => now()]);
-        return response()->json(['status' => 'updated']);
-    })->name('ping');
+        if ($request->user()) {
+            $request->user()->update(['last_activity_at' => now()]);
+            return response()->json(['status' => 'updated']);
+        }
+        return response()->json(['status' => 'unauthenticated'], 401);
+    })->middleware('auth')->name('ping');
 
     // Online users API
     Route::get('/online-users', function () {
