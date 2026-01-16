@@ -3534,7 +3534,22 @@ class AdminController extends Controller
     public function uploadVideoComponent(Request $request)
     {
         try {
+            // Log all request inputs for debugging
+            Log::info('Video upload component request received', [
+                'has_upload_id' => $request->filled('upload_id'),
+                'has_title' => $request->filled('title'),
+                'has_subject_id' => $request->filled('subject_id'),
+                'has_description' => $request->filled('description'),
+                'has_grade_level' => $request->filled('grade_level'),
+                'has_video_source' => $request->filled('video_source'),
+                'all_params' => array_keys($request->all())
+            ]);
+
             $uploadConfig = config('uploads');
+            if (!$uploadConfig) {
+                throw new \Exception('Upload configuration not found');
+            }
+            
             $videoMaxSize = $uploadConfig['video']['max_size'] / 1024; // Convert bytes to KB
             $thumbnailMaxSize = $uploadConfig['thumbnail']['max_size'] / 1024; // Convert bytes to KB
             
@@ -3566,6 +3581,14 @@ class AdminController extends Controller
                 'video_file.mimes' => 'Video must be one of: ' . implode(', ', $uploadConfig['video']['mimes']) . '.',
                 'thumbnail_file.max' => 'Thumbnail size cannot exceed ' . $uploadConfig['thumbnail']['max_size_display'] . '.',
                 'thumbnail_file.mimes' => 'Thumbnail must be one of: ' . implode(', ', $uploadConfig['thumbnail']['mimes']) . '.',
+            ]);
+
+            Log::info('Video upload validation passed', [
+                'title' => $request->title,
+                'subject_id' => $request->subject_id,
+                'grade_level' => $request->grade_level,
+                'video_source' => $request->video_source,
+                'is_chunked' => $isChunkedUpload
             ]);
 
             DB::beginTransaction();
@@ -3702,7 +3725,17 @@ class AdminController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Video upload failed', ['error' => $e->getMessage()]);
+            
+            Log::error('Video upload failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getFile() . ':' . $e->getLine(),
+                'request_data' => [
+                    'title' => $request->input('title'),
+                    'subject_id' => $request->input('subject_id'),
+                    'has_upload_id' => $request->filled('upload_id'),
+                    'has_video_file' => $request->hasFile('video_file')
+                ]
+            ]);
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
@@ -3713,7 +3746,18 @@ class AdminController extends Controller
     public function uploadDocumentsComponent(Request $request)
     {
         try {
+            Log::info('Documents upload component request received', [
+                'has_video_id' => $request->filled('video_id'),
+                'video_id' => $request->input('video_id'),
+                'has_documents' => $request->hasFile('documents'),
+                'all_params' => array_keys($request->all())
+            ]);
+
             $uploadConfig = config('uploads');
+            if (!$uploadConfig) {
+                throw new \Exception('Upload configuration not found');
+            }
+            
             $documentMaxSize = $uploadConfig['document']['max_size'] / 1024; // Convert bytes to KB
             
             $request->validate([
@@ -3723,6 +3767,11 @@ class AdminController extends Controller
             ], [
                 'documents.*.max' => 'Each document cannot exceed ' . $uploadConfig['document']['max_size_display'] . '.',
                 'documents.*.mimes' => 'Documents must be one of: ' . implode(', ', $uploadConfig['document']['mimes']) . '.',
+            ]);
+
+            Log::info('Documents upload validation passed', [
+                'video_id' => $request->video_id,
+                'documents_count' => count($request->file('documents'))
             ]);
 
             $video = Video::findOrFail($request->video_id);
@@ -3752,7 +3801,14 @@ class AdminController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Documents upload failed', ['error' => $e->getMessage()]);
+            Log::error('Documents upload failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getFile() . ':' . $e->getLine(),
+                'request_data' => [
+                    'video_id' => $request->input('video_id'),
+                    'has_documents' => $request->hasFile('documents')
+                ]
+            ]);
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
@@ -3763,11 +3819,24 @@ class AdminController extends Controller
     public function uploadQuizComponent(Request $request)
     {
         try {
+            Log::info('Quiz upload component request received', [
+                'has_video_id' => $request->filled('video_id'),
+                'video_id' => $request->input('video_id'),
+                'has_quiz_data' => $request->filled('quiz_data'),
+                'all_params' => array_keys($request->all())
+            ]);
+
             $request->validate([
                 'video_id' => 'required|exists:videos,id',
                 'quiz_data' => 'required|string',
                 'difficulty_level' => 'required|string',
                 'time_limit_minutes' => 'required|integer|min:1'
+            ]);
+
+            Log::info('Quiz upload validation passed', [
+                'video_id' => $request->video_id,
+                'difficulty_level' => $request->difficulty_level,
+                'time_limit_minutes' => $request->time_limit_minutes
             ]);
 
             $video = Video::findOrFail($request->video_id);
@@ -3809,7 +3878,14 @@ class AdminController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Quiz upload failed', ['error' => $e->getMessage()]);
+            Log::error('Quiz upload failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getFile() . ':' . $e->getLine(),
+                'request_data' => [
+                    'video_id' => $request->input('video_id'),
+                    'has_quiz_data' => $request->filled('quiz_data')
+                ]
+            ]);
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
