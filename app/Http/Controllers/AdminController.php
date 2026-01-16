@@ -3545,13 +3545,33 @@ class AdminController extends Controller
                 'all_params' => array_keys($request->all())
             ]);
 
+            // Manually load config if not cached
             $uploadConfig = config('uploads');
             if (!$uploadConfig) {
-                throw new \Exception('Upload configuration not found');
+                Log::warning('Config cache missing, reloading from file');
+                // Force reload from file
+                $uploadConfig = include config_path('uploads.php');
             }
             
-            $videoMaxSize = $uploadConfig['video']['max_size'] / 1024; // Convert bytes to KB
-            $thumbnailMaxSize = $uploadConfig['thumbnail']['max_size'] / 1024; // Convert bytes to KB
+            if (!$uploadConfig || !is_array($uploadConfig)) {
+                Log::error('Upload config invalid', ['config_value' => $uploadConfig, 'config_type' => gettype($uploadConfig)]);
+                throw new \Exception('Upload configuration not found or invalid');
+            }
+            
+            // Ensure required config keys exist
+            if (empty($uploadConfig['video']) || empty($uploadConfig['thumbnail'])) {
+                throw new \Exception('Upload configuration missing required keys (video, thumbnail)');
+            }
+            
+            $videoMaxSize = ($uploadConfig['video']['max_size'] ?? 34359738368) / 1024;
+            $thumbnailMaxSize = ($uploadConfig['thumbnail']['max_size'] ?? 10485760) / 1024;
+            
+            // Log config loaded successfully
+            Log::info('Upload config loaded successfully', [
+                'has_video_config' => !empty($uploadConfig['video']),
+                'has_thumbnail_config' => !empty($uploadConfig['thumbnail']),
+                'video_max_size' => $videoMaxSize
+            ]);
             
             // Determine if this is a chunked upload or direct upload
             $isChunkedUpload = $request->filled('upload_id');
@@ -3753,12 +3773,28 @@ class AdminController extends Controller
                 'all_params' => array_keys($request->all())
             ]);
 
+            // Manually load config if not cached
             $uploadConfig = config('uploads');
             if (!$uploadConfig) {
-                throw new \Exception('Upload configuration not found');
+                Log::warning('Config cache missing, reloading from file');
+                $uploadConfig = include config_path('uploads.php');
             }
             
-            $documentMaxSize = $uploadConfig['document']['max_size'] / 1024; // Convert bytes to KB
+            if (!$uploadConfig || !is_array($uploadConfig)) {
+                throw new \Exception('Upload configuration not found or invalid');
+            }
+            
+            // Ensure required config keys exist
+            if (empty($uploadConfig['document'])) {
+                throw new \Exception('Upload configuration missing document config');
+            }
+            
+            $documentMaxSize = ($uploadConfig['document']['max_size'] ?? 10485760) / 1024; // Convert bytes to KB
+            
+            Log::info('Documents config loaded', [
+                'has_document_config' => !empty($uploadConfig['document']),
+                'document_max_size' => $documentMaxSize
+            ]);
             
             $request->validate([
                 'video_id' => 'required|exists:videos,id',
