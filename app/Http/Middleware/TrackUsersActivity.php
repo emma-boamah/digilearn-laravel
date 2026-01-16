@@ -38,7 +38,16 @@ class TrackUsersActivity
             // If they were not online, mark them as online and broadcast
             if (!$alreadyOnline) {
                 Log::info("User {$userId} came online");
-                broadcast(new UserCameOnline($user))->toOthers();
+                try {
+                    broadcast(new UserCameOnline($user))->toOthers();
+                } catch (\Exception $e) {
+                    // Don't block request if broadcasting fails
+                    Log::warning('Broadcasting failed (non-blocking)', [
+                        'user_id' => $userId,
+                        'error' => $e->getMessage(),
+                        'path' => $request->path()
+                    ]);
+                }
             }
 
             // Log user activity
