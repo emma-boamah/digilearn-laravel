@@ -228,13 +228,17 @@ class PaymentController extends Controller
     {
         // Validate that the paid amount matches the expected amount
         $paidAmount = $paystackData['amount'] / 100; // Convert from kobo to GHS
+        
+        // Cast both to float for comparison with tolerance for floating point errors
+        $expectedAmount = (float) $payment->amount;
+        $paidAmountFloat = (float) $paidAmount;
 
-        if ($paidAmount !== $payment->amount) {
+        if (!$this->amountsMatch($expectedAmount, $paidAmountFloat)) {
             Log::error('Payment amount mismatch', [
                 'payment_id' => $payment->id,
                 'reference' => $payment->reference,
-                'expected_amount' => $payment->amount,
-                'paid_amount' => $paidAmount,
+                'expected_amount' => $expectedAmount,
+                'paid_amount' => $paidAmountFloat,
             ]);
 
             $payment->update(['status' => 'failed']);
@@ -314,6 +318,16 @@ class PaymentController extends Controller
                 ],
             ]
         );
+    }
+
+    /**
+     * Compare two amounts with tolerance for floating point precision
+     * Allows for up to 0.01 difference (1 pesewa)
+     */
+    private function amountsMatch(float $expected, float $paid): bool
+    {
+        $tolerance = 0.01; // 1 pesewa tolerance
+        return abs($expected - $paid) < $tolerance;
     }
 
     /**

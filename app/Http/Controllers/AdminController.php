@@ -3534,17 +3534,6 @@ class AdminController extends Controller
     public function uploadVideoComponent(Request $request)
     {
         try {
-            // Log incoming request data for debugging
-            Log::info('Video upload request received', [
-                'has_upload_id' => $request->filled('upload_id'),
-                'has_video_file' => $request->hasFile('video_file'),
-                'has_title' => $request->filled('title'),
-                'has_subject_id' => $request->filled('subject_id'),
-                'has_grade_level' => $request->filled('grade_level'),
-                'video_source' => $request->input('video_source'),
-                'upload_destination' => $request->input('upload_destination')
-            ]);
-
             $uploadConfig = config('uploads');
             $videoMaxSize = $uploadConfig['video']['max_size'] / 1024; // Convert bytes to KB
             $thumbnailMaxSize = $uploadConfig['thumbnail']['max_size'] / 1024; // Convert bytes to KB
@@ -3638,7 +3627,7 @@ class AdminController extends Controller
                             $vimeoService = new \App\Services\VimeoService();
                             $result = $vimeoService->uploadVideo('storage/public/' . $tempPath, $video->title, $video->description);
 
-                            if ($result && is_array($result) && $result['success']) {
+                            if ($result && is_array($result) && ($result['success'] ?? false)) {
                                 $video->update([
                                     'vimeo_id' => $result['video_id'] ?? null,
                                     'vimeo_embed_url' => $result['embed_url'] ?? null,
@@ -3649,7 +3638,7 @@ class AdminController extends Controller
                                 Storage::disk('public')->delete($tempPath);
                             } else {
                                 $video->update(['status' => 'rejected']);
-                                $errorMsg = is_array($result) ? ($result['error'] ?? 'Unknown error') : 'Vimeo upload returned invalid response';
+                                $errorMsg = is_array($result) ? ($result['error'] ?? 'Unknown error') : 'Vimeo service returned invalid response';
                                 throw new \Exception('Failed to upload to Vimeo: ' . $errorMsg);
                             }
                         } catch (\Exception $vimeoError) {
@@ -3673,7 +3662,7 @@ class AdminController extends Controller
                             $vimeoService = new \App\Services\VimeoService();
                             $result = $vimeoService->uploadVideo($tempPath, $video->title, $video->description);
 
-                            if ($result && is_array($result) && $result['success']) {
+                            if ($result && is_array($result) && ($result['success'] ?? false)) {
                                 $video->update([
                                     'vimeo_id' => $result['video_id'] ?? null,
                                     'vimeo_embed_url' => $result['embed_url'] ?? null,
@@ -3684,7 +3673,7 @@ class AdminController extends Controller
                                 Storage::disk('public')->delete($tempPath);
                             } else {
                                 $video->update(['status' => 'rejected']);
-                                $errorMsg = is_array($result) ? ($result['error'] ?? 'Unknown error') : 'Vimeo upload returned invalid response';
+                                $errorMsg = is_array($result) ? ($result['error'] ?? 'Unknown error') : 'Vimeo service returned invalid response';
                                 throw new \Exception('Failed to upload to Vimeo: ' . $errorMsg);
                             }
                         } catch (\Exception $vimeoError) {
