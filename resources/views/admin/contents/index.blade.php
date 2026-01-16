@@ -2443,43 +2443,68 @@
                 // Validate that a video has been selected
                 if (!uploadData.video) {
                     alert('Please select a video file first.');
+                    console.error('No video file selected');
                     return;
                 }
 
-                const title = document.getElementById('title');
-                const subjectId = document.getElementById('subject_id');
-                const description = document.getElementById('description');
-                const gradeLevel = document.getElementById('grade_level');
+                // Get form elements - try multiple selectors to be sure
+                const title = document.getElementById('title') || document.querySelector('[name="title"]');
+                const subjectId = document.getElementById('subject_id') || document.querySelector('[name="subject_id"]');
+                const description = document.getElementById('description') || document.querySelector('[name="description"]');
+                const gradeLevel = document.getElementById('grade_level') || document.querySelector('[name="grade_level"]');
 
                 if (!title || !subjectId || !description || !gradeLevel) {
-                    console.error('Required form elements not found for submission');
+                    console.error('Required form elements not found:', {
+                        hasTitle: !!title,
+                        hasSubjectId: !!subjectId,
+                        hasDescription: !!description,
+                        hasGradeLevel: !!gradeLevel
+                    });
                     alert('Form elements not found. Please refresh the page and try again.');
                     return;
                 }
 
-                // Validate that all required fields have values
-                if (!title.value.trim()) {
+                // Validate all fields have values
+                const titleValue = title.value ? title.value.trim() : '';
+                const subjectIdValue = subjectId.value ? subjectId.value.trim() : '';
+                const descriptionValue = description.value ? description.value.trim() : '';
+                const gradeLevelValue = gradeLevel.value ? gradeLevel.value.trim() : '';
+
+                if (!titleValue) {
                     alert('Please enter a title for the video.');
                     return;
                 }
 
-                if (!subjectId.value) {
+                if (!subjectIdValue) {
                     alert('Please select a subject.');
                     return;
                 }
 
-                if (!gradeLevel.value) {
+                if (!gradeLevelValue) {
                     alert('Please select a grade level.');
                     return;
                 }
 
+                // Log the data being sent for debugging
+                console.log('Upload data collected:', {
+                    hasVideo: !!uploadData.video,
+                    videoName: uploadData.video ? uploadData.video.name : null,
+                    videoSize: uploadData.video ? uploadData.video.size : null,
+                    title: titleValue,
+                    subject_id: subjectIdValue,
+                    description: descriptionValue,
+                    grade_level: gradeLevelValue,
+                    video_source: uploadData.video_source,
+                    upload_destination: uploadData.upload_destination
+                });
+
                 const finalData = {
                     video: {
                         file: uploadData.video,
-                        title: title.value.trim(),
-                        subject_id: subjectId.value,
-                        description: description.value.trim(),
-                        grade_level: gradeLevel.value,
+                        title: titleValue,
+                        subject_id: subjectIdValue,
+                        description: descriptionValue,
+                        grade_level: gradeLevelValue,
                         video_source: uploadData.video_source,
                         external_video_url: uploadData.external_video_url,
                         upload_destination: uploadData.upload_destination
@@ -2725,13 +2750,8 @@
                     });
 
                     if (!response.ok) {
-                        try {
-                            const errorData = await response.json();
-                            const errorMessage = errorData.message || JSON.stringify(errorData);
-                            return { success: false, error: errorMessage };
-                        } catch (e) {
-                            return { success: false, error: 'Chunk upload failed with status ' + response.status };
-                        }
+                        const error = await response.json();
+                        return { success: false, error: error.message || 'Chunk upload failed' };
                     }
 
                     uploadedBytes = end;
@@ -2806,19 +2826,14 @@
                         totalBytes: totalSize
                     });
 
-                    if (result && result.data && result.data.video_id) {
+                    if (result.data && result.data.video_id) {
                         window.uploadedVideoId = result.data.video_id;
                     }
 
                     return { success: true };
                 } else {
-                    try {
-                        const errorData = await finalResponse.json();
-                        const errorMessage = errorData.message || JSON.stringify(errorData);
-                        return { success: false, error: errorMessage };
-                    } catch (e) {
-                        return { success: false, error: 'Upload finalization failed with status ' + finalResponse.status };
-                    }
+                    const error = await finalResponse.json();
+                    return { success: false, error: error.message || 'Upload finalization failed' };
                 }
             } catch (error) {
                 return { success: false, error: error.message };
@@ -2895,19 +2910,14 @@
                     });
 
                     // Store video ID for later use
-                    if (result && result.data && result.data.video_id) {
+                    if (result.data && result.data.video_id) {
                         window.uploadedVideoId = result.data.video_id;
                     }
 
                     return { success: true };
                 } else {
-                    try {
-                        const errorData = await response.json();
-                        const errorMessage = errorData.message || JSON.stringify(errorData);
-                        return { success: false, error: errorMessage };
-                    } catch (e) {
-                        return { success: false, error: 'Upload failed with status ' + response.status };
-                    }
+                    const error = await response.json();
+                    return { success: false, error: error.message || 'Unknown error' };
                 }
             } catch (error) {
                 return { success: false, error: error.message };
@@ -2965,13 +2975,8 @@
                     });
                     return { success: true };
                 } else {
-                    try {
-                        const errorData = await response.json();
-                        const errorMessage = errorData.message || JSON.stringify(errorData);
-                        return { success: false, error: errorMessage };
-                    } catch (e) {
-                        return { success: false, error: 'Documents upload failed with status ' + response.status };
-                    }
+                    const error = await response.json();
+                    return { success: false, error: error.message || 'Unknown error' };
                 }
             } catch (error) {
                 return { success: false, error: error.message };
@@ -3016,13 +3021,8 @@
                     });
                     return { success: true };
                 } else {
-                    try {
-                        const errorData = await response.json();
-                        const errorMessage = errorData.message || JSON.stringify(errorData);
-                        return { success: false, error: errorMessage };
-                    } catch (e) {
-                        return { success: false, error: 'Quiz upload failed with status ' + response.status };
-                    }
+                    const error = await response.json();
+                    return { success: false, error: error.message || 'Unknown error' };
                 }
             } catch (error) {
                 return { success: false, error: error.message };
