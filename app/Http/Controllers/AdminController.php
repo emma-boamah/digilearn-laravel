@@ -3563,8 +3563,8 @@ class AdminController extends Controller
                 throw new \Exception('Upload configuration missing required keys (video, thumbnail)');
             }
             
-            $videoMaxSize = ($uploadConfig['video']['max_size'] ?? 34359738368) / 1024;
-            $thumbnailMaxSize = ($uploadConfig['thumbnail']['max_size'] ?? 10485760) / 1024;
+            $videoMaxSize = ($uploadConfig['video']['max_size'] ?? 32212254720) / 1024;
+            $thumbnailMaxSize = ($uploadConfig['thumbnail']['max_size'] ?? 5242880) / 1024;
             
             // Log config loaded successfully
             Log::info('Upload config loaded successfully', [
@@ -3598,9 +3598,11 @@ class AdminController extends Controller
             
             $request->validate($validationRules, [
                 'video_file.max' => 'Video file size cannot exceed ' . $uploadConfig['video']['max_size_display'] . '.',
-                'video_file.mimes' => 'Video must be one of: ' . implode(', ', $uploadConfig['video']['mimes']) . '.',
+                'video_file.mimes' => 'Invalid video format. Accepted formats: ' . implode(', ', array_map('strtoupper', $uploadConfig['video']['mimes'])) . '. Please ensure the file is a video file, not a document, image, or GIF.',
+                'video_file.file' => 'The uploaded file is not a valid video file.',
                 'thumbnail_file.max' => 'Thumbnail size cannot exceed ' . $uploadConfig['thumbnail']['max_size_display'] . '.',
                 'thumbnail_file.mimes' => 'Thumbnail must be one of: ' . implode(', ', $uploadConfig['thumbnail']['mimes']) . '.',
+                'thumbnail_file.image' => 'Thumbnail must be a valid image file.',
             ]);
 
             Log::info('Video upload validation passed', [
