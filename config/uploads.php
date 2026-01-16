@@ -11,12 +11,12 @@ return [
     |
     */
 
-    'max_file_size' => env('MAX_UPLOAD_SIZE', 34359738368), // 32GB in bytes (34359738368)
+    'max_file_size' => env('MAX_UPLOAD_SIZE', 32212254720), // 30GB in bytes (32212254720)
 
     'video' => [
-        'max_size' => env('VIDEO_MAX_SIZE', 34359738368), // 32GB in bytes
-        'max_size_mb' => env('VIDEO_MAX_SIZE_MB', 32768), // 32GB in MB for display
-        'max_size_display' => '32GB', // User-friendly display text
+        'max_size' => env('VIDEO_MAX_SIZE', 32212254720), // 30GB in bytes
+        'max_size_mb' => env('VIDEO_MAX_SIZE_MB', 30720), // 30GB in MB for display
+        'max_size_display' => '30GB', // User-friendly display text
         'mimes' => ['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp', 'mpeg', 'ogg', 'flv', 'wmv'],
         'allowed_mime_types' => [
             'video/mp4',

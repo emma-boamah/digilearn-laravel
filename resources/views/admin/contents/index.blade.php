@@ -1009,9 +1009,16 @@
                     <div id="fileUploadArea" class="file-upload-area">
                         <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
                         <p class="text-gray-600">Click to upload or drag and drop</p>
-                        <p class="text-sm text-gray-500">MP4, MOV, AVI up to 32GB</p>
+                        <p class="text-sm text-gray-500">MP4, MOV, AVI up to 30GB</p>
                     </div>
-                    <input type="file" id="fileInput" class="hidden" accept=".mp4,.mov,.avi">
+                    <input type="file" id="fileInput" class="hidden" accept=".mp4,.mov,.avi,.mkv,.webm,.3gp,.mpeg,.ogg,.flv,.wmv">
+                    <!-- Video Validation Error Message (Format & Size) -->
+                    <div id="videoValidationError" class="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg hidden">
+                        <p class="text-sm text-red-700">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            <span id="videoValidationErrorMessage">Video file exceeds maximum size of 30GB</span>
+                        </p>
+                    </div>
                 </div>
 
                 <!-- External URL Input -->
@@ -1953,6 +1960,85 @@
             finishBtn.style.display = currentStep === 3 ? 'block' : 'none';
         }
 
+        // Video Format & Size Validation Constants
+        const ALLOWED_VIDEO_FORMATS = ['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp', 'mpeg', 'ogg', 'flv', 'wmv'];
+        const ALLOWED_VIDEO_MIME_TYPES = [
+            'video/mp4',
+            'video/quicktime',
+            'video/x-msvideo',
+            'video/x-matroska',
+            'video/webm',
+            'video/3gpp',
+            'video/mpeg',
+            'video/ogg',
+            'video/x-flv',
+            'video/x-ms-wmv',
+        ];
+        const MAX_VIDEO_SIZE = 30 * 1024 * 1024 * 1024; // 30GB in bytes
+
+        // Video Validation Helper Functions
+        function showVideoValidationError(errorType, fileSize = null, fileName = null) {
+            const errorDiv = document.getElementById('videoValidationError');
+            const errorMessage = document.getElementById('videoValidationErrorMessage');
+            
+            if (errorDiv && errorMessage) {
+                let message = '';
+                
+                if (errorType === 'format') {
+                    const ext = fileName ? fileName.split('.').pop().toLowerCase() : 'unknown';
+                    message = `❌ Invalid video format (.${ext}). Accepted formats: MP4, MOV, AVI, MKV, WebM, 3GP, MPEG, OGG, FLV, WMV`;
+                } else if (errorType === 'size') {
+                    const fileSizeGB = (fileSize / (1024 * 1024 * 1024)).toFixed(2);
+                    message = `❌ Video file size (${fileSizeGB}GB) exceeds maximum allowed size of 30GB. Please choose a smaller file.`;
+                } else if (errorType === 'notVideo') {
+                    message = `❌ This file is not a valid video. Please upload a video file (MP4, MOV, AVI, etc.)`;
+                }
+                
+                errorMessage.innerHTML = message;
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        function hideVideoValidationError() {
+            const errorDiv = document.getElementById('videoValidationError');
+            if (errorDiv) {
+                errorDiv.classList.add('hidden');
+            }
+        }
+
+        function isValidVideoFormat(file) {
+            // Check by MIME type first (more reliable)
+            if (ALLOWED_VIDEO_MIME_TYPES.includes(file.type)) {
+                return true;
+            }
+            
+            // Fallback to extension check
+            const ext = file.name.split('.').pop().toLowerCase();
+            return ALLOWED_VIDEO_FORMATS.includes(ext);
+        }
+
+        function validateVideoFile(file) {
+            // Check if file type starts with 'video/' or has valid extension
+            if (!file.type.startsWith('video/') && !isValidVideoFormat(file)) {
+                showVideoValidationError('notVideo', null, file.name);
+                return false;
+            }
+            
+            // Check file format
+            if (!isValidVideoFormat(file)) {
+                showVideoValidationError('format', null, file.name);
+                return false;
+            }
+            
+            // Check file size
+            if (file.size > MAX_VIDEO_SIZE) {
+                showVideoValidationError('size', file.size);
+                return false;
+            }
+            
+            return true;
+        }
+
         // Step 1: Video Upload
         function initializeVideoStep() {
             const fileUploadArea = document.getElementById('fileUploadArea');
@@ -1968,6 +2054,12 @@
             fileInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (file) {
+                    // Validate video format and size
+                    if (!validateVideoFile(file)) {
+                        fileInput.value = '';
+                        return;
+                    }
+                    hideVideoValidationError();
                     uploadData.video = file;
                     updateVideoUploadArea(file);
                 }
@@ -2014,16 +2106,19 @@
 
             if (files.length > 0) {
                 const file = files[0];
-                if (file.type.startsWith('video/')) {
-                    uploadData.video = file;
-                    const fileInput = document.getElementById('fileInput');
-                    if (fileInput) {
-                        fileInput.files = files;
-                    }
-                    updateVideoUploadArea(file);
-                } else {
-                    alert('Please upload a video file.');
+                
+                // Validate video format and size
+                if (!validateVideoFile(file)) {
+                    return;
                 }
+                
+                hideVideoValidationError();
+                uploadData.video = file;
+                const fileInput = document.getElementById('fileInput');
+                if (fileInput) {
+                    fileInput.files = files;
+                }
+                updateVideoUploadArea(file);
             }
         }
 

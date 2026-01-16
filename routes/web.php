@@ -255,12 +255,47 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // Activity ping endpoint - update user's last activity time
+    // This endpoint is called frequently during long-running uploads to keep session alive
     Route::post('/ping', function ($request) {
-        if ($request->user()) {
-            $request->user()->update(['last_activity_at' => now()]);
-            return response()->json(['status' => 'updated']);
+        try {
+            // Check if user is authenticated
+            if (!$request->user()) {
+                return response()->json(['status' => 'unauthenticated'], 401);
+            }
+            
+            $user = $request->user();
+            
+            // Only update if enough time has passed (throttle updates to prevent database stress)
+            $lastUpdate = $user->last_activity_at;
+            $now = now();
+            
+            // Only update if more than 60 seconds have passed (increased throttle)
+            if (!$lastUpdate || $lastUpdate->diffInSeconds($now) > 60) {
+                try {
+                    // Use raw query update to avoid model overhead during uploads
+                    \Illuminate\Support\Facades\DB::table('users')
+                        ->where('id', $user->id)
+                        ->update(['last_activity_at' => $now]);
+                } catch (\Exception $updateError) {
+                    // Log but don't fail the ping - session timeout is handled by Laravel
+                    \Illuminate\Support\Facades\Log::warning('Ping update failed (non-blocking)', [
+                        'user_id' => $user->id,
+                        'error' => $updateError->getMessage()
+                    ]);
+                }
+            }
+            
+            // Return success quickly - don't wait for database response
+            return response()->json(['status' => 'ok'], 200);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Ping endpoint error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getFile() . ':' . $e->getLine()
+            ]);
+            // Return 200 even on error so uploads don't fail
+            // Session timeout is managed separately
+            return response()->json(['status' => 'ok'], 200);
         }
-        return response()->json(['status' => 'unauthenticated'], 401);
     })->middleware('auth')->name('ping');
 
     // Online users API
