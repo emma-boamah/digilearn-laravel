@@ -2750,16 +2750,30 @@
         }
 
         function formatTimeRemaining(seconds) {
-            if (seconds <= 0) return '--';
-            const minutes = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            if (minutes === 0) return `${secs}s`;
-            return `${minutes}m ${secs}s`;
+            if (seconds === undefined || seconds === null || isNaN(seconds) || seconds <= 0) {
+                return '--';
+            }
+            const totalSeconds = Math.round(seconds);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const secs = totalSeconds % 60;
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            } else if (minutes > 0) {
+                return `${minutes}m ${secs}s`;
+            } else {
+                return `${secs}s`;
+            }
         }
 
         function calculateSpeed(uploadedBytes, elapsedSeconds) {
-            if (elapsedSeconds <= 0) return 0;
-            return uploadedBytes / elapsedSeconds;
+            if (elapsedSeconds === undefined || elapsedSeconds === null || isNaN(elapsedSeconds) || elapsedSeconds <= 0) {
+                return 0;
+            }
+            const bytesPerSecond = uploadedBytes / elapsedSeconds;
+            // Ensure we return a valid number
+            return isNaN(bytesPerSecond) || !isFinite(bytesPerSecond) ? 0 : bytesPerSecond;
         }
 
         function updateProgress(type, percentage, status, isError = false, metrics = {}) {
@@ -2810,12 +2824,13 @@
             const uploadId = 'upload_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
             let uploadedBytes = 0;
-            let lastUpdateTime = Date.now();
+            let startTime = Date.now();
+            let lastUpdateTime = startTime;
             let lastUploadedBytes = 0;
 
             try {
-                // Phase 1: Preparation (5%)
-                updateProgress('video', 5, 'Preparing video data...', false, {
+                // Phase 1: Preparation (0%)
+                updateProgress('video', 0, 'Preparing video data...', false, {
                     uploadedBytes: 0,
                     totalBytes: totalSize,
                     speed: 0,
@@ -2823,9 +2838,9 @@
                     chunkInfo: `0/${totalChunks}`
                 });
 
-                await new Promise(resolve => setTimeout(resolve, 500)); // Brief pause for UX
+                await new Promise(resolve => setTimeout(resolve, 300)); // Brief pause for UX
 
-                // Phase 2: Upload chunks (5-95%)
+                // Phase 2: Upload chunks (0-90%)
                 for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
                     const start = chunkIndex * chunkSize;
                     const end = Math.min(start + chunkSize, totalSize);
@@ -2851,44 +2866,41 @@
 
                     uploadedBytes = end;
 
-                    // Calculate speed and time remaining
+                    // Calculate speed and time remaining - update more frequently
                     const currentTime = Date.now();
-                    const elapsedSeconds = (currentTime - lastUpdateTime) / 1000;
+                    const elapsedTotalSeconds = (currentTime - startTime) / 1000;
+                    const elapsedSinceLastUpdate = (currentTime - lastUpdateTime) / 1000;
 
-                    let speed = 0;
-                    let timeRemaining = 0;
+                    // Calculate instantaneous speed from overall time (more stable)
+                    const overallSpeed = elapsedTotalSeconds > 0 ? uploadedBytes / elapsedTotalSeconds : 0;
+                    const remainingBytes = totalSize - uploadedBytes;
+                    const estimatedTimeRemaining = overallSpeed > 0 ? remainingBytes / overallSpeed : 0;
 
-                    if (elapsedSeconds >= 1) {
-                        const bytesUploaded = uploadedBytes - lastUploadedBytes;
-                        speed = calculateSpeed(bytesUploaded, elapsedSeconds);
-                        const remainingBytes = totalSize - uploadedBytes;
-                        timeRemaining = speed > 0 ? remainingBytes / speed : 0;
-
-                        lastUpdateTime = currentTime;
-                        lastUploadedBytes = uploadedBytes;
-                    }
-
-                    // Progress: 5% + (90% * progress through chunks)
-                    const uploadProgress = 5 + Math.floor((uploadedBytes / totalSize) * 90);
+                    // Update every chunk for smooth progress (not just every 1 second)
+                    // Progress: 0% + (90% * progress through chunks)
+                    const uploadProgress = Math.floor((uploadedBytes / totalSize) * 90);
 
                     updateProgress('video', uploadProgress, `Uploading... Chunk ${chunkIndex + 1}/${totalChunks}`, false, {
                         uploadedBytes: uploadedBytes,
                         totalBytes: totalSize,
-                        speed: speed,
-                        timeRemaining: timeRemaining,
+                        speed: overallSpeed,
+                        timeRemaining: estimatedTimeRemaining,
                         chunkInfo: `${chunkIndex + 1}/${totalChunks}`
                     });
+
+                    lastUpdateTime = currentTime;
+                    lastUploadedBytes = uploadedBytes;
                 }
 
-                // Phase 3: Server processing (95-100%)
-                updateProgress('video', 95, 'Processing video on server...', false, {
+                // Phase 3: Server processing (90-100%)
+                updateProgress('video', 90, 'Processing video on server...', false, {
                     uploadedBytes: totalSize,
                     totalBytes: totalSize,
                     chunkInfo: `${totalChunks}/${totalChunks}`
                 });
 
                 // Wait for server to finalize
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise(resolve => setTimeout(resolve, 800));
 
                 // Complete upload metadata
                 const finalFormData = new FormData();
@@ -2946,7 +2958,9 @@
                 }
 
                 // Direct upload for smaller files (non-chunked)
-                updateProgress('video', 5, 'Preparing video data...', false, {
+                const startTime = Date.now();
+                
+                updateProgress('video', 0, 'Preparing video data...', false, {
                     uploadedBytes: 0,
                     totalBytes: fileSize,
                     speed: 0,
@@ -2983,8 +2997,8 @@
                     formData.append('thumbnail_file', uploadData.thumbnail);
                 }
 
-                updateProgress('video', 50, 'Sending to server...', false, {
-                    uploadedBytes: fileSize * 0.5,
+                updateProgress('video', 30, 'Uploading video file...', false, {
+                    uploadedBytes: fileSize * 0.3,
                     totalBytes: fileSize,
                     speed: 0
                 });
@@ -2999,9 +3013,14 @@
 
                 if (response.ok) {
                     const result = await response.json();
+                    const elapsedSeconds = (Date.now() - startTime) / 1000;
+                    const uploadSpeed = elapsedSeconds > 0 ? fileSize / elapsedSeconds : 0;
+                    
                     updateProgress('video', 100, 'Video uploaded successfully!', false, {
                         uploadedBytes: fileSize,
-                        totalBytes: fileSize
+                        totalBytes: fileSize,
+                        speed: uploadSpeed,
+                        timeRemaining: 0
                     });
 
                     // Store video ID for later use
