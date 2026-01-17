@@ -1880,7 +1880,9 @@ class AdminController extends Controller
                 $result = $vimeoService->uploadVideo(
                     $video->temp_file_path,
                     $video->title,
-                    $video->description
+                    $video->description,
+                    Auth::id(),
+                    'video_' . $video->id
                 );
 
                 Log::info('Vimeo upload result', ['video_id' => $video->id, 'result' => $result]);

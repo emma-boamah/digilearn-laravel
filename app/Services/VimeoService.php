@@ -4,7 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Storage;
+use Illuminate\Support\Facades\Storage;
 use App\Events\UploadProgress;
 use Exception;
 
@@ -31,15 +31,19 @@ class VimeoService
             Log::info('Starting Vimeo upload process', ['file_path' => $filePath, 'title' => $title]);
 
             // Validate file existence - handle both relative and absolute paths
-            if (str_starts_with($filePath, 'storage/public/')) {
-                // Path already includes storage/public prefix
-                $fullPath = storage_path('app/' . $filePath);
-            } elseif (str_starts_with($filePath, '/')) {
+            if (str_starts_with($filePath, '/')) {
                 // Absolute path
                 $fullPath = $filePath;
             } else {
-                // Relative path to storage/app/public
-                $fullPath = storage_path('app/public/' . $filePath);
+                // Normalize relative path by stripping any storage prefixes
+                $relativePath = $filePath;
+                if (str_starts_with($relativePath, 'storage/public/')) {
+                    $relativePath = substr($relativePath, strlen('storage/public/'));
+                } elseif (str_starts_with($relativePath, 'storage/')) {
+                    $relativePath = substr($relativePath, strlen('storage/'));
+                }
+                // Use Storage facade to get the full path
+                $fullPath = Storage::disk('public')->path($relativePath);
             }
 
             if (!file_exists($fullPath)) {
@@ -185,8 +189,8 @@ class VimeoService
 
                 $offset += $chunkSizeActual;
 
-                // Broadcast progress for large files
-                if ($fileSize > 10 * 1024 * 1024 && $userId && $uploadId) { // Only broadcast for files > 10MB with user context
+                // Broadcast progress for all uploads with user context
+                if ($userId && $uploadId) {
                     $progress = round(($offset / $fileSize) * 100, 2);
                     $uploadedBytes = $offset;
                     $remainingBytes = $fileSize - $uploadedBytes;
