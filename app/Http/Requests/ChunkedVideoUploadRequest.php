@@ -11,7 +11,8 @@ class ChunkedVideoUploadRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return auth()->check() && auth()->user()->hasRole(['admin', 'teacher', 'content_creator']);
+        // Since routes are already protected by admin middleware, just check authentication
+        return auth()->check();
     }
 
     /**

@@ -2924,7 +2924,8 @@ class AdminController extends Controller
                                 Log::info('Starting immediate Vimeo upload', ['video_id' => $video->id]);
 
                                 $vimeoService = new \App\Services\VimeoService();
-                                $result = $vimeoService->uploadVideo($tempPath, $video->title, $video->description);
+                                $uploadId = 'video_' . $video->id . '_' . time();
+                                $result = $vimeoService->uploadVideo($tempPath, $video->title, $video->description, auth()->id(), $uploadId);
 
                                 if ($result['success']) {
                                     $video->update([
@@ -3710,7 +3711,8 @@ class AdminController extends Controller
                     if ($request->upload_destination === 'vimeo') {
                         try {
                             $vimeoService = new \App\Services\VimeoService();
-                            $result = $vimeoService->uploadVideo($tempPath, $video->title, $video->description);
+                            $uploadId = 'video_' . $video->id . '_' . time();
+                            $result = $vimeoService->uploadVideo($tempPath, $video->title, $video->description, auth()->id(), $uploadId);
 
                             if ($result && is_array($result) && ($result['success'] ?? false)) {
                                 $video->update([
