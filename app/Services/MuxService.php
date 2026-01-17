@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Client\ConnectionException;
 use Exception;
 use Illuminate\Support\Str;
@@ -132,7 +133,21 @@ class MuxService
             throw new Exception('File path is required');
         }
 
-        $fullPath = storage_path('app/public/' . ltrim($filePath, '/'));
+        // Normalize file path - handle both relative and absolute paths
+        if (str_starts_with($filePath, '/')) {
+            // Absolute path
+            $fullPath = $filePath;
+        } else {
+            // Normalize relative path by stripping any storage prefixes
+            $relativePath = $filePath;
+            if (str_starts_with($relativePath, 'storage/public/')) {
+                $relativePath = substr($relativePath, strlen('storage/public/'));
+            } elseif (str_starts_with($relativePath, 'storage/')) {
+                $relativePath = substr($relativePath, strlen('storage/'));
+            }
+            // Use Storage facade to get the full path
+            $fullPath = Storage::disk('public')->path($relativePath);
+        }
 
         // Log details
         Log::info('File upload details', [

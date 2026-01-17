@@ -1679,8 +1679,12 @@ class AdminController extends Controller
         $expiryHours = (int) config('services.vimeo.temp_expiry_hours', 72);
         $tempExpiresAt = now()->addHours($expiryHours);
 
-        // Simulate duration calculation (in a real app, you'd use a video processing library)
-        $durationSeconds = rand(60, 3600); // Placeholder duration
+        // Get the absolute path for FFmpeg
+        $absolutePath = Storage::disk('public')->path($tempVideoPath);
+
+        // Calculate real duration using FFmpeg
+        $ffprobe = \FFMpeg\FFProbe::create();
+        $durationSeconds = (float) round($ffprobe->format($absolutePath)->get('duration'), 2);
 
         // Handle document upload
         $documentPath = null;
