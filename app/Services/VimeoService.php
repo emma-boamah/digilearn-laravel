@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Storage;
+use App\Events\UploadProgress;
 use Exception;
 
 class VimeoService
@@ -24,7 +25,7 @@ class VimeoService
     /**
      * Upload video to Vimeo
      */
-    public function uploadVideo($filePath, $title, $description = null)
+    public function uploadVideo($filePath, $title, $description = null, $userId = null, $uploadId = null)
     {
         try {
             Log::info('Starting Vimeo upload process', ['file_path' => $filePath, 'title' => $title]);
@@ -49,7 +50,7 @@ class VimeoService
             Log::info('Video entry created', ['uri' => $videoData['uri']]);
 
             // Step 2: Upload the actual video file
-            $uploadSuccess = $this->uploadVideoFile($videoData['upload']['upload_link'], $fullPath);
+            $uploadSuccess = $this->uploadVideoFile($videoData['upload']['upload_link'], $fullPath, $userId, $uploadId, $fileSize);
             
             if (!$uploadSuccess) {
                 throw new Exception('Failed to upload video file to Vimeo');
@@ -138,7 +139,7 @@ class VimeoService
     /**
      * Upload video file to Vimeo
      */
-    private function uploadVideoFile($uploadUrl, $fullPath)
+    private function uploadVideoFile($uploadUrl, $fullPath, $userId = null, $uploadId = null, $fileSize = null)
     {
         try {
             $fileSize = filesize($fullPath);
@@ -173,11 +174,31 @@ class VimeoService
                 }
 
                 $offset += $chunkSizeActual;
-                
-                // Log progress for large files
-                if ($fileSize > 10 * 1024 * 1024) { // Only log for files > 10MB
+
+                // Broadcast progress for large files
+                if ($fileSize > 10 * 1024 * 1024 && $userId && $uploadId) { // Only broadcast for files > 10MB with user context
                     $progress = round(($offset / $fileSize) * 100, 2);
-                    Log::info('Upload progress', ['progress' => $progress . '%']);
+                    $uploadedBytes = $offset;
+                    $remainingBytes = $fileSize - $uploadedBytes;
+
+                    // Calculate speed (rough estimate based on chunk size and time)
+                    $speed = $chunkSizeActual; // bytes per chunk, rough approximation
+
+                    // Estimate time remaining (rough approximation)
+                    $timeRemaining = $speed > 0 ? $remainingBytes / $speed : null;
+
+                    broadcast(new UploadProgress(
+                        $userId,
+                        $uploadId,
+                        $progress,
+                        'Uploading video to Vimeo...',
+                        $uploadedBytes,
+                        $fileSize,
+                        $speed,
+                        $timeRemaining
+                    ));
+
+                    Log::info('Upload progress', ['progress' => $progress . '%', 'user_id' => $userId, 'upload_id' => $uploadId]);
                 }
             }
 

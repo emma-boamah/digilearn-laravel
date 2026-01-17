@@ -35,3 +35,9 @@ Broadcast::channel('course.{courseId}', function ($user, $courseId) {
     // Allow authenticated users to join course channels for real-time comments
     return $user !== null;
 });
+
+// Upload progress channel for real-time upload status
+Broadcast::channel('upload-progress.{userId}', function ($user, $userId) {
+    // Only allow users to listen to their own upload progress
+    return (int) $user->id === (int) $userId;
+});

@@ -3675,7 +3675,7 @@ class AdminController extends Controller
                     if ($request->upload_destination === 'vimeo') {
                         try {
                             $vimeoService = new \App\Services\VimeoService();
-                            $result = $vimeoService->uploadVideo('storage/public/' . $tempPath, $video->title, $video->description);
+                            $result = $vimeoService->uploadVideo('storage/public/' . $tempPath, $video->title, $video->description, Auth::id(), 'video_' . $video->id);
 
                             if ($result && is_array($result) && ($result['success'] ?? false)) {
                                 $video->update([
