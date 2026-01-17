@@ -2875,7 +2875,7 @@ class AdminController extends Controller
                     'subject_id' => $request->subject_id,
                     'description' => $request->description,
                     'grade_level' => $request->grade_level,
-                    'uploaded_by' => auth()->id(),
+                    'uploaded_by' => Auth::id(),
                     'video_source' => $request->video_source ?? 'local',
                     'status' => 'pending' // Videos need approval
                 ];
@@ -2925,7 +2925,7 @@ class AdminController extends Controller
 
                                 $vimeoService = new \App\Services\VimeoService();
                                 $uploadId = 'video_' . $video->id . '_' . time();
-                                $result = $vimeoService->uploadVideo($tempPath, $video->title, $video->description, auth()->id(), $uploadId);
+                                $result = $vimeoService->uploadVideo($tempPath, $video->title, $video->description, Auth::id(), $uploadId);
 
                                 if ($result['success']) {
                                     $video->update([
@@ -2978,7 +2978,7 @@ class AdminController extends Controller
                         'title' => pathinfo($docFile->getClientOriginalName(), PATHINFO_FILENAME),
                         'file_path' => $path,
                         'description' => 'Related document for video: ' . ($video ? $video->title : 'Unknown'),
-                        'uploaded_by' => auth()->id(),
+                        'uploaded_by' => Auth::id(),
                         'video_id' => $video ? $video->id : null,
                         'grade_level' => $request->grade_level
                     ];
@@ -3004,7 +3004,7 @@ class AdminController extends Controller
                     $quizDataToCreate = [
                         'title' => 'Quiz for: ' . $video->title,
                         'subject_id' => $subject->id,
-                        'uploaded_by' => auth()->id(),
+                        'uploaded_by' => Auth::id(),
                         'grade_level' => $request->grade_level,
                         'video_id' => $video->id,
                         'quiz_data' => json_encode($quizData),
@@ -3035,7 +3035,7 @@ class AdminController extends Controller
 
             Log::error('Content package upload failed', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
                 'request_data' => $request->all()
             ]);
 
@@ -3626,7 +3626,7 @@ class AdminController extends Controller
                 'subject_id' => $request->subject_id,
                 'description' => $request->description,
                 'grade_level' => $request->grade_level,
-                'uploaded_by' => auth()->id(),
+                'uploaded_by' => Auth::id(),
                 'video_source' => $request->video_source ?? 'local',
                 'status' => 'pending'
             ];
@@ -3712,7 +3712,7 @@ class AdminController extends Controller
                         try {
                             $vimeoService = new \App\Services\VimeoService();
                             $uploadId = 'video_' . $video->id . '_' . time();
-                            $result = $vimeoService->uploadVideo($tempPath, $video->title, $video->description, auth()->id(), $uploadId);
+                            $result = $vimeoService->uploadVideo($tempPath, $video->title, $video->description, Auth::id(), $uploadId);
 
                             if ($result && is_array($result) && ($result['success'] ?? false)) {
                                 $video->update([
@@ -3830,7 +3830,7 @@ class AdminController extends Controller
                     'title' => pathinfo($docFile->getClientOriginalName(), PATHINFO_FILENAME),
                     'file_path' => $path,
                     'description' => 'Related document for video: ' . $video->title,
-                    'uploaded_by' => auth()->id(),
+                    'uploaded_by' => Auth::id(),
                     'video_id' => $video->id,
                     'grade_level' => $video->grade_level
                 ];
@@ -3900,7 +3900,7 @@ class AdminController extends Controller
             $quizDataToCreate = [
                 'title' => 'Quiz for: ' . $video->title,
                 'subject_id' => $subject->id,
-                'uploaded_by' => auth()->id(),
+                'uploaded_by' => Auth::id(),
                 'grade_level' => $video->grade_level,
                 'video_id' => $video->id,
                 'quiz_data' => json_encode($quizData),

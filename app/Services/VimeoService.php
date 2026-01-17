@@ -30,8 +30,18 @@ class VimeoService
         try {
             Log::info('Starting Vimeo upload process', ['file_path' => $filePath, 'title' => $title]);
 
-            // Validate file existence
-            $fullPath = storage_path('app/public/' . $filePath);
+            // Validate file existence - handle both relative and absolute paths
+            if (str_starts_with($filePath, 'storage/public/')) {
+                // Path already includes storage/public prefix
+                $fullPath = storage_path('app/' . $filePath);
+            } elseif (str_starts_with($filePath, '/')) {
+                // Absolute path
+                $fullPath = $filePath;
+            } else {
+                // Relative path to storage/app/public
+                $fullPath = storage_path('app/public/' . $filePath);
+            }
+
             if (!file_exists($fullPath)) {
                 throw new Exception("Video file not found: {$fullPath}");
             }
