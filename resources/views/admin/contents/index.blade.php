@@ -2969,6 +2969,10 @@
 
                 const formData = new FormData();
                 formData.append('_token', '{{ csrf_token() }}');
+                formData.append('title', finalData.video.title);
+                formData.append('subject_id', finalData.video.subject_id);
+                formData.append('description', finalData.video.description);
+                formData.append('grade_level', finalData.video.grade_level);
                 formData.append('video_source', finalData.video.video_source);
 
                 if (finalData.video.video_source === 'local') {
@@ -2987,11 +2991,6 @@
                 } else if (finalData.video.video_source === 'mux') {
                     formData.append('external_video_url', finalData.video.external_video_url);
                 }
-
-                formData.append('title', finalData.video.title);
-                formData.append('subject_id', finalData.video.subject_id);
-                formData.append('description', finalData.video.description);
-                formData.append('grade_level', finalData.video.grade_level);
 
                 if (uploadData.thumbnail) {
                     formData.append('thumbnail_file', uploadData.thumbnail);

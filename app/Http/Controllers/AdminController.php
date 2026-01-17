@@ -92,6 +92,11 @@ class AdminController extends Controller
      */
     public function dashboard()
     {
+        Log::info('Admin dashboard accessed', [
+            'user_id' => Auth::id(),
+            'timestamp' => now()->toISOString()
+        ]);
+
         // Get dashboard statistics
         $stats = $this->getDashboardStats();
 
