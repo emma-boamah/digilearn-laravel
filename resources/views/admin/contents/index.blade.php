@@ -1671,6 +1671,9 @@
         // Ping every 5 minutes to keep session alive
         setInterval(pingServer, 5 * 60 * 1000);
 
+        // Initialize upload progress broadcasting
+        initializeUploadProgressBroadcasting();
+
         // Upload Modal Elements
         const uploadBtn = document.getElementById('uploadBtn');
         const uploadModal = document.getElementById('uploadModal');
@@ -2949,9 +2952,10 @@
 
         async function uploadVideo(finalData) {
             try {
-                // Use chunked upload for files > 500MB, otherwise use direct upload
+                // Use chunked upload for files > 0.8% of max size (≈245MB), otherwise use direct upload
                 const fileSize = finalData.video.file.size;
-                const largeFileThreshold = 500 * 1024 * 1024; // 500MB
+                const maxSize = 30 * 1024 * 1024 * 1024; // 30GB in bytes
+                const largeFileThreshold = 0.008 * maxSize; // 0.8% of max size ≈ 245MB
 
                 if (fileSize > largeFileThreshold) {
                     return await uploadVideoInChunksHybrid(finalData);
@@ -3169,6 +3173,43 @@
 
         function showUploadError(message) {
             showUploadErrors([message]);
+        }
+
+        // Upload Progress Broadcasting
+        function initializeUploadProgressBroadcasting() {
+            if (typeof Echo === 'undefined') {
+                console.log('Broadcasting not available - Echo not loaded');
+                return;
+            }
+
+            const userId = '{{ Auth::id() }}';
+            if (!userId) {
+                console.log('User not authenticated for broadcasting');
+                return;
+            }
+
+            console.log('Initializing upload progress broadcasting for user:', userId);
+
+            // Listen for upload progress events
+            Echo.private('upload-progress.' + userId)
+                .listen('.upload.progress', (e) => {
+                    console.log('Received upload progress:', e);
+
+                    // Update video progress if it's a video upload
+                    if (e.upload_id && e.upload_id.startsWith('video_')) {
+                        updateProgress('video', e.progress, e.status, false, {
+                            uploadedBytes: e.uploaded_bytes,
+                            totalBytes: e.total_bytes,
+                            speed: e.speed,
+                            timeRemaining: e.time_remaining
+                        });
+                    }
+                })
+                .error((error) => {
+                    console.error('Broadcasting error:', error);
+                });
+
+            console.log('Upload progress broadcasting initialized');
         }
     });
 </script>
