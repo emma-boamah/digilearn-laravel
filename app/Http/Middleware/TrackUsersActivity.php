@@ -122,6 +122,7 @@ class TrackUsersActivity
             'js/',
             'images/',
             'storage/',
+            'admin/contents/upload/video-chunk', // Skip chunked video uploads to avoid temp file issues
         ];
 
         foreach ($skipPatterns as $pattern) {
