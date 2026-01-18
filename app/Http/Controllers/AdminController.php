@@ -3001,11 +3001,8 @@ class AdminController extends Controller
                 $quizData = json_decode($request->quiz_data, true);
 
                 if (!empty($quizData['questions'])) {
-                    // Find or create subject
-                    $subject = Subject::firstOrCreate(
-                        ['name' => $video->title],
-                        ['description' => 'Auto-created subject for quiz']
-                    );
+                    // Use the subject associated with the video
+                    $subject = Subject::find($video->subject_id);
 
                     $quizDataToCreate = [
                         'title' => 'Quiz for: ' . $video->title,
@@ -3897,11 +3894,8 @@ class AdminController extends Controller
                 throw new \Exception('No questions found in quiz data');
             }
 
-            // Find or create subject
-            $subject = Subject::firstOrCreate(
-                ['name' => $video->title],
-                ['description' => 'Auto-created subject for quiz']
-            );
+            // Use the subject associated with the video
+            $subject = Subject::find($video->subject_id);
 
             $quizDataToCreate = [
                 'title' => 'Quiz for: ' . $video->title,
