@@ -120,7 +120,7 @@ class SubscriptionAccessService
      */
     private static function getUserPlanSlug(User $user): ?string
     {
-        $currentSubscription = $user->currentSubscription;
+        $currentSubscription = $user->currentSubscription ? $user->currentSubscription->first() : null;
 
         if (!$currentSubscription) {
             return null;

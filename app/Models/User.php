@@ -122,8 +122,7 @@ class User extends Authenticatable implements MustVerifyEmail
                               ->orWhere('trial_ends_at', '>', now());
                     })
                     ->with('pricingPlan')
-                    ->orderBy('created_at', 'desc') // Use orderBy instead of latest()
-                    ->first(); // Get the first match
+                    ->orderBy('created_at', 'desc'); // Use orderBy instead of latest()
     }
 
     /**
