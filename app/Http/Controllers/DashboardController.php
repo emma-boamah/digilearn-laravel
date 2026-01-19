@@ -13,6 +13,7 @@ use App\Models\Video;
 use App\Models\UserNote;
 use App\Models\Course;
 use App\Models\CommentUserLike;
+use App\Models\Subject;
 
 class DashboardController extends Controller
 {
@@ -210,6 +211,21 @@ class DashboardController extends Controller
             }
         }
 
+        // DEBUG: Log subscription status
+        Log::info('Subscription Check Debug', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'selected_level_group' => $selectedLevelGroup,
+            'has_current_subscription' => $user->currentSubscription ? true : false,
+            'subscription_status' => $user->currentSubscription ? $user->currentSubscription->status : 'none',
+            'subscription_expires_at' => $user->currentSubscription ? $user->currentSubscription->expires_at : null,
+            'subscription_trial_ends_at' => $user->currentSubscription ? $user->currentSubscription->trial_ends_at : null,
+            'is_active' => $user->currentSubscription ? $user->currentSubscription->isActive() : false,
+            'is_in_trial' => $user->currentSubscription ? $user->currentSubscription->isInTrial() : false,
+            'pricing_plan_name' => $user->currentSubscription ? $user->currentSubscription->pricingPlan->name ?? 'none' : 'none',
+            'current_time' => now(),
+        ]);
+
         if (!$this->hasAccessToLevelGroup($user, $selectedLevelGroup)) {
             session()->forget('selected_level_group');
             return redirect()->route('pricing')->with('warning', 'Please upgrade your subscription to access this content.');
@@ -235,13 +251,15 @@ class DashboardController extends Controller
         if ($selectedLevelGroup === 'university') {
             $universityCourses = $this->getUniversityCourses();
             $universityCourses = $this->filterCoursesBySubscription($user, $universityCourses);
-            return view('dashboard.digilearn', compact('selectedLevelGroup', 'universityCourses'));
+            $subjects = $this->getSubjectsFromCourses($universityCourses);
+            return view('dashboard.digilearn', compact('selectedLevelGroup', 'universityCourses', 'subjects'));
         }
 
         $lessons = $this->getLessonsForLevelGroup($selectedLevelGroup);
         $lessons = $this->filterLessonsBySubscription($user, $lessons);
+        $subjects = $this->getSubjectsFromLessons($lessons);
 
-        return view('dashboard.digilearn', compact('selectedLevelGroup', 'lessons'));
+        return view('dashboard.digilearn', compact('selectedLevelGroup', 'lessons', 'subjects'));
     }
 
     /**
@@ -430,10 +448,38 @@ class DashboardController extends Controller
              return true;
          }
 
-         // Use the subscription access service
+         // Debug log
+         Log::info('Access Check', [
+             'user_id' => $user->id,
+             'group_id' => $groupId,
+             'subscription_exists' => $user->currentSubscription ? true : false,
+             'subscription_details' => $user->currentSubscription ? [
+                 'status' => $user->currentSubscription->status,
+                 'expires_at' => $user->currentSubscription->expires_at,
+                 'trial_ends_at' => $user->currentSubscription->trial_ends_at,
+                 'is_active' => $user->currentSubscription->isActive(),
+                 'is_in_trial' => $user->currentSubscription->isInTrial(),
+             ] : null,
+         ]);
+
+         // Use the subscription access service OR direct check
          $hasAccess = \App\Services\SubscriptionAccessService::canAccessLevelGroup($user, $groupId);
 
-         Log::info('Level group access check', [
+         // Fallback direct check if service fails
+         if (!$hasAccess) {
+             // Direct subscription check
+             $subscription = $user->currentSubscription;
+             if ($subscription && ($subscription->isActive() || $subscription->isInTrial())) {
+                 // Check if subscription plan has access to this level group
+                 $plan = $subscription->pricingPlan;
+                 if ($plan) {
+                     // Assuming pricing plan has a method to check level group access
+                     $hasAccess = $this->checkPlanAccess($plan, $groupId);
+                 }
+             }
+         }
+
+         Log::info('Level group access check result', [
              'user_id' => $user->id,
              'group_id' => $groupId,
              'has_access' => $hasAccess,
@@ -444,47 +490,78 @@ class DashboardController extends Controller
          return $hasAccess;
      }
 
+     /**
+      * Check if a pricing plan has access to a level group
+      */
+     private function checkPlanAccess($plan, $groupId)
+     {
+         // Map plan names to allowed level groups
+         $planAccessMap = [
+             'Essential' => ['primary-lower', 'primary-upper', 'jhs'],
+             'Home School' => ['primary-lower', 'primary-upper', 'jhs', 'shs'],
+             'Extra Tuition' => ['primary-lower', 'primary-upper', 'jhs', 'shs', 'university'],
+         ];
+
+         $allowedGroups = $planAccessMap[$plan->name] ?? [];
+         return in_array($groupId, $allowedGroups);
+     }
+
     /**
      * Filter lessons based on user's subscription
-      */
-     private function filterLessonsBySubscription($user, $lessons)
-     {
-         // If user has unlimited content access, return all lessons
-         if ($user->hasUnlimitedContentAccess()) {
-             Log::info('Full lesson access granted', [
-                 'user_id' => $user->id,
-                 'total_lessons' => count($lessons),
-                 'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'none',
-                 'timestamp' => now()->toISOString()
-             ]);
-             return $lessons;
-         }
+       */
+      private function filterLessonsBySubscription($user, $lessons)
+      {
+          // Superuser has access to all lessons
+          if ($user->is_superuser) {
+              Log::info('Full lesson access granted for superuser', [
+                  'user_id' => $user->id,
+                  'total_lessons' => count($lessons),
+                  'timestamp' => now()->toISOString()
+              ]);
+              return $lessons;
+          }
 
-         // Limit free users to first 2 lessons
-         $filteredLessons = array_slice($lessons, 0, 2);
-         Log::info('Lessons filtered for limited user', [
-             'user_id' => $user->id,
-             'total_lessons' => count($lessons),
-             'filtered_to' => count($filteredLessons),
-             'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'none',
-             'timestamp' => now()->toISOString()
-         ]);
-         return $filteredLessons;
-     }
+          // If user has unlimited content access, return all lessons
+          if ($user->hasUnlimitedContentAccess()) {
+              Log::info('Full lesson access granted', [
+                  'user_id' => $user->id,
+                  'total_lessons' => count($lessons),
+                  'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'none',
+                  'timestamp' => now()->toISOString()
+              ]);
+              return $lessons;
+          }
+
+          // Limit free users to first 2 lessons
+          $filteredLessons = array_slice($lessons, 0, 2);
+          Log::info('Lessons filtered for limited user', [
+              'user_id' => $user->id,
+              'total_lessons' => count($lessons),
+              'filtered_to' => count($filteredLessons),
+              'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'none',
+              'timestamp' => now()->toISOString()
+          ]);
+          return $filteredLessons;
+      }
 
     /**
      * Filter courses based on user's subscription
-      */
-     private function filterCoursesBySubscription($user, $courses)
-     {
-         // If user has unlimited content access, return all courses
-         if ($user->hasUnlimitedContentAccess()) {
-             return $courses;
-         }
+       */
+      private function filterCoursesBySubscription($user, $courses)
+      {
+          // Superuser has access to all courses
+          if ($user->is_superuser) {
+              return $courses;
+          }
 
-         // Limit free users to first 2 courses
-         return array_slice($courses, 0, 2);
-     }
+          // If user has unlimited content access, return all courses
+          if ($user->hasUnlimitedContentAccess()) {
+              return $courses;
+          }
+
+          // Limit free users to first 2 courses
+          return array_slice($courses, 0, 2);
+      }
 
     /**
      * Get lessons for a specific level (grade level)
@@ -498,7 +575,7 @@ class DashboardController extends Controller
             // Query approved videos for the specific grade level
             $videos = Video::approved()
                 ->where('grade_level', $dbLevel)
-                ->with(['uploader', 'documents', 'quiz'])
+                ->with(['uploader', 'documents', 'quiz', 'subject'])
                 ->orderBy('created_at', 'desc')
                 ->get();
 
@@ -519,6 +596,7 @@ class DashboardController extends Controller
 
             $lessons = [];
             foreach ($videos as $index => $video) {
+                $subjectName = $video->subject ? $video->subject->name : $this->getSubjectFromLevel($level);
                 $lesson = [
                     'id' => $video->id,
                     'video_id' => $video->id,
@@ -528,7 +606,9 @@ class DashboardController extends Controller
                     'video_url' => $video->getVideoUrl(),
                     'thumbnail' => $video->getThumbnailUrl(),
                     'instructor' => $video->uploader ? $video->uploader->name : 'Unknown',
-                    'subject' => $this->getSubjectFromLevel($level),
+                    'subject' => $subjectName,
+                    'subject_id' => $video->subject_id,
+                    'subject_slug' => \Illuminate\Support\Str::slug($subjectName),
                     'year' => $video->created_at->format('Y'),
                     'level' => $level,
                     'level_display' => $this->getLevelDisplayName($level),
@@ -2938,5 +3018,86 @@ class DashboardController extends Controller
            'university' => 'university',
        ];
        return $mappings[$level] ?? 'primary-lower';
+   }
+
+   /**
+    * Get subjects from lessons array (now from subjects table)
+    */
+   private function getSubjectsFromLessons($lessons)
+   {
+       $subjects = [];
+       $allSubjects = \App\Models\Subject::all();
+
+       $subjectIcons = [
+           'Mathematics' => 'fas fa-calculator',
+           'English' => 'fas fa-book',
+           'Science' => 'fas fa-flask',
+           'Social Studies' => 'fas fa-globe',
+           'General Education' => 'fas fa-graduation-cap',
+           'Primary Education' => 'fas fa-school',
+           'Junior High School' => 'fas fa-chalkboard-teacher',
+           'Senior High School' => 'fas fa-university',
+           'Computer Science' => 'fas fa-laptop-code',
+           'Business Administration' => 'fas fa-briefcase',
+           'Medicine' => 'fas fa-stethoscope',
+       ];
+
+       foreach ($allSubjects as $subject) {
+           $count = collect($lessons)->where('subject_id', $subject->id)->count();
+           $subjects[] = [
+               'name' => $subject->name,
+               'slug' => \Illuminate\Support\Str::slug($subject->name),
+               'icon' => $subjectIcons[$subject->name] ?? 'fas fa-book-open',
+               'count' => $count
+           ];
+       }
+
+       // Add 'All' subject at the beginning
+       array_unshift($subjects, [
+           'name' => 'All',
+           'slug' => 'all',
+           'icon' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>',
+           'count' => count($lessons)
+       ]);
+
+       return $subjects;
+   }
+
+   /**
+    * Get subjects from courses array
+    */
+   private function getSubjectsFromCourses($courses)
+   {
+       $subjects = [];
+       $allSubjects = \App\Models\Subject::all();
+
+       $subjectIcons = [
+           'Computer Science' => 'fas fa-laptop-code',
+           'Business Administration' => 'fas fa-briefcase',
+           'Medicine' => 'fas fa-stethoscope',
+           'Mathematics' => 'fas fa-calculator',
+           'English' => 'fas fa-book',
+           // Add more as needed
+       ];
+
+       foreach ($allSubjects as $subject) {
+           $count = collect($courses)->where('subject', $subject->name)->count();
+           $subjects[] = [
+               'name' => $subject->name,
+               'slug' => \Illuminate\Support\Str::slug($subject->name),
+               'icon' => $subjectIcons[$subject->name] ?? 'fas fa-book-open',
+               'count' => $count
+           ];
+       }
+
+       // Add 'All' subject at the beginning
+       array_unshift($subjects, [
+           'name' => 'All',
+           'slug' => 'all',
+           'icon' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>',
+           'count' => count($courses)
+       ]);
+
+       return $subjects;
    }
 }

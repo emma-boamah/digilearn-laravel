@@ -120,13 +120,13 @@ class SubscriptionAccessService
      */
     private static function getUserPlanSlug(User $user): ?string
     {
-        $activeSubscription = $user->activeSubscription;
+        $currentSubscription = $user->currentSubscription;
 
-        if (!$activeSubscription) {
+        if (!$currentSubscription) {
             return null;
         }
 
-        $planSlug = $activeSubscription->pricingPlan->slug ?? null;
+        $planSlug = $currentSubscription->pricingPlan->slug ?? null;
 
         // Map plan slugs to our access levels
         $slugMapping = [

@@ -8,7 +8,8 @@ export default defineConfig({
         "resources/scss/app.scss",
         "resources/css/app.css",
         "resources/css/notifications.css",
-        "resources/js/app.js"
+        "resources/js/app.js",
+        "resources/js/video-facade.js"
       ],
       refresh: true,
     }),
