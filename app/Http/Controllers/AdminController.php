@@ -601,8 +601,15 @@ class AdminController extends Controller
         $levelGroups = $dashboardController->getLevelGroups();
         $gradeLevels = [];
         foreach ($levelGroups as $group) {
-            foreach ($group['levels'] as $key => $level) {
-                $gradeLevels[$key] = $level['title'];
+            // Handle different group structures (levels vs years)
+            if (isset($group['levels'])) {
+                foreach ($group['levels'] as $key => $level) {
+                    $gradeLevels[$key] = $level['title'];
+                }
+            } elseif (isset($group['years'])) {
+                foreach ($group['years'] as $year) {
+                    $gradeLevels[$year['id']] = $year['name'];
+                }
             }
         }
 

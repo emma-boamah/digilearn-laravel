@@ -28,6 +28,21 @@
 
     <!-- YouTube IFrame Player API -->
     <script src="https://www.youtube.com/iframe_api"></script>
+
+    <!-- Mux Player for Mux video playback -->
+    <script src="https://unpkg.com/@mux/mux-player"></script>
+
+    <!-- Video Facade Manager for optimized video loading -->
+    @vite('resources/js/video-facade.js')
+
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        // Initialize video facade with auto-play enabled for YouTube-like behavior
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof VideoFacadeManager !== 'undefined') {
+                window.videoFacadeManager = new VideoFacadeManager({ autoPlay: true });
+            }
+        });
+    </script>
 @endsection
 
 @section('content')
@@ -3231,121 +3246,136 @@
             @else
                 <!-- Sticky Video Section with scroll-triggered animations -->
                 <div class="sticky-video-section" id="stickyVideoSection">
-                    <!-- Enhanced Video Player -->
+                    <!-- Enhanced Video Player using VideoFacadeManager -->
                     <div class="video-container">
                         @if(isset($lesson) && $lesson instanceof \App\Models\Video)
-                             @php
-                                 $videoUrl = $lesson->getVideoUrl();
-                                 $embedHtml = $lesson->getEmbedHtml();
-                                 Log::info('Video Debug - Model Instance', [
-                                     'lesson_id' => $lesson->id,
-                                     'video_url' => $videoUrl,
-                                     'embed_html_length' => strlen($embedHtml),
-                                     'video_source' => $lesson->video_source,
-                                     'status' => $lesson->status,
-                                     'mux_playback_id' => $lesson->mux_playback_id ?? 'none',
-                                     'vimeo_id' => $lesson->vimeo_id ?? 'none',
-                                     'video_path' => $lesson->video_path,
-                                     'temp_file_path' => $lesson->temp_file_path,
-                                     'is_temp_expired' => $lesson->isTempExpired()
-                                 ]);
-                             @endphp
-                             @if($embedHtml)
-                                 <div id="video-debug-info" style="background: #f0f0f0; padding: 10px; margin-bottom: 10px; font-size: 12px; border: 1px solid #ccc;">
-                                     <strong>Debug Info:</strong><br>
-                                     Video ID: {{ $lesson->id }}<br>
-                                     Source: {{ $lesson->video_source }}<br>
-                                     Status: {{ $lesson->status }}<br>
-                                     Embed HTML Length: {{ strlen($embedHtml) }}<br>
-                                     Video URL: {{ $videoUrl }}
-                                 </div>
-                                 @if($lesson->video_source === 'youtube')
-                                     <!-- YouTube Player Container -->
-                                     <div id="youtube-player-container" class="video-player" style="width: 100%; height: 100%; position: relative;">
-                                         <div id="youtube-player" style="width: 100%; height: 100%;"></div>
-                                     </div>
-                                 @elseif($lesson->video_source === 'vimeo')
-                                     <!-- Vimeo Player Container -->
-                                     <div id="vimeo-player-container" class="video-player" style="width: 100%; height: 100%; position: relative;">
-                                         <div id="vimeo-player" style="width: 100%; height: 100%;"></div>
-                                     </div>
-                                 @elseif($lesson->video_source === 'mux')
-                                     {!! $embedHtml !!}
-                                 @else
-                                     <video controls class="video-player">
-                                         <source src="{{ $videoUrl }}" type="video/mp4">
-                                         Your browser does not support the video tag.
-                                     </video>
-                                 @endif
-                             @else
-                                 <div style="background: #ffebee; padding: 20px; border: 1px solid #f44336; border-radius: 5px;">
-                                     <strong>Error:</strong> No embed HTML generated for this video.
-                                     <br>Video Source: {{ $lesson->video_source }}
-                                     <br>Status: {{ $lesson->status }}
-                                 </div>
-                             @endif
-                         @else
-                             @php
-                                 $videoSrc = secure_asset($lesson['video_url'] ?? '');
-                                 $posterSrc = secure_asset($lesson['thumbnail'] ?? '');
-                                 \Log::info('Video Debug - Array Data', [
-                                     'lesson_id' => $lesson['id'] ?? 'unknown',
-                                     'video_url_raw' => $lesson['video_url'] ?? 'none',
-                                     'thumbnail_raw' => $lesson['thumbnail'] ?? 'none',
-                                     'video_src_secure' => $videoSrc,
-                                     'poster_src_secure' => $posterSrc,
-                                     'lesson_keys' => array_keys($lesson)
-                                 ]);
-                             @endphp
-                             <!-- <div id="video-debug-info" style="background: #f0f0f0; padding: 10px; margin-bottom: 10px; font-size: 12px; border: 1px solid #ccc;">
-                                 <strong>Debug Info (Array Data):</strong><br>
-                                 Lesson ID: {{ $lesson['id'] ?? 'unknown' }}<br>
-                                 Video URL Raw: {{ $lesson['video_url'] ?? 'none' }}<br>
-                                 Video Src Secure: {{ $videoSrc }}<br>
-                                 Poster Src Secure: {{ $posterSrc }}<br>
-                                 Available Keys: {{ implode(', ', array_keys($lesson)) }}
-                             </div> -->
-                             @if(!empty($lesson['video_url']))
-                                 @if(strpos($lesson['video_url'] ?? '', 'youtube.com/embed') !== false || strpos($lesson['video_url'] ?? '', 'vimeo.com') !== false)
-                                         <div class="video-player" style="width: 100%; height: 100%; position: relative; padding-bottom: 56.25%; /* 16:9 aspect ratio */">
-                                             @if(strpos($lesson['video_url'] ?? '', 'vimeo.com') !== false)
-                                                 @php
-                                                     // Convert Vimeo URL to embed URL if needed
-                                                     $vimeoUrl = $lesson['video_url'];
-                                                     if (strpos($vimeoUrl, 'player.vimeo.com') === false) {
-                                                         // Extract video ID from Vimeo URL
-                                                         preg_match('/vimeo\.com\/(\d+)/', $vimeoUrl, $matches);
-                                                         if (isset($matches[1])) {
-                                                             $vimeoUrl = 'https://player.vimeo.com/video/' . $matches[1];
-                                                         }
-                                                     }
-                                                 @endphp
-                                                 <iframe src="{{ $vimeoUrl }}" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen
-                                                         style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
-                                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                                 </iframe>
-                                                 <div style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #666; font-size: 14px;">
-                                                     <div style="margin-bottom: 10px;">🎬</div>
-                                                     <div>Video is processing...</div>
-                                                     <div style="font-size: 12px; margin-top: 5px;">Please check back in a few minutes</div>
-                                                 </div>
-                                             @else
-                                                 <iframe src="{{ $lesson['video_url'] }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
-                                             @endif
-                                         </div>
-                                     @else
-                                         <video controls class="video-player" poster="{{ $posterSrc }}">
-                                             <source src="{{ $videoSrc }}" type="video/mp4">
-                                             Your browser does not support the video tag.
-                                         </video>
-                                     @endif
-                             @else
-                                 <div style="background: #ffebee; padding: 20px; border: 1px solid #f44336; border-radius: 5px; text-align: center;">
-                                     <strong>Video Unavailable</strong>
-                                     <br>This video is currently being processed or is unavailable.
-                                 </div>
-                             @endif
-                         @endif
+                            @php
+                                $videoUrl = $lesson->getVideoUrl();
+                                $embedHtml = $lesson->getEmbedHtml();
+                                Log::info('Video Debug - Model Instance', [
+                                    'lesson_id' => $lesson->id,
+                                    'video_url' => $videoUrl,
+                                    'embed_html_length' => strlen($embedHtml),
+                                    'video_source' => $lesson->video_source,
+                                    'status' => $lesson->status,
+                                    'mux_playback_id' => $lesson->mux_playback_id ?? 'none',
+                                    'vimeo_id' => $lesson->vimeo_id ?? 'none',
+                                    'video_path' => $lesson->video_path,
+                                    'temp_file_path' => $lesson->temp_file_path,
+                                    'is_temp_expired' => $lesson->isTempExpired()
+                                ]);
+                            @endphp
+                            @if($embedHtml)
+                                <!-- Video Player Container for Main Lesson Video -->
+                                <div id="lesson-video-player" class="video-facade-card lesson-main-video"
+                                     data-video-id="{{ $lesson->id }}"
+                                     data-video-source="{{ $lesson->video_source }}"
+                                     data-vimeo-id="{{ $lesson->vimeo_id }}"
+                                     data-external-video-id="{{ $lesson->external_video_id }}"
+                                     data-mux-playback-id="{{ $lesson->mux_playback_id }}"
+                                     data-video-path="{{ $lesson->video_path }}"
+                                     data-title="{{ $lesson->title }}"
+                                     data-lazy="false"
+                                     style="width: 100%; height: 100%; position: relative;">
+
+                                    <!-- Video Thumbnail (Poster) -->
+                                    <div class="video-facade-thumbnail" style="width: 100%; height: 100%; background-color: #000;">
+                                        @if($lesson->video_source === 'youtube')
+                                            <img src="https://img.youtube.com/vi/{{ $lesson->external_video_id }}/maxresdefault.jpg"
+                                                 alt="{{ $lesson->title }}"
+                                                 style="width: 100%; height: 100%; object-fit: cover; display: block;"
+                                                 onerror="this.src='https://img.youtube.com/vi/{{ $lesson->external_video_id }}/hqdefault.jpg'">
+                                        @elseif($lesson->video_source === 'vimeo')
+                                            <img src="https://vumbnail.com/{{ $lesson->vimeo_id }}.jpg"
+                                                 alt="{{ $lesson->title }}"
+                                                 style="width: 100%; height: 100%; object-fit: cover; display: block;"
+                                                 onerror="this.src='/placeholder.svg?height=315&width=560'">
+                                        @elseif($lesson->video_source === 'mux')
+                                            <img src="https://image.mux.com/{{ $lesson->mux_playback_id }}/thumbnail.jpg"
+                                                 alt="{{ $lesson->title }}"
+                                                 style="width: 100%; height: 100%; object-fit: cover; display: block;"
+                                                 onerror="this.src='/placeholder.svg?height=315&width=560'">
+                                        @else
+                                            <img src="{{ secure_asset($lesson->getThumbnailUrl()) }}"
+                                                 alt="{{ $lesson->title }}"
+                                                 style="width: 100%; height: 100%; object-fit: cover; display: block;"
+                                                 onerror="this.src='/placeholder.svg?height=315&width=560'">
+                                        @endif
+                                    </div>
+
+                                    <!-- Video Preview Container (for hover-to-play) -->
+                                    <div class="video-preview" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 2;"></div>
+
+                                    <!-- Play Overlay -->
+                                    <div class="play-overlay" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 3; display: flex; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.3); opacity: 0; transition: opacity 0.2s ease;">
+                                        <svg class="play-icon" fill="currentColor" viewBox="0 0 24 24" style="width: 64px; height: 64px; color: white; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));">
+                                            <polygon points="5 3 19 12 5 21 5 3"/>
+                                        </svg>
+                                    </div>
+
+                                    <!-- Debug Info (optional) -->
+                                    <div id="video-debug-info" style="background: rgba(0,0,0,0.8); color: white; padding: 8px; position: absolute; top: 10px; left: 10px; font-size: 11px; border-radius: 4px; z-index: 10; display: none;">
+                                        <strong>Debug:</strong><br>
+                                        ID: {{ $lesson->id }}<br>
+                                        Source: {{ $lesson->video_source }}<br>
+                                        Status: {{ $lesson->status }}
+                                    </div>
+                                </div>
+                            @else
+                                <div style="background: #ffebee; padding: 20px; border: 1px solid #f44336; border-radius: 5px;">
+                                    <strong>Error:</strong> No embed HTML generated for this video.
+                                    <br>Video Source: {{ $lesson->video_source }}
+                                    <br>Status: {{ $lesson->status }}
+                                </div>
+                            @endif
+                        @else
+                            @php
+                                $videoSrc = secure_asset($lesson['video_url'] ?? '');
+                                $posterSrc = secure_asset($lesson['thumbnail'] ?? '');
+                                \Log::info('Video Debug - Array Data', [
+                                    'lesson_id' => $lesson['id'] ?? 'unknown',
+                                    'video_url_raw' => $lesson['video_url'] ?? 'none',
+                                    'thumbnail_raw' => $lesson['thumbnail'] ?? 'none',
+                                    'video_src_secure' => $videoSrc,
+                                    'poster_src_secure' => $posterSrc,
+                                    'lesson_keys' => array_keys($lesson)
+                                ]);
+                            @endphp
+                            @if(!empty($lesson['video_url']))
+                                <!-- Video Player Container for Array-based Lesson Video -->
+                                <div id="lesson-video-player" class="video-facade-card lesson-main-video"
+                                     data-video-id="{{ $lesson['id'] ?? 'unknown' }}"
+                                     data-video-source="local"
+                                     data-video-path="{{ $lesson['video_url'] ?? '' }}"
+                                     data-title="{{ $lesson['title'] ?? 'Lesson Video' }}"
+                                     data-lazy="false"
+                                     style="width: 100%; height: 100%; position: relative;">
+
+                                    <!-- Video Thumbnail (Poster) -->
+                                    <div class="video-facade-thumbnail" style="width: 100%; height: 100%; background-color: #000;">
+                                        <img src="{{ $posterSrc }}"
+                                             alt="{{ $lesson['title'] ?? 'Lesson Video' }}"
+                                             style="width: 100%; height: 100%; object-fit: cover; display: block;"
+                                             onerror="this.src='/placeholder.svg?height=315&width=560'">
+                                    </div>
+
+                                    <!-- Video Preview Container -->
+                                    <div class="video-preview" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 2;"></div>
+
+                                    <!-- Play Overlay -->
+                                    <div class="play-overlay" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 3; display: flex; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.3); opacity: 0; transition: opacity 0.2s ease;">
+                                        <svg class="play-icon" fill="currentColor" viewBox="0 0 24 24" style="width: 64px; height: 64px; color: white; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));">
+                                            <polygon points="5 3 19 12 5 21 5 3"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                            @else
+                                <div style="background: #ffebee; padding: 20px; border: 1px solid #f44336; border-radius: 5px; text-align: center;">
+                                    <strong>Video Unavailable</strong>
+                                    <br>This video is currently being processed or is unavailable.
+                                </div>
+                            @endif
+                        @endif
                     </div>
 
                     <!-- Enhanced Lesson Info -->
@@ -3736,6 +3766,80 @@
     </div>
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        // Video Player Initialization for Lesson View
+        document.addEventListener('DOMContentLoaded', () => {
+            const card = document.querySelector('.video-facade-card');
+            if (!card) return;
+
+            let source = card.dataset.videoSource;
+            const container = document.getElementById('lesson-video-player');
+
+            if (!container) return;
+
+            // Detect actual video type from URL if source is 'local' but path looks external
+            if (source === 'local') {
+                const videoPath = card.dataset.videoPath || '';
+                if (videoPath.includes('youtube.com') || videoPath.includes('youtu.be')) {
+                    source = 'youtube';
+                    // Extract video ID from URL
+                    const youtubeMatch = videoPath.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+                    if (youtubeMatch) {
+                        card.dataset.externalVideoId = youtubeMatch[1];
+                    }
+                } else if (videoPath.includes('vimeo.com')) {
+                    source = 'vimeo';
+                    // Extract video ID from URL
+                    const vimeoMatch = videoPath.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+                    if (vimeoMatch) {
+                        card.dataset.vimeoId = vimeoMatch[1];
+                    }
+                }
+            }
+
+            if (source === 'local') {
+                container.innerHTML = `
+                    <video controls autoplay playsinline style="width:100%;height:auto">
+                        <source src="${card.dataset.videoPath}" type="video/mp4">
+                    </video>
+                `;
+            }
+
+            if (source === 'vimeo') {
+                container.innerHTML = `
+                    <iframe
+                        src="https://player.vimeo.com/video/${card.dataset.vimeoId}?autoplay=1&muted=0"
+                        frameborder="0"
+                        allow="autoplay; fullscreen"
+                        allowfullscreen
+                        style="width:100%;height:100%;aspect-ratio:16/9"
+                    ></iframe>
+                `;
+            }
+
+            if (source === 'youtube') {
+                container.innerHTML = `
+                    <iframe
+                        src="https://www.youtube.com/embed/${card.dataset.externalVideoId}?autoplay=1&mute=0&rel=0&modestbranding=1&showinfo=0&iv_load_policy=3&fs=1"
+                        frameborder="0"
+                        allow="autoplay; fullscreen; encrypted-media"
+                        allowfullscreen
+                        style="width:100%;height:100%;aspect-ratio:16/9"
+                    ></iframe>
+                `;
+            }
+
+            if (source === 'mux') {
+                container.innerHTML = `
+                    <mux-player
+                        playback-id="${card.dataset.muxPlaybackId}"
+                        autoplay
+                        controls
+                        style="width:100%;aspect-ratio:16/9">
+                    </mux-player>
+                `;
+            }
+        });
+
         // Global variables for the rich text editor
         const defaultNoteTitle = '{{ \Illuminate\Support\Str::slug($lesson["title"] ?? "") }}';
         let notesQuill = null;
@@ -5227,14 +5331,14 @@
 
                 // Prepare lesson data from page
                 const lessonData = {
-                    lesson_title: '{{ $lesson["title"] ?? "Unknown Lesson" }}',
-                    lesson_subject: '{{ $lesson["subject"] ?? "General" }}',
-                    lesson_instructor: '{{ $lesson["instructor"] ?? "Unknown" }}',
-                    lesson_year: '{{ $lesson["year"] ?? date("Y") }}',
-                    lesson_duration: {{ $lesson["total_duration"] ?? 300 }},
-                    lesson_thumbnail: '{{ $lesson["thumbnail"] ?? "" }}',
-                    lesson_video_url: '{{ $lesson["video_url"] ?? "" }}',
-                    selected_level: '{{ $selectedLevel ?? "primary-lower" }}'
+                    lesson_title: "{{ $lesson['title'] ?? 'Unknown Lesson' }}",
+                    lesson_subject: "{{ $lesson['subject'] ?? 'General' }}",
+                    lesson_instructor: "{{ $lesson['instructor'] ?? 'Unknown' }}",
+                    lesson_year: "{{ $lesson['year'] ?? date('Y') }}",
+                    lesson_duration: "{{ $lesson['total_duration'] ?? 300 }}",
+                    lesson_thumbnail: "{{ $lesson['thumbnail'] ?? '' }}",
+                    lesson_video_url: "{{ $lesson['video_url'] ?? '' }}",
+                    selected_level: "{{ $selectedLevel ?? 'primary-lower' }}"
                 };
 
                 console.log('Saving lesson with data:', lessonData);
@@ -5763,7 +5867,7 @@
             const lessonLevelGroup = '{{ $lesson["level_group"] ?? "primary-lower" }}';
             
             // CRITICAL: Get actual duration from backend
-            const totalDuration = {{ $lesson["total_duration"] ?? 300 }};
+            const totalDuration = parseInt('{{ $lesson["total_duration"] ?? 300 }}') || 300;
             
             console.log('Lesson Data with Duration:', {
                 lessonId,

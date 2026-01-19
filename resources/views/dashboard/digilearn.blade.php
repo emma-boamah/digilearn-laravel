@@ -14,6 +14,9 @@
     <!-- Vimeo Player API for hover-to-play functionality -->
     <script src="https://player.vimeo.com/api/player.js"></script>
 
+    <!-- Video Facade Manager for optimized video loading -->
+    @vite('resources/js/video-facade.js')
+
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         :root {
             --primary-red: #E11E2D;
@@ -1957,6 +1960,23 @@
     </style>
 </head>
 <body>
+@php
+$subjectIcons = [
+    'all' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>',
+    'mathematics' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>',
+    'science' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>',
+    'english' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>',
+    'social-studies' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>',
+    'history' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+    'chemistry' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>',
+    'physics' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>',
+    'biology' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>',
+    'geography' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+    'art' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4 4 4 0 004-4V5z"/></svg>',
+    'music' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>',
+];
+$defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>';
+@endphp
     <!-- Sidebar Overlay for Mobile - Moved outside main-container -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
@@ -2008,81 +2028,12 @@
         <!-- Sepaarate Horizontal Subjects Filter -->
         <div class="subjects-filter-container">
             <div class="subjects-filter">
-                <div class="subject-chip active" data-subject="all">
-                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                    </svg>
-                    All Subjects
-                </div>
-
-                <div class="subject-chip" data-subject="mathematics">
-                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                    </svg>
-
-                    Mathematics
-                </div>
-                <div class="subject-chip" data-subject="science">
-                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
-                    </svg>
-                    Science
-                </div>
-                <div class="subject-chip" data-subject="english">
-                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
-                    </svg>
-                    English
-                </div>
-                <div class="subject-chip" data-subject="social-studies">
-                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
-                    Social Studies
-                </div>
-                <div class="subject-chip" data-subject="history">
-                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    History
-                </div>
-                <div class="subject-chip" data-subject="chemistry">
-                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
-                    </svg>
-                    Chemistry
-                </div>
-                <div class="subject-chip" data-subject="physics">
-                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                    </svg>
-                    Physics
-                </div>
-                <div class="subject-chip" data-subject="biology">
-                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-                    </svg>
-                    Biology
-                </div>
-                <div class="subject-chip" data-subject="geography">
-                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    Geography
-                </div>
-                <div class="subject-chip" data-subject="art">
-                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4 4 4 0 004-4V5z"/>
-                    </svg>
-                    Art
-                </div>
-                <div class="subject-chip" data-subject="music">
-                    <svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
-                    </svg>
-                    Music
-                </div>
+                @foreach($subjects ?? [] as $subject)
+                    <div class="subject-chip {{ $subject['slug'] === 'all' ? 'active' : '' }}" data-subject="{{ $subject['slug'] }}">
+                        {!! $subjectIcons[$subject['slug']] ?? $defaultIcon !!}
+                        {{ $subject['name'] }}
+                    </div>
+                @endforeach
             </div>
         </div>
 
@@ -2110,64 +2061,52 @@
                     @if(isset($universityCourses))
                         {{-- Display University Courses --}}
                         @forelse($universityCourses as $course)
-                        <div class="lesson-card hover-video-card" data-lesson-id="{{ \App\Services\UrlObfuscator::encode($course['id']) }}" data-video-id="{{ $course['id'] }}" data-subject="{{ $course['subject'] }}" data-title="{{ $course['title'] }}" data-video-source="{{ $course['video_source'] ?? 'local' }}" data-vimeo-id="{{ $course['vimeo_id'] ?? '' }}" data-external-video-id="{{ $course['external_video_id'] ?? '' }}" data-mux-playback-id="{{ $course['mux_playback_id'] ?? '' }}" data-loaded="false">
-                            <div class="lesson-thumbnail">
-                                <img
-                                    src="{{ secure_asset($course['thumbnail']) }}"
-                                    alt="{{ $course['title'] }}"
-                                    class="video-thumb"
-                                    loading="lazy"
-                                    onerror="this.src='https://via.placeholder.com/400x225/E11E2D/ffffff?text=Course+Video'"
-                                />
-
-                                <div class="video-preview"></div>
-
-                                <div class="lesson-duration">{{ $course['duration'] }}</div>
-
-                                <!-- Level badge -->
-                                <div class="lesson-level-badge">{{ $course['level_display'] ?? 'Course' }}</div>
-
-                                <!-- Play overlay that appears on hover -->
-                                <div class="play-overlay">
-                                    <div class="play-button">
-                                        <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M8 5v14l11-7z"/>
-                                        </svg>
-                                    </div>
-                                </div>
+                        <x-video-facade
+                            videoId="{{ $course['id'] }}"
+                            videoSource="{{ $course['video_source'] ?? 'local' }}"
+                            vimeoId="{{ $course['vimeo_id'] ?? '' }}"
+                            externalVideoId="{{ $course['external_video_id'] ?? '' }}"
+                            muxPlaybackId="{{ $course['mux_playback_id'] ?? '' }}"
+                            thumbnail="{{ $course['thumbnail'] }}"
+                            title="{{ $course['title'] }}"
+                            duration="{{ $course['duration'] }}"
+                            levelDisplay="{{ $course['level_display'] ?? 'Course' }}"
+                            subject="{{ $course['subject'] }}"
+                            data-subject="{{ $course['subject_slug'] }}"
+                            instructor="{{ $course['instructor'] }}"
+                            year="{{ $course['year'] }}"
+                            lessonId="{{ \App\Services\UrlObfuscator::encode($course['id']) }}"
+                            courseId="{{ \App\Services\UrlObfuscator::encode($course['id']) }}"
+                            :showLevelBadge="true"
+                            :showDuration="true"
+                            :showPlayOverlay="true"
+                            :lazyLoad="true"
+                        >
+                            @if(isset($course['description']))
+                            <p class="course-description" style="font-size: 0.875rem; color: var(--gray-600); margin: 0.5rem 0;">
+                                {{ $course['description'] }}
+                            </p>
+                            @endif
+                            @if(isset($course['lessons_count']))
+                            <p class="course-lessons-count" style="font-size: 0.75rem; color: var(--secondary-blue); font-weight: 500;">
+                                {{ $course['lessons_count'] }} lessons • {{ $course['credit_hours'] ?? 3 }} credit hours
+                            </p>
+                            @endif
+                            <div class="lesson-actions">
+                                <a href="{{ route('dashboard.lesson.view', ['lessonId' => App\Services\UrlObfuscator::encode($course['id']), 'course_id' => App\Services\UrlObfuscator::encode($course['id'])]) }}" class="lesson-action-btn primary">
+                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                    Start Course
+                                </a>
+                                <a href="{{ $course['quiz_id'] ? route('quiz.instructions', ['quizId' => $course['encoded_quiz_id']]) : route('quiz.index') }}" class="lesson-action-btn secondary">
+                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    Quiz
+                                </a>
                             </div>
-                            <div class="lesson-info">
-                                <h3 class="lesson-title">{{ $course['title'] }}</h3>
-                                <div class="lesson-meta">
-                                    <span class="lesson-subject">({{ $course['subject'] }})</span>
-                                    <span>{{ $course['instructor'] }} | {{ $course['year'] }}</span>
-                                </div>
-                                @if(isset($course['description']))
-                                <p class="course-description" style="font-size: 0.875rem; color: var(--gray-600); margin: 0.5rem 0;">
-                                    {{ $course['description'] }}
-                                </p>
-                                @endif
-                                @if(isset($course['lessons_count']))
-                                <p class="course-lessons-count" style="font-size: 0.75rem; color: var(--secondary-blue); font-weight: 500;">
-                                    {{ $course['lessons_count'] }} lessons • {{ $course['credit_hours'] ?? 3 }} credit hours
-                                </p>
-                                @endif
-                                <div class="lesson-actions">
-                                    <a href="{{ route('dashboard.lesson.view', ['lessonId' => App\Services\UrlObfuscator::encode($course['id']), 'course_id' => App\Services\UrlObfuscator::encode($course['id'])]) }}" class="lesson-action-btn primary">
-                                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M8 5v14l11-7z"/>
-                                        </svg>
-                                        Start Course
-                                    </a>
-                                    <a href="{{ $lesson['quiz_id'] ? route('quiz.instructions', ['quizId' => $lesson['encoded_quiz_id']]) : route('quiz.index') }}" class="lesson-action-btn secondary">
-                                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                        </svg>
-                                        Quiz
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
+                        </x-video-facade>
                         @empty
                         <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
                             <h3 style="color: var(--gray-600); margin-bottom: 1rem;">No courses available</h3>
@@ -2177,38 +2116,26 @@
                     @else
                         {{-- Display Regular Lessons --}}
                         @forelse($lessons ?? [] as $lesson)
-                    <div class="lesson-card hover-video-card" data-lesson-id="{{ \App\Services\UrlObfuscator::encode($lesson['id']) }}" data-video-id="{{ $lesson['id'] }}" data-subject="{{ $lesson['subject'] }}" data-title="{{ $lesson['title'] }}" data-video-source="{{ $lesson['video_source'] ?? 'local' }}" data-vimeo-id="{{ $lesson['vimeo_id'] ?? '' }}" data-external-video-id="{{ $lesson['external_video_id'] ?? '' }}" data-mux-playback-id="{{ $lesson['mux_playback_id'] ?? '' }}" data-loaded="false">
-                        <div class="lesson-thumbnail">
-                            <img
-                                src="{{ secure_asset($lesson['thumbnail']) }}"
-                                alt="{{ $lesson['title'] }}"
-                                class="video-thumb"
-                                loading="lazy"
-                                onerror="this.src='https://via.placeholder.com/400x225/E11E2D/ffffff?text=Video+Lesson'"
-                            />
-
-                            <div class="video-preview"></div>
-
-                            <div class="lesson-duration">{{ $lesson['duration'] }}</div>
-
-                            <!-- Level badge -->
-                            <div class="lesson-level-badge">{{ $lesson['level_display'] ?? 'Level' }}</div>
-
-                            <!-- Play overlay that appears on hover -->
-                            <div class="play-overlay">
-                                <div class="play-button">
-                                    <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M8 5v14l11-7z"/>
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="lesson-info">
-                            <h3 class="lesson-title">{{ $lesson['title'] }}</h3>
-                            <div class="lesson-meta">
-                                <span class="lesson-subject">({{ $lesson['subject'] }})</span>
-                                <span>{{ $lesson['instructor'] }} | {{ $lesson['year'] }}</span>
-                            </div>
+                        <x-video-facade
+                            videoId="{{ $lesson['id'] }}"
+                            videoSource="{{ $lesson['video_source'] ?? 'local' }}"
+                            vimeoId="{{ $lesson['vimeo_id'] ?? '' }}"
+                            externalVideoId="{{ $lesson['external_video_id'] ?? '' }}"
+                            muxPlaybackId="{{ $lesson['mux_playback_id'] ?? '' }}"
+                            thumbnail="{{ $lesson['thumbnail'] }}"
+                            title="{{ $lesson['title'] }}"
+                            duration="{{ $lesson['duration'] }}"
+                            levelDisplay="{{ $lesson['level_display'] ?? 'Level' }}"
+                            subject="{{ $lesson['subject'] }}"
+                            data-subject="{{ $lesson['subject_slug'] }}"
+                            instructor="{{ $lesson['instructor'] }}"
+                            year="{{ $lesson['year'] }}"
+                            lessonId="{{ \App\Services\UrlObfuscator::encode($lesson['id']) }}"
+                            :showLevelBadge="true"
+                            :showDuration="true"
+                            :showPlayOverlay="true"
+                            :lazyLoad="true"
+                        >
                             <div class="lesson-actions">
                                 <a href="{{ route('dashboard.lesson.view', ['lessonId' => App\Services\UrlObfuscator::encode($lesson['id'])]) }}" class="lesson-action-btn primary">
                                     <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
@@ -2223,8 +2150,7 @@
                                     Quiz
                                 </a>
                             </div>
-                        </div>
-                    </div>
+                        </x-video-facade>
                     @empty
                     <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
                         <h3 style="color: var(--gray-600); margin-bottom: 1rem;">No lessons available</h3>
@@ -2260,8 +2186,18 @@
             console.log("hellow")
             initializeDropdowns();
             initializeSubjectFilter();
-            initializeVideoCards(); // Re-enabled hover-to-play functionality with fixes
+            // initializeVideoCards(); // Disabled - now using video facade manager
             initializeSearch();
+
+            // Initialize video facade manager with auto-play enabled for YouTube-like behavior
+            if (typeof window.videoFacadeManager !== 'undefined') {
+                console.log('Video facade manager already initialized');
+            } else if (typeof VideoFacadeManager !== 'undefined') {
+                window.videoFacadeManager = new VideoFacadeManager({ autoPlay: true });
+                console.log('Video facade manager initialized with auto-play');
+            } else {
+                console.log('Video facade manager not found, it should auto-initialize');
+            }
         });
 
         // Add this new function to prevent scrolling on body when sidebar is open
@@ -2546,20 +2482,20 @@
         // Subject filter functionality
         function initializeSubjectFilter() {
             const subjectChips = document.querySelectorAll('.subject-chip');
-            const lessonCards = document.querySelectorAll('.lesson-card');
 
             subjectChips.forEach(chip => {
                 chip.addEventListener('click', function() {
                     const selectedSubject = this.getAttribute('data-subject');
-                    
+
                     // Update active state
                     subjectChips.forEach(c => c.classList.remove('active'));
                     this.classList.add('active');
-                    
-                    // Filter lessons
+
+                    // Filter lessons - query cards at click time to handle lazy loading
+                    const lessonCards = document.querySelectorAll('.lesson-card');
                     lessonCards.forEach(card => {
                         const cardSubject = card.getAttribute('data-subject');
-                        
+
                         if (selectedSubject === 'all' || cardSubject === selectedSubject) {
                             card.style.display = 'block';
                             // Add fade-in animation
@@ -2571,7 +2507,7 @@
                             card.style.display = 'none';
                         }
                     });
-                    
+
                     console.log('Filtered by subject:', selectedSubject);
                 });
             });

@@ -52,7 +52,7 @@ class UserSubscription extends Model
      */
     public function isActive()
     {
-        return $this->status === 'active' && 
+        return in_array(strtolower($this->status), ['active']) &&
                ($this->expires_at === null || $this->expires_at->isFuture());
     }
 
@@ -61,8 +61,8 @@ class UserSubscription extends Model
      */
     public function isInTrial()
     {
-        return $this->status === 'trial' && 
-               $this->trial_ends_at && 
+        return in_array(strtolower($this->status), ['trial']) &&
+               $this->trial_ends_at &&
                $this->trial_ends_at->isFuture();
     }
 
