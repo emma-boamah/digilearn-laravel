@@ -169,7 +169,7 @@ class DashboardController extends Controller
         }
 
         // Get subscription info for dashboard display
-        $currentSubscription = $user->currentSubscription;
+        $currentSubscription = $user->currentSubscription ? $user->currentSubscription->first() : null;
         $subscriptionInfo = null;
         
         if ($currentSubscription) {
@@ -1131,8 +1131,8 @@ class DashboardController extends Controller
             return true;
         }
 
-        $currentSubscription = $user->currentSubscription;
-        
+        $currentSubscription = $user->currentSubscription ? $user->currentSubscription->first() : null;
+
         // Free users get access to first few lessons
         if (!$currentSubscription) {
             return in_array($lesson['id'], [1, 2, 5, 13]); // Sample free lesson IDs

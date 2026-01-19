@@ -50,7 +50,7 @@ class ProfileController extends Controller
     public function showProfile()
     {
         $user = Auth::user();
-        $currentSubscription = $user->currentSubscription;
+        $currentSubscription = $user->currentSubscription ? $user->currentSubscription->first() : null;
         $pricingPlans = PricingPlan::all();
 
         // Prepare subscription info for the view
@@ -916,7 +916,7 @@ class ProfileController extends Controller
         $newPlan = PricingPlan::find($validated['plan_id']);
 
         // Check if user already has an active or trial subscription
-        $currentSubscription = $user->currentSubscription;
+        $currentSubscription = $user->currentSubscription ? $user->currentSubscription->first() : null;
 
         // Simple payment simulation for MVP (replace with actual payment gateway integration)
         $paymentSuccess = true; // Assume payment is successful for demo purposes
@@ -997,7 +997,7 @@ class ProfileController extends Controller
     public function cancelSubscription(Request $request)
     {
         $user = Auth::user();
-        $currentSubscription = $user->currentSubscription;
+        $currentSubscription = $user->currentSubscription ? $user->currentSubscription->first() : null;
 
         if (!$currentSubscription || !($currentSubscription->isActive() || $currentSubscription->isInTrial())) {
             return response()->json(['success' => false, 'message' => 'No active subscription to cancel.'], 400);
@@ -1083,7 +1083,7 @@ class ProfileController extends Controller
     public function upgradeSubscription(Request $request)
     {
         $user = Auth::user();
-        $currentSubscription = $user->currentSubscription;
+        $currentSubscription = $user->currentSubscription ? $user->currentSubscription->first() : null;
 
         if (!$currentSubscription || !$currentSubscription->isActive()) {
             return redirect()->back()->with('error', 'You do not have an active subscription to upgrade.');
@@ -1173,7 +1173,7 @@ class ProfileController extends Controller
         }
 
         // Check if user has active subscription or trial
-        $currentSubscription = $user->currentSubscription;
+        $currentSubscription = $user->currentSubscription ? $user->currentSubscription->first() : null;
 
         if (!$currentSubscription) {
             return false;
