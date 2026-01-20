@@ -166,11 +166,12 @@ class AdminController extends Controller
      */
     public function users(Request $request)
     {
-        $query = User::query();
+        // Load users with their current subscription and pricing plan
+        $query = User::with(['currentSubscription.pricingPlan']);
 
-        // Search functionality
+        // Search functionality with improved sanitization
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = trim($request->search);
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%")
@@ -178,7 +179,52 @@ class AdminController extends Controller
             });
         }
 
-        // Filter by status
+        // Filter by subscription status with more granular options
+        if ($request->filled('subscription_status')) {
+            switch ($request->subscription_status) {
+                case 'subscribed':
+                    $query->whereHas('currentSubscription', function($q) {
+                        $q->whereIn('status', ['active', 'trial']);
+                    });
+                    break;
+                case 'not_subscribed':
+                    $query->whereDoesntHave('currentSubscription', function($q) {
+                        $q->whereIn('status', ['active', 'trial']);
+                    });
+                    break;
+                case 'trial':
+                    $query->whereHas('currentSubscription', function($q) {
+                        $q->where('status', 'trial');
+                    });
+                    break;
+                case 'active':
+                    $query->whereHas('currentSubscription', function($q) {
+                        $q->where('status', 'active');
+                    });
+                    break;
+                case 'expired':
+                    $query->whereHas('currentSubscription', function($q) {
+                        $q->where('status', 'expired');
+                    });
+                    break;
+                case 'cancelled':
+                    $query->whereHas('currentSubscription', function($q) {
+                        $q->where('status', 'cancelled');
+                    });
+                    break;
+            }
+        }
+
+        // Filter by plan type with partial matching
+        if ($request->filled('plan_type')) {
+            $query->whereHas('currentSubscription', function($q) use ($request) {
+                $q->whereHas('pricingPlan', function($p) use ($request) {
+                    $p->where('name', 'like', "%{$request->plan_type}%");
+                });
+            });
+        }
+
+        // Additional filters for status and level
         if ($request->filled('status')) {
             switch ($request->status) {
                 case 'active':
@@ -190,36 +236,41 @@ class AdminController extends Controller
                 case 'verified':
                     $query->whereNotNull('email_verified_at');
                     break;
-                case 'unverified':
-                    $query->whereNull('email_verified_at');
-                    break;
             }
         }
 
-        // Filter by registration date
-        if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->date_from);
-        }
-        if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->date_to);
+        if ($request->filled('level') && $request->level !== 'all') {
+            $query->where('grade', $request->level);
         }
 
-        $users = $query->orderBy('created_at', 'desc')->paginate(20);
+        $users = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
 
-        // Get user statistics
-        $userStats = [
-            'total' => User::count(),
-            'active' => User::whereNull('suspended_at')->count(),
-            'suspended' => User::whereNotNull('suspended_at')->count(),
-            'verified' => User::whereNotNull('email_verified_at')->count(),
-            'new_today' => User::whereDate('created_at', today())->count(),
-            'new_this_week' => User::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
-        ];
+        // Get user statistics including subscription stats with caching for performance
+        $userStats = cache()->remember('user_stats', 300, function () {
+            return [
+                'total' => User::count(),
+                'active' => User::whereNull('suspended_at')->count(),
+                'suspended' => User::whereNotNull('suspended_at')->count(),
+                'verified' => User::whereNotNull('email_verified_at')->count(),
+                'new_today' => User::whereDate('created_at', today())->count(),
+                'new_this_week' => User::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
+                'subscribed' => User::whereHas('currentSubscription', function($q) {
+                    $q->whereIn('status', ['active', 'trial']);
+                })->count(),
+                'on_trial' => User::whereHas('currentSubscription', function($q) {
+                    $q->where('status', 'trial');
+                })->count(),
+                'expired' => User::whereHas('currentSubscription', function($q) {
+                    $q->where('status', 'expired');
+                })->count(),
+            ];
+        });
 
-        // Get distinct grades for filter
+        // Get distinct plans and levels for filters
+        $plans = PricingPlan::active()->ordered()->pluck('name')->toArray();
         $levels = User::distinct('grade')->pluck('grade')->filter()->toArray();
 
-        return view('admin.users.index', compact('users', 'userStats', 'levels'));
+        return view('admin.users.index', compact('users', 'userStats', 'levels', 'plans'));
     }
 
     /**
