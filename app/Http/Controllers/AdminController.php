@@ -2565,8 +2565,10 @@ class AdminController extends Controller
     /**
      * Show revenue analytics page
      */
-    public function revenue()
+    public function revenue(Request $request)
     {
+        $activeTab = $request->get('tab', 'revenue'); // Default to revenue tab
+
         // Get revenue data
         $revenueData = $this->getRevenueData();
 
@@ -2579,14 +2581,28 @@ class AdminController extends Controller
         // Get top performing plans
         $topPlans = $this->getTopPerformingPlans();
 
+        // Get payment analytics if payments tab is active
+        $paymentAnalytics = null;
+        if ($activeTab === 'payments') {
+            $paymentAnalytics = $this->getPaymentAnalytics();
+        }
+
         Log::channel('security')->info('revenue_analytics_accessed', [
             'admin_id' => Auth::id(),
             'ip' => get_client_ip(),
             'user_agent' => request()->header('User-Agent'),
-            'timestamp' => now()->toISOString()
+            'timestamp' => now()->toISOString(),
+            'active_tab' => $activeTab
         ]);
 
-        return view('admin.revenue.index', compact('revenueData', 'subscriptionAnalytics', 'revenueTrends', 'topPlans'));
+        return view('admin.revenue.index', compact(
+            'revenueData',
+            'subscriptionAnalytics',
+            'revenueTrends',
+            'topPlans',
+            'paymentAnalytics',
+            'activeTab'
+        ));
     }
 
     /**
@@ -2757,6 +2773,190 @@ class AdminController extends Controller
         });
 
         return array_slice($planData, 0, 3);
+    }
+
+    /**
+     * Get payment analytics data
+     */
+    private function getPaymentAnalytics()
+    {
+        // Payment status distribution
+        $statusDistribution = \App\Models\Payment::selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+
+        $totalPayments = array_sum($statusDistribution);
+        $successfulPayments = $statusDistribution['success'] ?? 0;
+        $successRate = $totalPayments > 0 ? round(($successfulPayments / $totalPayments) * 100, 1) : 0;
+
+        // Average payment amount
+        $averageAmount = \App\Models\Payment::where('status', 'success')->avg('amount') ?? 0;
+
+        // Payment trends (last 12 months)
+        $paymentTrends = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $amount = \App\Models\Payment::where('status', 'success')
+                ->whereYear('paid_at', $date->year)
+                ->whereMonth('paid_at', $date->month)
+                ->sum('amount');
+
+            $paymentTrends[] = [
+                'month' => $date->format('M Y'),
+                'amount' => (float) $amount,
+                'count' => \App\Models\Payment::where('status', 'success')
+                    ->whereYear('paid_at', $date->year)
+                    ->whereMonth('paid_at', $date->month)
+                    ->count()
+            ];
+        }
+
+        // Payment metadata analytics
+        $metadataAnalytics = $this->getPaymentMetadataAnalytics();
+
+        // Recent payments
+        $recentPayments = \App\Models\Payment::with(['user:id,name,email', 'pricingPlan:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->limit(50)
+            ->get()
+            ->map(function ($payment) {
+                return [
+                    'id' => $payment->id,
+                    'user_name' => $payment->user->name ?? 'Unknown',
+                    'user_email' => $payment->user->email ?? '',
+                    'plan_name' => $payment->pricingPlan->name ?? 'Unknown',
+                    'amount' => (float) $payment->amount,
+                    'currency' => $payment->currency,
+                    'status' => $payment->status,
+                    'duration' => $this->getReadableDuration($payment->metadata['duration'] ?? 'N/A'),
+                    'reference' => $payment->reference,
+                    'created_at' => $payment->created_at->format('M d, Y H:i'),
+                    'paid_at' => $payment->paid_at ? $payment->paid_at->format('M d, Y H:i') : null,
+                ];
+            });
+
+        // Top paying users
+        $topPayingUsers = \App\Models\Payment::where('status', 'success')
+            ->with('user:id,name,email')
+            ->selectRaw('user_id, COUNT(*) as payment_count, SUM(amount) as total_amount')
+            ->groupBy('user_id')
+            ->orderBy('total_amount', 'desc')
+            ->limit(10)
+            ->get()
+            ->map(function ($payment) {
+                return [
+                    'user_name' => $payment->user->name ?? 'Unknown',
+                    'user_email' => $payment->user->email ?? '',
+                    'payment_count' => $payment->payment_count,
+                    'total_amount' => (float) $payment->total_amount,
+                ];
+            });
+
+        return [
+            'status_distribution' => $statusDistribution,
+            'total_payments' => $totalPayments,
+            'successful_payments' => $successfulPayments,
+            'success_rate' => $successRate,
+            'average_amount' => round($averageAmount, 2),
+            'total_value' => \App\Models\Payment::where('status', 'success')->sum('amount'),
+            'trends' => $paymentTrends,
+            'metadata' => $metadataAnalytics,
+            'recent_payments' => $recentPayments,
+            'top_users' => $topPayingUsers,
+        ];
+    }
+
+    /**
+     * Get payment metadata analytics (durations, plan names)
+     */
+    private function getPaymentMetadataAnalytics()
+    {
+        $payments = \App\Models\Payment::whereNotNull('metadata')->get();
+
+        $durations = [];
+        $planNames = [];
+
+        foreach ($payments as $payment) {
+            $metadata = $payment->metadata;
+
+            // Count durations with readable labels
+            if (isset($metadata['duration'])) {
+                $duration = $metadata['duration'];
+                $readableDuration = $this->getReadableDuration($duration);
+                $durations[$readableDuration] = ($durations[$readableDuration] ?? 0) + 1;
+            }
+
+            // Count plan names
+            if (isset($metadata['plan_name'])) {
+                $planName = $metadata['plan_name'];
+                $planNames[$planName] = ($planNames[$planName] ?? 0) + 1;
+            }
+        }
+
+        return [
+            'durations' => $durations,
+            'plan_names' => $planNames,
+        ];
+    }
+
+    /**
+     * Convert duration codes to readable labels
+     */
+    private function getReadableDuration(string $duration): string
+    {
+        return match ($duration) {
+            'month' => 'Monthly',
+            '3month' => 'Quarterly',
+            '6month' => 'Semi-Annual',
+            '12month' => 'Yearly',
+            'trial' => 'Trial',
+            default => ucfirst($duration)
+        };
+    }
+
+    /**
+     * Export payments data
+     */
+    public function exportPayments(Request $request)
+    {
+        $format = $request->get('format', 'csv');
+
+        $payments = \App\Models\Payment::with(['user:id,name,email', 'pricingPlan:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($payment) {
+                return [
+                    'ID' => $payment->id,
+                    'User Name' => $payment->user->name ?? 'Unknown',
+                    'User Email' => $payment->user->email ?? '',
+                    'Plan Name' => $payment->pricingPlan->name ?? 'Unknown',
+                    'Amount' => $payment->amount,
+                    'Currency' => $payment->currency,
+                    'Status' => $payment->status,
+                    'Duration' => $payment->metadata['duration'] ?? 'N/A',
+                    'Reference' => $payment->reference,
+                    'Transaction ID' => $payment->transaction_id,
+                    'Payment Provider' => $payment->payment_provider,
+                    'Created At' => $payment->created_at->format('Y-m-d H:i:s'),
+                    'Paid At' => $payment->paid_at ? $payment->paid_at->format('Y-m-d H:i:s') : null,
+                ];
+            });
+
+        Log::channel('security')->info('payments_data_exported', [
+            'admin_id' => Auth::id(),
+            'format' => $format,
+            'payment_count' => $payments->count(),
+            'ip' => get_client_ip(),
+            'user_agent' => $request->userAgent(),
+            'timestamp' => now()->toISOString()
+        ]);
+
+        if ($format === 'csv') {
+            return $this->exportToCsv($payments, 'payments');
+        }
+
+        return $this->exportToJson($payments, 'payments');
     }
 
     /**
