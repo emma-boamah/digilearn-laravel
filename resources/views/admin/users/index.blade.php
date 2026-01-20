@@ -23,10 +23,69 @@
             </div>
         </div>
 
+        <!-- Subscription Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+            <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-blue-100 p-3 rounded-lg">
+                        <i class="fas fa-users text-blue-600 text-xl" aria-hidden="true"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Users</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ $userStats['total'] }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-green-100 p-3 rounded-lg">
+                        <i class="fas fa-crown text-green-600 text-xl" aria-hidden="true"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Subscribed Users</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ $userStats['subscribed'] }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-yellow-100 p-3 rounded-lg">
+                        <i class="fas fa-clock text-yellow-600 text-xl" aria-hidden="true"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">On Trial</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ $userStats['on_trial'] }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-red-100 p-3 rounded-lg">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-xl" aria-hidden="true"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Expired</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ $userStats['expired'] }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-gray-100 p-3 rounded-lg">
+                        <i class="fas fa-user text-gray-600 text-xl" aria-hidden="true"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Free Users</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ $userStats['total'] - $userStats['subscribed'] }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Filters -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
             <div class="p-6">
-                <form method="GET" action="{{ route('admin.users') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <form method="GET" action="{{ route('admin.users') }}" class="grid grid-cols-1 md:grid-cols-6 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
                         <input type="text" name="search" value="{{ request('search') }}" placeholder="Name, email, or phone..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
@@ -46,6 +105,27 @@
                             <option value="all" {{ request('level') === 'all' ? 'selected' : '' }}>All Levels</option>
                             @foreach($levels as $level)
                                 <option value="{{ $level }}" {{ request('level') === $level ? 'selected' : '' }}>{{ ucwords(str_replace('-', ' ', $level)) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Subscription</label>
+                        <select name="subscription_status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="all" {{ request('subscription_status') === 'all' ? 'selected' : '' }}>All</option>
+                            <option value="subscribed" {{ request('subscription_status') === 'subscribed' ? 'selected' : '' }}>Subscribed</option>
+                            <option value="not_subscribed" {{ request('subscription_status') === 'not_subscribed' ? 'selected' : '' }}>Not Subscribed</option>
+                            <option value="active" {{ request('subscription_status') === 'active' ? 'selected' : '' }}>Active Plan</option>
+                            <option value="trial" {{ request('subscription_status') === 'trial' ? 'selected' : '' }}>Trial Plan</option>
+                            <option value="expired" {{ request('subscription_status') === 'expired' ? 'selected' : '' }}>Expired</option>
+                            <option value="cancelled" {{ request('subscription_status') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Plan Type</label>
+                        <select name="plan_type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="all" {{ request('plan_type') === 'all' ? 'selected' : '' }}>All Plans</option>
+                            @foreach($plans as $plan)
+                                <option value="{{ $plan }}" {{ request('plan_type') === $plan ? 'selected' : '' }}>{{ $plan }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -79,6 +159,8 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
+                            <!-- Add this new column for Subscription -->
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subscription</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -111,6 +193,54 @@
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                     {{ $user->grade ? ucwords(str_replace('-', ' ', $user->grade)) : 'Not Set' }}
                                 </span>
+                            </td>
+                            <!-- Add this new cell for Subscription information -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if($user->currentSubscription)
+                                    <div class="flex flex-col space-y-1">
+                                        <!-- Plan Name -->
+                                        <div class="flex items-center">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                                {{ $user->currentSubscription->status === 'active' ? 'bg-green-100 text-green-800' : ($user->currentSubscription->status === 'trial' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
+                                                <i class="fas {{ $user->currentSubscription->status === 'active' ? 'fa-crown' : ($user->currentSubscription->status === 'trial' ? 'fa-clock' : 'fa-exclamation-triangle') }} mr-1" aria-hidden="true"></i>
+                                                {{ $user->currentSubscription->pricingPlan->name ?? 'Unknown Plan' }}
+                                            </span>
+                                        </div>
+
+                                        <!-- Status Badge -->
+                                        <div class="flex items-center">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                                {{ $user->currentSubscription->status === 'active' ? 'bg-blue-100 text-blue-800' : ($user->currentSubscription->status === 'trial' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800') }}">
+                                                @if($user->currentSubscription->status === 'active')
+                                                    <i class="fas fa-check-circle mr-1 text-xs" aria-hidden="true"></i>Active
+                                                @elseif($user->currentSubscription->status === 'trial')
+                                                    <i class="fas fa-clock mr-1 text-xs" aria-hidden="true"></i>Trial
+                                                @else
+                                                    <i class="fas fa-times-circle mr-1 text-xs" aria-hidden="true"></i>{{ ucfirst($user->currentSubscription->status) }}
+                                                @endif
+                                            </span>
+                                        </div>
+
+                                        <!-- Expiry/Trial Info -->
+                                        @if($user->currentSubscription->expires_at || $user->currentSubscription->trial_ends_at)
+                                            <div class="text-xs text-gray-500">
+                                                <i class="fas fa-calendar-alt mr-1" aria-hidden="true"></i>
+                                                @if($user->currentSubscription->isInTrial())
+                                                    Trial ends {{ $user->currentSubscription->trial_ends_at->format('M d, Y') }}
+                                                @elseif($user->currentSubscription->expires_at)
+                                                    Expires {{ $user->currentSubscription->expires_at->format('M d, Y') }}
+                                                @endif
+                                            </div>
+                                        @endif
+                                    </div>
+                                @else
+                                    <div class="flex flex-col items-center space-y-1">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                            <i class="fas fa-user mr-1" aria-hidden="true"></i>Free Plan
+                                        </span>
+                                        <span class="text-xs text-gray-500">No subscription</span>
+                                    </div>
+                                @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex flex-col space-y-1">
@@ -154,7 +284,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                            <td colspan="8" class="px-6 py-12 text-center text-gray-500">
                                 <i class="fas fa-users text-4xl mb-4"></i>
                                 <p>No users found matching your criteria.</p>
                             </td>
@@ -282,6 +412,112 @@
 
     function exportUsers() {
         window.location.href = '{{ route("admin.export") }}?type=users&format=csv';
+    }
+
+    function convertToPaid(userId, subscriptionId) {
+        if (confirm('Convert this trial to a paid subscription?')) {
+            const button = event.target.closest('button');
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            fetch(`/admin/users/${userId}/subscriptions/${subscriptionId}/convert-to-paid`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    toastr.success(data.message || 'Subscription converted successfully');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    toastr.error(data.message || 'Failed to convert subscription');
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fas fa-dollar-sign"></i>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                toastr.error('An error occurred. Please try again.');
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-dollar-sign"></i>';
+            });
+        }
+    }
+
+    function cancelSubscription(userId, subscriptionId) {
+        const reason = prompt('Reason for cancellation (optional):');
+
+        if (reason !== null) { // Allow empty reason
+            const button = event.target.closest('button');
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            fetch(`/admin/users/${userId}/subscriptions/${subscriptionId}/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ reason: reason })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    toastr.success(data.message || 'Subscription cancelled successfully');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    toastr.error(data.message || 'Failed to cancel subscription');
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fas fa-times-circle"></i>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                toastr.error('An error occurred. Please try again.');
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-times-circle"></i>';
+            });
+        }
+    }
+
+    function assignSubscription(userId) {
+        // You can implement a modal to select a plan and assign it
+        const plan = prompt('Enter plan name to assign (e.g., "Essential", "Extra Tuition", "Home School"):');
+
+        if (plan) {
+            const button = event.target.closest('button');
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            fetch(`/admin/users/${userId}/assign-subscription`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ plan: plan })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    toastr.success(data.message || 'Subscription assigned successfully');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    toastr.error(data.message || 'Failed to assign subscription');
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fas fa-plus-circle"></i>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                toastr.error('An error occurred. Please try again.');
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-plus-circle"></i>';
+            });
+        }
     }
 </script>
 @endsection
