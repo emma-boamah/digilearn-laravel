@@ -468,6 +468,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Cookie Analytics
     Route::get('/cookie-stats', [CookieController::class, 'adminStatsPage'])->name('cookie-stats');
 
+    // Payment Analytics Export
+    Route::get('/payments/export', [AdminController::class, 'exportPayments'])->name('payments.export');
+
     // Storage Monitoring
     Route::prefix('storage')->name('storage.')->group(function () {
         Route::get('/', [AdminController::class, 'storageDashboard'])->name('dashboard');

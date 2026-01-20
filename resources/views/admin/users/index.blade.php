@@ -197,74 +197,15 @@
                             <!-- Add this new cell for Subscription information -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($user->currentSubscription)
-                                    <div class="flex flex-col space-y-1">
-                                        <!-- Plan Name -->
-                                        <div class="flex items-center">
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                                {{ $user->currentSubscription->status === 'active' ? 'bg-green-100 text-green-800' : ($user->currentSubscription->status === 'trial' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
-                                                <i class="fas {{ $user->currentSubscription->status === 'active' ? 'fa-crown' : ($user->currentSubscription->status === 'trial' ? 'fa-clock' : 'fa-exclamation-triangle') }} mr-1" aria-hidden="true"></i>
-                                                {{ $user->currentSubscription->pricingPlan->name ?? 'Unknown Plan' }}
-                                            </span>
-                                        </div>
-
-                                        <!-- Status Badge -->
-                                        <div class="flex items-center">
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
-                                                {{ $user->currentSubscription->status === 'active' ? 'bg-blue-100 text-blue-800' : ($user->currentSubscription->status === 'trial' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800') }}">
-                                                @if($user->currentSubscription->status === 'active')
-                                                    <i class="fas fa-check-circle mr-1 text-xs" aria-hidden="true"></i>Active
-                                                @elseif($user->currentSubscription->status === 'trial')
-                                                    <i class="fas fa-clock mr-1 text-xs" aria-hidden="true"></i>Trial
-                                                @else
-                                                    <i class="fas fa-times-circle mr-1 text-xs" aria-hidden="true"></i>{{ ucfirst($user->currentSubscription->status) }}
-                                                @endif
-                                            </span>
-                                        </div>
-
-                                        <!-- Expiry/Trial Info -->
-                                        @if($user->currentSubscription->expires_at || $user->currentSubscription->trial_ends_at)
-                                            <div class="text-xs text-gray-500">
-                                                <i class="fas fa-calendar-alt mr-1" aria-hidden="true"></i>
-                                                @if($user->currentSubscription->isInTrial())
-                                                    Trial ends {{ $user->currentSubscription->trial_ends_at->format('M d, Y') }}
-                                                @elseif($user->currentSubscription->expires_at)
-                                                    Expires {{ $user->currentSubscription->expires_at->format('M d, Y') }}
-                                                @endif
-                                            </div>
-                                        @endif
-                                    </div>
+                                    <span class="text-sm text-gray-900">{{ ucfirst($user->currentSubscription->status) }}</span>
                                 @else
-                                    <div class="flex flex-col items-center space-y-1">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                            <i class="fas fa-user mr-1" aria-hidden="true"></i>Free Plan
-                                        </span>
-                                        <span class="text-xs text-gray-500">No subscription</span>
-                                    </div>
+                                    <span class="text-sm text-gray-500">Free</span>
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex flex-col space-y-1">
-                                    @if($user->suspended_at)
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                            <i class="fas fa-ban mr-1"></i>Suspended
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            <i class="fas fa-check-circle mr-1"></i>Active
-                                        </span>
-                                    @endif
-                                    
-                                    @if($user->email_verified_at)
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            <i class="fas fa-envelope-check mr-1"></i>Verified
-                                        </span>
-                                    @endif
-                                    
-                                    @if($user->phone_verified_at)
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                            <i class="fas fa-phone-check mr-1"></i>Phone Verified
-                                        </span>
-                                    @endif
+                                <div class="flex items-center space-x-2">
+                                    <span class="inline-block w-3 h-3 rounded-full {{ $user->suspended_at ? 'bg-red-500' : 'bg-green-500' }}"></span>
+                                    <span class="text-sm text-gray-900">{{ $user->suspended_at ? 'Suspended' : 'Active' }}</span>
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
