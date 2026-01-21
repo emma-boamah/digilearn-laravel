@@ -3163,6 +3163,12 @@ class AdminController extends Controller
                         $videoData['external_video_id'] = $parsed['video_id'];
                         $videoData['external_video_url'] = $parsed['embed_url'];
                         $videoData['status'] = 'approved'; // External videos are auto-approved
+                
+                        // Try to get duration from YouTube API if it's YouTube
+                        if ($parsed['source'] === 'youtube') {
+                            $youtubeService = new \App\Services\YouTubeService();
+                            $durationSeconds = $youtubeService->getVideoDuration($parsed['video_id']);
+                        }
                     } else {
                         throw new \Exception('Invalid video URL provided');
                     }
