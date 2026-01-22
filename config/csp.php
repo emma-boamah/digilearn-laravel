@@ -30,6 +30,7 @@ return [
             'https://www.youtube.com',
             'https://s.ytimg.com',
             'https://js.paystack.co',
+            'https://www.googletagmanager.com',
         ],
         'style-src' => [
             "'self'",
@@ -65,6 +66,9 @@ return [
             'https://i.ytimg.com',
             'https://i.vimeocdn.com',
             'https://img.youtube.com',
+            'https://googleads.g.doubleclick.net',
+            'https://www.googleadservices.com',
+            'https://www.google.com',
         ],
         'media-src' => [
             "'self'",
@@ -99,6 +103,8 @@ return [
             'https://www.youtube.com',
             'https://ipapi.co',
             'https://schema.org',
+            'https://googleads.g.doubleclick.net',
+            'https://www.googleadservices.com',
     	 ],
         'frame-src' => [
             "'self'",
