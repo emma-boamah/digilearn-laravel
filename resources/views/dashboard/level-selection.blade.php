@@ -5,6 +5,7 @@
     @php
         $referrer = request()->headers->get('referer');
         $isFromDigilearn = $referrer && str_contains($referrer, '/dashboard/digilearn');
+        $isFromLessonView = $referrer && str_contains($referrer, '/dashboard/lesson/');
     @endphp
 
     @if(isset($isChanging) && $isChanging)
