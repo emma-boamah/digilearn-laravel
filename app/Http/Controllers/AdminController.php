@@ -2024,6 +2024,16 @@ class AdminController extends Controller
                         'mux_asset_id' => $result['asset_id'] ?? null
                     ]);
 
+                    // Send notification to all users about new video
+                    try {
+                        $this->notificationService->notifyNewVideo($video);
+                    } catch (\Exception $e) {
+                        Log::error('Failed to send new video notification', [
+                            'video_id' => $video->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+
                     if ($request->expectsJson()) {
                         return response()->json(['success' => true, 'message' => 'Video approved and uploaded to Mux successfully!']);
                     }

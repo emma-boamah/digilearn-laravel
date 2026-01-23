@@ -53,7 +53,7 @@ class NotificationService
      */
     public function sendSystemAnnouncement(string $title, string $message, ?string $url = null, ?array $channels = null): void
     {
-        $users = User::where('is_verified', true)->get();
+        $users = User::whereNotNull('email_verified_at')->get();
 
         $notification = new \App\Notifications\SystemAnnouncementNotification($title, $message, $this->normalizeUrl($url));
 
@@ -97,7 +97,7 @@ class NotificationService
             $query->whereIn('id', $criteria['user_ids']);
         }
 
-        $users = $query->where('is_verified', true)->get();
+        $users = $query->whereNotNull('email_verified_at')->get();
 
         $this->sendToUsers($users, $notification, $channels);
 
@@ -328,7 +328,7 @@ class NotificationService
      */
     public function sendToAllUsers(Notification $notification, ?array $channels = null): void
     {
-        $users = User::where('is_verified', true)->get();
+        $users = User::whereNotNull('email_verified_at')->get();
         $this->sendToUsers($users, $notification, $channels);
 
         Log::info('Notification sent to all users', [
@@ -343,7 +343,7 @@ class NotificationService
      */
     public function sendToSpecificUsers(array $userIds, Notification $notification, ?array $channels = null): void
     {
-        $users = User::whereIn('id', $userIds)->where('is_verified', true)->get();
+        $users = User::whereIn('id', $userIds)->whereNotNull('email_verified_at')->get();
         $this->sendToUsers($users, $notification, $channels);
 
         Log::info('Notification sent to specific users', [
@@ -370,21 +370,24 @@ class NotificationService
      */
     public function notifyNewVideo(Video $video): void
     {
-        $users = User::where('is_verified', true)->get();
+        $users = User::whereNotNull('email_verified_at')->get();
 
         $notification = new \App\Notifications\NewVideoNotification($video);
 
+        $sentCount = 0;
         foreach ($users as $user) {
-            // Check user preferences before sending
-            if ($this->shouldSendToUser($user, 'lesson_completed', 'database')) {
+            // Check user preferences before sending - use system_announcements for new content
+            if ($this->shouldSendToUser($user, 'system_announcements', 'database')) {
                 $this->sendToUser($user, $notification);
+                $sentCount++;
             }
         }
 
         Log::info('New video notification sent', [
             'video_id' => $video->id,
             'video_title' => $video->title,
-            'user_count' => $users->count(),
+            'total_users' => $users->count(),
+            'notifications_sent' => $sentCount,
         ]);
     }
 

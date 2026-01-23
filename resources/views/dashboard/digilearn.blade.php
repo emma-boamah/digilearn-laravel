@@ -922,6 +922,7 @@
             transition: all 0.2s ease;
             border: none;
             white-space: nowrap;
+            text-decoration: none;
         }
 
         .level-indicator:hover {
@@ -1987,13 +1988,13 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
         <!-- Search/Filter Bar -->
         <div class="filter-bar" id="filterBar">
             <div class="level-container">
-                <label for="level-modal-toggle" class="level-indicator">Grade: {{ $selectedLevelGroup ? ([
+                <a href="{{ route('dashboard.level-selection') }}" class="level-indicator">{{ $selectedLevelGroup ? ([
                     'primary-lower' => 'Grade 1-3',
                     'primary-upper' => 'Grade 4-6',
                     'jhs' => 'Grade 7-9',
                     'shs' => 'Grade 10-12',
                     'university' => 'University'
-                ][$selectedLevelGroup] ?? ucwords(str_replace('-', ' ', $selectedLevelGroup))) : 'Grade 1-3' }}</label>
+                ][$selectedLevelGroup] ?? ucwords(str_replace('-', ' ', $selectedLevelGroup))) : 'Grade 1-3' }}</a>
             </div>
 
             <!-- Mobile Search Toggle Button -->
@@ -2160,19 +2161,6 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                     @endif
                 </div>
             </div>
-            <input type="checkbox" id="level-modal-toggle" style="display: none;">
-
-            <div class="level-modal">
-                <div class="modal-overlay"></div>
-                <div class="modal-content">
-                    <h3>Select Grade</h3>
-                    <a href="{{ route('dashboard.level-group', ['groupId' => 'primary-lower']) }}" class="level-option">Grade 1-3</a>
-                    <a href="{{ route('dashboard.level-group', ['groupId' => 'primary-upper']) }}" class="level-option">Grade 4-6</a>
-                    <a href="{{ route('dashboard.level-group', ['groupId' => 'jhs']) }}" class="level-option">Grade 7-9</a>
-                    <a href="{{ route('dashboard.level-group', ['groupId' => 'shs']) }}" class="level-option">Grade 10-12</a>
-                    <a href="{{ route('dashboard.level-group', ['groupId' => 'university']) }}" class="level-option">University</a>
-                </div>
-            </div>
         </main>
     </div>
 
@@ -2226,23 +2214,6 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
         // Call the new function
         preventBodyScroll();
 
-        // Level modal close handler
-        const levelModalToggle = document.getElementById('level-modal-toggle');
-        const modalOverlay = document.querySelector('.modal-overlay');
-        if (modalOverlay && levelModalToggle) {
-            modalOverlay.addEventListener('click', () => {
-                levelModalToggle.checked = false;
-            });
-        }
-
-        // Close modal when selecting a level option
-        document.querySelectorAll('.level-option').forEach(option => {
-            option.addEventListener('click', () => {
-                if (levelModalToggle) {
-                    levelModalToggle.checked = false;
-                }
-            });
-        });
 
         // Enhanced Mobile UI with search functionality
         function initializeMobileUI() {
