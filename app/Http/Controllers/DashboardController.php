@@ -14,6 +14,7 @@ use App\Models\UserNote;
 use App\Models\Course;
 use App\Models\CommentUserLike;
 use App\Models\Subject;
+use App\Services\PlanChangeService;
 
 class DashboardController extends Controller
 {
@@ -45,7 +46,13 @@ class DashboardController extends Controller
 
         $levels = $this->getAvailableLevels();
 
-        return view('dashboard.level-selection', compact('levels', 'hasActiveSubscription', 'isInTrial'));
+        // Check access for each level group
+        $accessInfo = [];
+        foreach ($levels as $level) {
+            $accessInfo[$level['id']] = $this->hasAccessToLevelGroup($user, $level['id']);
+        }
+
+        return view('dashboard.level-selection', compact('levels', 'hasActiveSubscription', 'isInTrial', 'accessInfo'));
     }
 
     /**
@@ -463,7 +470,16 @@ class DashboardController extends Controller
          ]);
 
          // Use the subscription access service OR direct check
-         $hasAccess = \App\Services\SubscriptionAccessService::canAccessLevelGroup($user, $groupId);
+         try {
+             $hasAccess = \App\Services\SubscriptionAccessService::canAccessLevelGroup($user, $groupId);
+         } catch (\Exception $e) {
+             Log::warning('SubscriptionAccessService failed, using fallback', [
+                 'user_id' => $user->id,
+                 'group_id' => $groupId,
+                 'error' => $e->getMessage()
+             ]);
+             $hasAccess = false;
+         }
 
          // Fallback direct check if service fails
          if (!$hasAccess) {
@@ -492,18 +508,25 @@ class DashboardController extends Controller
 
      /**
       * Check if a pricing plan has access to a level group
+      * Now uses database configuration instead of hardcoded mapping
       */
      private function checkPlanAccess($plan, $groupId)
      {
-         // Map plan names to allowed level groups
+         // Try using database relationship first
+         if (method_exists($plan, 'canAccessLevelGroup')) {
+             return $plan->canAccessLevelGroup($groupId);
+         }
+
+         // Fallback to slug-based mapping
+         $planSlug = $plan->slug ?? strtolower(str_replace(' ', '-', $plan->name));
+
          $planAccessMap = [
-             'Essential' => ['primary-lower', 'primary-upper', 'jhs'],
-             'Home School' => ['primary-lower', 'primary-upper', 'jhs', 'shs'],
-             'Extra Tuition' => ['primary-lower', 'primary-upper', 'jhs', 'shs', 'university'],
+             'essential' => ['primary-lower', 'primary-upper', 'jhs'],
+             'home_school' => ['primary-lower', 'primary-upper', 'jhs', 'shs'],
+             'extra_tuition' => ['primary-lower', 'primary-upper', 'jhs', 'shs', 'university'],
          ];
 
-         $allowedGroups = $planAccessMap[$plan->name] ?? [];
-         return in_array($groupId, $allowedGroups);
+         return in_array($groupId, $planAccessMap[$planSlug] ?? []);
      }
 
     /**
@@ -2136,14 +2159,14 @@ class DashboardController extends Controller
     public function showLevelGroup($groupId)
     {
         $levelGroups = $this->getLevelGroups();
-        
+
         if (!isset($levelGroups[$groupId])) {
             return redirect()->route('dashboard.level-selection')
                 ->withErrors(['group' => 'Invalid level group selected.']);
         }
 
         $group = $levelGroups[$groupId];
-        
+
         // Log group selection access
         Log::channel('security')->info('level_group_accessed', [
             'user_id' => Auth::id(),
@@ -3099,5 +3122,59 @@ class DashboardController extends Controller
        ]);
 
        return $subjects;
+   }
+
+   /**
+    * Handle plan change for a user (upgrade/downgrade)
+    */
+   public function changePlan(Request $request)
+   {
+       $request->validate([
+           'new_plan_id' => 'required|exists:pricing_plans,id'
+       ]);
+
+       $user = Auth::user();
+       $newPlanId = $request->new_plan_id;
+
+       try {
+           $planChangeService = new PlanChangeService();
+           $result = $planChangeService->changeUserPlan($user, $newPlanId);
+
+           if ($result['success']) {
+               // Log the plan change
+               Log::channel('security')->info('plan_changed', [
+                   'user_id' => $user->id,
+                   'old_plan' => $result['old_plan'],
+                   'new_plan' => $result['new_plan'],
+                   'type' => $result['type'],
+                   'ip' => request()->ip(),
+                   'timestamp' => Carbon::now()->toISOString()
+               ]);
+
+               return response()->json([
+                   'success' => true,
+                   'message' => 'Plan changed successfully!',
+                   'data' => $result
+               ]);
+           } else {
+               return response()->json([
+                   'success' => false,
+                   'message' => 'Failed to change plan.'
+               ], 400);
+           }
+
+       } catch (\Exception $e) {
+           Log::error('plan_change_error', [
+               'user_id' => $user->id,
+               'new_plan_id' => $newPlanId,
+               'error' => $e->getMessage(),
+               'trace' => $e->getTraceAsString()
+           ]);
+
+           return response()->json([
+               'success' => false,
+               'message' => 'An error occurred while changing the plan. Please try again.'
+           ], 500);
+       }
    }
 }

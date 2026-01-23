@@ -338,6 +338,9 @@ Route::middleware(['auth'])->group(function () {
     // Lesson search API
     Route::get('/api/dashboard/search-lessons', [DashboardController::class, 'searchLessons'])->name('api.dashboard.search-lessons');
 
+    // Plan change API
+    Route::post('/api/dashboard/change-plan', [DashboardController::class, 'changePlan'])->name('api.dashboard.change-plan');
+
     // Notifications API
     Route::middleware(['decode.obfuscated'])->prefix('api/notifications')->name('api.notifications.')->group(function () {
         Route::get('/', [NotificationController::class, 'index'])->name('index');

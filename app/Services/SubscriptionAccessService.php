@@ -131,6 +131,8 @@ class SubscriptionAccessService
         // Map plan slugs to our access levels
         $slugMapping = [
             'essential' => 'essential',
+            'essential-plus' => 'home_school',
+            'essential-pro' => 'extra_tuition',
             'home-school' => 'home_school',
             'extra-tuition' => 'extra_tuition',
             // Add more mappings as needed

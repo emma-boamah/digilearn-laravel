@@ -2,12 +2,24 @@
 
 @section('content')
     <!-- Back Button -->
+    @php
+        $referrer = request()->headers->get('referer');
+        $isFromDigilearn = $referrer && str_contains($referrer, '/dashboard/digilearn');
+    @endphp
+
     @if(isset($isChanging) && $isChanging)
         <a href="{{ route('dashboard.main') }}" class="back-button" id="backToDashboard">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
             </svg>
             Back to Dashboard
+        </a>
+    @elseif($isFromDigilearn)
+        <a href="{{ route('dashboard.digilearn') }}" class="back-button" id="backToDigilearn">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Back to DigiLearn
         </a>
     @else
         <button class="back-button" id="backButton">
@@ -40,7 +52,10 @@
             <!-- Level Selection Grid -->
             <div class="level-selection-grid">
                 @foreach($levels as $level)
-                    <div class="level-group-card">
+                    @php
+                        $hasAccess = $accessInfo[$level['id']] ?? false;
+                    @endphp
+                    <div class="level-group-card {{ $hasAccess ? '' : 'disabled' }}">
                         <div class="level-header">
                             <h3 class="level-title">{{ $level['title'] }}</h3>
                         </div>
@@ -58,18 +73,26 @@
                             @endif
                         </div>
                         <p class="level-description">{{ $level['description'] }}</p>
-                        
-                        <!-- Form to select level group and go to digilearn -->
-                        <form action="{{ route('dashboard.select-level-group', $level['id']) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="level-select-btn">
-                                @if(session('selected_level_group') === $level['id'])
-                                    Current Level
-                                @else
-                                    Select
-                                @endif
-                            </button>
-                        </form>
+
+                        @if($hasAccess)
+                            <!-- Form to select level group and go to digilearn -->
+                            <form action="{{ route('dashboard.select-level-group', $level['id']) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="level-select-btn">
+                                    @if(session('selected_level_group') === $level['id'])
+                                        Current Level
+                                    @else
+                                        Select
+                                    @endif
+                                </button>
+                            </form>
+                        @else
+                            <div class="upgrade-required">
+                                <button type="button" class="upgrade-btn" onclick="redirectToPricing()">
+                                    Upgrade Required
+                                </button>
+                            </div>
+                        @endif
                     </div>
                 @endforeach
             </div>
@@ -164,9 +187,23 @@
             text-align: center;
         }
 
-        .level-group-card:hover {
+        .level-group-card:hover:not(.disabled) {
             transform: translateY(-4px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .level-group-card.disabled {
+            opacity: 0.6;
+            filter: grayscale(50%);
+            cursor: not-allowed;
+        }
+
+        .level-group-card.disabled .level-title {
+            color: #9ca3af;
+        }
+
+        .level-group-card.disabled .level-description {
+            color: #9ca3af;
         }
 
         .level-header {
@@ -264,6 +301,27 @@
             background-color: #1e5a8a;
         }
 
+        .upgrade-required {
+            margin-top: 1rem;
+        }
+
+        .upgrade-btn {
+            background-color: #dc2626;
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            width: 100%;
+            font-size: 1rem;
+        }
+
+        .upgrade-btn:hover {
+            background-color: #b91c1c;
+        }
+
         @media (max-width: 768px) {
             .level-selection-grid {
                 grid-template-columns: 1fr;
@@ -297,5 +355,9 @@
             });
         }
     });
+
+    function redirectToPricing() {
+        window.location.href = '{{ route("pricing") }}';
+    }
 </script>
 @endpush

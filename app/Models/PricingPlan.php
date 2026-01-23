@@ -116,4 +116,22 @@ class PricingPlan extends Model
         $price = $this->getPriceForDuration($duration);
         return $this->currency . ' ' . number_format($price, 2);
     }
+
+    /**
+     * Get level groups accessible by this plan
+     */
+    public function accessibleLevelGroups()
+    {
+        return $this->hasMany(PlanLevelGroup::class, 'pricing_plan_id');
+    }
+
+    /**
+     * Check if plan can access a specific level group
+     */
+    public function canAccessLevelGroup($groupId)
+    {
+        return $this->accessibleLevelGroups()
+            ->where('level_group', $groupId)
+            ->exists();
+    }
 }

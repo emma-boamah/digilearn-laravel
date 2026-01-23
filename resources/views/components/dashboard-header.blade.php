@@ -901,7 +901,7 @@
                 const isUnread = !notification.read_at;
                 const unreadClass = isUnread ? 'unread' : '';
                 const timeAgo = formatTimeAgo(new Date(notification.created_at));
-                const contentType = notification.content_type || 'system';
+                const contentType = notification.data?.content_type || 'system';
                 const icon = getNotificationIcon(notification.type, contentType);
 
                 let notificationContent = '';
@@ -921,7 +921,7 @@
                 }
 
                 return `
-                    <div class="notification-item ${unreadClass}" data-id="${notification.id}" data-url="${notification.url || ''}" data-content-type="${contentType}">
+                    <div class="notification-item ${unreadClass}" data-id="${notification.id}" data-url="${notification.data?.url || ''}" data-content-type="${contentType}">
                         <div class="notification-icon">
                             <i class="${icon}"></i>
                         </div>
@@ -952,17 +952,18 @@
         }
 
         function renderVideoNotification(notification, timeAgo) {
+            const data = notification.data || {};
             return `
                 <div class="notification-content">
                     <div class="notification-header">
                         <span class="notification-badge video-badge">Video</span>
-                        <span class="notification-subject">${notification.subject || 'General'}</span>
+                        <span class="notification-subject">${data.subject || 'General'}</span>
                     </div>
-                    <p class="notification-title">${notification.title}</p>
-                    <p class="notification-message">${notification.message}</p>
+                    <p class="notification-title">${data.title}</p>
+                    <p class="notification-message">${data.message}</p>
                     <div class="notification-meta">
-                        <span class="notification-instructor">${notification.instructor || 'DigiLearn Team'}</span>
-                        <span class="notification-duration">${notification.duration || ''}</span>
+                        <span class="notification-instructor">${data.instructor || 'DigiLearn Team'}</span>
+                        <span class="notification-duration">${data.duration || ''}</span>
                     </div>
                     <span class="notification-time">${timeAgo}</span>
                 </div>
@@ -970,17 +971,18 @@
         }
 
         function renderDocumentNotification(notification, timeAgo) {
+            const data = notification.data || {};
             return `
                 <div class="notification-content">
                     <div class="notification-header">
-                        <span class="notification-badge document-badge">${notification.document_type || 'Document'}</span>
-                        <span class="notification-subject">${notification.subject || 'General'}</span>
+                        <span class="notification-badge document-badge">${data.document_type || 'Document'}</span>
+                        <span class="notification-subject">${data.subject || 'General'}</span>
                     </div>
-                    <p class="notification-title">${notification.title}</p>
-                    <p class="notification-message">${notification.message}</p>
+                    <p class="notification-title">${data.title}</p>
+                    <p class="notification-message">${data.message}</p>
                     <div class="notification-meta">
-                        <span class="notification-lesson">${notification.lesson_title || 'Related Lesson'}</span>
-                        ${notification.file_size ? `<span class="notification-size">${notification.file_size}</span>` : ''}
+                        <span class="notification-lesson">${data.lesson_title || 'Related Lesson'}</span>
+                        ${data.file_size ? `<span class="notification-size">${data.file_size}</span>` : ''}
                     </div>
                     <span class="notification-time">${timeAgo}</span>
                 </div>
@@ -988,18 +990,19 @@
         }
 
         function renderQuizNotification(notification, timeAgo) {
+            const data = notification.data || {};
             return `
                 <div class="notification-content">
                     <div class="notification-header">
                         <span class="notification-badge quiz-badge">Quiz</span>
-                        <span class="notification-subject">${notification.subject || 'General'}</span>
+                        <span class="notification-subject">${data.subject || 'General'}</span>
                     </div>
-                    <p class="notification-title">${notification.title}</p>
-                    <p class="notification-message">${notification.message}</p>
+                    <p class="notification-title">${data.title}</p>
+                    <p class="notification-message">${data.message}</p>
                     <div class="notification-meta">
-                        <span class="notification-questions">${notification.question_count || 0} questions</span>
-                        <span class="notification-difficulty">${notification.difficulty || 'Mixed'}</span>
-                        <span class="notification-duration">${notification.duration || 'No limit'}</span>
+                        <span class="notification-questions">${data.question_count || 0} questions</span>
+                        <span class="notification-difficulty">${data.difficulty || 'Mixed'}</span>
+                        <span class="notification-duration">${data.duration || 'No limit'}</span>
                     </div>
                     <span class="notification-time">${timeAgo}</span>
                 </div>
@@ -1007,10 +1010,11 @@
         }
 
         function renderSystemNotification(notification, timeAgo) {
+            const data = notification.data || {};
             return `
                 <div class="notification-content">
-                    <p class="notification-title">${notification.title}</p>
-                    <p class="notification-message">${notification.message}</p>
+                    <p class="notification-title">${data.title}</p>
+                    <p class="notification-message">${data.message}</p>
                     <span class="notification-time">${timeAgo}</span>
                 </div>
             `;
