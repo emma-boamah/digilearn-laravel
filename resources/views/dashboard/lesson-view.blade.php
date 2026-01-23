@@ -2807,187 +2807,6 @@
             }
         }
 
-        /* ===== LEVEL MODAL STYLES (From DigiLearn) ===== */
-        #level-modal-toggle {
-            display: none;
-        }
-
-        .level-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 9999;
-            display: none;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #level-modal-toggle:checked ~ .level-modal {
-            display: flex;
-        }
-
-        .level-modal {
-            pointer-events: none;
-        }
-
-        #level-modal-toggle:checked ~ .level-modal {
-            pointer-events: auto;
-        }
-
-        .modal-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        #level-modal-toggle:checked ~ .level-modal .modal-overlay {
-            opacity: 1;
-        }
-
-        .modal-content {
-            position: relative;
-            background-color: var(--white);
-            border-radius: 1.5rem;
-            box-shadow: var(--shadow-xl);
-            padding: 2rem;
-            z-index: 1000;
-            min-width: 300px;
-            max-width: 450px;
-            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            transform: translateY(0);
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        #level-modal-toggle:not(:checked) ~ .level-modal .modal-content {
-            animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            transform: translateY(20px);
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 1;
-                transform: translateY(0);
-            }
-            to {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-        }
-
-        .modal-content h3 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--gray-900);
-            margin: 0 0 1.5rem 0;
-            line-height: 1.3;
-        }
-
-        .level-option {
-            display: block;
-            padding: 1rem 1.25rem;
-            margin-bottom: 0.75rem;
-            background-color: var(--gray-50);
-            border: 2px solid var(--gray-200);
-            border-radius: 0.75rem;
-            color: var(--gray-700);
-            font-size: 0.9375rem;
-            font-weight: 500;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-align: left;
-        }
-
-        .level-option:hover {
-            background-color: var(--white);
-            border-color: var(--secondary-blue);
-            color: var(--secondary-blue);
-            transform: translateX(4px);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .level-option:active {
-            transform: translateX(2px);
-        }
-
-        .level-container {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            flex-shrink: 0;
-        }
-
-        .level-indicator {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            padding: 0.875rem 1.25rem;
-            background-color: var(--white);
-            border: 2px solid var(--gray-200);
-            border-radius: 0.75rem;
-            color: var(--gray-700);
-            font-size: 0.875rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            white-space: nowrap;
-            min-width: 140px;
-        }
-
-        /* Mobile: Compact level indicator */
-        @media (max-width: 768px) {
-            .level-indicator {
-                padding: 0.75rem 0.75rem;
-                font-size: 0.7rem;
-                min-width: 80px;
-                gap: 0.25rem;
-            }
-
-            .level-indicator::after {
-                font-size: 0.5rem;
-                margin-left: 0.25rem;
-            }
-        }
-
-        .level-indicator:hover {
-            border-color: var(--secondary-blue);
-            background-color: rgba(38, 119, 184, 0.05);
-            color: var(--secondary-blue);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .level-indicator::after {
-            content: '▼';
-            font-size: 0.65rem;
-            margin-left: 0.5rem;
-            transition: transform 0.3s ease;
-        }
-
-        #level-modal-toggle:checked ~ * .level-indicator::after {
-            transform: rotate(180deg);
-        }
-
-        /* ===== END LEVEL MODAL STYLES ===== */
     </style>
 
     @php
@@ -3003,17 +2822,7 @@
         </button>
 
         <!-- Level Indicator (Left) -->
-        <div class="level-container">
-            <label for="level-modal-toggle" class="level-indicator">
-                Grade: {{ $selectedLevel ? ([
-                    'primary-lower' => 'Grade 1-3',
-                    'primary-upper' => 'Grade 4-6',
-                    'jhs' => 'Grade 7-9',
-                    'shs' => 'Grade 10-12',
-                    'university' => 'University'
-                ][$selectedLevel] ?? ucwords(str_replace('-', ' ', $selectedLevel))) : 'Grade 1-3' }}
-            </label>
-        </div>
+        <x-level-indicator :selectedLevel="$selectedLevel" />
 
         <!-- Search Box (Middle) -->
         <div class="search-box" id="searchBox">
@@ -3036,19 +2845,6 @@
         </div>
     </div>
 
-    <!-- Level Modal (Keep this for level selection) -->
-    <input type="checkbox" id="level-modal-toggle" style="display: none;">
-    <div class="level-modal">
-        <div class="modal-overlay"></div>
-        <div class="modal-content">
-            <h3>Select Grade</h3>
-            <a href="{{ route('dashboard.level-group', ['groupId' => 'primary-lower']) }}" class="level-option">Grade 1-3</a>
-            <a href="{{ route('dashboard.level-group', ['groupId' => 'primary-upper']) }}" class="level-option">Grade 4-6</a>
-            <a href="{{ route('dashboard.level-group', ['groupId' => 'jhs']) }}" class="level-option">Grade 7-9</a>
-            <a href="{{ route('dashboard.level-group', ['groupId' => 'shs']) }}" class="level-option">Grade 10-12</a>
-            <a href="{{ route('dashboard.level-group', ['groupId' => 'university']) }}" class="level-option">University</a>
-        </div>
-    </div>
 
     <!-- Enhanced Main Layout -->
     <div class="lesson-page">
@@ -3955,55 +3751,6 @@
             });
         }
 
-        // Initialize Level Modal with proper close handlers
-        function initializeLevelModal() {
-            const levelModalToggle = document.getElementById('level-modal-toggle');
-            const modalOverlay = document.querySelector('.modal-overlay');
-            const levelIndicator = document.querySelector('.level-indicator');
-
-            // Close on overlay click
-            if (modalOverlay && levelModalToggle) {
-                modalOverlay.addEventListener('click', (e) => {
-                    if (e.target === modalOverlay) {
-                        levelModalToggle.checked = false;
-                    }
-                });
-            }
-
-            // Close on Escape key
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && levelModalToggle && levelModalToggle.checked) {
-                    levelModalToggle.checked = false;
-                }
-            });
-
-            // Close on outside click
-            document.addEventListener('click', (e) => {
-                const modalContent = document.querySelector('.modal-content');
-                const isClickInsideModal = modalContent?.contains(e.target);
-                const isClickOnToggle = levelIndicator?.contains(e.target);
-                if (!isClickInsideModal && !isClickOnToggle && levelModalToggle && levelModalToggle.checked) {
-                    levelModalToggle.checked = false;
-                }
-            });
-
-            // Close modal when selecting a level option
-            document.querySelectorAll('.level-option').forEach(option => {
-                option.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    if (levelModalToggle) {
-                        levelModalToggle.checked = false;
-                    }
-                    // The href will navigate after a short delay to allow animation
-                    const href = option.getAttribute('href');
-                    if (href) {
-                        setTimeout(() => {
-                            window.location.href = href;
-                        }, 150);
-                    }
-                });
-            });
-        }
 
         function initializeAll() {
             // Initialize all functionality
@@ -4023,7 +3770,6 @@
             initializeCourseTabs();
             checkDocumentAvailability();
             initializeVideoProgressTracking();
-            initializeLevelModal(); // Initialize level modal handlers
             initializeSearchToggle(); // Initialize mobile search toggle
         }
 

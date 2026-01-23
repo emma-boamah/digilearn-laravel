@@ -1987,15 +1987,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
             
         <!-- Search/Filter Bar -->
         <div class="filter-bar" id="filterBar">
-            <div class="level-container">
-                <a href="{{ route('dashboard.level-selection') }}" class="level-indicator">{{ $selectedLevelGroup ? ([
-                    'primary-lower' => 'Grade 1-3',
-                    'primary-upper' => 'Grade 4-6',
-                    'jhs' => 'Grade 7-9',
-                    'shs' => 'Grade 10-12',
-                    'university' => 'University'
-                ][$selectedLevelGroup] ?? ucwords(str_replace('-', ' ', $selectedLevelGroup))) : 'Grade 1-3' }}</a>
-            </div>
+            <x-level-indicator :selectedLevel="$selectedLevelGroup" />
 
             <!-- Mobile Search Toggle Button -->
             <button class="mobile-search-toggle" id="mobileSearchToggle">
