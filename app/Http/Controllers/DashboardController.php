@@ -28,31 +28,72 @@ class DashboardController extends Controller
     }
 
     /**
-     * Show level selection page - Updated with University Years
+     * Unified level selection method with enhanced subscription checks
+     * Handles both initial level selection and level changes
      */
-    public function levelSelection()
+    public function levelSelection(Request $request)
     {
         $user = Auth::user();
-        $hasActiveSubscription = $user->currentSubscription && $user->currentSubscription->isActive();
-        $isInTrial = $user->currentSubscription && $user->currentSubscription->isInTrial();
+        $isChanging = $request->get('changing', false) || $request->route()->getName() === 'dashboard.change-level';
 
-        Log::channel('security')->info('level_selection_accessed', [
-            'user_id' => Auth::id(),
+        // Verify user authentication
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        // Get subscription details
+        $currentSubscription = $user->currentSubscription;
+        $hasActiveSubscription = $currentSubscription && $currentSubscription->isActive();
+        $isInTrial = $currentSubscription && $currentSubscription->isInTrial();
+
+        // Check if user is superuser (bypass all restrictions)
+        $isSuperUser = $user->is_superuser;
+
+        Log::channel('security')->info($isChanging ? 'change_level_accessed' : 'level_selection_accessed', [
+            'user_id' => $user->id,
             'has_subscription' => $hasActiveSubscription,
             'is_trial' => $isInTrial,
+            'is_superuser' => $isSuperUser,
             'ip' => request()->ip(),
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
         $levels = $this->getAvailableLevels();
 
-        // Check access for each level group
+        // Check access for each level group with enhanced validation
         $accessInfo = [];
         foreach ($levels as $level) {
-            $accessInfo[$level['id']] = $this->hasAccessToLevelGroup($user, $level['id']);
+            $accessInfo[$level['id']] = $this->hasEnhancedAccessToLevelGroup($user, $level['id'], $isSuperUser);
         }
 
-        return view('dashboard.level-selection', compact('levels', 'hasActiveSubscription', 'isInTrial', 'accessInfo'));
+        return view('dashboard.level-selection', compact('levels', 'hasActiveSubscription', 'isInTrial', 'accessInfo', 'isSuperUser'))->with('isChanging', $isChanging);
+    }
+
+    /**
+     * Legacy method for backward compatibility - redirects to unified method
+     */
+    public function changeLevelSelection()
+    {
+        return $this->levelSelection(request()->merge(['changing' => true]));
+    }
+
+    /**
+     * Enhanced access check method with superuser override
+     */
+    private function hasEnhancedAccessToLevelGroup($user, $groupId, $isSuperUser = null)
+    {
+        // Superuser override - always grant access
+        if ($isSuperUser || ($user && $user->is_superuser)) {
+            Log::info('Level group access granted: superuser override', [
+                'user_id' => $user ? $user->id : null,
+                'group_id' => $groupId,
+                'timestamp' => now()->toISOString()
+            ]);
+            return true;
+        }
+
+        // Use existing access check method
+        return $this->hasAccessToLevelGroup($user, $groupId);
     }
 
     /**
@@ -874,26 +915,6 @@ class DashboardController extends Controller
         return view('dashboard.shop', compact('selectedLevel'));
     }
 
-    /**
-     * Show change level selection page
-     */
-    public function changeLevelSelection()
-    {
-        $user = Auth::user();
-        
-        Log::channel('security')->info('change_level_accessed', [
-            'user_id' => Auth::id(),
-            'current_level' => session('selected_level'),
-            'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
-            'ip' => request()->ip(),
-            'timestamp' => Carbon::now()->toISOString()
-        ]);
-
-        // Get available levels
-        $levels = $this->getAvailableLevels();
-
-        return view('dashboard.level-selection', compact('levels'))->with('isChanging', true);
-    }
 
     /**
      * View specific lesson (updated to work with level groups and courses)

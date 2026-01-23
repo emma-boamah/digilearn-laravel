@@ -105,7 +105,7 @@ Route::middleware(['throttle:forms'])->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])->group(function () {
-    // Level selection and dashboard
+    // Level selection and dashboard - unified method handles both initial selection and changes
     Route::get('/dashboard/level-selection', [DashboardController::class, 'levelSelection'])->name('dashboard.level-selection');
     Route::get('/dashboard/level-group/{groupId}', [DashboardController::class, 'showLevelGroup'])->name('dashboard.level-group');
     Route::post('/dashboard/select-level-group/{groupId}', [DashboardController::class, 'selectLevelGroup'])->name('dashboard.select-level-group');
@@ -113,7 +113,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/digilearn', [DashboardController::class, 'digilearn'])->name('dashboard.digilearn');
     Route::get('/dashboard/personalized', [DashboardController::class, 'personalized'])->name('dashboard.personalized');
     Route::get('/dashboard/shop', [DashboardController::class, 'shop'])->name('dashboard.shop');
-    Route::get('/dashboard/change-level', [DashboardController::class, 'changeLevelSelection'])->name('dashboard.change-level');
+    Route::get('/dashboard/change-level', [DashboardController::class, 'levelSelection'])->name('dashboard.change-level');
 
     // Lessons
     Route::middleware(['decode.obfuscated'])->group(function () {
