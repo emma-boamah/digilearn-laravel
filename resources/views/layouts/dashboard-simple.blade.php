@@ -14,7 +14,8 @@
         :root {
             --primary-red: #E11E2D;
             --primary-red-hover: #b91c1c;
-            --secondary-blue: #2677B8;
+            --secondary-blue: #2e7ab8ff;
+            --secondary-blue-hover: #1f6f9f;
             --white: #ffffff;
             --gray-50: #f9fafb;
             --gray-100: #f3f4f6;
@@ -68,7 +69,7 @@
         .back-button {
             background: none;
             border: none;
-            color: #DC2626;
+            color: var(--gray-800);
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -331,7 +332,7 @@
 
         .card-button {
             width: 100%;
-            background-color: var(--primary-red);
+            background-color: var(--secondary-blue);
             color: var(--white);
             border: none;
             padding: 0.75rem 1rem;
@@ -342,7 +343,7 @@
         }
 
         .card-button:hover {
-            background-color: var(--primary-red-hover);
+            background-color: var(--secondary-blue-hover);
         }
 
         /* Grid Layouts */

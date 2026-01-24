@@ -56,12 +56,9 @@
                     @php
                         $hasAccess = $accessInfo[$level['id']] ?? false;
                     @endphp
-                    <div class="level-group-card {{ $hasAccess ? 'accessible' : 'upgrade-needed' }}">
+                    <div class="level-group-card {{ $hasAccess ? 'accessible' : 'explore-more' }}">
                         <div class="level-header">
                             <h3 class="level-title">{{ $level['title'] }}</h3>
-                            @if(!$hasAccess)
-                                <div class="premium-badge">Premium</div>
-                            @endif
                         </div>
                         <div class="level-image-container">
                             @if($level['id'] === 'jhs')
@@ -94,9 +91,9 @@
                             <!-- Allow clicking but redirect to pricing -->
                             <button type="button" class="upgrade-btn upgrade-trigger" data-level-title="{{ $level['title'] }}" data-level-id="{{ $level['id'] }}">
                                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 0.5rem;">
-                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                    <path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/><path d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
                                 </svg>
-                                Upgrade to Access
+                                Explore This Level
                             </button>
                         @endif
                     </div>
@@ -198,40 +195,24 @@
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         }
 
-        .level-group-card.upgrade-needed {
-            border: 2px solid #fbbf24; /* Yellow border for premium content */
-            background: linear-gradient(135deg, #fef3c7 0%, #ffffff 100%);
+        .level-group-card.explore-more {
+            border: 2px solid #3b82f6; /* Blue border for additional content */
+            background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
             position: relative;
         }
 
-        .level-group-card.upgrade-needed:hover {
+        .level-group-card.explore-more:hover {
             transform: translateY(-4px);
-            box-shadow: 0 8px 25px rgba(251, 191, 36, 0.3);
-            border-color: #f59e0b;
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+            border-color: #2563eb;
         }
 
         .level-group-card.accessible {
-            border: 2px solid #eaf4faff; /* Green border for accessible content */
+            border: 2px solid #10b981; /* Green border for accessible content */
         }
 
         .level-group-card.accessible:hover {
-            border-color: #dceef8ff;
-        }
-
-        .premium-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: 1rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.025em;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-            z-index: 10;
+            border-color: #059669;
         }
 
         .level-header {
@@ -334,20 +315,30 @@
         }
 
         .upgrade-btn {
-            background-color: #dc2626;
+            background-color: #3b82f6;
             color: white;
             border: none;
             padding: 0.75rem 2rem;
             border-radius: 6px;
             font-weight: 500;
             cursor: pointer;
-            transition: background-color 0.2s ease;
+            transition: all 0.2s ease;
             width: 100%;
             font-size: 1rem;
+            box-shadow: 0 1px 3px rgba(59, 130, 246, 0.3);
         }
 
         .upgrade-btn:hover {
-            background-color: #b91c1c;
+            background-color: #2563eb;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .upgrade-btn:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
         @media (max-width: 768px) {
@@ -416,7 +407,7 @@
         const originalText = button.innerHTML;
 
         // Show loading state
-        button.innerHTML = '<svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 0.5rem;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Redirecting...';
+        button.innerHTML = '<svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 0.5rem;"><path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/><path d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/></svg>Loading...';
         button.disabled = true;
 
         // Add a subtle animation
