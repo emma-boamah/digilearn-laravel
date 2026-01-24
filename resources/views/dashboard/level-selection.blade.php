@@ -348,12 +348,24 @@
 @push('scripts')
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
     document.addEventListener('DOMContentLoaded', function() {
-        // Handle back button navigation
-        const backButton = document.getElementById('backButton');
+        // Handle back button navigation - check for any back button element
+        const backButton = document.getElementById('backButton') ||
+                          document.getElementById('backToDashboard') ||
+                          document.getElementById('backToDigilearn');
+
         if (backButton) {
-            backButton.addEventListener('click', function() {
-                window.history.back();
-            });
+            console.log('Back button found:', backButton.id);
+            // Only add click handler for actual button elements (not links)
+            if (backButton.tagName.toLowerCase() === 'button') {
+                backButton.addEventListener('click', function() {
+                    console.log('Back button clicked');
+                    window.history.back();
+                });
+            } else {
+                console.log('Back button is a link, letting browser handle navigation');
+            }
+        } else {
+            console.log('No back button found');
         }
     });
 

@@ -415,5 +415,6 @@
 <body>
     @include('components.dashboard-header')
     @yield('content')
+    @stack('scripts')
 </body>
 </html>
