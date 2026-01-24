@@ -204,15 +204,15 @@
         .level-group-card.explore-more:hover {
             transform: translateY(-4px);
             box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
-            border-color: #2563eb;
+            border-color: #aec6fcff;
         }
 
         .level-group-card.accessible {
-            border: 2px solid #10b981; /* Green border for accessible content */
+            border: 2px solid #c3def7ff; /* Green border for accessible content */
         }
 
         .level-group-card.accessible:hover {
-            border-color: #059669;
+            border-color: #a1d4f7ff;
         }
 
         .level-header {
