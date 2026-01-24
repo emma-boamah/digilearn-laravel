@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\CookieController;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use App\Models\User;
@@ -554,3 +555,24 @@ Route::post('/csp-report', function (Request $request) {
 Route::post('/webhooks/mux', [App\Http\Controllers\MuxWebhookController::class, 'handleWebhook'])
     ->withoutMiddleware([VerifyCsrfToken::class])
     ->name('webhooks.mux');
+
+/*
+|--------------------------------------------------------------------------
+| Quiz Image Routes
+|--------------------------------------------------------------------------
+*/
+Route::get('/quiz/{quizId}/image/{imageIndex}', function($quizId, $imageIndex) {
+    $path = "quiz_images/{$quizId}/{$imageIndex}";
+
+    // Check for different extensions
+    $extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+    foreach ($extensions as $ext) {
+        $fullPath = "{$path}.{$ext}";
+        if (Storage::disk('public')->exists($fullPath)) {
+            return response()->file(storage_path("app/public/{$fullPath}"));
+        }
+    }
+
+    return response()->json(['error' => 'Image not found'], 404);
+})->name('quiz.image');

@@ -290,20 +290,22 @@
             transform: none;
         }
 
-        /* Right Content */
+        /* Right Content - Updated for Image Questions */
         .quiz-content {
             background-color: var(--white);
             border-radius: 1rem;
             padding: 2.5rem;
             box-shadow: var(--shadow-sm);
             border: 1px solid var(--gray-200);
+            display: flex;
+            flex-direction: column;
         }
 
         .question-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             padding-bottom: 1rem;
             border-bottom: 1px solid var(--gray-200);
         }
@@ -318,6 +320,34 @@
             font-size: 0.875rem;
             color: var(--gray-500);
             font-weight: 500;
+        }
+
+        /* Image Container */
+        .question-image-container {
+            margin-bottom: 1.5rem;
+            text-align: center;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            background-color: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            padding: 0.5rem;
+            max-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .question-image {
+            max-width: 100%;
+            max-height: 250px;
+            object-fit: contain;
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.3s ease;
+        }
+
+        .question-image:hover {
+            transform: scale(1.01);
         }
 
         .question-text {
@@ -386,6 +416,7 @@
             display: flex;
             justify-content: space-between;
             gap: 1rem;
+            margin-top: auto;
         }
 
         .nav-btn {
@@ -466,6 +497,14 @@
             .question-text {
                 font-size: 1.125rem;
             }
+
+            .question-image-container {
+                max-height: 250px;
+            }
+
+            .question-image {
+                max-height: 200px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -490,6 +529,15 @@
                 width: 35px;
                 height: 35px;
                 font-size: 0.875rem;
+            }
+
+            .question-image-container {
+                max-height: 200px;
+                padding: 0.25rem;
+            }
+
+            .question-image {
+                max-height: 150px;
             }
         }
 
@@ -610,10 +658,10 @@
     <div class="main-layout">
         <!-- Left Sidebar -->
         <div class="quiz-sidebar">
-            <h2 class="quiz-title">{{ $quiz['title'] ?? 'Living and non-living things Quiz 1' }}</h2>
+            <h2 class="quiz-title">{{ $quiz['title'] ?? 'Introduction to Computer Hardware' }}</h2>
             
             <div class="timer-container">
-                <div class="timer" id="timer">2:59</div>
+                <div class="timer" id="timer">14:56</div>
             </div>
             
             <div class="questions-section">
@@ -631,12 +679,17 @@
         <!-- Right Content -->
         <div class="quiz-content">
             <div class="question-header">
-                <span class="question-label" id="questionLabel">Question 1</span>
+                <span class="question-label" id="questionLabel">Question 1 of 5</span>
                 <span class="answer-instruction">Select your answer</span>
             </div>
             
+            <!-- Image Container - Only shown when question has image -->
+            <div class="question-image-container" id="questionImageContainer" style="display: none;">
+                <img id="questionImage" class="question-image" src="" alt="Question Image">
+            </div>
+            
             <div class="question-text" id="questionText">
-                <!-- Question text will be populated by JavaScript -->
+                Identify the component highlighted in the image above.
             </div>
             
             <div class="options-container" id="optionsContainer">
@@ -674,6 +727,71 @@
         </div>
     </div>
 
+    @php
+        $defaultQuestions = [
+            [
+                'id' => 1,
+                'question' => 'Identify the component highlighted in the image above.',
+                'image' => secure_asset('images/computer-hardware-cpu.png'),
+                'options' => [
+                    'Central Processing Unit (CPU)',
+                    'Random Access Memory (RAM)',
+                    'Graphics Processing Unit (GPU)',
+                    'Power Supply Unit (PSU)'
+                ],
+                'correct_answer' => 0
+            ],
+            [
+                'id' => 2,
+                'question' => 'What is the main function of RAM in a computer system?',
+                'image' => null,
+                'options' => [
+                    'Permanent storage of files',
+                    'Temporary data storage for active processes',
+                    'Processing graphics and videos',
+                    'Power distribution to components'
+                ],
+                'correct_answer' => 1
+            ],
+            [
+                'id' => 3,
+                'question' => 'Which component is shown in this image?',
+                'image' => secure_asset('images/computer-hardware-gpu.png'),
+                'options' => [
+                    'Motherboard',
+                    'Hard Disk Drive',
+                    'Graphics Card',
+                    'Network Interface Card'
+                ],
+                'correct_answer' => 2
+            ],
+            [
+                'id' => 4,
+                'question' => 'What does this component do?',
+                'image' => secure_asset('images/computer-hardware-psu.png'),
+                'options' => [
+                    'Processes audio signals',
+                    'Converts AC to DC power',
+                    'Manages network connections',
+                    'Cools the system components'
+                ],
+                'correct_answer' => 1
+            ],
+            [
+                'id' => 5,
+                'question' => 'Which component connects all other components together?',
+                'image' => secure_asset('images/computer-hardware-motherboard.png'),
+                'options' => [
+                    'Power Supply',
+                    'Motherboard',
+                    'CPU',
+                    'Case'
+                ],
+                'correct_answer' => 1
+            ]
+        ];
+    @endphp
+
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         // Quiz data and state
         let currentQuestion = 0;
@@ -682,7 +800,8 @@
         let answers = {};
         let timerInterval;
 
-        const questions = @json($quiz['questions'] ?? []);
+        // Updated questions array to include images
+        const questions = @json($quiz['questions'] ?? $defaultQuestions);
 
         document.addEventListener('DOMContentLoaded', function() {
             initializeQuiz();
@@ -725,9 +844,27 @@
             const question = questions[currentQuestion];
             console.log('Rendering question:', question);
 
-            document.getElementById('questionLabel').textContent = `Question ${currentQuestion + 1}`;
+            // Update question label
+            document.getElementById('questionLabel').textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
+            
+            // Handle question image
+            const imageContainer = document.getElementById('questionImageContainer');
+            const questionImage = document.getElementById('questionImage');
+
+            if (question && question.image) {
+                // Show image container and set image source
+                imageContainer.style.display = 'block';
+                questionImage.src = question.image;
+                questionImage.alt = `Question ${currentQuestion + 1} Image`;
+            } else {
+                // Hide image container if no image
+                imageContainer.style.display = 'none';
+            }
+
+            // Set question text
             document.getElementById('questionText').textContent = question ? question.question : 'Question not available';
 
+            // Render options
             const optionsContainer = document.getElementById('optionsContainer');
             optionsContainer.innerHTML = '';
 
@@ -758,7 +895,7 @@
             answers[currentQuestion] = optionIndex;
             renderCurrentQuestion();
             renderQuestionsGrid();
-            updateNavigationButtons(); // Update button states when answer is selected
+            updateNavigationButtons();
         }
 
         function goToQuestion(questionIndex) {
@@ -783,6 +920,9 @@
                 renderCurrentQuestion();
                 renderQuestionsGrid();
                 updateNavigationButtons();
+            } else {
+                // If on last question, show submit modal
+                submitQuiz();
             }
         }
 
@@ -801,7 +941,7 @@
             if (currentQuestion === questions.length - 1) {
                 nextBtn.textContent = 'Finish';
                 nextBtn.onclick = submitQuiz;
-                nextBtn.disabled = false; // Allow finishing even if timer is running
+                nextBtn.disabled = false;
             } else {
                 nextBtn.innerHTML = `
                     Next
@@ -822,6 +962,9 @@
         function startTimer() {
             const timerElement = document.getElementById('timer');
             
+            // Set initial time (14:56 as shown in screenshot)
+            timeRemaining = 14 * 60 + 56; // 14 minutes 56 seconds
+            
             timerInterval = setInterval(() => {
                 timeRemaining--;
                 
@@ -831,9 +974,9 @@
                 timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
                 
                 // Change timer color based on time remaining
-                if (timeRemaining <= 30) {
+                if (timeRemaining <= 60) { // 1 minute or less
                     timerElement.className = 'timer danger';
-                } else if (timeRemaining <= 60) {
+                } else if (timeRemaining <= 180) { // 3 minutes or less
                     timerElement.className = 'timer warning';
                 }
                 
@@ -876,17 +1019,17 @@
 
             // Submit the quiz
             console.log('Starting quiz submission...');
-            console.log('Submitting to:', `/quiz/{{ $quiz['id'] }}/submit`);
+            console.log('Submitting to:', `/quiz/{{ $quiz['id'] ?? '1' }}/submit`);
             console.log('Form data:', {
                 answers: answers,
-                time_spent: (timeLimitMinutes * 60) - timeRemaining
+                time_spent: (14 * 60 + 56) - timeRemaining
             });
 
             // Create a form element and submit it normally
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = `/quiz/{{ $quiz['id'] }}/submit`;
-            form.setAttribute('data-quiz-form', 'true'); // Add the data attribute for anti-cheat detection
+            form.action = `/quiz/{{ $quiz['id'] ?? '1' }}/submit`;
+            form.setAttribute('data-quiz-form', 'true');
 
             // Add hidden inputs for the data
             const answersInput = document.createElement('input');
@@ -898,7 +1041,7 @@
             const timeSpentInput = document.createElement('input');
             timeSpentInput.type = 'hidden';
             timeSpentInput.name = 'time_spent';
-            timeSpentInput.value = (timeLimitMinutes * 60) - timeRemaining;
+            timeSpentInput.value = (14 * 60 + 56) - timeRemaining;
             form.appendChild(timeSpentInput);
 
             // Add CSRF token
@@ -942,6 +1085,9 @@
                 nextQuestion();
             } else if (e.key >= '1' && e.key <= '4') {
                 const optionIndex = parseInt(e.key) - 1;
+                selectOption(optionIndex);
+            } else if (e.key >= 'a' && e.key <= 'd') {
+                const optionIndex = e.key.charCodeAt(0) - 97; // 'a' = 0, 'b' = 1, etc.
                 selectOption(optionIndex);
             }
         });
