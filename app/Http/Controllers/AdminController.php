@@ -4183,6 +4183,11 @@ class AdminController extends Controller
 
             $quiz = Quiz::create($quizDataToCreate);
 
+            // Handle quiz image uploads
+            if ($request->hasFile('question_images')) {
+                $this->saveQuizImages($quizData, $request, $quiz->id);
+            }
+
             // Update video's quiz_id for consistency
             $video->quiz_id = $quiz->id;
             $video->save();
@@ -4207,6 +4212,149 @@ class AdminController extends Controller
             ]);
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Process quiz images - convert base64 to files or handle file uploads
+     */
+    private function processQuizImages(array $quizData, Request $request): array
+    {
+        // Create directory for quiz images
+        $quizImagesDir = 'quiz_images/' . date('Y/m');
+        Storage::disk('public')->makeDirectory($quizImagesDir);
+
+        // Process each question
+        foreach ($quizData['questions'] as &$question) {
+            // Handle question image
+            if (!empty($question['image']) && strpos($question['image'], 'data:image') === 0) {
+                // Base64 image - convert to file
+                $question['image'] = $this->saveBase64Image($question['image'], $quizImagesDir);
+            }
+
+            // Process options images
+            if (!empty($question['options'])) {
+                foreach ($question['options'] as &$option) {
+                    if (!empty($option['image']) && strpos($option['image'], 'data:image') === 0) {
+                        // Base64 image - convert to file
+                        $option['image'] = $this->saveBase64Image($option['image'], $quizImagesDir);
+                    }
+                }
+            }
+        }
+
+        return $quizData;
+    }
+
+    /**
+     * Save quiz images uploaded with the quiz
+     */
+    private function saveQuizImages(array $quizData, Request $request, $quizId)
+    {
+        $uploadedImages = [];
+
+        if ($request->hasFile('question_images')) {
+            foreach ($request->file('question_images') as $index => $imageFile) {
+                if ($imageFile && $imageFile->isValid()) {
+                    // Store in quiz_images/{quiz_id} directory
+                    $path = $imageFile->storeAs(
+                        "quiz_images/{$quizId}",
+                        "{$index}." . $imageFile->getClientOriginalExtension(),
+                        'public'
+                    );
+
+                    $uploadedImages[$index] = $path;
+
+                    Log::info('Quiz image saved', [
+                        'quiz_id' => $quizId,
+                        'image_index' => $index,
+                        'file_path' => $path
+                    ]);
+                }
+            }
+        }
+
+        return $uploadedImages;
+    }
+
+    /**
+     * Process uploaded quiz image files
+     */
+    private function processQuizImageFiles(array $quizData, Request $request): array
+    {
+        // Create directory for quiz images
+        $quizImagesDir = 'quiz_images/' . date('Y/m');
+        Storage::disk('public')->makeDirectory($quizImagesDir);
+
+        // Get all uploaded question images
+        $questionImages = $request->file('question_images', []);
+
+        // Process each question
+        foreach ($quizData['questions'] as &$question) {
+            // Handle uploaded question image
+            if (!empty($question['has_image']) && isset($question['image_index'])) {
+                $imageIndex = $question['image_index'];
+
+                if (isset($questionImages[$imageIndex]) && $questionImages[$imageIndex]->isValid()) {
+                    $imageFile = $questionImages[$imageIndex];
+                    $filename = uniqid() . '_' . time() . '.' . $imageFile->getClientOriginalExtension();
+                    $filePath = $imageFile->storeAs($quizImagesDir, $filename, 'public');
+
+                    // Update question with the image URL
+                    $question['image'] = asset('storage/' . $filePath);
+
+                    // Remove the has_image and image_index as they're no longer needed
+                    unset($question['has_image']);
+                    unset($question['image_index']);
+
+                    Log::info('Quiz image processed', [
+                        'question_id' => $question['id'],
+                        'image_index' => $imageIndex,
+                        'file_path' => $filePath,
+                        'image_url' => $question['image']
+                    ]);
+                } else {
+                    Log::warning('Quiz image file not found or invalid', [
+                        'question_id' => $question['id'],
+                        'image_index' => $imageIndex,
+                        'available_files' => array_keys($questionImages)
+                    ]);
+                }
+            }
+
+            // Process options images (if any)
+            if (!empty($question['options'])) {
+                foreach ($question['options'] as &$option) {
+                    // Handle uploaded option images if needed
+                    // (Currently not implemented in frontend, but structure is ready)
+                }
+            }
+        }
+
+        return $quizData;
+    }
+
+    /**
+     * Save base64 image to file
+     */
+    private function saveBase64Image(string $base64Image, string $directory): string
+    {
+        $imageData = explode(',', $base64Image);
+        $imageInfo = explode(';', $imageData[0]);
+        $mimeType = explode(':', $imageInfo[0])[1];
+        $extension = explode('/', $mimeType)[1];
+
+        // Decode base64 image
+        $imageContent = base64_decode($imageData[1]);
+
+        // Generate unique filename
+        $filename = uniqid() . '_' . time() . '.' . $extension;
+        $filePath = $directory . '/' . $filename;
+
+        // Save to storage
+        Storage::disk('public')->put($filePath, $imageContent);
+
+        // Return the public URL
+        return asset('storage/' . $filePath);
     }
 
     /**

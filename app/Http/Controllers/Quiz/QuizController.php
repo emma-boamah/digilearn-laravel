@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use \App\Models\Quiz;
 
 class QuizController extends Controller
@@ -652,6 +653,19 @@ class QuizController extends Controller
                     'questions_count' => $quizData && isset($quizData['questions']) ? count($quizData['questions']) : 0
                 ]);
 
+                // Process questions to add image URLs
+                $processedQuestions = [];
+                if ($quizData && isset($quizData['questions'])) {
+                    foreach ($quizData['questions'] as $question) {
+                        // Check if question has an image
+                        if (isset($question['has_image']) && $question['has_image'] && isset($question['image_index'])) {
+                            // Construct image URL based on quiz ID and image index
+                            $question['image'] = $this->getQuizImageUrl($quiz->id, $question['image_index']);
+                        }
+                        $processedQuestions[] = $question;
+                    }
+                }
+
                 // Get time limit from quiz_data JSON if available, otherwise use database field
                 $timeLimitMinutes = $quizData && isset($quizData['time_limit_minutes']) ? $quizData['time_limit_minutes'] : $quiz->time_limit_minutes;
 
@@ -668,8 +682,8 @@ class QuizController extends Controller
                     'grade_level' => $quiz->grade_level,
                     'duration' => $formattedDuration, // Use actual formatted duration
                     'time_limit_minutes' => $timeLimitMinutes,
-                    'questions_count' => $quizData && isset($quizData['questions']) ? count($quizData['questions']) : 0,
-                    'questions' => $quizData && isset($quizData['questions']) ? $quizData['questions'] : [],
+                    'questions_count' => count($processedQuestions),
+                    'questions' => $processedQuestions,
                     'difficulty' => $difficultyLevel,
                     'uploader' => $quiz->uploader,
                 ];
@@ -1021,6 +1035,24 @@ class QuizController extends Controller
             'message' => 'Rating submitted successfully',
             'rating' => $rating,
         ]);
+    }
+
+    /**
+     * Get quiz image URL based on quiz ID and image index
+     */
+    private function getQuizImageUrl($quizId, $imageIndex)
+    {
+        // Check for different extensions
+        $extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+        foreach ($extensions as $ext) {
+            $path = "quiz_images/{$quizId}/{$imageIndex}.{$ext}";
+            if (Storage::disk('public')->exists($path)) {
+                return asset('storage/' . $path);
+            }
+        }
+
+        return null; // Image not found
     }
 
     /**

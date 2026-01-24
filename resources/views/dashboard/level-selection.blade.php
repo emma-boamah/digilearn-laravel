@@ -196,7 +196,7 @@
         }
 
         .level-group-card.explore-more {
-            border: 2px solid #3b82f6; /* Blue border for additional content */
+            border: 2px solid #b6cff7ff; /* Blue border for additional content */
             background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
             position: relative;
         }

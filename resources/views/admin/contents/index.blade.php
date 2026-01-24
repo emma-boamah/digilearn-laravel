@@ -1139,7 +1139,7 @@
                             <!-- Time Limit -->
                             <div>
                                 <label for="quiz_time_limit" class="block text-sm font-medium text-gray-700 mb-2">Time Limit (minutes)</label>
-                                <input type="number" id="quiz_time_limit" min="1" max="300" value="15"
+                                <input type="number" id="quiz_time_limit" min="0" max="300" value="15"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <p class="text-xs text-gray-500 mt-1">Set to 0 for no time limit</p>
                             </div>
@@ -2298,12 +2298,16 @@
             const timeLimitInput = document.getElementById('quiz_time_limit');
 
             if (difficultySelect) {
+                // Set initial value
+                uploadData.quiz.difficulty_level = difficultySelect.value;
                 difficultySelect.addEventListener('change', (e) => {
                     uploadData.quiz.difficulty_level = e.target.value;
                 });
             }
 
             if (timeLimitInput) {
+                // Set initial value
+                uploadData.quiz.time_limit_minutes = parseInt(timeLimitInput.value) || 15;
                 timeLimitInput.addEventListener('input', (e) => {
                     uploadData.quiz.time_limit_minutes = parseInt(e.target.value) || 15;
                 });
@@ -2324,13 +2328,80 @@
                 question: '',
                 options: type === 'mcq' ? ['', '', '', ''] : null,
                 correct_answer: type === 'mcq' ? 0 : '',
-                points: 1
+                points: 1,
+                image: null,
+                imageFile: null
             };
 
             uploadData.quiz.questions.push(question);
 
             const questionElement = createQuestionElement(question);
             questionsList.appendChild(questionElement);
+        }
+
+        function setupQuestionImageUpload(questionElement, question) {
+            const uploadArea = questionElement.querySelector('.question-image-upload-area');
+            const fileInput = questionElement.querySelector('.question-image-input');
+            const uploadDiv = questionElement.querySelector(`#questionImageUpload_${question.id}`);
+            const previewDiv = questionElement.querySelector(`#questionImagePreview_${question.id}`);
+            const previewImg = previewDiv ? previewDiv.querySelector('.question-preview-img') : null;
+            const removeImageBtn = previewDiv ? previewDiv.querySelector('.remove-question-image') : null;
+
+            // Handle image upload
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Validate file size (5MB max)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Image size must be less than 5MB');
+                    return;
+                }
+
+                // Validate file type
+                const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+                if (!validTypes.includes(file.type)) {
+                    alert('Please upload a PNG, JPG, or WEBP image');
+                    return;
+                }
+
+                // Create object URL for preview
+                const objectUrl = URL.createObjectURL(file);
+
+                // Update question data
+                question.imageFile = file;
+                question.image = objectUrl; // Store object URL for preview
+
+                // Update UI
+                if (previewImg) previewImg.src = objectUrl;
+                uploadDiv.classList.add('hidden');
+                previewDiv.classList.remove('hidden');
+            });
+
+            // Handle image removal
+            if (removeImageBtn) {
+                removeImageBtn.addEventListener('click', () => {
+                    // Clean up object URL
+                    if (question.image && question.image.startsWith('blob:')) {
+                        URL.revokeObjectURL(question.image);
+                    }
+
+                    // Update question data
+                    question.imageFile = null;
+                    question.image = null;
+
+                    // Clear file input
+                    fileInput.value = '';
+
+                    // Update UI
+                    uploadDiv.classList.remove('hidden');
+                    previewDiv.classList.add('hidden');
+                });
+            }
         }
 
         function createQuestionElement(question) {
@@ -2340,58 +2411,134 @@
 
             if (question.type === 'mcq') {
                 div.innerHTML = `
-                    <div class="flex justify-between items-center mb-3">
+                    <div class="flex justify-between items-center mb-4">
                         <h4 class="font-medium text-gray-900">Multiple Choice Question</h4>
                         <button type="button" class="text-red-600 hover:text-red-800 remove-question">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
-                    <div class="mb-3">
-                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg question-text"
+
+                    <!-- Image Upload Section -->
+                    <div class="mb-4 question-image-section">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Add Question Image (Optional)</label>
+                        <div class="space-y-4">
+                            <!-- Image Upload Button -->
+                            <div id="questionImageUpload_${question.id}" class="question-image-upload ${question.image ? 'hidden' : ''}">
+                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer bg-gray-50 question-image-upload-area">
+                                    <i class="fas fa-image text-3xl text-gray-400 mb-3"></i>
+                                    <p class="text-gray-600 font-medium mb-1">Click to upload image</p>
+                                    <p class="text-sm text-gray-500">PNG, JPG, or WEBP up to 5MB</p>
+                                    <input type="file" class="hidden question-image-input" accept=".png,.jpg,.jpeg,.webp">
+                                </div>
+                            </div>
+
+                            <!-- Image Preview -->
+                            <div id="questionImagePreview_${question.id}" class="question-image-preview ${question.image ? '' : 'hidden'}">
+                                <div class="relative border border-gray-200 rounded-lg overflow-hidden bg-gray-100">
+                                    <img src="${question.image || ''}" alt="Question image" class="w-full h-auto max-h-48 object-contain question-preview-img">
+                                    <div class="absolute top-2 right-2 flex space-x-2">
+                                        <button type="button" class="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 remove-question-image" title="Remove image">
+                                            <i class="fas fa-trash text-red-600 text-sm"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1 text-center">Click the trash icon to remove the image</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Question Text -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Question</label>
+                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg question-text focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Enter your question..." value="${question.question}">
                     </div>
-                    <div class="space-y-2 mb-3">
+
+                    <!-- Options -->
+                    <div class="space-y-3 mb-4">
                         ${question.options.map((option, index) => `
-                            <div class="flex items-center">
+                            <div class="flex items-center space-x-3">
                                 <input type="radio" name="correct_${question.id}" value="${index}"
-                                    class="mr-2 correct-answer" ${question.correct_answer === index ? 'checked' : ''}>
-                                <input type="text" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg option-text"
-                                    placeholder="Option ${index + 1}" value="${option}">
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 correct-answer" ${question.correct_answer === index ? 'checked' : ''}>
+                                <input type="text" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg option-text focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Option ${String.fromCharCode(65 + index)}" value="${option}">
                             </div>
                         `).join('')}
                     </div>
-                    <div class="flex items-center">
-                        <label class="mr-2 text-sm text-gray-600">Points:</label>
-                        <input type="number" class="w-20 px-2 py-1 border border-gray-300 rounded question-points"
-                            value="${question.points}" min="1">
+
+                    <!-- Points -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <label class="mr-2 text-sm font-medium text-gray-700">Points:</label>
+                            <input type="number" class="w-20 px-2 py-1 border border-gray-300 rounded question-points focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value="${question.points}" min="1" max="10">
+                        </div>
                     </div>
                 `;
             } else {
                 div.innerHTML = `
-                    <div class="flex justify-between items-center mb-3">
+                    <div class="flex justify-between items-center mb-4">
                         <h4 class="font-medium text-gray-900">Essay Question</h4>
                         <button type="button" class="text-red-600 hover:text-red-800 remove-question">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
-                    <div class="mb-3">
-                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg question-text"
+
+                    <!-- Image Upload Section -->
+                    <div class="mb-4 question-image-section">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Add Question Image (Optional)</label>
+                        <div class="space-y-4">
+                            <!-- Image Upload Button -->
+                            <div id="questionImageUpload_${question.id}" class="question-image-upload ${question.image ? 'hidden' : ''}">
+                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer bg-gray-50 question-image-upload-area">
+                                    <i class="fas fa-image text-3xl text-gray-400 mb-3"></i>
+                                    <p class="text-gray-600 font-medium mb-1">Click to upload image</p>
+                                    <p class="text-sm text-gray-500">PNG, JPG, or WEBP up to 5MB</p>
+                                    <input type="file" class="hidden question-image-input" accept=".png,.jpg,.jpeg,.webp">
+                                </div>
+                            </div>
+
+                            <!-- Image Preview -->
+                            <div id="questionImagePreview_${question.id}" class="question-image-preview ${question.image ? '' : 'hidden'}">
+                                <div class="relative border border-gray-200 rounded-lg overflow-hidden bg-gray-100">
+                                    <img src="${question.image || ''}" alt="Question image" class="w-full h-auto max-h-48 object-contain question-preview-img">
+                                    <div class="absolute top-2 right-2 flex space-x-2">
+                                        <button type="button" class="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 remove-question-image" title="Remove image">
+                                            <i class="fas fa-trash text-red-600 text-sm"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1 text-center">Click the trash icon to remove the image</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Question Text -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Question</label>
+                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg question-text focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Enter your essay question..." value="${question.question}">
                     </div>
-                    <div class="mb-3">
-                        <label class="block text-sm text-gray-600 mb-1">Sample Answer (for reference)</label>
-                        <textarea class="w-full px-3 py-2 border border-gray-300 rounded-lg correct-answer"
-                                rows="3" placeholder="Enter sample answer...">${question.correct_answer}</textarea>
+
+                    <!-- Sample Answer -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Sample Answer (for reference)</label>
+                        <textarea class="w-full px-3 py-2 border border-gray-300 rounded-lg correct-answer focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3"
+                            placeholder="Enter sample answer...">${question.correct_answer}</textarea>
                     </div>
-                    <div class="flex items-center">
-                        <label class="mr-2 text-sm text-gray-600">Points:</label>
-                        <input type="number" class="w-20 px-2 py-1 border border-gray-300 rounded question-points"
-                            value="${question.points}" min="1">
+
+                    <!-- Points -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <label class="mr-2 text-sm font-medium text-gray-700">Points:</label>
+                            <input type="number" class="w-20 px-2 py-1 border border-gray-300 rounded question-points focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value="${question.points}" min="1" max="10">
+                        </div>
                     </div>
                 `;
             }
 
-            // Add event listeners
+            // Add existing event listeners (remove question, text changes, etc.)
             const removeBtn = div.querySelector('.remove-question');
             const questionText = div.querySelector('.question-text');
             const questionPoints = div.querySelector('.question-points');
@@ -2414,6 +2561,9 @@
                     question.points = parseInt(e.target.value) || 1;
                 });
             }
+
+            // Add image upload functionality
+            setupQuestionImageUpload(div, question);
 
             if (question.type === 'mcq') {
                 const optionTexts = div.querySelectorAll('.option-text');
@@ -3219,15 +3369,50 @@
                 formData.append('_token', '{{ csrf_token() }}');
                 formData.append('video_id', window.uploadedVideoId || '');
 
+                // Create quiz data structure
                 const quizData = {
-                    questions: finalData.quiz.questions,
+                    questions: [],
                     difficulty_level: finalData.quiz.difficulty_level,
                     time_limit_minutes: finalData.quiz.time_limit_minutes
                 };
 
+                // Process each question
+                let questionIndex = 0;
+                for (const question of finalData.quiz.questions) {
+                    const questionData = {
+                        id: question.id,
+                        type: question.type,
+                        question: question.question,
+                        points: question.points
+                    };
+
+                    if (question.type === 'mcq') {
+                        questionData.options = question.options;
+                        questionData.correct_answer = question.correct_answer;
+                    } else {
+                        questionData.correct_answer = question.correct_answer;
+                    }
+
+                    // Add question image if exists
+                    if (question.imageFile) {
+                        formData.append(`question_images[${questionIndex}]`, question.imageFile);
+                        questionData.has_image = true;
+                        questionData.image_index = questionIndex;
+                    } else {
+                        questionData.has_image = false;
+                    }
+
+                    quizData.questions.push(questionData);
+                    questionIndex++;
+                }
+
+                // Use the values from finalData.quiz for the separate fields
+                const difficultyLevel = finalData.quiz.difficulty_level || 'medium';
+                const timeLimitMinutes = finalData.quiz.time_limit_minutes || 15;
+
                 formData.append('quiz_data', JSON.stringify(quizData));
-                formData.append('difficulty_level', finalData.quiz.difficulty_level);
-                formData.append('time_limit_minutes', finalData.quiz.time_limit_minutes);
+                formData.append('difficulty_level', difficultyLevel);
+                formData.append('time_limit_minutes', timeLimitMinutes);
 
                 updateProgress('quiz', 50, 'Sending quiz to server...', false, {
                     speed: 0
