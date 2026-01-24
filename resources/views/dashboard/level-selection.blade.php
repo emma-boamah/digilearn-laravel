@@ -56,9 +56,12 @@
                     @php
                         $hasAccess = $accessInfo[$level['id']] ?? false;
                     @endphp
-                    <div class="level-group-card {{ $hasAccess ? '' : 'disabled' }}">
+                    <div class="level-group-card {{ $hasAccess ? 'accessible' : 'upgrade-needed' }}">
                         <div class="level-header">
                             <h3 class="level-title">{{ $level['title'] }}</h3>
+                            @if(!$hasAccess)
+                                <div class="premium-badge">Premium</div>
+                            @endif
                         </div>
                         <div class="level-image-container">
                             @if($level['id'] === 'jhs')
@@ -88,11 +91,13 @@
                                 </button>
                             </form>
                         @else
-                            <div class="upgrade-required">
-                                <button type="button" class="upgrade-btn" onclick="redirectToPricing()">
-                                    Upgrade Required
-                                </button>
-                            </div>
+                            <!-- Allow clicking but redirect to pricing -->
+                            <button type="button" class="upgrade-btn upgrade-trigger" data-level-title="{{ $level['title'] }}" data-level-id="{{ $level['id'] }}">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 0.5rem;">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                </svg>
+                                Upgrade to Access
+                            </button>
                         @endif
                     </div>
                 @endforeach
@@ -193,18 +198,40 @@
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         }
 
-        .level-group-card.disabled {
-            opacity: 0.6;
-            filter: grayscale(50%);
-            cursor: not-allowed;
+        .level-group-card.upgrade-needed {
+            border: 2px solid #fbbf24; /* Yellow border for premium content */
+            background: linear-gradient(135deg, #fef3c7 0%, #ffffff 100%);
+            position: relative;
         }
 
-        .level-group-card.disabled .level-title {
-            color: #9ca3af;
+        .level-group-card.upgrade-needed:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(251, 191, 36, 0.3);
+            border-color: #f59e0b;
         }
 
-        .level-group-card.disabled .level-description {
-            color: #9ca3af;
+        .level-group-card.accessible {
+            border: 2px solid #eaf4faff; /* Green border for accessible content */
+        }
+
+        .level-group-card.accessible:hover {
+            border-color: #dceef8ff;
+        }
+
+        .premium-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            z-index: 10;
         }
 
         .level-header {
@@ -367,10 +394,52 @@
         } else {
             console.log('No back button found');
         }
+
+        // Handle upgrade triggers
+        const upgradeTriggers = document.querySelectorAll('.upgrade-trigger');
+        upgradeTriggers.forEach(trigger => {
+            trigger.addEventListener('click', function() {
+                const levelTitle = this.getAttribute('data-level-title');
+                const levelId = this.getAttribute('data-level-id');
+                handleUpgradeRequired(levelTitle, levelId);
+            });
+        });
     });
 
     function redirectToPricing() {
         window.location.href = '{{ route("pricing") }}';
+    }
+
+    function handleUpgradeRequired(levelTitle, levelId) {
+        // Find the button that was clicked
+        const button = event.target.closest('.upgrade-trigger');
+        const originalText = button.innerHTML;
+
+        // Show loading state
+        button.innerHTML = '<svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 0.5rem;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Redirecting...';
+        button.disabled = true;
+
+        // Add a subtle animation
+        button.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            button.style.transform = 'scale(1)';
+        }, 100);
+
+        // Log the upgrade attempt
+        console.log('User attempting to access premium level:', levelTitle, 'ID:', levelId);
+
+        // Track this interaction (could send to analytics)
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'upgrade_prompt_shown', {
+                level_title: levelTitle,
+                level_id: levelId
+            });
+        }
+
+        // Redirect to pricing after a brief delay
+        setTimeout(() => {
+            window.location.href = '{{ route("pricing") }}';
+        }, 800);
     }
 </script>
 @endpush
