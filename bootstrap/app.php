@@ -27,20 +27,20 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
 
-        // Web middleware group
-        $middleware->web(append: [
-            // Add web-specific middleware here if needed
-            ShareErrorsFromSession::class,
-            CookieConsentMiddleware::class,
-            CheckSuspended::class,
-        ]);
-        // Global middleware (applies to all requests)
+        // Global middleware (applies to all requests) - Order matters!
         $middleware->append(RealIpMiddleware::class);
-        $middleware->append(StartSession::class);
         $middleware->append(SecurityHeaders::class);
         $middleware->append(CheckWebsiteLock::class);
         $middleware->append(TrackUsersActivity::class);
         $middleware->append(HandleJsonRequestErrors::class);
+
+        // Web middleware group
+        $middleware->web(append: [
+            // ShareErrorsFromSession must come AFTER StartSession
+            ShareErrorsFromSession::class,
+            CookieConsentMiddleware::class,
+            CheckSuspended::class,
+        ]);
         
         // API middleware group
         $middleware->api(append: [
