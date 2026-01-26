@@ -425,10 +425,15 @@
             display: flex;
             align-items: center;
             gap: 6px;
+            padding: 0.5rem 0.75rem;
+            background-color: rgba(220, 38, 38, 0.05);
+            border-radius: 6px;
+            border-left: 3px solid var(--accent);
         }
         
         .error-message i {
             font-size: 1rem;
+            flex-shrink: 0;
         }
         
         .rate-limit-error {
@@ -456,6 +461,10 @@
         
         .rate-limit-message strong {
             font-weight: 600;
+        }
+
+        .rate-limit-message p {
+            margin: 0.5rem 0 0 0;
         }
         
         @media (max-width: 900px) {
@@ -550,6 +559,25 @@
                 <form method="POST" action="{{ route('login.submit') }}">
                     @csrf
                     
+                    {{-- Display non-field-specific errors (e.g., rate limit, account locked) --}}
+                    @if ($errors->has('rate_limit'))
+                        <div class="rate-limit-error">
+                            <svg class="rate-limit-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div class="rate-limit-message">
+                                <strong>Too many attempts</strong>
+                                <p>{{ $errors->first('rate_limit') }}</p>
+                            </div>
+                        </div>
+                    @endif
+                    
+
+                    
+
+                    
+
+                    
                     <div class="form-group">
                         <label for="email">Email</label>
                         <div class="input-group">
@@ -565,12 +593,12 @@
                                 class="{{ $errors->has('email') ? 'error' : '' }}"
                             >
                         </div>
-                        @error('email')
+                        @if ($errors->has('email'))
                         <div class="error-message">
                             <i class="fas fa-exclamation-circle"></i>
-                            <span>{{ $message }}</span>
+                            <span>{{ $errors->first('email') }}</span>
                         </div>
-                        @enderror
+                        @endif
                     </div>
                     
                     <div class="form-group">
@@ -590,12 +618,12 @@
                                 <i class="far fa-eye" id="toggleIcon"></i>
                             </button>
                         </div>
-                        @error('password')
+                        @if ($errors->has('password'))
                         <div class="error-message">
                             <i class="fas fa-exclamation-circle"></i>
-                            <span>{{ $message }}</span>
+                            <span>{{ $errors->first('password') }}</span>
                         </div>
-                        @enderror
+                        @endif
                     </div>
                     
                     <div class="options">
@@ -603,7 +631,7 @@
                             <input type="checkbox" id="remember" name="remember" {{ old('remember') ? 'checked' : '' }}>
                             <label for="remember">Remember me</label>
                         </div>
-                        <a href="#" class="forgot-password">Forgot password?</a>
+                        <a href="{{ route('password.request') }}" class="forgot-password">Forgot password?</a>
                     </div>
                     
                     <button type="submit" class="btn" id="loginBtn">Log In</button>

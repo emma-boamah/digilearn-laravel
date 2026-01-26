@@ -89,6 +89,14 @@ Route::get('auth/google/callback/route', [GoogleController::class, 'handleGoogle
     ->middleware('throttle.redirect:'.config('services.google.rate_limit', 5).',1')
     ->name('auth.google.callback');
 
+// Forgot Password Routes
+Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
+Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])
+    ->middleware('throttle:5,60') // 5 attempts per hour
+    ->name('password.email');
+Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
+
 /*
 |--------------------------------------------------------------------------
 | Form Submission Routes (Rate Limited)

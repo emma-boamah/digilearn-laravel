@@ -24,6 +24,11 @@ use Carbon\Carbon;
 use App\Services\EmailVerificationService;
 use App\Services\UserActivityService;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
+use App\Mail\ResetPasswordMail;
+use App\Mail\GoogleAccountInfoMail;
+use App\Mail\PasswordChangedMail;
 
 class AuthController extends Controller
 {
@@ -108,7 +113,7 @@ class AuthController extends Controller
                 Log::channel('security')->info('recovery_code_used', [
                     'user_id' => $user->id,
                     'code' => $request->recovery_code,
-                    'ip' => get_client_ip()
+                    'ip' => $request->ip(),
                 ]);
                 // Delete the recovery code after successful use
                 $recoveryCode->delete();
@@ -182,7 +187,7 @@ class AuthController extends Controller
         if (RateLimiter::tooManyAttempts($key, self::MAX_LOGIN_ATTEMPTS)) {
             $seconds = RateLimiter::availableIn($key);
             $this->logAuthEvent('login_rate_limit_exceeded', self::ERROR_CATEGORIES['RATE_LIMIT'], $request, [
-                'ip' => get_client_ip(),
+                'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
                 'lockout_seconds' => $seconds
             ]);
@@ -200,13 +205,13 @@ class AuthController extends Controller
             $seconds = RateLimiter::availableIn($key);
 
             $this->logAuthEvent('rate_limit_exceeded', self::ERROR_CATEGORIES['RATE_LIMIT'], $request, [
-                'ip' => get_client_ip(),
+                'ip' => $request->ip(),
                 'email' => $request->input('email'),
                 'lockout_seconds' => $seconds,
                 'attempts' => RateLimiter::attempts($key)
             ]);
 
-            return back()->withErrors([
+            return redirect()->route('login')->withErrors([
                 'rate_limit' => "Too many login attempts. Please try again in " . ceil($seconds / 60) . " minutes.",
             ])->withInput($request->except('password'));
         }
@@ -216,8 +221,7 @@ class AuthController extends Controller
             'email' => [
                 'required',
                 'email:rfc,dns',
-                'max:255',
-                'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/'
+                'max:255'
             ],
             'password' => [
                 'required',
@@ -226,9 +230,12 @@ class AuthController extends Controller
                 'max:255'
             ],
         ], [
+            'email.required' => 'Please enter your email address.',
             'email.email' => 'Please enter a valid email address.',
-            'email.regex' => 'The email format is invalid.',
+            'email.max' => 'Email address is too long.',
+            'password.required' => 'Please enter your password.',
             'password.min' => 'Password must be at least 8 characters.',
+            'password.max' => 'Password is too long.',
         ]);
 
         if ($validator->fails()) {
@@ -237,10 +244,10 @@ class AuthController extends Controller
             $this->logAuthEvent('validation_failed', self::ERROR_CATEGORIES['VALIDATION'], $request, [
                 'errors' => $validator->errors()->toArray(),
                 'email' => $request->input('email'),
-                'ip' => get_client_ip()
+                'ip' => $request->ip()
             ]);
 
-            return back()->withErrors($validator)->withInput($request->except('password'));
+            return redirect()->route('login')->withErrors($validator)->withInput($request->except('password'));
         }
 
         $credentials = $validator->validated();
@@ -254,10 +261,10 @@ class AuthController extends Controller
 
             $this->logAuthEvent('user_not_found', self::ERROR_CATEGORIES['INVALID_CREDENTIALS'], $request, [
                 'email' => $credentials['email'],
-                'ip' => get_client_ip()
+                'ip' => $request->ip()
             ]);
 
-            return back()->withErrors([
+            return redirect()->route('login')->withErrors([
                 'email' => 'No account found with this email address.',
             ])->withInput($request->except('password'));
         }
@@ -271,7 +278,7 @@ class AuthController extends Controller
                 'failed_attempts' => $user->failed_login_attempts
             ]);
 
-            return back()->withErrors([
+            return redirect()->route('login')->withErrors([
                 'email' => 'Your account has been temporarily locked due to too many failed attempts. Please try again later or reset your password.',
             ])->withInput($request->except('password'));
         }
@@ -304,7 +311,7 @@ class AuthController extends Controller
                 'failed_login_attempts' => 0,
                 'locked_until' => null,
                 'last_login_at' => Carbon::now(),
-                'last_login_ip' => get_client_ip(),
+                'last_login_ip' => $request->ip(),
             ]);
 
             $this->logAuthEvent('successful_login', 'success', $request, [
@@ -368,9 +375,14 @@ class AuthController extends Controller
 
         event(new Failed('web', $user, $credentials));
 
-        return back()->withErrors([
-            'password' => 'The password you entered is incorrect.',
-        ])->withInput($request->except('password'));
+        // Return with password error message
+        return redirect()
+            ->route('login')
+            ->withErrors([
+                'password' => 'The password you entered is incorrect.',
+                'auth_failed' => true  // Additional flag to ensure error display
+            ])
+            ->withInput($request->except('password'));
     }
 
     public function showSignup(Request $request)
@@ -432,8 +444,7 @@ class AuthController extends Controller
                 'string',
                 'email:rfc,dns',
                 'max:255',
-                'unique:users',
-                'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/'
+                'unique:users'
             ],
             'country' => [
                 'required',
@@ -465,13 +476,19 @@ class AuthController extends Controller
                     ->uncompromised(3)
             ],
         ], [
+            'name.required' => 'Please enter your full name.',
+            'name.min' => 'Name must be at least 2 characters long.',
             'name.regex' => 'Name can only contain letters, spaces, hyphens, apostrophes, and periods.',
+            'email.required' => 'Please enter your email address.',
             'email.unique' => 'An account with this email already exists. Please <a href="' . route('login') . '" class="text-primary-blue hover:underline">login</a> or use a different email.',
-            'email.regex' => 'Please enter a valid email address.',
+            'email.email' => 'Please enter a valid email address.',
+            'email.max' => 'Email address is too long.',
             'phone.unique' => 'This phone number is already registered. Please use a different number or <a href="' . route('login') . '" class="text-primary-blue hover:underline">login instead</a>.',
             'phone.regex' => 'Please enter a valid phone number.',
+            'country.required' => 'Please select your country.',
             'country.regex' => 'Country name can only contain letters, spaces, and hyphens.',
             'country_code.regex' => 'Please select a valid country code.',
+            'password.required' => 'Please create a strong password.',
             'password.uncompromised' => 'This password has been found in data breaches. Please choose a more secure password.',
             'password.confirmed' => 'Password confirmation does not match.',
         ]);
@@ -640,6 +657,130 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
         
         return redirect()->route('home');
+    }
+
+    // Forgot Password & Reset Methods
+
+    public function showForgotPassword()
+    {
+        return view('auth.forgot-password');
+    }
+
+    public function sendResetLink(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+        $email = strtolower(trim($request->email));
+
+        $user = User::where('email', $email)->first();
+
+        // Always return generic success message to prevent user enumeration
+        $statusMessage = 'If an account exists for this email, you will receive password reset instructions.';
+
+        if (!$user) {
+            // Log for security monitoring (optional, careful not to log simple typos as attacks)
+            Log::info('Password reset requested for non-existent email', ['email' => $email, 'ip' => $request->ip()]);
+            return back()->with('status', $statusMessage);
+        }
+
+        // Check if user is Google Auth only (assuming google_id exists and password might be null or user is known to use Google)
+        // Adjust logic if you allow both. For this requirement: "If Social Login... send email informing them"
+        if ($user->google_id && empty($user->password)) { 
+            // Send Google Account Info Mail
+            Mail::to($user->email)->send(new GoogleAccountInfoMail($user));
+            Log::info('Sent Google account info mail for password reset', ['email' => $email]);
+            return back()->with('status', $statusMessage);
+        }
+
+        // Local Account Flow
+        // 1. Generate secure random token
+        $token = Str::random(64);
+        
+        // 2. Hash token for storage
+        // Laravel's password_reset_tokens table usually has email, token, created_at.
+        // We will store the HASHED token.
+        // Note: verify your table structure. Default Laravel stores unhashed or hashed depending on provider.
+        // We will manually insert to be sure.
+        
+        DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $email],
+            [
+                'email' => $email,
+                'token' => Hash::make($token), // Using BCrypt/Argon2 hashing for the token
+                'created_at' => Carbon::now()
+            ]
+        );
+
+        // 3. Send email with RAW token
+        Mail::to($user->email)->send(new ResetPasswordMail($token, $email));
+        
+        Log::info('Sent password reset link', ['email' => $email]);
+
+        return back()->with('status', $statusMessage);
+    }
+
+    public function showResetPassword($token)
+    {
+        return view('auth.reset-password', ['token' => $token, 'email' => request()->query('email')]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => [
+                'required',
+                'confirmed',
+                PasswordRule::min(8)
+                    ->letters()
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols()
+                    ->uncompromised(3)
+            ],
+        ]);
+
+        $email = strtolower(trim($request->email));
+        
+        // Retrieve record
+        $record = DB::table('password_reset_tokens')->where('email', $email)->first();
+
+        if (!$record) {
+            return back()->withErrors(['email' => 'Invalid or expired password reset link.']);
+        }
+
+        // Check expiration (e.g., 60 minutes)
+        if (Carbon::parse($record->created_at)->addMinutes(60)->isPast()) {
+            DB::table('password_reset_tokens')->where('email', $email)->delete();
+            return back()->withErrors(['email' => 'This password reset link has expired.']);
+        }
+
+        // Verify Token
+        if (!Hash::check($request->token, $record->token)) {
+            return back()->withErrors(['email' => 'Invalid password reset link.']);
+        }
+
+        // Update Password
+        $user = User::where('email', $email)->first();
+        if (!$user) {
+             return back()->withErrors(['email' => 'User not found.']);
+        }
+
+        $user->forceFill([
+            'password' => Hash::make($request->password),
+            'remember_token' => Str::random(60),
+        ])->save();
+
+        // Invalidate token
+        DB::table('password_reset_tokens')->where('email', $email)->delete();
+
+        // Send confirmation email
+        Mail::to($user->email)->send(new PasswordChangedMail($user));
+
+        // Log
+        Log::info('Password reset successful', ['user_id' => $user->id, 'ip' => $request->ip()]);
+
+        return redirect()->route('login')->with('status', 'Your password has been reset!');
     }
 
     /**
