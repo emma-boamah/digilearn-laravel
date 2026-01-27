@@ -1311,6 +1311,7 @@
             align-items: center;
             gap: 0.5rem;
             padding: 0.5rem 1rem;
+            border: 1px solid var(--secondary-blue);
             border-radius: 0.375rem;
             font-size: 0.875rem;
             font-weight: 500;
@@ -1321,12 +1322,12 @@
         }
 
         .lesson-action-btn.primary {
-            background-color: var(--secondary-blue);
-            color: var(--white);
+            background-color: transparent;
+            color: var(--secondary-blue);
         }
 
         .lesson-action-btn.primary:hover {
-            background-color: var(--secondary-blue-hover);
+            background-color: rgba(38, 119, 184, 0.05);
         }
 
         .lesson-action-btn.secondary {
