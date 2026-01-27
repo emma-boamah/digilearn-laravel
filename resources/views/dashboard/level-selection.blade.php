@@ -56,47 +56,64 @@
                     @php
                         $hasAccess = $accessInfo[$level['id']] ?? false;
                     @endphp
-                    <div class="level-group-card {{ $hasAccess ? 'accessible' : 'explore-more' }}">
-                        <div class="level-header">
-                            <h3 class="level-title">{{ $level['title'] }}</h3>
-                        </div>
-                        <div class="level-image-container">
-                            @if($level['id'] === 'jhs')
-                                <img src="{{ asset('images/jhs.jpeg') }}" alt="JHS" class="level-jhs-image">
-                            @elseif($level['id'] === 'shs')
-                                <img src="{{ asset('images/SHS.png') }}" alt="SHS" class="level-shs-image">
-                            @elseif($level['id'] === 'primary-upper')
-                                <img src="{{ asset('images/g4-6.jpeg') }}" alt="Grade 4-6" class="level-g4-6-image">
-                            @elseif($level['id'] === 'university')
-                                <img src="{{ asset('images/university.jpeg') }}" alt="University" class="level-university-image">
-                            @else
-                                <div class="level-placeholder-image"></div>
-                            @endif
-                        </div>
-                        <p class="level-description">{{ $level['description'] }}</p>
-
-                        @if($hasAccess)
-                            <!-- Form to select level group and go to digilearn -->
-                            <form action="{{ route('dashboard.select-level-group', $level['id']) }}" method="POST">
-                                @csrf
-                                <button type="submit" class="level-select-btn">
+                    @if($hasAccess)
+                        {{-- Accessible card: entire card is clickable --}}
+                        <form action="{{ route('dashboard.select-level-group', $level['id']) }}" method="POST" class="level-group-card-form">
+                            @csrf
+                            <button type="submit" class="level-group-card accessible clickable-card">
+                                <svg class="card-chevron" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                                <div class="level-header">
+                                    <h3 class="level-title">{{ $level['title'] }}</h3>
                                     @if(session('selected_level_group') === $level['id'])
-                                        Current Level
-                                    @else
-                                        Select
+                                        <span class="current-level-badge">Current</span>
                                     @endif
-                                </button>
-                            </form>
-                        @else
-                            <!-- Allow clicking but redirect to pricing -->
+                                </div>
+                                <div class="level-image-container">
+                                    @if($level['id'] === 'jhs')
+                                        <img src="{{ asset('images/jhs.jpeg') }}" alt="JHS" class="level-jhs-image">
+                                    @elseif($level['id'] === 'shs')
+                                        <img src="{{ asset('images/SHS.png') }}" alt="SHS" class="level-shs-image">
+                                    @elseif($level['id'] === 'primary-upper')
+                                        <img src="{{ asset('images/g4-6.jpeg') }}" alt="Grade 4-6" class="level-g4-6-image">
+                                    @elseif($level['id'] === 'university')
+                                        <img src="{{ asset('images/university.jpeg') }}" alt="University" class="level-university-image">
+                                    @else
+                                        <div class="level-placeholder-image"></div>
+                                    @endif
+                                </div>
+                                <p class="level-description">{{ $level['description'] }}</p>
+                            </button>
+                        </form>
+                    @else
+                        {{-- Non-accessible card: has upgrade button --}}
+                        <div class="level-group-card explore-more">
+                            <div class="level-header">
+                                <h3 class="level-title">{{ $level['title'] }}</h3>
+                            </div>
+                            <div class="level-image-container">
+                                @if($level['id'] === 'jhs')
+                                    <img src="{{ asset('images/jhs.jpeg') }}" alt="JHS" class="level-jhs-image">
+                                @elseif($level['id'] === 'shs')
+                                    <img src="{{ asset('images/SHS.png') }}" alt="SHS" class="level-shs-image">
+                                @elseif($level['id'] === 'primary-upper')
+                                    <img src="{{ asset('images/g4-6.jpeg') }}" alt="Grade 4-6" class="level-g4-6-image">
+                                @elseif($level['id'] === 'university')
+                                    <img src="{{ asset('images/university.jpeg') }}" alt="University" class="level-university-image">
+                                @else
+                                    <div class="level-placeholder-image"></div>
+                                @endif
+                            </div>
+                            <p class="level-description">{{ $level['description'] }}</p>
                             <button type="button" class="upgrade-btn upgrade-trigger" data-level-title="{{ $level['title'] }}" data-level-id="{{ $level['id'] }}">
-                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 0.5rem;">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" class="upgrade-icon">
                                     <path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/><path d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
                                 </svg>
                                 Explore This Level
                             </button>
-                        @endif
-                    </div>
+                        </div>
+                    @endif
                 @endforeach
             </div>
         </div>
@@ -181,6 +198,11 @@
             margin: 0 auto;
         }
 
+        /* Form wrapper for clickable cards */
+        .level-group-card-form {
+            display: contents;
+        }
+
         .level-group-card {
             background: white;
             border-radius: 12px;
@@ -195,8 +217,55 @@
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         }
 
+        /* Clickable card button styles */
+        .level-group-card.clickable-card {
+            width: 100%;
+            font-family: inherit;
+            font-size: inherit;
+            cursor: pointer;
+            display: block;
+            position: relative;
+        }
+
+        /* Chevron arrow for clickable cards */
+        .card-chevron {
+            position: absolute;
+            right: 1rem;
+            top: 85%;
+            transform: translateY(-50%);
+            color: #2677B8;
+            opacity: 0.6;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .level-group-card.clickable-card:hover .card-chevron {
+            opacity: 1;
+            transform: translateY(-50%) translateX(4px);
+        }
+
+        .level-group-card.accessible {
+            border: 2px solid #c3def7ff;
+        }
+
+        .level-group-card.accessible:hover {
+            border-color: #a1d4f7ff;
+        }
+
+        /* Current level badge */
+        .current-level-badge {
+            display: inline-block;
+            background: #2677B8;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
         .level-group-card.explore-more {
-            border: 2px solid #b6cff7ff; /* Blue border for additional content */
+            border: 2px solid #b6cff7ff;
             background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
             position: relative;
         }
@@ -207,12 +276,8 @@
             border-color: #aec6fcff;
         }
 
-        .level-group-card.accessible {
-            border: 2px solid #c3def7ff; /* Green border for accessible content */
-        }
-
-        .level-group-card.accessible:hover {
-            border-color: #a1d4f7ff;
+        .upgrade-icon {
+            margin-right: 0.5rem;
         }
 
         .level-header {
@@ -293,26 +358,7 @@
             line-height: 1.4;
         }
 
-        .level-select-btn {
-            background-color: #2677B8;
-            color: white;
-            border: none;
-            padding: 0.75rem 2rem;
-            border-radius: 6px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-            width: 100%;
-            font-size: 1rem;
-        }
 
-        .level-select-btn:hover {
-            background-color: #1e5a8a;
-        }
-
-        .upgrade-required {
-            margin-top: 1rem;
-        }
 
         .upgrade-btn {
             background-color: #3b82f6;
