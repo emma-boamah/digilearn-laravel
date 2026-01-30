@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('lesson_difficulties', function (Blueprint $table) {
+        Schema::createIfNotExists('lesson_difficulties', function (Blueprint $table) {
             $table->id();
             $table->string('grade_level')->unique();
             $table->integer('difficulty_score');

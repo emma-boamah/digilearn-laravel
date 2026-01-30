@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('notifications', function (Blueprint $table) {
+        Schema::createIfNotExists('notifications', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('type'); // Laravel uses FQCN of notification class
             $table->foreignId('notification_type_id')

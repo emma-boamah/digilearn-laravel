@@ -12,7 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('storage_monitoring_settings', function (Blueprint $table) {
+        Schema::createIfNotExists('storage_monitoring_settings', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique();
             $table->string('description')->nullable();

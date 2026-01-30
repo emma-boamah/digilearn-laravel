@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('plan_level_group', function (Blueprint $table) {
+        Schema::createIfNotExists('plan_level_group', function (Blueprint $table) {
             $table->id();
             $table->foreignId('pricing_plan_id')->constrained()->onDelete('cascade');
             $table->string('level_group'); // 'primary-lower', 'university', etc.

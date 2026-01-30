@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('cookie_consents', function (Blueprint $table) {
+        Schema::createIfNotExists('cookie_consents', function (Blueprint $table) {
             $table->id();
             $table->string('ip_address')->nullable();
             $table->string('user_agent')->nullable();

@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('user_notification_preferences', function (Blueprint $table) {
+        Schema::createIfNotExists('user_notification_preferences', function (Blueprint $table) {
             $table->id();
 
             $table->foreignId('user_id')
