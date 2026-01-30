@@ -15,9 +15,18 @@ use App\Models\Course;
 use App\Models\CommentUserLike;
 use App\Models\Subject;
 use App\Services\PlanChangeService;
+use App\Services\RelatedLessonsService;
 
 class DashboardController extends Controller
 {
+    private $relatedLessonsService;
+    
+    public function __construct(
+        RelatedLessonsService $relatedLessonsService
+    ) {
+        $this->relatedLessonsService = $relatedLessonsService;
+    }
+    
     public function index()
     {
         $user = Auth::user();
@@ -129,6 +138,45 @@ class DashboardController extends Controller
     }
 
     /**
+     * Get related lessons API endpoint
+     */
+    public function getRelatedLessonsApi(Request $request, $lessonId)
+    {
+        $user = Auth::user();
+        
+        $currentLesson = Video::find($lessonId);
+        if (!$currentLesson) {
+            return response()->json(['error' => 'Lesson not found'], 404);
+        }
+        
+        $filters = $request->validate([
+            'sortBy' => 'sometimes|string|in:related_score,popularity,difficulty,instructor',
+            'limit' => 'sometimes|integer|min:1|max:20'
+        ]);
+        
+        $relatedLessons = $this->relatedLessonsService->getRelatedLessons(
+            $currentLesson->toArray(),
+            $user,
+            array_merge($filters, ['limit' => $filters['limit'] ?? 12])
+        );
+        
+        Log::channel('analytics')->info('Related lessons API accessed', [
+            'user_id' => $user->id,
+            'lesson_id' => $lessonId,
+            'filters' => $filters,
+            'result_count' => count($relatedLessons),
+            'execution_time_ms' => (microtime(true) - LARAVEL_START) * 1000
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'lessons' => $relatedLessons,
+            'filters_applied' => $filters,
+            'total' => count($relatedLessons)
+        ]);
+    }
+    
+    /**
      * Handle level group selection and redirect appropriately
      */
     public function selectLevelGroup(Request $request, $groupId)
@@ -217,7 +265,7 @@ class DashboardController extends Controller
         }
 
         // Get subscription info for dashboard display
-        $currentSubscription = $user->currentSubscription ? $user->currentSubscription->first() : null;
+        $currentSubscription = $user->currentSubscription;
         $subscriptionInfo = null;
         
         if ($currentSubscription) {
@@ -311,6 +359,20 @@ class DashboardController extends Controller
     }
 
     /**
+     * Update user's grade to the lowest grade in the selected group
+     */
+    public function updateGrade(Request $request)
+    {
+        $validated = $request->validate([
+            'grade' => 'required|string|in:primary-1,primary-2,primary-3,primary-4,primary-5,primary-6,jhs-1,jhs-2,jhs-3,shs-1,shs-2,shs-3'
+        ]);
+        
+        Auth::user()->update(['grade' => $validated['grade']]);
+        
+        return response()->json(['success' => true]);
+    }
+
+    /**
      * Handle joining a class
      */
     public function joinClass(Request $request)
@@ -363,8 +425,8 @@ class DashboardController extends Controller
                     'error' => $e->getMessage(),
                     'ip' => request()->ip(),
                 ]);
-                return redirect()->back()->with('error', 'Failed to join class. Please try again.');
-            }
+                 return redirect()->back()->with('error', 'Failed to join class. Please try again.');
+             }
         }
 
         // Regular users must have access to live classes
@@ -432,6 +494,8 @@ class DashboardController extends Controller
             return redirect()->back()->with('error', 'Failed to join class. Please try again.');
         }
     }
+
+
 
     /**
      * Show the virtual classroom page.
@@ -676,6 +740,7 @@ class DashboardController extends Controller
                     'year' => $video->created_at->format('Y'),
                     'level' => $level,
                     'level_display' => $this->getLevelDisplayName($level),
+                    'grade_level' => $video->grade_level,
                     'video_source' => $video->video_source,
                     'vimeo_id' => $video->vimeo_id,
                     'external_video_id' => $video->external_video_id,
@@ -981,92 +1046,86 @@ class DashboardController extends Controller
         ]);
 
         // University: search across all course lessons
-        if ($selectedLevelGroup === 'university') {
-            $allLessons = [];
-            // Build a flat list of all university lessons by iterating known programs
-            foreach (['computer-science', 'business-administration'] as $programKey) {
-                $courses = $this->getCoursesForProgram($programKey);
-                foreach ($courses as $course) {
-                    $courseLessons = $this->getLessonsForCourse($course['id']);
-                    foreach ($courseLessons as $ul) {
-                        // Attach helpful metadata to lesson (subject, instructor, year, level_display)
-                        $ul['subject'] = $course['name'] ?? ($course['code'] ?? '');
-                        $ul['instructor'] = $course['instructor'] ?? ($ul['instructor'] ?? '');
-                        $video = Video::find($ul['video_id']);
-                        $ul['year'] = $video ? $video->created_at->format('Y') : date('Y');
-                        $ul['level_display'] = $course['code'] ?? ($course['id'] ?? '');
-                        $allLessons[] = $ul;
+            if ($selectedLevelGroup === 'university') {
+                $allLessons = [];
+                // Build a flat list of all university lessons by iterating known programs
+                foreach (['computer-science', 'business-administration'] as $programKey) {
+                    $courses = $this->getCoursesForProgram($programKey);
+                    foreach ($courses as $course) {
+                        $courseLessons = $this->getLessonsForCourse($course['id']);
+                        foreach ($courseLessons as $ul) {
+                            // Attach helpful metadata to lesson (subject, instructor, year, level_display)
+                            $ul['subject'] = $course['name'] ?? ($course['code'] ?? '');
+                            $ul['instructor'] = $course['instructor'] ?? ($ul['instructor'] ?? '');
+                            $video = Video::find($ul['video_id']);
+                            $ul['year'] = $video ? $video->created_at->format('Y') : date('Y');
+                            $ul['level_display'] = $course['code'] ?? ($course['id'] ?? '');
+                            $allLessons[] = $ul;
+                        }
                     }
                 }
-            }
-
-            $lesson = null;
-            foreach ($allLessons as $l) {
-                if ($l['id'] == $lessonId) {
-                    $lesson = $l;
-                    break;
+                
+                $lesson = null;
+                foreach ($allLessons as $l) {
+                    if ($l['id'] == $lessonId) {
+                        $lesson = $l;
+                        break;
+                    }
                 }
-            }
 
-            if (!$lesson) {
-                return redirect()->route('dashboard.digilearn')
-                    ->withErrors(['lesson' => 'Lesson not found.']);
-            }
-
-            // CRITICAL: Get actual video duration from database
-            $videoDuration = null;
-            if (isset($lesson['id'])) {
-                $video = \App\Models\Video::find($lesson['id']);
-                if ($video) {
-                    // Try to get actual duration from video source
-                    $videoDuration = $video->getDuration();
-                    
-                    Log::info('Video duration retrieved', [
-                        'video_id' => $lesson['id'],
-                        'duration' => $videoDuration,
-                        'video_source' => $video->video_source
-                    ]);
+                if (!$lesson) {
+                    return redirect()->route('dashboard.digilearn')
+                        ->withErrors(['lesson' => 'Lesson not found.']);
                 }
-            }
-            // Add duration to lesson array
-            $lesson['total_duration'] = $videoDuration ?: 300; // Fallback to 300 if not found
-            $lesson['duration_seconds'] = $videoDuration ?: 300;
-            $lesson['level_group'] = $this->getLevelGroup($lesson['level'] ?? 'primary-lower');
 
-            Log::info('University lesson prepared for view', [
-                'lesson_id' => $lessonId,
-                'total_duration' => $lesson['total_duration'] ?? 0,
-                'video_source' => $lesson['video_source'] ?? 'unknown'
-            ]);
-
-            // Increment video views for university lessons
-            if (isset($lesson['video_id'])) {
-                $video = Video::find($lesson['video_id']);
-                if ($video) {
-                    $video->increment('views');
+                // CRITICAL: Get actual video duration from database
+                $videoDuration = null;
+                if (isset($lesson['id'])) {
+                    $video = \App\Models\Video::find($lesson['id']);
+                    if ($video) {
+                        // Try to get actual duration from video source
+                        $videoDuration = $video->getDuration();
+                        
+                        Log::info('Video duration retrieved', [
+                            'video_id' => $lesson['id'],
+                            'duration' => $videoDuration,
+                            'video_source' => $video->video_source
+                        ]);
+                    }
                 }
+                // Add duration to lesson array
+                $lesson['total_duration'] = $videoDuration ?: 300; // Fallback to 300 if not found
+                $lesson['duration_seconds'] = $videoDuration ?: 300;
+                $lesson['level_group'] = $this->getLevelGroup($lesson['level'] ?? 'primary-lower');
+
+                Log::info('University lesson prepared for view', [
+                    'lesson_id' => $lessonId,
+                    'total_duration' => $lesson['total_duration'] ?? 0,
+                    'video_source' => $lesson['video_source'] ?? 'unknown'
+                ]);
+
+                // Related lessons from same course if possible
+                $relatedLessons = array_values(array_filter($allLessons, function ($l) use ($lessonId) {
+                    return $l['id'] !== $lessonId;
+                }));
+                $relatedLessons = array_slice($relatedLessons, 0, 8);
+
+                Log::channel('security')->info('lesson_viewed', [
+                    'user_id' => Auth::id(),
+                    'lesson_id' => $lessonId,
+                    'selected_level_group' => $selectedLevelGroup,
+                    'lesson_level' => $lesson['level'] ?? null,
+                    'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
+                    'ip' => request()->ip(),
+                    'timestamp' => Carbon::now()->toISOString()
+                ]);
+
+                // Fetch user notes for the lesson
+                $note = UserNote::forUserAndVideo(Auth::id(), $lesson['id'])->first();
+
+                return view('dashboard.lesson-view', compact('lesson', 'selectedLevelGroup', 'relatedLessons', 'note'));
             }
 
-            // Related lessons from same course if possible
-            $relatedLessons = array_values(array_filter($allLessons, function ($l) use ($lessonId) {
-                return $l['id'] !== $lessonId;
-            }));
-            $relatedLessons = array_slice($relatedLessons, 0, 8);
-
-            Log::channel('security')->info('lesson_viewed', [
-                'user_id' => Auth::id(),
-                'lesson_id' => $lessonId,
-                'selected_level_group' => $selectedLevelGroup,
-                'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
-                'ip' => request()->ip(),
-                'timestamp' => Carbon::now()->toISOString()
-            ]);
-
-            // Fetch user notes for the lesson
-            $note = UserNote::forUserAndVideo(Auth::id(), $lesson['id'])->first();
-
-            return view('dashboard.lesson-view', compact('lesson', 'selectedLevelGroup', 'relatedLessons', 'note'));
-        }
 
         // Get all lessons from the level group (non-university)
         Log::info('Lesson View Debug - Non-University Path', [
@@ -1090,6 +1149,31 @@ class DashboardController extends Controller
                     'lesson_data' => $l
                 ]);
                 break;
+            }
+        }
+
+        if (!$lesson) {
+            // Fallback: Check if lesson exists globally (for cross-level access)
+            $video = Video::find($lessonId);
+            
+            if ($video) {
+                $levelSlug = $this->convertLevelFormatBack($video->grade_level);
+                
+                // Switch context to this lesson's group
+                $selectedLevelGroup = $this->getLevelGroup($levelSlug);
+                
+                // Fetch lesson details from its specific level
+                $levelLessons = $this->getLessonsForLevel($levelSlug);
+                foreach ($levelLessons as $l) {
+                    if ($l['id'] == $lessonId) {
+                        $lesson = $l;
+                        Log::info('Lesson found in different level group', [
+                            'lesson_id' => $lessonId,
+                            'new_group' => $selectedLevelGroup
+                        ]);
+                        break;
+                    }
+                }
             }
         }
 
@@ -1143,11 +1227,15 @@ class DashboardController extends Controller
             }
         }
 
-        // Get related lessons (exclude current lesson)
-        $relatedLessons = array_filter($allLessons, function($l) use ($lessonId) {
-            return $l['id'] != $lessonId;
-        });
-        $relatedLessons = array_slice($relatedLessons, 0, 8);
+        // NEW: Enhanced related lessons with intelligent filtering
+        $relatedLessons = $this->relatedLessonsService->getRelatedLessons(
+            $lesson,
+            $user,
+            [
+                'limit' => 12,
+                'sort_by' => 'related_score'
+            ]
+        );
 
         // Fetch user notes for the lesson
         $note = UserNote::forUserAndVideo(Auth::id(), $lesson['id'])->first();
@@ -1170,20 +1258,18 @@ class DashboardController extends Controller
      */
     private function hasLessonAccess($user, $lesson)
     {
-        // Superuser has access to all lessons
-        if ($user->is_superuser) {
-            return true;
+        $gradeLevel = $lesson['grade_level'] ?? null;
+
+        if (!$gradeLevel && isset($lesson['level'])) {
+            $gradeLevel = $this->convertLevelFormat($lesson['level']);
         }
 
-        $currentSubscription = $user->currentSubscription ? $user->currentSubscription->first() : null;
-
-        // Free users get access to first few lessons
-        if (!$currentSubscription) {
-            return in_array($lesson['id'], [1, 2, 5, 13]); // Sample free lesson IDs
-        }
-
-        // Subscribed users get full access
-        return $currentSubscription->isActive() || $currentSubscription->isInTrial();
+        // Use the centralized subscription access service
+        // This handles superuser bypass internally
+        return \App\Services\SubscriptionAccessService::canAccessGradeLevel(
+            $user,
+            $gradeLevel ?? 'Primary 1'
+        );
     }
 
     /**
@@ -3198,4 +3284,38 @@ class DashboardController extends Controller
            ], 500);
        }
    }
+    /**
+     * Track user engagement analytics for lessons
+     */
+    public function trackAnalytics(Request $request)
+    {
+        $request->validate([
+            'lesson_id' => 'required|integer|exists:videos,id',
+            'event_type' => 'required|string',
+            'duration' => 'sometimes|integer',
+            'metadata' => 'sometimes|array'
+        ]);
+
+        $user = Auth::user();
+        
+        try {
+            \App\Models\UserEngagement::record(
+                $user->id,
+                'video',
+                $request->lesson_id,
+                $request->event_type,
+                $request->duration ?? 0,
+                $request->metadata ?? []
+            );
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            Log::error('analytics_track_error', [
+                'user_id' => $user->id,
+                'lesson_id' => $request->lesson_id,
+                'error' => $e->getMessage()
+            ]);
+            return response()->json(['success' => false], 500);
+        }
+    }
 }

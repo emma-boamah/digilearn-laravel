@@ -21,7 +21,9 @@
     'showLevelBadge' => true,
     'showDuration' => true,
     'showPlayOverlay' => true,
-    'lazyLoad' => true
+    'lazyLoad' => true,
+    'isRestricted' => false,
+    'upgradePrompt' => null
 ])
 
 <div class="{{ $class }} video-facade-card hover-video-card"
@@ -36,6 +38,8 @@
      data-thumbnail="{{ $thumbnail }}"
      data-subject="{{ $attributes->get('data-subject', '') }}"
      data-loaded="false"
+     data-access-level="{{ $isRestricted ? 'preview' : 'full' }}"
+     @if($isRestricted) data-upgrade-prompt="{{ json_encode($upgradePrompt) }}" @endif
      @if($lazyLoad) data-lazy="true" @endif>
 
     <div class="lesson-thumbnail">
@@ -77,6 +81,19 @@
             <div class="play-button">
                 <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z"/>
+                </svg>
+            </div>
+        </div>
+        @endif
+
+        <!-- Premium Restricted Overlay -->
+        @if($isRestricted)
+        <div class="premium-badge">Premium</div>
+        <div class="premium-lock-overlay">
+            <div class="lock-icon-circle">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
             </div>
         </div>
@@ -215,6 +232,56 @@
 .video-facade-card:not(.playing):hover .play-overlay {
     opacity: 1;
     background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Premium Restricted Styles */
+.premium-lock-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: 6;
+    color: white;
+}
+
+.premium-badge {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.25rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    z-index: 7;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.lock-icon-circle {
+    width: 50px;
+    height: 50px;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.video-facade-card:hover .lock-icon-circle {
+    transform: scale(1.1);
+    background-color: rgba(0, 0, 0, 0.82);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.video-facade-card[data-access-level="preview"] .play-overlay {
+    display: none !important;
 }
 
 .play-button {

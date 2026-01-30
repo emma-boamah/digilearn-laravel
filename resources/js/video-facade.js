@@ -137,13 +137,23 @@ class VideoFacadeManager {
         if (this.isMobile) {
             // Mobile: Click to play
             card.addEventListener('click', (e) => {
-                if (e.target.closest('.lesson-action-btn')) return; // Don't trigger on action buttons
+                const actionBtn = e.target.closest('.lesson-action-btn');
+                if (actionBtn) return; // Allow action buttons to handle their own navigation
+
+                if (card.dataset.accessLevel === 'preview') {
+                    e.preventDefault();
+                    this.handleRestrictedAccess(card);
+                    return;
+                }
+
                 e.preventDefault();
                 this.handlePlayClick(card);
             });
         } else {
             // Desktop: Hover to preview
             card.addEventListener('mouseenter', () => {
+                if (card.dataset.accessLevel === 'preview') return;
+
                 this.hoverTimer = setTimeout(() => {
                     this.activatePreview(card);
                 }, 250); // Debounce hover

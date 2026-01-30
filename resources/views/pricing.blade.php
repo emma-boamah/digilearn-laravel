@@ -121,7 +121,7 @@
         font-weight: 600;
         font-size: 0.875rem;
         border-radius: 50px;
-        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+        box-shadow: 0 4px 12px rgba(38, 138, 220, 0.25);
         z-index: 10;
         min-width: 120px;
         text-align: center;
@@ -235,7 +235,7 @@
                 @endif
                 <div class="pricing-card-content">
                     <p class="pricing-description">
-                        {{ $plan->description ?? 'Comprehensive learning package with access to all platform features.' }}
+                        {{ $plan->description ?? 'Comprehensive learning package with access to platform features.' }}
                     </p>
                     <div class="pricing-price">{{ $plan->currency }} {{ number_format($plan->price, 2) }}</div>
                     <ul class="pricing-features">
