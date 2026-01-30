@@ -9,6 +9,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\URL;
 use Symfony\Component\HttpFoundation\IpUtils;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Schema\Builder;
+use Illuminate\Support\Facades\Schema;
+use Closure;
+
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,8 +33,30 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
         }
-        
+
         $this->configureRateLimiting();
+        
+        // Macro: Create table only if it doesn't exist
+        Builder::macro('createIfNotExists', function (string $table, Closure $callback) {
+            if (!Schema::hasTable($table)) {
+                Schema::create($table, $callback);
+            }
+        });
+
+        // Macro: Add column only if it doesn't exist
+        Blueprint::macro('addColumnIfMissing', function (string $name, Closure $definition) {
+            if (!Schema::hasColumn($this->getTable(), $name)) {
+                $definition($this);
+            }
+        });
+
+        // Macro: Add index only if it doesn't exist
+        Blueprint::macro('addIndexIfMissing', function ($columns, $name = null) {
+            // Schema::hasIndex accepts the index name OR the columns array to check for existence
+            if (!Schema::hasIndex($this->getTable(), $name ?? $columns)) {
+                $this->index($columns, $name);
+            }
+        });
     }
 
     /**
