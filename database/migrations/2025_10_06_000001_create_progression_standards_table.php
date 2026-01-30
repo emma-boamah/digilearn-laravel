@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('progression_standards', function (Blueprint $table) {
+        Schema::createIfNotExists('progression_standards', function (Blueprint $table) {
             $table->id();
             $table->string('level_group'); // e.g., 'primary-lower', 'jhs', 'shs'
             $table->decimal('required_lesson_completion_percentage', 5, 2)->default(80.00);

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // Storage analytics table for tracking usage over time
-        Schema::create('storage_analytics', function (Blueprint $table) {
+        Schema::createIfNotExists('storage_analytics', function (Blueprint $table) {
             $table->id();
             $table->string('path'); // Storage path being monitored
             $table->unsignedBigInteger('total_space_bytes');

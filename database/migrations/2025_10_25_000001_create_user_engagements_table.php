@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('user_engagements', function (Blueprint $table) {
+        Schema::createIfNotExists('user_engagements', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
             $table->string('content_type'); // video, document, quiz, lesson

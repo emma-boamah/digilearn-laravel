@@ -13,37 +13,22 @@ return new class extends Migration
     {
         if (Schema::hasTable('users')) {
             Schema::table('users', function (Blueprint $table) {
-                // Column additions (Condensed for brevity)
-                $cols = [
-                    'country' => fn() => $table->string('country')->nullable()->after('email'),
-                    'failed_login_attempts' => fn() => $table->integer('failed_login_attempts')->default(0)->after('remember_token'),
-                    'locked_until' => fn() => $table->timestamp('locked_until')->nullable()->after('failed_login_attempts'),
-                    'last_login_at' => fn() => $table->timestamp('last_login_at')->nullable()->after('locked_until'),
-                    'last_login_ip' => fn() => $table->ipAddress('last_login_ip')->nullable()->after('last_login_at'),
-                    'registration_ip' => fn() => $table->ipAddress('registration_ip')->nullable()->after('last_login_ip'),
-                    'two_factor_secret' => fn() => $table->text('two_factor_secret')->nullable()->after('registration_ip'),
-                    'two_factor_recovery_codes' => fn() => $table->text('two_factor_recovery_codes')->nullable()->after('two_factor_secret'),
-                    'two_factor_confirmed_at' => fn() => $table->timestamp('two_factor_confirmed_at')->nullable()->after('two_factor_recovery_codes'),
-                    'deleted_at' => fn() => $table->softDeletes()->after('updated_at'),
-                ];
-
-                foreach ($cols as $col => $definition) {
-                    if (!Schema::hasColumn('users', $col)) $definition();
-                }
+                // Column additions using macro
+                $table->addColumnIfMissing('country', fn($t) => $t->string('country')->nullable()->after('email'));
+                $table->addColumnIfMissing('failed_login_attempts', fn($t) => $t->integer('failed_login_attempts')->default(0)->after('remember_token'));
+                $table->addColumnIfMissing('locked_until', fn($t) => $t->timestamp('locked_until')->nullable()->after('failed_login_attempts'));
+                $table->addColumnIfMissing('last_login_at', fn($t) => $t->timestamp('last_login_at')->nullable()->after('locked_until'));
+                $table->addColumnIfMissing('last_login_ip', fn($t) => $t->ipAddress('last_login_ip')->nullable()->after('last_login_at'));
+                $table->addColumnIfMissing('registration_ip', fn($t) => $t->ipAddress('registration_ip')->nullable()->after('last_login_ip'));
+                $table->addColumnIfMissing('two_factor_secret', fn($t) => $t->text('two_factor_secret')->nullable()->after('registration_ip'));
+                $table->addColumnIfMissing('two_factor_recovery_codes', fn($t) => $t->text('two_factor_recovery_codes')->nullable()->after('two_factor_secret'));
+                $table->addColumnIfMissing('two_factor_confirmed_at', fn($t) => $t->timestamp('two_factor_confirmed_at')->nullable()->after('two_factor_recovery_codes'));
+                $table->addColumnIfMissing('deleted_at', fn($t) => $t->softDeletes()->after('updated_at'));
                 
-                // FIX: Unified Index Checks
-                // Check by column array OR specific name to prevent the 1061 error
-                if (!Schema::hasIndex('users', ['email', 'deleted_at'])) {
-                    $table->index(['email', 'deleted_at']);
-                }
-                
-                if (!Schema::hasIndex('users', ['failed_login_attempts', 'locked_until'])) {
-                    $table->index(['failed_login_attempts', 'locked_until']);
-                }
-
-                if (!Schema::hasIndex('users', 'users_last_login_at_index')) {
-                    $table->index('last_login_at');
-                }
+                // Index additions using macro
+                $table->addIndexIfMissing(['email', 'deleted_at']);
+                $table->addIndexIfMissing(['failed_login_attempts', 'locked_until']);
+                $table->addIndexIfMissing('last_login_at', 'users_last_login_at_index');
             });
         }
     }
