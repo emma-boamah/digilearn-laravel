@@ -1317,6 +1317,65 @@
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
         }
 
+        /* Restricted Lessons */
+        .restricted-lesson .video-thumbnail::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 2;
+        }
+
+        .premium-lock-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 3;
+            color: white;
+            opacity: 1;
+            transition: all 0.2s ease;
+        }
+
+        .lock-icon-circle {
+            width: 40px;
+            height: 40px;
+            background-color: rgba(0, 0, 0, 0.6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.25rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .premium-badge {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            z-index: 4;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .restricted-lesson:hover .lock-icon-circle {
+            transform: scale(1.1);
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .restricted-lesson .play-overlay {
+            display: none !important;
+        }
+
         .video-details {
             flex: 1;
             display: flex;
@@ -3383,16 +3442,45 @@
                 
                 @if(isset($relatedLessons))
                     @foreach($relatedLessons as $relatedLesson)
-                    <div class="video-item related-video-item hover-video-card" data-href="/dashboard/lesson/{{ \App\Services\UrlObfuscator::encode($relatedLesson['id']) }}" data-lesson-id="{{ \App\Services\UrlObfuscator::encode($relatedLesson['id']) }}" data-video-id="{{ $relatedLesson['id'] }}" data-subject="{{ $relatedLesson['subject'] ?? 'General' }}" data-title="{{ $relatedLesson['title'] ?? 'Lesson' }}" data-video-source="{{ $relatedLesson['video_source'] ?? 'local' }}" data-vimeo-id="{{ $relatedLesson['vimeo_id'] ?? '' }}" data-external-video-id="{{ $relatedLesson['external_video_id'] ?? '' }}" data-mux-playback-id="{{ $relatedLesson['mux_playback_id'] ?? '' }}" data-loaded="false">
+                    @php
+                        $accessInfo = $relatedLesson['access_info'] ?? ['level' => 'full'];
+                        $isRestricted = $accessInfo['level'] === 'preview';
+                    @endphp
+                    <div class="video-item related-video-item hover-video-card {{ $isRestricted ? 'restricted-lesson' : '' }}" 
+                         data-href="/dashboard/lesson/{{ \App\Services\UrlObfuscator::encode($relatedLesson['id']) }}" 
+                         data-lesson-id="{{ \App\Services\UrlObfuscator::encode($relatedLesson['id']) }}" 
+                         data-video-id="{{ $relatedLesson['id'] }}" 
+                         data-subject="{{ $relatedLesson['subject'] ?? 'General' }}" 
+                         data-title="{{ $relatedLesson['title'] ?? 'Lesson' }}" 
+                         data-video-source="{{ $relatedLesson['video_source'] ?? 'local' }}" 
+                         data-vimeo-id="{{ $relatedLesson['vimeo_id'] ?? '' }}" 
+                         data-external-video-id="{{ $relatedLesson['external_video_id'] ?? '' }}" 
+                         data-mux-playback-id="{{ $relatedLesson['mux_playback_id'] ?? '' }}" 
+                         data-loaded="false"
+                         data-access-level="{{ $accessInfo['level'] }}"
+                         @if($isRestricted) data-upgrade-prompt="{{ json_encode($accessInfo['upgrade_prompt'] ?? null) }}" @endif>
                         <div class="video-thumbnail">
                             <img src="{{ secure_asset($relatedLesson['thumbnail'] ?? '') }}" alt="{{ $relatedLesson['title'] ?? 'Lesson' }}"
                                  onerror="this.src='/placeholder.svg?height=78&width=140'">
                             <div class="video-preview"></div>
-                            <div class="play-overlay">
-                                <svg class="play-icon" fill="currentColor" viewBox="0 0 24 24">
-                                    <polygon points="5 3 19 12 5 21 5 3"/>
-                                </svg>
-                            </div>
+                            
+                            @if($isRestricted)
+                                <div class="premium-badge">Upgrade</div>
+                                <div class="premium-lock-overlay">
+                                    <div class="lock-icon-circle">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            @else
+                                <div class="play-overlay">
+                                    <svg class="play-icon" fill="currentColor" viewBox="0 0 24 24">
+                                        <polygon points="5 3 19 12 5 21 5 3"/>
+                                    </svg>
+                                </div>
+                            @endif
                         </div>
                         <div class="video-details">
                             <h4 class="video-title">{{ $relatedLesson['title'] ?? 'Living and non-living organisms' }}</h4>
@@ -4459,12 +4547,29 @@
             // Related video items
             document.querySelectorAll('.related-video-item').forEach(item => {
                 item.addEventListener('click', function() {
-                const url = this.dataset.href;
-                // Visual feedback
-                this.style.opacity = '0.7';
-                this.style.transform = 'scale(0.98)';
-                // Navigation
-                setTimeout(() => window.location.href = url, 200);
+                    const accessLevel = this.dataset.accessLevel;
+                    
+                    if (accessLevel === 'preview') {
+                        // Restricted content - show upgrade prompt
+                        const promptData = JSON.parse(this.dataset.upgradePrompt || '{}');
+                        if (typeof showUpgradeModal === 'function') {
+                            showUpgradeModal(promptData);
+                        } else {
+                            // Fallback if modal function not available
+                            const planName = promptData.required_plan || 'Essential';
+                            if (confirm(`This lesson requires the ${planName} plan. Would you like to view our pricing plans?`)) {
+                                window.location.href = '/pricing';
+                            }
+                        }
+                        return;
+                    }
+
+                    const url = this.dataset.href;
+                    // Visual feedback
+                    this.style.opacity = '0.7';
+                    this.style.transform = 'scale(0.98)';
+                    // Navigation
+                    setTimeout(() => window.location.href = url, 200);
                 });
             });
         }
@@ -6255,8 +6360,43 @@
             }
         }
 
-        // Initialize on DOM ready
+        // Enhanced Analytics Tracking for Related Lessons
+        function trackLessonAnalytics(lessonId, eventType, metadata = {}) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || (typeof VideoProgressTracker !== 'undefined' ? new VideoProgressTracker().csrfToken : '');
+            
+            fetch('/api/lessons/track-analytics', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    lesson_id: lessonId,
+                    event_type: eventType,
+                    metadata: metadata
+                })
+            }).catch(e => console.debug('Analytics ping failed (non-blocking)'));
+        }
+
+        // Initialize analytics on DOM ready
         document.addEventListener('DOMContentLoaded', function() {
+            const currentLessonId = "{{ $lesson['id'] ?? '' }}";
+            if (currentLessonId) {
+                // Silent view tracking
+                trackLessonAnalytics(currentLessonId, 'view');
+            }
+
+            // Click tracking for related lessons
+            document.querySelectorAll('.related-video-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const relatedId = this.dataset.videoId;
+                    if (relatedId) {
+                        trackLessonAnalytics(relatedId, 'click', { source: 'related_sidebar' });
+                    }
+                });
+            });
+
             console.log('DOM Content Loaded - initializing video progress tracking');
             initializeVideoProgressTracking();
         });

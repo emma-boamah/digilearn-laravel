@@ -364,8 +364,8 @@
     }
 
     .modal-feature-icon.tuition {
-        background-color: #fee2e2;
-        color: var(--primary-red);
+        background-color: #e2edfeff;
+        color: var(--secondary-blue);
     }
 
     .modal-feature-icon.resources {
@@ -847,7 +847,7 @@
 
     <div class="modal-footer">
         @auth
-            <button class="modal-purchase-btn" onclick="initiateModalPayment()">Next: View Pricing</button>
+            <button class="modal-purchase-btn" onclick="initiateModalPayment()">Next: Make Payment</button>
         @else
             <a href="{{ route('login') }}" class="modal-purchase-btn modal-login-link">Login to Purchase</a>
         @endauth
@@ -1027,7 +1027,7 @@ $plansJson = $plans->map(function($plan) {
             const modalBtn = document.querySelector('.modal-purchase-btn');
             if (modalBtn && modalBtn.disabled) {
                 modalBtn.disabled = false;
-                modalBtn.textContent = 'Next: View Pricing';
+                modalBtn.textContent = 'Next: Make Payment';
             }
 
             // Reset desktop purchase buttons

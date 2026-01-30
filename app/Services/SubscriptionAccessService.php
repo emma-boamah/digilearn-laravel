@@ -48,6 +48,11 @@ class SubscriptionAccessService
      */
     public static function canAccessLevelGroup(User $user, string $levelGroup): bool
     {
+        // Superuser bypass
+        if ($user->is_superuser) {
+            return true;
+        }
+
         $userPlan = self::getUserPlanSlug($user);
 
         if (!$userPlan) {
@@ -64,6 +69,11 @@ class SubscriptionAccessService
      */
     public static function canAccessGradeLevel(User $user, string $gradeLevel): bool
     {
+        // Superuser bypass
+        if ($user->is_superuser) {
+            return true;
+        }
+
         $userPlan = self::getUserPlanSlug($user);
 
         if (!$userPlan) {
@@ -85,6 +95,15 @@ class SubscriptionAccessService
      */
     public static function getAllowedGradeLevels(User $user): array
     {
+        // Superusers get all grade levels
+        if ($user->is_superuser) {
+            $allGrades = [];
+            foreach (self::$levelGroupToGrades as $grades) {
+                $allGrades = array_merge($allGrades, $grades);
+            }
+            return array_unique($allGrades);
+        }
+
         $userPlan = self::getUserPlanSlug($user);
 
         if (!$userPlan) {
@@ -106,6 +125,11 @@ class SubscriptionAccessService
      */
     public static function getAllowedLevelGroups(User $user): array
     {
+        // Superusers get all level groups
+        if ($user->is_superuser) {
+            return array_keys(self::$levelGroupToGrades);
+        }
+
         $userPlan = self::getUserPlanSlug($user);
 
         if (!$userPlan) {
@@ -120,7 +144,7 @@ class SubscriptionAccessService
      */
     private static function getUserPlanSlug(User $user): ?string
     {
-        $currentSubscription = $user->currentSubscription ? $user->currentSubscription->first() : null;
+        $currentSubscription = $user->currentSubscription;
 
         if (!$currentSubscription) {
             return null;
