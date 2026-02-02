@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\NotificationType;
 use App\Models\UserNotificationPreference;
+use App\Models\UserPreference;
 use App\Models\Video;
 use App\Models\Document;
 use App\Models\Quiz;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class NotificationService
 {
@@ -366,11 +368,95 @@ class NotificationService
     }
 
     /**
+     * Helper to determine level group from grade string.
+     */
+    private function getLevelGroupFromGrade(?string $grade): ?string
+    {
+        if (!$grade) return null;
+
+        $slug = strtolower(str_replace(' ', '-', $grade));
+        
+        if (str_contains($slug, 'primary-1') || str_contains($slug, 'primary-2') || str_contains($slug, 'primary-3')) return 'primary-lower';
+        if (str_contains($slug, 'primary-4') || str_contains($slug, 'primary-5') || str_contains($slug, 'primary-6')) return 'primary-upper';
+        if (str_contains($slug, 'jhs')) return 'jhs';
+        if (str_contains($slug, 'shs')) return 'shs';
+        if (str_contains($slug, 'uni') || str_contains($slug, 'tertiary')) return 'university';
+        
+        return null;
+    }
+
+    /**
+     * Get users interested in a specific grade level.
+     */
+    private function getUsersForGradeLevel(?string $gradeLevel): Collection
+    {
+        $query = User::whereNotNull('email_verified_at');
+        
+        $levelGroup = $this->getLevelGroupFromGrade($gradeLevel);
+
+        if ($levelGroup) {
+            $grades = $this->getGradesForLevelGroup($levelGroup);
+            // Include the specific gradeLevel as well to ensure coverage
+            if ($gradeLevel && !in_array($gradeLevel, $grades)) {
+                $grades[] = $gradeLevel;
+            }
+            
+            $query->whereIn('grade', $grades);
+        }
+
+        // Exclude users who have opted out of this specific grade level
+        $query->whereNotExists(function ($q) use ($gradeLevel) {
+            $q->select(DB::raw(1))
+              ->from('user_preferences')
+              ->whereColumn('user_preferences.user_id', 'users.id')
+              ->where('user_preferences.preference_type', 'opt_out_grade_notification')
+              ->where('user_preferences.preference_value', $gradeLevel);
+        });
+
+        return $query->get();
+    }
+
+    /**
+     * Get grades for a level group.
+     */
+    private function getGradesForLevelGroup(string $levelGroup): array
+    {
+        $levelMappings = [
+            'primary-lower' => ['Primary 1', 'Primary 2', 'Primary 3'],
+            'primary-upper' => ['Primary 4', 'Primary 5', 'Primary 6'],
+            'jhs' => ['JHS 1', 'JHS 2', 'JHS 3'],
+            'shs' => ['SHS 1', 'SHS 2', 'SHS 3'],
+            'university' => ['University Year 1', 'University Year 2', 'University Year 3', 'University Year 4'],
+        ];
+
+        return $levelMappings[$levelGroup] ?? [];
+    }
+
+    /**
+     * Set user's grade notification preference (opt-out).
+     */
+    public function setGradeNotificationPreference(User $user, string $grade, bool $optOut): void
+    {
+        if ($optOut) {
+            UserPreference::firstOrCreate([
+                'user_id' => $user->id,
+                'preference_type' => 'opt_out_grade_notification',
+                'preference_value' => $grade
+            ]);
+        } else {
+            UserPreference::where('user_id', $user->id)
+                ->where('preference_type', 'opt_out_grade_notification')
+                ->where('preference_value', $grade)
+                ->delete();
+        }
+    }
+
+    /**
      * Send notification for new video content.
      */
     public function notifyNewVideo(Video $video): void
     {
-        $users = User::whereNotNull('email_verified_at')->get();
+        $users = $this->getUsersForGradeLevel($video->grade_level);
 
         $notification = new \App\Notifications\NewVideoNotification($video);
 
@@ -396,13 +482,13 @@ class NotificationService
      */
     public function notifyNewDocument(Document $document): void
     {
-        $users = User::where('is_verified', true)->get();
+        $users = $this->getUsersForGradeLevel($document->grade_level);
 
         $notification = new \App\Notifications\NewDocumentNotification($document);
 
         foreach ($users as $user) {
-            // Check user preferences before sending
-            if ($this->shouldSendToUser($user, 'lesson_completed', 'database')) {
+            // Check user preferences before sending - using system_announcements for consistency
+            if ($this->shouldSendToUser($user, 'system_announcements', 'database')) {
                 $this->sendToUser($user, $notification);
             }
         }
@@ -419,13 +505,13 @@ class NotificationService
      */
     public function notifyNewQuiz(Quiz $quiz): void
     {
-        $users = User::where('is_verified', true)->get();
+        $users = $this->getUsersForGradeLevel($quiz->grade_level);
 
         $notification = new \App\Notifications\NewQuizNotification($quiz);
 
         foreach ($users as $user) {
-            // Check user preferences before sending
-            if ($this->shouldSendToUser($user, 'quiz_completed', 'database')) {
+            // Check user preferences before sending - using system_announcements for consistency
+            if ($this->shouldSendToUser($user, 'system_announcements', 'database')) {
                 $this->sendToUser($user, $notification);
             }
         }
