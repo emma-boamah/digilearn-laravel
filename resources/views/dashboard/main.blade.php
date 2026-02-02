@@ -22,7 +22,7 @@
                 <!-- DigiLearn Section -->
                 <div class="card">
                     <div class="card-image">
-                        <img src="https://via.placeholder.com/400x200/9CA3AF/ffffff?text=DigiLearn" alt="DigiLearn">
+                        <img src="{{ asset('images/digilrn.jpeg') }}" alt="DigiLearn">
                     </div>
                     <h3 class="card-title">DigiLearn</h3>
                     <p class="card-description">
@@ -36,7 +36,7 @@
                 <!-- Personalized Learning Section -->
                 <div class="card">
                     <div class="card-image">
-                        <img src="https://via.placeholder.com/400x200/3B82F6/ffffff?text=Personalized+Learning" alt="Personalized Learning">
+                        <img src="{{ asset('images/personalized.jpeg') }}" alt="Personalized Learning">
                     </div>
                     <h3 class="card-title">Personalized learning</h3>
                     <p class="card-description">
@@ -50,7 +50,7 @@
                 <!-- Shop Section -->
                 <div class="card">
                     <div class="card-image">
-                        <img src="https://via.placeholder.com/400x200/3B82F6/ffffff?text=Shop" alt="Shop">
+                        <img src="{{ asset('images/digishop.jpeg') }}" alt="Shop">
                     </div>
                     <h3 class="card-title">Shop</h3>
                     <p class="card-description">

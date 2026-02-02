@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use App\Models\UserPreference;
 use App\Services\UserActivityService;
+use App\Services\SubscriptionAccessService;
 
 class ProfileController extends Controller
 {
@@ -41,7 +42,35 @@ class ProfileController extends Controller
         // Get user's subject preferences for display
         $userSubjectPreferences = UserPreference::getSubjectPreferences($user->id)->pluck('preference_value')->toArray();
 
-        return view('dashboard.profile', compact('user', 'maskedPhone', 'availablePlans', 'userSubjectPreferences'));
+        // Get user's grade notification opt-outs
+        $gradeOptOuts = UserPreference::where('user_id', $user->id)
+            ->where('preference_type', 'opt_out_grade_notification')
+            ->pluck('preference_value')
+            ->toArray();
+
+        // Get grade levels the user has access to based on their subscription
+        $allGradeLevels = SubscriptionAccessService::getAllowedGradeLevels($user);
+
+        return view('dashboard.profile', compact('user', 'maskedPhone', 'availablePlans', 'userSubjectPreferences', 'gradeOptOuts', 'allGradeLevels'));
+    }
+
+    /**
+     * Show the settings page.
+     */
+    public function settings()
+    {
+        $user = Auth::user();
+
+        // Get user's grade notification opt-outs
+        $gradeOptOuts = UserPreference::where('user_id', $user->id)
+            ->where('preference_type', 'opt_out_grade_notification')
+            ->pluck('preference_value')
+            ->toArray();
+
+        // Get grade levels the user has access to based on their subscription
+        $allGradeLevels = SubscriptionAccessService::getAllowedGradeLevels($user);
+
+        return view('dashboard.settings', compact('user', 'gradeOptOuts', 'allGradeLevels'));
     }
 
     /**

@@ -2419,6 +2419,8 @@ class AdminController extends Controller
             'is_featured' => $request->has('is_featured'),
         ]);
 
+        $this->notificationService->notifyNewDocument($document);
+
         return redirect()->route('admin.content.documents.index')->with('success', 'Document uploaded successfully!');
     }
 
@@ -3244,6 +3246,11 @@ class AdminController extends Controller
                     $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailFilename, 'public');
                     $video->update(['thumbnail_path' => $thumbnailPath]);
                 }
+
+                // Notify if video is approved immediately (e.g. external URL)
+                if ($video->status === 'approved') {
+                    $this->notificationService->notifyNewVideo($video);
+                }
             }
 
             // Step 2: Upload documents (optional) - only if documents are provided and video_id is set
@@ -3265,6 +3272,7 @@ class AdminController extends Controller
 
                     $document = Document::create($docData);
                     $documents[] = $document;
+                    $this->notificationService->notifyNewDocument($document);
                 }
                 $responseData['documents_count'] = count($documents);
             }
@@ -3296,6 +3304,7 @@ class AdminController extends Controller
 
                     $responseData['quiz_id'] = $quiz->id;
                     $responseData['questions_count'] = $quiz->questions()->count();
+                    $this->notificationService->notifyNewQuiz($quiz);
                 }
             }
 
@@ -3932,6 +3941,11 @@ class AdminController extends Controller
 
             $video = Video::create($videoData);
 
+            // Notify if video is approved immediately (e.g. external URL)
+            if ($video->status === 'approved') {
+                $this->notificationService->notifyNewVideo($video);
+            }
+
             // Handle file upload - either chunked or direct
             if ($isChunkedUpload) {
                 // Handle chunked upload - file is already assembled in temp_videos
@@ -3964,6 +3978,7 @@ class AdminController extends Controller
                                     'temp_expires_at' => null
                                 ]);
                                 Storage::disk('public')->delete($tempPath);
+                                $this->notificationService->notifyNewVideo($video);
                             } else {
                                 $video->update(['status' => 'rejected']);
                                 $errorMsg = is_array($result) ? ($result['error'] ?? 'Unknown error') : 'Vimeo service returned invalid response';
@@ -4000,6 +4015,7 @@ class AdminController extends Controller
                                     'temp_expires_at' => null
                                 ]);
                                 Storage::disk('public')->delete($tempPath);
+                                $this->notificationService->notifyNewVideo($video);
                             } else {
                                 $video->update(['status' => 'rejected']);
                                 $errorMsg = is_array($result) ? ($result['error'] ?? 'Unknown error') : 'Vimeo service returned invalid response';
@@ -4114,6 +4130,7 @@ class AdminController extends Controller
 
                 $document = Document::create($docData);
                 $documents[] = $document;
+                $this->notificationService->notifyNewDocument($document);
             }
 
             return response()->json([
@@ -4191,6 +4208,8 @@ class AdminController extends Controller
             // Update video's quiz_id for consistency
             $video->quiz_id = $quiz->id;
             $video->save();
+
+            $this->notificationService->notifyNewQuiz($quiz);
 
             return response()->json([
                 'success' => true,

@@ -159,6 +159,24 @@ class NotificationController extends Controller
     }
 
     /**
+     * Toggle grade level notification opt-out.
+     */
+    public function toggleGradeOptOut(Request $request): JsonResponse
+    {
+        $request->validate([
+            'grade_level' => 'required|string',
+            'opt_out' => 'required|boolean'
+        ]);
+
+        $this->notificationService->setGradeNotificationPreference($request->user(), $request->grade_level, $request->boolean('opt_out'));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Notification preference updated successfully',
+        ]);
+    }
+
+    /**
      * Send system announcement (Admin only).
      */
     public function sendSystemAnnouncement(Request $request): JsonResponse
