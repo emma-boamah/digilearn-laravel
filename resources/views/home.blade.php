@@ -182,7 +182,16 @@
         /* Hero Section */
         .hero {
             position: relative;
+            /* Default for desktop */
             height: 100vh;
+        }
+
+        @media (max-width: 768px) {
+            .hero {
+                /* Adjust for fixed header and safe area on mobile */
+                height: calc(100vh - (120px + var(--safe-area-inset-top)));
+                min-height: 500px; /* Ensure reasonable minimum height */
+            }
         }
 
         .hero-background {

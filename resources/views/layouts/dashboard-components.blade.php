@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="csp-nonce" content="{{ request()->attributes->get('csp_nonce') }}">
     <title>{{ $title ?? config('app.name', 'ShoutOutGh') }} - Dashboard</title>
@@ -37,6 +37,7 @@
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
             --sidebar-width-expanded: 240px;
             --sidebar-width-collapsed: 72px;
+            --safe-area-inset-top: env(safe-area-inset-top, 0px);
         }
 
         * {
@@ -54,6 +55,18 @@
         }
 
         /* YouTube-style Sidebar */
+        .filter-bar {
+            position: fixed !important;
+            top: calc(60px + var(--safe-area-inset-top)) !important; /* Directly below the header */
+            left: 0; /* Start from left edge for full width */
+            width: 100%;
+            background-color: var(--white);
+            border-bottom: 1px solid var(--gray-200);
+            z-index: 999 !important;
+            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            height: calc(60px + var(--safe-area-inset-top));
+            padding-top: calc(0.75rem + var(--safe-area-inset-top));
+        }
         .youtube-sidebar {
             position: fixed;
             top: 0;
@@ -65,6 +78,7 @@
             z-index: 1000;
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease;
             overflow-y: scroll;
+            padding-top: var(--safe-area-inset-top);
         }
 
         .youtube-sidebar.collapsed {
@@ -132,9 +146,8 @@
             padding: 1rem 0;
             overflow-y: auto;
             overflow-x: hidden;
-            height: calc(100vh - 64px);
+            height: calc(100vh - (201.4px + var(--safe-area-inset-top))) !important; /* Full height minus headers */
         }
-
         .sidebar-section {
             margin-bottom: 1.5rem;
         }
@@ -249,7 +262,9 @@
         /* Main Content */
         .main-content {
             position: relative;
-            margin-left: var(--sidebar-width-expanded);
+            margin-left: var(--sidebar-width-expanded) !important;
+            margin-top: calc(201.4px + var(--safe-area-inset-top)) !important; /*Account for both headers: 60px header + 56px filter bar */
+            /* padding-top: 1rem !important; Internal padding */
             min-height: calc(100vh - 60px);
             background-color: var(--gray-25);
             transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -300,6 +315,13 @@
             }
 
             /* Main content takes full width on mobile */
+            .subjects-filter-container {
+            position: fixed !important;
+            left: 0 !important;
+            top: calc(116px + var(--safe-area-inset-top)) !important;
+            width: 100vw !important;
+            }
+
             .main-content {
                 margin-left: 0 !important;
                 width: 100vw !important;

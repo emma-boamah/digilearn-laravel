@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>My Progress - {{ config('app.name', 'ShoutOutGh') }}</title>
     
@@ -35,6 +35,7 @@
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
             --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            --safe-area-inset-top: env(safe-area-inset-top, 0px);
         }
 
         * {
@@ -54,7 +55,7 @@
         .header {
             background-color: var(--white);
             border-bottom: 1px solid var(--gray-200);
-            padding: 1rem 2rem;
+            padding: calc(1rem + var(--safe-area-inset-top)) 2rem 1rem 2rem;
             position: sticky;
             top: 0;
             z-index: 100;

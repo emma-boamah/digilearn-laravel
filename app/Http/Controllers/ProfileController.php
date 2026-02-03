@@ -60,6 +60,18 @@ class ProfileController extends Controller
     public function settings()
     {
         $user = Auth::user();
+        // Load subscription for the summary card
+        $user->load(['currentSubscription.pricingPlan']);
+
+        return view('settings.index', compact('user'));
+    }
+
+    /**
+     * Show the notifications settings page.
+     */
+    public function notifications()
+    {
+        $user = Auth::user();
 
         // Get user's grade notification opt-outs
         $gradeOptOuts = UserPreference::where('user_id', $user->id)
@@ -70,7 +82,7 @@ class ProfileController extends Controller
         // Get grade levels the user has access to based on their subscription
         $allGradeLevels = SubscriptionAccessService::getAllowedGradeLevels($user);
 
-        return view('dashboard.settings', compact('user', 'gradeOptOuts', 'allGradeLevels'));
+        return view('settings.notifications', compact('user', 'gradeOptOuts', 'allGradeLevels'));
     }
 
     /**

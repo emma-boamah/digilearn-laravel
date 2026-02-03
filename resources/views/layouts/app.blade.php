@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title', config('app.name', 'ShoutOutGh'))</title>
@@ -43,6 +43,7 @@
             --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
             --transition-duration: 0.3s;
+            --safe-area-inset-top: env(safe-area-inset-top, 0px);
         }
 
         /* Base styles */
@@ -60,7 +61,8 @@
 
         @media (max-width: 768px) {
             body {
-                padding-top: 120px;
+                /* Add safe area inset + header height */
+                padding-top: calc(120px + var(--safe-area-inset-top));
             }
         }
 
@@ -87,7 +89,7 @@
             left: 0;
             right: 0;
             z-index: 50;
-            padding: 0 1rem;
+            padding: var(--safe-area-inset-top) 1rem 0 1rem;
             transition: all var(--transition-duration) ease;
         }
 
@@ -139,7 +141,7 @@
             }
 
             body {
-                padding-top: 130px; /* Increased from 120px */
+                padding-top: calc(130px + var(--safe-area-inset-top)); /* Increased from 120px */
             }
             
             /* .nav-links {

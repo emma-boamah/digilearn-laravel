@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'ShoutOutGh') }} - Dashboard</title>
     
@@ -27,6 +27,7 @@
             --gray-700: #374151;
             --gray-800: #1f2937;
             --gray-900: #111827;
+            --safe-area-inset-top: env(safe-area-inset-top, 0px);
         }
 
         * {
@@ -39,6 +40,7 @@
             font-family: 'Figtree', sans-serif;
             background-color: var(--gray-100);
             color: var(--gray-900);
+            padding-top: var(--safe-area-inset-top);
         }
 
         .container {

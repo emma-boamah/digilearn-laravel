@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Settings - {{ config('app.name', 'ShoutOutGh') }}</title>
     
@@ -26,11 +26,12 @@
             --gray-900: #111827;
             --sidebar-width-expanded: 240px;
             --sidebar-width-collapsed: 72px;
+            --safe-area-inset-top: env(safe-area-inset-top);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background-color: var(--gray-50); color: var(--gray-900); line-height: 1.6; overflow-x: hidden; }
         .main-container { display: flex; min-height: 100vh; }
-        .main-content { flex: 1; margin-left: var(--sidebar-width-expanded); transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding-top: 60px; }
+        .main-content { flex: 1; margin-left: var(--sidebar-width-expanded); transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding-top: calc(60px + var(--safe-area-inset-top)); }
         .youtube-sidebar.collapsed ~ .main-content { margin-left: var(--sidebar-width-collapsed); }
         .content-wrapper { padding: 2rem; max-width: 900px; margin: 0 auto; }
         .page-title { font-size: 1.875rem; font-weight: 700; color: var(--gray-900); margin-bottom: 0.5rem; }
@@ -50,6 +51,7 @@
             overflow-y: auto;
             display: flex;
             flex-direction: column;
+            padding-top: var(--safe-area-inset-top);
         }
         .youtube-sidebar.collapsed { width: var(--sidebar-width-collapsed) !important; }
         .top-header {
@@ -64,7 +66,8 @@
             border-bottom: 1px solid rgba(229, 231, 235, 0.6);
             z-index: 999 !important;
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            height: 60px;
+            height: calc(60px + var(--safe-area-inset-top));
+            padding-top: calc(0.75rem + var(--safe-area-inset-top));
         }
         .youtube-sidebar.collapsed ~ .top-header { padding-left: var(--sidebar-width-collapsed) !important; }
 
