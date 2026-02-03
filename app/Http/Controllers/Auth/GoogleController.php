@@ -157,14 +157,24 @@ class GoogleController extends Controller
                 return redirect()->intended(route('admin.dashboard'));
             }
 
-            // For regular users, check if they have selected a level group
-            if (!session('selected_level_group')) {
-                return redirect()->route('dashboard.level-selection');
+            // For regular users, check database for existing progress to set session
+            $latestProgress = UserProgress::where('user_id', $user->id)
+                ->where('is_active', true)
+                ->first();
+
+            if ($latestProgress) {
+                // Restore their active session
+                session(['selected_level_group' => $latestProgress->level_group]);
+            } else {
+                // Also check for any progress if no active one found
+                $anyProgress = UserProgress::where('user_id', $user->id)->latest()->first();
+                if ($anyProgress) {
+                     session(['selected_level_group' => $anyProgress->level_group]);
+                }
             }
-
-            // Ensure user progress is initialized for their selected level group
-            $this->ensureUserProgressInitializedForLevelGroup($user, session('selected_level_group'));
-
+            
+            // Redirect to main dashboard directly regardless of level selection
+            // The main dashboard will handle cases where no level is selected
             return redirect()->intended(route('dashboard.main'));
 
         } catch (\Illuminate\Http\Client\ConnectionException $e) {

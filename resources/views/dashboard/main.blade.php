@@ -42,7 +42,7 @@
                     <p class="card-description">
                         Learn at your own pace with our tutors and explore more educative videos on personalized learning. Get the chance to schedule time with tutors.
                     </p>
-                    <a href="{{ route('dashboard.personalized') }}" class="card-button" style="display: inline-block; text-decoration: none; text-align: center;">
+                    <a href="{{ route('coming-soon') }}" class="card-button" style="display: inline-block; text-decoration: none; text-align: center;">
                         Start
                     </a>
                 </div>
@@ -56,7 +56,7 @@
                     <p class="card-description">
                         Purchase all your student needs here. Items are affordable and drastically reduced to suit your financial equilibrium.
                     </p>
-                    <a href="{{ route('dashboard.shop') }}" class="card-button" style="display: inline-block; text-decoration: none; text-align: center;">
+                    <a href="{{ route('coming-soon') }}" class="card-button" style="display: inline-block; text-decoration: none; text-align: center;">
                         Shop now
                     </a>
                 </div>

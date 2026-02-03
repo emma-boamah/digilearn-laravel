@@ -175,11 +175,8 @@ class AuthController extends Controller
             }
 
             // For regular users
-            if (session('selected_level')) {
-                return redirect()->route('dashboard.main');
-            } else {
-                return redirect()->route('dashboard.level-selection');
-            }
+            // For regular users - always redirect to main dashboard
+            return redirect()->route('dashboard.main');
         }
 
         // Check for too many failed attempts
@@ -344,7 +341,23 @@ class AuthController extends Controller
                 return redirect()->route('admin.dashboard');
             }
 
-            return redirect()->route('dashboard.level-selection');
+            // Check database for existing progress to set session
+            $latestProgress = UserProgress::where('user_id', $user->id)
+                ->where('is_active', true)
+                ->first();
+
+            if ($latestProgress) {
+                // Restore their active session
+                session(['selected_level_group' => $latestProgress->level_group]);
+            } else {
+                // Also check for any progress if no active one found
+                $anyProgress = UserProgress::where('user_id', $user->id)->latest()->first();
+                if ($anyProgress) {
+                     session(['selected_level_group' => $anyProgress->level_group]);
+                }
+            }
+
+            return redirect()->route('dashboard.main');
         }
 
         // Failed login attempt
@@ -396,11 +409,8 @@ class AuthController extends Controller
             }
             
             // For regular users
-            if (session('selected_level')) {
-                return redirect()->route('dashboard.main');
-            } else {
-                return redirect()->route('dashboard.level-selection');
-            }
+            // For regular users - always redirect to main dashboard
+            return redirect()->route('dashboard.main');
         }
         return view('auth.signup');
     }

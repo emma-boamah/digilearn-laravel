@@ -53,6 +53,11 @@ Route::get('/guidelines/account-suspension', function () {
 Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
 Route::get('/pricing/pricing-details', [PricingController::class, 'show'])->name('pricing-details');
 
+// Coming soon route (authenticated)
+Route::middleware(['auth'])->group(function(){
+    Route::get('/coming-soon', [App\Http\Controllers\ComingSoonController::class, 'index'])->name('coming-soon');
+});
+
 // Payment routes (authenticated)
 Route::middleware(['auth'])->group(function () {
     Route::post('/payment/initiate', [App\Http\Controllers\PaymentController::class, 'initiatePayment'])->name('payment.initiate');
