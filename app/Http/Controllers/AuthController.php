@@ -721,11 +721,18 @@ class AuthController extends Controller
         );
 
         // 3. Send email with RAW token
-        Mail::to($user->email)->send(new ResetPasswordMail($token, $email));
-        
-        Log::info('Sent password reset link', ['email' => $email]);
-
-        return back()->with('status', $statusMessage);
+        try {
+            Mail::to($user->email)->send(new ResetPasswordMail($token, $email));
+            Log::info('Sent password reset link', ['email' => $email]);
+            return back()->with('status', $statusMessage);
+        } catch (\Exception $e) {
+            Log::error('Failed to send password reset email', [
+                'email' => $email,
+                'error' => $e->getMessage()
+            ]);
+            
+            return back()->with('error', 'Unable to send password reset link due to a temporary system error. Please try again later.');
+        }
     }
 
     public function showResetPassword($token)
