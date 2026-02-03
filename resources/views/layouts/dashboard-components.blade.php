@@ -263,7 +263,7 @@
         .main-content {
             position: relative;
             margin-left: var(--sidebar-width-expanded) !important;
-            margin-top: calc(201.4px + var(--safe-area-inset-top)) !important; /*Account for both headers: 60px header + 56px filter bar */
+            margin-top: var(--safe-area-inset-top) !important; /*Account for both headers: 60px header + 56px filter bar */
             /* padding-top: 1rem !important; Internal padding */
             min-height: calc(100vh - 60px);
             background-color: var(--gray-25);
