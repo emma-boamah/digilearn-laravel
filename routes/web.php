@@ -204,6 +204,7 @@ Route::middleware(['auth'])->group(function () {
     // Profile
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/settings', [ProfileController::class, 'settings'])->name('settings');
+    Route::get('/settings/notifications', [App\Http\Controllers\ProfileController::class, 'notifications'])->name('settings.notifications');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
@@ -362,6 +363,8 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/preferences', [NotificationController::class, 'updatePreferences'])->name('preferences.update');
         Route::post('/grade-opt-out', [NotificationController::class, 'toggleGradeOptOut'])->name('grade-opt-out');
     });
+
+    
 });
 
 /*

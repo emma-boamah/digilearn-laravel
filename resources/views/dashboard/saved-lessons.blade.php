@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Saved Lessons - {{ config('app.name', 'ShoutOutGh') }}</title>
     
@@ -35,6 +35,7 @@
             --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
             --sidebar-width-expanded: 240px;
             --sidebar-width-collapsed: 72px;
+            --safe-area-inset-top: env(safe-area-inset-top, 0px);
         }
 
         * {
@@ -68,6 +69,7 @@
             z-index: 1000;
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             overflow: hidden;
+            padding-top: var(--safe-area-inset-top);
         }
 
         .youtube-sidebar.collapsed {
@@ -274,6 +276,7 @@
             z-index: 999;
             backdrop-filter: blur(8px);
             background-color: rgba(255, 255, 255, 0.95);
+            padding-top: calc(0.75rem + var(--safe-area-inset-top)) !important;
         }
 
         .header-left {
@@ -331,7 +334,7 @@
 
         /* Page Header */
         .page-header {
-            margin-top: 60px;
+            margin-top: calc(60px + var(--safe-area-inset-top));
             padding: 2rem 1rem 1rem;
             background-color: var(--white);
             border-bottom: 1px solid var(--gray-200);

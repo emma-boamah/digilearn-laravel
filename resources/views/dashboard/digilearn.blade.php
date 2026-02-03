@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>DigiLearn - {{ config('app.name', 'ShoutOutGh') }}</title>
     
@@ -41,6 +41,7 @@
             --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
             --sidebar-width-expanded: 240px;
             --sidebar-width-collapsed: 72px;
+            --safe-area-inset-top: env(safe-area-inset-top, 0px);
         }
 
         * {
@@ -79,6 +80,7 @@
             overflow-y: scroll;
             display: flex;
             flex-direction: column;
+            padding-top: var(--safe-area-inset-top);
         }
 
         .youtube-sidebar.collapsed {
@@ -151,7 +153,7 @@
             scrollbar-width: thin; /* For Firefox */
             scrollbar-color: var(--gray-400) transparent; /* For Firefox */
             scroll-behavior: smooth;
-            max-height: calc(100vh - 64px) !important;
+            max-height: calc(100vh - (64px + var(--safe-area-inset-top))) !important;
         }
 
         /* Custom scrollbar for sidebar content */
@@ -324,13 +326,14 @@
             width: calc(100vw - var(--sidebar-width-expanded)) !important;
             max-width: calc(100vw - var(--sidebar-width-expanded)) !important;
             margin-left: var(--sidebar-width-expanded) !important;
-            margin-top: 201.4px !important; /*Account for both headers: 60px header + 56px filter bar */
+            margin-top: calc(201.4px + var(--safe-area-inset-top)) !important; /*Account for both headers: 60px header + 56px filter bar */
             /* padding-top: 1rem !important; Internal padding */
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-sizing: border-box;
             overflow-x: hidden;
             overflow-y: auto;
-            height: calc(100vh - 201.4px) !important; /* Full height minus headers */
+            overflow-y: auto;
+            height: calc(100vh - (201.4px + var(--safe-area-inset-top))) !important; /* Full height minus headers */
         }
 
         .youtube-sidebar.collapsed ~ .main-content {
@@ -363,7 +366,8 @@
             border-bottom: 1px solid rgba(229, 231, 235, 0.6);
             z-index: 999 !important;
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            height: 60px;
+            height: calc(60px + var(--safe-area-inset-top));
+            padding-top: calc(0.75rem + var(--safe-area-inset-top));
         }
 
         .youtube-sidebar.collapsed ~ .top-header {
@@ -565,7 +569,7 @@
         /* Updated filter bar to span full width with glassmorphism and proper positioning */
         .filter-bar {
             position: fixed !important;
-            top: 60px !important; /* Directly below the header */
+            top: calc(60px + var(--safe-area-inset-top)) !important; /* Directly below the header */
             left: 0; /* Start from left edge for full width */
             width: 100vw; /* Full viewport width */
             padding-left: calc(var(--sidebar-width-expanded) + 0.75rem); /* Account for sidebar */
@@ -742,7 +746,7 @@
         .subjects-filter-container {
             position: fixed !important;
             left: 0 !important;
-            top: 116px !important;
+            top: calc(116px + var(--safe-area-inset-top)) !important;
             width: 100vw !important;
             background-color: var(--white);
             border-bottom: 1px solid var(--gray-200);
