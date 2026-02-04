@@ -454,7 +454,7 @@
                             <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image">
                         </a>
                         <nav class="nav-links">
-                            <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">Home</a>
+                            <a href="{{ route('home', ['show_home' => 'true']) }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">Home</a>
                             <a href="{{ route('about') }}" class="{{ request()->routeIs('about') ? 'active' : '' }}">About Us</a>
                             <a href="{{ route('pricing') }}" class="{{ request()->routeIs('pricing') ? 'active' : '' }}">Pricing</a>
                             <a href="{{ route('contact') }}" class="{{ request()->routeIs('contact') ? 'active' : '' }}">Contact</a>
@@ -514,7 +514,7 @@
 
                 <!-- Mobile menu -->
                 <div id="mobile-menu">
-                    <a href="{{ route('home') }}" class="mobile-menu-item">Home</a>
+                    <a href="{{ route('home', ['show_home' => 'true']) }}" class="mobile-menu-item">Home</a>
                     <a href="{{ route('about') }}" class="mobile-menu-item">About Us</a>
                     <a href="{{ route('pricing') }}" class="mobile-menu-item">Pricing</a>
                     <a href="{{ route('contact') }}" class="mobile-menu-item">Contact</a>
