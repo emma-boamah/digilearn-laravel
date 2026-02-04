@@ -461,8 +461,44 @@
                         </nav>
                     </div>
                     <div class="nav-buttons">
-                        <a href="{{ route('login') }}" class="btn btn-outline">Login</a>
-                        <a href="{{ route('signup') }}" class="btn btn-primary">Sign Up Free</a>
+                        @auth
+                            <a href="{{ route('dashboard.main') }}" class="btn btn-primary" style="margin-right: 1rem;">
+                                Learning Hub
+                            </a>
+
+                            <div class="user-dropdown" style="position: relative; display: inline-block;">
+                                <button class="user-avatar-header" id="userDropdownToggle" style="border: none; background: none; cursor: pointer; padding: 0;">
+                                    @if(auth()->user()->avatar_url)
+                                        <img src="{{ auth()->user()->avatar_url }}" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                    @else
+                                        <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #E11E2D, #2677B8); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1.2rem;">
+                                            {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
+                                        </div>
+                                    @endif
+                                </button>
+
+                                <div class="user-dropdown-menu" id="publicUserDropdown" style="position: absolute; right: 0; top: 100%; background: white; border: 1px solid #e5e7eb; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); min-width: 200px; display: none; z-index: 50; margin-top: 0.5rem;">
+                                    <div style="padding: 1rem; border-bottom: 1px solid #e5e7eb;">
+                                        <div style="font-weight: 600; color: #111827;">{{ auth()->user()->name }}</div>
+                                        <div style="font-size: 0.875rem; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ auth()->user()->email }}</div>
+                                    </div>
+                                    
+                                    <a href="{{ route('profile.show') }}" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='transparent'">
+                                        Profile Settings
+                                    </a>
+                                    
+                                    <form action="{{ route('logout') }}" method="POST" style="margin: 0;">
+                                        @csrf
+                                        <button type="submit" style="width: 100%; text-align: left; padding: 0.75rem 1rem; border: none; background: none; color: #E11E2D; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='transparent'">
+                                            Log Out
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        @else
+                            <a href="{{ route('login') }}" class="btn btn-outline">Login</a>
+                            <a href="{{ route('signup') }}" class="btn btn-primary">Sign Up Free</a>
+                        @endauth
                     </div>
                 </div>
 
@@ -482,8 +518,17 @@
                     <a href="{{ route('about') }}" class="mobile-menu-item">About Us</a>
                     <a href="{{ route('pricing') }}" class="mobile-menu-item">Pricing</a>
                     <a href="{{ route('contact') }}" class="mobile-menu-item">Contact</a>
-                    <a href="{{ route('login') }}" class="mobile-menu-item login">Login</a>
-                    <a href="{{ route('signup') }}" class="mobile-menu-item signup">Sign Up Free</a>
+                    @auth
+                        <a href="{{ route('dashboard.main') }}" class="mobile-menu-item" style="color: var(--secondary-blue);">Learning Hub</a>
+                        <a href="{{ route('profile.show') }}" class="mobile-menu-item">Profile Settings</a>
+                        <form action="{{ route('logout') }}" method="POST" style="width: 100%;">
+                            @csrf
+                            <button type="submit" class="mobile-menu-item" style="width: 100%; color: var(--primary-red); border: none; background: none; cursor: pointer;">Log Out</button>
+                        </form>
+                    @else
+                        <a href="{{ route('login') }}" class="mobile-menu-item login">Login</a>
+                        <a href="{{ route('signup') }}" class="mobile-menu-item signup">Sign Up Free</a>
+                    @endauth
                 </div>
             </div>
         </header>
@@ -569,6 +614,23 @@
                 document.body.classList.remove('no-scroll');
             });
         });
+
+        // User Dropdown Toggle for Desktop
+        const userToggle = document.getElementById('userDropdownToggle');
+        const userMenu = document.getElementById('publicUserDropdown');
+        
+        if (userToggle && userMenu) {
+            userToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                userMenu.style.display = userMenu.style.display === 'block' ? 'none' : 'block';
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!userToggle.contains(e.target) && !userMenu.contains(e.target)) {
+                    userMenu.style.display = 'none';
+                }
+            });
+        }
     });
 
     // periodic ping to keep user session active

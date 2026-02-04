@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'DigiLearn - Online Learning Platform for Ghanaian Students')
-@section('description', 'DigiLearn is Ghana\'s premier online learning platform offering interactive lessons, quizzes, and educational resources for students from primary to tertiary level.')
+@section('title', 'ShoutOutGH - Online Learning Platform for Ghanaian Students')
+@section('description', 'ShoutOutGH is Ghana\'s premier online learning platform offering interactive lessons, quizzes, and educational resources for students from primary to tertiary level.')
 
 @section('content')
     <!-- JSON-LD Structured Data for SEO -->
@@ -9,14 +9,14 @@
     $jsonLd = [
         "@context" => "https://schema.org",
         "@type" => "EducationalOrganization",
-        "name" => "DigiLearn",
+        "name" => "ShoutOutGH",
         "description" => "Ghana's premier online learning platform offering interactive lessons, quizzes, and educational resources for students from primary to tertiary level.",
         "url" => url('/'),
         "logo" => secure_asset('images/shoutoutgh-logo.png'),
         "sameAs" => [
-            "https://facebook.com/digilearn",
-            "https://twitter.com/digilearn",
-            "https://instagram.com/digilearn"
+            "https://facebook.com/shoutoutgh",
+            "https://twitter.com/shoutoutgh",
+            "https://instagram.com/shoutoutgh"
         ],
         "contactPoint" => [
             "@type" => "ContactPoint",
@@ -31,7 +31,7 @@
                 "educationalLevel" => "Primary School",
                 "provider" => [
                     "@type" => "EducationalOrganization",
-                    "name" => "DigiLearn"
+                    "name" => "ShoutOutGH"
                 ]
             ],
             [
@@ -40,7 +40,7 @@
                 "educationalLevel" => "JHS",
                 "provider" => [
                     "@type" => "EducationalOrganization",
-                    "name" => "DigiLearn"
+                    "name" => "ShoutOutGH"
                 ]
             ],
             [
@@ -49,7 +49,7 @@
                 "educationalLevel" => "SHS",
                 "provider" => [
                     "@type" => "EducationalOrganization",
-                    "name" => "DigiLearn"
+                    "name" => "ShoutOutGH"
                 ]
             ],
             [
@@ -58,7 +58,7 @@
                 "educationalLevel" => "University Level",
                 "provider" => [
                     "@type" => "EducationalOrganization",
-                    "name" => "DigiLearn"
+                    "name" => "ShoutOutGH"
                 ]
             ]
         ],
@@ -100,17 +100,17 @@
     </script>
 
     <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="DigiLearn - Online Learning Platform for Ghanaian Students">
-    <meta property="og:description" content="DigiLearn is Ghana's premier online learning platform offering interactive lessons, quizzes, and educational resources for students from primary to tertiary level.">
+    <meta property="og:title" content="ShoutOutGH - Online Learning Platform for Ghanaian Students">
+    <meta property="og:description" content="ShoutOutGH is Ghana's premier online learning platform offering interactive lessons, quizzes, and educational resources for students from primary to tertiary level.">
     <meta property="og:image" content="{{ secure_asset('images/shoutoutgh-logo.png') }}">
     <meta property="og:url" content="{{ url('/') }}">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="DigiLearn">
+    <meta property="og:site_name" content="ShoutOutGH">
 
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="DigiLearn - Online Learning Platform for Ghanaian Students">
-    <meta name="twitter:description" content="DigiLearn is Ghana's premier online learning platform offering interactive lessons, quizzes, and educational resources for students from primary to tertiary level.">
+    <meta name="twitter:title" content="ShoutOutGH - Online Learning Platform for Ghanaian Students">
+    <meta name="twitter:description" content="ShoutOutGH is Ghana's premier online learning platform offering interactive lessons, quizzes, and educational resources for students from primary to tertiary level.">
     <meta name="twitter:image" content="{{ secure_asset('images/shoutoutgh-logo.png') }}">
 
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
@@ -2219,10 +2219,10 @@
             <div class="hero-text">
                 <h1 id="hero-title" class="hero-title">
                     Welcome to<br>
-                    <span class="hero-title-emphasis">DigiLearn</span>
+                    <span class="hero-title-emphasis">ShoutOutGH</span>
                 </h1>
                 <div class="hero-description">
-                    <!-- <a href="{{ route('login') }}" class="hero-btn" aria-label="Start learning now on DigiLearn">
+                    <!-- <a href="{{ route('login') }}" class="hero-btn" aria-label="Start learning now on ShoutOutGH">
                         Start now
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -2234,13 +2234,13 @@
     </header>
 
     <main role="main">
-        <!-- Why Choose DigiLearn -->
+        <!-- Why Choose ShoutOutGH -->
         <section class="section bg-white" aria-labelledby="why-choose-title" itemscope itemtype="https://schema.org/Service">
             <div class="container">
                 <div class="why-choose">
                     <div class="why-choose-text">
                         <p class="tools-on-shoutout">Tools on ShoutoutGh</p>
-                        <h2 id="why-choose-title" class="text-3xl font-bold mb-6" itemprop="name">Why Choose DigiLearn?</h2>
+                        <h2 id="why-choose-title" class="text-3xl font-bold mb-6" itemprop="name">Why Choose ShoutOutGH?</h2>
                         <p class="discover-innovative-features" itemprop="description">
                             Discover innovative features, designed to simplify your study process and maximize your academic success.
                         </p>
@@ -2292,7 +2292,7 @@
                                 playsinline
                                 preload="metadata"
                                 poster="{{ secure_asset('images/student-focus.png') }}"
-                                aria-label="Video demonstration of DigiLearn's interactive learning features"
+                                aria-label="Video demonstration of ShoutOutGH's interactive learning features"
                             >
                                 <source src="{{ secure_asset('videos/personalized-study.mp4') }}" type="video/mp4">
                                 <track kind="captions" src="" srclang="en" label="English captions">
@@ -2310,10 +2310,10 @@
                 <div class="study-journey-content">
                     <div class="study-journey-text">
                         <h2 id="journey-title" class="journey-title">Start Your Study<br>Journey Today</h2>
-                        <p class="journey-subtitle">Join thousands of students who are achieving their goals with DigiLearn.<br>Signup now and unlock your potentials</p>
+                        <p class="journey-subtitle">Join thousands of students who are achieving their goals with ShoutOutGH.<br>Signup now and unlock your potentials</p>
                     </div>
                     <div class="study-journey-button">
-                        <a href="{{ route('signup') }}" class="btn btn-white" aria-label="Sign up for DigiLearn to start your learning journey">Sign up now</a>
+                        <a href="{{ route('signup') }}" class="btn btn-white" aria-label="Sign up for ShoutOutGH to start your learning journey">Sign up now</a>
                     </div>
                 </div>
             </div>
@@ -2324,12 +2324,12 @@
             <div class="container">
                 <div class="learning-goals-content">
                     <div class="learning-goals-image">
-                        <img src="{{ secure_asset('images/team-learning.png') }}" alt="Students collaborating and learning together on DigiLearn platform" loading="lazy">
+                        <img src="{{ secure_asset('images/team-learning.png') }}" alt="Students collaborating and learning together on ShoutOutGH platform" loading="lazy">
                     </div>
                     <div class="learning-goals-text">
                         <h3 id="learning-goals-title">We have quizzes that questions and answer choice on all levels, from grade one to tertiary level.</h3>
                         <p>All resources based on the level selected and all on the platform.</p>
-                        <a href="{{ route('login') }}" class="btn btn-primary" aria-label="Get started with learning on DigiLearn">Get Started</a>
+                        <a href="{{ route('login') }}" class="btn btn-primary" aria-label="Get started with learning on ShoutOutGH">Get Started</a>
                     </div>
                 </div>
             </div>
@@ -2338,12 +2338,12 @@
         <!-- Course Videos Section -->
         <section class="course-videos-section" aria-labelledby="course-videos-title">
             <div class="container">
-                <h2 id="course-videos-title" class="course-videos-title">Explore Over 1M Learning Videos on DigiLearn</h2>
+                <h2 id="course-videos-title" class="course-videos-title">Explore Over 1M Learning Videos on ShoutOutGH</h2>
                 <div class="course-videos-grid" role="list" aria-label="Course categories">
                     @foreach($courseCategories as $index => $category)
                         <article class="hover-video-card" data-video-id="course-video-{{ $index }}" role="listitem" itemscope itemtype="https://schema.org/VideoObject">
                             <meta itemprop="name" content="{{ $category['title'] }} Learning Videos">
-                            <meta itemprop="description" content="Educational videos for {{ $category['title'] }} students on DigiLearn">
+                            <meta itemprop="description" content="Educational videos for {{ $category['title'] }} students on ShoutOutGH">
                             <meta itemprop="thumbnailUrl" content="{{ secure_asset($category['img']) }}">
                             <meta itemprop="uploadDate" content="2024-01-01">
                             <meta itemprop="duration" content="PT3M">
@@ -2432,7 +2432,7 @@
                             </div>
                         </div>
                         <div class="pricing-image-right">
-                            <img src="{{ secure_asset('images/student-laptop.png') }}" alt="Student learning on laptop with DigiLearn platform" loading="lazy">
+                            <img src="{{ secure_asset('images/student-laptop.png') }}" alt="Student learning on laptop with ShoutOutGH platform" loading="lazy">
                         </div>
                     </div>
                 </header>
