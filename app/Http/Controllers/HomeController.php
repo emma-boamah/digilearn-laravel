@@ -10,6 +10,24 @@ class HomeController extends Controller
 {
     public function index(Request $request)
     {
+        // Check if user is authenticated and redirect to dashboard
+        // UNLESS they explicitly requested the home page via query param
+        if (Auth::check() && !$request->has('show_home')) {
+            $user = Auth::user();
+
+            // Check if user is admin and redirect appropriately
+            if ($user->is_admin || $user->is_superuser) {
+                return redirect()->route('admin.dashboard');
+            }
+
+            // For regular users, redirect to their dashboard
+            if (session('selected_level_group') || session('selected_level')) {
+                return redirect()->route('dashboard.main');
+            } else {
+                return redirect()->route('dashboard.level-selection');
+            }
+        }
+
         $courseCategories = [
             [
                 'title' => 'Web Development',
