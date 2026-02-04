@@ -87,6 +87,8 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::get('/unlock', [AuthController::class, 'showUnlock'])->name('unlock');
 Route::post('/unlock', [AuthController::class, 'unlock'])->name('unlock.submit');
 Route::get('/suspended', [AuthController::class, 'showSuspended'])->name('auth.suspended');
+Route::get('/verify-otp', [AuthController::class, 'showVerifyOtp'])->name('verify-otp');
+Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->name('verify-otp.submit');
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])
     ->middleware('throttle.redirect:'.config('services.google.rate_limit', 5).',1')
     ->name('auth.google');

@@ -269,7 +269,7 @@
                                 </svg>
                             </div>
                             <div class="text">
-                                <h3>(+233) 2400 20375</h3>
+                                <h3>(+233) 546 994383</h3>
                                 <p>
                                     We have a team of teachers around the world as it helps us provide the best for you. Our team is available 24/7 to help you.
                                 </p>
@@ -286,7 +286,7 @@
                                 </svg>
                             </div>
                             <div class="text">
-                                <h3>shoutoutGh.edu.online</h3>
+                                <h3>shoutoutgh.com</h3>
                                 <p>
                                     We have a team of teachers around the world as it helps us provide the best for you. Our team is available 24/7 to help you with your questions.
                                 </p>
@@ -320,11 +320,11 @@
                         <div class="form-group form-row">
                             <div>
                                 <label for="firstName">First Name</label>
-                                <input id="firstName" name="firstName" placeholder="John">
+                                <input id="firstName" name="firstName" placeholder="First Name">
                             </div>
                             <div>
                                 <label for="lastName">Last Name</label>
-                                <input id="lastName" name="lastName" placeholder="Doe">
+                                <input id="lastName" name="lastName" placeholder="Last Name">
                             </div>
                         </div>
 
