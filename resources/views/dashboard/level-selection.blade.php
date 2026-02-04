@@ -101,6 +101,8 @@
                                     <img src="{{ asset('images/SHS.png') }}" alt="SHS" class="level-shs-image">
                                 @elseif($level['id'] === 'primary-upper')
                                     <img src="{{ asset('images/g4-6.jpeg') }}" alt="Grade 4-6" class="level-g4-6-image">
+                                @elseif($level['id'] === 'primary-lower')
+                                    <img src="{{ asset('images/grade 1-3U.jpeg') }}" alt="Grade 1-3" class="level-g1-3-image">
                                 @elseif($level['id'] === 'university')
                                     <img src="{{ asset('images/university.jpeg') }}" alt="University" class="level-university-image">
                                 @else
