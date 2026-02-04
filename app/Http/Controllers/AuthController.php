@@ -29,6 +29,7 @@ use Illuminate\Support\Facades\DB;
 use App\Mail\ResetPasswordMail;
 use App\Mail\GoogleAccountInfoMail;
 use App\Mail\PasswordChangedMail;
+use App\Mail\OtpVerificationMail;
 
 class AuthController extends Controller
 {
@@ -49,9 +50,9 @@ class AuthController extends Controller
         'SYSTEM' => 'system'
     ];
 
-    public function __construct()
+    public function __construct(EmailVerificationService $emailVerifier)
     {
-        $this->emailVerifier = new EmailVerificationService();
+        $this->emailVerifier = $emailVerifier;
     }
     /**
      * Maximum login attempts before lockout
@@ -538,6 +539,12 @@ class AuthController extends Controller
                     'ip' => get_client_ip()
                 ]);
 
+                // Fallback to OTP if service error
+                if (!empty($emailVerificationResult['service_error'])) {
+                     Log::info('Initiating OTP fallback due to email service error', ['email' => $validated['email']]);
+                     return $this->initiateOtpFlow($request, $validated);
+                }
+
                 return back()->withErrors([
                     'auth_error' => $emailVerificationResult['message'] ?? 'Please provide a valid email address. This email appears to be invalid or disposable.',
                 ])->withInput($request->except('password', 'password_confirmation'));
@@ -550,10 +557,27 @@ class AuthController extends Controller
             ]);
 
             // Continue with signup even if email service fails (don't block user)
-            Log::warning('Email verification service unavailable, proceeding with signup', [
+        } catch (\Exception $e) {
+            $this->logAuthEvent('email_service_error', self::ERROR_CATEGORIES['SYSTEM'], $request, [
+                'email' => $validated['email'],
+                'error' => $e->getMessage(),
+                'ip' => get_client_ip()
+            ]);
+
+            Log::warning('Email verification service unavailable, checking for fallback', [
                 'email' => $validated['email'],
                 'error' => $e->getMessage()
             ]);
+
+             // Check if it's a specific service availability error to trigger OTP
+             // The service returns a specific structure on error, or we catch exceptions here
+             // If we are here, an exception occurred in the try block OR verify() returned logic to throw/log
+             // Actually, verify() in EmailVerificationService returns an array. The try-catch around it handles unexpected exceptions.
+             // But the service itself might return 'service_error' => true without throwing exception.
+             // Wait, the previous block calls $this->emailVerifier->verify(). If that throws, we come here.
+             // If it returns ['service_error' => true], we need to handle that inside the try block.
+             
+             // Let's refactor the logic inside the try block slightly to be cleaner
         }
 
         try {
@@ -615,9 +639,105 @@ class AuthController extends Controller
                 ])->withInput($request->except('password', 'password_confirmation'));
             }
 
-            return back()->withErrors([
+        return back()->withErrors([
                 'auth_error' => 'Registration failed due to a system error. Please try again or contact support if the problem persists.',
             ])->withInput($request->except('password', 'password_confirmation'));
+        }
+    }
+
+    protected function initiateOtpFlow(Request $request, array $validated)
+    {
+        // Generate 6-digit OTP
+        $otp = (string) rand(100000, 999999);
+        
+        // Store registration data and OTP in session (valid for 10 minutes)
+        $registrationData = $validated;
+        $registrationData['password'] = Hash::make($validated['password']); // Hash password now
+        
+        session()->put('registration_otp', [
+            'code' => $otp,
+            'expires_at' => now()->addMinutes(10),
+            'data' => $registrationData
+        ]);
+        
+        // Send OTP email
+        try {
+            Mail::to($validated['email'])->send(new OtpVerificationMail($otp, $validated['name']));
+        } catch (\Exception $e) {
+            Log::error('Failed to send OTP email', ['error' => $e->getMessage()]);
+            return back()->withErrors(['email' => 'Unable to send verification code. Please try again later.']);
+        }
+        
+        return redirect()->route('verify-otp')->with('otp_email', $validated['email']);
+    }
+
+    public function showVerifyOtp()
+    {
+        if (!session()->has('registration_otp')) {
+            return redirect()->route('signup');
+        }
+        return view('auth.verify-otp');
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'otp' => 'required|string|size:6'
+        ]);
+
+        $sessionData = session('registration_otp');
+
+        if (!$sessionData) {
+            return redirect()->route('signup')->withErrors(['email' => 'Session expired. Please sign up again.']);
+        }
+
+        if (now()->gt($sessionData['expires_at'])) {
+            session()->forget('registration_otp');
+            return redirect()->route('signup')->withErrors(['email' => 'Verification code expired. Please sign up again.']);
+        }
+
+        if ($request->otp !== $sessionData['code']) {
+            return back()->withErrors(['otp' => 'Invalid verification code.']);
+        }
+
+        // OTP Valid - Create User
+        $userData = $sessionData['data'];
+
+        try {
+            $user = User::create([
+                'name' => $userData['name'],
+                'email' => $userData['email'],
+                'country' => $userData['country'],
+                'phone' => $userData['phone'] ?? null,
+                'password' => $userData['password'], // Already hashed
+                'email_verified_at' => now(), // OTP acts as verification
+                'registration_ip' => get_client_ip(),
+                'last_login_ip' => get_client_ip(),
+                'last_login_at' => now(),
+            ]);
+
+            // Clear session data
+            session()->forget('registration_otp');
+            session()->forget('otp_email');
+
+            // Standard post-registration logic
+            $this->logAuthEvent('successful_registration_otp', 'success', $request, [
+                'user_id' => $user->id,
+                'email' => $user->email
+            ]);
+
+            event(new Registered($user));
+            Auth::login($user);
+
+            if ($user->is_admin || $user->is_superuser) {
+                return redirect()->route('admin.dashboard');
+            }
+
+            return redirect()->route('dashboard.level-selection');
+
+        } catch (\Exception $e) {
+            Log::error('User creation failed after OTP verification', ['error' => $e->getMessage()]);
+            return redirect()->route('signup')->withErrors(['auth_error' => 'Failed to create account. Please try again.']);
         }
     }
 
@@ -694,7 +814,7 @@ class AuthController extends Controller
 
         // Check if user is Google Auth only (assuming google_id exists and password might be null or user is known to use Google)
         // Adjust logic if you allow both. For this requirement: "If Social Login... send email informing them"
-        if ($user->google_id && empty($user->password)) { 
+        if ($user->google_id) { 
             // Send Google Account Info Mail
             Mail::to($user->email)->send(new GoogleAccountInfoMail($user));
             Log::info('Sent Google account info mail for password reset', ['email' => $email]);
