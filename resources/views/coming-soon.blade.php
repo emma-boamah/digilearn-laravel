@@ -15,8 +15,8 @@
     </p>
 
     <div style="display: flex; gap: 1rem;">
-        <a href="{{ route('dashboard.main') }}" class="btn-primary" style="padding: 1rem 2rem; border-radius: 2rem; font-weight: 600; text-decoration: none; background-color: var(--primary-red); color: white; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(225, 30, 45, 0.2);">
-            Back to Dashboard
+        <a href="{{ route('dashboard.main') }}" class="btn-primary" style="padding: 1rem 2rem; border-radius: 2rem; font-weight: 600; text-decoration: none; background-color: var(--secondary-blue); color: white; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(30, 121, 225, 0.2);">
+            Learning Hub
         </a>
     </div>
 </div>
