@@ -1058,22 +1058,6 @@
             opacity: 0.9;
         }
 
-        .hero-view-button {
-            background-color: var(--primary-red);
-            color: var(--white);
-            padding: 1rem 2rem;
-            border: none;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .hero-view-button:hover {
-            background-color: var(--primary-red-hover);
-        }
-
         /* Content Section */
         .content-section {
             flex: 1;
@@ -1633,11 +1617,6 @@
                 margin-bottom: 16px;
             }
 
-            .hero-view-button {
-                padding: 0.5rem 1rem;
-                font-size: 0.9rem;
-            }
-
             .content-section {
                 min-height: calc(100vh - 172px - 200px);
                 padding: 1rem 0.75rem 2rem;
@@ -2049,7 +2028,6 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                         <h1>Explore & Learn</h1>
                         <p>at your own pace.</p>
                     </div>
-                    <button class="hero-view-button">View</button>
                 </div>
             </div>
             
