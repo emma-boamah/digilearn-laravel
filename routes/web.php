@@ -104,16 +104,6 @@ Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 
-/*
-|--------------------------------------------------------------------------
-| Form Submission Routes (Rate Limited)
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['throttle:forms'])->group(function () {
-    Route::post('/contact/submit', [ContactController::class, 'submit'])->name('contact.submit');
-    Route::post('/feedback/submit', [ContactController::class, 'submitFeedback'])->name('feedback.submit');
-    Route::post('/newsletter/subscribe', [HomeController::class, 'subscribe'])->name('newsletter.subscribe');
-});
 
 /*
 |--------------------------------------------------------------------------
@@ -359,6 +349,12 @@ Route::middleware(['auth'])->group(function () {
     // Plan change API
     Route::post('/api/dashboard/change-plan', [DashboardController::class, 'changePlan'])->name('api.dashboard.change-plan');
 
+    // Form Submissions
+Route::middleware(['throttle:forms'])->group(function () {
+    Route::post('/contact/submit', [ContactController::class, 'submit'])->name('contact.submit');
+    Route::post('/feedback/submit', [ContactController::class, 'submitFeedback'])->name('feedback.submit');
+    Route::post('/newsletter/subscribe', [HomeController::class, 'subscribe'])->name('newsletter.subscribe');
+});
     // Notifications API
     Route::middleware(['decode.obfuscated'])->prefix('api/notifications')->name('api.notifications.')->group(function () {
         Route::get('/', [NotificationController::class, 'index'])->name('index');

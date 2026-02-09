@@ -176,6 +176,11 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(config('services.google.rate_limit', 5))
                 ->by($request->ip());
         });
+
+        // Form submission rate limiting
+        RateLimiter::for('forms', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip());
+        });
     }
 
     /**
