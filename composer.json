@@ -19,7 +19,8 @@
         "pbmedia/laravel-ffmpeg": "^8.7",
         "php-ffmpeg/php-ffmpeg": "^1.3",
         "predis/predis": "^3.0",
-        "pusher/pusher-php-server": "^7.2"
+        "pusher/pusher-php-server": "^7.2",
+        "zohomail/laravel-zeptomail": "^1.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

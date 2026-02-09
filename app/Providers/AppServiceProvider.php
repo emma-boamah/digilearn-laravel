@@ -12,6 +12,8 @@ use Symfony\Component\HttpFoundation\IpUtils;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\Builder;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Mail;
+use ZohoMail\LaravelZeptoMail\Transport\ZeptoMailTransport;
 use Closure;
 
 
@@ -56,6 +58,22 @@ class AppServiceProvider extends ServiceProvider
             if (!Schema::hasIndex($this->getTable(), $name ?? $columns)) {
                 $this->index($columns, $name);
             }
+        });
+
+        // Configure ZeptoMail as the default mailer
+        Mail::extend('zeptomail', function () {
+            // Ensure you have 'token' in config/services.php
+            if (!config('services.zeptomail.token')) {
+                throw new \InvalidArgumentException('ZeptoMail token is not configured in config/services.php.');
+            }
+
+            $region = config('services.zeptomail.region', 'com');
+            $host = str_contains($region, 'zoho.') ? $region : "zoho.$region";
+
+            return new ZeptoMailTransport(
+                config('services.zeptomail.token'),
+                $host
+            );
         });
     }
 
