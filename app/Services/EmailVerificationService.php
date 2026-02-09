@@ -60,11 +60,24 @@ class EmailVerificationService
 
             $data = json_decode($response->getBody(), true);
 
+            // Check for API error response (e.g. quota exceeded)
+            if (isset($data['success']) && $data['success'] === false) {
+                Log::warning('Email verification API error', ['email' => $email, 'response' => $data]);
+                return [
+                    'valid' => false,
+                    'message' => 'Email verification service unavailable.',
+                    'service_error' => true,
+                    'data' => $data
+                ];
+            }
+
             // Validate API response
-            $isValid = isset($data['format_valid'], $data['mx_found'], $data['smtp_check'])
+            // We check if keys exist to avoid undefined index warnings
+            $isValid = isset($data['format_valid'], $data['mx_found'])
                         && $data['format_valid']
-                        && $data['mx_found']
-                        && $data['smtp_check'];
+                        && $data['mx_found'];
+            
+            // Note: We are being lenient with smtp_check as it can be flaky or missing in some responses
 
             // Cache the result with tags
             Cache::tags([$this->cacheTag])->put($cacheKey, $isValid, $this->cacheTtl);
@@ -137,15 +150,15 @@ class EmailVerificationService
             'smtp_check_failed' => 'The email server rejected this address.',
         ];
 
-        if (!$data['format_valid']) {
+        if (isset($data['format_valid']) && !$data['format_valid']) {
             return $messages['format_invalid'];
         }
 
-        if (!$data['mx_found']) {
+        if (isset($data['mx_found']) && !$data['mx_found']) {
             return $messages['mx_not_found'];
         }
 
-        if (!$data['smtp_check']) {
+        if (isset($data['smtp_check']) && !$data['smtp_check']) {
             return $messages['smtp_check_failed'];
         }
 
