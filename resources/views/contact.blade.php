@@ -236,6 +236,22 @@
                 <h2>Let's connect</h2>
             </div>
 
+            @if(session('success'))
+                <div style="padding: 1rem; margin: 1rem; background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; border-radius: 0;">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if($errors->any())
+                <div style="padding: 1rem; margin: 1rem; background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; border-radius: 0;">
+                    <ul style="margin: 0; padding-left: 1rem;">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <div class="card-content">
                 <!-- Left Column - Contact Methods -->
                 <div class="contact-methods">
@@ -317,27 +333,6 @@
                     <h3>Send a message</h3>
                     <form action="{{ route('contact.submit') }}" method="POST">
                         @csrf
-                        <div class="form-group form-row">
-                            <div>
-                                <label for="firstName">First Name</label>
-                                <input id="firstName" name="firstName" placeholder="First Name">
-                            </div>
-                            <div>
-                                <label for="lastName">Last Name</label>
-                                <input id="lastName" name="lastName" placeholder="Last Name">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="email">Email</label>
-                            <input id="email" name="email" type="email" placeholder="john@example.com">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="phone">Phone</label>
-                            <input id="phone" name="phone" placeholder="+1 (123) 456-7890">
-                        </div>
-
                         <div class="form-group">
                             <label for="message">Message</label>
                             <textarea id="message" name="message" placeholder="How can we help you?"></textarea>
