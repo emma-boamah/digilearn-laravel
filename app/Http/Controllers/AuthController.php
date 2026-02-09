@@ -556,28 +556,12 @@ class AuthController extends Controller
                 'ip' => get_client_ip()
             ]);
 
-            // Continue with signup even if email service fails (don't block user)
-        } catch (\Exception $e) {
-            $this->logAuthEvent('email_service_error', self::ERROR_CATEGORIES['SYSTEM'], $request, [
-                'email' => $validated['email'],
-                'error' => $e->getMessage(),
-                'ip' => get_client_ip()
-            ]);
-
             Log::warning('Email verification service unavailable, checking for fallback', [
                 'email' => $validated['email'],
                 'error' => $e->getMessage()
             ]);
 
-             // Check if it's a specific service availability error to trigger OTP
-             // The service returns a specific structure on error, or we catch exceptions here
-             // If we are here, an exception occurred in the try block OR verify() returned logic to throw/log
-             // Actually, verify() in EmailVerificationService returns an array. The try-catch around it handles unexpected exceptions.
-             // But the service itself might return 'service_error' => true without throwing exception.
-             // Wait, the previous block calls $this->emailVerifier->verify(). If that throws, we come here.
-             // If it returns ['service_error' => true], we need to handle that inside the try block.
-             
-             // Let's refactor the logic inside the try block slightly to be cleaner
+            return $this->initiateOtpFlow($request, $validated);
         }
 
         try {
