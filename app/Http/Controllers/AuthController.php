@@ -533,17 +533,17 @@ class AuthController extends Controller
             $emailVerificationResult = $this->emailVerifier->verify($validated['email']);
 
             if (!$emailVerificationResult['valid']) {
-                $this->logAuthEvent('email_verification_failed', self::ERROR_CATEGORIES['EMAIL_VERIFICATION_FAILED'], $request, [
-                    'email' => $validated['email'],
-                    'service_response' => $emailVerificationResult,
-                    'ip' => get_client_ip()
-                ]);
-
                 // Fallback to OTP if service error
                 if (!empty($emailVerificationResult['service_error'])) {
                      Log::info('Initiating OTP fallback due to email service error', ['email' => $validated['email']]);
                      return $this->initiateOtpFlow($request, $validated);
                 }
+
+                $this->logAuthEvent('email_verification_failed', self::ERROR_CATEGORIES['EMAIL_VERIFICATION_FAILED'], $request, [
+                    'email' => $validated['email'],
+                    'service_response' => $emailVerificationResult,
+                    'ip' => get_client_ip()
+                ]);
 
                 return back()->withErrors([
                     'auth_error' => $emailVerificationResult['message'] ?? 'Please provide a valid email address. This email appears to be invalid or disposable.',

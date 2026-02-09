@@ -71,6 +71,18 @@ class EmailVerificationService
                 ];
             }
 
+            // Check for incomplete response (null MX record check) which indicates service limitation/error
+            // Only trigger if format is valid, otherwise let it fail validation normally
+            if ((!isset($data['format_valid']) || $data['format_valid']) && array_key_exists('mx_found', $data) && is_null($data['mx_found'])) {
+                Log::warning('Email verification API returned null MX check', ['email' => $email, 'response' => $data]);
+                return [
+                    'valid' => false,
+                    'message' => 'Email verification service unavailable.',
+                    'service_error' => true,
+                    'data' => $data
+                ];
+            }
+
             // Validate API response
             // We check if keys exist to avoid undefined index warnings
             $isValid = isset($data['format_valid'], $data['mx_found'])
