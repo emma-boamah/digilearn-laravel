@@ -150,7 +150,11 @@ Use Certbot to enable HTTPS.
 
 1. Fork the repo
 2. Create your feature branch (`git checkout -b feature/my-feature`)
-3. Commit your changes
+3. Commit your changes<img width="1920" height="1080" alt="Screenshot from 2026-02-09 22-36-33" src="https://github.com/user-attachments/assets/ba1b3e7b-2257-449b-a88b-cf180493b36c" />
+<img width="1920" height="1080" alt="Screenshot from 2026-02-09 22-36-44" src="https://github.com/user-attachments/assets/c823c169-3310-42a7-9a82-cc2f75e0e276" />
+<img width="1920" height="1080" alt="Screenshot from 2026-02-09 22-37-33" src="https://github.com/user-attachments/assets/f47e947b-7237-454f-ac1b-d02ff2477fe9" />
+<img width="1920" height="1080" alt="Screenshot from 2026-02-09 22-38-05" src="https://github.com/user-attachments/assets/9f7514cd-c256-4a9f-8b0e-e670a99aa6a3" />
+
 4. Push to the branch
 5. Create a pull request
 >>>>>>> 17ecdc3 (These are fixes to the University logic flow, using the right intended route)
