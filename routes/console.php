@@ -50,3 +50,9 @@ Schedule::command('storage:monitor')
         ->everyFifteenMinutes()
         ->withoutOverlapping()
         ->runInBackground();
+
+// Monitor subscription expiry daily at 9 AM
+Schedule::command('subscription:monitor-expiry')
+        ->dailyAt('09:00')
+        ->withoutOverlapping()
+        ->runInBackground();
