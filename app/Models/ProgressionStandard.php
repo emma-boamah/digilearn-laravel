@@ -96,4 +96,62 @@ class ProgressionStandard extends Model
 
         return static::getDefaults();
     }
+    /**
+     * Get all valid level names for a specific level group.
+     * Including variations like "Grade 1", "Class 1", etc.
+     */
+    public static function getLevelsForGroup($levelGroup)
+    {
+        $mapping = [
+            'primary-lower' => [
+                'Primary 1', 'Grade 1', 'Class 1', 'Basic 1',
+                'Primary 2', 'Grade 2', 'Class 2', 'Basic 2',
+                'Primary 3', 'Grade 3', 'Class 3', 'Basic 3'
+            ],
+            'primary-upper' => [
+                'Primary 4', 'Grade 4', 'Class 4', 'Basic 4',
+                'Primary 5', 'Grade 5', 'Class 5', 'Basic 5',
+                'Primary 6', 'Grade 6', 'Class 6', 'Basic 6'
+            ],
+            'jhs' => [
+                'JHS 1', 'J.H.S 1', 'JHS-1', 'Basic 7', 'Grade 7',
+                'JHS 2', 'J.H.S 2', 'JHS-2', 'Basic 8', 'Grade 8',
+                'JHS 3', 'J.H.S 3', 'JHS-3', 'Basic 9', 'Grade 9'
+            ],
+            'shs' => [
+                'SHS 1', 'S.H.S 1', 'SHS-1', 'Grade 10',
+                'SHS 2', 'S.H.S 2', 'SHS-2', 'Grade 11',
+                'SHS 3', 'S.H.S 3', 'SHS-3', 'Grade 12'
+            ],
+            'tertiary' => ['Tertiary', 'University', 'College', 'Polytechnic'],
+        ];
+
+        return $mapping[$levelGroup] ?? [$levelGroup];
+    }
+
+    /**
+     * Get the level group for a specific individual level.
+     * Handles variations and case-insensitivity.
+     */
+    public static function getLevelGroup($individualLevel)
+    {
+        // Normalize input
+        // $normalized = trim(strtolower($individualLevel ?? '')); 
+        // For now, checks containment in the arrays.
+        // Optimization: Could build a reverse map cache if performance becomes an issue.
+
+        $groups = ['primary-lower', 'primary-upper', 'jhs', 'shs', 'tertiary'];
+        
+        foreach ($groups as $group) {
+            $levels = static::getLevelsForGroup($group);
+            // Case-insensitive check
+            foreach ($levels as $level) {
+                if (strcasecmp($level, $individualLevel) === 0) {
+                    return $group;
+                }
+            }
+        }
+
+        return 'unknown';
+    }
 }

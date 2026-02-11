@@ -52,7 +52,7 @@ class LessonCompletion extends Model
     {
         // Ensure we have both individual level and level group
         $individualLevel = $lessonData['level']; // e.g., "Primary 1"
-        $levelGroup = $lessonData['level_group'] ?? static::getLevelGroup($individualLevel); // e.g., "primary-lower"
+        $levelGroup = $lessonData['level_group'] ?? \App\Models\ProgressionStandard::getLevelGroup($individualLevel); // e.g., "primary-lower"
 
         $completion = static::updateOrCreate(
             [
@@ -70,10 +70,22 @@ class LessonCompletion extends Model
             ]
         );
 
-        // Accumulate watch time from all sessions
+        // Secure Progress Logic
+        // We revert to cumulative tracking based on actual watch time reported by frontend.
+        // Frontend only sends watch_time ticks when video is actually playing.
+        // If user skips, watch_time is small, so progress won't jump.
+        
         $previousWatchTime = $completion->watch_time_seconds ?? 0;
+        
+        // Add the incremental watch time from this session
         $completion->watch_time_seconds = $previousWatchTime + $watchTimeSeconds;
-        $completion->completion_percentage = min(100, ($completion->watch_time_seconds / $totalDurationSeconds) * 100);
+
+        // Ensure we don't exceed total duration
+        $completion->watch_time_seconds = min($completion->watch_time_seconds, $totalDurationSeconds);
+        
+        $completion->completion_percentage = $totalDurationSeconds > 0 
+            ? min(100, ($completion->watch_time_seconds / $totalDurationSeconds) * 100) 
+            : 0;
 
         // Get the watch threshold from standards
         $standards = \App\Models\ProgressionStandard::getStandardsForLevel($levelGroup);
@@ -85,8 +97,9 @@ class LessonCompletion extends Model
             $completion->completed_at = now();
         }
 
-        // Increment times watched if starting over
-        if ($watchTimeSeconds < 30) { // If watching from beginning
+        // Increment times watched only if starting from the beginning (new session)
+        // We check if previous watch time was effectively zero to determine if this is a new start
+        if ($previousWatchTime < 30) { 
             $completion->times_watched++;
         }
 
@@ -100,29 +113,7 @@ class LessonCompletion extends Model
         return $completion;
     }
 
-    /**
-     * Get level group from individual level
-     */
-    private static function getLevelGroup($individualLevel)
-    {
-        $groups = [
-            'Primary 1' => 'primary-lower',
-            'Primary 2' => 'primary-lower',
-            'Primary 3' => 'primary-lower',
-            'Primary 4' => 'primary-upper',
-            'Primary 5' => 'primary-upper',
-            'Primary 6' => 'primary-upper',
-            'JHS 1' => 'jhs',
-            'JHS 2' => 'jhs',
-            'JHS 3' => 'jhs',
-            'SHS 1' => 'shs',
-            'SHS 2' => 'shs',
-            'SHS 3' => 'shs',
-            'Tertiary' => 'tertiary',
-        ];
 
-        return $groups[$individualLevel] ?? $individualLevel;
-    }
 
     /**
      * Get completion statistics for a user and level
