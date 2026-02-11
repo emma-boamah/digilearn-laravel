@@ -6274,8 +6274,11 @@
                 }
 
                 try {
+                    const currentTime = this.videoElement.currentTime || (this.youtubePlayer && typeof this.youtubePlayer.getCurrentTime === 'function' ? this.youtubePlayer.getCurrentTime() : 0);
+                    
                     const progressData = {
                         watch_time: Math.floor(this.watchTime),
+                        current_timestamp: Math.floor(currentTime),
                         total_duration: this.totalDuration, // Use actual duration
                         lesson_data: this.lessonData
                     };

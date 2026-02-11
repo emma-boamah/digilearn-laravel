@@ -126,16 +126,8 @@ class QuizAttempt extends Model
      */
     public static function getLevelGroupStats($userId, $levelGroup)
     {
-        // Map level group to individual levels
-        $levelMapping = [
-            'primary-lower' => ['Primary 1', 'Primary 2', 'Primary 3'],
-            'primary-upper' => ['Primary 4', 'Primary 5', 'Primary 6'],
-            'jhs' => ['JHS 1', 'JHS 2', 'JHS 3'],
-            'shs' => ['SHS 1', 'SHS 2', 'SHS 3'],
-            'tertiary' => ['Tertiary'],
-        ];
-
-        $levels = $levelMapping[$levelGroup] ?? [$levelGroup];
+        // Use centralized level mapping
+        $levels = ProgressionStandard::getLevelsForGroup($levelGroup);
 
         return static::where('user_id', $userId)
                     ->whereIn('quiz_level', $levels)

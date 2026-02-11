@@ -29,6 +29,18 @@ class ProgressController extends Controller
         $quizStats = QuizAttempt::getLevelGroupStats($userId, $currentLevel);
         $progressionHistory = LevelProgression::getUserHistory($userId);
 
+        // SYNC: Ensure UserProgress record is up-to-date with calculated stats
+        // This fixes the 'Overall Progress 0%' issue by propagating the 'Quiz Count' fix to the main record
+        $progress->update([
+            'completed_lessons' => $lessonStats->completed_lessons ?? 0,
+            'completed_quizzes' => $quizStats->passed_quizzes ?? 0,
+            'average_quiz_score' => $quizStats->avg_score ?? 0,
+            'total_lessons_in_level' => $this->getTotalLessonsForLevel($currentLevel),
+            'total_quizzes_in_level' => $this->getTotalQuizzesForLevel($currentLevel),
+        ]);
+        $progress->updateCompletionPercentage(); // Recalculate overall % based on new values
+        $progress->save();
+
         // Debug logging to verify data is coming from database
         Log::info('Progress page data sources', [
             'user_id' => $userId,
@@ -91,6 +103,7 @@ class ProgressController extends Controller
     {
         $request->validate([
             'watch_time' => 'required|integer|min:0',
+            'current_timestamp' => 'nullable|integer|min:0',
             'total_duration' => 'nullable|numeric|min:1',
             'lesson_data' => 'required|array',
         ]);
@@ -148,6 +161,11 @@ class ProgressController extends Controller
             'final_duration' => $totalDuration,
             'watch_time' => $request->watch_time
         ]);
+
+        // Merge current_timestamp into lessonData for the model
+        if ($request->has('current_timestamp')) {
+            $lessonData['current_timestamp'] = $request->current_timestamp;
+        }
 
         // Record the lesson completion
         $completion = LessonCompletion::recordWatchProgress(
@@ -507,29 +525,13 @@ class ProgressController extends Controller
     private function updateLessonCompletionsForProgression($userId, $levelGroup)
     {
         try {
-            // Get all lesson completions for this user and level group
-            $lessonCompletions = \App\Models\LessonCompletion::where('user_id', $userId)
-                ->where('lesson_level_group', $levelGroup)
-                ->get();
-
             // Get all quiz attempts for this user and level group
             $quizAttempts = \App\Models\QuizAttempt::where('user_id', $userId)
                 ->where('quiz_level', $levelGroup)
                 ->get();
 
-            // Update lesson_completions with final completion status
-            foreach ($lessonCompletions as $completion) {
-                // Mark as fully completed if not already done
-                if (!$completion->fully_completed) {
-                    $completion->update([
-                        'fully_completed' => true,
-                        'completed_at' => now(),
-                        'completion_percentage' => 100.00, // Mark as 100% complete for progression
-                    ]);
-                }
-            }
-
             // Create lesson completion records for quizzes that were passed
+            // This ensures they appear in the user's history even if they progressed via other means
             foreach ($quizAttempts as $attempt) {
                 if ($attempt->passed) {
                     // Check if we already have a completion record for this quiz
@@ -562,8 +564,8 @@ class ProgressController extends Controller
             Log::info('Updated lesson_completions for level progression', [
                 'user_id' => $userId,
                 'level_group' => $levelGroup,
-                'lesson_completions_updated' => $lessonCompletions->count(),
                 'quiz_completions_added' => $quizAttempts->where('passed', true)->count(),
+                'note' => 'Skipped auto-completing video lessons to preserve watch history',
             ]);
 
         } catch (\Exception $e) {
@@ -617,16 +619,8 @@ class ProgressController extends Controller
      */
     private function getTotalLessonsForLevel($level)
     {
-        // Map level group to individual levels for database query
-        $levelMapping = [
-            'primary-lower' => ['Primary 1', 'Primary 2', 'Primary 3'],
-            'primary-upper' => ['Primary 4', 'Primary 5', 'Primary 6'],
-            'jhs' => ['JHS 1', 'JHS 2', 'JHS 3'],
-            'shs' => ['SHS 1', 'SHS 2', 'SHS 3'],
-            'tertiary' => ['Tertiary'],
-        ];
-
-        $levels = $levelMapping[$level] ?? [$level];
+        // Use centralized level mapping from ProgressionStandard
+        $levels = \App\Models\ProgressionStandard::getLevelsForGroup($level);
 
         // Get actual count from videos table
         return \App\Models\Video::whereIn('grade_level', $levels)
@@ -636,16 +630,8 @@ class ProgressController extends Controller
     
     private function getTotalQuizzesForLevel($level)
     {
-        // Map level group to individual levels for database query
-        $levelMapping = [
-            'primary-lower' => ['Primary 1', 'Primary 2', 'Primary 3'],
-            'primary-upper' => ['Primary 4', 'Primary 5', 'Primary 6'],
-            'jhs' => ['JHS 1', 'JHS 2', 'JHS 3'],
-            'shs' => ['SHS 1', 'SHS 2', 'SHS 3'],
-            'tertiary' => ['Tertiary'],
-        ];
-
-        $levels = $levelMapping[$level] ?? [$level];
+        // Use centralized level mapping from ProgressionStandard
+        $levels = \App\Models\ProgressionStandard::getLevelsForGroup($level);
 
         // Get actual count from quizzes table
         return \App\Models\Quiz::whereIn('grade_level', $levels)
