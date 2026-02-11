@@ -1,5 +1,18 @@
 @extends('layouts.app')
 
+@section('title', 'Contact ShoutOutGH - Get in Touch With Us')
+@section('description', 'Contact ShoutOutGH for questions about our online education platform. Reach us by phone, email, or our contact form. Based in Accra, Ghana.')
+@section('keywords', 'contact ShoutOutGH, online education support ghana, e-learning help ghana, ShoutOutGH phone number, ShoutOutGH email')
+
+@section('head')
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Contact ShoutOutGH - Get in Touch With Us">
+    <meta property="og:description" content="Contact ShoutOutGH for questions about our online education platform in Ghana. We're here to help.">
+    <meta property="og:image" content="{{ secure_asset('images/shoutoutgh-logo.png') }}">
+    <meta property="og:url" content="{{ url('/contact') }}">
+    <meta property="og:type" content="website">
+@endsection
+
 @section('content')
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         /* Contact page specific styles */

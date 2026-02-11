@@ -1,9 +1,20 @@
 @extends('layouts.app')
 
+@section('title', 'About ShoutOutGH - Online Education Platform in Ghana')
+@section('description', 'Learn about ShoutOutGH, Ghana\'s premier digital learning platform created by Emmanuel Kwadwo Boamah. Transforming education and making quality learning accessible to every Ghanaian student.')
+@section('keywords', 'about ShoutOutGH, online education ghana, digital learning platform ghana, e-learning ghana, ghana education platform, Emmanuel Kwadwo Boamah')
+
 @section('head')
     <!-- Preload critical LCP image -->
     <link rel="preload" as="image" href="{{ secure_asset('images/student-laptop-about.webp') }}" type="image/webp" fetchpriority="high">
     <link rel="preload" as="image" href="{{ secure_asset('images/student-laptop-about.jpg') }}" fetchpriority="high">
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="About ShoutOutGH - Online Education Platform in Ghana">
+    <meta property="og:description" content="Learn about ShoutOutGH, Ghana's premier digital learning platform. Transforming education and making quality learning accessible to every Ghanaian student.">
+    <meta property="og:image" content="{{ secure_asset('images/shoutoutgh-logo.png') }}">
+    <meta property="og:url" content="{{ url('/about') }}">
+    <meta property="og:type" content="website">
 @endsection
 
 @section('content')
