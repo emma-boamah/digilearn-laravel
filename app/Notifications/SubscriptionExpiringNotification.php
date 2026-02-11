@@ -44,7 +44,7 @@ class SubscriptionExpiringNotification extends Notification implements ShouldQue
             ->line("Your **{$this->planName}** subscription will expire in **{$this->daysRemaining} days**.")
             ->line("To avoid any interruption to your access, please renew your subscription soon.")
             ->action('Renew Subscription', route('pricing'))
-            ->line('Thank you for using DigiLearn!');
+            ->line('Thank you for using ShoutOutGh!');
     }
 
     /**
