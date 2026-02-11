@@ -4,11 +4,22 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Sign Up - {{ config('app.name', 'DigiLearn') }}</title>
+    <title>Sign Up - ShoutOutGH | Free Online Education in Ghana</title>
+    <meta name="description" content="Create a free ShoutOutGH account to access quality online education in Ghana. Interactive lessons, quizzes, and study materials for Primary, JHS, SHS, and University students.">
+    <meta name="keywords" content="ShoutOutGH signup, register online education ghana, free online school ghana, create account, e-learning registration ghana">
+    <meta name="robots" content="noindex, follow">
+    <link rel="canonical" href="{{ url('/signup') }}">
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Sign Up - ShoutOutGH | Free Online Education in Ghana">
+    <meta property="og:description" content="Create a free ShoutOutGH account. Access quality online education for Ghanaian students.">
+    <meta property="og:image" content="{{ secure_asset('images/shoutoutgh-logo.png') }}">
+    <meta property="og:url" content="{{ url('/signup') }}">
+    <meta property="og:type" content="website">
+
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         :root {
             --primary-red: #dc2626;
