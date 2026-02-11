@@ -7,7 +7,14 @@
 
     <title>@yield('title', config('app.name', 'ShoutOutGh'))</title>
 
-    <!-- Additional head content -->
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="@yield('description', 'ShoutOutGH is Ghana\'s premier online learning platform offering interactive lessons, quizzes, and educational resources for students from primary to tertiary level.')">
+    <meta name="keywords" content="@yield('keywords', 'online education in ghana, online school, education, school, e-learning ghana, ghana education, digital learning, online classes ghana, ShoutOutGH')">
+    <meta name="robots" content="index, follow">
+    <meta name="author" content="ShoutOutGH">
+    <link rel="canonical" href="@yield('canonical', url()->current())">
+
+    <!-- Additional head content (OG tags, structured data, etc.) -->
     @yield('head')
 
     <!-- Fonts -->

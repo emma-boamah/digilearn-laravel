@@ -1,9 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'ShoutOutGH - Online Learning Platform for Ghanaian Students')
-@section('description', 'ShoutOutGH is Ghana\'s premier online learning platform offering interactive lessons, quizzes, and educational resources for students from primary to tertiary level.')
+@section('title', 'ShoutOutGH - Online Learning Platform for Ghanaian Students | Online Education in Ghana')
+@section('description', 'ShoutOutGH is Ghana\'s premier online learning platform offering interactive lessons, quizzes, and educational resources for students from primary to tertiary level. Access quality online education in Ghana.')
+@section('keywords', 'online education in ghana, online school ghana, education ghana, school, e-learning ghana, digital learning platform, online classes ghana, ShoutOutGH, JHS lessons, SHS lessons, university courses ghana, BECE preparation, WASSCE preparation, free online school ghana')
+@section('canonical', url('/'))
 
-@section('content')
+@section('head')
     <!-- JSON-LD Structured Data for SEO -->
     @php
     $jsonLd = [
@@ -101,17 +103,21 @@
 
     <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="ShoutOutGH - Online Learning Platform for Ghanaian Students">
-    <meta property="og:description" content="ShoutOutGH is Ghana's premier online learning platform offering interactive lessons, quizzes, and educational resources for students from primary to tertiary level.">
+    <meta property="og:description" content="Access quality online education in Ghana. Interactive lessons, quizzes, and study materials for Primary, JHS, SHS, and University students.">
     <meta property="og:image" content="{{ secure_asset('images/shoutoutgh-logo.png') }}">
     <meta property="og:url" content="{{ url('/') }}">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="ShoutOutGH">
+    <meta property="og:locale" content="en_GH">
 
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="ShoutOutGH - Online Learning Platform for Ghanaian Students">
-    <meta name="twitter:description" content="ShoutOutGH is Ghana's premier online learning platform offering interactive lessons, quizzes, and educational resources for students from primary to tertiary level.">
+    <meta name="twitter:description" content="Access quality online education in Ghana. Interactive lessons, quizzes, and study materials for Primary, JHS, SHS, and University students.">
     <meta name="twitter:image" content="{{ secure_asset('images/shoutoutgh-logo.png') }}">
+@endsection
+
+@section('content')
 
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
     html, body {

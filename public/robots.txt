@@ -1,2 +1,14 @@
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /profile
+Disallow: /settings
+Disallow: /api/
+Disallow: /login
+Disallow: /signup
+Disallow: /payment/
+Disallow: /webhooks/
+
+# Sitemap
+Sitemap: https://shoutoutgh.com/sitemap.xml

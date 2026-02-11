@@ -1,5 +1,18 @@
 @extends('layouts.app')
 
+@section('title', 'Pricing Plans - ShoutOutGH Online Learning Platform')
+@section('description', 'Choose the right learning plan for you on ShoutOutGH. Affordable online education plans for Ghanaian students with access to lessons, quizzes, and study materials.')
+@section('keywords', 'ShoutOutGH pricing, online education pricing ghana, affordable e-learning ghana, online school fees ghana, digital learning plans')
+
+@section('head')
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Pricing Plans - ShoutOutGH Online Learning Platform">
+    <meta property="og:description" content="Affordable online education plans for Ghanaian students. Choose the right plan for Primary, JHS, SHS, or University level.">
+    <meta property="og:image" content="{{ secure_asset('images/shoutoutgh-logo.png') }}">
+    <meta property="og:url" content="{{ url('/pricing') }}">
+    <meta property="og:type" content="website">
+@endsection
+
 @section('content')
 <style nonce="{{ request()->attributes->get('csp_nonce') }}">
     html, body {
