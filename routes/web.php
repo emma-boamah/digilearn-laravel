@@ -18,6 +18,7 @@ use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\CookieController;
+use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
@@ -45,6 +46,7 @@ Route::get('/session-test', function (Request $request) {
 |--------------------------------------------------------------------------
 */
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/about', [AboutController::class, 'index'])->name('about');
 Route::get('/contact', [ContactController::class, 'index'])->name('contact');
 Route::get('/guidelines/account-suspension', function () {
