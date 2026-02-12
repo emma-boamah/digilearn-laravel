@@ -20,6 +20,7 @@ use Carbon\Carbon;
 use App\Models\UserPreference;
 use App\Services\UserActivityService;
 use App\Services\SubscriptionAccessService;
+use App\Services\ResubscriptionService;
 
 class ProfileController extends Controller
 {
@@ -990,21 +991,21 @@ class ProfileController extends Controller
                 $expiresAt = $startedAt->copy()->addYear();
             }
 
-            $userSubscription = UserSubscription::create([
-                'user_id' => $user->id,
-                'pricing_plan_id' => $newPlan->id,
-                'status' => $status,
-                'started_at' => $startedAt,
-                'expires_at' => $expiresAt,
-                'trial_ends_at' => $trialEndsAt,
+            // Use ResubscriptionService to handle complex re-subscription logic
+            $resubService = app(ResubscriptionService::class);
+            $duration = ($newPlan->period === 'yearly') ? '12month' : 'month';
+            
+            $resubResult = $resubService->handleResubscription($user, $newPlan, [
                 'amount_paid' => $newPlan->price,
                 'payment_method' => 'simulated',
                 'transaction_id' => Str::random(16),
-                'metadata' => [
-                    'previous_plan_id' => $currentSubscription ? $currentSubscription->pricing_plan_id : null,
-                    'change_type' => $currentSubscription ? ($newPlan->price > $currentSubscription->pricingPlan->price ? 'upgrade' : 'downgrade') : 'new',
-                ],
+                'duration' => $duration,
+                'status' => $status, // Pass through trial status if applicable
+                'trial_ends_at' => $trialEndsAt,
+                'expires_at' => $expiresAt
             ]);
+
+            $userSubscription = $resubResult['subscription'];
 
             // Update user's has_active_subscription flag or cache if you have one
             $user->load('currentSubscription'); // Refresh user's relationship
@@ -1097,15 +1098,16 @@ class ProfileController extends Controller
         $startDate = Carbon::now();
         $endDate = $startDate->copy()->addDays($plan->duration_days);
 
-        UserSubscription::create([
-            'user_id' => $user->id,
-            'pricing_plan_id' => $plan->id,
-            'start_date' => $startDate,
-            'end_date' => $endDate,
-            'status' => 'active',
-            'payment_status' => 'paid',
-            'trial_ends_at' => null, // No trial for direct subscription
+        // Use ResubscriptionService to handle re-subscription logic
+        $resubService = app(ResubscriptionService::class);
+        $resubResult = $resubService->handleResubscription($user, $plan, [
+            'amount_paid' => $plan->price, // Assuming plan has a price
+            'payment_method' => 'simulated',
+            'transaction_id' => Str::random(16),
+            'duration' => ($plan->duration_days >= 365) ? '12month' : 'month'
         ]);
+
+        $userSubscription = $resubResult['subscription'];
 
         Log::channel('security')->info('user_subscribed', [
             'user_id' => Auth::id(),
@@ -1153,15 +1155,16 @@ class ProfileController extends Controller
         $startDate = Carbon::now();
         $endDate = $startDate->copy()->addDays($newPlan->duration_days);
 
-        UserSubscription::create([
-            'user_id' => $user->id,
-            'pricing_plan_id' => $newPlan->id,
-            'start_date' => $startDate,
-            'end_date' => $endDate,
-            'status' => 'active',
-            'payment_status' => 'paid',
-            'trial_ends_at' => null,
+        // Use ResubscriptionService to handle re-subscription/upgrade logic
+        $resubService = app(ResubscriptionService::class);
+        $resubResult = $resubService->handleResubscription($user, $newPlan, [
+            'amount_paid' => $newPlan->price,
+            'payment_method' => 'simulated',
+            'transaction_id' => Str::random(16),
+            'duration' => ($newPlan->duration_days >= 365) ? '12month' : 'month'
         ]);
+
+        $userSubscription = $resubResult['subscription'];
 
         Log::channel('security')->info('user_upgraded_subscription', [
             'user_id' => Auth::id(),

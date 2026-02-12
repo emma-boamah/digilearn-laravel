@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\UserSubscription;
 use App\Notifications\SubscriptionExpiringNotification;
+use App\Notifications\SubscriptionExpiredNotification;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -35,7 +36,11 @@ class MonitorSubscriptionExpiry extends Command
         $this->checkExpiringSubscriptions(3);
         
         $this->checkExpiringTrials(3);
-        $this->checkExpiringTrials(1); // Notify 1 day before trial ends as well
+        $this->checkExpiringTrials(1);
+
+        // Expiry-day and grace period notifications
+        $this->checkExpiredToday();
+        $this->checkGracePeriodEnding(1);
 
         $this->info('Subscription expiry check completed.');
     }
@@ -115,6 +120,86 @@ class MonitorSubscriptionExpiry extends Command
                 Log::error("Failed to send {$days}-day trial expiry notification", [
                     'user_id' => $subscription->user_id,
                     'error' => $e->getMessage()
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Notify users whose subscriptions expired today (now in grace period).
+     */
+    private function checkExpiredToday()
+    {
+        $today = Carbon::now()->format('Y-m-d');
+
+        // Find subscriptions that just moved to grace period today
+        $expiredToday = UserSubscription::where('status', 'grace_period')
+            ->whereDate('expires_at', $today)
+            ->with(['user', 'pricingPlan'])
+            ->get();
+
+        $count = $expiredToday->count();
+        $this->info("Found {$count} subscriptions that expired today.");
+
+        foreach ($expiredToday as $subscription) {
+            if (!$subscription->user) {
+                continue;
+            }
+
+            try {
+                $subscription->user->notify(new SubscriptionExpiredNotification(
+                    $subscription->pricingPlan->name ?? 'Plan',
+                    'expired'
+                ));
+
+                Log::info('Sent subscription expired notification', [
+                    'user_id' => $subscription->user_id,
+                    'subscription_id' => $subscription->id,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send subscription expired notification', [
+                    'user_id' => $subscription->user_id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Notify users whose grace period ends in X days.
+     */
+    private function checkGracePeriodEnding(int $days)
+    {
+        $targetDate = Carbon::now()->addDays($days)->format('Y-m-d');
+
+        $gracePeriodEnding = UserSubscription::where('status', 'grace_period')
+            ->whereDate('grace_period_ends_at', $targetDate)
+            ->with(['user', 'pricingPlan'])
+            ->get();
+
+        $count = $gracePeriodEnding->count();
+        $this->info("Found {$count} grace periods ending in {$days} day(s).");
+
+        foreach ($gracePeriodEnding as $subscription) {
+            if (!$subscription->user) {
+                continue;
+            }
+
+            try {
+                $subscription->user->notify(new SubscriptionExpiredNotification(
+                    $subscription->pricingPlan->name ?? 'Plan',
+                    'grace_ending',
+                    $days
+                ));
+
+                Log::info("Sent grace period ending notification ({$days} day(s))", [
+                    'user_id' => $subscription->user_id,
+                    'subscription_id' => $subscription->id,
+                ]);
+            } catch (\Exception $e) {
+                Log::error("Failed to send grace period ending notification", [
+                    'user_id' => $subscription->user_id,
+                    'error' => $e->getMessage(),
                 ]);
             }
         }

@@ -51,6 +51,12 @@ Schedule::command('storage:monitor')
         ->withoutOverlapping()
         ->runInBackground();
 
+// Expire subscriptions and manage grace periods daily at midnight
+Schedule::command('subscription:expire')
+        ->dailyAt('00:05')
+        ->withoutOverlapping()
+        ->runInBackground();
+
 // Monitor subscription expiry daily at 9 AM
 Schedule::command('subscription:monitor-expiry')
         ->dailyAt('09:00')

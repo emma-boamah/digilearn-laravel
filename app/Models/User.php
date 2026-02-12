@@ -112,17 +112,22 @@ class User extends Authenticatable implements MustVerifyEmail
     public function currentSubscription()
     {
         return $this->hasOne(UserSubscription::class)
-                    ->whereIn('status', ['active', 'trial', 'Active', 'Trial']) // Add case variations
+                    ->whereIn('status', ['active', 'trial', 'grace_period'])
                     ->where(function ($query) {
                         $query->whereNull('expires_at')
-                              ->orWhere('expires_at', '>', now());
+                              ->orWhere('expires_at', '>', now())
+                              ->orWhere(function ($q) {
+                                  // Grace period: expires_at is past but grace_period_ends_at is future
+                                  $q->where('status', 'grace_period')
+                                    ->where('grace_period_ends_at', '>', now());
+                              });
                     })
                     ->where(function ($query) {
                         $query->whereNull('trial_ends_at')
                               ->orWhere('trial_ends_at', '>', now());
                     })
                     ->with('pricingPlan')
-                    ->orderBy('created_at', 'desc'); // Use orderBy instead of latest()
+                    ->orderBy('created_at', 'desc');
     }
 
     /**
