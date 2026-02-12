@@ -8,6 +8,12 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+// Monitor authentication logs every 6 hours and send alerts
+Schedule::command('auth:monitor --hours=24 --alert --silent --email=contact@shoutoutgh.com')
+        ->everySixHours()
+        ->withoutOverlapping()
+        ->runInBackground();
+
 // Schedule video cleanup to run daily at 2 AM
 Schedule::command('videos:cleanup-expired')->dailyAt('02:00');
 
