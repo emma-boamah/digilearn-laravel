@@ -21,12 +21,14 @@ class UserSubscription extends Model
         'payment_method',
         'transaction_id',
         'metadata',
+        'grace_period_ends_at',
     ];
 
     protected $casts = [
         'started_at' => 'datetime',
         'expires_at' => 'datetime',
         'trial_ends_at' => 'datetime',
+        'grace_period_ends_at' => 'datetime',
         'amount_paid' => 'decimal:2',
         'metadata' => 'array',
     ];
@@ -71,7 +73,18 @@ class UserSubscription extends Model
      */
     public function isExpired()
     {
-        return $this->expires_at && $this->expires_at->isPast();
+        return $this->status === 'expired' ||
+               ($this->expires_at && $this->expires_at->isPast() && !$this->isInGracePeriod());
+    }
+
+    /**
+     * Check if subscription is in grace period
+     */
+    public function isInGracePeriod(): bool
+    {
+        return $this->status === 'grace_period'
+            && $this->grace_period_ends_at
+            && $this->grace_period_ends_at->isFuture();
     }
 
     /**
@@ -103,11 +116,18 @@ class UserSubscription extends Model
      */
     public function scopeActive($query)
     {
-        return $query->where('status', 'active')
-                    ->where(function ($q) {
-                        $q->whereNull('expires_at')
-                          ->orWhere('expires_at', '>', now());
-                    });
+        return $query->where(function ($q) {
+            $q->where(function ($active) {
+                $active->where('status', 'active')
+                       ->where(function ($dates) {
+                           $dates->whereNull('expires_at')
+                                 ->orWhere('expires_at', '>', now());
+                       });
+            })->orWhere(function ($grace) {
+                $grace->where('status', 'grace_period')
+                      ->where('grace_period_ends_at', '>', now());
+            });
+        });
     }
 
     /**
