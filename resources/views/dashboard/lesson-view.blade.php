@@ -737,6 +737,7 @@
             transition: all 0.2s ease;
             box-shadow: var(--shadow-sm);
             min-width: 0; /* Prevents overflow */
+            text-decoration: none;
         }
 
         .action-btn:hover {
@@ -2900,7 +2901,7 @@
 
         <!-- Quiz Button (Right) -->
         <div class="quiz-container">
-            <a href="{{ route('quiz.index') }}" class="filter-button quiz">Quiz</a>
+            <a href="{{ isset($lesson) && !empty($lesson['has_quiz']) ? route('quiz.instructions', ['quizId' => $lesson['encoded_quiz_id']]) : route('quiz.index') }}" class="filter-button quiz">Quiz</a>
         </div>
     </div>
 
@@ -3078,7 +3079,7 @@
                                     </div>
                                 </div>
                                 <div class="item-actions">
-                                    <a href="{{ route('quiz.take', ['quizId' => $quiz->id]) }}" class="action-btn-small primary">
+                                    <a href="{{ route('quiz.instructions', ['quizId' => \App\Services\UrlObfuscator::encode($quiz->id)]) }}" class="action-btn-small primary">
                                         <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
                                             <path d="M14.23 12.004a2.236 2.236 0 0 0 .53-1.482 2.236 2.236 0 0 0-.53-1.482l-4.23-2.882a2.236 2.236 0 0 0-2.46 0L3.31 9.04a2.236 2.236 0 0 0 0 3.848l4.23 2.882a2.236 2.236 0 0 0 2.46 0l4.23-2.882z"/>
                                         </svg>
@@ -3318,12 +3319,12 @@
         <aside class="lesson-sidebar">
             <!-- Enhanced Action Buttons -->
             <div class="action-buttons-grid">
-                <button class="action-btn">
-                    <svg fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                <a href="{{ isset($lesson) && !empty($lesson['has_quiz']) ? route('quiz.instructions', ['quizId' => $lesson['encoded_quiz_id']]) : route('quiz.index') }}" class="action-btn">
+                    <svg fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org">
+                        <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm1 14h-2v-2h2v2zm0-4.43c0 .34-.05.62-.16.82-.1.21-.29.41-.57.6-.28.19-.44.33-.49.43-.05.1-.08.27-.08.5h-1.4c0-.42.06-.75.18-.99.12-.24.36-.48.72-.7.24-.16.39-.3.45-.43.06-.13.09-.3.09-.5 0-.31-.08-.55-.25-.72-.17-.17-.42-.26-.74-.26-.35 0-.6.09-.76.27-.15.18-.23.46-.23.85H9c0-.77.21-1.36.63-1.78.43-.41 1.01-.62 1.76-.62.74 0 1.32.2 1.74.6.42.39.63.92.63 1.58-.01.32-.08.61-.22.84l-.01.12z"/>
                     </svg>
-                    Test
-                </button>
+                    Quiz
+                </a>
                 <button class="action-btn action-navigate-btn" data-href="{{ route('dashboard.lesson.document', ['lessonId' => \App\Services\UrlObfuscator::encode($lesson['id']), 'type' => 'pdf']) }}" data-document-type="pdf">
                     <svg fill="currentColor" viewBox="0 0 24 24">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
