@@ -299,6 +299,8 @@
             cursor: pointer;
             font-weight: 500;
             transition: all 0.2s ease;
+            position: relative;
+            text-decoration: none;
         }
 
         /* Mobile: Compact quiz button */
@@ -2556,6 +2558,7 @@
                 padding: 0.75rem 0.5rem;
                 font-size: 0.75rem;
                 gap: 0.25rem;
+                position: relative;
             }
 
             .action-btn svg {
@@ -2795,6 +2798,7 @@
             .action-btn {
                 padding: 0.625rem 0.375rem;
                 font-size: 0.6875rem;
+                position: relative;
             }
 
             .action-btn svg {
@@ -2901,7 +2905,7 @@
 
         <!-- Quiz Button (Right) -->
         <div class="quiz-container">
-            <a href="{{ isset($lesson) && !empty($lesson['has_quiz']) ? route('quiz.instructions', ['quizId' => $lesson['encoded_quiz_id']]) : route('quiz.index') }}" class="filter-button quiz">Quiz</a>
+            <a href="{{ route('quiz.index') }}" class="filter-button quiz">Quiz</a>
         </div>
     </div>
 
@@ -3319,13 +3323,21 @@
         <aside class="lesson-sidebar">
             <!-- Enhanced Action Buttons -->
             <div class="action-buttons-grid">
-                <a href="{{ isset($lesson) && !empty($lesson['has_quiz']) ? route('quiz.instructions', ['quizId' => $lesson['encoded_quiz_id']]) : route('quiz.index') }}" class="action-btn">
+                <button class="action-btn action-navigate-btn" 
+                    data-href="{{ isset($lesson) && !empty($lesson['has_quiz']) ? route('quiz.instructions', ['quizId' => $lesson['encoded_quiz_id']]) : route('quiz.index') }}" 
+                    data-resource-exists="{{ (isset($lesson) && !empty($lesson['has_quiz'])) ? 'true' : 'false' }}"
+                    data-resource-type="quiz">
                     <svg fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org">
                         <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm1 14h-2v-2h2v2zm0-4.43c0 .34-.05.62-.16.82-.1.21-.29.41-.57.6-.28.19-.44.33-.49.43-.05.1-.08.27-.08.5h-1.4c0-.42.06-.75.18-.99.12-.24.36-.48.72-.7.24-.16.39-.3.45-.43.06-.13.09-.3.09-.5 0-.31-.08-.55-.25-.72-.17-.17-.42-.26-.74-.26-.35 0-.6.09-.76.27-.15.18-.23.46-.23.85H9c0-.77.21-1.36.63-1.78.43-.41 1.01-.62 1.76-.62.74 0 1.32.2 1.74.6.42.39.63.92.63 1.58-.01.32-.08.61-.22.84l-.01.12z"/>
                     </svg>
                     Quiz
-                </a>
-                <button class="action-btn action-navigate-btn" data-href="{{ route('dashboard.lesson.document', ['lessonId' => \App\Services\UrlObfuscator::encode($lesson['id']), 'type' => 'pdf']) }}" data-document-type="pdf">
+                    @if(isset($lesson) && !empty($lesson['has_quiz']))
+                        <div class="document-indicator">
+                            <i class="fas fa-check"></i>
+                        </div>
+                    @endif
+                </button>
+                <button class="action-btn action-navigate-btn" data-href="{{ route('dashboard.lesson.document', ['lessonId' => \App\Services\UrlObfuscator::encode($lesson['id']), 'type' => 'pdf']) }}" data-resource-type="document">
                     <svg fill="currentColor" viewBox="0 0 24 24">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                         <polyline points="14,2 14,8 20,8"/>
@@ -3335,7 +3347,7 @@
                         <i class="fas fa-check"></i>
                     </div>
                 </button>
-                <button class="action-btn action-navigate-btn" data-href="{{ route('dashboard.lesson.document', ['lessonId' => \App\Services\UrlObfuscator::encode($lesson['id']), 'type' => 'ppt']) }}" data-document-type="ppt">
+                <button class="action-btn action-navigate-btn" data-href="{{ route('dashboard.lesson.document', ['lessonId' => \App\Services\UrlObfuscator::encode($lesson['id']), 'type' => 'ppt']) }}" data-resource-type="ppt">
                     <svg fill="currentColor" viewBox="0 0 24 24">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                         <line x1="9" y1="9" x2="15" y2="9"/>
@@ -4500,16 +4512,37 @@
                 });
             });
 
-            // Navigation buttons - Check if documents exist before navigating
+            // Navigation buttons - Check if resources exist before navigating
             document.querySelectorAll('.action-navigate-btn').forEach(btn => {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
                     const href = this.dataset.href;
-                    const buttonText = this.textContent.trim().toLowerCase();
+                    const resourceType = this.dataset.resourceType;
+                    const resourceExistsAttr = this.dataset.resourceExists;
 
-                    // Check if this is a document or PPT button
-                    if (buttonText.includes('document') || buttonText.includes('ppt')) {
-                        // Make AJAX call to check if documents exist
+                    // Case 1: Quiz (existence status is known in Blade)
+                    if (resourceType === 'quiz') {
+                        if (resourceExistsAttr === 'true') {
+                            const quizUrl = this.dataset.href;
+                            window.location.href = quizUrl;
+                        } else {
+                            showResourceAvailabilityMessage('quiz');
+                        }
+                        return;
+                    }
+
+                    // Case 2: Document/PPT
+                    if (resourceType === 'document' || resourceType === 'ppt') {
+                        // Optimistically check if indicator is already visible
+                        const indicatorId = resourceType === 'ppt' ? 'ppt-indicator' : 'pdf-indicator';
+                        const indicator = document.getElementById(indicatorId);
+                        
+                        if (indicator && indicator.style.display === 'flex') {
+                            window.location.href = href;
+                            return;
+                        }
+
+                        // Fallback: Re-verify with AJAX
                         fetch(href, {
                             method: 'GET',
                             headers: {
@@ -4520,23 +4553,18 @@
                         .then(response => response.json())
                         .then(data => {
                             if (data.error === 'level_required') {
-                                // Level selection required, redirect to level selection
                                 window.location.href = '/dashboard/level-selection';
                             } else if (data.exists) {
-                                // Documents exist, proceed with navigation
                                 window.location.href = href;
                             } else {
-                                // No documents found, show message
-                                showNoDocumentsMessage(buttonText.includes('ppt') ? 'PPT' : 'Document');
+                                showResourceAvailabilityMessage(resourceType === 'ppt' ? 'ppt' : 'document');
                             }
                         })
                         .catch(error => {
-                            console.error('Error checking documents:', error);
-                            // On error, show message instead of redirecting
-                            showNoDocumentsMessage(buttonText.includes('ppt') ? 'PPT' : 'Document');
+                            console.error('Error checking resource:', error);
+                            showResourceAvailabilityMessage(resourceType === 'ppt' ? 'ppt' : 'document');
                         });
                     } else {
-                        // For other buttons, proceed normally
                         window.location.href = href;
                     }
                 });
@@ -5332,12 +5360,18 @@
             }, 3000);
         }
 
-        function showNoDocumentsMessage(type) {
+        function showResourceAvailabilityMessage(type) {
             const messageDiv = document.createElement('div');
             messageDiv.className = 'no-documents-message';
+            
+            let displayType = type === 'ppt' ? 'PPT' : (type === 'quiz' ? 'quiz' : 'document');
+            let messageText = type === 'quiz' 
+                ? `No quiz for this lesson yet.` 
+                : `No ${displayType} found for this lesson yet.`;
+
             messageDiv.innerHTML = `
                 <i class="fas fa-info-circle"></i>
-                No ${type.toLowerCase()} documents are currently attached to this video lesson.
+                ${messageText}
             `;
 
             // Style the message

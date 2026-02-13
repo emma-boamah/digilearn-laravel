@@ -12,13 +12,19 @@ class DocumentController extends Controller
     {
         // Check if this is an AJAX request to check document existence
         if (request()->ajax() || request()->wantsJson()) {
-            // For AJAX requests, check level group selection first
-            if (!session('selected_level_group')) {
+            $user = Auth::user();
+            $selectedLevelGroup = $user->current_level_group ?? session('selected_level_group');
+
+            if (!$selectedLevelGroup) {
                 return response()->json([
                     'exists' => false,
                     'error' => 'level_required',
                     'message' => 'Please select your grade level first.'
                 ]);
+            }
+            
+            if (!session('selected_level_group')) {
+                session(['selected_level_group' => $selectedLevelGroup]);
             }
 
             $document = $this->getDocumentForLesson($lessonId, $type);
@@ -28,13 +34,18 @@ class DocumentController extends Controller
             ]);
         }
 
+        $user = Auth::user();
+        $selectedLevelGroup = $user->current_level_group ?? session('selected_level_group');
+
         // Check if user has selected a level group
-        if (!session('selected_level_group')) {
+        if (!$selectedLevelGroup) {
             return redirect()->route('dashboard.level-selection')
                 ->with('error', 'Please select your grade level first.');
         }
 
-        $selectedLevelGroup = session('selected_level_group');
+        if (!session('selected_level_group')) {
+            session(['selected_level_group' => $selectedLevelGroup]);
+        }
 
         // Get lesson data from database (similar to DashboardController approach)
         $gradeLevels = $this->getGradeLevelForLevelGroup($selectedLevelGroup);
@@ -82,13 +93,18 @@ class DocumentController extends Controller
     // Second page - Document content viewer
     public function viewDocumentContent($lessonId, $type)
     {
+        $user = Auth::user();
+        $selectedLevelGroup = $user->current_level_group ?? session('selected_level_group');
+
         // Check if user has selected a level group
-        if (!session('selected_level_group')) {
+        if (!$selectedLevelGroup) {
             return redirect()->route('dashboard.level-selection')
                 ->with('error', 'Please select your grade level first.');
         }
 
-        $selectedLevelGroup = session('selected_level_group');
+        if (!session('selected_level_group')) {
+            session(['selected_level_group' => $selectedLevelGroup]);
+        }
 
         // Get lesson data from database (similar to DashboardController approach)
         $gradeLevels = $this->getGradeLevelForLevelGroup($selectedLevelGroup);
@@ -286,13 +302,18 @@ class DocumentController extends Controller
     // Create new PPT
     public function createPpt($lessonId)
     {
+        $user = Auth::user();
+        $selectedLevelGroup = $user->current_level_group ?? session('selected_level_group');
+
         // Check if user has selected a level group
-        if (!session('selected_level_group')) {
+        if (!$selectedLevelGroup) {
             return redirect()->route('dashboard.level-selection')
                 ->with('error', 'Please select your grade level first.');
         }
 
-        $selectedLevelGroup = session('selected_level_group');
+        if (!session('selected_level_group')) {
+            session(['selected_level_group' => $selectedLevelGroup]);
+        }
 
         // Get lesson data from database (similar to DashboardController approach)
         $videos = \App\Models\Video::approved()->where('grade_level', $this->getGradeLevelForLevelGroup($selectedLevelGroup))->with('documents')->get();
@@ -346,9 +367,16 @@ class DocumentController extends Controller
             'slides.*.title' => 'required|string',
         ]);
 
+        $user = Auth::user();
+        $selectedLevelGroup = $user->current_level_group ?? session('selected_level_group');
+
         // Check if user has selected a level group
-        if (!session('selected_level_group')) {
+        if (!$selectedLevelGroup) {
             return response()->json(['error' => 'Session expired'], 401);
+        }
+
+        if (!session('selected_level_group')) {
+            session(['selected_level_group' => $selectedLevelGroup]);
         }
 
         // In a real application, you would save this to your database
@@ -381,9 +409,16 @@ class DocumentController extends Controller
             'slides' => 'required|array'
         ]);
 
+        $user = Auth::user();
+        $selectedLevelGroup = $user->current_level_group ?? session('selected_level_group');
+
         // Check if user has selected a level group
-        if (!session('selected_level_group')) {
+        if (!$selectedLevelGroup) {
             return response()->json(['error' => 'Session expired'], 401);
+        }
+
+        if (!session('selected_level_group')) {
+            session(['selected_level_group' => $selectedLevelGroup]);
         }
 
         $presentations = session('user_presentations', []);
@@ -409,9 +444,16 @@ class DocumentController extends Controller
             'changes' => 'required|array'
         ]);
 
+        $user = Auth::user();
+        $selectedLevelGroup = $user->current_level_group ?? session('selected_level_group');
+
         // Check if user has selected a level group
-        if (!session('selected_level_group')) {
+        if (!$selectedLevelGroup) {
             return response()->json(['error' => 'Session expired'], 401);
+        }
+
+        if (!session('selected_level_group')) {
+            session(['selected_level_group' => $selectedLevelGroup]);
         }
 
         // In a real application, you would save these changes to your database

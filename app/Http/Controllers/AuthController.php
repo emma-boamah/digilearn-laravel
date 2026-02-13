@@ -595,6 +595,13 @@ class AuthController extends Controller
                 return redirect()->route('admin.dashboard');
             }
 
+            $selectedLevelGroup = $user->current_level_group ?? session('selected_level_group');
+            if ($selectedLevelGroup) {
+                if (!session('selected_level_group')) {
+                    session(['selected_level_group' => $selectedLevelGroup]);
+                }
+                return redirect()->route('dashboard.main');
+            }
             return redirect()->route('dashboard.level-selection');
 
         } catch (\Exception $e) {
@@ -717,6 +724,13 @@ class AuthController extends Controller
                 return redirect()->route('admin.dashboard');
             }
 
+            $selectedLevelGroup = $user->current_level_group ?? session('selected_level_group');
+            if ($selectedLevelGroup) {
+                if (!session('selected_level_group')) {
+                    session(['selected_level_group' => $selectedLevelGroup]);
+                }
+                return redirect()->route('dashboard.main');
+            }
             return redirect()->route('dashboard.level-selection');
 
         } catch (\Exception $e) {
