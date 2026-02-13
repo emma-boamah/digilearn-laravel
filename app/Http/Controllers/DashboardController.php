@@ -261,7 +261,21 @@ class DashboardController extends Controller
         if (!$selectedLevelGroup) {
             // Fallback to session for backward compatibility
             $selectedLevelGroup = session('selected_level_group');
-            // Allow access even without selected level group
+            
+            if ($selectedLevelGroup) {
+                // Sync session value to DB for persistence if needed? 
+                // Actually, if it's only in session, we might want to keep it that way until they explicitly select.
+                // But definitely sync if DB had it and session didn't.
+            }
+        } else {
+            // DB has it, ensure session is synced
+            if (!session('selected_level_group')) {
+                session(['selected_level_group' => $selectedLevelGroup]);
+            }
+        }
+
+        if (!$selectedLevelGroup) {
+            return redirect()->route('dashboard.level-selection');
         }
 
         // Get subscription info for dashboard display
@@ -1518,7 +1532,8 @@ class DashboardController extends Controller
     private function findVideoByLessonId($lessonId)
     {
         // For university lessons, search through all courses
-        if (session('selected_level_group') === 'university') {
+        $selectedLevelGroup = Auth::user()->current_level_group ?? session('selected_level_group');
+        if ($selectedLevelGroup === 'university') {
             // Search through university courses to find the lesson and get its video_id
             $allCourses = [];
             foreach (['computer-science', 'business-administration'] as $programKey) {
@@ -1748,7 +1763,8 @@ class DashboardController extends Controller
      */
     public function universityYears()
     {
-        if (session('selected_level_group') !== 'university') {
+        $selectedLevelGroup = Auth::user()->current_level_group ?? session('selected_level_group');
+        if ($selectedLevelGroup !== 'university') {
             return redirect()->route('dashboard.level-selection');
         }
 
@@ -1770,7 +1786,8 @@ class DashboardController extends Controller
      */
     public function selectUniversityYear($yearId)
     {
-        if (session('selected_level_group') !== 'university') {
+        $selectedLevelGroup = Auth::user()->current_level_group ?? session('selected_level_group');
+        if ($selectedLevelGroup !== 'university') {
             return redirect()->route('dashboard.level-selection');
         }
 
@@ -1882,7 +1899,8 @@ class DashboardController extends Controller
     public function courseLessonsById($courseId)
     {
         // Ensure user selected university level group
-        if (session('selected_level_group') !== 'university') {
+        $selectedLevelGroup = Auth::user()->current_level_group ?? session('selected_level_group');
+        if ($selectedLevelGroup !== 'university') {
             return redirect()->route('dashboard.level-selection');
         }
 

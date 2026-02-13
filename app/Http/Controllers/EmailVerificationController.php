@@ -18,7 +18,11 @@ class EmailVerificationController extends Controller
     {
         // If user is already verified, redirect to dashboard
         if ($request->user()->hasVerifiedEmail()) {
-            if (session('selected_level')) {
+            $selectedLevelGroup = $request->user()->current_level_group ?? session('selected_level_group');
+            if ($selectedLevelGroup) {
+                if (!session('selected_level_group')) {
+                    session(['selected_level_group' => $selectedLevelGroup]);
+                }
                 return redirect()->route('dashboard.main');
             } else {
                 return redirect()->route('dashboard.level-selection');
@@ -42,7 +46,11 @@ class EmailVerificationController extends Controller
                 'email' => $user->email
             ]);
 
-            if (session('selected_level')) {
+            $selectedLevelGroup = $user->current_level_group ?? session('selected_level_group');
+            if ($selectedLevelGroup) {
+                if (!session('selected_level_group')) {
+                    session(['selected_level_group' => $selectedLevelGroup]);
+                }
                 return redirect()->route('dashboard.main');
             } else {
                 return redirect()->route('dashboard.level-selection');
@@ -60,6 +68,14 @@ class EmailVerificationController extends Controller
             ]);
         }
 
+        $selectedLevelGroup = $user->current_level_group ?? session('selected_level_group');
+        if ($selectedLevelGroup) {
+            if (!session('selected_level_group')) {
+                session(['selected_level_group' => $selectedLevelGroup]);
+            }
+            return redirect()->route('dashboard.main')->with('verified', true);
+        }
+
         return redirect()->route('dashboard.level-selection')->with('verified', true);
     }
 
@@ -72,7 +88,11 @@ class EmailVerificationController extends Controller
 
         // Check if email is already verified
         if ($user->hasVerifiedEmail()) {
-            if (session('selected_level')) {
+            $selectedLevelGroup = $user->current_level_group ?? session('selected_level_group');
+            if ($selectedLevelGroup) {
+                if (!session('selected_level_group')) {
+                    session(['selected_level_group' => $selectedLevelGroup]);
+                }
                 return redirect()->route('dashboard.main');
             } else {
                 return redirect()->route('dashboard.level-selection');

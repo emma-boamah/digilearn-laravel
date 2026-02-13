@@ -21,7 +21,12 @@ class HomeController extends Controller
             }
 
             // For regular users, redirect to their dashboard
-            if (session('selected_level_group') || session('selected_level')) {
+            $selectedLevelGroup = $user->current_level_group ?? session('selected_level_group');
+            
+            if ($selectedLevelGroup) {
+                if (!session('selected_level_group')) {
+                    session(['selected_level_group' => $selectedLevelGroup]);
+                }
                 return redirect()->route('dashboard.main');
             } else {
                 return redirect()->route('dashboard.level-selection');
