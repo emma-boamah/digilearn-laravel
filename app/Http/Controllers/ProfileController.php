@@ -87,6 +87,86 @@ class ProfileController extends Controller
     }
 
     /**
+     * Show the billing and subscriptions page.
+     */
+    public function billing()
+    {
+        $user = Auth::user();
+        $user->load(['currentSubscription.pricingPlan']);
+        
+        $availablePlans = PricingPlan::active()->ordered()->get();
+        
+        // Fetch last 10 payments for billing history
+        $payments = \App\Models\Payment::where('user_id', $user->id)
+            ->with('pricingPlan')
+            ->orderBy('created_at', 'desc')
+            ->take(10)
+            ->get();
+            
+        return view('settings.billing', compact('user', 'availablePlans', 'payments'));
+    }
+
+    /**
+     * Show the full billing history page.
+     */
+    public function billingHistory(Request $request)
+    {
+        $user = Auth::user();
+        
+        $query = \App\Models\Payment::where('user_id', $user->id)
+            ->with('pricingPlan');
+
+        // Apply filters
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('reference', 'LIKE', "%{$search}%")
+                  ->orWhereHas('pricingPlan', function($p) use ($search) {
+                      $p->where('name', 'LIKE', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('date_range')) {
+            $months = match($request->date_range) {
+                '3months' => 3,
+                '6months' => 6,
+                '12months' => 12,
+                default => null
+            };
+            if ($months) {
+                $query->where('created_at', '>=', now()->subMonths($months));
+            }
+        }
+
+        $payments = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
+
+        // Aggregate statistics
+        $totalSpentYear = \App\Models\Payment::where('user_id', $user->id)
+            ->where('status', 'success')
+            ->whereYear('created_at', now()->year)
+            ->sum('amount');
+
+        $user->load('currentSubscription');
+        $nextInvoiceDate = $user->currentSubscription ? $user->currentSubscription->expires_at : null;
+        
+        // Defaulting outstanding balance to 0.00 as requested
+        $outstandingBalance = 0.00;
+
+        return view('settings.billing-history', compact(
+            'user', 
+            'payments', 
+            'totalSpentYear', 
+            'nextInvoiceDate', 
+            'outstandingBalance'
+        ));
+    }
+
+    /**
      * Show the user profile page.
      */
     public function showProfile()
