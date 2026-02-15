@@ -10,7 +10,6 @@
             <h1>Test Your Knowledge</h1>
             <p>Challenge yourself with our interactive quizzes.</p>
         </div>
-        <button class="hero-view-button">Start Quiz</button>
     </div>
 </div>
 
@@ -61,22 +60,6 @@
         color: var(--white);
         margin-top: 0.5rem;
         opacity: 0.9;
-    }
-
-    .hero-view-button {
-        background-color: var(--primary-red);
-        color: var(--white);
-        padding: 1rem 2rem;
-        border: none;
-        border-radius: 0.5rem;
-        font-size: 1rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .hero-view-button:hover {
-        background-color: var(--primary-red-hover);
     }
 
     /* Mobile adjustments */

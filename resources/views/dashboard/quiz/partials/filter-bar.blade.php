@@ -1,89 +1,76 @@
 <!-- Search/Filter Bar -->
 <div class="filter-bar">
-    <div class="search-box" id="mobileSearchBox">
-        <input type="text" class="search-input" placeholder="Search quizzes...">
-        <button class="search-button">
-            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-        </button>
+    <div class="filter-row">
+        <!-- Level Indicator (Anchor Tag) -->
+        <x-level-indicator :selectedLevel="$selectedLevelGroup" />
+
+        <form action="{{ route('quiz.index') }}" method="GET" class="search-box" id="mobileSearchBox">
+            <input type="text" name="search" class="search-input" placeholder="Search quizzes..." id="quizSearchInput" value="{{ request('search') }}">
+            <button type="submit" class="search-button">
+                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            </button>
+        </form>
     </div>
-    
-    <!-- Custom levels dropdown -->
-    <div class="custom-dropdown">
-        <button class="dropdown-toggle">
-            <span>{{ ucwords(str_replace('-', ' ', $selectedLevelGroup ?? 'Grade 1-3')) }}</span>
-            <svg xmlns="http://www.w3.org/2000/svg" class="dropdown-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-        </button>
-        <div class="dropdown-menu">
-            <div class="dropdown-option" data-level="grade-1-3">Grade 1-3</div>
-            <div class="dropdown-option" data-level="grade-4-6">Grade 4-6</div>
-            <div class="dropdown-option" data-level="grade-7-9">Grade 7-9</div>
-            <div class="dropdown-option" data-level="high-school">High School</div>
-        </div>
-    </div>
-    
-    <!-- Custom subjects dropdown -->
-    <div class="custom-dropdown">
-        <button class="dropdown-toggle">
-            <span>Subjects</span>
-            <svg xmlns="http://www.w3.org/2000/svg" class="dropdown-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-        </button>
-        <div class="dropdown-menu">
-            <div class="dropdown-section">
-                <h4 class="section-header">Core Subjects</h4>
-                <div class="dropdown-option" data-subject="mathematics">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="subject-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    <span>Mathematics</span>
-                </div>
-                <div class="dropdown-option" data-subject="science">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="subject-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                    </svg>
-                    <span>Science</span>
-                </div>
+</div>
+
+<!-- Horizontal Subjects Filter -->
+<div class="subjects-filter-container">
+    <div class="subjects-filter">
+        @foreach($subjects ?? [] as $subject)
+            <div class="subject-chip {{ $subject['slug'] === 'all' ? 'active' : '' }}" data-subject="{{ $subject['slug'] }}">
+                <i class="{{ $subject['icon'] }}"></i>
+                {{ $subject['name'] }}
             </div>
-            
-            <div class="dropdown-section">
-                <h4 class="section-header">Electives</h4>
-                <div class="dropdown-option" data-subject="english">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="subject-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                    </svg>
-                    <span>English</span>
-                </div>
-            </div>
-        </div>
+        @endforeach
     </div>
-    
-    <button class="filter-button question">Question</button>
-    <a href="{{ route('quiz.index') }}" class="filter-button quiz">Quiz</a>
 </div>
 
 <style>
+    :root {
+        --safe-area-inset-top: env(safe-area-inset-top, 0px);
+    }
+
     /* Search/Filter Bar */
     .filter-bar {
+        position: fixed !important;
+        top: calc(60px + var(--safe-area-inset-top)) !important;
+        left: 0;
+        width: 100vw;
+        padding-left: calc(var(--sidebar-width-expanded, 240px) + 0.75rem);
+        padding-right: 0.75rem;
+        padding-top: 0.75rem;
+        padding-bottom: 0.75rem;
+        z-index: 998 !important;
         display: flex;
         align-items: center;
-        margin-top: 60px;
         gap: 0.75rem;
-        padding: 0.75rem;
-        background-color: var(--white);
+        background-color: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(10px) saturate(160%);
+        -webkit-backdrop-filter: blur(10px) saturate(160%);
         border-bottom: 1px solid var(--gray-200);
-        flex-wrap: nowrap;
-        overflow-x: auto;
+        box-sizing: border-box;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .youtube-sidebar.collapsed ~ .main-content .filter-bar {
+        padding-left: calc(var(--sidebar-width-collapsed, 72px) + 0.75rem);
+    }
+
+    .filter-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        max-width: 100%;
     }
 
     .search-box {
         position: relative;
         flex: 1;
-        min-width: 300px;
+        min-width: 200px;
         display: flex;
     }
 
@@ -94,24 +81,25 @@
         width: 100%;
         font-size: 0.875rem;
         padding-right: 3.5rem;
+        background: var(--white);
     }
 
     .search-input:focus {
         outline: none;
-        border-color: var(--primary-red);
-        box-shadow: 0 0 0 3px rgba(225, 30, 45, 0.1);
+        border-color: var(--secondary-blue);
+        box-shadow: 0 0 0 3px rgba(38, 119, 184, 0.1);
     }
 
     .search-button {
         position: absolute;
-        right: 0;
-        top: 0;
-        height: 100%;
+        right: 1px;
+        top: 1px;
+        height: calc(100% - 2px);
         width: 2.5rem;
-        background-color: var(--primary-red);
+        background-color: var(--secondary-blue, #2677B8);
         border: none;
-        border-top-right-radius: 0.5rem;
-        border-bottom-right-radius: 0.5rem;
+        border-top-right-radius: 0.4rem;
+        border-bottom-right-radius: 0.4rem;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -119,7 +107,7 @@
     }
 
     .search-button:hover {
-        background-color: #c41e2a;
+        background-color: var(--secondary-blue-hover, #1e5a8a);
     }
 
     .search-icon {
@@ -127,103 +115,76 @@
         stroke: currentColor;
     }
 
-    /* Custom Dropdown Styles */
-    .custom-dropdown {
-        position: relative;
-        min-width: 120px;
+    /* Horizontal Subjects Filter */
+    .subjects-filter-container {
+        position: fixed !important;
+        left: 0 !important;
+        top: calc(116px + var(--safe-area-inset-top)) !important;
+        width: 100vw !important;
+        background-color: var(--white);
+        border-bottom: 1px solid var(--gray-200);
+        padding-left: calc(var(--sidebar-width-expanded, 240px) + 0.75rem);
+        padding-right: 1rem;
+        padding-top: 0.75rem;
+        padding-bottom: 0.75rem;
+        overflow: hidden;
+        box-sizing: border-box;
+        z-index: 997 !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .dropdown-toggle {
+    .youtube-sidebar.collapsed ~ .main-content .subjects-filter-container {
+        padding-left: calc(var(--sidebar-width-collapsed, 72px) + 0.75rem);
+    }
+
+    .subjects-filter {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding: 0.75rem 1rem;
-        border: 1px solid var(--gray-300);
-        border-radius: 0.5rem;
-        background-color: var(--white);
-        color: var(--primary-red);
-        font-size: 0.875rem;
-        cursor: pointer;
-        width: 100%;
-        text-align: left;
-    }
-
-    .dropdown-toggle:focus {
-        outline: none;
-        border-color: var(--primary-red);
-        box-shadow: 0 0 0 3px rgba(225, 30, 45, 0.1);
-    }
-
-    .dropdown-chevron {
-        width: 16px;
-        height: 16px;
-        color: var(--primary-red);
-        transition: transform 0.2s ease;
-    }
-
-    .dropdown-menu {
-        position: absolute;
-        top: calc(100% + 8px);
-        left: 0;
-        right: 0;
-        background-color: var(--white);
-        border-radius: 0.5rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        z-index: 100;
-        opacity: 0;
-        visibility: hidden;
-        transform: translateY(-10px);
-        transition: all 0.3s ease;
-        max-height: 60vh;
-        overflow-y: auto;
-    }
-
-    .custom-dropdown.open .dropdown-menu {
-        opacity: 1;
-        visibility: visible;
-        transform: translateY(0);
-    }
-
-    .custom-dropdown.open .dropdown-chevron {
-        transform: rotate(180deg);
-    }
-
-    .dropdown-section {
+        gap: 0.75rem;
+        overflow-x: auto;
+        overflow-y: hidden;
         padding: 0.5rem 0;
-        border-bottom: 1px solid var(--gray-100);
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        scroll-behavior: smooth;
+        width: 100%;
     }
 
-    .dropdown-section:last-child {
-        border-bottom: none;
+    .subjects-filter::-webkit-scrollbar {
+        display: none;
     }
 
-    .section-header {
-        padding: 0.5rem 1rem;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        color: var(--gray-500);
-        letter-spacing: 0.5px;
-    }
-
-    .dropdown-option {
+    .subject-chip {
         display: flex;
         align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1.25rem;
+        background-color: var(--gray-100);
+        border: 1px solid transparent;
+        border-radius: 2rem;
+        font-size: 0.875rem;
+        font-weight: 500;
         color: var(--gray-700);
-        padding: 0.75rem 1rem;
         cursor: pointer;
-        transition: background-color 0.2s ease;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 
-    .dropdown-option:hover {
-        background-color: var(--gray-50);
+    .subject-chip i {
+        font-size: 0.875rem;
     }
 
-    .subject-icon {
-        width: 18px;
-        height: 18px;
-        margin-right: 0.75rem;
-        color: var(--gray-600);
+    .subject-chip:hover {
+        background-color: var(--gray-200);
+        color: var(--secondary-blue);
+    }
+
+    .subject-chip.active {
+        background-color: var(--secondary-blue);
+        color: var(--white);
+        border-color: var(--secondary-blue);
     }
 
     .filter-button {
@@ -234,19 +195,11 @@
         font-weight: 500;
         cursor: pointer;
         transition: all 0.2s ease;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
+        white-space: nowrap;
     }
 
     .filter-button.question {
         background-color: var(--primary-red);
-        color: var(--white);
-    }
-
-    .filter-button.quiz {
-        background-color: var(--secondary-blue);
         color: var(--white);
     }
 
@@ -257,48 +210,62 @@
     /* Mobile Responsive */
     @media (max-width: 768px) {
         .filter-bar {
-            flex-direction: row;
-            gap: 12px;
-            padding: 16px;
-            position: relative;
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+            height: auto;
+            position: relative !important;
+            top: 0 !important;
+            margin-top: 0;
         }
 
-        .dropdowns-row {
-            display: flex;
-            gap: 12px;
-            width: 100%;
+        .filter-row {
+            flex-wrap: nowrap !important;
+            gap: 0.5rem;
+            justify-content: space-between;
         }
 
-        .dropdowns-row .custom-dropdown {
-            flex: 1;
-            min-width: auto;
+        .subjects-filter-container {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+            position: relative !important;
+            top: 0 !important;
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
         }
 
         .search-box {
-            display: flex;
-            order: 0;
-            min-width: 100%;
-            margin-bottom: 12px;
-        }
-
-        .search-box.mobile-visible {
-            display: flex;
-        }
-
-        .custom-dropdown {
-            min-width: calc(50% - 0.25rem);
-        }
-
-        .filter-buttons {
-            display: flex;
-            gap: 12px;
-            width: 100%;
-        }
-
-        .filter-button {
+            min-width: 0; /* Allow shrinking */
             flex: 1;
-            padding: 0.75rem;
-            font-size: 0.8rem;
+        }
+        
+        /* Ensure level indicator doesn't grow too much */
+        .level-container {
+            flex-shrink: 0;
+            width: auto;
+        }
+    }
+
+    /* Dynamic Island / Safe Area Support */
+    @supports (padding-top: env(safe-area-inset-top)) {
+        .filter-bar {
+            padding-top: calc(0.75rem + var(--safe-area-inset-top));
         }
     }
 </style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Subject Chip filtering
+        const chips = document.querySelectorAll('.subject-chip');
+        chips.forEach(chip => {
+            chip.addEventListener('click', function() {
+                chips.forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                
+                const subject = this.dataset.subject;
+                // Add your filtering logic here
+                console.log('Filtering by subject:', subject);
+            });
+        });
+    });
+</script>

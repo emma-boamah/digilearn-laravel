@@ -43,12 +43,23 @@
                                         View Subscription Plans
                                     </a>
                                 @else
+                                @if(request('search'))
+                                    <svg style="width: 80px; height: 80px; color: var(--gray-400); margin: 0 auto 1.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                    </svg>
+                                    <h3 style="color: var(--gray-600); margin-bottom: 1rem; font-size: 1.25rem; font-weight: 600;">No results found for "{{ request('search') }}"</h3>
+                                    <p style="color: var(--gray-500); font-size: 1rem;">We couldn't find any quizzes matching your search in the current level group.</p>
+                                    <a href="{{ route('quiz.index') }}" style="display: inline-block; margin-top: 1rem; color: var(--secondary-blue, #2677B8); font-weight: 600; text-decoration: none;">
+                                        Clear Search
+                                    </a>
+                                @else
                                     <svg style="width: 80px; height: 80px; color: var(--gray-400); margin: 0 auto 1.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                     </svg>
                                     <h3 style="color: var(--gray-600); margin-bottom: 1rem; font-size: 1.25rem; font-weight: 600;">No quizzes available</h3>
                                     <p style="color: var(--gray-500); font-size: 1rem;">Quizzes for {{ ucwords(str_replace('-', ' ', $selectedLevelGroup ?? 'this level')) }} are coming soon!</p>
                                     <p style="color: var(--gray-400); font-size: 0.875rem; margin-top: 0.5rem;">Check back later or try a different grade level.</p>
+                                @endif
                                 @endif
                             </div>
                         </div>
