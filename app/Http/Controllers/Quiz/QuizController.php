@@ -50,9 +50,12 @@ class QuizController extends Controller
         $cacheKey = "quizzes.{$selectedLevelGroup}";
         $cacheDuration = 300; // 5 minutes
 
+        // Get search term from request
+        $search = $request->query('search');
+
         // Get base quiz data with caching
         $baseQuizzes = Cache::remember($cacheKey, $cacheDuration, function () use ($selectedLevelGroup, $userId, $allowedGradeLevels, $requiresSubscription, $user) {
-            $query = \App\Models\Quiz::with(['uploader', 'ratings', 'attempts']);
+            $query = \App\Models\Quiz::with(['uploader', 'ratings', 'attempts', 'subject']);
 
             // Filter by grade level if specified
             if ($selectedLevelGroup && $selectedLevelGroup !== 'all') {
@@ -99,6 +102,14 @@ class QuizController extends Controller
 
             return $quizzes;
         });
+
+        // Filter by search if provided
+        if ($search) {
+            $baseQuizzes = $baseQuizzes->filter(function ($quiz) use ($search) {
+                return stripos($quiz->title, $search) !== false || 
+                       ($quiz->subject && stripos($quiz->subject->name, $search) !== false);
+            });
+        }
 
         // Personalize with user-specific data (cached per user)
         $quizzes = $baseQuizzes->map(function ($quiz) use ($userId) {
@@ -155,7 +166,53 @@ class QuizController extends Controller
             });
         });
 
-        return view('dashboard.quiz.index', compact('quizzes', 'selectedLevelGroup', 'requiresSubscription'));
+        // Get available subjects for the subjects filter
+        $subjects = $this->getSubjectsFromQuizzes($quizzes);
+
+        return view('dashboard.quiz.index', compact('quizzes', 'selectedLevelGroup', 'requiresSubscription', 'subjects'));
+    }
+
+    /**
+     * Get unique subjects from the list of quizzes
+     */
+    private function getSubjectsFromQuizzes($quizzes)
+    {
+        $subjectIcons = [
+            'Mathematics' => 'fas fa-calculator',
+            'English' => 'fas fa-book',
+            'Science' => 'fas fa-flask',
+            'Social Studies' => 'fas fa-globe',
+            'General Education' => 'fas fa-graduation-cap',
+            'Primary Education' => 'fas fa-school',
+            'Junior High School' => 'fas fa-chalkboard-teacher',
+            'Senior High School' => 'fas fa-university',
+            'Computer Science' => 'fas fa-laptop-code',
+            'Business Administration' => 'fas fa-briefcase',
+            'Medicine' => 'fas fa-stethoscope',
+        ];
+
+        $uniqueSubjects = $quizzes->pluck('subject')->unique()->filter()->values();
+        
+        $subjects = collect([
+            [
+                'name' => 'All',
+                'slug' => 'all',
+                'icon' => 'fas fa-th-large',
+                'count' => $quizzes->count()
+            ]
+        ]);
+
+        foreach ($uniqueSubjects as $subjectName) {
+            $count = $quizzes->where('subject', $subjectName)->count();
+            $subjects->push([
+                'name' => $subjectName,
+                'slug' => \Illuminate\Support\Str::slug($subjectName),
+                'icon' => $subjectIcons[$subjectName] ?? 'fas fa-book-open',
+                'count' => $count
+            ]);
+        }
+
+        return $subjects;
     }
 
     /**

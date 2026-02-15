@@ -257,9 +257,10 @@
       margin-left: var(--sidebar-width-expanded);
       width: calc(100vw - var(--sidebar-width-expanded));
       max-width: calc(100vw - var(--sidebar-width-expanded));
+      margin-top: calc(172px + var(--safe-area-inset-top, 0px)) !important; /* Fixed headers height */
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       overflow-x: hidden;
-      min-height: 100vh;
+      min-height: calc(100vh - 172px);
   }
 
   .youtube-sidebar.collapsed ~ .main-content {
@@ -1457,6 +1458,8 @@
           width: 100vw !important;
           max-width: 100vw !important;
           margin-left: 0 !important;
+          margin-top: 46.5px !important;
+          padding-top: 1rem !important;
       }
 
       .youtube-sidebar {
