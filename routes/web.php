@@ -204,6 +204,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/settings', [ProfileController::class, 'settings'])->name('settings');
     Route::get('/settings/notifications', [App\Http\Controllers\ProfileController::class, 'notifications'])->name('settings.notifications');
+    Route::get('/settings/billing', [ProfileController::class, 'billing'])->name('settings.billing');
+    Route::get('/settings/billing-history', [ProfileController::class, 'billingHistory'])->name('settings.billing-history');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     

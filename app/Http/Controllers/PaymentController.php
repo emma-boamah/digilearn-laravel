@@ -315,6 +315,7 @@ class PaymentController extends Controller
                 'metadata' => [
                     'payment_id' => $payment->id,
                     'reference' => $payment->reference,
+                    'duration' => $duration,
                 ],
             ]
         );

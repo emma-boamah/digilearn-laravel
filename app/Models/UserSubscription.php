@@ -112,6 +112,38 @@ class UserSubscription extends Model
     }
 
     /**
+     * Get the billing cycle as a human-readable string
+     */
+    public function getBillingCycleAttribute()
+    {
+        $duration = $this->metadata['duration'] ?? null;
+
+        if (!$duration) {
+            // Reconstruct duration from interval if missing
+            $start = $this->started_at;
+            $end = $this->expires_at;
+            if (!$start || !$end) return 'N/A';
+            
+            $days = round($start->diffInDays($end, true));
+            if ($days <= 0) return 'Free';
+            if ($days <= 7) return 'Trial';
+            if ($days <= 31) return 'Monthly';
+            if ($days <= 92) return 'Quarterly';
+            if ($days <= 186) return 'Semi-Annually';
+            return 'Annually';
+        }
+
+        return match ($duration) {
+            'trial' => 'Trial',
+            'month' => 'Monthly',
+            '3month' => 'Quarterly',
+            '6month' => 'Semi-Annually',
+            '12month' => 'Annually',
+            default => 'Custom',
+        };
+    }
+
+    /**
      * Scope for active subscriptions
      */
     public function scopeActive($query)
