@@ -11,6 +11,10 @@
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Alpine.js -->
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}" defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         tailwind.config = {
             theme: {
@@ -25,6 +29,12 @@
             }
         }
     </script>
+
+    <!-- Conditional Analytics -->
+    @if(auth()->check() ? (isset($cookieManager) ? $cookieManager->isAllowed('analytics') : false) : (request()->cookie('digilearn_consent') ? json_decode(request()->cookie('digilearn_consent'), true)['analytics'] ?? false : false))
+        @include('partials.analytics')
+    @endif
+
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         :root {
             --safe-area-inset-top: env(safe-area-inset-top, 0px);
@@ -93,5 +103,7 @@
             }
         });
     </script>
+    @include('cookie-consent-banner')
 </body>
+
 </html>

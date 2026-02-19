@@ -114,4 +114,8 @@ return [
         'region' => env('ZEPTOMAIL_REGION', 'com'), // e.g., com, eu, in, au
     ],
 
+    'google_analytics' => [
+        'id' => env('GOOGLE_ANALYTICS_ID'),
+    ],
+
 ];
