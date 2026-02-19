@@ -1288,7 +1288,7 @@
                     <i class="fas fa-redo"></i> Retake Quiz
                 </a>
                 <button class="btn-action dark" onclick="openShareModal()">
-                    <i class="fas fa-share-alt"></i> Share Certificate
+                    <i class="fas fa-share-alt"></i> Share Results
                 </button>
              </div>
 
