@@ -111,6 +111,14 @@ class QuizController extends Controller
             });
         }
 
+        // Filter by subject slug if provided
+        $subjectSlug = $request->query('subject');
+        if ($subjectSlug && $subjectSlug !== 'all') {
+            $baseQuizzes = $baseQuizzes->filter(function ($quiz) use ($subjectSlug) {
+                return \Illuminate\Support\Str::slug($quiz->subject?->name) === $subjectSlug;
+            });
+        }
+
         // Personalize with user-specific data (cached per user)
         $quizzes = $baseQuizzes->map(function ($quiz) use ($userId) {
             // Cache user-specific data for this quiz

@@ -38,7 +38,7 @@
         </div>
         <div class="meta-item">
             <i class="far fa-question-circle"></i>
-            <span>{{ $quiz['questions_count'] ?? '10' }} questions</span>
+            <span>{{ $quiz['questions_count'] ?? '0' }} {{ Str::plural('question', $quiz['questions_count'] ?? 0) }}</span>
         </div>
         
         @php
