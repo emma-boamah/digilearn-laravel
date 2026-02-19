@@ -2502,10 +2502,23 @@
                 right: 1.5rem;
                 width: 300px;
                 height: auto;
-                z-index: 1000;
+                z-index: 9999; /* High z-index to stay on top */
                 box-shadow: var(--shadow-xl);
                 border-radius: 0.75rem;
                 overflow: hidden;
+                background: #000; /* Ensure black background */
+                animation: slideIn 0.3s ease-out;
+            }
+
+            @keyframes slideIn {
+                from {
+                    transform: translateY(100px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
             }
 
             .sticky-video-section.compact .video-container {
@@ -4016,29 +4029,55 @@
         function initializeMobileVideoScroll() {
             if (window.innerWidth <= 768) {
                 const stickyVideoSection = document.getElementById('stickyVideoSection');
+                if (!stickyVideoSection) return;
 
-                window.addEventListener('scroll', function() {
-                    const currentScrollY = window.scrollY;
-                    isScrollingDown = currentScrollY > lastScrollY;
+                // Create a placeholder to maintain layout space when video becomes fixed
+                const placeholder = document.createElement('div');
+                placeholder.id = 'stickyVideoPlaceholder';
+                placeholder.style.display = 'none';
+                stickyVideoSection.parentNode.insertBefore(placeholder, stickyVideoSection.nextSibling);
 
-                    // Add compact class when scrolling down past threshold
-                    if (currentScrollY > scrollThreshold && isScrollingDown) {
-                        stickyVideoSection.classList.add('compact');
-                    }
-                    // Remove compact class when scrolling back to top
-                    else if (currentScrollY <= scrollThreshold) {
-                        stickyVideoSection.classList.remove('compact');
-                    }
+                // Create sentinel as a SIBLING (not child) so it stays in document flow
+                // when the video section becomes position:fixed
+                const sentinel = document.createElement('div');
+                sentinel.id = 'videoScrollSentinel';
+                sentinel.style.height = '1px';
+                sentinel.style.width = '100%';
+                sentinel.style.pointerEvents = 'none';
+                stickyVideoSection.parentNode.insertBefore(sentinel, stickyVideoSection.nextSibling);
 
-                    lastScrollY = currentScrollY;
-                }, { passive: true });
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (!entry.isIntersecting && entry.boundingClientRect.top < 0) {
+                            // Video has scrolled out of view — show PiP
+                            if (!stickyVideoSection.classList.contains('compact')) {
+                                // Save height for placeholder before going fixed
+                                placeholder.style.height = stickyVideoSection.offsetHeight + 'px';
+                                placeholder.style.display = 'block';
+                                stickyVideoSection.classList.add('compact');
+                            }
+                        } else {
+                            // Video is back in view — restore normal
+                            stickyVideoSection.classList.remove('compact');
+                            placeholder.style.display = 'none';
+                        }
+                    });
+                }, {
+                    root: null,
+                    threshold: 0,
+                    rootMargin: '-60px 0px 0px 0px' // Offset for header height
+                });
+
+                observer.observe(sentinel);
             }
 
-            // Re-initialize on window resize
+            // Clean up compact state on resize to desktop
             window.addEventListener('resize', function() {
                 if (window.innerWidth > 768) {
                     const stickyVideoSection = document.getElementById('stickyVideoSection');
-                    stickyVideoSection.classList.remove('compact');
+                    const placeholder = document.getElementById('stickyVideoPlaceholder');
+                    if (stickyVideoSection) stickyVideoSection.classList.remove('compact');
+                    if (placeholder) placeholder.style.display = 'none';
                 }
             });
         }

@@ -661,7 +661,7 @@
             <h2 class="quiz-title">{{ $quiz['title'] ?? 'Introduction to Computer Hardware' }}</h2>
             
             <div class="timer-container">
-                <div class="timer" id="timer">14:56</div>
+                <div class="timer" id="timer">--:--</div>
             </div>
             
             <div class="questions-section">
@@ -796,7 +796,7 @@
         // Quiz data and state
         let currentQuestion = 0;
         let timeLimitMinutes = {{ $quiz['time_limit_minutes'] ?? 3 }};
-        let timeRemaining = timeLimitMinutes * 60; // Use time limit from database
+        let timeRemaining = timeLimitMinutes * 60; 
         let answers = {};
         let timerInterval;
 
@@ -961,8 +961,10 @@
         function startTimer() {
             const timerElement = document.getElementById('timer');
             
-            // Set initial time (14:56 as shown in screenshot)
-            timeRemaining = 14 * 60 + 56; // 14 minutes 56 seconds
+            // Set initial display
+            const initialMinutes = Math.floor(timeRemaining / 60);
+            const initialSeconds = timeRemaining % 60;
+            timerElement.textContent = `${initialMinutes}:${initialSeconds.toString().padStart(2, '0')}`;
             
             timerInterval = setInterval(() => {
                 timeRemaining--;

@@ -68,16 +68,19 @@
             padding-top: calc(0.75rem + var(--safe-area-inset-top));
         }
         .youtube-sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: var(--sidebar-width-expanded);
-            height: 100vh;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: var(--sidebar-width-expanded) !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
             background-color: var(--white);
             border-right: 1px solid var(--gray-200);
             z-index: 1000;
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease;
             overflow-y: scroll;
+            display: flex;
+            flex-direction: column;
             padding-top: var(--safe-area-inset-top);
         }
 
@@ -144,12 +147,52 @@
 
         .sidebar-content {
             padding: 1rem 0;
-            overflow-y: auto;
+            flex: 1;
+            overflow-y: auto !important;
             overflow-x: hidden;
-            height: calc(100vh - (201.4px + var(--safe-area-inset-top))) !important; /* Full height minus headers */
+            display: flex;
+            flex-direction: column;
+            scrollbar-width: thin;
+            scrollbar-color: var(--gray-400) transparent;
+            scroll-behavior: smooth;
+            max-height: calc(100vh - (64px + var(--safe-area-inset-top))) !important;
         }
+
+        /* Custom scrollbar for sidebar content */
+        .sidebar-content::-webkit-scrollbar {
+            width: 4px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-content:hover::-webkit-scrollbar {
+            opacity: 1;
+        }
+
+        .sidebar-content::-webkit-scrollbar-track {
+            background: transparent;
+            margin: 8px 0;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb {
+            background: var(--gray-400);
+            border-radius: 4px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb:hover {
+            background: var(--gray-500);
+        }
+
         .sidebar-section {
             margin-bottom: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .sidebar-section:last-of-type {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--gray-100);
         }
 
         .sidebar-section-title {

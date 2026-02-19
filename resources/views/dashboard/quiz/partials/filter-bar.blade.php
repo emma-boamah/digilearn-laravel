@@ -19,7 +19,7 @@
 <div class="subjects-filter-container">
     <div class="subjects-filter">
         @foreach($subjects ?? [] as $subject)
-            <div class="subject-chip {{ $subject['slug'] === 'all' ? 'active' : '' }}" data-subject="{{ $subject['slug'] }}">
+            <div class="subject-chip {{ request('subject', 'all') === $subject['slug'] ? 'active' : '' }}" data-subject="{{ $subject['slug'] }}">
                 <i class="{{ $subject['icon'] }}"></i>
                 {{ $subject['name'] }}
             </div>
@@ -259,12 +259,19 @@
         const chips = document.querySelectorAll('.subject-chip');
         chips.forEach(chip => {
             chip.addEventListener('click', function() {
-                chips.forEach(c => c.classList.remove('active'));
-                this.classList.add('active');
-                
                 const subject = this.dataset.subject;
-                // Add your filtering logic here
-                console.log('Filtering by subject:', subject);
+                const url = new URL(window.location.href);
+                
+                if (subject === 'all') {
+                    url.searchParams.delete('subject');
+                } else {
+                    url.searchParams.set('subject', subject);
+                }
+                
+                // Reset search when changing subject or keep it? User might want to search within a subject.
+                // Let's keep existing search if any
+                
+                window.location.href = url.toString();
             });
         });
     });
