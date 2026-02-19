@@ -14,6 +14,15 @@
 
     @yield('head')
 
+    <!-- Alpine.js -->
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}" defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Conditional Analytics -->
+    @if(auth()->check() ? (isset($cookieManager) ? $cookieManager->isAllowed('analytics') : false) : (request()->cookie('digilearn_consent') ? json_decode(request()->cookie('digilearn_consent'), true)['analytics'] ?? false : false))
+        @include('partials.analytics')
+    @endif
+
+
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         :root {
             --primary-red: #E11E2D;
@@ -490,5 +499,7 @@
     </script>
 
     @stack('scripts')
+    @include('cookie-consent-banner')
 </body>
+
 </html>
