@@ -249,9 +249,9 @@
         }
 
         .question-number.current {
-            background-color: var(--primary-red);
+            background-color: var(--secondary-blue);
             color: var(--white);
-            border-color: var(--primary-red);
+            border-color: var(--secondary-blue);
         }
 
         .question-number.answered {
@@ -933,9 +933,8 @@
 
             prevBtn.disabled = currentQuestion === 0;
 
-            // Enable submit button if all questions are answered, regardless of timer
-            const allAnswered = Object.keys(answers).length === questions.length;
-            submitBtn.disabled = !allAnswered;
+            // Allow submission even if not all questions are answered
+            submitBtn.disabled = false;
 
             // Change next button to "Finish" on last question
             if (currentQuestion === questions.length - 1) {
@@ -955,7 +954,7 @@
 
             // Update submit button state in real-time
             if (submitBtn) {
-                submitBtn.disabled = !allAnswered;
+                submitBtn.disabled = false;
             }
         }
 

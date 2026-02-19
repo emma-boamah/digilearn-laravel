@@ -577,7 +577,8 @@ class QuizController extends Controller
                     'correct_answer' => $correctAnswer,
                     'user_answer' => $userAnswer,
                     'user_correct' => $userCorrect,
-                    'text' => $question['question'] ?? 'Question not available'
+                    'text' => $question['question'] ?? 'Question not available',
+                    'image' => $question['image'] ?? null,
                 ];
             }
         }
