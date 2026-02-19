@@ -253,12 +253,15 @@
         .question-number:hover {
             border-color: var(--gray-300);
             background-color: var(--gray-50);
+            transform: translateY(-1px);
         }
 
         .question-number.current {
-            background-color: var(--secondary-blue);
-            color: var(--white);
+            background-color: var(--gray-50);
+            color: var(--gray-600);
+            border: 2px solid;
             border-color: var(--secondary-blue);
+            box-shadow: 0 0 0 2px var(--secondary-blue);
         }
 
         .question-number.answered {
