@@ -156,6 +156,16 @@
             margin: 0 auto;
         }
 
+        /* Left Column Wrapper */
+        .quiz-left-column {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            position: sticky;
+            top: 80px;
+            align-self: start;
+        }
+
         /* Left Sidebar */
         .quiz-sidebar {
             background-color: var(--white);
@@ -163,9 +173,6 @@
             padding: 2rem;
             box-shadow: var(--shadow-sm);
             border: 1px solid var(--gray-200);
-            height: fit-content;
-            position: sticky;
-            top: 100px;
         }
 
         .quiz-title {
@@ -626,6 +633,135 @@
         .modal-btn:hover {
             transform: translateY(-1px);
         }
+
+        /* Progress Overview */
+        .progress-overview {
+            background-color: var(--white);
+            border-radius: 1rem;
+            padding: 1.5rem 2rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-200);
+        }
+
+        .progress-overview-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-overview-header i {
+            color: var(--secondary-blue);
+            font-size: 1.1rem;
+        }
+
+        .progress-overview-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+
+        .progress-chart-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-ring-container {
+            position: relative;
+            width: 140px;
+            height: 140px;
+        }
+
+        .progress-ring-container svg {
+            transform: rotate(-90deg);
+            width: 140px;
+            height: 140px;
+        }
+
+        .progress-ring-bg {
+            fill: none;
+            stroke: var(--gray-200);
+            stroke-width: 10;
+        }
+
+        .progress-ring-fill {
+            fill: none;
+            stroke: var(--secondary-blue);
+            stroke-width: 10;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.5s ease;
+        }
+
+        .progress-ring-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .progress-ring-percent {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            line-height: 1;
+        }
+
+        .progress-ring-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--gray-400);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-top: 0.25rem;
+        }
+
+        .progress-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .progress-stat-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .progress-stat-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            font-weight: 500;
+        }
+
+        .progress-stat-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .progress-stat-dot.answered {
+            background-color: #22c55e;
+        }
+
+        .progress-stat-dot.unanswered {
+            background-color: var(--gray-300);
+        }
+
+        .progress-stat-dot.skipped {
+            background-color: #f59e0b;
+        }
+
+        .progress-stat-value {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: var(--gray-800);
+        }
     </style>
 </head>
 <body>
@@ -656,25 +792,73 @@
 
     <!-- Main Layout -->
     <div class="main-layout">
-        <!-- Left Sidebar -->
-        <div class="quiz-sidebar">
-            <h2 class="quiz-title">{{ $quiz['title'] ?? 'Introduction to Computer Hardware' }}</h2>
-            
-            <div class="timer-container">
-                <div class="timer" id="timer">--:--</div>
-            </div>
-            
-            <div class="questions-section">
-                <h3 class="questions-title">Questions</h3>
-                <div class="questions-grid" id="questionsGrid">
-                    <!-- Questions will be populated by JavaScript -->
+        <!-- Left Column -->
+        <div class="quiz-left-column">
+            <div class="quiz-sidebar">
+                <h2 class="quiz-title">{{ $quiz['title'] ?? 'Introduction to Computer Hardware' }}</h2>
+                
+                <div class="timer-container">
+                    <div class="timer" id="timer">--:--</div>
+                </div>
+                
+                <div class="questions-section">
+                    <h3 class="questions-title">Questions</h3>
+                    <div class="questions-grid" id="questionsGrid">
+                        <!-- Questions will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="quiz-actions">
+                    <button class="submit-quiz-btn" id="submitQuizBtn" onclick="submitQuiz()">Submit Quiz</button>
                 </div>
             </div>
-            
-            <div class="quiz-actions">
-                <button class="submit-quiz-btn" id="submitQuizBtn" onclick="submitQuiz()">Submit Quiz</button>
+
+            <!-- Progress Overview -->
+            <div class="progress-overview" id="progressOverview">
+                <div class="progress-overview-header">
+                    <i class="fas fa-info-circle"></i>
+                    <span class="progress-overview-title">Progress Overview</span>
+                </div>
+
+                <div class="progress-chart-wrapper">
+                    <div class="progress-ring-container">
+                        <svg viewBox="0 0 140 140">
+                            <circle class="progress-ring-bg" cx="70" cy="70" r="56"/>
+                            <circle class="progress-ring-fill" id="progressRingFill" cx="70" cy="70" r="56"
+                                stroke-dasharray="351.858" stroke-dashoffset="351.858"/>
+                        </svg>
+                        <div class="progress-ring-text">
+                            <div class="progress-ring-percent" id="progressPercent">0%</div>
+                            <div class="progress-ring-label">Done</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="progress-stats">
+                    <div class="progress-stat-row">
+                        <span class="progress-stat-label">
+                            <span class="progress-stat-dot answered"></span>
+                            Answered
+                        </span>
+                        <span class="progress-stat-value" id="answeredCount">0/0</span>
+                    </div>
+                    <div class="progress-stat-row">
+                        <span class="progress-stat-label">
+                            <span class="progress-stat-dot unanswered"></span>
+                            Unanswered
+                        </span>
+                        <span class="progress-stat-value" id="unansweredCount">0/0</span>
+                    </div>
+                    <div class="progress-stat-row">
+                        <span class="progress-stat-label">
+                            <span class="progress-stat-dot skipped"></span>
+                            Skipped
+                        </span>
+                        <span class="progress-stat-value" id="skippedCount">0/0</span>
+                    </div>
+                </div>
             </div>
-        </div>
+        </div> <!-- /.quiz-left-column -->
 
         <!-- Right Content -->
         <div class="quiz-content">
@@ -812,6 +996,7 @@
             renderQuestionsGrid();
             renderCurrentQuestion();
             updateNavigationButtons();
+            updateProgressOverview();
         }
 
         function renderQuestionsGrid() {
@@ -896,6 +1081,7 @@
             renderCurrentQuestion();
             renderQuestionsGrid();
             updateNavigationButtons();
+            updateProgressOverview();
         }
 
         function goToQuestion(questionIndex) {
@@ -1023,7 +1209,7 @@
             console.log('Submitting to:', `/quiz/{{ $quiz['id'] ?? '1' }}/submit`);
             console.log('Form data:', {
                 answers: answers,
-                time_spent: (14 * 60 + 56) - timeRemaining
+                time_spent: (timeLimitMinutes * 60) - timeRemaining
             });
 
             // Create a form element and submit it normally
@@ -1042,7 +1228,7 @@
             const timeSpentInput = document.createElement('input');
             timeSpentInput.type = 'hidden';
             timeSpentInput.name = 'time_spent';
-            timeSpentInput.value = (14 * 60 + 56) - timeRemaining;
+            timeSpentInput.value = (timeLimitMinutes * 60) - timeRemaining;
             form.appendChild(timeSpentInput);
 
             // Add CSRF token
@@ -1092,6 +1278,57 @@
                 selectOption(optionIndex);
             }
         });
+
+        // Progress Overview
+        // Track which questions have been visited (navigated to)
+        let visitedQuestions = new Set([0]); // Start with first question visited
+
+        function updateProgressOverview() {
+            const total = questions.length;
+            const answeredCount = Object.keys(answers).length;
+            // Skipped = visited but not answered (excluding the current question)
+            let skippedCount = 0;
+            visitedQuestions.forEach(qi => {
+                if (qi !== currentQuestion && answers[qi] === undefined) {
+                    skippedCount++;
+                }
+            });
+            const unansweredCount = total - answeredCount - skippedCount;
+            const percent = total > 0 ? Math.round((answeredCount / total) * 100) : 0;
+
+            // Update ring
+            const circumference = 2 * Math.PI * 56; // r=56
+            const offset = circumference - (percent / 100) * circumference;
+            document.getElementById('progressRingFill').setAttribute('stroke-dashoffset', offset);
+
+            // Update text
+            document.getElementById('progressPercent').textContent = percent + '%';
+            document.getElementById('answeredCount').textContent = answeredCount + '/' + total;
+            document.getElementById('unansweredCount').textContent = unansweredCount + '/' + total;
+            document.getElementById('skippedCount').textContent = skippedCount + '/' + total;
+        }
+
+        // Override goToQuestion to track visited questions
+        const _originalGoToQuestion = goToQuestion;
+        goToQuestion = function(questionIndex) {
+            visitedQuestions.add(questionIndex);
+            _originalGoToQuestion(questionIndex);
+            updateProgressOverview();
+        };
+
+        const _originalNextQuestion = nextQuestion;
+        nextQuestion = function() {
+            _originalNextQuestion();
+            visitedQuestions.add(currentQuestion);
+            updateProgressOverview();
+        };
+
+        const _originalPreviousQuestion = previousQuestion;
+        previousQuestion = function() {
+            _originalPreviousQuestion();
+            visitedQuestions.add(currentQuestion);
+            updateProgressOverview();
+        };
     </script>
     @include('dashboard.quiz.partials.anti-cheat')
 </body>
