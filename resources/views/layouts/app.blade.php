@@ -81,7 +81,7 @@
         /* Container */
         .container {
             max-width: 100%;
-            margin: 0 3rem;
+            margin: 0 2rem;
             padding: 0 1rem;
         }
 

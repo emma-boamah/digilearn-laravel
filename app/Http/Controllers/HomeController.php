@@ -94,16 +94,16 @@ class HomeController extends Controller
 
         $faqs = [
             [
-                'question' => 'How do I sign up for a course?',
-                'answer' => 'To sign up for a course, simply create an account, browse our catalog, and click on the "Enroll" button for the course you\'re interested in. Follow the prompts to complete your enrollment.'
+                'question' => 'How do I Watch a Video Lesson?',
+                'answer' => 'To Watch a Video Lesson, simply create an account, browse our catalog, and click on the "Watch" button for the course you\'re interested in.'
             ],
             [
-                'question' => 'Can I access DigiLearn courses on mobile devices?',
-                'answer' => 'Yes, DigiLearn is fully responsive and can be accessed on smartphones, tablets, and computers. We also offer a mobile app for iOS and Android devices.'
+                'question' => 'Can I access ShoutOutGH Video Lessons on mobile devices?',
+                'answer' => 'Yes, ShoutOutGH Video Lessons are fully responsive and can be accessed on smartphones, tablets, and computers. We are also working to offer a mobile app for iOS and Android devices.'
             ],
             [
                 'question' => 'Are certificates provided upon course completion?',
-                'answer' => 'Yes, we provide certificates of completion for most of our courses. These certificates can be added to your resume or LinkedIn profile to showcase your new skills.'
+                'answer' => 'No, we do not provide certificates of completion for most of our courses. However, we are considering adding this feature in the future.'
             ],
             [
                 'question' => 'What happens if my account gets suspended?',

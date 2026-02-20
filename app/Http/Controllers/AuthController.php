@@ -191,6 +191,11 @@ class AuthController extends Controller
             ]);
         }
 
+        // Handle redirect_to for pricing and other specific flows
+        if ($request->has('redirect_to')) {
+            session(['url.intended' => $request->get('redirect_to')]);
+        }
+
         return view('auth.login');
     }
 
@@ -358,7 +363,7 @@ class AuthController extends Controller
                 }
             }
 
-            return redirect()->route('dashboard.main');
+            return redirect()->intended(route('dashboard.main'));
         }
 
         // Failed login attempt
@@ -600,9 +605,9 @@ class AuthController extends Controller
                 if (!session('selected_level_group')) {
                     session(['selected_level_group' => $selectedLevelGroup]);
                 }
-                return redirect()->route('dashboard.main');
+                return redirect()->intended(route('dashboard.main'));
             }
-            return redirect()->route('dashboard.level-selection');
+            return redirect()->intended(route('dashboard.level-selection'));
 
         } catch (\Exception $e) {
             // Only increment rate limiter on actual database errors (not validation errors)
@@ -729,9 +734,9 @@ class AuthController extends Controller
                 if (!session('selected_level_group')) {
                     session(['selected_level_group' => $selectedLevelGroup]);
                 }
-                return redirect()->route('dashboard.main');
+                return redirect()->intended(route('dashboard.main'));
             }
-            return redirect()->route('dashboard.level-selection');
+            return redirect()->intended(route('dashboard.level-selection'));
 
         } catch (\Exception $e) {
             Log::error('User creation failed after OTP verification', ['error' => $e->getMessage()]);

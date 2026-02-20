@@ -16,7 +16,6 @@
         align-items: flex-end; /* Align logo and text to right */
         margin-left: auto; /* Push to right side */
         text-align: right;
-        order: 2; /* Logo below copyright */
     }
 
     .image-logo-height {
@@ -129,12 +128,7 @@
             align-items: flex-end; /* Align to bottom */
         }
         
-        .copyright {
-            order: 1; /* Copyright on left */
-        }
-        
         .footer-brand {
-            order: 2; /* Logo on right */
             text-align: right;
         }
     }
@@ -190,7 +184,6 @@
     .copyright {
         font-size: 0.875rem;
         color: var(--gray-500);
-        order: 1; /* Copyright above logo */
     }
 
     .social-links {
@@ -235,7 +228,8 @@
         }
 
         .footer-links {
-            grid-template-columns: 1fr; /* Stack links on small screens */
+            grid-template-columns: repeat(2, 1fr); /* Align links horizontally on small screens */
+            gap: 1rem;
         }
 
         .footer-brand {
@@ -284,10 +278,7 @@
                             <a href="{{ route('contact') }}">Contact</a>
                         </li>
                         <li>
-                            <a href="#">Pricing</a>
-                        </li>
-                        <li>
-                            <a href="#">Features</a>
+                            <a href="{{ route('pricing') }}">Pricing</a>
                         </li>
                     </ul>
                 </div>
@@ -297,13 +288,10 @@
                             <a href="#">FAQ</a>
                         </li>
                         <li>
-                            <a href="#">T & C</a>
+                            <a href="#">Terms & Conditions</a>
                         </li>
                         <li>
-                            <a href="#">Support</a>
-                        </li>
-                        <li>
-                            <a href="#">Docs</a>
+                            <a href="{{ route('guidelines.account-suspension') }}">Usage Guidelines</a>
                         </li>
                     </ul>
                 </div>
@@ -312,13 +300,13 @@
 
         <!-- Footer Bottom with Logo on Right -->
         <div class="footer-bottom">
-            <div class="copyright">© {{ date('Y') }} ShoutoutGh All rights reserved.</div>
             <div class="footer-brand">
                 <a href="{{ route('home') }}" class="brand-link">
                     <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image image-logo-height">
                 </a>
                 <p>Educating through Entertainment</p>
             </div>
+            <div class="copyright">© {{ date('Y') }} ShoutoutGh All rights reserved.</div>
         </div>
     </div>
 </footer>
