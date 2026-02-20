@@ -138,7 +138,30 @@
         color: rgba(255, 255, 255, 0.9);
         font-size: 1rem;
         line-height: 1.6;
+        margin-bottom: 2rem;
+        font-family: 'Work Sans', sans-serif;
+    }
+
+    .hero-title {
+        font-family: 'Work Sans', sans-serif;
+        font-weight: 700;
+        line-height: 1.1;
         margin-bottom: 1.5rem;
+        text-align: center;
+    }
+
+    .hero-title-main {
+        font-size: clamp(2rem, 8vw, 5rem);
+        color: #008CFF;
+        display: block;
+        white-space: nowrap;
+    }
+
+    .hero-title-sub {
+        font-size: clamp(2.2rem, 9vw, 5.5rem);
+        color: #f1f3f6ff;
+        display: block;
+        white-space: nowrap;
     }
 
     .hr {
@@ -170,14 +193,23 @@
         .journey-subtitle {
             font-size: 1.25rem;
         }
+        .hero-title-main {
+            font-size: 4rem;
+        }
+        .hero-title-sub {
+            font-size: 4.5rem;
+        }
     }
 
     /* Desktop sizes */
     @media (min-width: 1024px) {
-    .study-journey-text .journey-title {
-        font-size: 90px;
+        .hero-title-main {
+            font-size: 5rem;
+        }
+        .hero-title-sub {
+            font-size: 5.5rem;
+        }
     }
-}
 
     /* Large desktop */
     @media (min-width: 1280px) {
@@ -247,19 +279,17 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            max-width: 42rem;
+            max-width: 95vw;
             text-align: center;
             padding-top: 5rem;
         }
 
         .hero-title {
-            font-size: 6vw;
-            font-weight: 400;
-            letter-spacing: 0.05em;
+            letter-spacing: -0.02em;
             color: rgba(255, 255, 255, 0.95);
-            line-height: 1;
+            line-height: 1.1;
             margin-bottom: 2rem;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
         }
 
         @media (max-width: 768px) {
@@ -350,6 +380,12 @@
         @media (max-width: 480px) {
             .hero-title {
                 font-size: 9vw;
+            }
+            .hero-title-main {
+                font-size: 2.5rem;
+            }
+            .hero-title-sub {
+                font-size: 2.75rem;
             }
 
             .hero-content {
@@ -518,7 +554,7 @@
             width: 1.25rem;
             height: 1.25rem;
             margin-top: 0.25rem;
-            color: var(--primary-red);
+            color: var(--secondary-blue);
             flex-shrink: 0;
         }
 
@@ -2224,17 +2260,25 @@
         <div class="hero-content">
             <div class="hero-text">
                 <h1 id="hero-title" class="hero-title">
-                    Welcome to<br>
-                    <span class="hero-title-emphasis">ShoutOutGH</span>
+                    <span class="hero-title-main">Video Lessons for Every Level</span>
+                    <span class="hero-title-sub">Pass Exams and Build Skills</span>
                 </h1>
-                <div class="hero-description">
-                    <!-- <a href="{{ route('login') }}" class="hero-btn" aria-label="Start learning now on ShoutOutGH">
-                        Start now
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
-                    </a> -->
+                <!-- <div class="hero-description">
+                    <p class="journey-subtitle" style="max-width: 800px;">
+                        Professional educational content designed to help African students and professionals excel in their careers and academic journeys.
+                    </p>
+                </div> -->
+                <div class="hero-actions">
+                    <a href="{{ route('signup') }}" class="hero-btn" style="background-color: #008cffff; color: #f9fbfcff; font-weight: 700; font-family: 'Work Sans', sans-serif; text-transform: uppercase; letter-spacing: 0.05em; border: none; box-shadow: 0 4px 14px 0 rgba(0, 136, 255, 0.39);">
+                        Get Started
+                    </a>
                 </div>
+
+                <!-- <div class="trusted-badge" style="margin-top: 4rem; display: flex; align-items: center; gap: 1rem; color: rgba(255, 255, 255, 0.6); font-family: 'Work Sans', sans-serif; font-size: 0.875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.2em;">
+                    <div style="height: 1px; width: 40px; background: rgba(255, 255, 255, 0.3);"></div>
+                    Trusted by 50,000+ Learners
+                    <div style="height: 1px; width: 40px; background: rgba(255, 255, 255, 0.3);"></div>
+                </div> -->
             </div>
         </div>
     </header>
@@ -2284,9 +2328,17 @@
                                 </svg>
                                 <span itemprop="name">Make personal note edit and save on your preferences</span>
                             </li>
+                            <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+                                <meta itemprop="position" content="4">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg>
+                                <span itemprop="name">Test your knowledge with interactive quizzes</span>
+                            </li>
                         </ul>
                     </div>
-                    <div class="why-choose-videos">
+                    <!-- <div class="why-choose-videos">
                         <div class="youtube-style-video-container">
                             <video
                                 preload="auto"
@@ -2305,13 +2357,13 @@
                                 Your browser does not support the video tag.
                             </video>
                         </div>
-                    </div>
+                    </div> -->
                 </div>
             </div>
         </section>
 
         <!-- Start Your Study Journey CTA -->
-        <section class="study-journey-section" aria-labelledby="journey-title">
+        <!-- <section class="study-journey-section" aria-labelledby="journey-title">
             <div class="container">
                 <div class="study-journey-content">
                     <div class="study-journey-text">
@@ -2323,10 +2375,10 @@
                     </div>
                 </div>
             </div>
-        </section>
+        </section> -->
 
         <!-- Learning Goals Section -->
-        <section class="learning-goals-section" aria-labelledby="learning-goals-title">
+        <!-- <section class="learning-goals-section" aria-labelledby="learning-goals-title">
             <div class="container">
                 <div class="learning-goals-content">
                     <div class="learning-goals-image">
@@ -2339,10 +2391,10 @@
                     </div>
                 </div>
             </div>
-        </section>
+        </section> -->
 
         <!-- Course Videos Section -->
-        <section class="course-videos-section" aria-labelledby="course-videos-title">
+        <!-- <section class="course-videos-section" aria-labelledby="course-videos-title">
             <div class="container">
                 <h2 id="course-videos-title" class="course-videos-title">Explore Over 1M Learning Videos on ShoutOutGH</h2>
                 <div class="course-videos-grid" role="list" aria-label="Course categories">
@@ -2380,10 +2432,10 @@
                     @endforeach
                 </div>
             </div>
-        </section>
+        </section> -->
 
     <!-- All Learning Resources -->
-    <section class="resources-section">
+    <!-- <section class="resources-section">
         <div class="resources-background">
             <img src="{{ secure_asset('images/resources-bg.png') }}" alt="Learning resources" class="resources-image">
             <div class="resources-overlay">
@@ -2421,7 +2473,7 @@
                 </div>
             </div>
         </div>
-    </section>
+    </section> -->
 
         <!-- Pricing Plans -->
         <section class="pricing-section bg-white" aria-labelledby="pricing-title" itemscope itemtype="https://schema.org/Service">
