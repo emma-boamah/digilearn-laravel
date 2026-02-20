@@ -800,7 +800,7 @@
                                 @auth
                                     <button type="submit" class="purchase-btn-main" onclick="initiatePayment(this)">Purchase</button>
                                 @else
-                                    <a href="{{ route('login') }}" class="purchase-btn-main login-link">Login to Purchase</a>
+                                    <a href="{{ route('login', ['redirect_to' => url()->full()]) }}" class="purchase-btn-main login-link">Login to Purchase</a>
                                 @endauth
                             </form>
                         </div>
@@ -849,7 +849,7 @@
         @auth
             <button class="modal-purchase-btn" onclick="initiateModalPayment()">Next: Make Payment</button>
         @else
-            <a href="{{ route('login') }}" class="modal-purchase-btn modal-login-link">Login to Purchase</a>
+            <a href="{{ route('login', ['redirect_to' => url()->full()]) }}" class="modal-purchase-btn modal-login-link">Login to Purchase</a>
         @endauth
     </div>
 </div>

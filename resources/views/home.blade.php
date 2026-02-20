@@ -151,17 +151,24 @@
     }
 
     .hero-title-main {
-        font-size: clamp(2rem, 8vw, 5rem);
+        font-size: clamp(1.4rem, 6.5vw, 5rem);
         color: #008CFF;
         display: block;
         white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 0.75rem; /* Space between main and sub title */
+        line-height: 1.2;
+        padding-bottom: 0.1em;
     }
 
     .hero-title-sub {
-        font-size: clamp(2.2rem, 9vw, 5.5rem);
+        font-size: clamp(1.6rem, 7.5vw, 5.5rem);
         color: #f1f3f6ff;
         display: block;
         white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .hr {
@@ -193,22 +200,7 @@
         .journey-subtitle {
             font-size: 1.25rem;
         }
-        .hero-title-main {
-            font-size: 4rem;
-        }
-        .hero-title-sub {
-            font-size: 4.5rem;
-        }
-    }
-
-    /* Desktop sizes */
-    @media (min-width: 1024px) {
-        .hero-title-main {
-            font-size: 5rem;
-        }
-        .hero-title-sub {
-            font-size: 5.5rem;
-        }
+    /* Tablet & Desktop overrides removed to favor clamp() behavior */
     }
 
     /* Large desktop */
@@ -279,9 +271,11 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            max-width: 95vw;
+            max-width: 98vw;
+            width: 100%;
             text-align: center;
-            padding-top: 5rem;
+            padding: 5rem 1rem 0;
+            box-sizing: border-box;
         }
 
         .hero-title {
@@ -382,10 +376,10 @@
                 font-size: 9vw;
             }
             .hero-title-main {
-                font-size: 2.5rem;
+                /* Extra small screen adjustment */
             }
             .hero-title-sub {
-                font-size: 2.75rem;
+                /* Extra small screen adjustment */
             }
 
             .hero-content {
@@ -1293,15 +1287,38 @@
         }
 
         /* Testimonials */
+        .testimonials-slider-wrapper {
+            position: relative;
+            padding: 0 1rem;
+            margin-bottom: 2rem;
+        }
+
         .testimonials-grid {
-            display: grid;
-            gap: 2rem;
-            margin-top: 2rem;
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            padding: 1rem 0;
+            gap: 1.5rem;
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+            scroll-behavior: smooth;
+        }
+
+        .testimonials-grid::-webkit-scrollbar {
+            display: none; /* Chrome, Safari and Opera */
         }
 
         @media (min-width: 48rem) {
+            .testimonials-slider-wrapper {
+                padding: 0;
+            }
             .testimonials-grid {
+                display: grid;
+                gap: 2rem;
+                margin-top: 2rem;
                 grid-template-columns: repeat(2, 1fr);
+                overflow-x: visible;
+                scroll-snap-type: none;
             }
         }
 
@@ -1312,12 +1329,64 @@
         }
 
         .testimonial-card {
-            background-color: var(--red);
+            flex: 0 0 85%; /* Shows most of one card and a bit of the next */
+            scroll-snap-align: center;
+            background-color: var(--white);
             border-radius: var(--border-radius-lg);
-            box-shadow: var(--shadow-lg);
+            box-shadow: var(--shadow-md);
             overflow: hidden;
-            padding: 2rem;
-            border: 1px solid rgb(235, 229, 229);
+            padding: 1rem;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        @media (min-width: 48rem) {
+            .testimonial-card {
+                flex: none;
+                background-color: var(--red);
+                box-shadow: var(--shadow-lg);
+                border: 1px solid rgb(235, 229, 229);
+            }
+        }
+
+        /* Slider Navigation Buttons */
+        .slider-nav {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        @media (min-width: 48rem) {
+            .slider-nav {
+                display: none;
+            }
+        }
+
+        .slider-nav-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--white);
+            border: 1px solid var(--gray-200);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--gray-600);
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .slider-nav-btn:hover {
+            background-color: var(--primary-red);
+            color: var(--white);
+            border-color: var(--primary-red);
+        }
+
+        .slider-nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .testimonial-content {
@@ -1961,67 +2030,6 @@
             }
         }
 
-        /* Testimonials */
-        .testimonials-grid {
-            display: grid;
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-
-        @media (min-width: 48rem) {
-            .testimonials-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (min-width: 64rem) {
-            .testimonials-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
-        }
-
-        .testimonial-card {
-            background-color: var(--red);
-            border-radius: var(--border-radius-lg);
-            box-shadow: var(--shadow-lg);
-            overflow: hidden;
-            padding: 2rem;
-            border: 1px solid rgb(235, 229, 229);
-        }
-
-        .testimonial-content {
-            margin-bottom: 1.5rem;
-        }
-
-        .testimonial-content p {
-            font-style: italic;
-            color: var(--gray-900);
-            line-height: 1.6;
-        }
-
-        .testimonial-author {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .testimonial-author img {
-            width: 3rem;
-            height: 3rem;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-
-        .author-info h4 {
-            font-weight: 600;
-            color: var(--secondary-blue);
-            margin-bottom: 0.25rem;
-        }
-
-        .author-info span {
-            color: var(--gray-600);
-            font-size: 0.875rem;
-        }
 
         /* FAQ Section - Reduced sizes for better proportions */
         .faq-section {
@@ -2264,7 +2272,7 @@
                     <span class="hero-title-sub">Pass Exams and Build Skills</span>
                 </h1>
                 <!-- <div class="hero-description">
-                    <p class="journey-subtitle" style="max-width: 800px;">
+                    <p class="journey-subtitle" style="max-width: 800px; font-size: clamp(0.9rem, 2.5vw, 1.125rem); line-height: 1.5; margin-bottom: 2rem;">
                         Professional educational content designed to help African students and professionals excel in their careers and academic journeys.
                     </p>
                 </div> -->
@@ -2274,11 +2282,11 @@
                     </a>
                 </div>
 
-                <!-- <div class="trusted-badge" style="margin-top: 4rem; display: flex; align-items: center; gap: 1rem; color: rgba(255, 255, 255, 0.6); font-family: 'Work Sans', sans-serif; font-size: 0.875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.2em;">
-                    <div style="height: 1px; width: 40px; background: rgba(255, 255, 255, 0.3);"></div>
-                    Trusted by 50,000+ Learners
-                    <div style="height: 1px; width: 40px; background: rgba(255, 255, 255, 0.3);"></div>
-                </div> -->
+                <div class="trusted-badge" style="margin-top: 3rem; display: flex; align-items: center; justify-content: center; gap: 0.75rem; color: rgba(255, 255, 255, 0.6); font-family: 'Work Sans', sans-serif; font-size: clamp(0.65rem, 3vw, 0.875rem); font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; width: 100%;">
+                    <div style="height: 1px; flex: 1; max-width: 40px; background: rgba(255, 255, 255, 0.3);"></div>
+                    <span style="white-space: nowrap;">Trusted by 50,000+ Learners</span>
+                    <div style="height: 1px; flex: 1; max-width: 40px; background: rgba(255, 255, 255, 0.3);"></div>
+                </div>
             </div>
         </div>
     </header>
@@ -2550,22 +2558,37 @@
         <section class="section bg-gray-50" aria-labelledby="testimonials-title">
             <div class="container">
                 <h2 id="testimonials-title" class="section-title text-center">What our students say</h2>
-                <div class="testimonials-grid" role="list" aria-label="Student testimonials">
-                    @foreach($testimonials as $testimonial)
-                        <article class="testimonial-card" role="listitem" itemscope itemtype="https://schema.org/Review">
-                            <meta itemprop="reviewRating" content="5">
-                            <div class="testimonial-content" itemprop="reviewBody">
-                                <p>"{{ $testimonial['quote'] }}"</p>
-                            </div>
-                            <div class="testimonial-author" itemprop="author" itemscope itemtype="https://schema.org/Person">
-                                <img src="{{ secure_asset($testimonial['image']) }}" alt="Photo of {{ $testimonial['name'] }}" loading="lazy" itemprop="image">
-                                <div class="author-info">
-                                    <h4 itemprop="name">{{ $testimonial['name'] }}</h4>
-                                    <span itemprop="jobTitle">{{ $testimonial['role'] }}</span>
+                <div class="testimonials-slider-wrapper" x-data="{ 
+                    scrollNext() { $refs.slider.scrollBy({ left: $refs.slider.offsetWidth * 0.8, behavior: 'smooth' }) },
+                    scrollPrev() { $refs.slider.scrollBy({ left: -$refs.slider.offsetWidth * 0.8, behavior: 'smooth' }) }
+                }">
+                    <div class="testimonials-grid" role="list" aria-label="Student testimonials" x-ref="slider">
+                        @foreach($testimonials as $testimonial)
+                            <article class="testimonial-card" role="listitem" itemscope itemtype="https://schema.org/Review">
+                                <meta itemprop="reviewRating" content="5">
+                                <div class="testimonial-content" itemprop="reviewBody">
+                                    <p>"{{ $testimonial['quote'] }}"</p>
                                 </div>
-                            </div>
-                        </article>
-                    @endforeach
+                                <div class="testimonial-author" itemprop="author" itemscope itemtype="https://schema.org/Person">
+                                    <img src="{{ secure_asset($testimonial['image']) }}" alt="Photo of {{ $testimonial['name'] }}" loading="lazy" itemprop="image">
+                                    <div class="author-info">
+                                        <h4 itemprop="name">{{ $testimonial['name'] }}</h4>
+                                        <span itemprop="jobTitle">{{ $testimonial['role'] }}</span>
+                                    </div>
+                                </div>
+                            </article>
+                        @endforeach
+                    </div>
+
+                    <!-- Slider Navigation -->
+                    <div class="slider-nav">
+                        <button class="slider-nav-btn" @click="scrollPrev()" aria-label="Previous testimonial">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                        </button>
+                        <button class="slider-nav-btn" @click="scrollNext()" aria-label="Next testimonial">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -2581,7 +2604,7 @@
                                 <h3 class="faq-question" itemprop="name">{{ strtoupper($faq['question']) }}</h3>
                                 <div class="faq-divider"></div>
                                 <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
-                                    <p class="faq-answer" itemprop="text">{{ $faq['answer'] }}</p>
+                                    <p class="faq-answer" itemprop="text">{!! $faq['answer'] !!}</p>
                                 </div>
                             </div>
                         </div>

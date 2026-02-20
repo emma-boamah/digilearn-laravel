@@ -76,22 +76,24 @@
         }
 
         .card-content {
-            display: grid;
-            gap: 2rem;
             padding: 2rem;
             background-color: #f9f9f9;
-        }
-
-        @media (min-width: 48rem) {
-            .card-content {
-                grid-template-columns: repeat(2, 1fr);
-            }
         }
 
         .contact-methods {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            gap: 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        @media (min-width: 48rem) {
+            .contact-methods {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 2rem;
+            }
         }
 
         .contact-item {
@@ -147,7 +149,7 @@
         }
 
         .text button {
-            background-color: var(--primary-red);
+            background-color: var(--secondary-blue);
             color: var(--white);
             border: none;
             padding: 0.5rem 1rem;
@@ -159,62 +161,6 @@
             width: auto;
         }
 
-        .contact-form {
-            background-color: #fff;
-            border-radius: 0;
-            padding: 1.25rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .contact-form h3 {
-            font-weight: 500;
-            margin-bottom: 1rem;
-            font-size: 1rem;
-        }
-
-        .form-group {
-            margin-bottom: 1rem;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 0.75rem;
-            color: var(--gray-600);
-            margin-bottom: 0.25rem;
-        }
-
-        .form-group input,
-        .form-group textarea {
-            width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0;
-            font-size: 0.875rem;
-        }
-
-        .form-group textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-
-        .contact-form button {
-            background-color: var(--primary-red);
-            color: var(--white);
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 0;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 0.875rem;
-            width: auto;
-        }
 
         /* Map section */
         .map-section {
@@ -341,19 +287,6 @@
                     </div>
                 </div>
 
-                <!-- Right Column - Contact Form -->
-                <div class="contact-form">
-                    <h3>Send a message</h3>
-                    <form action="{{ route('contact.submit') }}" method="POST">
-                        @csrf
-                        <div class="form-group">
-                            <label for="message">Message</label>
-                            <textarea id="message" name="message" placeholder="How can we help you?"></textarea>
-                        </div>
-
-                        <button type="submit">Submit</button>
-                    </form>
-                </div>
             </div>
         </div>
     </section>
