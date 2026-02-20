@@ -151,24 +151,21 @@
     }
 
     .hero-title-main {
-        font-size: clamp(1.4rem, 6.5vw, 5rem);
+        font-size: clamp(2rem, 10vw, 5rem);
         color: #008CFF;
         display: block;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
         margin-bottom: 0.75rem; /* Space between main and sub title */
         line-height: 1.2;
         padding-bottom: 0.1em;
     }
 
     .hero-title-sub {
-        font-size: clamp(1.6rem, 7.5vw, 5.5rem);
+        font-size: clamp(1.2rem, 6vw, 2.5rem);
+        line-height: 1.3;
+        font-weight: 500;
+        margin-top: 0.5rem;
         color: #f1f3f6ff;
         display: block;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
 
     .hr {
@@ -379,11 +376,12 @@
                 /* Extra small screen adjustment */
             }
             .hero-title-sub {
-                /* Extra small screen adjustment */
+                font-size: 1.4rem;
+                margin-top: 0.25rem;
             }
 
             .hero-content {
-                padding: 0 1.5rem;
+                padding: 0 0.75rem;
             }
         }
 
@@ -409,9 +407,9 @@
             /* width: 14rem; */
             background-color: var(--secondary-blue);
             color: var(--white);
-            margin-top: 3rem;
+            margin-top: 1.5rem;
             padding: 1.25rem 3rem;
-            border-radius: var(--border-radius-md);
+            border-radius: var(--border-radius-full);
             text-decoration: none;
             display: inline-flex;
             align-items: center;
@@ -519,6 +517,7 @@
             display: flex;
             flex-direction: column;
             gap: 2rem;
+            align-items: center;
         }
 
         @media (min-width: 48rem) {
@@ -579,16 +578,27 @@
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
+            width: 100%;
         }
 
         .video-container {
             position: relative;
             border-radius: var(--border-radius-lg);
             overflow: hidden;
-            height: 400px;
+            aspect-ratio: 16 / 9;
+            width: 100%;
             cursor: pointer;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .youtube-style-video-container {
+            position: relative;
+            border-radius: var(--border-radius-lg);
+            overflow: hidden;
+            aspect-ratio: 16 / 9;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
         }
 
         .video-container:hover {
@@ -1297,11 +1307,12 @@
             display: flex;
             overflow-x: auto;
             scroll-snap-type: x mandatory;
-            padding: 1rem 0;
+            padding: 1.5rem 0.5rem;
             gap: 1.5rem;
             -ms-overflow-style: none; /* IE and Edge */
             scrollbar-width: none; /* Firefox */
             scroll-behavior: smooth;
+            flex-wrap: nowrap;
         }
 
         .testimonials-grid::-webkit-scrollbar {
@@ -1313,23 +1324,20 @@
                 padding: 0;
             }
             .testimonials-grid {
-                display: grid;
-                gap: 2rem;
-                margin-top: 2rem;
-                grid-template-columns: repeat(2, 1fr);
-                overflow-x: visible;
-                scroll-snap-type: none;
+                padding: 2rem 0;
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
             }
         }
 
         @media (min-width: 64rem) {
             .testimonials-grid {
-                grid-template-columns: repeat(3, 1fr);
+                padding: 2rem 0;
             }
         }
 
         .testimonial-card {
-            flex: 0 0 85%; /* Shows most of one card and a bit of the next */
+            flex: 0 0 calc(90% - 1.5rem); /* Default for mobile */
             scroll-snap-align: center;
             background-color: var(--white);
             border-radius: var(--border-radius-lg);
@@ -1342,7 +1350,7 @@
 
         @media (min-width: 48rem) {
             .testimonial-card {
-                flex: none;
+                flex: 0 0 400px;
                 background-color: var(--red);
                 box-shadow: var(--shadow-lg);
                 border: 1px solid rgb(235, 229, 229);
@@ -1359,7 +1367,9 @@
 
         @media (min-width: 48rem) {
             .slider-nav {
-                display: none;
+                display: flex; /* Ensure visible on desktop */
+                justify-content: center;
+                margin-top: 2rem;
             }
         }
 
@@ -2268,8 +2278,8 @@
         <div class="hero-content">
             <div class="hero-text">
                 <h1 id="hero-title" class="hero-title">
-                    <span class="hero-title-main">Video Lessons for Every Level</span>
-                    <span class="hero-title-sub">Pass Exams and Build Skills</span>
+                    <span class="hero-title-main">Video lessons for every level</span>
+                    <span class="hero-title-sub">Pass exams and build skills</span>
                 </h1>
                 <!-- <div class="hero-description">
                     <p class="journey-subtitle" style="max-width: 800px; font-size: clamp(0.9rem, 2.5vw, 1.125rem); line-height: 1.5; margin-bottom: 2rem;">
@@ -2346,7 +2356,7 @@
                             </li>
                         </ul>
                     </div>
-                    <!-- <div class="why-choose-videos">
+                    <div class="why-choose-videos">
                         <div class="youtube-style-video-container">
                             <video
                                 preload="auto"
@@ -2365,7 +2375,7 @@
                                 Your browser does not support the video tag.
                             </video>
                         </div>
-                    </div> -->
+                    </div>
                 </div>
             </div>
         </section>
