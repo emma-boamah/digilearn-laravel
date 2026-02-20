@@ -426,7 +426,7 @@
             display: flex;
             justify-content: space-between;
             gap: 1rem;
-            margin-top: auto;
+            margin-top: 2.5rem;
         }
 
         .nav-btn {

@@ -1116,7 +1116,15 @@
                     <span class="active">Results Review</span>
                 </div>
                 <h1 class="page-title">Quiz Results: {{ trim(str_replace('Quiz for:', '', $quiz['title'])) }}</h1>
-                <p class="page-subtitle">Excellent work! You've mastered the foundational components of this topic.</p>
+                <p class="page-subtitle">
+                    @if($percentage >= 80)
+                        Excellent work! You've mastered the foundational components of this topic.
+                    @elseif($percentage >= 50)
+                        Good job! You've grasped most concepts, but there's room for improvement.
+                    @else
+                        Keep practicing! Review the materials and try again to improve your score.
+                    @endif
+                </p>
              </div>
 
              <!-- Performance Cards -->
