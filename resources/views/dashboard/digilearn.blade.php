@@ -635,16 +635,32 @@
         }
 
         .search-close {
-            display: flex;
+            display: none; /* Changed: hidden by default */
+            align-items: center;
+            justify-content: center;
             position: absolute;
-            right: 45px; /* Position to the left of search button */
+            right: 52px; /* Increased spacing from search button */
             top: 50%;
             transform: translateY(-50%);
             background: none;
             border: none;
-            padding: 0.5rem;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
             cursor: pointer;
-            color: var(--gray-500);
+            color: var(--gray-600);
+            transition: all 0.2s ease;
+            z-index: 21;
+        }
+
+        .search-close:hover {
+            background-color: var(--gray-100);
+            color: var(--gray-900);
+        }
+
+        .search-close:active {
+            background-color: var(--gray-200);
+            transform: translateY(-50%) scale(0.95);
         }
 
         .search-input {
@@ -653,7 +669,7 @@
             border-radius: 0.5rem;
             width: 100%;
             font-size: 0.875rem;
-            padding-right: 3.5rem;
+            padding-right: 5.5rem; /* Increased to accommodate the close button + search button */
             background: var(--white);
             color: var(--gray-900);
         }
@@ -1528,7 +1544,7 @@
             }
 
             .search-close {
-                display: flex;
+                display: none; /* Default state for mobile search too */
             }
             .main-container {
                 flex-direction: column;
@@ -1990,8 +2006,8 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                     </button>
                     <!-- Close button for mobile search -->
                     <button class="search-close" id="searchClose">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
@@ -2208,10 +2224,19 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
             }
 
             if (searchClose && searchInput && filterBar) {
+                // Initial state check
+                searchClose.style.display = searchInput.value ? 'flex' : 'none';
+
+                // Listen for typing
+                searchInput.addEventListener('input', function() {
+                    searchClose.style.display = searchInput.value ? 'flex' : 'none';
+                });
+
                 searchClose.addEventListener('click', function() {
                     if (searchInput.value) {
                         // Clear input if it has content
                         searchInput.value = '';
+                        searchClose.style.display = 'none'; // Hide button after clearing
                         searchInput.focus();
                     } else {
                         // Close search if input is empty
@@ -2664,22 +2689,15 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                 console.log('Adding input event listener');
                 searchInput.addEventListener('input', function() {
                     console.log('Input event triggered, value:', this.value);
-                    clearTimeout(searchTimeout);
                     const query = this.value.trim();
 
                     if (query.length === 0) {
-                        // Restore original content
+                        // Restore original content immediately when cleared
                         restoreOriginalLessons();
-                        return;
                     }
-
-                    if (query.length < 2) {
-                        return; // Don't search for very short queries
-                    }
-
-                    searchTimeout = setTimeout(() => {
-                        performSearch(query);
-                    }, 300); // Debounce 300ms
+                    
+                    // Note: Automatic search-as-you-type removed for scalability.
+                    // Search now only triggers via Enter key or Search button click.
                 });
 
                 // Handle Enter key

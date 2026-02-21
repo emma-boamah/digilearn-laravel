@@ -1237,7 +1237,7 @@
         }
 
         .pricing-features svg {
-            color: var(--primary-red);
+            color: var(--secondary-blue);
             flex-shrink: 0;
         }
 
