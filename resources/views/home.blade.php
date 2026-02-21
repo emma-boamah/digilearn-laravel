@@ -283,107 +283,7 @@
             text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
         }
 
-        @media (max-width: 768px) {
-            .hero-title {
-                font-size: 2.5rem; /* Adjusted for smaller screens */
-            }
 
-            .hero-title-emphasis {
-                font-size: 3rem; /* Adjusted for smaller screens */
-            }
-
-            .hero-btn {
-                padding: 1rem 1.5rem;
-                font-size: 1.25rem; /* Adjusted for smaller screens */
-            }
-
-            .hero-content {
-                padding: 0 2rem;
-            }
-
-            /* Why Choose Section */
-            .why-choose {
-                flex-direction: column;
-            }
-
-            .why-choose-videos {
-                order: -1; /* Move videos below text on smaller screens */
-                margin-bottom: 2rem;
-            }
-
-            .feature-list li {
-                font-size: 1rem; /* Adjusted for smaller screens */
-            }
-
-            /* Learning Resources Buttons - Fixed */
-            .resources-red-section {
-                height: auto; /* Remove fixed height */
-                padding: 2rem 0; /* Add proper padding */
-            }
-
-            .resources-buttons-container {
-                padding: 0 1rem; /* Add side padding */
-            }
-
-            /* Study Journey Section */
-            .study-journey-text h2 {
-                font-size: 2.5rem; /* Adjusted for smaller screens */
-                line-height: 1.2;
-            }
-
-            /* Pricing Section */
-            .pricing-header-content-new {
-                flex-direction: column;
-                text-align: center;
-            }
-
-            .pricing-image-right {
-                margin: 2rem auto 0;
-            }
-
-            .pricing-grid {
-                grid-template-columns: 1fr; /* Single column on smaller screens */
-            }
-
-            /* Learning Resources Section */
-
-            .resources-main-title {
-                font-size: 2.5rem; /* Adjusted for smaller screens */
-                width: 100%;
-            }
-
-            .resources-content-layout {
-                flex-direction: column;
-                text-align: center;
-            }
-
-            /* Learning Resources Buttons */
-            .resources-buttons-grid {
-                display: flex;
-                flex-direction: column;
-                gap: 0.75rem;
-                width: 100%;
-                max-width: 300px;
-                margin: 0 auto;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .hero-title {
-                font-size: 9vw;
-            }
-            .hero-title-main {
-                /* Extra small screen adjustment */
-            }
-            .hero-title-sub {
-                font-size: 1.4rem;
-                margin-top: 0.25rem;
-            }
-
-            .hero-content {
-                padding: 0 0.75rem;
-            }
-        }
 
         @media (min-width: 1600px) {
             .hero-title {
@@ -429,7 +329,60 @@
             margin-left: 0.5rem;
         }
 
-        
+        .hero-actions {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+
+        /* Mobile Overrides for Hero Section */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem; /* Adjusted for smaller screens */
+            }
+
+            .hero-title-emphasis {
+                font-size: 3rem; /* Adjusted for smaller screens */
+            }
+
+            .hero-actions {
+                margin-top: 1rem;
+            }
+
+            .hero-btn {
+                padding: 0.75rem 1.5rem !important; /* Force reduction */
+                font-size: 1rem !important; /* Force reduction */
+                margin-top: 1rem;
+            }
+
+            .hero-content {
+                padding: 0 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-title {
+                font-size: 9vw;
+            }
+            .hero-title-sub {
+                font-size: 1.4rem;
+                margin-top: 0.25rem;
+            }
+
+            .hero-actions {
+                margin-top: 0.75rem;
+            }
+
+            .hero-btn {
+                padding: 0.75rem 1.75rem !important; /* Slightly increased width */
+                font-size: 1rem !important; /* Balanced font size */
+            }
+
+            .hero-content {
+                padding: 0 0.75rem;
+            }
+        }
         /* Section styles */
         .section {
             padding: 2rem 0;
@@ -1667,7 +1620,7 @@
             opacity: 0.7;
         }
 
-     /* All Learning Resources - Custom container for exact screenshot match */
+        /* All Learning Resources - Custom container for exact screenshot match */
         .resources-section {
             position: relative;
             padding: 0;
@@ -2268,8 +2221,8 @@
     <header class="hero" role="banner" aria-labelledby="hero-title">
         <div class="hero-background">
             <video preload="auto" loading="lazy" autoplay muted loop playsinline poster="{{ secure_asset('images/hero-image.png') }}" aria-hidden="true">
-                <source src="{{ secure_asset('videos/hero-video.mp4') }}" type="video/mp4">
-                <source src="{{ secure_asset('videos/hero-video.webm') }}" type="video/webm">
+                <source src="{{ secure_asset('videos/_users_ea54fd73-85a6-42d9-923f-e36dd7fc6d63_generated_d6bac217-3806-4c87-8cf8-16ea2b676063_generated_video.MP4') }}" type="video/mp4">
+                <source src="{{ secure_asset('videos/hero-video-new.webm') }}" type="video/webm">
                 Your browser does not support the video tag.
             </video>
             <div class="hero-overlay"></div>
@@ -2320,7 +2273,7 @@
                                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                                     <polyline points="22 4 12 14.01 9 11.01"></polyline>
                                 </svg>
-                                <span itemprop="name">Access a library of curated resources tailored to your needs</span>
+                                <span itemprop="name">Learn at your own pace and time, anywhere on any device</span>
                             </li>
                             <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
                                 <meta itemprop="position" content="2">
@@ -2328,7 +2281,7 @@
                                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                                     <polyline points="22 4 12 14.01 9 11.01"></polyline>
                                 </svg>
-                                <span itemprop="name">Get interactive tools to enhance your understanding of complex topics</span>
+                                <span itemprop="name">Creative and engaging video content to enhance your understanding of complex topics</span>
                             </li>
                             <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
                                 <meta itemprop="position" content="3">
@@ -2336,7 +2289,7 @@
                                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                                     <polyline points="22 4 12 14.01 9 11.01"></polyline>
                                 </svg>
-                                <span itemprop="name">Learn at your own convenient time on our platform</span>
+                                <span itemprop="name">Test your knowledge with feedback-driven quizzes</span>
                             </li>
                             <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
                                 <meta itemprop="position" content="4">
@@ -2344,15 +2297,15 @@
                                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                                     <polyline points="22 4 12 14.01 9 11.01"></polyline>
                                 </svg>
-                                <span itemprop="name">Make personal note edit and save on your preferences</span>
+                                <span itemprop="name">Premium-quality educational content at a price that makes sense</span>
                             </li>
                             <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
-                                <meta itemprop="position" content="4">
+                                <meta itemprop="position" content="5">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                                     <polyline points="22 4 12 14.01 9 11.01"></polyline>
                                 </svg>
-                                <span itemprop="name">Test your knowledge with interactive quizzes</span>
+                                <span itemprop="name">24 hour support, guidance and feedback from our instructors</span>
                             </li>
                         </ul>
                     </div>
