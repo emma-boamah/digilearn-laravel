@@ -96,12 +96,11 @@ class ProfileController extends Controller
         
         $availablePlans = PricingPlan::active()->ordered()->get();
         
-        // Fetch last 10 payments for billing history
+        // Fetch paginated payments for billing history
         $payments = \App\Models\Payment::where('user_id', $user->id)
             ->with('pricingPlan')
             ->orderBy('created_at', 'desc')
-            ->take(10)
-            ->get();
+            ->paginate(5);
             
         return view('settings.billing', compact('user', 'availablePlans', 'payments'));
     }
