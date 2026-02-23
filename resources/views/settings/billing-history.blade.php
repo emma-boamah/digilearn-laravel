@@ -4,95 +4,97 @@
 @section('breadcrumb', 'Billing / History')
 
 @section('content')
-<div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
-    <div>
-        <h1 class="page-title" style="margin-bottom: 0.5rem;">Billing History</h1>
-        <p class="page-description">View and manage your school's subscription and payment records.</p>
+<div class="page-header flex justify-between items-start mb-8 flex-wrap gap-4 max-w-full">
+    <div class="flex-1 min-w-200">
+        <h1 class="page-title mb-2 break-word">Billing History</h1>
+        <p class="page-description text-wrap">View and manage your school's subscription and payment records.</p>
     </div>
-    <button style="display: flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; background-color: white; border: 1px solid var(--border-color); border-radius: 0.5rem; color: var(--text-main); font-weight: 600; cursor: pointer; font-size: 0.875rem;">
+    <button class="flex items-center gap-2 p-2-5 bg-white border border-color rounded-lg text-main font-semibold cursor-pointer text-sm shadow-sm no-underline whitespace-nowrap">
         <i class="fas fa-download"></i>
         Export CSV
     </button>
 </div>
 
 <!-- Filters -->
-<div style="background-color: var(--bg-card); border-radius: 1rem; border: 1px solid var(--border-color); padding: 1rem; margin-bottom: 2rem;">
-    <form action="{{ route('settings.billing-history') }}" method="GET" style="display: flex; gap: 1rem; align-items: center;">
-        <div style="flex: 1; position: relative;">
-            <i class="fas fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by Invoice ID or Plan..." style="width: 100%; padding: 0.75rem 1rem 0.75rem 2.75rem; border-radius: 0.75rem; border: 1px solid var(--border-color); background-color: var(--bg-body); font-size: 0.875rem;">
+<div class="filters-container bg-card rounded-2xl border p-4 mb-8">
+    <form action="{{ route('settings.billing-history') }}" method="GET" class="flex gap-4 items-center flex-wrap">
+        <div class="flex-1 relative min-w-250">
+            <i class="fas fa-search filter-search-icon"></i>
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by Invoice ID or Plan..." class="w-full p-4 pl-11 rounded-xl border bg-body text-sm">
         </div>
         
-        <select name="date_range" style="padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); background-color: var(--bg-body); font-size: 0.875rem; min-width: 160px;">
-            <option value="">All Time</option>
-            <option value="3months" {{ request('date_range') == '3months' ? 'selected' : '' }}>Last 3 Months</option>
-            <option value="6months" {{ request('date_range') == '6months' ? 'selected' : '' }}>Last 6 Months</option>
-            <option value="12months" {{ request('date_range') == '12months' ? 'selected' : '' }}>Last 12 Months</option>
-        </select>
-
-        <select name="status" style="padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); background-color: var(--bg-body); font-size: 0.875rem; min-width: 140px;">
-            <option value="">All Statuses</option>
-            <option value="success" {{ request('status') == 'success' ? 'selected' : '' }}>Paid</option>
-            <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-            <option value="failed" {{ request('status') == 'failed' ? 'selected' : '' }}>Failed</option>
-        </select>
-
-        <button type="submit" style="padding: 0.75rem 1.5rem; background-color: var(--primary-color); color: white; border: none; border-radius: 0.75rem; font-weight: 600; cursor: pointer;">Filter</button>
+        <div class="flex gap-4 flex-1 min-w-300 flex-wrap">
+            <select name="date_range" class="flex-1 p-3 rounded-xl border bg-body text-sm min-w-140">
+                <option value="">All Time</option>
+                <option value="3months" {{ request('date_range') == '3months' ? 'selected' : '' }}>Last 3 Months</option>
+                <option value="6months" {{ request('date_range') == '6months' ? 'selected' : '' }}>Last 6 Months</option>
+                <option value="12months" {{ request('date_range') == '12months' ? 'selected' : '' }}>Last 12 Months</option>
+            </select>
+            <select name="status" class="flex-1 p-3 rounded-xl border bg-body text-sm min-w-140">
+                <option value="">All Statuses</option>
+                <option value="success" {{ request('status') == 'success' ? 'selected' : '' }}>Paid</option>
+                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                <option value="failed" {{ request('status') == 'failed' ? 'selected' : '' }}>Failed</option>
+            </select>
+            <button type="submit" class="p-3 px-6 bg-primary text-white border-none rounded-xl font-semibold cursor-pointer min-w-100">Filter</button>
+        </div>
     </form>
 </div>
 
 <!-- History Table -->
-<div style="background-color: var(--bg-card); border-radius: 1rem; border: 1px solid var(--border-color); overflow: hidden; margin-bottom: 2rem;">
-    <table style="width: 100%; border-collapse: collapse; text-align: left;">
-        <thead style="background-color: var(--bg-body); border-bottom: 1px solid var(--border-color);">
-            <tr>
-                <th style="padding: 1.25rem 1.5rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Invoice ID</th>
-                <th style="padding: 1.25rem 1.5rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Date</th>
-                <th style="padding: 1.25rem 1.5rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Plan</th>
-                <th style="padding: 1.25rem 1.5rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Amount (GHS)</th>
-                <th style="padding: 1.25rem 1.5rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($payments as $payment)
-                <tr style="border-bottom: 1px solid var(--border-color); transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='var(--bg-body)'" onmouseout="this.style.backgroundColor='transparent'">
-                    <td style="padding: 1.25rem 1.5rem;">
-                        <a href="#" style="color: var(--primary-color); font-weight: 700; text-decoration: none;">#INV-{{ $payment->created_at->format('Y') }}-{{ str_pad($payment->id, 3, '0', STR_PAD_LEFT) }}</a>
-                    </td>
-                    <td style="padding: 1.25rem 1.5rem;">
-                        <div style="font-weight: 600; color: var(--text-main);">{{ $payment->created_at->format('M d, Y') }}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ $payment->created_at->format('H:i A') }}</div>
-                    </td>
-                    <td style="padding: 1.25rem 1.5rem;">
-                        <div style="font-weight: 600; color: var(--text-main);">{{ $payment->pricingPlan->name ?? 'Unknown Plan' }}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">Subscription</div>
-                    </td>
-                    <td style="padding: 1.25rem 1.5rem;">
-                        <span style="font-weight: 700; color: var(--text-main);">{{ number_format($payment->amount, 2) }}</span>
-                    </td>
-                    <td style="padding: 1.25rem 1.5rem;">
-                        @if($payment->status === 'success')
-                            <span style="background-color: #dcfce7; color: #166534; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; font-size: 0.75rem;">Paid</span>
-                        @elseif($payment->status === 'pending')
-                            <span style="background-color: #fef9c3; color: #854d0e; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; font-size: 0.75rem;">Pending</span>
-                        @else
-                            <span style="background-color: #fee2e2; color: #991b1b; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; font-size: 0.75rem;">{{ ucfirst($payment->status) }}</span>
-                        @endif
-                    </td>
-                </tr>
-            @empty
+<div class="bg-card rounded-2xl border overflow-hidden mb-8">
+    <div class="table-responsive">
+        <table class="w-full border-collapse text-left min-w-800">
+            <thead class="bg-body border-bottom">
                 <tr>
-                    <td colspan="6" style="padding: 3rem; text-align: center; color: var(--text-muted);">No billing history found matching your filters.</td>
+                    <th class="p-5 text-xs font-bold text-muted uppercase tracking-wider">Invoice ID</th>
+                    <th class="p-5 text-xs font-bold text-muted uppercase tracking-wider">Date</th>
+                    <th class="p-5 text-xs font-bold text-muted uppercase tracking-wider">Plan</th>
+                    <th class="p-5 text-xs font-bold text-muted uppercase tracking-wider">Amount (GHS)</th>
+                    <th class="p-5 text-xs font-bold text-muted uppercase tracking-wider">Status</th>
                 </tr>
-            @endforelse
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @forelse($payments as $payment)
+                    <tr class="border-bottom row-hover-bg">
+                        <td class="p-5">
+                            <a href="#" class="text-primary font-bold no-underline">#INV-{{ $payment->created_at->format('Y') }}-{{ str_pad($payment->id, 3, '0', STR_PAD_LEFT) }}</a>
+                        </td>
+                        <td class="p-5">
+                            <div class="font-semibold text-main">{{ $payment->created_at->format('M d, Y') }}</div>
+                            <div class="text-xs text-muted">{{ $payment->created_at->format('H:i A') }}</div>
+                        </td>
+                        <td class="p-5">
+                            <div class="font-semibold text-main">{{ $payment->pricingPlan->name ?? 'Unknown Plan' }}</div>
+                            <div class="text-xs text-muted">Subscription</div>
+                        </td>
+                        <td class="p-5">
+                            <span class="font-bold text-main">{{ number_format($payment->amount, 2) }}</span>
+                        </td>
+                        <td class="p-5">
+                            @if($payment->status === 'success')
+                                <span class="bg-green-50 text-green-700 px-3 py-1 rounded-full font-semibold text-xs">Paid</span>
+                            @elseif($payment->status === 'pending')
+                                <span class="bg-orange-50 text-orange-700 px-3 py-1 rounded-full font-semibold text-xs">Pending</span>
+                            @else
+                                <span class="bg-red-50 text-red-700 px-3 py-1 rounded-full font-semibold text-xs">{{ ucfirst($payment->status) }}</span>
+                            @endif
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="5" class="p-12 text-center text-muted">No billing history found matching your filters.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
     
     <!-- Pagination -->
     @if($payments->hasPages())
-        <div style="padding: 1.25rem 1.5rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-            <div style="font-size: 0.875rem; color: var(--text-secondary);">
-                Showing 1 to {{ $payments->count() }} of {{ $payments->total() }} results
+        <div class="p-5 border-top flex justify-between items-center flex-wrap gap-4">
+            <div class="text-sm text-secondary">
+                Showing {{ $payments->firstItem() ?? 0 }} to {{ $payments->lastItem() ?? 0 }} of {{ $payments->total() }} results
             </div>
             <div class="custom-pagination">
                 {{ $payments->links() }}
@@ -102,39 +104,75 @@
 </div>
 
 <!-- Summary Cards -->
-<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;">
-    <div style="background-color: var(--bg-card); border-radius: 1rem; border: 1px solid var(--border-color); padding: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-            <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Total Spent (Year)</div>
-            <div style="font-size: 1.5rem; font-weight: 800; color: var(--text-main);">GHS {{ number_format($totalSpentYear, 2) }}</div>
+<div class="summary-cards-grid grid gap-6 max-w-full">
+    <div class="bg-card rounded-2xl border p-6 flex justify-between items-center min-w-0">
+        <div class="min-w-0 flex-1">
+            <div class="text-sm text-secondary mb-2 whitespace-nowrap overflow-hidden ellipsis">Total Spent (Year)</div>
+            <div class="text-xl font-extrabold text-main break-all">GHS {{ number_format($totalSpentYear, 2) }}</div>
         </div>
-        <div style="width: 48px; height: 48px; background-color: #eff6ff; color: var(--primary-color); border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+        <div class="w-12 h-12 bg-blue-50 text-primary rounded-xl flex items-center justify-center text-xl flex-shrink-0 ml-4">
             <i class="fas fa-credit-card"></i>
         </div>
     </div>
     
-    <div style="background-color: var(--bg-card); border-radius: 1rem; border: 1px solid var(--border-color); padding: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-            <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Next Invoice</div>
-            <div style="font-size: 1.5rem; font-weight: 800; color: var(--text-main);">{{ $nextInvoiceDate ? $nextInvoiceDate->format('M d, Y') : 'N/A' }}</div>
+    <div class="bg-card rounded-2xl border p-6 flex justify-between items-center min-w-0">
+        <div class="min-w-0 flex-1">
+            <div class="text-sm text-secondary mb-2 whitespace-nowrap overflow-hidden ellipsis">Next Invoice</div>
+            <div class="text-xl font-extrabold text-main">{{ $nextInvoiceDate ? $nextInvoiceDate->format('M d, Y') : 'N/A' }}</div>
         </div>
-        <div style="width: 48px; height: 48px; background-color: #fff7ed; color: #f97316; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+        <div class="w-12 h-12 bg-orange-50 text-orange-700 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ml-4">
             <i class="fas fa-calendar-alt"></i>
         </div>
     </div>
 
-    <div style="background-color: var(--bg-card); border-radius: 1rem; border: 1px solid var(--border-color); padding: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-            <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Outstanding Balance</div>
-            <div style="font-size: 1.5rem; font-weight: 800; color: var(--text-main);">GHS {{ number_format($outstandingBalance, 2) }}</div>
+    <div class="bg-card rounded-2xl border p-6 flex justify-between items-center min-w-0">
+        <div class="min-w-0 flex-1">
+            <div class="text-sm text-secondary mb-2 whitespace-nowrap overflow-hidden ellipsis">Outstanding Balance</div>
+            <div class="text-xl font-extrabold text-main break-all">GHS {{ number_format($outstandingBalance, 2) }}</div>
         </div>
-        <div style="width: 48px; height: 48px; background-color: #f0fdf4; color: #22c55e; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+        <div class="w-12 h-12 bg-green-50 text-green-700 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ml-4">
             <i class="fas fa-check-circle"></i>
         </div>
     </div>
 </div>
 
-<style>
+<style nonce="{{ request()->attributes->get('csp_nonce') }}">
+    .summary-cards-grid {
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+    .break-word { word-break: break-word; }
+    .whitespace-nowrap { white-space: nowrap; }
+    .ellipsis { text-overflow: ellipsis; }
+    .min-w-200 { min-width: 200px; }
+    .min-w-250 { min-width: 250px; }
+    .min-w-300 { min-width: 300px; }
+    .min-w-140 { min-width: 140px; }
+    .min-w-100 { min-width: 100px; }
+    .min-w-800 { min-width: 800px; }
+    .p-2-5 { padding: 0.625rem 1rem; }
+    .pl-11 { padding-left: 2.75rem; }
+    .filter-search-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+    .border-color { border-color: var(--border-color); }
+    .row-hover-bg:hover { background-color: var(--bg-body); }
+    .p-12 { padding: 3rem; }
+    
+    @media (max-width: 768px) {
+        .min-w-200, .min-w-250, .min-w-300, .min-w-140, .min-w-100 {
+            min-width: 0;
+            width: 100%;
+        }
+        .filters-container form {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .filters-container .flex-1 {
+            flex: none;
+            width: 100%;
+        }
+        .filters-container .flex {
+            flex-direction: column;
+        }
+    }
     .custom-pagination nav {
         display: flex;
         gap: 0.5rem;

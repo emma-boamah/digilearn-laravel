@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <style>
+   <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         :root {
             --primary-color: #2563eb; /* Blue-600 */
             --primary-hover: #1d4ed8; /* Blue-700 */
@@ -28,9 +28,18 @@
             --danger: #ef4444;
             --warning: #f59e0b;
             --safe-area-inset-top: env(safe-area-inset-top, 0px);
+            --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-area-inset-left: env(safe-area-inset-left, 0px);
+            --safe-area-inset-right: env(safe-area-inset-right, 0px);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+            position: relative;
+        }
         
         body {
             font-family: 'Inter', sans-serif;
@@ -157,6 +166,8 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            min-width: 0; /* Allow flex to shrink beyond content */
+            width: 100%;
         }
 
         .top-bar {
@@ -166,7 +177,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: var(--safe-area-inset-top) 2rem 0 2rem;
+            padding: var(--safe-area-inset-top) calc(2rem + var(--safe-area-inset-right)) 0 calc(2rem + var(--safe-area-inset-left));
             position: sticky;
             top: 0;
             z-index: 40;
@@ -190,9 +201,12 @@
 
         .content-area {
             padding: 2rem;
+            padding-bottom: calc(2rem + var(--safe-area-inset-bottom));
             max-width: 1200px;
             width: 100%;
             margin: 0 auto;
+            max-width: 100%; /* Ensure containment */
+            box-sizing: border-box;
         }
 
         .page-header {
@@ -236,13 +250,173 @@
                 margin-right: 1rem;
             }
             .top-bar {
-                padding: var(--safe-area-inset-top) 1rem 0 1rem;
+                padding: var(--safe-area-inset-top) calc(1rem + var(--safe-area-inset-right)) 0 calc(1rem + var(--safe-area-inset-left));
                 justify-content: flex-start;
             }
             .content-area {
-                padding: 1rem;
+                padding: 1rem calc(1rem + var(--safe-area-inset-right)) calc(1rem + var(--safe-area-inset-bottom)) calc(1rem + var(--safe-area-inset-left));
             }
         }
+        /* Shared Responsive Utilities */
+        .table-responsive {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-bottom: 1rem;
+            position: relative;
+            scrollbar-width: thin;
+        }
+
+        /* Shadow indicator for horizontal scroll */
+        .table-responsive::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 30px;
+            background: linear-gradient(to left, rgba(0,0,0,0.05), transparent);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .table-responsive.is-scrollable::after {
+            opacity: 1;
+        }
+        
+        .table-responsive::-webkit-scrollbar {
+            height: 6px;
+        }
+        
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: var(--text-muted);
+            border-radius: 10px;
+        }
+
+        .text-wrap {
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+            white-space: normal !important;
+        }
+
+        @media (max-width: 768px) {
+            .grid-1-col {
+                grid-template-columns: minmax(0, 1fr) !important;
+            }
+            .stack-mobile {
+                flex-direction: column !important;
+            }
+        }
+
+        /* CSP utilities */
+        .flex-1 { flex: 1; }
+        .w-10 { width: 40px; }
+        .h-10 { height: 40px; }
+        .object-cover { object-fit: cover; }
+        .border-2 { border: 2px solid var(--border-color); }
+        .alert-success { background-color: #d1fae5; color: #065f46; }
+        .alert-error { background-color: #fee2e2; color: #991b1b; }
+        .hidden { display: none; }
+        .text-right { text-align: right; }
+        .font-medium { font-weight: 500; }
+        .bg-transparent { background: none; }
+        .border-none { border: none; }
+        .cursor-pointer { cursor: pointer; }
+        .text-left { text-align: left; }
+        .font-inherit { font-family: inherit; }
+        .text-inherit { font-size: inherit; }
+        .grid { display: grid; }
+        .cursor-not-allowed { cursor: not-allowed; }
+        
+        @media (min-width: 640px) {
+            .sm-block { display: block; }
+        }
+        .w-full { width: 100%; }
+        .max-w-full { max-width: 100%; }
+        .h-auto { height: auto; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .inline-flex { display: inline-flex; }
+        .items-start { align-items: flex-start; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .justify-center { justify-content: center; }
+        .justify-start { justify-content: flex-start; }
+        .gap-1 { gap: 0.25rem; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-3 { gap: 0.75rem; }
+        .gap-4 { gap: 1rem; }
+        .gap-6 { gap: 1.5rem; }
+        .p-4 { padding: 1rem; }
+        .p-5 { padding: 1.25rem; }
+        .p-6 { padding: 1.5rem; }
+        .mt-1 { margin-top: 0.25rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .mt-4 { margin-top: 1rem; }
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-3 { margin-bottom: 0.75rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mb-8 { margin-bottom: 2rem; }
+        .p-2-5 { padding: 0.625rem 1rem; }
+        .p-3 { padding: 0.75rem; }
+        .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+        .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+        .w-12 { width: 3rem; }
+        .h-12 { height: 3rem; }
+        .w-14 { width: 3.5rem; }
+        .h-14 { height: 3.5rem; }
+        .h-2 { height: 0.5rem; }
+        .h-full { height: 100%; }
+        .flex-shrink-0 { flex-shrink: 0; }
+        .transition-all { transition: all 0.2s; }
+        .border-collapse { border-collapse: collapse; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded-xl { border-radius: 0.75rem; }
+        .rounded-2xl { border-radius: 1rem; }
+        .rounded-full { border-radius: 9999px; }
+        .border { border: 1px solid var(--border-color); }
+        .bg-card { background-color: var(--bg-card); }
+        .bg-body { background-color: var(--bg-body); }
+        .bg-white { background-color: #ffffff; }
+        .bg-gray-100 { background-color: #f3f4f6; }
+        .bg-blue-50 { background-color: #eff6ff; }
+        .bg-green-50 { background-color: #dcfce7; }
+        .bg-orange-50 { background-color: #fff7ed; }
+        .bg-red-50 { background-color: #fee2e2; }
+        .text-white { color: #ffffff; }
+        .text-blue-700 { color: #1d4ed8; }
+        .text-green-700 { color: #15803d; }
+        .text-orange-700 { color: #c2410c; }
+        .text-red-700 { color: #b91c1c; }
+        .text-blue-800 { color: #1e40af; }
+        .text-blue-900 { color: #1e3a8a; }
+        .overflow-hidden { overflow: hidden; }
+        .relative { position: relative; }
+        .text-center { text-align: center; }
+        .font-semibold { font-weight: 600; }
+        .font-bold { font-weight: 700; }
+        .font-extrabold { font-weight: 800; }
+        .text-xs { font-size: 0.75rem; }
+        .text-sm { font-size: 0.875rem; }
+        .text-lg { font-size: 1.125rem; }
+        .text-xl { font-size: 1.25rem; }
+        .text-2xl { font-size: 1.5rem; }
+        .text-3xl { font-size: 1.875rem; }
+        .text-4xl { font-size: 2.25rem; }
+        .text-main { color: var(--text-main); }
+        .text-secondary { color: var(--text-secondary); }
+        .text-muted { color: var(--text-muted); }
+        .text-primary { color: var(--primary-color); }
+        .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .shadow-md { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .uppercase { text-transform: uppercase; }
+        .no-underline { text-decoration: none; }
+        .block { display: block; }
+        .inline-block { display: inline-block; }
     </style>
     @stack('styles')
 </head>
@@ -290,7 +464,7 @@
                 <div class="nav-group-title">Account Action</div>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button type="submit" class="nav-item" style="width: 100%; background: none; border: none; cursor: pointer; text-align: left; font-family: inherit; font-size: inherit;">
+                    <button type="submit" class="nav-item w-full bg-transparent border-none cursor-pointer text-left font-inherit text-inherit">
                         <i class="fas fa-sign-out-alt"></i>
                         <span>Logout</span>
                     </button>
@@ -313,33 +487,33 @@
                 <i class="fas fa-bars"></i>
             </button>
             
-            <div style="flex: 1; display: flex; align-items: center;">
+            <div class="flex-1 flex items-center">
                 <div class="breadcrumb">
                     Settings <span>/</span> @yield('breadcrumb', 'Overview')
                 </div>
             </div>
             
             <div class="user-menu">
-                <div style="text-align: right; display: none; @media(min-width: 640px){display: block;}">
-                    <div style="font-weight: 500; font-size: 0.875rem;">{{ Auth::user()->name }}</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary);">{{ Auth::user()->email }}</div>
+                <div class="hidden sm-block text-right">
+                    <div class="font-medium text-sm">{{ Auth::user()->name }}</div>
+                    <div class="text-xs text-secondary">{{ Auth::user()->email }}</div>
                 </div>
                 <img src="{{ Auth::user()->avatar_url ? (str_starts_with(Auth::user()->avatar_url, 'http') ? Auth::user()->avatar_url : asset('storage/' . Auth::user()->avatar_url)) : 'https://ui-avatars.com/api/?name='.urlencode(Auth::user()->name) }}" 
                      alt="Avatar" 
-                     style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-color);">
+                     class="w-10 h-10 rounded-full object-cover border-2">
             </div>
         </header>
 
         <main class="content-area">
             @if(session('success'))
-                <div style="background-color: #d1fae5; color: #065f46; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                <div class="alert-success flex items-center gap-3 p-4 rounded-lg mb-6">
                     <i class="fas fa-check-circle"></i>
                     {{ session('success') }}
                 </div>
             @endif
 
             @if(session('error'))
-                <div style="background-color: #fee2e2; color: #991b1b; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                <div class="alert-error flex items-center gap-3 p-4 rounded-lg mb-6">
                     <i class="fas fa-exclamation-circle"></i>
                     {{ session('error') }}
                 </div>
@@ -349,7 +523,7 @@
         </main>
     </div>
 
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         document.getElementById('sidebarToggle').addEventListener('click', function() {
             document.getElementById('settingsSidebar').classList.toggle('active');
         });
@@ -366,6 +540,30 @@
                 sidebar.classList.remove('active');
             }
         });
+
+        // Check horizontal scroll on tables to show/hide shadow indicator
+        function updateScrollIndicator() {
+            document.querySelectorAll('.table-responsive').forEach(container => {
+                if (container.scrollWidth > container.clientWidth) {
+                    // Check if scrolled to the end
+                    if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 5) {
+                        container.classList.remove('is-scrollable');
+                    } else {
+                        container.classList.add('is-scrollable');
+                    }
+                } else {
+                    container.classList.remove('is-scrollable');
+                }
+            });
+        }
+
+        window.addEventListener('resize', updateScrollIndicator);
+        document.querySelectorAll('.table-responsive').forEach(container => {
+            container.addEventListener('scroll', updateScrollIndicator);
+        });
+        
+        // Initial check
+        setTimeout(updateScrollIndicator, 100);
     </script>
     @stack('scripts')
 </body>
