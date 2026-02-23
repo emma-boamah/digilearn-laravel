@@ -322,6 +322,7 @@
         .text-right { text-align: right; }
         .font-medium { font-weight: 500; }
         .bg-transparent { background: none; }
+        .bg-primary { background-color: #2563eb; }
         .border-none { border: none; }
         .cursor-pointer { cursor: pointer; }
         .text-left { text-align: left; }
