@@ -29,7 +29,7 @@
                 </div>
                 <div>
                     <h4 class="font-semibold text-main mb-1">Email Notifications</h4>
-                    <p class="text-secondary text-sm text-wrap">Weekly digests, account security alerts, and new course announcements.</p>
+                    <p class="text-secondary text-sm text-wrap">New content announcements.</p>
                 </div>
             </div>
             <label class="toggle-switch-ui">
@@ -48,7 +48,7 @@
                 </div>
                 <div>
                     <h4 class="font-semibold text-main mb-1">Push Notifications</h4>
-                    <p class="text-secondary text-sm text-wrap">Instant alerts for mentions, assignment deadlines, and system updates.</p>
+                    <p class="text-secondary text-sm text-wrap">In-app alerts for new content.</p>
                 </div>
             </div>
             <label class="toggle-switch-ui">
@@ -61,86 +61,6 @@
     </div>
 </div>
 
-<!-- Grade Level Content -->
-<div>
-    <h3 style="font-size: 1.125rem; font-weight: 600; color: var(--text-main); margin-bottom: 1rem;">Grade Level Content</h3>
-    <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.5rem;">Subscribe to specific educational tiers to receive tailored content.</p>
-
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
-        @foreach($allGradeLevels as $grade)
-            @php
-                $isPrimary = Str::contains(Str::lower($grade), 'primary');
-                $isJhs = Str::contains(Str::lower($grade), 'jhs') || Str::contains(Str::lower($grade), 'junior high');
-                $isShs = Str::contains(Str::lower($grade), 'shs') || Str::contains(Str::lower($grade), 'senior high');
-                $isUniversity = Str::contains(Str::lower($grade), 'university') || Str::contains(Str::lower($grade), 'tertiary');
-                
-                $iconClass = 'fa-graduation-cap';
-                $colorClass = '#2563eb'; // Default Blue
-                $bgColorClass = '#eff6ff';
-                $tagText = 'LEVEL';
-                $tagColor = '#dbeafe';
-                $tagTextColor = '#1e40af';
-
-                if ($isPrimary) {
-                    $iconClass = 'fa-child';
-                    $colorClass = '#10b981'; // Green
-                    $bgColorClass = '#ecfdf5';
-                    $tagText = 'GRADES 1-6';
-                    $tagColor = '#d1fae5';
-                    $tagTextColor = '#065f46';
-                } elseif ($isJhs) {
-                    $iconClass = 'fa-user-friends';
-                    $colorClass = '#f59e0b'; // Amber
-                    $bgColorClass = '#fffbeb';
-                    $tagText = 'JUNIOR HIGH';
-                    $tagColor = '#fef3c7';
-                    $tagTextColor = '#92400e';
-                } elseif ($isShs) {
-                    $iconClass = 'fa-school';
-                    $colorClass = '#6366f1'; // Indigo
-                    $bgColorClass = '#e0e7ff';
-                    $tagText = 'SENIOR HIGH';
-                    $tagColor = '#c7d2fe';
-                    $tagTextColor = '#3730a3';
-                } elseif ($isUniversity) {
-                    $iconClass = 'fa-university';
-                    $colorClass = '#ec4899'; // Pink
-                    $bgColorClass = '#fce7f3';
-                    $tagText = 'TERTIARY';
-                    $tagColor = '#fbcfe8';
-                    $tagTextColor = '#9d174d';
-                }
-            @endphp
-
-            <div style="background-color: var(--bg-card); border-radius: 1rem; padding: 1.5rem; border: 1px solid var(--border-color);">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
-                    <div style="display: flex; align-items: center; gap: 0.75rem;">
-                        <div style="width: 40px; height: 40px; background-color: {{ $bgColorClass }}; color: {{ $colorClass }}; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas {{ $iconClass }}"></i>
-                        </div>
-                        <h4 style="font-weight: 600; color: var(--text-main);">{{ $grade }}</h4>
-                    </div>
-                    <span style="background-color: {{ $tagColor }}; color: {{ $tagTextColor }}; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.625rem; border-radius: 9999px;">
-                        {{ $tagText }}
-                    </span>
-                </div>
-
-                <div style="display: flex; flex-direction: column; gap: 1rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 0.875rem; color: var(--text-secondary);">New curriculum uploads</span>
-                        <input 
-                            type="checkbox" 
-                            class="grade-toggle"
-                            data-grade="{{ $grade }}"
-                            {{ !in_array($grade, $gradeOptOuts) ? 'checked' : '' }}
-                            style="width: 1.25rem; height: 1.25rem; cursor: pointer; accent-color: var(--primary-color);"
-                        >
-                    </div>
-                </div>
-            </div>
-        @endforeach
-    </div>
-</div>
 
 <!-- Grade Level Content -->
 <div>
@@ -193,7 +113,7 @@
 
                 <div class="flex flex-col gap-4">
                     <div class="flex justify-between items-center">
-                        <span class="text-sm text-secondary">New curriculum uploads</span>
+                        <span class="text-sm text-secondary">New content uploads</span>
                         <input 
                             type="checkbox" 
                             class="grade-toggle"
