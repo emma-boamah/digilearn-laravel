@@ -4058,53 +4058,51 @@
                 const stickyVideoSection = document.getElementById('stickyVideoSection');
                 if (!stickyVideoSection) return;
 
-                // Create a placeholder to maintain layout space when video becomes fixed
-                const placeholder = document.createElement('div');
-                placeholder.id = 'stickyVideoPlaceholder';
-                placeholder.style.display = 'none';
-                stickyVideoSection.parentNode.insertBefore(placeholder, stickyVideoSection.nextSibling);
-
-                // Create sentinel as a SIBLING (not child) so it stays in document flow
-                // when the video section becomes position:fixed
-                const sentinel = document.createElement('div');
-                sentinel.id = 'videoScrollSentinel';
-                sentinel.style.height = '1px';
-                sentinel.style.width = '100%';
-                sentinel.style.pointerEvents = 'none';
-                stickyVideoSection.parentNode.insertBefore(sentinel, stickyVideoSection.nextSibling);
+                // Create a static wrapper to observe, ensuring it stays in the document flow
+                // and doesn't shrink when stickyVideoSection becomes position:fixed
+                const wrapper = document.createElement('div');
+                wrapper.id = 'stickyVideoWrapper';
+                stickyVideoSection.parentNode.insertBefore(wrapper, stickyVideoSection);
+                wrapper.appendChild(stickyVideoSection);
+                
+                // Set the wrapper's minimum height to prevent layout jumps when video goes fixed
+                const updateWrapperHeight = () => {
+                    if (!stickyVideoSection.classList.contains('compact')) {
+                        wrapper.style.minHeight = stickyVideoSection.offsetHeight + 'px';
+                    }
+                };
+                
+                // Initial set and brief delay to ensure styles are computed
+                setTimeout(updateWrapperHeight, 100);
 
                 const observer = new IntersectionObserver((entries) => {
                     entries.forEach(entry => {
+                        // If the static wrapper is scrolling up and out of view (top bound crossed)
                         if (!entry.isIntersecting && entry.boundingClientRect.top < 0) {
-                            // Video has scrolled out of view — show PiP
                             if (!stickyVideoSection.classList.contains('compact')) {
-                                // Save height for placeholder before going fixed
-                                placeholder.style.height = stickyVideoSection.offsetHeight + 'px';
-                                placeholder.style.display = 'block';
+                                updateWrapperHeight(); // Lock the height
                                 stickyVideoSection.classList.add('compact');
                             }
                         } else {
-                            // Video is back in view — restore normal
+                            // Wrapper is back in view (scrolling down or at top)
                             stickyVideoSection.classList.remove('compact');
-                            placeholder.style.display = 'none';
                         }
                     });
                 }, {
                     root: null,
                     threshold: 0,
-                    rootMargin: '-60px 0px 0px 0px' // Offset for header height
+                    rootMargin: '-60px 0px 0px 0px' // Offset for sticky header height
                 });
 
-                observer.observe(sentinel);
+                // Observe the static wrapper, not the element that changes position
+                observer.observe(wrapper);
             }
 
             // Clean up compact state on resize to desktop
             window.addEventListener('resize', function() {
                 if (window.innerWidth > 768) {
                     const stickyVideoSection = document.getElementById('stickyVideoSection');
-                    const placeholder = document.getElementById('stickyVideoPlaceholder');
                     if (stickyVideoSection) stickyVideoSection.classList.remove('compact');
-                    if (placeholder) placeholder.style.display = 'none';
                 }
             });
         }
