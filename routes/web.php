@@ -268,7 +268,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Activity ping endpoint - update user's last activity time
     // This endpoint is called frequently during long-running uploads to keep session alive
-    Route::post('/ping', function ($request) {
+    Route::post('/ping', function (Request $request) {
         try {
             // Check if user is authenticated
             if (!$request->user()) {
