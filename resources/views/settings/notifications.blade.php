@@ -29,7 +29,7 @@
                 </div>
                 <div>
                     <h4 class="font-semibold text-main mb-1">Email Notifications</h4>
-                    <p class="text-secondary text-sm text-wrap">New content announcements.</p>
+                    <p class="text-secondary text-sm text-wrap">New content announcements</p>
                 </div>
             </div>
             <label class="toggle-switch-ui">
@@ -48,7 +48,7 @@
                 </div>
                 <div>
                     <h4 class="font-semibold text-main mb-1">Push Notifications</h4>
-                    <p class="text-secondary text-sm text-wrap">In-app alerts for new content.</p>
+                    <p class="text-secondary text-sm text-wrap">In-app alerts for new content</p>
                 </div>
             </div>
             <label class="toggle-switch-ui">
