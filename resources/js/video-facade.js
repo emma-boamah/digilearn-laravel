@@ -337,7 +337,7 @@ class VideoFacadeManager {
         iframe.allow = 'autoplay';
         iframe.loading = 'lazy';
         iframe.frameBorder = '0';
-        iframe.style.cssText = 'width: 100%; height: 100%; position: absolute; top: 0; left: 0;';
+        iframe.className = 'csp-facade-player';
 
         preview.appendChild(iframe);
 
@@ -387,11 +387,11 @@ class VideoFacadeManager {
         // - iv_load_policy=3: Hide annotations
         // - fs=0: Disable fullscreen button
         const iframe = document.createElement('iframe');
-        iframe.src = `https://www.youtube.com/embed/${externalVideoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&loop=1&playlist=${externalVideoId}&enablejsapi=1&iv_load_policy=3&fs=0`;
+        iframe.src = `https://www.youtube.com/embed/${externalVideoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&loop=1&playlist=${externalVideoId}&enablejsapi=1&iv_load_policy=3&fs=0&origin=${window.location.origin}`;
         iframe.allow = 'autoplay; encrypted-media';
         iframe.loading = 'lazy';
         iframe.frameBorder = '0';
-        iframe.style.cssText = 'width: 100%; height: 100%; position: absolute; top: 0; left: 0;';
+        iframe.className = 'csp-facade-player';
 
         preview.appendChild(iframe);
 
@@ -427,7 +427,7 @@ class VideoFacadeManager {
         video.loop = true;
         video.playsInline = true;
         video.preload = 'none'; // Don't preload video data until needed
-        video.style.cssText = 'width: 100%; height: 100%; position: absolute; top: 0; left: 0; object-fit: cover;';
+        video.className = 'csp-facade-video-cover';
 
         preview.appendChild(video);
 
@@ -461,7 +461,7 @@ class VideoFacadeManager {
         iframe.allow = 'autoplay';
         iframe.loading = 'lazy';
         iframe.frameBorder = '0';
-        iframe.style.cssText = 'width: 100%; height: 100%; position: absolute; top: 0; left: 0;';
+        iframe.className = 'csp-facade-player';
 
         preview.appendChild(iframe);
 
@@ -497,11 +497,11 @@ class VideoFacadeManager {
         if (!externalVideoId) return;
 
         const iframe = document.createElement('iframe');
-        iframe.src = `https://www.youtube.com/embed/${externalVideoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&loop=1&playlist=${externalVideoId}&enablejsapi=1&iv_load_policy=3&fs=0`;
+        iframe.src = `https://www.youtube.com/embed/${externalVideoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&loop=1&playlist=${externalVideoId}&enablejsapi=1&iv_load_policy=3&fs=0&origin=${window.location.origin}`;
         iframe.allow = 'autoplay; encrypted-media';
         iframe.loading = 'lazy';
         iframe.frameBorder = '0';
-        iframe.style.cssText = 'width: 100%; height: 100%; position: absolute; top: 0; left: 0;';
+        iframe.className = 'csp-facade-player';
 
         preview.appendChild(iframe);
 
@@ -530,7 +530,7 @@ class VideoFacadeManager {
         video.loop = true;
         video.playsInline = true;
         video.preload = 'none';
-        video.style.cssText = 'width: 100%; height: 100%; position: absolute; top: 0; left: 0; object-fit: cover;';
+        video.className = 'csp-facade-video-cover';
 
         preview.appendChild(video);
 

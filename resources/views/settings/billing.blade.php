@@ -220,7 +220,7 @@
 
     <!-- Payment Method -->
     <div class="min-w-0">
-        <div class="flex justify-between items-center mb-4 mt-4">
+        <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-bold text-main">Payment Method</h3>
         </div>
         

@@ -20,22 +20,33 @@
     </script>
 
     <!-- Additional Libraries for Enhanced Functionality -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <!-- Vimeo Player API for hover-to-play functionality -->
-    <script src="https://player.vimeo.com/api/player.js"></script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://player.vimeo.com/api/player.js"></script>
 
     <!-- YouTube IFrame Player API -->
-    <script src="https://www.youtube.com/iframe_api"></script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://www.youtube.com/iframe_api"></script>
 
     <!-- Mux Player for Mux video playback -->
-    <script src="https://unpkg.com/@mux/mux-player"></script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://unpkg.com/@mux/mux-player"></script>
 
     <!-- Video Facade Manager for optimized video loading -->
     @vite('resources/js/video-facade.js')
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        // Handle image loading errors for CSP compliance (replaces inline onerror handlers)
+        document.addEventListener('error', function (e) {
+            if (e.target && e.target.tagName && e.target.tagName.toLowerCase() === 'img') {
+                var fallback = e.target.getAttribute('data-fallback');
+                if (fallback && e.target.src !== fallback) {
+                    e.target.src = fallback;
+                    e.target.removeAttribute('data-fallback'); // Prevent infinite loop if fallback fails
+                }
+            }
+        }, true);
+
         // Initialize video facade with auto-play enabled for YouTube-like behavior
         document.addEventListener('DOMContentLoaded', function() {
             if (typeof VideoFacadeManager !== 'undefined') {
@@ -2884,6 +2895,23 @@
             }
         }
 
+        /* CSP Compliance utility classes for video player and components */
+        .csp-video-card { width: 100%; height: 100%; position: relative; }
+        .csp-video-thumb { width: 100%; height: 100%; background-color: #000; }
+        .csp-img-cover { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .csp-video-preview { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 2; }
+        .csp-play-overlay { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 3; display: flex; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.3); opacity: 0; transition: opacity 0.2s ease; }
+        .csp-play-icon { width: 64px; height: 64px; color: white; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3)); }
+        .csp-debug-info { background: rgba(0,0,0,0.8); color: white; padding: 8px; position: absolute; top: 10px; left: 10px; font-size: 11px; border-radius: 4px; z-index: 10; display: none; }
+        .csp-error-box { background: #ffebee; padding: 20px; border: 1px solid #f44336; border-radius: 5px; }
+        .csp-error-box-center { background: #ffebee; padding: 20px; border: 1px solid #f44336; border-radius: 5px; text-align: center; }
+        .csp-hidden { display: none; }
+        .csp-notes-wrapper { display: none; margin-top: 1rem; }
+        .csp-video-auto { width: 100%; height: auto; }
+        .csp-video-aspect { width: 100%; height: 100%; aspect-ratio: 16/9; }
+        .csp-mux-aspect { width: 100%; aspect-ratio: 16/9; }
+        .csp-facade-player { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        .csp-facade-video-cover { width: 100%; height: 100%; position: absolute; top: 0; left: 0; object-fit: cover; }
     </style>
 
     @php
@@ -3149,45 +3177,45 @@
                                      data-video-path="{{ $lesson->video_path }}"
                                      data-title="{{ $lesson->title }}"
                                      data-lazy="false"
-                                     style="width: 100%; height: 100%; position: relative;">
+                                     class="video-facade-card lesson-main-video csp-video-card">
 
                                     <!-- Video Thumbnail (Poster) -->
-                                    <div class="video-facade-thumbnail" style="width: 100%; height: 100%; background-color: #000;">
+                                    <div class="video-facade-thumbnail csp-video-thumb">
                                         @if($lesson->video_source === 'youtube')
                                             <img src="https://img.youtube.com/vi/{{ $lesson->external_video_id }}/maxresdefault.jpg"
                                                  alt="{{ $lesson->title }}"
-                                                 style="width: 100%; height: 100%; object-fit: cover; display: block;"
-                                                 onerror="this.src='https://img.youtube.com/vi/{{ $lesson->external_video_id }}/hqdefault.jpg'">
+                                                 class="csp-img-cover"
+                                                 data-fallback="https://img.youtube.com/vi/{{ $lesson->external_video_id }}/hqdefault.jpg">
                                         @elseif($lesson->video_source === 'vimeo')
                                             <img src="https://vumbnail.com/{{ $lesson->vimeo_id }}.jpg"
                                                  alt="{{ $lesson->title }}"
-                                                 style="width: 100%; height: 100%; object-fit: cover; display: block;"
-                                                 onerror="this.src='/placeholder.svg?height=315&width=560'">
+                                                 class="csp-img-cover"
+                                                 data-fallback="/placeholder.svg?height=315&width=560">
                                         @elseif($lesson->video_source === 'mux')
                                             <img src="https://image.mux.com/{{ $lesson->mux_playback_id }}/thumbnail.jpg"
                                                  alt="{{ $lesson->title }}"
-                                                 style="width: 100%; height: 100%; object-fit: cover; display: block;"
-                                                 onerror="this.src='/placeholder.svg?height=315&width=560'">
+                                                 class="csp-img-cover"
+                                                 data-fallback="/placeholder.svg?height=315&width=560">
                                         @else
                                             <img src="{{ secure_asset($lesson->getThumbnailUrl()) }}"
                                                  alt="{{ $lesson->title }}"
-                                                 style="width: 100%; height: 100%; object-fit: cover; display: block;"
-                                                 onerror="this.src='/placeholder.svg?height=315&width=560'">
+                                                 class="csp-img-cover"
+                                                 data-fallback="/placeholder.svg?height=315&width=560">
                                         @endif
                                     </div>
 
                                     <!-- Video Preview Container (for hover-to-play) -->
-                                    <div class="video-preview" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 2;"></div>
+                                    <div class="video-preview csp-video-preview"></div>
 
                                     <!-- Play Overlay -->
-                                    <div class="play-overlay" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 3; display: flex; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.3); opacity: 0; transition: opacity 0.2s ease;">
-                                        <svg class="play-icon" fill="currentColor" viewBox="0 0 24 24" style="width: 64px; height: 64px; color: white; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));">
+                                    <div class="play-overlay csp-play-overlay">
+                                        <svg class="play-icon csp-play-icon" fill="currentColor" viewBox="0 0 24 24">
                                             <polygon points="5 3 19 12 5 21 5 3"/>
                                         </svg>
                                     </div>
 
                                     <!-- Debug Info (optional) -->
-                                    <div id="video-debug-info" style="background: rgba(0,0,0,0.8); color: white; padding: 8px; position: absolute; top: 10px; left: 10px; font-size: 11px; border-radius: 4px; z-index: 10; display: none;">
+                                    <div id="video-debug-info" class="csp-debug-info">
                                         <strong>Debug:</strong><br>
                                         ID: {{ $lesson->id }}<br>
                                         Source: {{ $lesson->video_source }}<br>
@@ -3195,7 +3223,7 @@
                                     </div>
                                 </div>
                             @else
-                                <div style="background: #ffebee; padding: 20px; border: 1px solid #f44336; border-radius: 5px;">
+                                <div class="csp-error-box">
                                     <strong>Error:</strong> No embed HTML generated for this video.
                                     <br>Video Source: {{ $lesson->video_source }}
                                     <br>Status: {{ $lesson->status }}
@@ -3216,34 +3244,33 @@
                             @endphp
                             @if(!empty($lesson['video_url']))
                                 <!-- Video Player Container for Array-based Lesson Video -->
-                                <div id="lesson-video-player" class="video-facade-card lesson-main-video"
+                                <div id="lesson-video-player" class="video-facade-card lesson-main-video csp-video-card"
                                      data-video-id="{{ $lesson['id'] ?? 'unknown' }}"
                                      data-video-source="local"
                                      data-video-path="{{ $lesson['video_url'] ?? '' }}"
                                      data-title="{{ $lesson['title'] ?? 'Lesson Video' }}"
-                                     data-lazy="false"
-                                     style="width: 100%; height: 100%; position: relative;">
+                                     data-lazy="false">
 
                                     <!-- Video Thumbnail (Poster) -->
-                                    <div class="video-facade-thumbnail" style="width: 100%; height: 100%; background-color: #000;">
+                                    <div class="video-facade-thumbnail csp-video-thumb">
                                         <img src="{{ $posterSrc }}"
                                              alt="{{ $lesson['title'] ?? 'Lesson Video' }}"
-                                             style="width: 100%; height: 100%; object-fit: cover; display: block;"
-                                             onerror="this.src='/placeholder.svg?height=315&width=560'">
+                                             class="csp-img-cover"
+                                             data-fallback="/placeholder.svg?height=315&width=560">
                                     </div>
 
                                     <!-- Video Preview Container -->
-                                    <div class="video-preview" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 2;"></div>
+                                    <div class="video-preview csp-video-preview"></div>
 
                                     <!-- Play Overlay -->
-                                    <div class="play-overlay" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 3; display: flex; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.3); opacity: 0; transition: opacity 0.2s ease;">
-                                        <svg class="play-icon" fill="currentColor" viewBox="0 0 24 24" style="width: 64px; height: 64px; color: white; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));">
+                                    <div class="play-overlay csp-play-overlay">
+                                        <svg class="play-icon csp-play-icon" fill="currentColor" viewBox="0 0 24 24">
                                             <polygon points="5 3 19 12 5 21 5 3"/>
                                         </svg>
                                     </div>
                                 </div>
                             @else
-                                <div style="background: #ffebee; padding: 20px; border: 1px solid #f44336; border-radius: 5px; text-align: center;">
+                                <div class="csp-error-box-center">
                                     <strong>Video Unavailable</strong>
                                     <br>This video is currently being processed or is unavailable.
                                 </div>
@@ -3356,7 +3383,7 @@
                         <polyline points="14,2 14,8 20,8"/>
                     </svg>
                     Document
-                    <div class="document-indicator" id="pdf-indicator" style="display: none;">
+                    <div class="document-indicator csp-hidden" id="pdf-indicator">
                         <i class="fas fa-check"></i>
                     </div>
                 </button>
@@ -3367,7 +3394,7 @@
                         <line x1="9" y1="12" x2="15" y2="12"/>
                     </svg>
                     PPT
-                    <div class="document-indicator" id="ppt-indicator" style="display: none;">
+                    <div class="document-indicator csp-hidden" id="ppt-indicator">
                         <i class="fas fa-check"></i>
                     </div>
                 </button>
@@ -3437,7 +3464,7 @@
             </div>
 
             <!-- Notes Wrapper (hidden by default) -->
-            <div id="notesWrapper" style="display: none; margin-top: 1rem;">
+            <div id="notesWrapper" class="csp-notes-wrapper">
                 <!-- Update Mode Selector -->
                 <div class="update-mode-selector">
                     <label>
@@ -3487,7 +3514,7 @@
                          @if($isRestricted) data-upgrade-prompt="{{ json_encode($accessInfo['upgrade_prompt'] ?? null) }}" @endif>
                         <div class="video-thumbnail">
                             <img src="{{ secure_asset($relatedLesson['thumbnail'] ?? '') }}" alt="{{ $relatedLesson['title'] ?? 'Lesson' }}"
-                                 onerror="this.src='/placeholder.svg?height=78&width=140'">
+                                 data-fallback="/placeholder.svg?height=78&width=140">
                             <div class="video-preview"></div>
                             
                             @if($isRestricted)
@@ -3708,7 +3735,7 @@
 
             if (source === 'local') {
                 container.innerHTML = `
-                    <video controls autoplay playsinline style="width:100%;height:auto">
+                    <video controls autoplay playsinline class="csp-video-auto">
                         <source src="${card.dataset.videoPath}" type="video/mp4">
                     </video>
                 `;
@@ -3721,7 +3748,7 @@
                         frameborder="0"
                         allow="autoplay; fullscreen"
                         allowfullscreen
-                        style="width:100%;height:100%;aspect-ratio:16/9"
+                        class="csp-video-aspect"
                     ></iframe>
                 `;
             }
@@ -3733,7 +3760,7 @@
                         frameborder="0"
                         allow="autoplay; fullscreen; encrypted-media"
                         allowfullscreen
-                        style="width:100%;height:100%;aspect-ratio:16/9"
+                        class="csp-video-aspect"
                     ></iframe>
                 `;
             }
@@ -3744,7 +3771,7 @@
                         playback-id="${card.dataset.muxPlaybackId}"
                         autoplay
                         controls
-                        style="width:100%;aspect-ratio:16/9">
+                        class="csp-mux-aspect">
                     </mux-player>
                 `;
             }
