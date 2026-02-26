@@ -88,13 +88,14 @@
             z-index: 1000;
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease;
             overflow-y: scroll;
+            overflow-x: hidden;   /* clip horizontal bleed when collapsed */
             display: flex;
             flex-direction: column;
             padding-top: var(--safe-area-inset-top);
         }
 
         .youtube-sidebar.collapsed {
-            width: var(--sidebar-width-collapsed);
+            width: var(--sidebar-width-collapsed) !important;
         }
 
         .sidebar-header {
@@ -315,20 +316,23 @@
         .main-content {
             position: relative;
             margin-left: var(--sidebar-width-expanded) !important;
-            margin-top: var(--safe-area-inset-top) !important; /*Account for both headers: 60px header + 56px filter bar */
-            /* padding-top: 1rem !important; Internal padding */
+            margin-top: var(--safe-area-inset-top) !important;
             min-height: calc(100vh - 60px);
             background-color: var(--gray-25);
-            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            /* Synchronise all three so nothing jumps to the right */
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                        width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                        max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             width: calc(100% - var(--sidebar-width-expanded));
             max-width: calc(100% - var(--sidebar-width-expanded));
             overflow-x: hidden;
         }
 
+        /* Collapsed state — !important to beat the base !important rules above */
         .youtube-sidebar.collapsed ~ .main-content {
-            margin-left: var(--sidebar-width-collapsed);
-            width: calc(100% - var(--sidebar-width-collapsed));
-            max-width: calc(100% - var(--sidebar-width-collapsed));
+            margin-left: var(--sidebar-width-collapsed) !important;
+            width: calc(100% - var(--sidebar-width-collapsed)) !important;
+            max-width: calc(100% - var(--sidebar-width-collapsed)) !important;
         }
 
         .top-header {
@@ -454,17 +458,45 @@
             const sidebarToggle = document.getElementById('sidebarToggle');
             const youtubeSidebar = document.getElementById('youtubeSidebar');
             const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const mainContent = document.querySelector('.main-content');
+
+            const EXPANDED = '240px';
+            const COLLAPSED = '72px';
+
+            function applyCollapsed(collapsed) {
+                if (collapsed) {
+                    youtubeSidebar.classList.add('collapsed');
+                    // Only force sidebar width inline; main-content width is driven by CSS
+                    youtubeSidebar.style.width = COLLAPSED;
+                    if (mainContent) {
+                        mainContent.style.marginLeft = COLLAPSED;
+                        // Clear any previous inline width overrides so CSS transition takes over
+                        mainContent.style.width = '';
+                        mainContent.style.maxWidth = '';
+                    }
+                } else {
+                    youtubeSidebar.classList.remove('collapsed');
+                    youtubeSidebar.style.width = EXPANDED;
+                    if (mainContent) {
+                        mainContent.style.marginLeft = EXPANDED;
+                        mainContent.style.width = '';
+                        mainContent.style.maxWidth = '';
+                    }
+                }
+            }
+
 
             if (sidebarToggle) {
                 sidebarToggle.addEventListener('click', function() {
                     if (window.innerWidth <= 768) {
-                        // Mobile behavior
-                        youtubeSidebar.classList.toggle('mobile-open');
-                        sidebarOverlay.classList.toggle('active');
-                        document.body.style.overflow = youtubeSidebar.classList.contains('mobile-open') ? 'hidden' : '';
+                        // Mobile: slide in/out
+                        const isOpen = youtubeSidebar.classList.toggle('mobile-open');
+                        sidebarOverlay.classList.toggle('active', isOpen);
+                        document.body.style.overflow = isOpen ? 'hidden' : '';
                     } else {
-                        // Desktop behavior
-                        youtubeSidebar.classList.toggle('collapsed');
+                        // Desktop: collapse/expand
+                        const isCollapsed = youtubeSidebar.classList.contains('collapsed');
+                        applyCollapsed(!isCollapsed);
                     }
                 });
             }

@@ -120,6 +120,7 @@ return [
             'https://www.youtube.com',
             'https://youtube.com',
             'https://youtu.be',
+            'https://www.youtube-nocookie.com'
         ],
         'object-src' => ["'none'"],
         'base-uri' => ["'self'"],

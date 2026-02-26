@@ -346,6 +346,11 @@ Route::middleware(['auth'])->group(function () {
     // Recommendation feeds
     Route::get('/api/dashboard/feeds', [App\Http\Controllers\RecommendationController::class, 'getDashboardFeeds'])->name('api.dashboard.feeds');
     Route::get('/api/analytics', [App\Http\Controllers\RecommendationController::class, 'getAnalytics'])->name('api.analytics');
+    
+    // Lesson tracker backend mock
+    Route::post('/api/lessons/track-analytics', function(Request $request) {
+        return response()->json(['status' => 'ok']);
+    })->name('api.lessons.track-analytics');
 
     // Lesson search API
     Route::get('/api/dashboard/search-lessons', [DashboardController::class, 'searchLessons'])->name('api.dashboard.search-lessons');
@@ -560,12 +565,21 @@ Route::prefix('cookies')->name('cookies.')->group(function () {
     });
 });
 
-Route::post('/csp-report', function (Request $request) {
+Route::post(config('csp.report_uri', '/csp-report'), function (Request $request) {
     Log::channel('security')->warning('CSP violation', [
         'data' => $request->getContent()
     ]);
     return response()->noContent();
 })->withoutMiddleware([VerifyCsrfToken::class]);
+
+// Fallback just in case config is cached incorrectly
+Route::post('/csp-reports', function (Request $request) {
+    Log::channel('security')->warning('CSP violation', [
+        'data' => $request->getContent()
+    ]);
+    return response()->noContent();
+})->withoutMiddleware([VerifyCsrfToken::class]);
+
 
 /*
 |--------------------------------------------------------------------------

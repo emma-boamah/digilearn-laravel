@@ -4,7 +4,16 @@
         flex-direction: column;
         height: 100%;
         min-height: 0; /* Important for flex children to scroll */
-        gap: 0.5rem; /* Ensuring consistent gap between sections */
+        gap: 0.5rem;   /* Ensuring consistent gap between sections */
+        width: 100%;
+        overflow: hidden;
+        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Collapse the inner content width with the sidebar */
+    .youtube-sidebar.collapsed .sidebar-scrollable {
+        width: var(--sidebar-width-collapsed, 72px);
+        overflow: hidden;
     }
 
     /* Ensure the last section does not get cut off */

@@ -2261,7 +2261,7 @@
                 <div class="why-choose">
                     <div class="why-choose-text">
                         <p class="tools-on-shoutout">Tools on ShoutoutGh</p>
-                        <h2 id="why-choose-title" class="text-3xl font-bold mb-6" itemprop="name">Why Choose ShoutOutGH?</h2>
+                        <h2 id="why-choose-title" class="text-3xl font-bold mb-6" itemprop="name">Why Choose ShoutOutGh?</h2>
                         <p class="discover-innovative-features" itemprop="description">
                             Discover innovative features, designed to simplify your study process and maximize your academic success.
                         </p>
@@ -2520,7 +2520,7 @@
         <!-- Testimonials -->
         <section class="section bg-gray-50" aria-labelledby="testimonials-title">
             <div class="container">
-                <h2 id="testimonials-title" class="section-title text-center">What our students say</h2>
+                <h2 id="testimonials-title" class="section-title text-center">What our customers say</h2>
                 <div class="testimonials-slider-wrapper" x-data="{ 
                     scrollNext() { $refs.slider.scrollBy({ left: $refs.slider.offsetWidth * 0.8, behavior: 'smooth' }) },
                     scrollPrev() { $refs.slider.scrollBy({ left: -$refs.slider.offsetWidth * 0.8, behavior: 'smooth' }) }

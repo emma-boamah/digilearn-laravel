@@ -6163,7 +6163,8 @@
                             rel: 0,
                             showinfo: 0,
                             fs: 1,
-                            iv_load_policy: 3
+                            iv_load_policy: 3,
+                            origin: window.location.origin
                         },
                         events: {
                             'onReady': (event) => {

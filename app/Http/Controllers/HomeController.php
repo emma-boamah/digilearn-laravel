@@ -67,28 +67,28 @@ class HomeController extends Controller
 
         $testimonials = [
             [
-                'name' => 'Sarah Johnson',
-                'role' => 'Web Development Graduate',
+                'name' => 'Bonaventure Williamson',
+                'role' => 'Parent',
                 'image' => 'images/testimonial-1.png',
-                'quote' => 'DigiLearn helped me acquire the skills I needed to advance my career. The courses are comprehensive and the instructors are experts in their fields.'
+                'quote' => 'ShoutOutGh is an important tool for my kids. As a parent, I don’t have to pay for extra tuition anymore. This is where my kids learn every day. '
             ],
             [
-                'name' => 'Michael Chen',
-                'role' => 'Data Science Student',
+                'name' => 'Travis Owusu Kelvin',
+                'role' => 'Student - Mfantsipim School',
                 'image' => 'images/testimonial-2.png',
-                'quote' => 'The flexibility of DigiLearn\'s platform allowed me to study while working full-time. I\'ve already applied what I\'ve learned to real-world projects.'
+                'quote' => 'This platform makes it easy to understand difficult topics. The video lessons are short, concise and self-explanatory. Also aligns with our curriculum. '
             ],
             [
-                'name' => 'Emily Rodriguez',
-                'role' => 'Digital Marketing Professional',
+                'name' => 'Princess Ivy',
+                'role' => 'Student - University of Ghana',
                 'image' => 'images/testimonial-3.png',
-                'quote' => 'As someone who needed to update my skills, DigiLearn provided exactly what I needed. The courses are practical and up-to-date with industry trends.'
+                'quote' => 'I love the resources on entrepreneurship and other non-traditional courses. This has given me the needed skills to start a business whilst in school.'
             ],
             [
-                'name' => 'David Kim',
-                'role' => 'Mobile App Developer',
+                'name' => 'Nana Akua Nhyira',
+                'role' => 'Student - University of Ghana',
                 'image' => 'images/testimonial-4.png',
-                'quote' => 'The community support and instructor feedback make DigiLearn stand out. I feel confident in my abilities after completing their courses.'
+                'quote' => 'I like the fact that subscription isn’t expensive.  To pay less for such comprehensive resources on all subjects is just so considerate.'
             ]
         ];
 
