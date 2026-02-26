@@ -82,6 +82,46 @@ class ProgressController extends Controller
         // Get progression standards for the current level group
         $standards = \App\Models\ProgressionStandard::getStandardsForLevel($currentLevel);
 
+        // Get per-grade (individual level) stats for the grade cards
+        $gradesInGroup = \App\Models\ProgressionStandard::getLevelsForGroup($currentLevel);
+        // Pick canonical grade names (every 4th item in the mapping array: Grade 4, Grade 5, Grade 6 etc.)
+        // The mapping stores 4 variants per grade; pick every 4th starting at index 1 (the "Grade N" form)
+        $canonicalGrades = [];
+        for ($i = 1; $i < count($gradesInGroup); $i += 4) {
+            $canonicalGrades[] = $gradesInGroup[$i];
+        }
+        $gradeStats = [];
+        foreach ($canonicalGrades as $grade) {
+            // Get all label variants for this grade (4 variants per grade)
+            $gradeIndex = array_search($grade, $gradesInGroup);
+            $gradeVariants = array_slice($gradesInGroup, $gradeIndex - 1, 4);
+            $lessonStat = \App\Models\LessonCompletion::where('user_id', $userId)
+                ->whereIn('lesson_level', $gradeVariants)
+                ->selectRaw('SUM(CASE WHEN fully_completed = 1 THEN 1 ELSE 0 END) as completed_lessons')
+                ->first();
+            $quizStat = \App\Models\QuizAttempt::where('user_id', $userId)
+                ->whereIn('quiz_level', $gradeVariants)
+                ->selectRaw('COUNT(DISTINCT CASE WHEN passed = 1 THEN quiz_id END) as passed_quizzes')
+                ->first();
+            $totalLessons = \App\Models\Video::whereIn('grade_level', $gradeVariants)->where('status', 'approved')->count();
+            $totalQuizzes = \App\Models\Quiz::whereIn('grade_level', $gradeVariants)->count();
+            $completedLessons = (int)($lessonStat->completed_lessons ?? 0);
+            $passedQuizzes   = (int)($quizStat->passed_quizzes ?? 0);
+            // Determine status: completed, in-progress, locked
+            $isCompleted  = $totalLessons > 0 && $completedLessons >= $totalLessons && $totalQuizzes > 0 && $passedQuizzes >= $totalQuizzes;
+            $isInProgress = !$isCompleted && ($completedLessons > 0 || $passedQuizzes > 0);
+            $gradeStats[$grade] = [
+                'grade'              => $grade,
+                'completed_lessons'  => $completedLessons,
+                'total_lessons'      => $totalLessons,
+                'passed_quizzes'     => $passedQuizzes,
+                'total_quizzes'      => $totalQuizzes,
+                'is_completed'       => $isCompleted,
+                'is_in_progress'     => $isInProgress,
+                'is_locked'          => !$isCompleted && !$isInProgress,
+            ];
+        }
+
         return view('dashboard.my-progress', compact(
             'progress',
             'lessonStats',
@@ -92,7 +132,8 @@ class ProgressController extends Controller
             'progressionStatus',
             'currentLevel',
             'analytics',
-            'standards'
+            'standards',
+            'gradeStats'
         ));
     }
 
