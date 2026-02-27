@@ -140,7 +140,7 @@
         align-items: center;
         gap: 1rem;
         box-shadow: var(--shadow-sm);
-        border: 1px solid var(--gray-200);
+        border: 1px solid rgba(0,0,0,0.03); /* Extremely subtle border */
     }
 
     .metric-icon {
@@ -207,13 +207,25 @@
         margin-bottom: 3rem;
     }
 
-    /* Each grade column — padding only, zero decoration */
+    /* Each grade column — Elevated Card Style */
     .grade-col {
-        padding: 0;           /* content starts flush; no box padding needed */
+        background: #fff;
+        padding: 1.25rem;
+        border-radius: 1rem;
+        box-shadow: var(--shadow-sm);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
-    /* Locked grades: muted palette signals "not yet" without a visual cage */
-    .grade-col.locked { opacity: 0.5; }
+    .grade-col:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    /* Locked grades: muted palette signals "not yet" */
+    .grade-col.locked {
+        opacity: 0.7;
+        background: rgba(255,255,255,0.6);
+    }
 
     /* ── Grade header ── */
     .grade-card-header {
@@ -298,9 +310,11 @@
 
     .pathway-container {
         position: relative;
-        /* icon height 58px, so center = 29px;
-           add a small padding-top so labels below don't clip */
-        padding: 1rem 0 1.5rem;
+        background: #fff;
+        padding: 2rem 1.5rem 2.5rem;
+        border-radius: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        border: 1px solid rgba(0,0,0,0.03);
     }
 
     .pathway-line {
@@ -367,6 +381,58 @@
     .pathway-step.active     .step-status { color: var(--app-blue); }
     .pathway-step.milestone  .step-status { color: var(--gray-500); }
     .pathway-step.future     .step-status { color: var(--gray-400); }
+
+    /* ── Grade Switcher ── */
+    .report-tabs {
+        display: flex;
+        gap: 1.25rem;
+        background: #fff;
+        padding: 0.75rem 1.25rem;
+        border-radius: 1rem;
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 2rem;
+        border: 1px solid rgba(0,0,0,0.03);
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .report-tabs::-webkit-scrollbar { display: none; }
+
+    .report-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--gray-500);
+        text-decoration: none;
+        border-radius: 2rem;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+        border: 2px solid transparent;
+    }
+
+    .report-tab:hover:not(.locked) {
+        color: var(--app-blue);
+        background: rgba(38,119,184,0.05);
+    }
+
+    .report-tab.active {
+        color: var(--app-blue);
+        background: rgba(38,119,184,0.1);
+        border-color: var(--app-blue);
+    }
+
+    .report-tab.locked {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+        background: var(--gray-50);
+    }
+
+    .report-tab i { font-size: 0.75rem; }
 
     /* ── Animations ── */
     @keyframes fillUp {
@@ -461,17 +527,37 @@
         </div>
     </div>
 
+    {{-- Grade Navigation Tabs --}}
+    <div class="report-tabs">
+        @foreach($canonicalGrades as $grade)
+            @php
+                $isUnlocked = in_array($grade, $unlockedGrades);
+                $isUserGrade = strcasecmp($grade, auth()->user()->grade) === 0;
+            @endphp
+            <a href="{{ $isUnlocked ? route('dashboard.digilearn', ['grade' => $grade]) : '#' }}" 
+               class="report-tab {{ $isUnlocked ? '' : 'locked' }} {{ $isUserGrade ? 'active' : '' }}"
+               {!! $isUnlocked ? '' : 'title="Locked"' !!}>
+                @if(!$isUnlocked) <i class="fas fa-lock"></i> @endif
+                {{ $grade }}
+            </a>
+        @endforeach
+    </div>
+
     {{-- Individual Grade Progress --}}
     <div class="section-header">
         <h2 class="section-title">Individual Grade Progress</h2>
-        <a href="#" class="view-report-link">View Detailed Report</a>
+        <a href="{{ route('dashboard.detailed-report') }}" class="view-report-link">View Detailed Report</a>
     </div>
 
     <div class="grades-panel">
         @foreach($gradeStats as $grade => $stats)
             @php
+                $isUnlocked = in_array($grade, $unlockedGrades);
                 $statusClass = $stats['is_completed'] ? 'completed' : ($stats['is_in_progress'] ? 'in-progress' : 'locked');
+                if (!$isUnlocked) $statusClass = 'locked';
+                
                 $statusLabel = $stats['is_completed'] ? 'Completed' : ($stats['is_in_progress'] ? 'In Progress' : 'Locked');
+                if (!$isUnlocked) $statusLabel = 'Locked';
 
                 $subtitles = [
                     'Grade 4' => 'Lower Transition',
@@ -485,14 +571,18 @@
                     'Grade 9' => 'Final JHS',
                 ];
                 $subtitle = $subtitles[$grade] ?? '';
-
-                $lessonPerc = $stats['total_lessons'] > 0 ? min(100, ($stats['completed_lessons'] / $stats['total_lessons']) * 100) : 0;
-                $quizPerc   = $stats['total_quizzes'] > 0 ? min(100, ($stats['passed_quizzes']  / $stats['total_quizzes'])  * 100) : 0;
+                $isUnlocked = in_array($grade, $unlockedGrades);
             @endphp
-            <div class="grade-col {{ $statusClass }}">
+            <a href="{{ $isUnlocked ? route('dashboard.digilearn', ['grade' => $grade]) : '#' }}" 
+               class="grade-col {{ $statusClass }}" 
+               style="text-decoration: none; display: block;"
+               @if(!$isUnlocked) title="Locked" @endif>
                 <div class="grade-card-header">
                     <div>
-                        <div class="grade-name">{{ $grade }}</div>
+                        <div class="grade-name">
+                            @if(!$isUnlocked) <i class="fas fa-lock" style="font-size: 0.8rem; margin-right: 0.25rem;"></i> @endif
+                            {{ $grade }}
+                        </div>
                         @if($subtitle)
                             <div class="grade-subtitle">{{ $subtitle }}</div>
                         @endif
@@ -500,28 +590,58 @@
                     <span class="status-badge {{ $statusClass }}">{{ $statusLabel }}</span>
                 </div>
 
+                {{-- 1. Lessons Attempted --}}
+                @php $attemptedLessonPerc = $stats['total_lessons'] > 0 ? min(100, ($stats['attempted_lessons'] / $stats['total_lessons']) * 100) : 0; @endphp
                 <div class="grade-stat-row">
                     <div class="stat-label-flex">
-                        <span class="stat-label">Lessons</span>
+                        <span class="stat-label">Lessons Attempted</span>
+                        <span class="stat-value">{{ $stats['attempted_lessons'] }}/{{ $stats['total_lessons'] }}</span>
+                    </div>
+                    <div class="mini-progress-bar">
+                        <div class="mini-progress-fill lessons animate-fill"
+                             style="--w: {{ $attemptedLessonPerc }}%; width: {{ $attemptedLessonPerc }}%;"></div>
+                    </div>
+                </div>
+
+                {{-- 2. Fully Watched Lessons --}}
+                @php $completedLessonPerc = $stats['total_lessons'] > 0 ? min(100, ($stats['completed_lessons'] / $stats['total_lessons']) * 100) : 0; @endphp
+                <div class="grade-stat-row">
+                    <div class="stat-label-flex">
+                        <span class="stat-label">Fully Watched</span>
                         <span class="stat-value">{{ $stats['completed_lessons'] }}/{{ $stats['total_lessons'] }}</span>
                     </div>
                     <div class="mini-progress-bar">
                         <div class="mini-progress-fill lessons animate-fill"
-                             style="--w: {{ $lessonPerc }}%; width: {{ $lessonPerc }}%;"></div>
+                             style="--w: {{ $completedLessonPerc }}%; width: {{ $completedLessonPerc }}%; background: #16a34a;"></div>
                     </div>
                 </div>
 
+                {{-- 3. Quizzes Attempted --}}
+                @php $attemptedQuizPerc = $stats['total_quizzes'] > 0 ? min(100, ($stats['attempted_quizzes'] / $stats['total_quizzes']) * 100) : 0; @endphp
                 <div class="grade-stat-row">
                     <div class="stat-label-flex">
-                        <span class="stat-label">Quizzes</span>
+                        <span class="stat-label">Quizzes Attempted</span>
+                        <span class="stat-value">{{ $stats['attempted_quizzes'] }}/{{ $stats['total_quizzes'] }}</span>
+                    </div>
+                    <div class="mini-progress-bar">
+                        <div class="mini-progress-fill animate-fill"
+                             style="--w: {{ $attemptedQuizPerc }}%; width: {{ $attemptedQuizPerc }}%;"></div>
+                    </div>
+                </div>
+
+                {{-- 4. Fully Completed Quizzes --}}
+                @php $passedQuizPerc = $stats['total_quizzes'] > 0 ? min(100, ($stats['passed_quizzes'] / $stats['total_quizzes']) * 100) : 0; @endphp
+                <div class="grade-stat-row">
+                    <div class="stat-label-flex">
+                        <span class="stat-label">Fully Completed</span>
                         <span class="stat-value">{{ $stats['passed_quizzes'] }}/{{ $stats['total_quizzes'] }}</span>
                     </div>
                     <div class="mini-progress-bar">
                         <div class="mini-progress-fill animate-fill"
-                             style="--w: {{ $quizPerc }}%; width: {{ $quizPerc }}%;"></div>
+                             style="--w: {{ $passedQuizPerc }}%; width: {{ $passedQuizPerc }}%; background: #16a34a;"></div>
                     </div>
                 </div>
-            </div>
+            </a>
         @endforeach
     </div>
 

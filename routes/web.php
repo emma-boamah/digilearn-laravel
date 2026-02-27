@@ -180,6 +180,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Progress
     Route::get('/dashboard/my-progress', [ProgressController::class, 'index'])->name('dashboard.my-progress');
+    Route::get('/dashboard/detailed-report/{grade?}', [ProgressController::class, 'detailedReport'])->name('dashboard.detailed-report');
     Route::middleware(['decode.obfuscated'])->group(function () {
         Route::post('/dashboard/lesson/{lessonId}/progress', [ProgressController::class, 'recordLessonProgress'])->name('dashboard.lesson.progress');
         Route::post('/dashboard/quiz/{quizId}/attempt', [ProgressController::class, 'recordQuizAttempt'])->name('dashboard.quiz.attempt');

@@ -118,7 +118,7 @@ class PricingPlan extends Model
     }
 
     /**
-     * Get level groups accessible by this plan
+     * Get level groups accessible by this plan (Old version)
      */
     public function accessibleLevelGroups()
     {
@@ -126,10 +126,24 @@ class PricingPlan extends Model
     }
 
     /**
+     * Get level groups accessible by this plan (New database-driven version)
+     */
+    public function levelGroups()
+    {
+        return $this->belongsToMany(LevelGroup::class, 'plan_level_group_new');
+    }
+
+    /**
      * Check if plan can access a specific level group
      */
     public function canAccessLevelGroup($groupId)
     {
+        // Try new database-driven approach first
+        if ($this->levelGroups()->where('slug', $groupId)->exists()) {
+            return true;
+        }
+
+        // Fallback to old string-based approach
         return $this->accessibleLevelGroups()
             ->where('level_group', $groupId)
             ->exists();

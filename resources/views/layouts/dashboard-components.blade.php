@@ -31,8 +31,8 @@
             --secondary-blue-hover: #1e5a8a;
             --white: #ffffff;
             --gray-25: #fcfcfd;
-            --gray-50: #f9fafb;
-            --gray-100: #f3f4f6;
+            --gray-50: #f8f9fa;
+            --gray-100: #f1f3f5;
             --gray-200: #e5e7eb;
             --gray-300: #d1d5db;
             --gray-400: #9ca3af;
@@ -41,7 +41,7 @@
             --gray-700: #374151;
             --gray-800: #1f2937;
             --gray-900: #111827;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.05);
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
             --sidebar-width-expanded: 240px;
@@ -318,7 +318,7 @@
             margin-left: var(--sidebar-width-expanded) !important;
             margin-top: var(--safe-area-inset-top) !important;
             min-height: calc(100vh - 60px);
-            background-color: var(--gray-25);
+            background-color: var(--gray-50);
             /* Synchronise all three so nothing jumps to the right */
             transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
                         width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
