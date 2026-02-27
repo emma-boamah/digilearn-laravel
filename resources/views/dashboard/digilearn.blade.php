@@ -584,7 +584,7 @@
             backdrop-filter: blur(10px) saturate(160%); /* Glassmorphism effect */
             -webkit-backdrop-filter: blur(10px) saturate(160%); /* Safari support */
             border-bottom: 1px solid var(--gray-200);
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             overflow-x: hidden;
             overflow-y: hidden;
             max-width: 100%;
@@ -925,8 +925,65 @@
             min-width: 200px;
         }
 
-        .quiz-container {
-            /* Right on desktop */
+        .current-level-display {
+            display: inline-flex;
+            align-items: center;
+            gap: 1.25rem;
+            margin-left: 0.5rem;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            padding: 2px 4px;
+        }
+
+        .current-level-display::-webkit-scrollbar { display: none; }
+
+        .grade-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #fff;
+            border: 2px solid var(--gray-200);
+            border-radius: 2rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-500);
+            text-decoration: none;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+            height: 40px;
+            box-sizing: border-box;
+        }
+
+        .grade-tab:hover:not(.locked) {
+            border-color: var(--secondary-blue);
+            color: var(--secondary-blue);
+            background: rgba(38,119,184,0.05);
+        }
+
+        .grade-tab.active {
+            background: rgba(38, 119, 184, 0.05);
+            border-color: var(--secondary-blue);
+            color: var(--secondary-blue);
+            box-shadow: 0 4px 12px rgba(38,119,184,0.2);
+        }
+
+        .grade-tab.locked {
+            opacity: 0.6;
+            background-color: var(--gray-50);
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .grade-tab i {
+            font-size: 0.75rem;
+        }
+
+        .grade-tab.locked i {
+            color: var(--gray-400);
+        }
+    /* Right on desktop */
         }
 
         .level-indicator {
@@ -1396,12 +1453,39 @@
             .filter-bar {
                 left: 0 !important;
                 width: 100vw !important;
+                justify-content: flex-start !important;
+                flex-wrap: nowrap !important;
+                height: 56px !important;
+                padding: 0 0.75rem !important;
+                gap: 0.5rem !important;
+                overflow: hidden !important;
+                top: calc(60px + var(--safe-area-inset-top)) !important;
             }
+
+            .current-level-display {
+                flex: 1 !important;
+                min-width: 0 !important;
+                overflow-x: auto !important;
+                white-space: nowrap !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 0.5rem !important;
+                padding: 0 !important;
+                height: 100% !important;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .current-level-display::-webkit-scrollbar { display: none; }
 
             .subjects-filter-container {
                 left: 0 !important;
                 width: 100vw !important;
-                padding: 16px 0;
+                padding: 0 1rem !important;
+                height: 56px !important;
+                display: flex !important;
+                align-items: center !important;
+                top: calc(116px + var(--safe-area-inset-top)) !important;
+                z-index: 997 !important;
             }
 
             .youtube-sidebar {
@@ -1499,22 +1583,23 @@
 
         /* Responsive Design */
         @media (max-width: 768px) {
-            .filter-bar {
-                justify-content: space-between;
-            }
-
+            /* Mobile design logic consolidated from previous redundant blocks */
             .level-container {
                 display: flex;
-                order: 1;
+                flex-shrink: 0;
+            }
+
+            .current-level-label {
+                display: none;
             }
 
             .mobile-search-toggle {
                 display: flex;
-                order: 2;
+                flex-shrink: 0;
             }
 
             .quiz-container {
-                order: 3;
+                flex-shrink: 0;
             }
 
             .search-container {
@@ -1523,28 +1608,30 @@
 
             #filterBar.search-active .search-container {
                 display: flex;
-                flex: 1;
-                min-height: 48px;
+                position: absolute;
+                inset: 0;
+                z-index: 10;
                 background: var(--white);
-                padding: 0.5rem;
-                box-shadow: var(--shadow-md);
+                padding: 0.5rem 0.75rem;
+                align-items: center;
             }
 
             #filterBar.search-active .search-box {
                 background: var(--gray-100);
-                border-radius: 0.375rem;
-                padding: 0.25rem;
+                border-radius: 0.5rem;
                 width: 100%;
+                display: flex;
             }
 
             #filterBar.search-active .level-container,
+            #filterBar.search-active .current-level-display,
             #filterBar.search-active .mobile-search-toggle,
             #filterBar.search-active .quiz-container {
                 display: none;
             }
 
             .search-close {
-                display: none; /* Default state for mobile search too */
+                display: none;
             }
             .main-container {
                 flex-direction: column;
@@ -1582,25 +1669,10 @@
                 padding: 10px 15px;
             }
 
-            /* Filter bar layout */
-            .filter-bar {
-                gap: 12px;
-                padding: 16px;
-                position: relative;
-                overflow: hidden;
-            }
-
-            /* Dropdowns row */
-            .dropdowns-row {
-                display: flex;
-                gap: 12px;
-                width: 100%;
-                flex-wrap: wrap;
-            }
-
-            .dropdowns-row .custom-dropdown {
-                flex: 1;
-                min-width: auto;
+            /* Fixed heights for mobile compatibility */
+            .content-section {
+                min-height: calc(100vh - 172px);
+                padding: 1rem 0.75rem 2rem;
             }
 
             /* Hide sidebar toggle in sidebar on mobile */
@@ -1989,6 +2061,33 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
         <div class="filter-bar" id="filterBar">
             <x-level-indicator :selectedLevel="$selectedLevelGroup" />
 
+            <div class="current-level-display">
+                @foreach($canonicalGrades as $grade)
+                    @php
+                        $isUnlocked = in_array($grade, $unlockedGrades);
+                        $userLevel = \App\Models\Level::where('slug', auth()->user()->grade)
+                                      ->orWhere('title', auth()->user()->grade)
+                                      ->first();
+                        
+                        // Active tab is either the specifically selected grade OR the user's current grade (if none selected)
+                        $isActive = false;
+                        if ($validSelectedGrade) {
+                            $isActive = ($validSelectedGrade === $grade);
+                        } elseif ($userLevel) {
+                            $isActive = ($userLevel->title === $grade);
+                        }
+                    @endphp
+                    <a href="{{ $isUnlocked ? route('dashboard.digilearn', ['grade' => $grade]) : '#' }}" 
+                       class="grade-tab {{ $isUnlocked ? '' : 'locked' }} {{ $isActive ? 'active' : '' }}"
+                       {!! $isUnlocked ? '' : 'title="Complete current lessons to unlock '. $grade . '"' !!}>
+                        @if(!$isUnlocked)
+                            <i class="fas fa-lock"></i>
+                        @endif
+                        {{ $grade }}
+                    </a>
+                @endforeach
+            </div>
+
             <!-- Mobile Search Toggle Button -->
             <button class="mobile-search-toggle" id="mobileSearchToggle">
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2060,12 +2159,12 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                             externalVideoId="{{ $course['external_video_id'] ?? '' }}"
                             muxPlaybackId="{{ $course['mux_playback_id'] ?? '' }}"
                             thumbnail="{{ $course['thumbnail'] }}"
-                            title="{{ $course['title'] }}"
+                            :title="$course['title']"
                             duration="{{ $course['duration'] }}"
-                            levelDisplay="{{ $course['level_display'] ?? 'Course' }}"
-                            subject="{{ $course['subject'] }}"
+                            :levelDisplay="$course['level_display'] ?? 'Course'"
+                            :subject="$course['subject']"
                             data-subject="{{ $course['subject_slug'] }}"
-                            instructor="{{ $course['instructor'] }}"
+                            :instructor="$course['instructor']"
                             year="{{ $course['year'] }}"
                             lessonId="{{ \App\Services\UrlObfuscator::encode($course['id']) }}"
                             courseId="{{ \App\Services\UrlObfuscator::encode($course['id']) }}"
@@ -2115,12 +2214,12 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                             externalVideoId="{{ $lesson['external_video_id'] ?? '' }}"
                             muxPlaybackId="{{ $lesson['mux_playback_id'] ?? '' }}"
                             thumbnail="{{ $lesson['thumbnail'] }}"
-                            title="{{ $lesson['title'] }}"
+                            :title="$lesson['title']"
                             duration="{{ $lesson['duration'] }}"
-                            levelDisplay="{{ $lesson['level_display'] ?? 'Level' }}"
-                            subject="{{ $lesson['subject'] }}"
+                            :levelDisplay="$lesson['level_display'] ?? 'Level'"
+                            :subject="$lesson['subject']"
                             data-subject="{{ $lesson['subject_slug'] }}"
-                            instructor="{{ $lesson['instructor'] }}"
+                            :instructor="$lesson['instructor']"
                             year="{{ $lesson['year'] }}"
                             lessonId="{{ \App\Services\UrlObfuscator::encode($lesson['id']) }}"
                             :showLevelBadge="true"
@@ -2800,6 +2899,13 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
             }
         }
 
+        function escapeHTML(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
         function updateLessonGrid(lessons, query) {
             const grid = document.querySelector('.content-grid');
 
@@ -2815,7 +2921,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                             <line x1="9" x2="13" y1="9" y2="13"></line>
                         </svg>
                         <h3 style="color: var(--gray-600); margin-bottom: 1rem;">No lessons found</h3>
-                        <p style="color: var(--gray-500);">No lessons match "<strong>${query}</strong>" in your current level.</p>
+                        <p style="color: var(--gray-500);">No lessons match "<strong>${escapeHTML(query)}</strong>" in your current level.</p>
                         <p style="color: var(--gray-500); margin-top: 1rem;">Try different keywords or check your level selection.</p>
                     </div>
                 `;
@@ -2831,12 +2937,16 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                     </div>
                 ` : '';
 
+                const escapedTitle = escapeHTML(lesson.title);
+                const escapedSubject = escapeHTML(lesson.subject);
+                const escapedInstructor = escapeHTML(lesson.instructor);
+
                 html += `
-                    <div class="lesson-card hover-video-card" data-lesson-id="${lesson.encoded_id}" data-video-id="${lesson.id}" data-subject="${lesson.subject}" data-title="${lesson.title}" data-video-source="${lesson.video_source || 'local'}" data-vimeo-id="${lesson.vimeo_id || ''}" data-external-video-id="${lesson.external_video_id || ''}" data-mux-playback-id="${lesson.mux_playback_id || ''}" data-loaded="false">
+                    <div class="lesson-card hover-video-card" data-lesson-id="${lesson.encoded_id}" data-video-id="${lesson.id}" data-subject="${escapedSubject}" data-title="${escapedTitle}" data-video-source="${lesson.video_source || 'local'}" data-vimeo-id="${lesson.vimeo_id || ''}" data-external-video-id="${lesson.external_video_id || ''}" data-mux-playback-id="${lesson.mux_playback_id || ''}" data-loaded="false">
                         <div class="lesson-thumbnail">
                             <img
                                 src="${lesson.thumbnail}"
-                                alt="${lesson.title}"
+                                alt="${escapedTitle}"
                                 class="video-thumb"
                                 loading="lazy"
                             />
@@ -2856,10 +2966,10 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                             </div>
                         </div>
                         <div class="lesson-info">
-                            <h3 class="lesson-title">${lesson.title}</h3>
+                            <h3 class="lesson-title">${escapedTitle}</h3>
                             <div class="lesson-meta">
-                                <span class="lesson-subject">(${lesson.subject})</span>
-                                <span>${lesson.instructor} | ${lesson.year}</span>
+                                <span class="lesson-subject">(${escapedSubject})</span>
+                                <span>${escapedInstructor} | ${lesson.year}</span>
                             </div>
                             ${documentsHtml}
                             <div class="lesson-actions">

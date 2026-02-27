@@ -37,7 +37,9 @@ class Video extends Model
         'quiz_id',
         'video_source',
         'external_video_id',
-        'external_video_url'
+        'external_video_url',
+        'unit_number',
+        'unit_name'
     ];
 
     protected $casts = [
@@ -66,6 +68,14 @@ class Video extends Model
     public function document()
     {
         return $this->belongsTo(Document::class, 'document_id');
+    }
+
+    /**
+     * Get the lesson completions associated with the video.
+     */
+    public function completions()
+    {
+        return $this->hasMany(LessonCompletion::class, 'lesson_id');
     }
 
     /**
@@ -792,5 +802,20 @@ class Video extends Model
         }
 
         return false;
+    }
+    /**
+     * Get the video duration formatted (e.g., 1h 20m or 45m).
+     */
+    public function getDurationFormatted()
+    {
+        $seconds = $this->duration_seconds;
+        if (!$seconds) return '0s';
+        $h = floor($seconds / 3600);
+        $m = floor(($seconds % 3600) / 60);
+        $s = $seconds % 60;
+        
+        if ($h > 0) return "{$h}h " . ($m > 0 ? "{$m}m" : "");
+        if ($m > 0) return "{$m}m " . ($s > 0 ? "{$s}s" : "");
+        return "{$s}s";
     }
 }

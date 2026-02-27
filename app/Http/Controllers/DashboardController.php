@@ -194,9 +194,18 @@ class DashboardController extends Controller
                 ->with('warning', 'Please upgrade your subscription to access this content.');
         }
 
-        // Set the user's grade to the lowest level in the selected group
+        // Set the user's grade to the requested level or the lowest in the group
+        $requestedGrade = $request->get('grade');
         $lowestGrade = $this->getLowestGradeForLevelGroup($groupId);
-        $user->update(['grade' => $lowestGrade]);
+        
+        // Validate requested grade belongs to the group
+        $groupLevels = $this->getGradeLevelsForLevelGroup($groupId);
+        if ($requestedGrade && !in_array($requestedGrade, $groupLevels)) {
+            $requestedGrade = null; // Fallback to lowest if invalid
+        }
+        
+        $gradeToSet = $requestedGrade ?: $lowestGrade;
+        $user->update(['grade' => $gradeToSet]);
 
         // Deactivate previous active progress
         \App\Models\UserProgress::where('user_id', $user->id)
@@ -208,7 +217,7 @@ class DashboardController extends Controller
             [
                 'user_id' => $user->id,
                 'level_group' => $groupId,
-                'current_level' => $lowestGrade
+                'current_level' => $gradeToSet
             ],
             [
                 'is_active' => true,
@@ -225,8 +234,8 @@ class DashboardController extends Controller
             'user_id' => $user->id,
             'from_level_group' => $user->activeProgress?->level_group ?? $groupId,
             'to_level_group' => $groupId,
-            'from_level' => $user->activeProgress?->current_level ?? $lowestGrade,
-            'to_level' => $lowestGrade,
+            'from_level' => $user->activeProgress?->current_level ?? $gradeToSet,
+            'to_level' => $gradeToSet,
             'final_score' => 0.00,
             'lessons_completed' => 0,
             'quizzes_passed' => 0,
@@ -308,7 +317,7 @@ class DashboardController extends Controller
     /**
      * Show DigiLearn page (updated to handle university structure)
      */
-    public function digilearn()
+    public function digilearn(Request $request)
     {
         $user = Auth::user();
         $selectedLevelGroup = $user->current_level_group;
@@ -321,43 +330,74 @@ class DashboardController extends Controller
             }
         }
 
-        // DEBUG: Log subscription status
-        Log::info('Subscription Check Debug', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-            'selected_level_group' => $selectedLevelGroup,
-            'has_current_subscription' => $user->currentSubscription ? true : false,
-            'subscription_status' => $user->currentSubscription ? $user->currentSubscription->status : 'none',
-            'subscription_expires_at' => $user->currentSubscription ? $user->currentSubscription->expires_at : null,
-            'subscription_trial_ends_at' => $user->currentSubscription ? $user->currentSubscription->trial_ends_at : null,
-            'is_active' => $user->currentSubscription ? $user->currentSubscription->isActive() : false,
-            'is_in_trial' => $user->currentSubscription ? $user->currentSubscription->isInTrial() : false,
-            'pricing_plan_name' => $user->currentSubscription ? $user->currentSubscription->pricingPlan->name ?? 'none' : 'none',
-            'current_time' => now(),
-        ]);
-
         if (!$this->hasAccessToLevelGroup($user, $selectedLevelGroup)) {
             session()->forget('selected_level_group');
             return redirect()->route('pricing')->with('warning', 'Please upgrade your subscription to access this content.');
         }
 
-        // University is now handled directly in digilearn view
-        // No special redirect needed
-
-        if (!$this->hasAccessToLevelGroup($user, $selectedLevelGroup)) {
-            return redirect()->route('pricing')
-                ->with('warning', 'Please upgrade your subscription to access this content.');
+        // --- Grade Unification & Locked Logic ---
+        $group = \App\Models\LevelGroup::where('slug', $selectedLevelGroup)->with('levels')->first();
+        $canonicalGrades = $group ? $group->levels->pluck('title')->toArray() : [];
+        
+        // Determine accessible (unlocked) grades
+        $unlockedGrades = [];
+        $userLevel = \App\Models\Level::where('slug', $user->grade)
+                      ->orWhere('title', $user->grade)
+                      ->first();
+        
+        if ($userLevel && $group) {
+            $userRank = $userLevel->rank;
+            $unlockedGrades = $group->levels->filter(function($level) use ($userRank) {
+                return $level->rank <= $userRank;
+            })->pluck('title')->toArray();
+        } else {
+            // Fallback for safety
+            $unlockedGrades = $canonicalGrades; 
         }
 
-        Log::channel('security')->info('digilearn_accessed', [
-            'user_id' => Auth::id(),
-            'selected_level_group' => $selectedLevelGroup,
-            'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
-            'ip' => request()->ip(),
-            'timestamp' => Carbon::now()->toISOString()
-        ]);
+        // Get selected grade from request
+        $selectedGrade = $request->query('grade');
+        $validSelectedGrade = null;
 
-        // Handle university level specially to show courses instead of lessons
+        if ($selectedGrade) {
+            // Security: Check if selected grade is unlocked
+            if (in_array($selectedGrade, $unlockedGrades)) {
+                $validSelectedGrade = $selectedGrade;
+            } else {
+                // If locked or invalid, flash warning and ignore filter
+                session()->flash('warning', 'That grade is currently locked. Complete your current lessons to unlock it!');
+            }
+        }
+
+        // Determine which lessons to show
+        if ($validSelectedGrade) {
+            // Convert "Grade X" back to internal variant like "primary-X" or similar if needed
+            // Actually getLessonsForLevel handles conversion, but we need the internal key
+            // We can find the key by looking at the levelGroups mapping
+            $levelGroups = $this->getLevelGroups();
+            $internalLevelKey = null;
+            if (isset($levelGroups[$selectedLevelGroup]['levels'])) {
+                foreach ($levelGroups[$selectedLevelGroup]['levels'] as $levelData) {
+                    if ($levelData['title'] === $validSelectedGrade || str_contains($validSelectedGrade, $levelData['title'])) {
+                        $internalLevelKey = $levelData['id'];
+                        break;
+                    }
+                }
+            }
+            
+            if ($internalLevelKey) {
+                $lessons = $this->getLessonsForLevel($internalLevelKey);
+            } else {
+                // Fallback to all if internal key not found (unlikely)
+                $lessons = $this->getLessonsForLevelGroup($selectedLevelGroup);
+            }
+        } else {
+            // Default: Show all lessons for the level group (or we could default to user's current grade)
+            $lessons = $this->getLessonsForLevelGroup($selectedLevelGroup);
+        }
+
+        // --- End Grade Unification ---
+
         if ($selectedLevelGroup === 'university') {
             $universityCourses = $this->getUniversityCourses();
             $universityCourses = $this->filterCoursesBySubscription($user, $universityCourses);
@@ -365,11 +405,17 @@ class DashboardController extends Controller
             return view('dashboard.digilearn', compact('selectedLevelGroup', 'universityCourses', 'subjects'));
         }
 
-        $lessons = $this->getLessonsForLevelGroup($selectedLevelGroup);
         $lessons = $this->filterLessonsBySubscription($user, $lessons);
         $subjects = $this->getSubjectsFromLessons($lessons);
 
-        return view('dashboard.digilearn', compact('selectedLevelGroup', 'lessons', 'subjects'));
+        return view('dashboard.digilearn', compact(
+            'selectedLevelGroup', 
+            'lessons', 
+            'subjects', 
+            'canonicalGrades', 
+            'unlockedGrades', 
+            'validSelectedGrade'
+        ));
     }
 
     /**
@@ -1556,11 +1602,10 @@ class DashboardController extends Controller
         $levelGroups = $this->getLevelGroups();
 
         foreach ($levelGroups as $groupId => $group) {
-            if (isset($group['levels'])) {
-                foreach ($levelGroups[$groupId]['levels'] as $level => $levelData) {
-                    $levelLessons = $this->getLessonsForLevel($level);
-                    $allLessons = array_merge($allLessons, $levelLessons);
-                }
+            $levels = $group['levels'] ?? $group['years'] ?? [];
+            foreach ($levels as $levelData) {
+                $levelLessons = $this->getLessonsForLevel($levelData['id']);
+                $allLessons = array_merge($allLessons, $levelLessons);
             }
         }
 
@@ -1933,44 +1978,21 @@ class DashboardController extends Controller
      */
     private function getUniversityYears()
     {
-        return [
-            [
-                'id' => 'uni-1',
-                'name' => 'University Year 1',
-                'description' => 'First year undergraduate programs and foundation courses',
-                'programs_count' => 12,
-                'thumbnail' => 'images/university/year1.jpg',
+        $group = \App\Models\LevelGroup::where('slug', 'university')->first();
+        if (!$group) return [];
+
+        return $group->levels->map(function ($level, $index) {
+            return [
+                'id' => $level->slug,
+                'name' => $level->title, // Keep for legacy
+                'title' => $level->title,
+                'description' => $level->description,
+                'programs_count' => 0, // Logic for this can be added later
+                'thumbnail' => "images/university/year" . ($index + 1) . ".jpg",
                 'level' => 'Undergraduate',
-                'year_number' => 1
-            ],
-            [
-                'id' => 'uni-2',
-                'name' => 'University Year 2',
-                'description' => 'Second year undergraduate programs with specialized tracks',
-                'programs_count' => 15,
-                'thumbnail' => 'images/university/year2.jpg',
-                'level' => 'Undergraduate',
-                'year_number' => 2
-            ],
-            [
-                'id' => 'uni-3',
-                'name' => 'University Year 3',
-                'description' => 'Third year undergraduate programs with advanced coursework',
-                'programs_count' => 18,
-                'thumbnail' => 'images/university/year3.jpg',
-                'level' => 'Undergraduate',
-                'year_number' => 3
-            ],
-            [
-                'id' => 'uni-4',
-                'name' => 'University Year 4',
-                'description' => 'Final year undergraduate programs and capstone projects',
-                'programs_count' => 14,
-                'thumbnail' => 'images/university/year4.jpg',
-                'level' => 'Undergraduate',
-                'year_number' => 4
-            ]
-        ];
+                'year_number' => $index + 1
+            ];
+        })->toArray();
     }
 
     /**
@@ -2266,19 +2288,23 @@ class DashboardController extends Controller
      */
     private function getAvailableLevels()
     {
-        $levelGroups = $this->getLevelGroups();
-        $availableLevels = [];
-
-        foreach ($levelGroups as $groupId => $group) {
-            $availableLevels[] = [
-                'id' => $groupId,
-                'title' => $group['title'],
-                'description' => $group['description'],
-                'has_illustration' => $group['has_illustration']
-            ];
-        }
-
-        return $availableLevels;
+        return \App\Models\LevelGroup::orderBy('display_order')
+            ->get()
+            ->map(function ($group) {
+                return [
+                    'id' => $group->slug,
+                    'title' => $group->title,
+                    'description' => $group->description,
+                    'has_illustration' => $group->has_illustration,
+                    'levels' => $group->levels->map(function ($level) {
+                        return [
+                            'id' => $level->slug,
+                            'title' => $level->title,
+                        ];
+                    })->toArray()
+                ];
+            })
+            ->toArray();
     }
 
     public function showLevelGroup($groupId)
@@ -2316,20 +2342,21 @@ class DashboardController extends Controller
         }
 
         $allLessons = [];
-        // Some groups (e.g., 'university') do not have 'levels' but rather 'years'
-        if (!isset($levelGroups[$groupId]['levels']) || !is_array($levelGroups[$groupId]['levels'])) {
+        $levels = $levelGroups[$groupId]['levels'] ?? $levelGroups[$groupId]['years'] ?? [];
+
+        if (empty($levels)) {
             return [];
         }
-        $individualLevels = array_keys($levelGroups[$groupId]['levels']);
 
         // Get lessons from all individual levels in the group
-        foreach ($individualLevels as $level) {
-            $levelLessons = $this->getLessonsForLevel($level);
+        foreach ($levels as $levelData) {
+            $levelId = $levelData['id'];
+            $levelLessons = $this->getLessonsForLevel($levelId);
             
             // Add level information to each lesson
             foreach ($levelLessons as &$lesson) {
-                $lesson['level'] = $level;
-                $lesson['level_display'] = $this->getLevelDisplayName($level);
+                $lesson['level'] = $levelId;
+                $lesson['level_display'] = $this->getLevelDisplayName($levelId);
             }
             
             $allLessons = array_merge($allLessons, $levelLessons);
@@ -2372,90 +2399,38 @@ class DashboardController extends Controller
      */
     public function getLevelGroups()
     {
-        return [
-            'primary-lower' => [
-                'title' => 'Grade/Primary 1-3',
-                'description' => 'Lower primary or Elementary school',
-                'has_illustration' => false,
-                'levels' => [
-                    'primary-1' => [
-                        'title' => 'Primary 1',
-                        'description' => 'Foundation learning for young minds'
-                    ],
-                    'primary-2' => [
-                        'title' => 'Primary 2', 
-                        'description' => 'Building on fundamentals'
-                    ],
-                    'primary-3' => [
-                        'title' => 'Primary 3',
-                        'description' => 'Developing critical thinking skills'
-                    ]
-                ]
-            ],
-            'primary-upper' => [
-                'title' => 'Grade/Primary 4-6',
-                'description' => 'Upper primary or elementary school',
-                'has_illustration' => false,
-                'levels' => [
-                    'primary-4' => [
-                        'title' => 'Primary 4',
-                        'description' => 'Advanced primary education'
-                    ],
-                    'primary-5' => [
-                        'title' => 'Primary 5',
-                        'description' => 'Preparing for junior high transition'
-                    ],
-                    'primary-6' => [
-                        'title' => 'Primary 6',
-                        'description' => 'BECE preparation focus'
-                    ]
-                ]
-            ],
-            'jhs' => [
-                'title' => 'Grade 7-9/JHS 1-3',
-                'description' => 'Junior High School or Middle school',
-                'has_illustration' => true,
-                'levels' => [
-                    'jhs-1' => [
-                        'title' => 'JHS 1',
-                        'description' => 'Introduction to junior high curriculum'
-                    ],
-                    'jhs-2' => [
-                        'title' => 'JHS 2',
-                        'description' => 'Intermediate junior high studies'
-                    ],
-                    'jhs-3' => [
-                        'title' => 'JHS 3',
-                        'description' => 'Final JHS year with BECE preparation'
-                    ]
-                ]
-            ],
-            'shs' => [
-                'title' => 'Grade 10-12/SHS 1-3',
-                'description' => 'High school or Senior High School',
-                'has_illustration' => false,
-                'levels' => [
-                    'shs-1' => [
-                        'title' => 'SHS 1',
-                        'description' => 'Senior high foundation with specialized tracks'
-                    ],
-                    'shs-2' => [
-                        'title' => 'SHS 2',
-                        'description' => 'Advanced senior high studies'
-                    ],
-                    'shs-3' => [
-                        'title' => 'SHS 3',
-                        'description' => 'Final SHS year with WASSCE preparation'
-                    ]
-                ]
-                    ],
-            'university' => [
-                'title' => 'University',
-                'description' => 'Higher education with specialized programs and courses',
-                'has_illustration' => true,
-                'years' => $this->getUniversityYears()
-            ]
-        ];
+        return \App\Models\LevelGroup::with('levels')
+            ->orderBy('display_order')
+            ->get()
+            ->keyBy('slug')
+            ->map(function ($group) {
+                $data = [
+                    'id' => $group->slug,
+                    'title' => $group->title,
+                    'description' => $group->description,
+                    'has_illustration' => $group->has_illustration,
+                ];
+
+                if ($group->slug === 'university') {
+                    $data['years'] = $group->levels->map(function ($level) {
+                        return [
+                            'id' => $level->slug,
+                            'title' => $level->title,
+                            'description' => $level->description,
+                        ];
+                    })->toArray();
+                } else {
+                    $data['levels'] = $group->levels->map(function ($level) {
+                        return [
+                            'id' => $level->slug,
+                            'title' => $level->title,
+                        ];
+                    })->toArray();
+                }
+
+                return $data;
+            })
+            ->toArray();
     }
 
     /**
@@ -2520,33 +2495,26 @@ class DashboardController extends Controller
     /**
      * Get grade levels for a level group
      */
-    private function getGradeLevelsForLevelGroup($levelGroup)
+    private function getGradeLevelsForLevelGroup($levelGroupSlug)
     {
-        $levelMappings = [
-            'primary-lower' => ['Primary 1', 'Primary 2', 'Primary 3'],
-            'primary-upper' => ['Primary 4', 'Primary 5', 'Primary 6'],
-            'jhs' => ['JHS 1', 'JHS 2', 'JHS 3'],
-            'shs' => ['SHS 1', 'SHS 2', 'SHS 3'],
-            'university' => [], // University handled differently
-        ];
+        $group = \App\Models\LevelGroup::where('slug', $levelGroupSlug)->first();
+        
+        if (!$group) {
+            return [];
+        }
 
-        return $levelMappings[$levelGroup] ?? [];
+        return $group->levels->pluck('title')->toArray();
     }
 
-    /**
-     * Get the lowest grade level for a level group (for new user assignment)
-     */
-    private function getLowestGradeForLevelGroup($levelGroup)
+    private function getLowestGradeForLevelGroup($levelGroupSlug)
     {
-        $lowestGrades = [
-            'primary-lower' => 'Primary 1',
-            'primary-upper' => 'Primary 4',
-            'jhs' => 'JHS 1',
-            'shs' => 'SHS 1',
-            'university' => 'University Year 1',
-        ];
+        $group = \App\Models\LevelGroup::where('slug', $levelGroupSlug)->first();
+        
+        if (!$group) {
+            return null;
+        }
 
-        return $lowestGrades[$levelGroup] ?? $levelGroup;
+        return $group->levels()->orderBy('rank')->first()?->slug;
     }
 
     /**

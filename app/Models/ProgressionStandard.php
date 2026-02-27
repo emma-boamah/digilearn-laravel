@@ -100,33 +100,23 @@ class ProgressionStandard extends Model
      * Get all valid level names for a specific level group.
      * Including variations like "Grade 1", "Class 1", etc.
      */
-    public static function getLevelsForGroup($levelGroup)
+    public static function getLevelsForGroup($levelGroupSlug)
     {
-        $mapping = [
-            'primary-lower' => [
-                'Primary 1', 'Grade 1', 'Class 1', 'Basic 1',
-                'Primary 2', 'Grade 2', 'Class 2', 'Basic 2',
-                'Primary 3', 'Grade 3', 'Class 3', 'Basic 3'
-            ],
-            'primary-upper' => [
-                'Primary 4', 'Grade 4', 'Class 4', 'Basic 4',
-                'Primary 5', 'Grade 5', 'Class 5', 'Basic 5',
-                'Primary 6', 'Grade 6', 'Class 6', 'Basic 6'
-            ],
-            'jhs' => [
-                'JHS 1', 'J.H.S 1', 'JHS-1', 'Basic 7', 'Grade 7',
-                'JHS 2', 'J.H.S 2', 'JHS-2', 'Basic 8', 'Grade 8',
-                'JHS 3', 'J.H.S 3', 'JHS-3', 'Basic 9', 'Grade 9'
-            ],
-            'shs' => [
-                'SHS 1', 'S.H.S 1', 'SHS-1', 'Grade 10',
-                'SHS 2', 'S.H.S 2', 'SHS-2', 'Grade 11',
-                'SHS 3', 'S.H.S 3', 'SHS-3', 'Grade 12'
-            ],
-            'tertiary' => ['Tertiary', 'University', 'College', 'Polytechnic'],
-        ];
+        $group = LevelGroup::where('slug', $levelGroupSlug)->first();
+        
+        if (!$group) {
+            // Support legacy aliases if needed, or fallback to the slug itself
+            $legacyMappings = [
+                'tertiary' => 'university'
+            ];
+            $group = LevelGroup::where('slug', $legacyMappings[$levelGroupSlug] ?? $levelGroupSlug)->first();
+        }
 
-        return $mapping[$levelGroup] ?? [$levelGroup];
+        if ($group) {
+            return $group->levels->pluck('title')->toArray();
+        }
+
+        return [$levelGroupSlug];
     }
 
     /**
@@ -135,19 +125,21 @@ class ProgressionStandard extends Model
      */
     public static function getLevelGroup($individualLevel)
     {
-        // Normalize input
-        // $normalized = trim(strtolower($individualLevel ?? '')); 
-        // For now, checks containment in the arrays.
-        // Optimization: Could build a reverse map cache if performance becomes an issue.
+        $level = Level::where('slug', $individualLevel)
+                      ->orWhere('title', $individualLevel)
+                      ->first();
 
-        $groups = ['primary-lower', 'primary-upper', 'jhs', 'shs', 'tertiary'];
+        if ($level) {
+            return $level->levelGroup->slug;
+        }
+
+        // Fallback for variations not in our standard 'title' or 'slug'
+        $groups = LevelGroup::with('levels')->get();
         
         foreach ($groups as $group) {
-            $levels = static::getLevelsForGroup($group);
-            // Case-insensitive check
-            foreach ($levels as $level) {
-                if (strcasecmp($level, $individualLevel) === 0) {
-                    return $group;
+            foreach ($group->levels as $lvl) {
+                if (strcasecmp($lvl->title, $individualLevel) === 0 || strcasecmp($lvl->slug, $individualLevel) === 0) {
+                    return $group->slug;
                 }
             }
         }

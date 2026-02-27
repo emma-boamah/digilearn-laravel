@@ -10,6 +10,7 @@ use App\Models\UserProgress;
 use App\Models\LessonCompletion;
 use App\Models\QuizAttempt;
 use App\Models\LevelProgression;
+use App\Models\ProgressionStandard;
 
 class ProgressController extends Controller
 {
@@ -83,42 +84,61 @@ class ProgressController extends Controller
         $standards = \App\Models\ProgressionStandard::getStandardsForLevel($currentLevel);
 
         // Get per-grade (individual level) stats for the grade cards
-        $gradesInGroup = \App\Models\ProgressionStandard::getLevelsForGroup($currentLevel);
-        // Pick canonical grade names (every 4th item in the mapping array: Grade 4, Grade 5, Grade 6 etc.)
-        // The mapping stores 4 variants per grade; pick every 4th starting at index 1 (the "Grade N" form)
-        $canonicalGrades = [];
-        for ($i = 1; $i < count($gradesInGroup); $i += 4) {
-            $canonicalGrades[] = $gradesInGroup[$i];
+        $group = \App\Models\LevelGroup::where('slug', $currentLevel)->with('levels')->first();
+        $canonicalGrades = $group ? $group->levels->pluck('title')->toArray() : [];
+        
+        // Determine UNLOCKED grades based on user's rank
+        $unlockedGrades = [];
+        $userGrade = Auth::user()->grade;
+        $userLevel = \App\Models\Level::where('slug', $userGrade)
+                      ->orWhere('title', $userGrade)
+                      ->first();
+        
+        if ($userLevel && $group) {
+            $userRank = $userLevel->rank;
+            $unlockedGrades = $group->levels->filter(function($level) use ($userRank) {
+                return $level->rank <= $userRank;
+            })->pluck('title')->toArray();
+        } else {
+            // Fallback for safety
+            $unlockedGrades = $canonicalGrades; 
         }
+
         $gradeStats = [];
         foreach ($canonicalGrades as $grade) {
-            // Get all label variants for this grade (4 variants per grade)
-            $gradeIndex = array_search($grade, $gradesInGroup);
-            $gradeVariants = array_slice($gradesInGroup, $gradeIndex - 1, 4);
             $lessonStat = \App\Models\LessonCompletion::where('user_id', $userId)
-                ->whereIn('lesson_level', $gradeVariants)
-                ->selectRaw('SUM(CASE WHEN fully_completed = 1 THEN 1 ELSE 0 END) as completed_lessons')
+                ->where('lesson_level', $grade)
+                ->selectRaw('COUNT(lesson_id) as attempted_lessons, SUM(CASE WHEN fully_completed = 1 THEN 1 ELSE 0 END) as completed_lessons')
                 ->first();
             $quizStat = \App\Models\QuizAttempt::where('user_id', $userId)
-                ->whereIn('quiz_level', $gradeVariants)
-                ->selectRaw('COUNT(DISTINCT CASE WHEN passed = 1 THEN quiz_id END) as passed_quizzes')
+                ->where('quiz_level', $grade)
+                ->selectRaw('COUNT(DISTINCT quiz_id) as attempted_quizzes, COUNT(DISTINCT CASE WHEN passed = 1 THEN quiz_id END) as passed_quizzes')
                 ->first();
-            $totalLessons = \App\Models\Video::whereIn('grade_level', $gradeVariants)->where('status', 'approved')->count();
-            $totalQuizzes = \App\Models\Quiz::whereIn('grade_level', $gradeVariants)->count();
+                
+            $totalLessons = \App\Models\Video::where('grade_level', $grade)->where('status', 'approved')->count();
+            $totalQuizzes = \App\Models\Quiz::where('grade_level', $grade)->count();
+            
+            $attemptedLessons = (int)($lessonStat->attempted_lessons ?? 0);
             $completedLessons = (int)($lessonStat->completed_lessons ?? 0);
-            $passedQuizzes   = (int)($quizStat->passed_quizzes ?? 0);
-            // Determine status: completed, in-progress, locked
+            $attemptedQuizzes = (int)($quizStat->attempted_quizzes ?? 0);
+            $passedQuizzes    = (int)($quizStat->passed_quizzes ?? 0);
+            
+            // Determine status
+            $isUnlocked = in_array($grade, $unlockedGrades);
             $isCompleted  = $totalLessons > 0 && $completedLessons >= $totalLessons && $totalQuizzes > 0 && $passedQuizzes >= $totalQuizzes;
-            $isInProgress = !$isCompleted && ($completedLessons > 0 || $passedQuizzes > 0);
+            $isInProgress = !$isCompleted && ($attemptedLessons > 0 || $attemptedQuizzes > 0);
+            
             $gradeStats[$grade] = [
                 'grade'              => $grade,
+                'attempted_lessons'  => $attemptedLessons,
                 'completed_lessons'  => $completedLessons,
                 'total_lessons'      => $totalLessons,
+                'attempted_quizzes'  => $attemptedQuizzes,
                 'passed_quizzes'     => $passedQuizzes,
                 'total_quizzes'      => $totalQuizzes,
                 'is_completed'       => $isCompleted,
                 'is_in_progress'     => $isInProgress,
-                'is_locked'          => !$isCompleted && !$isInProgress,
+                'is_locked'          => !$isUnlocked,
             ];
         }
 
@@ -133,7 +153,163 @@ class ProgressController extends Controller
             'currentLevel',
             'analytics',
             'standards',
-            'gradeStats'
+            'gradeStats',
+            'canonicalGrades',
+            'unlockedGrades'
+        ));
+    }
+
+    /**
+     * Show detailed progress report
+     */
+    /**
+     * Show detailed progress report
+     */
+    public function detailedReport($grade = null)
+    {
+        $userId = Auth::id();
+        $user = Auth::user();
+        
+        // 1. Determine which grade we are viewing
+        // If no grade provided, use user's current grade
+        $viewingGrade = $grade ?? $user->grade;
+        
+        // Find the Level in the database
+        $selectedLevel = \App\Models\Level::where('slug', $viewingGrade)
+                      ->orWhere('title', $viewingGrade)
+                      ->first();
+
+        // Fallback if level not found in database manually
+        if (!$selectedLevel) {
+            return redirect()->route('dashboard.my-progress')
+                ->with('error', 'The requested grade could not be found.');
+        }
+
+        $foundCanonical = $selectedLevel->title;
+        $group = $selectedLevel->levelGroup;
+        $currentLevel = $group->slug;
+        
+        // 2. Determine UNLOCKED grades based on user's rank
+        $unlockedGrades = [];
+        $userLevel = \App\Models\Level::where('slug', $user->grade)
+                      ->orWhere('title', $user->grade)
+                      ->first();
+        
+        if ($userLevel && $group) {
+            $userRank = $userLevel->rank;
+            $unlockedGrades = $group->levels->filter(function($level) use ($userRank) {
+                return $level->rank <= $userRank;
+            })->pluck('title')->toArray();
+        } else {
+            // Fallback for safety (e.g. user hasn't picked a grade yet)
+            $unlockedGrades = $group ? $group->levels->pluck('title')->toArray() : [];
+        }
+
+        // Security: If specific grade requested and it's locked, redirect to default (user's current grade)
+        if ($grade && !in_array($foundCanonical, $unlockedGrades)) {
+            // ONLY redirect if we aren't already on the default route to avoid loops
+            return redirect()->route('dashboard.detailed-report')
+                ->with('warning', 'That grade report is currently locked!');
+        }
+
+        // 3. Get progress record for this specific grade level
+        $progress = UserProgress::where('user_id', $userId)
+            ->where('current_level', $foundCanonical)
+            ->first();
+        
+        $avgScore = $progress ? $progress->average_quiz_score : 0;
+        $timeSpent = $progress ? $progress->getFormattedTimeSpent() : '0m';
+
+        if (!$progress) {
+            // Calculate metrics manually for past/unvisited grades
+            $avgScore = QuizAttempt::where('user_id', $userId)
+                ->where('quiz_level', $foundCanonical)
+                ->avg('score_percentage') ?? 0;
+            
+            $totalSeconds = LessonCompletion::where('user_id', $userId)
+                ->where('lesson_level', $foundCanonical)
+                ->sum('watch_time_seconds') ?? 0;
+            
+            $hours = floor($totalSeconds / 3600);
+            $mins = floor(($totalSeconds % 3600) / 60);
+            $timeSpent = $hours > 0 ? "{$hours}h {$mins}m" : "{$mins}m";
+        }
+
+        // 4. Performance Summary
+        $higherScoresCount = UserProgress::where('current_level', $foundCanonical)
+            ->where('average_quiz_score', '>', $avgScore)
+            ->count();
+        $totalUsersInGrade = UserProgress::where('current_level', $foundCanonical)->count();
+        $rankingPercentile = $totalUsersInGrade > 0 ? ($higherScoresCount / $totalUsersInGrade) * 100 : 0;
+        
+        $performanceSummary = [
+            'ranking' => $rankingPercentile <= 15 ? 'Top 15%' : 'Top ' . ceil($rankingPercentile) . '%',
+            'grade_average' => round($avgScore, 1),
+            'total_study_time' => $timeSpent,
+            'ranking_trend' => '+2% this month',
+            'average_trend' => '+1.5% from Q1',
+            'time_trend' => '+12h this week',
+        ];
+
+        // 5. Recent Quiz Scores
+        $recentQuizzes = QuizAttempt::where('user_id', $userId)
+            ->where('quiz_level', $foundCanonical)
+            ->join('quizzes', 'quiz_attempts.quiz_id', '=', 'quizzes.id')
+            ->join('subjects', 'quizzes.subject_id', '=', 'subjects.id')
+            ->select('quiz_attempts.*', 'quizzes.title as quiz_name', 'subjects.name as subject', 'quiz_attempts.score_percentage as score')
+            ->orderBy('completed_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        // 6. Subject Mastery
+        $subjectMastery = QuizAttempt::where('user_id', $userId)
+            ->where('quiz_level', $foundCanonical)
+            ->join('quizzes', 'quiz_attempts.quiz_id', '=', 'quizzes.id')
+            ->join('subjects', 'quizzes.subject_id', '=', 'subjects.id')
+            ->groupBy('subjects.name')
+            ->select('subjects.name as subject', DB::raw('AVG(quiz_attempts.score_percentage) as average_score'))
+            ->get();
+
+        // 7. Lesson Library Data
+        $librarySubjects = \App\Models\Subject::whereHas('videos', function($query) use ($foundCanonical) {
+            $query->where('grade_level', $foundCanonical)->where('status', 'approved');
+        })->get();
+
+        $libraryLessons = \App\Models\Video::where('grade_level', $foundCanonical)
+            ->where('status', 'approved')
+            ->with(['subject', 'completions' => function($query) use ($userId) {
+                $query->where('user_id', $userId);
+            }])
+            ->orderBy('unit_number')
+            ->orderBy('title')
+            ->get();
+
+        // Process lessons to add progress percentage and human status
+        foreach ($libraryLessons as $lesson) {
+            $completion = $lesson->completions->first();
+            $lesson->progress_percent = $completion ? min(100, (int)$completion->completion_percentage) : 0;
+            $lesson->watch_time_formatted = $completion ? $completion->getFormattedWatchTime() : '0s';
+            $lesson->duration_formatted = $lesson->getDurationFormatted();
+            $lesson->thumbnail_url = $lesson->getThumbnailUrl();
+        }
+
+        $libraryUnits = $libraryLessons->pluck('unit_name')->unique()->filter()->values()->toArray();
+
+        // 8. Grade Tabs
+        $canonicalGrades = $group ? $group->levels->pluck('title')->toArray() : [];
+
+        return view('dashboard.detailed-report', compact(
+            'performanceSummary',
+            'recentQuizzes',
+            'subjectMastery',
+            'librarySubjects',
+            'libraryLessons',
+            'libraryUnits',
+            'canonicalGrades',
+            'unlockedGrades',
+            'viewingGrade',
+            'foundCanonical',
+            'currentLevel'
         ));
     }
 

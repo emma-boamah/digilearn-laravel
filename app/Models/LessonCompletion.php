@@ -146,4 +146,19 @@ class LessonCompletion extends Model
                     ')
                     ->first();
     }
+    /**
+     * Get the watch time formatted (e.g., 1h 20m or 45m).
+     */
+    public function getFormattedWatchTime()
+    {
+        $seconds = $this->watch_time_seconds;
+        if (!$seconds) return '0s';
+        $h = floor($seconds / 3600);
+        $m = floor(($seconds % 3600) / 60);
+        $s = $seconds % 60;
+        
+        if ($h > 0) return "{$h}h " . ($m > 0 ? "{$m}m" : "");
+        if ($m > 0) return "{$m}m " . ($s > 0 ? "{$s}s" : "");
+        return "{$s}s";
+    }
 }

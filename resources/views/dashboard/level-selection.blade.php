@@ -57,37 +57,44 @@
                         $hasAccess = $accessInfo[$level['id']] ?? false;
                     @endphp
                     @if($hasAccess)
-                        {{-- Accessible card: entire card is clickable --}}
-                        <form action="{{ route('dashboard.select-level-group', $level['id']) }}" method="POST" class="level-group-card-form">
-                            @csrf
-                            <button type="submit" class="level-group-card accessible clickable-card">
-                                <svg class="card-chevron" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                </svg>
-                                <div class="level-header">
-                                    <h3 class="level-title">{{ $level['title'] }}</h3>
-                                    @if(session('selected_level_group') === $level['id'])
-                                        <span class="current-level-badge">Current</span>
-                                    @endif
-                                </div>
-                                <div class="level-image-container">
-                                    @if($level['id'] === 'jhs')
-                                        <img src="{{ asset('images/jhs.jpeg') }}" alt="JHS" class="level-jhs-image">
-                                    @elseif($level['id'] === 'shs')
-                                        <img src="{{ asset('images/SHS.png') }}" alt="SHS" class="level-shs-image">
-                                    @elseif($level['id'] === 'primary-upper')
-                                        <img src="{{ asset('images/g4-6.jpeg') }}" alt="Grade 4-6" class="level-g4-6-image">
-                                    @elseif($level['id'] === 'primary-lower')
-                                        <img src="{{ asset('images/grade 1-3U.jpeg') }}" alt="Grade 1-3" class="level-g1-3-image">
-                                    @elseif($level['id'] === 'university')
-                                        <img src="{{ asset('images/university.jpeg') }}" alt="University" class="level-university-image">
-                                    @else
-                                        <div class="level-placeholder-image"></div>
-                                    @endif
-                                </div>
-                                <p class="level-description">{{ $level['description'] }}</p>
-                            </button>
-                        </form>
+                        {{-- Accessible card with individual grade selection --}}
+                        <div class="level-group-card accessible">
+                            <div class="level-header">
+                                <h3 class="level-title">{{ $level['title'] }}</h3>
+                                @if(session('selected_level_group') === $level['id'])
+                                    <span class="current-level-badge">Current</span>
+                                @endif
+                            </div>
+                            <div class="level-image-container">
+                                @if($level['id'] === 'jhs')
+                                    <img src="{{ asset('images/jhs.jpeg') }}" alt="JHS" class="level-jhs-image">
+                                @elseif($level['id'] === 'shs')
+                                    <img src="{{ asset('images/SHS.png') }}" alt="SHS" class="level-shs-image">
+                                @elseif($level['id'] === 'primary-upper')
+                                    <img src="{{ asset('images/g4-6.jpeg') }}" alt="Grade 4-6" class="level-g4-6-image">
+                                @elseif($level['id'] === 'primary-lower')
+                                    <img src="{{ asset('images/grade 1-3U.jpeg') }}" alt="Grade 1-3" class="level-g1-3-image">
+                                @elseif($level['id'] === 'university')
+                                    <img src="{{ asset('images/university.jpeg') }}" alt="University" class="level-university-image">
+                                @else
+                                    <div class="level-placeholder-image"></div>
+                                @endif
+                            </div>
+                            <p class="level-description">{{ $level['description'] }}</p>
+                            
+                            <div class="card-footer">
+                                <button type="button" class="enter-group-btn" 
+                                    onclick="handleGroupEntry('{{ $level['id'] }}', '{{ $level['title'] }}', {{ json_encode($level['levels'] ?? $level['years'] ?? []) }}, '{{ Auth::user()->grade }}')">
+                                    <span>Enter Group</span>
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                                    </svg>
+                                </button>
+                                <form id="form-{{ $level['id'] }}" action="{{ route('dashboard.select-level-group', $level['id']) }}" method="POST" style="display: none;">
+                                    @csrf
+                                </form>
+                            </div>
+                        </div>
                     @else
                         {{-- Non-accessible card: has upgrade button --}}
                         <div class="level-group-card explore-more">
@@ -122,6 +129,36 @@
             </div>
         </div>
     </main>
+
+    <!-- Admission Modal -->
+    <div id="admissionModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="modal-icon-wrapper">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="modal-title">Welcome to <span id="modalGroupName">...</span></h2>
+                    <p class="modal-subtitle">Pick your starting grade to begin your journey.</p>
+                </div>
+                <button type="button" class="modal-close" onclick="closeModal()">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="grade-selection-grid" id="modalGradeGrid">
+                <!-- Grades will be populated here by JS -->
+            </div>
+
+            <div class="modal-footer">
+                <p class="footer-note">Selecting a grade unlocks all previous materials in this level.</p>
+            </div>
+        </div>
+    </div>
 
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
 
@@ -248,12 +285,189 @@
         }
 
         .level-group-card.accessible {
-            border: 2px solid #c3def7ff;
+            border: 2px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
         .level-group-card.accessible:hover {
-            border-color: #a1d4f7ff;
+            border-color: #3b82f6;
         }
+
+        .card-footer {
+            margin-top: auto;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 1.25rem;
+        }
+
+        .enter-group-btn {
+            width: 100%;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .enter-group-btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
+
+        /* Modal Styles */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-container {
+            background: white;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            animation: modalSlide 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-header {
+            padding: 2rem 2rem 1.5rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .modal-icon-wrapper {
+            width: 56px;
+            height: 56px;
+            background: #eff6ff;
+            color: #3b82f6;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.25rem;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-subtitle {
+            color: #64748b;
+            font-size: 0.9375rem;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1.25rem;
+            right: 1.25rem;
+            padding: 0.5rem;
+            color: #94a3b8;
+            border: none;
+            background: none;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .grade-selection-grid {
+            padding: 0 2rem 2rem;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .grade-tile {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            padding: 1.25rem;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .grade-tile:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+            transform: scale(1.02);
+        }
+
+        .grade-tile .grade-name {
+            font-weight: 700;
+            color: #1e293b;
+            font-size: 1.125rem;
+        }
+
+        .grade-tile .grade-desc {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .modal-footer {
+            padding: 1.25rem 2rem;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .footer-note {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes modalSlide {
+            from { transform: translateY(30px) scale(0.95); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        @media (max-width: 480px) {
+            .grade-selection-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .mt-4 { margin-top: 1rem; }
 
         /* Current level badge */
         .current-level-badge {
@@ -488,6 +702,71 @@
         setTimeout(() => {
             window.location.href = '{{ route("pricing") }}';
         }, 800);
+    }
+
+    // Modal Logic
+    const modal = document.getElementById('admissionModal');
+    const gradeGrid = document.getElementById('modalGradeGrid');
+    const groupNameSpan = document.getElementById('modalGroupName');
+
+    function handleGroupEntry(groupId, groupTitle, grades, currentGrade) {
+        console.log('Entering group:', groupId, 'Current user grade:', currentGrade);
+        
+        // If user already has a grade selected AND it's one of the grades in this group, just enter
+        const hasSpecificGradeInGroup = grades.some(g => g.id === currentGrade);
+
+        if (hasSpecificGradeInGroup) {
+            document.getElementById('form-' + groupId).submit();
+            return;
+        }
+
+        // Otherwise, open the "Admission" Modal
+        openModal(groupId, groupTitle, grades);
+    }
+
+    function openModal(groupId, groupTitle, grades) {
+        groupNameSpan.textContent = groupTitle;
+        gradeGrid.innerHTML = '';
+        
+        grades.forEach(grade => {
+            const tile = document.createElement('div');
+            tile.className = 'grade-tile';
+            tile.innerHTML = `
+                <span class="grade-name">${grade.title}</span>
+                <span class="grade-desc">Click to select</span>
+            `;
+            
+            tile.onclick = () => selectGrade(groupId, grade.id);
+            gradeGrid.appendChild(tile);
+        });
+
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden'; // Prevent scroll
+    }
+
+    function closeModal() {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    function selectGrade(groupId, gradeId) {
+        const form = document.getElementById('form-' + groupId);
+        
+        // Add hidden grade input
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'grade';
+        input.value = gradeId;
+        form.appendChild(input);
+        
+        form.submit();
+    }
+
+    // Close modal on outside click
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            closeModal();
+        }
     }
 </script>
 @endpush
