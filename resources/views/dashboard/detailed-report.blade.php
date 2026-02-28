@@ -692,7 +692,7 @@
                             <th>Quiz Name</th>
                             <th>Subject</th>
                             <th>Score</th>
-                            <th>Status</th>
+                            <th>Date</th>
                         </tr>
                     </thead>
                     <tbody>

@@ -192,7 +192,7 @@
         color: var(--app-blue);
         text-decoration: none;
     }
-    .view-report-link:hover { text-decoration: underline; }
+    .view-report-link:hover { text-decoration: none; }
 
     /* ══════════════════════════════════════════════
        INDIVIDUAL GRADE PROGRESS — Negative-space layout
@@ -243,12 +243,22 @@
     .grade-col.in-progress .grade-card-header { border-top-color: var(--app-blue); }
     .grade-col.locked .grade-card-header     { border-top-color: var(--gray-200); }
 
+    .grade-card-locked {
+        text-decoration: none;
+        display: block;
+    }
+
     .grade-name {
         font-size: 1rem;
         font-weight: 700;
         color: var(--gray-900);
     }
     .grade-col.locked .grade-name { color: var(--gray-500); }
+
+    .grade-name-i {
+        font-size: 0.8rem;
+        margin-right: 0.25rem;
+    }
 
     .grade-subtitle {
         font-size: 0.75rem;
@@ -319,8 +329,8 @@
 
     .pathway-line {
         position: absolute;
-        /* center of the 58px icons: padding-top(16px) + icon-center(29px) = 45px */
-        top: calc(1rem + 29px);
+        /* center of the 58px icons: padding-top(32px) + icon-center(29px) = 45px */
+        top: calc(2rem + 29px);
         left: 6.25%;   /* roughly half of each 25%-wide step from the edge */
         right: 6.25%;
         height: 3px;
@@ -474,7 +484,7 @@
                 @endphp
                 <h2 class="hero-title">{{ $levelDisplayName }}</h2>
                 <p class="hero-subtitle">
-                    You're making great progress! Keep going to unlock
+                    You're making great progress! Keep going to progress to 
                     {{ $progressionStatus['next_level'] ? ucwords(str_replace('-', ' ', $progressionStatus['next_level'])) . ' level.' : 'the next level.' }}
                 </p>
             </div>
@@ -574,13 +584,12 @@
                 $isUnlocked = in_array($grade, $unlockedGrades);
             @endphp
             <a href="{{ $isUnlocked ? route('dashboard.digilearn', ['grade' => $grade]) : '#' }}" 
-               class="grade-col {{ $statusClass }}" 
-               style="text-decoration: none; display: block;"
+               class="grade-col {{ $statusClass }} grade-card-locked"
                @if(!$isUnlocked) title="Locked" @endif>
                 <div class="grade-card-header">
                     <div>
                         <div class="grade-name">
-                            @if(!$isUnlocked) <i class="fas fa-lock" style="font-size: 0.8rem; margin-right: 0.25rem;"></i> @endif
+                            @if(!$isUnlocked) <i class="fas fa-lock grade-name-i"></i> @endif
                             {{ $grade }}
                         </div>
                         @if($subtitle)

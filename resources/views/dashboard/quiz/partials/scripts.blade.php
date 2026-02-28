@@ -5,6 +5,14 @@
         initializeDropdowns();
     });
 
+    // Handle back-forward cache (bfcache) to reset UI on back navigation
+    window.addEventListener('pageshow', function(event) {
+        // event.persisted is true if the page is loaded from the bfcache
+        if (event.persisted) {
+            resetQuizCardStates();
+        }
+    });
+
     function initializeSidebar() {
         // Sidebar functionality
         const sidebarToggle = document.getElementById('sidebarToggle');
@@ -179,6 +187,25 @@
         });
     }
 
+    function resetQuizCardStates() {
+        document.querySelectorAll('.quiz-card').forEach(card => {
+            card.style.opacity = '1';
+            card.style.transform = 'none';
+
+            const startBtn = card.querySelector('.quiz-start-btn');
+            if (startBtn && startBtn.hasAttribute('data-original-html')) {
+                startBtn.innerHTML = startBtn.getAttribute('data-original-html');
+                startBtn.removeAttribute('data-original-html');
+            }
+
+            const reviseBtn = card.querySelector('.quiz-preview-btn');
+            if (reviseBtn && reviseBtn.hasAttribute('data-original-html')) {
+                reviseBtn.innerHTML = reviseBtn.getAttribute('data-original-html');
+                reviseBtn.removeAttribute('data-original-html');
+            }
+        });
+    }
+
     function openQuiz(encodedQuizId) {
         // Add visual feedback
         const card = document.querySelector(`[data-encoded-quiz-id="${encodedQuizId}"]`);
@@ -189,6 +216,9 @@
             // Add loading state
             const startBtn = card.querySelector('.quiz-start-btn');
             if (startBtn) {
+                if (!startBtn.hasAttribute('data-original-html')) {
+                    startBtn.setAttribute('data-original-html', startBtn.innerHTML);
+                }
                 startBtn.innerHTML = `
                     <svg class="btn-icon animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -210,6 +240,9 @@
         if (card) {
             const btn = card.querySelector('.quiz-preview-btn');
             if (btn) {
+                if (!btn.hasAttribute('data-original-html')) {
+                    btn.setAttribute('data-original-html', btn.innerHTML);
+                }
                 btn.innerHTML = `
                     <svg class="btn-icon animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
