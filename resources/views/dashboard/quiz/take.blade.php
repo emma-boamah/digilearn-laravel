@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Quiz - {{ config('app.name', 'ShoutOutGh') }}</title>
     
@@ -55,6 +55,9 @@
             justify-content: space-between;
             align-items: center;
             padding: 0.75rem 1rem;
+            padding-top: calc(0.75rem + env(safe-area-inset-top, 0rem));
+            padding-left: calc(1rem + env(safe-area-inset-left, 0rem));
+            padding-right: calc(1rem + env(safe-area-inset-right, 0rem));
             background-color: var(--white);
             border-bottom: 1px solid var(--gray-200);
             position: sticky;
@@ -152,6 +155,7 @@
             grid-template-columns: 300px 1fr;
             gap: 2rem;
             padding: 2rem 1rem;
+            padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0rem));
             max-width: 1400px;
             margin: 0 auto;
         }
@@ -230,14 +234,15 @@
         }
 
         .questions-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 0.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.75rem;
         }
 
         .question-number {
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             border-radius: 0.5rem;
             display: flex;
             align-items: center;
@@ -473,13 +478,9 @@
                 padding: 1rem;
             }
 
-            .quiz-sidebar {
+            .quiz-left-column {
                 position: static;
                 order: -1;
-            }
-
-            .questions-grid {
-                grid-template-columns: repeat(6, 1fr);
             }
         }
 
@@ -494,14 +495,6 @@
 
             .options-container {
                 grid-template-columns: 1fr;
-            }
-
-            .navigation-buttons {
-                flex-direction: column;
-            }
-
-            .questions-grid {
-                grid-template-columns: repeat(5, 1fr);
             }
 
             .question-text {
@@ -531,14 +524,10 @@
                 padding: 0.75rem 1rem;
             }
 
-            .questions-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
-
             .question-number {
-                width: 35px;
-                height: 35px;
-                font-size: 0.875rem;
+                width: 40px;
+                height: 40px;
+                font-size: 0.9rem;
             }
 
             .question-image-container {
@@ -867,7 +856,7 @@
         <div class="quiz-content">
             <div class="question-header">
                 <span class="question-label" id="questionLabel">Question 1 of 5</span>
-                <span class="answer-instruction">Select your answer</span>
+                <span class="answer-instruction">Select the correct answer</span>
             </div>
             
             <!-- Image Container - Only shown when question has image -->
