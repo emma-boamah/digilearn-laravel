@@ -151,12 +151,13 @@
     }
 
     .hero-title-main {
-        font-size: clamp(2rem, 10vw, 5rem);
+        font-size: clamp(2rem, 6vw, 5rem);
         color: #008CFF;
         display: block;
         margin-bottom: 0.75rem; /* Space between main and sub title */
         line-height: 1.2;
         padding-bottom: 0.1em;
+        white-space: nowrap;
     }
 
     .hero-title-sub {
@@ -481,6 +482,12 @@
 
         .why-choose-text {
             flex: 2;
+        }
+
+        @media (min-width: 48rem) and (max-width: 64rem) {
+            .why-choose-text {
+                flex: 1;
+            }
         }
 
         .feature-list {
@@ -1093,10 +1100,6 @@
         }
 
         @media (min-width: 48rem) {
-            .pricing-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-
             /* Reset centering on larger screens with multiple cards */
             .pricing-grid:not(:has(.pricing-card:only-child)) {
                 justify-items: start;
@@ -1151,9 +1154,13 @@
         }
 
         .pricing-body {
-            padding: 2.5rem 2rem 2rem 2rem; /* Increased top padding */
-            max-width: 370px;
+            padding: 2.5rem 2rem 2rem 2rem;
+            max-width: 100%;
             width: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-content: center;
         }
 
         .pricing-description {
@@ -1932,6 +1939,12 @@
         }
 
         @media (min-width: 48rem) {
+            .pricing-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 64rem) {
             .pricing-grid {
                 grid-template-columns: repeat(3, 1fr);
             }

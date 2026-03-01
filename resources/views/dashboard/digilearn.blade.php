@@ -983,6 +983,16 @@
         .grade-tab.locked i {
             color: var(--gray-400);
         }
+
+        /* Responsive grade name handling */
+        .grade-full-name {
+            display: inline;
+        }
+
+        .grade-short-name {
+            display: none;
+        }
+
     /* Right on desktop */
         }
 
@@ -1476,6 +1486,20 @@
             }
 
             .current-level-display::-webkit-scrollbar { display: none; }
+
+            .grade-tab {
+                padding: 0.5rem 0.75rem; /* Smaller padding for mobile */
+            }
+
+            .grade-full-name {
+                display: none;
+            }
+
+            .grade-short-name {
+                display: inline;
+                font-weight: 600;
+            }
+
 
             .subjects-filter-container {
                 left: 0 !important;
@@ -2036,7 +2060,7 @@
 @php
 function abbreviateGrade($grade) {
     $gradeStr = strtolower((string) $grade);
-    $parts = explode('-', $gradeStr);
+    $parts = preg_split('/[- ]+/', $gradeStr); // Split on one or more hyphens or spaces
     $lastPart = trim(end($parts));
 
     if (str_contains($gradeStr, 'primary')) return 'P' . $lastPart;
@@ -2290,6 +2314,33 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                 console.log('Video facade manager initialized with auto-play');
             } else {
                 console.log('Video facade manager not found, it should auto-initialize');
+            }
+        });
+
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                // Page was loaded from bfcache, reset search state
+                isSearching = false;
+                
+                const activeSearchBox = document.querySelector('.search-container .search-box') || document.querySelector('#mobileSearchBox');
+                if (activeSearchBox) {
+                    activeSearchBox.classList.remove('searching');
+                }
+
+                const searchInput = document.querySelector('.search-input');
+                if (searchInput && searchInput.value) {
+                    // If there was text in search, clear it to avoid confusion
+                    searchInput.value = '';
+                }
+                
+                restoreOriginalLessons();
+                
+                // Also reset subject filter to 'all'
+                const subjectChips = document.querySelectorAll('.subject-chip');
+                subjectChips.forEach(chip => {
+                    const isAll = chip.getAttribute('data-subject') === 'all';
+                    chip.classList.toggle('active', isAll);
+                });
             }
         });
 
