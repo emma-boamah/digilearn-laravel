@@ -379,8 +379,14 @@ class UserProgress extends Model
      */
     public function getFormattedTimeSpent(): string
     {
-        $hours = floor($this->total_time_spent_seconds / 3600);
-        $minutes = floor(($this->total_time_spent_seconds % 3600) / 60);
+        $seconds = $this->total_time_spent_seconds;
+        
+        if ($seconds < 60) {
+            return "{$seconds}s";
+        }
+
+        $hours = floor($seconds / 3600);
+        $minutes = floor(($seconds % 3600) / 60);
 
         if ($hours > 0) {
             return "{$hours}h {$minutes}m";
@@ -471,7 +477,7 @@ class UserProgress extends Model
                 'total_attempts' => $quizStats->total_attempts ?? 0,
             ],
             'engagement' => [
-                'time_spent' => $this->getFormattedTimeSpent(),
+                'time_spent_formatted' => $this->getFormattedTimeSpent(),
                 'current_streak' => $this->current_streak_days,
                 'longest_streak' => $this->longest_streak_days,
                 'last_activity' => $this->last_activity_at,

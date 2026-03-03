@@ -38,6 +38,7 @@ class ProgressController extends Controller
             'average_quiz_score' => $quizStats->avg_score ?? 0,
             'total_lessons_in_level' => $this->getTotalLessonsForLevel($currentLevel),
             'total_quizzes_in_level' => $this->getTotalQuizzesForLevel($currentLevel),
+            'total_time_spent_seconds' => ($lessonStats->total_watch_time ?? 0) + ($quizStats->total_time ?? 0),
         ]);
         $progress->updateCompletionPercentage(); // Recalculate overall % based on new values
         $progress->save();
@@ -85,7 +86,8 @@ class ProgressController extends Controller
 
         // Get per-grade (individual level) stats for the grade cards
         $group = \App\Models\LevelGroup::where('slug', $currentLevel)->with('levels')->first();
-        $canonicalGrades = $group ? $group->levels->pluck('title')->toArray() : [];
+        $levels = $group ? $group->levels : collect();
+        $canonicalGrades = $levels->pluck('title')->toArray();
         
         // Determine UNLOCKED grades based on user's rank
         $unlockedGrades = [];
@@ -105,11 +107,21 @@ class ProgressController extends Controller
         }
 
         $gradeStats = [];
-        foreach ($canonicalGrades as $grade) {
+        foreach ($levels as $levelItem) {
+            $grade = $levelItem->title;
+            $slug = $levelItem->slug;
+
             $lessonStat = \App\Models\LessonCompletion::where('user_id', $userId)
-                ->where('lesson_level', $grade)
-                ->selectRaw('COUNT(lesson_id) as attempted_lessons, SUM(CASE WHEN fully_completed = 1 THEN 1 ELSE 0 END) as completed_lessons')
+                ->where(function($q) use ($grade, $slug) {
+                    $q->where('lesson_level', $grade)->orWhere('lesson_level', $slug);
+                })
+                ->selectRaw('
+                    COUNT(lesson_id) as attempted_lessons, 
+                    SUM(CASE WHEN fully_completed = 1 THEN 1 ELSE 0 END) as completed_lessons,
+                    SUM(CASE WHEN fully_completed = 0 AND watch_time_seconds > 0 THEN 1 ELSE 0 END) as partially_watched
+                ')
                 ->first();
+
             $quizStat = \App\Models\QuizAttempt::where('user_id', $userId)
                 ->where('quiz_level', $grade)
                 ->selectRaw('COUNT(DISTINCT quiz_id) as attempted_quizzes, COUNT(DISTINCT CASE WHEN passed = 1 THEN quiz_id END) as passed_quizzes')
@@ -120,6 +132,7 @@ class ProgressController extends Controller
             
             $attemptedLessons = (int)($lessonStat->attempted_lessons ?? 0);
             $completedLessons = (int)($lessonStat->completed_lessons ?? 0);
+            $partiallyWatched  = (int)($lessonStat->partially_watched ?? 0);
             $attemptedQuizzes = (int)($quizStat->attempted_quizzes ?? 0);
             $passedQuizzes    = (int)($quizStat->passed_quizzes ?? 0);
             
@@ -132,6 +145,7 @@ class ProgressController extends Controller
                 'grade'              => $grade,
                 'attempted_lessons'  => $attemptedLessons,
                 'completed_lessons'  => $completedLessons,
+                'partially_watched'  => $partiallyWatched,
                 'total_lessons'      => $totalLessons,
                 'attempted_quizzes'  => $attemptedQuizzes,
                 'passed_quizzes'     => $passedQuizzes,
@@ -271,7 +285,7 @@ class ProgressController extends Controller
             ->get();
 
         // 7. Lesson Library Data
-        $librarySubjects = \App\Models\Subject::whereHas('videos', function($query) use ($foundCanonical) {
+        $librarySubjects = \App\Models\Subject::whereHas('primaryVideos', function($query) use ($foundCanonical) {
             $query->where('grade_level', $foundCanonical)->where('status', 'approved');
         })->get();
 

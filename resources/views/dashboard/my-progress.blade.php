@@ -620,8 +620,21 @@
                         <span class="stat-value">{{ $stats['completed_lessons'] }}/{{ $stats['total_lessons'] }}</span>
                     </div>
                     <div class="mini-progress-bar">
-                        <div class="mini-progress-fill lessons animate-fill"
+                        <div class="mini-progress-fill animate-fill"
                              style="--w: {{ $completedLessonPerc }}%; width: {{ $completedLessonPerc }}%; background: #16a34a;"></div>
+                    </div>
+                </div>
+
+                {{-- 2.5. Partially Watched Lessons --}}
+                @php $partialLessonPerc = $stats['total_lessons'] > 0 ? min(100, ($stats['partially_watched'] / $stats['total_lessons']) * 100) : 0; @endphp
+                <div class="grade-stat-row">
+                    <div class="stat-label-flex">
+                        <span class="stat-label">Partially Watched</span>
+                        <span class="stat-value">{{ $stats['partially_watched'] }}/{{ $stats['total_lessons'] }}</span>
+                    </div>
+                    <div class="mini-progress-bar">
+                        <div class="mini-progress-fill animate-fill"
+                             style="--w: {{ $partialLessonPerc }}%; width: {{ $partialLessonPerc }}%; background: #fbbf24;"></div>
                     </div>
                 </div>
 
