@@ -451,6 +451,40 @@
     }
     .animate-fill { animation: fillUp 1.4s cubic-bezier(0.1,0.5,0.1,1) forwards; }
 
+    /* ── Progression Action ── */
+    .progression-action {
+        margin-top: 1.5rem;
+    }
+    .btn-promote {
+        background: var(--success-green);
+        color: #fff;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 700;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    .btn-promote:hover {
+        background: #059669;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4);
+        color: #fff;
+    }
+    .btn-promote i {
+        font-size: 1rem;
+    }
+    .promote-loading {
+        display: none;
+        margin-left: 0.5rem;
+    }
+
     /* ── Mobile ── */
     @media (max-width: 640px) {
         .progress-page   { padding: 1rem; }
@@ -487,6 +521,16 @@
                     You're making great progress! Keep going to progress to 
                     {{ $progressionStatus['next_level'] ? ucwords(str_replace('-', ' ', $progressionStatus['next_level'])) . ' level.' : 'the next level.' }}
                 </p>
+
+                @if($progressionStatus['eligible'])
+                    <div class="progression-action">
+                        <button id="btnPromote" class="btn-promote" data-level="{{ $currentLevel }}">
+                            <i class="fas fa-graduation-cap"></i>
+                            <span>Progress to Next Level</span>
+                            <i class="fas fa-spinner fa-spin promote-loading"></i>
+                        </button>
+                    </div>
+                @endif
             </div>
 
             <div class="hero-progress-wrapper">
@@ -710,4 +754,54 @@
     </div>
 
 </div>
+@section('scripts')
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
+document.addEventListener('DOMContentLoaded', function() {
+    const btnPromote = document.getElementById('btnPromote');
+    if (btnPromote) {
+        btnPromote.addEventListener('click', function() {
+            const level = this.getAttribute('data-level');
+            const loading = this.querySelector('.promote-loading');
+            const btnText = this.querySelector('span');
+            
+            if (confirm('Congratulations! You are eligible for the next level. Would you like to progress now?')) {
+                // Show loading
+                loading.style.display = 'inline-block';
+                this.disabled = true;
+                btnText.textContent = 'Promoting...';
+
+                const url = "{{ route('dashboard.progress.check', ['level' => ':level']) }}".replace(':level', level);
+                fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success message and reload
+                        alert(data.message || 'Congratulations! You have been promoted to the next level.');
+                        window.location.reload();
+                    } else {
+                        alert(data.message || 'Progression check completed, but no changes were made.');
+                        loading.style.display = 'none';
+                        this.disabled = false;
+                        btnText.textContent = 'Progress to Next Level';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while processing your progression. Please try again later.');
+                    loading.style.display = 'none';
+                    this.disabled = false;
+                    btnText.textContent = 'Progress to Next Level';
+                });
+            }
+        });
+    }
+});
+</script>
+@endsection
 @endsection

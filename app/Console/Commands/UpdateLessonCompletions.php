@@ -142,6 +142,8 @@ class UpdateLessonCompletions extends Command
         // Get standards for this level group
         $standards = \App\Models\ProgressionStandard::getStandardsForLevel($progress->level_group);
 
+        // Strict 100% check logic:
+        // Use >= to handle rounding but conceptually it must be complete.
         $lessonCompletionRate = $progress->total_lessons_in_level > 0
             ? ($progress->completed_lessons / $progress->total_lessons_in_level) * 100
             : 0;
@@ -150,9 +152,14 @@ class UpdateLessonCompletions extends Command
             ? ($progress->completed_quizzes / $progress->total_quizzes_in_level) * 100
             : 0;
 
-        return $lessonCompletionRate >= $standards['required_lesson_completion_percentage'] &&
-               $quizCompletionRate >= $standards['required_quiz_completion_percentage'] &&
-               $progress->average_quiz_score >= $standards['required_average_quiz_score'];
+        // Ensure we handle the "100.00" string/decimal comparison correctly
+        $requiredLesson = (float)$standards['required_lesson_completion_percentage'];
+        $requiredQuiz = (float)$standards['required_quiz_completion_percentage'];
+        $requiredScore = (float)$standards['required_average_quiz_score'];
+
+        return $lessonCompletionRate >= $requiredLesson &&
+               $quizCompletionRate >= $requiredQuiz &&
+               $progress->average_quiz_score >= $requiredScore;
     }
 
     /**
@@ -246,37 +253,70 @@ class UpdateLessonCompletions extends Command
     /**
      * Update user's grade level in the users table when they progress
      */
-    private function updateUserGradeLevel($userId, $levelGroup)
+    private function updateUserGradeLevel($userId, $currentLevelGroup)
     {
         try {
             $user = \App\Models\User::find($userId);
-            if ($user) {
-                // Map level group to appropriate grade level for display
-                $gradeMapping = [
-                    'primary-lower' => 'Primary 1-3',
-                    'primary-upper' => 'Primary 4-6',
-                    'jhs' => 'JHS 1-3',
-                    'shs' => 'SHS 1-3',
-                    'tertiary' => 'Tertiary',
+            if (!$user) return;
+
+            $oldGrade = $user->grade;
+            $newGrade = null;
+
+            // 1. Try to find the progress record to use its internal progression logic
+            $progress = UserProgress::where('user_id', $userId)
+                                   ->where('level_group', $currentLevelGroup)
+                                   ->first();
+
+            if ($progress) {
+                // calls getNextLevelWithinGroup() which handles P1 -> P2
+                $newGrade = $progress->shouldProgressWithinLevelGroup();
+            }
+
+            // 2. If no next level within group, find the next level group
+            if (!$newGrade) {
+                // Map current group to next group (hardcoded as per ProgressController)
+                $groupProgression = [
+                    'primary-lower' => 'primary-upper',
+                    'primary-upper' => 'jhs',
+                    'jhs' => 'shs',
+                    'shs' => 'university',
                 ];
 
-                $newGrade = $gradeMapping[$levelGroup] ?? $levelGroup;
+                $nextGroupSlug = $groupProgression[$currentLevelGroup] ?? null;
 
+                if ($nextGroupSlug) {
+                    $nextGroup = \App\Models\LevelGroup::where('slug', $nextGroupSlug)->first();
+                    if ($nextGroup) {
+                        // Get the first level in the next group
+                        $firstLevel = $nextGroup->levels()->orderBy('rank', 'asc')->first();
+                        if ($firstLevel) {
+                            $newGrade = $firstLevel->title;
+                        }
+                    }
+                }
+            }
+
+            if ($newGrade && $newGrade !== $oldGrade) {
                 $user->update(['grade' => $newGrade]);
 
-                Log::info('Updated user grade level after progression', [
+                // Reset progress record if it's within group
+                if ($progress) {
+                     // Note: progressUserToNextLevel would normally handle record creation for group transitions
+                     // But for automated command, we just ensure the grade is updated.
+                }
+
+                Log::info('Automated grade progression triggered', [
                     'user_id' => $userId,
-                    'old_grade' => $user->getOriginal('grade'),
+                    'old_grade' => $oldGrade,
                     'new_grade' => $newGrade,
-                    'level_group' => $levelGroup,
+                    'level_group' => $currentLevelGroup,
                 ]);
 
-                $this->line("  Updated user grade to: {$newGrade}");
+                $this->line("  Updated user grade from '{$oldGrade}' to '{$newGrade}'");
             }
         } catch (\Exception $e) {
-            Log::error('Failed to update user grade level', [
+            Log::error('Failed to update user grade level in command', [
                 'user_id' => $userId,
-                'new_level_group' => $levelGroup,
                 'error' => $e->getMessage(),
             ]);
 

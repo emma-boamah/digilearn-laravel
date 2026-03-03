@@ -2191,52 +2191,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                     @if(isset($universityCourses))
                         {{-- Display University Courses --}}
                         @forelse($universityCourses as $course)
-                        <x-video-facade
-                            videoId="{{ $course['id'] }}"
-                            videoSource="{{ $course['video_source'] ?? 'local' }}"
-                            vimeoId="{{ $course['vimeo_id'] ?? '' }}"
-                            externalVideoId="{{ $course['external_video_id'] ?? '' }}"
-                            muxPlaybackId="{{ $course['mux_playback_id'] ?? '' }}"
-                            thumbnail="{{ $course['thumbnail'] }}"
-                            :title="$course['title']"
-                            duration="{{ $course['duration'] }}"
-                            :levelDisplay="$course['level_display'] ?? 'Course'"
-                            :subject="$course['subject']"
-                            data-subject="{{ $course['subject_slug'] }}"
-                            :instructor="$course['instructor']"
-                            year="{{ $course['year'] }}"
-                            lessonId="{{ \App\Services\UrlObfuscator::encode($course['id']) }}"
-                            courseId="{{ \App\Services\UrlObfuscator::encode($course['id']) }}"
-                            :showLevelBadge="true"
-                            :showDuration="true"
-                            :showPlayOverlay="true"
-                            :lazyLoad="true"
-                        >
-                            @if(isset($course['description']))
-                            <p class="course-description" style="font-size: 0.875rem; color: var(--gray-600); margin: 0.5rem 0;">
-                                {{ $course['description'] }}
-                            </p>
-                            @endif
-                            @if(isset($course['lessons_count']))
-                            <p class="course-lessons-count" style="font-size: 0.75rem; color: var(--secondary-blue); font-weight: 500;">
-                                {{ $course['lessons_count'] }} lessons • {{ $course['credit_hours'] ?? 3 }} credit hours
-                            </p>
-                            @endif
-                            <div class="lesson-actions">
-                                <a href="{{ route('dashboard.lesson.view', ['lessonId' => App\Services\UrlObfuscator::encode($course['id']), 'course_id' => App\Services\UrlObfuscator::encode($course['id'])]) }}" class="lesson-action-btn primary">
-                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M8 5v14l11-7z"/>
-                                    </svg>
-                                    Start Course
-                                </a>
-                                <a href="{{ $course['quiz_id'] ? route('quiz.instructions', ['quizId' => $course['encoded_quiz_id']]) : route('quiz.index') }}" class="lesson-action-btn secondary">
-                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                    </svg>
-                                    Quiz
-                                </a>
-                            </div>
-                        </x-video-facade>
+                            @include('dashboard.partials.video-card', ['course' => $course, 'universityCourses' => true])
                         @empty
                         <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
                             <h3 style="color: var(--gray-600); margin-bottom: 1rem;">No courses available</h3>
@@ -2246,47 +2201,20 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                     @else
                         {{-- Display Regular Lessons --}}
                         @forelse($lessons ?? [] as $lesson)
-                        <x-video-facade
-                            videoId="{{ $lesson['id'] }}"
-                            videoSource="{{ $lesson['video_source'] ?? 'local' }}"
-                            vimeoId="{{ $lesson['vimeo_id'] ?? '' }}"
-                            externalVideoId="{{ $lesson['external_video_id'] ?? '' }}"
-                            muxPlaybackId="{{ $lesson['mux_playback_id'] ?? '' }}"
-                            thumbnail="{{ $lesson['thumbnail'] }}"
-                            :title="$lesson['title']"
-                            duration="{{ $lesson['duration'] }}"
-                            :levelDisplay="$lesson['level_display'] ?? 'Level'"
-                            :subject="$lesson['subject']"
-                            data-subject="{{ $lesson['subject_slug'] }}"
-                            :instructor="$lesson['instructor']"
-                            year="{{ $lesson['year'] }}"
-                            lessonId="{{ \App\Services\UrlObfuscator::encode($lesson['id']) }}"
-                            :showLevelBadge="true"
-                            :showDuration="true"
-                            :showPlayOverlay="true"
-                            :lazyLoad="true"
-                        >
-                            <div class="lesson-actions">
-                                <a href="{{ route('dashboard.lesson.view', ['lessonId' => App\Services\UrlObfuscator::encode($lesson['id'])]) }}" class="lesson-action-btn primary">
-                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M8 5v14l11-7z"/>
-                                    </svg>
-                                    Watch
-                                </a>
-                                <a href="{{ $lesson['quiz_id'] ? route('quiz.instructions', ['quizId' => $lesson['encoded_quiz_id']]) : route('quiz.index') }}" class="lesson-action-btn secondary">
-                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                    </svg>
-                                    Quiz
-                                </a>
-                            </div>
-                        </x-video-facade>
-                    @empty
-                    <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
-                        <h3 style="color: var(--gray-600); margin-bottom: 1rem;">No lessons available</h3>
-                        <p style="color: var(--gray-500);">Lessons for {{ ucwords(str_replace('-', ' ', $selectedLevelGroup)) }} are coming soon!</p>
-                    </div>
-                    @endforelse
+                            @include('dashboard.partials.video-card', ['lesson' => $lesson])
+                        @empty
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                            <h3 style="color: var(--gray-600); margin-bottom: 1rem;">No lessons available</h3>
+                            <p style="color: var(--gray-500);">Lessons for {{ ucwords(str_replace('-', ' ', $selectedLevelGroup)) }} are coming soon!</p>
+                        </div>
+                        @endforelse
+                    @endif
+                </div>
+
+                {{-- Infinite Scroll Sentinel --}}
+                <div id="scroll-sentinel" style="height: 50px; display: flex; align-items: center; justify-content: center; margin-top: 2rem;">
+                    @if(($totalLessons ?? 0) > count($lessons ?? []))
+                        <div class="loading-spinner" id="infinite-loader" style="width: 30px; height: 30px; border-width: 2px;"></div>
                     @endif
                 </div>
             </div>
@@ -2305,6 +2233,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
             initializeSubjectFilter();
             // initializeVideoCards(); // Disabled - now using video facade manager
             initializeSearch();
+            initializeInfiniteScroll();
 
             // Initialize video facade manager with auto-play enabled for YouTube-like behavior
             if (typeof window.videoFacadeManager !== 'undefined') {
@@ -2371,7 +2300,101 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
         preventBodyScroll();
 
 
-        // Enhanced Mobile UI with search functionality
+        // Infinite Scroll Implementation
+        let currentPage = 1;
+        let isLoading = false;
+        let hasMore = {{ ($totalLessons ?? 0) > count($lessons ?? []) ? 'true' : 'false' }};
+
+        function initializeInfiniteScroll() {
+            const sentinel = document.getElementById('scroll-sentinel');
+            const loader = document.getElementById('infinite-loader');
+
+            if (!sentinel) return;
+
+            const observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting && hasMore && !isLoading && !isSearching) {
+                    loadMoreLessons();
+                }
+            }, {
+                rootMargin: '200px'
+            });
+
+            observer.observe(sentinel);
+        }
+
+        function loadMoreLessons() {
+            if (isLoading || !hasMore) return;
+
+            isLoading = true;
+            currentPage++;
+
+            const loader = document.getElementById('infinite-loader');
+            if (loader) loader.style.display = 'block';
+
+            // Get current filters
+            const activeGrade = document.querySelector('.grade-tab.active');
+            const gradeTitle = activeGrade ? activeGrade.querySelector('.grade-full-name').textContent.trim() : null;
+            
+            const activeSubjectChip = document.querySelector('.subject-chip.active');
+            const subjectSlug = activeSubjectChip ? activeSubjectChip.getAttribute('data-subject') : 'all';
+
+            const url = new URL('{{ route('dashboard.load-more-lessons') }}', window.location.origin);
+            url.searchParams.append('page', currentPage);
+            if (gradeTitle) url.searchParams.append('grade', gradeTitle);
+            if (subjectSlug !== 'all') url.searchParams.append('subject', subjectSlug);
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.html) {
+                        const contentGrid = document.querySelector('.content-grid');
+                        // Use insertAdjacentHTML instead of innerHTML += to preserve existing event listeners/elements
+                        contentGrid.insertAdjacentHTML('beforeend', data.html);
+                        
+                        // If we are currently filtering client-side, we need to hide the new elements that don't match
+                        if (subjectSlug !== 'all') {
+                            const newElements = contentGrid.querySelectorAll('.content-grid > *:nth-last-child(-n+' + data.count + ')');
+                            newElements.forEach(el => {
+                                if (el.getAttribute('data-subject') !== subjectSlug) {
+                                    el.style.display = 'none';
+                                }
+                            });
+                        }
+                    }
+
+                    hasMore = data.hasMore;
+                    if (!hasMore && sentinel) {
+                        const loader = document.getElementById('infinite-loader');
+                        if (loader) loader.style.display = 'none';
+                    }
+                    
+                    isLoading = false;
+                })
+                .catch(error => {
+                    console.error('Error loading more lessons:', error);
+                    isLoading = false;
+                    currentPage--; // Reset page on error
+                });
+        }
+
+        // Reset infinite scroll when filters change
+        function resetInfiniteScroll() {
+            currentPage = 1;
+            hasMore = true;
+            isLoading = false;
+            const loader = document.getElementById('infinite-loader');
+            if (loader) loader.style.display = 'block';
+        }
+
+        // Add event listeners to subject chips to reset infinite scroll
+        document.querySelectorAll('.subject-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                // If we want to truly re-fetch filtered results for infinite scroll, 
+                // we'd clear the grid and reset page. 
+                // But for now, we'll keep the client-side hide logic for already loaded items.
+                // However, 'loadMoreLessons' handles the subject parameter so it works correctly for new items.
+            });
+        });
         function initializeMobileUI() {
             const mobileSearchToggle = document.getElementById('mobileSearchToggle');
             const mobileSearchBox = document.getElementById('mobileSearchBox');
