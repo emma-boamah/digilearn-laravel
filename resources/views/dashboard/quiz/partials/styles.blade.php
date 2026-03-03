@@ -47,6 +47,7 @@
   .main-container {
       display: flex;
       min-height: 100vh;
+      min-height: 100dvh;
       overflow-x: hidden;
       width: 100%;
       max-width: 100%;
@@ -59,6 +60,7 @@
       left: 0;
       width: var(--sidebar-width-expanded);
       height: 100vh;
+      height: 100dvh;
       background-color: var(--white);
       border-right: 1px solid var(--gray-200);
       z-index: 1000;
@@ -133,6 +135,7 @@
       overflow-y: auto;
       overflow-x: hidden;
       height: calc(100vh - 64px);
+      height: calc(100dvh - 64px);
       scrollbar-width: none; /* Hide scrollbar for Firefox */
   }
 
@@ -257,11 +260,14 @@
       margin-left: var(--sidebar-width-expanded);
       width: calc(100vw - var(--sidebar-width-expanded));
       max-width: calc(100vw - var(--sidebar-width-expanded));
-      margin-top: calc(172px + var(--safe-area-inset-top, 0px)) !important; /* Fixed headers height */
+      margin-top: calc(186px + var(--safe-area-inset-top, 0px)) !important; /* Fixed headers height */
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       overflow-x: hidden;
-      min-height: calc(100vh - 172px);
+      min-height: calc(100vh - 186px);
+      min-height: calc(100dvh - 186px);
   }
+
+  
 
   .youtube-sidebar.collapsed ~ .main-content {
       margin-left: var(--sidebar-width-collapsed);
@@ -595,6 +601,7 @@
   /* Content Section - FIXED */
   .content-section {
       padding: 2rem 1rem;
+      padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0rem));
       background-color: var(--gray-25);
       overflow-x: hidden;
       width: 100%;
@@ -1467,6 +1474,7 @@
           left: 0;
           top: 0;
           height: 100vh;
+          height: 100dvh;
           z-index: 2000; /* Much higher than overlay */
           transform: translateX(-100%);
           transition: transform 0.3s ease;
@@ -1716,5 +1724,20 @@
       .content-grid {
           grid-template-columns: repeat(4, 1fr);
       }
+  }
+
+  @media (max-width: 1024px) {
+    .main-content {
+        min-height: calc(100vh - 47px);
+        min-height: calc(100dvh - 47px);
+    }
+
+    .hero-section {
+        height: 200px;
+    }
+
+    .content-grid {
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    }
   }
 </style>

@@ -1940,12 +1940,6 @@
 
         @media (min-width: 48rem) {
             .pricing-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (min-width: 64rem) {
-            .pricing-grid {
                 grid-template-columns: repeat(3, 1fr);
             }
         }

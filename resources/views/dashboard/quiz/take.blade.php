@@ -47,6 +47,7 @@
             color: var(--gray-900);
             line-height: 1.6;
             min-height: 100vh;
+            min-height: 100dvh;
         }
 
         /* Top Header */
@@ -155,7 +156,7 @@
             grid-template-columns: 300px 1fr;
             gap: 2rem;
             padding: 2rem 1rem;
-            padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0rem));
+            padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0rem));
             max-width: 1400px;
             margin: 0 auto;
         }
@@ -476,6 +477,7 @@
                 grid-template-columns: 1fr;
                 gap: 1.5rem;
                 padding: 1rem;
+                padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0rem));
             }
 
             .quiz-left-column {

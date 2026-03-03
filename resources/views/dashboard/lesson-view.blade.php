@@ -87,6 +87,11 @@
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+        /* Hide close button by default, only show in compact mobile view */
+        .close-sticky-video-btn {
+            display: none;
+        }
+
         /* Search/Filter Bar */
         /* Updated filter bar to span full width with glassmorphism and proper positioning */
         .filter-bar {
@@ -1381,6 +1386,46 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
+        .lesson-level-badge {
+            position: absolute;
+            top: 0.5rem;
+            left: 0.5rem;
+            background-color: var(--secondary-blue);
+            color: var(--white);
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-video-badge {
+            display: none;
+            pointer-events: none; /* Prevents badge from blocking taps on the video */
+            opacity: 1;
+            transition: opacity 3s ease-out;
+        }
+
+        .mobile-video-badge.fade-out {
+            opacity: 0 !important;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-video-badge {
+                display: block !important;
+                z-index: 20;
+            }
+        }
+
+        .hover-video-card:hover .lesson-level-badge {
+            background-color: var(--primary-red);
+            transform: scale(1.05);
+        }
+
         .restricted-lesson:hover .lock-icon-circle {
             transform: scale(1.1);
             background-color: rgba(0, 0, 0, 0.8);
@@ -2516,9 +2561,32 @@
                 z-index: 9999; /* High z-index to stay on top */
                 box-shadow: var(--shadow-xl);
                 border-radius: 0.75rem;
-                overflow: hidden;
+                overflow: visible; /* Changed to visible for close button */
                 background: #000; /* Ensure black background */
                 animation: slideIn 0.3s ease-out;
+            }
+
+            .close-sticky-video-btn {
+                display: none;
+                position: absolute;
+                top: -10px;
+                right: -10px;
+                width: 30px;
+                height: 30px;
+                background-color: var(--primary-red);
+                color: var(--white);
+                border: none;
+                border-radius: 50%;
+                z-index: 10000;
+                cursor: pointer;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                align-items: center;
+                justify-content: center;
+                padding: 0;
+            }
+
+            .sticky-video-section.compact .close-sticky-video-btn {
+                display: flex;
             }
 
             @keyframes slideIn {
@@ -2737,19 +2805,54 @@
             .ql-container {
                 min-height: 200px !important;
                 max-height: 300px !important;
+                font-size: 14px !important;
             }
 
             .ql-toolbar {
                 overflow-x: auto;
                 flex-wrap: nowrap;
+                padding: 4px !important;
             }
 
-            /* Ensure save button is visible */
-            #saveNotesBtn {
+            .ql-toolbar.ql-snow .ql-formats {
+                margin-right: 2px !important;
+                margin-bottom: 2px !important;
+                display: inline-flex;
+            }
+
+            .ql-toolbar.ql-snow button {
+                width: 20px !important;
+                height: 20px !important;
+                padding: 1px !important;
+            }
+
+            .ql-toolbar.ql-snow .ql-picker-label {
+                padding-left: 2px !important;
+                padding-right: 2px !important;
+                font-size: 12px !important;
+            }
+
+            .ql-toolbar.ql-snow svg {
+                width: 14px !important;
+                height: 14px !important;
+            }
+
+            /* Ensure save and close buttons are visible and balanced */
+            .editor-action-buttons {
+                display: flex;
+                gap: 0.5rem;
+                width: 100%;
+                justify-content: space-between;
+                margin-top: 0.5rem;
+            }
+
+            #saveNotesBtn, #closeEditorBtn {
                 position: relative;
                 z-index: 100;
-                margin: 1rem auto;
-                width: 90%;
+                margin: 0 !important;
+                flex: 1;
+                padding: 0.5rem;
+                font-size: 0.875rem;
             }
 
             /* Ensure related videos don't overlap */
@@ -3147,8 +3250,30 @@
             @else
                 <!-- Sticky Video Section with scroll-triggered animations -->
                 <div class="sticky-video-section" id="stickyVideoSection">
+                    <button id="closeStickyVideoBtn" class="close-sticky-video-btn" aria-label="Close Video">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
                     <!-- Enhanced Video Player using VideoFacadeManager -->
                     <div class="video-container">
+                        @php
+                            $badgeLevelDisplay = '';
+                            if (isset($lesson)) {
+                                if ($lesson instanceof \App\Models\Video && isset($lesson->level_display)) {
+                                    $badgeLevelDisplay = $lesson->level_display;
+                                } elseif (is_array($lesson) && !empty($lesson['level_display'])) {
+                                    $badgeLevelDisplay = $lesson['level_display'];
+                                } elseif (isset($selectedLevelGroup)) {
+                                    $badgeLevelDisplay = ucwords(str_replace('-', ' ', $selectedLevelGroup));
+                                }
+                            }
+                        @endphp
+                        @if(!empty($badgeLevelDisplay))
+                            <div class="lesson-level-badge mobile-video-badge">{{ $badgeLevelDisplay }}</div>
+                        @endif
+
                         @if(isset($lesson) && $lesson instanceof \App\Models\Video)
                             @php
                                 $videoUrl = $lesson->getVideoUrl();
@@ -3483,10 +3608,15 @@
                     <div id="notes-editor"></div>
                 </div>
 
-                <!-- Save Button -->
-                <button id="saveNotesBtn" class="btn btn-success mt-2">
-                    Save Notes
-                </button>
+                <!-- Editor Action Buttons -->
+                <div class="editor-action-buttons d-flex w-100 mt-2">
+                    <button id="closeEditorBtn" class="btn btn-secondary w-50">
+                        Close Editor
+                    </button>
+                    <button id="saveNotesBtn" class="btn btn-success w-50">
+                        Save Notes
+                    </button>
+                </div>
             </div>
 
             <!-- Enhanced Related Videos -->
@@ -3516,6 +3646,10 @@
                             <img src="{{ secure_asset($relatedLesson['thumbnail'] ?? '') }}" alt="{{ $relatedLesson['title'] ?? 'Lesson' }}"
                                  data-fallback="/placeholder.svg?height=78&width=140">
                             <div class="video-preview"></div>
+                            
+                            @if(!empty($relatedLesson['level_display']))
+                                <div class="lesson-level-badge">{{ $relatedLesson['level_display'] }}</div>
+                            @endif
                             
                             @if($isRestricted)
                                 <div class="premium-badge">Upgrade</div>
@@ -3555,6 +3689,7 @@
                         <div class="video-thumbnail">
                             <img src="/placeholder.svg?height=78&width=140" alt="Related Lesson {{ $i }}">
                             <div class="video-preview"></div>
+                            <div class="lesson-level-badge">Grade 4</div>
                             <div class="play-overlay">
                                 <svg class="play-icon" fill="currentColor" viewBox="0 0 24 24">
                                     <polygon points="5 3 19 12 5 21 5 3"/>
@@ -3774,6 +3909,33 @@
                         class="csp-mux-aspect">
                     </mux-player>
                 `;
+            }
+
+            // Logic to gradually disappear the lesson-level badge
+            const mobileBadge = document.querySelector('.mobile-video-badge');
+            if (mobileBadge) {
+                const triggerFadeOut = () => {
+                    if (mobileBadge.classList.contains('fade-out')) return;
+                    mobileBadge.classList.add('fade-out');
+                };
+
+                // For local/Mux, we can listen for play events
+                if (source === 'local' || source === 'mux') {
+                    const mediaElement = container.querySelector(source === 'local' ? 'video' : 'mux-player');
+                    if (mediaElement) {
+                        mediaElement.addEventListener('play', () => {
+                            // Fade out 4 seconds after play starts
+                            setTimeout(triggerFadeOut, 4000);
+                        }, { once: true });
+                    }
+                } else {
+                    // For iframes (YT, Vimeo), we use a standard timeout from load or interaction
+                    setTimeout(triggerFadeOut, 8000);
+                    // Also fade if user taps the container to interact
+                    container.addEventListener('touchstart', () => {
+                        setTimeout(triggerFadeOut, 3000);
+                    }, { once: true });
+                }
             }
         });
 
@@ -4079,7 +4241,7 @@
                     entries.forEach(entry => {
                         // If the static wrapper is scrolling up and out of view (top bound crossed)
                         if (!entry.isIntersecting && entry.boundingClientRect.top < 0) {
-                            if (!stickyVideoSection.classList.contains('compact')) {
+                            if (!stickyVideoSection.classList.contains('compact') && stickyVideoSection.dataset.userClosed !== 'true') {
                                 updateWrapperHeight(); // Lock the height
                                 stickyVideoSection.classList.add('compact');
                             }
@@ -4090,9 +4252,21 @@
                     });
                 }, {
                     root: null,
-                    threshold: 0,
-                    rootMargin: '-60px 0px 0px 0px' // Offset for sticky header height
+                    threshold: 0
                 });
+
+                observer.observe(wrapper);
+
+                // Add listener for close button
+                const closeStickyBtn = document.getElementById('closeStickyVideoBtn');
+                if (closeStickyBtn) {
+                    closeStickyBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        stickyVideoSection.classList.remove('compact');
+                        stickyVideoSection.dataset.userClosed = 'true';
+                    });
+                }
 
                 // Observe the static wrapper, not the element that changes position
                 observer.observe(wrapper);
@@ -4158,7 +4332,7 @@
 
         // Load comments from server
         function loadComments() {
-            const lessonId = '{{ $lesson["id"] ?? "" }}';
+            const lessonId = @json($lesson["id"] ?? "");
             const commentsList = document.getElementById('commentsList');
             const loadingComments = document.getElementById('loadingComments');
 
@@ -4285,7 +4459,7 @@
         function submitComment(parentId = null) {
             const commentInput = document.getElementById('commentInput');
             const commentText = commentInput.value.trim();
-            const lessonId = '{{ $lesson["id"] ?? "" }}';
+            const lessonId = @json($lesson["id"] ?? "");
 
             if (!commentText || !lessonId) return;
 
@@ -4394,7 +4568,7 @@
 
         // Initialize real-time comment broadcasting
         function initializeCommentBroadcasting() {
-            const lessonId = '{{ $lesson["id"] ?? "" }}';
+            const lessonId = @json($lesson["id"] ?? "");
 
             if (!lessonId || typeof Echo === 'undefined') {
                 console.log('Broadcasting not available or lesson ID missing');
@@ -4507,7 +4681,7 @@
 
         // Check document availability and show indicators
         function checkDocumentAvailability() {
-            const lessonId = '{{ $lesson["id"] ?? "" }}';
+            const lessonId = @json($lesson["id"] ?? "");
 
             if (!lessonId) return;
 
@@ -4688,6 +4862,7 @@
             const notesEducationModalOverlay = document.getElementById('notesEducationModalOverlay');
             const notesEducationModalClose = document.getElementById('notesEducationModalClose');
             const notesEducationModalGotIt = document.getElementById('notesEducationModalGotIt');
+            const closeEditorBtn = document.getElementById('closeEditorBtn');
             let notesQuill = null;
             let isEditorOpen = false;
             let hasExistingNotes = false;
@@ -4721,9 +4896,16 @@
                 }
             }
 
+            if (closeEditorBtn) {
+                closeEditorBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (addNotesBtn) addNotesBtn.click();
+                });
+            }
+
             // Load existing notes from server
             function loadExistingNotes() {
-                const lessonId = '{{ $lesson["id"] ?? "" }}';
+                const lessonId = @json($lesson["id"] ?? "");
                 if (!lessonId) return Promise.resolve(null);
 
                 return fetch(`/dashboard/lesson/${lessonId}/user-notes`, {
@@ -5810,11 +5992,11 @@
             console.log('=== Starting Video Progress Tracking Initialization ===');
 
             // Get lesson data from page - INCLUDING DURATION
-            const lessonId = '{{ $lesson["id"] ?? "" }}';
-            const lessonTitle = '{{ $lesson["title"] ?? "Unknown" }}';
-            const lessonSubject = '{{ $lesson["subject"] ?? "General" }}';
-            const lessonLevel = '{{ $lesson["level"] ?? "unknown" }}';
-            const lessonLevelGroup = '{{ $lesson["level_group"] ?? "primary-lower" }}';
+            const lessonId = @json($lesson["id"] ?? "");
+            const lessonTitle = @json($lesson["title"] ?? "Unknown");
+            const lessonSubject = @json($lesson["subject"] ?? "General");
+            const lessonLevel = @json($lesson["level"] ?? "unknown");
+            const lessonLevelGroup = @json($lesson["level_group"] ?? "primary-lower");
             
             // CRITICAL: Get actual duration from backend
             const totalDuration = parseInt('{{ $lesson["total_duration"] ?? 300 }}') || 300;
