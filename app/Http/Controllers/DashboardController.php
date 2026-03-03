@@ -407,6 +407,11 @@ class DashboardController extends Controller
         }
 
         $lessons = $this->filterLessonsBySubscription($user, $lessons);
+        
+        // Paginate for initial load (show 12 lessons)
+        $totalLessons = count($lessons);
+        $lessons = array_slice($lessons, 0, 12);
+
         $subjects = $this->getSubjectsFromLessons($lessons);
 
         return view('dashboard.digilearn', compact(
@@ -415,8 +420,70 @@ class DashboardController extends Controller
             'subjects', 
             'canonicalGrades', 
             'unlockedGrades', 
-            'validSelectedGrade'
+            'validSelectedGrade',
+            'totalLessons'
         ));
+    }
+
+    /**
+     * AJAX endpoint for loading more lessons (Infinite Scroll)
+     */
+    public function loadMoreLessons(Request $request)
+    {
+        $user = Auth::user();
+        $page = $request->get('page', 2);
+        $perPage = 12;
+        $offset = ($page - 1) * $perPage;
+        
+        $selectedLevelGroup = $user->current_level_group ?? session('selected_level_group');
+        $selectedGrade = $request->get('grade');
+        $subjectFilter = $request->get('subject');
+
+        if (!$selectedLevelGroup) {
+            return response()->json(['html' => '', 'hasMore' => false]);
+        }
+
+        // Fetch lessons based on grade if provided, else group
+        if ($selectedGrade) {
+            $levelGroups = $this->getLevelGroups();
+            $internalLevelKey = null;
+            if (isset($levelGroups[$selectedLevelGroup]['levels'])) {
+                foreach ($levelGroups[$selectedLevelGroup]['levels'] as $levelData) {
+                    if ($levelData['title'] === $selectedGrade || str_contains($selectedGrade, $levelData['title'])) {
+                        $internalLevelKey = $levelData['id'];
+                        break;
+                    }
+                }
+            }
+            $lessons = $internalLevelKey ? $this->getLessonsForLevel($internalLevelKey) : $this->getLessonsForLevelGroup($selectedLevelGroup);
+        } else {
+            $lessons = $this->getLessonsForLevelGroup($selectedLevelGroup);
+        }
+
+        // Apply subscription filters
+        $lessons = $this->filterLessonsBySubscription($user, $lessons);
+
+        // Apply subject filter if active
+        if ($subjectFilter && $subjectFilter !== 'all') {
+            $lessons = array_values(array_filter($lessons, function($l) use ($subjectFilter) {
+                return ($l['subject_slug'] ?? '') === $subjectFilter;
+            }));
+        }
+
+        $totalCount = count($lessons);
+        $paginatedLessons = array_slice($lessons, $offset, $perPage);
+        $hasMore = $totalCount > ($offset + $perPage);
+
+        $html = '';
+        foreach ($paginatedLessons as $lesson) {
+            $html .= view('dashboard.partials.video-card', compact('lesson'))->render();
+        }
+
+        return response()->json([
+            'html' => $html,
+            'hasMore' => $hasMore,
+            'count' => count($paginatedLessons)
+        ]);
     }
 
     /**

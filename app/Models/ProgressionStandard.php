@@ -54,19 +54,19 @@ class ProgressionStandard extends Model
     public static function getDefaults()
     {
         return [
-            'required_lesson_completion_percentage' => 80.00,
-            'required_quiz_completion_percentage' => 70.00,
-            'required_average_quiz_score' => 70.00,
-            'minimum_quiz_score' => 70.00,
-            'lesson_watch_threshold_percentage' => 90.00,
+            'required_lesson_completion_percentage' => 100.00,
+            'required_quiz_completion_percentage' => 100.00,
+            'required_average_quiz_score' => 100.00,
+            'minimum_quiz_score' => 100.00,
+            'lesson_watch_threshold_percentage' => 100.00,
             'required_number_of_lessons_individual' => 10,
             'required_number_of_quizzes_individual' => 5,
             'required_number_of_lessons_group' => 20,
             'required_number_of_quizzes_group' => 10,
             // Individual level progression thresholds (within level groups)
-            'individual_level_lesson_threshold' => 75.00, // 75% for within-group progression
-            'individual_level_quiz_threshold' => 60.00,    // 60% for within-group progression
-            'individual_level_score_threshold' => 65.00,   // 65% average score for within-group
+            'individual_level_lesson_threshold' => 100.00, 
+            'individual_level_quiz_threshold' => 100.00,    
+            'individual_level_score_threshold' => 100.00,   
         ];
     }
 
