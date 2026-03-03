@@ -198,9 +198,9 @@ class DashboardController extends Controller
         $requestedGrade = $request->get('grade');
         $lowestGrade = $this->getLowestGradeForLevelGroup($groupId);
         
-        // Validate requested grade belongs to the group
-        $groupLevels = $this->getGradeLevelsForLevelGroup($groupId);
-        if ($requestedGrade && !in_array($requestedGrade, $groupLevels)) {
+        // Validate requested grade belongs to the group using slugs
+        $groupSlugs = $this->getGradeSlugsForLevelGroup($groupId);
+        if ($requestedGrade && !in_array($requestedGrade, $groupSlugs)) {
             $requestedGrade = null; // Fallback to lowest if invalid
         }
         
@@ -253,8 +253,9 @@ class DashboardController extends Controller
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
-        // For all levels including university, redirect to digilearn
-        return redirect()->route('dashboard.digilearn')
+        // For all levels including university, redirect to digilearn with the grade title for tab activation
+        $gradeTitle = $this->convertLevelFormat($gradeToSet);
+        return redirect()->route('dashboard.digilearn', ['grade' => $gradeTitle])
             ->with('success', 'Level selected successfully!');
     }
 
@@ -2504,6 +2505,20 @@ class DashboardController extends Controller
         }
 
         return $group->levels->pluck('title')->toArray();
+    }
+
+    /**
+     * Get grade slugs for a level group
+     */
+    private function getGradeSlugsForLevelGroup($levelGroupSlug)
+    {
+        $group = \App\Models\LevelGroup::where('slug', $levelGroupSlug)->first();
+        
+        if (!$group) {
+            return [];
+        }
+
+        return $group->levels->pluck('slug')->toArray();
     }
 
     private function getLowestGradeForLevelGroup($levelGroupSlug)

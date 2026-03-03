@@ -116,7 +116,8 @@ class QuizAttempt extends Model
                         COUNT(DISTINCT CASE WHEN passed = 1 THEN quiz_id END) as passed_quizzes,
                         AVG(score_percentage) as avg_score,
                         MAX(score_percentage) as best_score,
-                        COUNT(*) as total_attempts
+                        COUNT(*) as total_attempts,
+                        SUM(time_taken_seconds) as total_time
                     ')
                     ->first();
     }
@@ -136,7 +137,8 @@ class QuizAttempt extends Model
                         COUNT(DISTINCT CASE WHEN passed = 1 THEN quiz_id END) as passed_quizzes,
                         AVG(score_percentage) as avg_score,
                         MAX(score_percentage) as best_score,
-                        COUNT(*) as total_attempts
+                        COUNT(*) as total_attempts,
+                        SUM(time_taken_seconds) as total_time
                     ')
                     ->first();
     }
