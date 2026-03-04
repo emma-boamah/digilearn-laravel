@@ -403,7 +403,21 @@ class DashboardController extends Controller
             $universityCourses = $this->getUniversityCourses();
             $universityCourses = $this->filterCoursesBySubscription($user, $universityCourses);
             $subjects = $this->getSubjectsFromCourses($universityCourses);
-            return view('dashboard.digilearn', compact('selectedLevelGroup', 'universityCourses', 'subjects'));
+            
+            // Default initializations to prevent undefined variable errors in view
+            $lessons = [];
+            $totalLessons = 0;
+
+            return view('dashboard.digilearn', compact(
+                'selectedLevelGroup', 
+                'universityCourses', 
+                'subjects', 
+                'canonicalGrades', 
+                'unlockedGrades', 
+                'validSelectedGrade',
+                'lessons',
+                'totalLessons'
+            ));
         }
 
         $lessons = $this->filterLessonsBySubscription($user, $lessons);

@@ -13,7 +13,7 @@
     
     <!-- Quill.js for rich text editing -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
     
     <style>
         :root {

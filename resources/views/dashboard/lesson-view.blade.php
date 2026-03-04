@@ -6,7 +6,7 @@
     <!-- Quill.js Rich Text Editor (Using multiple CDN fallbacks) -->
     <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.snow.css" rel="stylesheet">
-    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         // Fallback if primary CDN fails
         if (typeof Quill === 'undefined') {
@@ -1129,23 +1129,6 @@
             min-height: 250px !important;
         }
 
-        /* Fix Save Button positioning */
-        #saveNotesBtn {
-            margin: 1rem auto;
-            display: block;
-            padding: 0.75rem 2rem;
-            background-color: var(--secondary-blue);
-            color: var(--white);
-            border: none;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        #saveNotesBtn:hover {
-            background-color: var(--secondary-blue-hover);
-        }
 
         /* Ensure Related Videos Card has proper spacing */
         .related-videos-card {
@@ -2443,6 +2426,99 @@
             padding: 0 1.5rem 1.5rem;
         }       
 
+        /* Notes Editor Action Buttons */
+        .editor-action-buttons {
+            display: flex;
+            gap: 1rem;
+            width: 100%;
+            justify-content: space-between;
+            margin-top: 1rem;
+        }
+
+        #saveNotesBtn, #closeEditorBtn {
+            position: relative;
+            z-index: 100;
+            margin: 0 !important;
+            flex: 1;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.875rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+        }
+
+        #saveNotesBtn {
+            background-color: var(--secondary-blue);
+            color: var(--white);
+        }
+
+        #saveNotesBtn:hover {
+            background-color: var(--secondary-blue-hover);
+        }
+
+        #closeEditorBtn {
+            background-color: var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        #closeEditorBtn:hover {
+            background-color: var(--gray-300);
+        }
+
+        /* Desktop: Hide close button */
+        #closeEditorBtn {
+            display: none;
+        }
+
+        /* Tablet and Mobile: Show close button */
+        @media (max-width: 1024px) {
+            #closeEditorBtn {
+                display: flex;
+            }
+        }
+
+        /* CSP Fix: Move success modal styles to classes to avoid inline style violations */
+        .csp-success-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--white);
+            border: 2px solid var(--gray-200);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: var(--shadow-xl);
+            z-index: 2000;
+            max-width: 400px;
+            text-align: center;
+            font-size: 0.875rem;
+            color: var(--gray-700);
+            animation: slideIn 0.3s ease;
+        }
+
+        .csp-modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--gray-500);
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s ease;
+        }
+
+        .csp-modal-close:hover {
+            color: var(--primary-red);
+        }
 
         /* Enhanced Responsive Design */
         @media (max-width: 1200px) {
@@ -2837,23 +2913,6 @@
                 height: 14px !important;
             }
 
-            /* Ensure save and close buttons are visible and balanced */
-            .editor-action-buttons {
-                display: flex;
-                gap: 0.5rem;
-                width: 100%;
-                justify-content: space-between;
-                margin-top: 0.5rem;
-            }
-
-            #saveNotesBtn, #closeEditorBtn {
-                position: relative;
-                z-index: 100;
-                margin: 0 !important;
-                flex: 1;
-                padding: 0.5rem;
-                font-size: 0.875rem;
-            }
 
             /* Ensure related videos don't overlap */
             .related-videos-card {
@@ -3609,11 +3668,11 @@
                 </div>
 
                 <!-- Editor Action Buttons -->
-                <div class="editor-action-buttons d-flex w-100 mt-2">
-                    <button id="closeEditorBtn" class="btn btn-secondary w-50">
+                <div class="editor-action-buttons d-flex mt-2">
+                    <button id="closeEditorBtn" class="btn btn-secondary">
                         Close Editor
                     </button>
-                    <button id="saveNotesBtn" class="btn btn-success w-50">
+                    <button id="saveNotesBtn" class="btn btn-success">
                         Save Notes
                     </button>
                 </div>
@@ -5620,38 +5679,13 @@
                 ${messageText}
             `;
 
-            // Style the message
-            messageDiv.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background-color: var(--white);
-                border: 2px solid var(--gray-200);
-                border-radius: 1rem;
-                padding: 2rem;
-                box-shadow: var(--shadow-xl);
-                z-index: 2000;
-                max-width: 400px;
-                text-align: center;
-                font-size: 0.875rem;
-                color: var(--gray-700);
-                animation: slideIn 0.3s ease;
-            `;
+            // Style the message using class for CSP compliance
+            messageDiv.classList.add('csp-success-modal');
 
             // Add close button
             const closeBtn = document.createElement('button');
             closeBtn.innerHTML = '<i class="fas fa-times"></i>';
-            closeBtn.style.cssText = `
-                position: absolute;
-                top: 1rem;
-                right: 1rem;
-                background: none;
-                border: none;
-                cursor: pointer;
-                color: var(--gray-500);
-                font-size: 1.25rem;
-            `;
+            closeBtn.classList.add('csp-modal-close');
             closeBtn.onclick = () => messageDiv.remove();
 
             messageDiv.appendChild(closeBtn);
