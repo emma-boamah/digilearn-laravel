@@ -110,6 +110,14 @@
         .pricing-grid {
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
         }
+        .billing-grid-override {
+            grid-template-columns: 1fr !important;
+            gap: 1.5rem !important;
+        }
+        .paystack-notice {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+        }
     }
     .btn-outline-primary { border: 1px solid var(--primary-color) !important; }
     .border-primary { border: 2px solid var(--primary-color); }
