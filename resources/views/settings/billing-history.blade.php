@@ -17,13 +17,13 @@
 
 <!-- Filters -->
 <div class="filters-container bg-card rounded-2xl border p-4 mb-8">
-    <form action="{{ route('settings.billing-history') }}" method="GET" class="flex gap-4 items-center flex-wrap">
-        <div class="flex-1 relative min-w-250">
+    <form action="{{ route('settings.billing-history') }}" method="GET" class="flex gap-4 items-center">
+        <div class="flex-1 relative min-w-250 search-wrapper">
             <i class="fas fa-search filter-search-icon"></i>
             <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by Invoice ID or Plan..." class="w-full p-4 pl-11 rounded-xl border bg-body text-sm">
         </div>
         
-        <div class="flex gap-4 flex-1 min-w-300 flex-wrap">
+        <div class="flex gap-4 flex-1 min-w-300 filter-actions">
             <select name="date_range" class="flex-1 p-3 rounded-xl border bg-body text-sm min-w-140">
                 <option value="">All Time</option>
                 <option value="3months" {{ request('date_range') == '3months' ? 'selected' : '' }}>Last 3 Months</option>
@@ -156,22 +156,37 @@
     .row-hover-bg:hover { background-color: var(--bg-body); }
     .p-12 { padding: 3rem; }
     
-    @media (max-width: 768px) {
+    .filters-container form {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        padding-bottom: 2px;
+    }
+    .filters-container form::-webkit-scrollbar { display: none; }
+    
+    .search-wrapper { flex: 2 !important; min-width: 200px !important; }
+    .filter-actions { flex: 3 !important; min-width: auto !important; }
+
+    @media (max-width: 1024px) {
         .min-w-200, .min-w-250, .min-w-300, .min-w-140, .min-w-100 {
-            min-width: 0;
-            width: 100%;
+            min-width: 0 !important;
         }
-        .filters-container form {
-            flex-direction: column;
-            align-items: stretch;
+        .search-wrapper { min-width: 180px !important; }
+        .min-w-140 { min-width: 120px !important; }
+        .min-w-100 { min-width: 80px !important; }
+    }
+
+    @media (max-width: 768px) {
+        .filters-container { padding: 0.75rem !important; }
+        .filters-container input, .filters-container select, .filters-container button {
+            padding: 0.5rem 0.75rem !important;
+            font-size: 0.8rem !important;
         }
-        .filters-container .flex-1 {
-            flex: none;
-            width: 100%;
-        }
-        .filters-container .flex {
-            flex-direction: column;
-        }
+        .search-wrapper { min-width: 150px !important; }
+        .min-w-140 { min-width: 100px !important; }
+        .filters-container .filter-search-icon { left: 0.75rem; }
+        .filters-container input { padding-left: 2.25rem; }
     }
     .custom-pagination nav {
         display: flex;
