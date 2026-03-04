@@ -31,6 +31,10 @@ return [
             'https://s.ytimg.com',
             'https://js.paystack.co',
             'https://www.googletagmanager.com',
+            "'strict-dynamic'",
+            "'unsafe-inline'",
+            'https:',
+            'http:',
         ],
         'style-src' => [
             "'self'",
@@ -46,6 +50,7 @@ return [
             'https://fonts.gstatic.com',
             'sha256-UsBDWcNiW9xgM3//3WV5K+wPxigoixhEFoB+At/ceSE=',
             'sha256-DOHS0qk/iDff75ZhpabyJw=',
+            'sha256-RvAvREUHojDuwHylTVWZp9DhleqLs6ml8G7LpjCF+EY=',
             "'unsafe-hashes'"
         ],
         'font-src' => [

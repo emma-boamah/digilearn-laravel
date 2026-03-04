@@ -253,7 +253,7 @@
     }
 </style>
 
-<script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
     document.addEventListener('DOMContentLoaded', function() {
         // Subject Chip filtering
         const chips = document.querySelectorAll('.subject-chip');

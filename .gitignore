@@ -28,3 +28,4 @@ docker-compose.yaml
 /.zed
 auth_monitor_cron.sh
 laravel_scheduler.sh
+: " . $sub->status . "n";

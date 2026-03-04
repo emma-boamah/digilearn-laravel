@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Vimeo Player API for hover-to-play functionality -->
-    <script src="https://player.vimeo.com/api/player.js"></script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://player.vimeo.com/api/player.js"></script>
 
     <!-- Video Facade Manager for optimized video loading -->
     @vite('resources/js/video-facade.js')
