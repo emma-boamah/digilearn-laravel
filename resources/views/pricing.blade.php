@@ -83,13 +83,20 @@
 
     .pricing-cards {
         display: grid;
+        grid-template-columns: 1fr;
         gap: 2rem;
-        max-width: 1050px;
+        max-width: 1150px;
         margin: 0 auto;
         justify-content: center;
     }
 
-    @media (min-width: 48rem) {
+    @media (min-width: 40rem) {
+        .pricing-cards {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (min-width: 64rem) {
         .pricing-cards {
             grid-template-columns: repeat(3, 1fr);
         }
@@ -116,7 +123,9 @@
         position: relative;
         box-shadow: 0 4px 6px rgb(105, 158, 236);
         transition: transform 0.3s ease;
-        width: 370px;
+        width: 100%;
+        max-width: 370px;
+        justify-self: center;
     }
 
     .pricing-card:hover {

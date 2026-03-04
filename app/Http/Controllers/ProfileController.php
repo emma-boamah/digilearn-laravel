@@ -29,6 +29,22 @@ class ProfileController extends Controller
      */
     public function show()
     {
+        return view('dashboard.profile', $this->getProfileData());
+    }
+
+    /**
+     * Show the settings page.
+     */
+    public function settings()
+    {
+        return view('dashboard.profile', $this->getProfileData());
+    }
+
+    /**
+     * Get shared data for the profile/settings view
+     */
+    private function getProfileData()
+    {
         $user = Auth::user();
 
         // Load user with current subscription
@@ -52,19 +68,39 @@ class ProfileController extends Controller
         // Get grade levels the user has access to based on their subscription
         $allGradeLevels = SubscriptionAccessService::getAllowedGradeLevels($user);
 
-        return view('dashboard.profile', compact('user', 'maskedPhone', 'availablePlans', 'userSubjectPreferences', 'gradeOptOuts', 'allGradeLevels'));
-    }
+        // Prepare subscription info (from showProfile logic)
+        $currentSubscription = $user->currentSubscription;
+        $subscriptionInfo = null;
+        if ($currentSubscription) {
+            $subscriptionInfo = [
+                'plan_name' => $currentSubscription->pricingPlan->name,
+                'status' => $currentSubscription->status,
+                'start_date' => $currentSubscription->start_date->format('M d, Y'),
+                'end_date' => $currentSubscription->end_date ? $currentSubscription->end_date->format('M d, Y') : 'N/A',
+                'days_remaining' => $currentSubscription->days_remaining,
+                'trial_days_remaining' => $currentSubscription->trial_days_remaining,
+                'is_trial' => $currentSubscription->isInTrial(),
+                'is_active' => $currentSubscription->isActive(),
+                'is_cancelled' => $currentSubscription->isCancelled(),
+            ];
+        }
 
-    /**
-     * Show the settings page.
-     */
-    public function settings()
-    {
-        $user = Auth::user();
-        // Load subscription for the summary card
-        $user->load(['currentSubscription.pricingPlan']);
+        // Split name for display
+        $nameParts = explode(' ', $user->name ?? '');
+        $firstName = $nameParts[0] ?? '';
+        $lastName = count($nameParts) > 1 ? end($nameParts) : '';
 
-        return view('settings.index', compact('user'));
+        return compact(
+            'user', 
+            'firstName',
+            'lastName',
+            'maskedPhone', 
+            'availablePlans', 
+            'userSubjectPreferences', 
+            'gradeOptOuts', 
+            'allGradeLevels',
+            'subscriptionInfo'
+        );
     }
 
     /**
@@ -170,34 +206,16 @@ class ProfileController extends Controller
      */
     public function showProfile()
     {
-        $user = Auth::user();
-        $currentSubscription = $user->currentSubscription;
-        $pricingPlans = PricingPlan::all();
-
-        // Prepare subscription info for the view
-        $subscriptionInfo = null;
-        if ($currentSubscription) {
-            $subscriptionInfo = [
-                'plan_name' => $currentSubscription->pricingPlan->name,
-                'status' => $currentSubscription->status,
-                'start_date' => $currentSubscription->start_date->format('M d, Y'),
-                'end_date' => $currentSubscription->end_date ? $currentSubscription->end_date->format('M d, Y') : 'N/A',
-                'days_remaining' => $currentSubscription->days_remaining,
-                'trial_days_remaining' => $currentSubscription->trial_days_remaining,
-                'is_trial' => $currentSubscription->isInTrial(),
-                'is_active' => $currentSubscription->isActive(),
-                'is_cancelled' => $currentSubscription->isCancelled(),
-            ];
-        }
+        $data = $this->getProfileData();
 
         Log::channel('security')->info('profile_page_accessed', [
             'user_id' => Auth::id(),
-            'subscription_plan' => $currentSubscription?->pricingPlan?->name ?? 'Free',
+            'subscription_plan' => $data['user']->currentSubscription?->pricingPlan?->name ?? 'Free',
             'ip' => request()->ip(),
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
-        return view('dashboard.profile', compact('user', 'subscriptionInfo', 'pricingPlans'));
+        return view('dashboard.profile', $data);
     }
 
     /**
@@ -205,6 +223,11 @@ class ProfileController extends Controller
      */
     public function update(Request $request)
     {
+        Log::info('profile_update_hit', [
+            'method' => $request->method(),
+            'all_data' => $request->except(['avatar']),
+            'has_avatar' => $request->hasFile('avatar')
+        ]);
         $user = Auth::user();
 
         $validated = $request->validate([
@@ -281,9 +304,15 @@ class ProfileController extends Controller
                 $avatarUrl = Storage::url($path);
 
                 // Save only the relative path (e.g. "avatars/xyz.jpg") in DB
-                $user->avatar = $path;
+                $validated['avatar'] = $path;
                 $avatarPath   = $path;
                 $avatarUpdated = true;
+
+                // Clear Google avatar if it exists so local one takes precedence
+                if ($user->google_avatar) {
+                    $user->google_avatar = null;
+                    $user->save();
+                }
 
                 Log::info('avatar_file_stored', [
                     'user_id'    => $user->id,
@@ -296,9 +325,6 @@ class ProfileController extends Controller
             // Combine first and last name
             $validated['name'] = trim($validated['first_name'] . ' ' . $validated['last_name']);
             unset($validated['first_name'], $validated['last_name']);
-
-            // Remove avatar from validated data since we handle it separately
-            unset($validated['avatar']);
 
             // Sanitize inputs
             $validated['email'] = strtolower(trim($validated['email']));
