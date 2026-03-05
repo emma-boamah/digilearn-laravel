@@ -640,8 +640,9 @@
     {{-- Performance Summary Section --}}
     <div class="section-header">
         <h2 class="section-title">Performance Summary</h2>
-        <span class="section-subtitle">Academic Year 2023-2024</span>
+        <span class="section-subtitle">Academic Year {{ $academicYear }}</span>
     </div>
+
 
     <div class="summary-grid">
         <div class="summary-card">

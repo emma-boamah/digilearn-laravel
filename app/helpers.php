@@ -43,3 +43,27 @@ if (!function_exists('get_client_ip')) {
         return $request->ip() ?? '0.0.0.0';
     }
 }
+
+if (!function_exists('get_academic_year')) {
+    /**
+     * Get the current academic year (September to August cycle)
+     * 
+     * @return string
+     */
+    function get_academic_year(): string
+    {
+        $now = now();
+        $year = $now->year;
+        $month = $now->month;
+
+        // If month is September (9) or later, it's the start of a new academic year
+        if ($month >= 9) {
+            $nextYear = $year + 1;
+            return "{$year}-{$nextYear}";
+        }
+
+        // If before September, we are in the second half of the previous year's cycle
+        $prevYear = $year - 1;
+        return "{$prevYear}-{$year}";
+    }
+}
