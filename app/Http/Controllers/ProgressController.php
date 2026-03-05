@@ -324,7 +324,8 @@ class ProgressController extends Controller
             'viewingGrade',
             'foundCanonical',
             'currentLevel'
-        ));
+        ))->with('academicYear', get_academic_year());
+
     }
 
     /**
