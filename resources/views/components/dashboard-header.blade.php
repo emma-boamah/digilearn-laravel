@@ -769,7 +769,9 @@
             </svg>
         </button>
         <div class="sidebar-logo">
-            <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
+            <a href="{{ route('home', ['show_home' => 'true']) }}">
+                <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
+            </a>
         </div>
     </div>
     
