@@ -53,6 +53,7 @@ Route::get('/guidelines/account-suspension', function () {
     return view('guidelines.account-suspension');
 })->name('guidelines.account-suspension');
 Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
+Route::get('/pricing-plan/{slug}', [PricingController::class, 'getPlanDetails'])->name('pricing.plan-details');
 Route::get('/pricing/pricing-details', [PricingController::class, 'show'])->name('pricing-details');
 
 // Coming soon route (authenticated)

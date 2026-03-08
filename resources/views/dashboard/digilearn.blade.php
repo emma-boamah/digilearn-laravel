@@ -1093,7 +1093,8 @@
         /* Hero Section */
         .hero-section {
             position: relative;
-            height: 300px;
+            height: clamp(180px, 22vh, 280px); /* Responsive height instead of fixed 300px */
+            min-height: 180px;
             overflow: hidden;
             width: 100%;
             max-width: 100%;
@@ -1144,7 +1145,7 @@
         /* Content Section */
         .content-section {
             flex: 1;
-            min-height: calc(100vh - 172px - 300px); /* viewport - fixed elements - hero */
+            min-height: 50vh; /* Replaced rigid calc */
             padding: 2rem 1rem 3rem;
             width: 100%;
             max-width: 100%;
@@ -1715,9 +1716,7 @@
             }
 
             /* Adjust hero section for mobile */
-            .hero-section {
-                height: 200px;
-            }
+            /* Removed fixed 200px hero height override, clamp() handles this responsively */
 
             .hero-content h1 {
                 font-size: 24px;
