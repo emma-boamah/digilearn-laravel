@@ -16,6 +16,7 @@ use App\Models\CommentUserLike;
 use App\Models\Subject;
 use App\Services\PlanChangeService;
 use App\Services\RelatedLessonsService;
+use App\Models\PricingPlan;
 
 class DashboardController extends Controller
 {
@@ -54,6 +55,8 @@ class DashboardController extends Controller
         $currentSubscription = $user->currentSubscription;
         $hasActiveSubscription = $currentSubscription && $currentSubscription->isActive();
         $isInTrial = $currentSubscription && $currentSubscription->isInTrial();
+        $currentPlanName = $currentSubscription->pricingPlan->name ?? null;
+
 
         // Check if user is superuser (bypass all restrictions)
         $isSuperUser = $user->is_superuser;
@@ -68,6 +71,7 @@ class DashboardController extends Controller
         ]);
 
         $levels = $this->getAvailableLevels();
+        $pricingPlans = PricingPlan::active()->ordered()->get();
 
         // Check access for each level group with enhanced validation
         $accessInfo = [];
@@ -75,7 +79,7 @@ class DashboardController extends Controller
             $accessInfo[$level['id']] = $this->hasEnhancedAccessToLevelGroup($user, $level['id'], $isSuperUser);
         }
 
-        return view('dashboard.level-selection', compact('levels', 'hasActiveSubscription', 'isInTrial', 'accessInfo', 'isSuperUser'))->with('isChanging', $isChanging);
+        return view('dashboard.level-selection', compact('levels', 'hasActiveSubscription', 'isInTrial', 'accessInfo', 'isSuperUser', 'pricingPlans', 'currentPlanName'))->with('isChanging', $isChanging);
     }
 
     /**
@@ -340,33 +344,19 @@ class DashboardController extends Controller
         $group = \App\Models\LevelGroup::where('slug', $selectedLevelGroup)->with('levels')->first();
         $canonicalGrades = $group ? $group->levels->pluck('title')->toArray() : [];
         
-        // Determine accessible (unlocked) grades
-        $unlockedGrades = [];
-        $userLevel = \App\Models\Level::where('slug', $user->grade)
-                      ->orWhere('title', $user->grade)
-                      ->first();
-        
-        if ($userLevel && $group) {
-            $userRank = $userLevel->rank;
-            $unlockedGrades = $group->levels->filter(function($level) use ($userRank) {
-                return $level->rank <= $userRank;
-            })->pluck('title')->toArray();
-        } else {
-            // Fallback for safety
-            $unlockedGrades = $canonicalGrades; 
-        }
+        // Make all grades within the group accessible
+        $unlockedGrades = $canonicalGrades;
 
         // Get selected grade from request
         $selectedGrade = $request->query('grade');
         $validSelectedGrade = null;
 
         if ($selectedGrade) {
-            // Security: Check if selected grade is unlocked
+            // Allow any valid grade within the group
             if (in_array($selectedGrade, $unlockedGrades)) {
                 $validSelectedGrade = $selectedGrade;
             } else {
-                // If locked or invalid, flash warning and ignore filter
-                session()->flash('warning', 'That grade is currently locked. Complete your current lessons to unlock it!');
+                session()->flash('warning', 'Invalid grade selected.');
             }
         }
 

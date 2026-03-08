@@ -119,47 +119,22 @@
                             <p class="level-description">{{ $level['description'] }}</p>
                             
                             @if(strtolower($currentPlanName) === 'essential' && $level['id'] === 'shs')
-                                @php
-                                    $essentialPlusPlan = $pricingPlans->where('slug', 'essential-plus')->first();
-                                @endphp
-                                <div class="pricing-options">
-                                    @if($essentialPlusPlan)
-                                        <button type="button" class="price-badge open-pricing-modal" data-plan-slug="{{ $essentialPlusPlan->slug }}" style="width: 100%; cursor: pointer;">
-                                            {{ $essentialPlusPlan->name }} - {{ $essentialPlusPlan->formatted_price }}
-                                        </button>
-                                    @else
-                                        <button type="button" class="upgrade-btn open-pricing-modal" data-plan-slug="essential-plus">
-                                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" class="upgrade-icon">
-                                                <path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/><path d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
-                                            </svg>
-                                            Upgrade to Essential Plus
-                                        </button>
+                                @foreach($pricingPlans as $plan)
+                                    @if($plan->slug === 'essential-plus')
+                                    <button type="button" class="upgrade-btn" onclick="showUpgradeModal('{{ $plan->slug }}')">
+                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" class="upgrade-icon">
+                                            <path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/><path d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
+                                        </svg>
+                                        Upgrade to {{ $plan->name }}
+                                    </button>
                                     @endif
-                                </div>
-                            @elseif(in_array(strtolower($currentPlanName), ['essential', 'essential plus']) && $level['id'] === 'university')
-                                @php
-                                    $essentialProPlan = $pricingPlans->where('slug', 'essential-pro')->first();
-                                @endphp
-                                <div class="pricing-options">
-                                    @if($essentialProPlan)
-                                        <button type="button" class="price-badge open-pricing-modal" data-plan-slug="{{ $essentialProPlan->slug }}" style="width: 100%; cursor: pointer;">
-                                            {{ $essentialProPlan->name }} - {{ $essentialProPlan->formatted_price }}
-                                        </button>
-                                    @else
-                                        <button type="button" class="upgrade-btn open-pricing-modal" data-plan-slug="essential-pro">
-                                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" class="upgrade-icon">
-                                                <path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/><path d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
-                                            </svg>
-                                            Upgrade to Essential Pro
-                                        </button>
-                                    @endif
-                                </div>
+                                @endforeach
                             @elseif(!$hasActiveSubscription)
                                 <div class="pricing-options">
                                     @foreach($pricingPlans as $plan)
-                                        <button type="button" class="price-badge open-pricing-modal" data-plan-slug="{{ $plan->slug }}" style="width: 100%; cursor: pointer;">
+                                        <a href="{{ route('pricing') }}?plan={{ $plan->slug }}" class="price-badge">
                                             {{ $plan->name }} - {{ $plan->formatted_price }}
-                                        </button>
+                                        </a>
                                     @endforeach
                                 </div>
                             @else
@@ -176,8 +151,6 @@
             </div>
         </div>
     </main>
-
-    @include('partials._upgrade_modal')
 
     <!-- Admission Modal -->
     <div id="admissionModal" class="modal-backdrop" style="display: none;">
@@ -208,6 +181,14 @@
             </div>
         </div>
     </div>
+    
+    <!-- Upgrade Modal -->
+    <div id="upgradeModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-container" id="upgradeModalContent">
+            <!-- Content will be loaded here -->
+        </div>
+    </div>
+
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
 
         a {
@@ -679,66 +660,39 @@
                 grid-template-columns: repeat(3, 1fr);
             }
         }
-    
-        /* Pricing Options Styles */
-        .pricing-options {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            width: 100%;
-        }
-
-        .price-badge {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0.75rem 1rem;
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-            border: 2px solid #bfdbfe;
-            color: #1e40af;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.875rem;
-            text-decoration: none;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .price-badge:hover {
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-            border-color: #93c5fd;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
-        }
-
     </style>
-
 @endsection
 
 @push('scripts')
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
     document.addEventListener('DOMContentLoaded', function() {
-        // Handle back button navigation
+        // Handle back button navigation - check for any back button element
         const backButton = document.getElementById('backButton') ||
                           document.getElementById('backToDashboard') ||
                           document.getElementById('backToDigilearn');
 
-        if (backButton && backButton.tagName.toLowerCase() === 'button') {
-            backButton.addEventListener('click', () => window.history.back());
+        if (backButton) {
+            console.log('Back button found:', backButton.id);
+            // Only add click handler for actual button elements (not links)
+            if (backButton.tagName.toLowerCase() === 'button') {
+                backButton.addEventListener('click', function() {
+                    console.log('Back button clicked');
+                    window.history.back();
+                });
+            } else {
+                console.log('Back button is a link, letting browser handle navigation');
+            }
+        } else {
+            console.log('No back button found');
         }
 
         // Handle upgrade triggers
-        document.querySelectorAll('.upgrade-trigger').forEach(trigger => {
+        const upgradeTriggers = document.querySelectorAll('.upgrade-trigger');
+        upgradeTriggers.forEach(trigger => {
             trigger.addEventListener('click', function() {
-                handleUpgradeRequired(this.getAttribute('data-level-title'), this.getAttribute('data-level-id'));
-            });
-        });
-
-        // Handle upgrade modal trigger
-        document.querySelectorAll('.open-pricing-modal').forEach(trigger => {
-            trigger.addEventListener('click', function(e) {
-                e.preventDefault();
-                const planSlug = this.getAttribute('data-plan-slug');
-                openUpgradeModal(planSlug);
+                const levelTitle = this.getAttribute('data-level-title');
+                const levelId = this.getAttribute('data-level-id');
+                handleUpgradeRequired(levelTitle, levelId);
             });
         });
     });
@@ -748,10 +702,24 @@
     }
 
     function handleUpgradeRequired(levelTitle, levelId) {
+        // Find the button that was clicked
         const button = event.target.closest('.upgrade-trigger');
-        button.innerHTML = 'Loading...';
+        const originalText = button.innerHTML;
+
+        // Show loading state
+        button.innerHTML = '<svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="margin-right: 0.5rem;"><path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/><path d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/></svg>Loading...';
         button.disabled = true;
 
+        // Add a subtle animation
+        button.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            button.style.transform = 'scale(1)';
+        }, 100);
+
+        // Log the upgrade attempt
+        console.log('User attempting to access premium level:', levelTitle, 'ID:', levelId);
+
+        // Track this interaction (could send to analytics)
         if (typeof gtag !== 'undefined') {
             gtag('event', 'upgrade_prompt_shown', {
                 level_title: levelTitle,
@@ -759,58 +727,21 @@
             });
         }
 
+        // Redirect to pricing after a brief delay
         setTimeout(() => {
             window.location.href = '{{ route("pricing") }}';
         }, 800);
     }
 
-    // Upgrade Modal Logic
-    const upgradeModal = document.getElementById('upgradeModal');
-
-    function openUpgradeModal(planSlug) {
-        // Show loading state in modal
-        const pricingCard = upgradeModal.querySelector('.pricing-card');
-        if(!pricingCard) return;
-
-        pricingCard.innerHTML = '<p style="padding: 2rem;">Loading plan details...</p>';
-        upgradeModal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-
-        // Fetch plan details
-        fetch(`/pricing-plan/${planSlug}`)
-            .then(response => response.json())
-            .then(data => {
-                pricingCard.innerHTML = `
-                    <div class="pricing-card" style="box-shadow: none; border: none; margin: 0;">
-                        <div class="pricing-badge">${data.name || planSlug}</div>
-                        <div class="pricing-card-content">
-                            <p class="pricing-description">${data.description || 'Comprehensive learning package with access to platform features.'}</p>
-                            <div class="pricing-price">${data.currency || 'GHS'} ${parseFloat(data.price || 0).toFixed(2)}</div>
-                            <ul class="pricing-features">
-                                ${Array.isArray(data.features) && data.features.length > 0 ? data.features.map(feature => `<li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>${feature}</li>`).join('') : `<li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>Access to ${data.name || planSlug} features</li>`}
-                            </ul>
-                            <a href="/pricing/pricing-details?planId=${data.obfuscated_id}" class="pricing-btn">Upgrade Now</a>
-                        </div>
-                    </div>
-                `;
-            })
-            .catch(error => {
-                console.error('Error fetching pricing plan:', error);
-                pricingCard.innerHTML = '<p style="padding: 2rem; color: #dc2626;">Sorry, we could not load the plan details. Please try again later.</p>';
-            });
-    }
-
-    function closeUpgradeModal() {
-        upgradeModal.style.display = 'none';
-        document.body.style.overflow = '';
-    }
-
-    // Admission Modal Logic
-    const admissionModal = document.getElementById('admissionModal');
+    // Modal Logic
+    const modal = document.getElementById('admissionModal');
     const gradeGrid = document.getElementById('modalGradeGrid');
     const groupNameSpan = document.getElementById('modalGroupName');
 
     function handleGroupEntry(groupId, groupTitle, grades, currentGrade) {
+        console.log('Entering group:', groupId, 'Current user grade:', currentGrade);
+        
+        // If user already has a grade selected AND it's one of the grades in this group, just enter
         const hasSpecificGradeInGroup = grades.some(g => g.id === currentGrade);
 
         if (hasSpecificGradeInGroup) {
@@ -818,42 +749,77 @@
             return;
         }
 
-        openAdmissionModal(groupId, groupTitle, grades);
+        // Otherwise, open the "Admission" Modal
+        openModal(groupId, groupTitle, grades);
     }
 
-    function openAdmissionModal(groupId, groupTitle, grades) {
+    function openModal(groupId, groupTitle, grades) {
         groupNameSpan.textContent = groupTitle;
         gradeGrid.innerHTML = '';
         
         grades.forEach(grade => {
             const tile = document.createElement('div');
             tile.className = 'grade-tile';
-            tile.innerHTML = `<span class="grade-name">${grade.title}</span><span class="grade-desc">Click to select</span>`;
+            tile.innerHTML = `
+                <span class="grade-name">${grade.title}</span>
+                <span class="grade-desc">Click to select</span>
+            `;
+            
             tile.onclick = () => selectGrade(groupId, grade.id);
             gradeGrid.appendChild(tile);
         });
 
-        admissionModal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden'; // Prevent scroll
     }
 
     function closeModal() {
-        admissionModal.style.display = 'none';
+        modal.style.display = 'none';
         document.body.style.overflow = '';
     }
 
     function selectGrade(groupId, gradeId) {
         const form = document.getElementById('form-' + groupId);
+        
+        // Add hidden grade input
         const input = document.createElement('input');
         input.type = 'hidden';
         input.name = 'grade';
         input.value = gradeId;
         form.appendChild(input);
+        
         form.submit();
     }
 
+    // Upgrade Modal Logic
+    const upgradeModal = document.getElementById('upgradeModal');
+    const upgradeModalContent = document.getElementById('upgradeModalContent');
+
+    function showUpgradeModal(planSlug) {
+        const url = `/upgrade-plan/${planSlug}`;
+        
+        // Show loading state
+        upgradeModalContent.innerHTML = '<p>Loading...</p>';
+        upgradeModal.style.display = 'flex';
+
+        fetch(url)
+            .then(response => response.text())
+            .then(html => {
+                upgradeModalContent.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error fetching upgrade modal:', error);
+                upgradeModalContent.innerHTML = '<p>Something went wrong. Please try again later.</p>';
+            });
+    }
+
+    function closeUpgradeModal() {
+        upgradeModal.style.display = 'none';
+    }
+
+    // Close modal on outside click
     window.onclick = function(event) {
-        if (event.target == admissionModal) {
+        if (event.target == modal) {
             closeModal();
         }
         if (event.target == upgradeModal) {

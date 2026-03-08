@@ -75,4 +75,22 @@ class PricingController extends Controller
 
         return view('pricing-details', compact('plans'));
     }
+
+    public function getPlanDetails($slug)
+    {
+        $plan = PricingPlan::where('slug', $slug)->active()->first();
+
+        if (!$plan) {
+            return response()->json(['error' => 'Plan not found'], 404);
+        }
+
+        return response()->json([
+            'name' => $plan->name,
+            'description' => $plan->description,
+            'currency' => $plan->currency,
+            'price' => $plan->price,
+            'features' => is_array($plan->features) ? $plan->features : [],
+            'obfuscated_id' => \App\Services\UrlObfuscator::encode($plan->id)
+        ]);
+    }
 }
