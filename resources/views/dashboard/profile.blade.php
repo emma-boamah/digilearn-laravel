@@ -287,6 +287,21 @@
         gap: 0.75rem;
     }
 
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 0.5rem;
+        line-height: 1;
+        transition: color 0.2s;
+    }
+
+    .modal-close:hover {
+        color: var(--primary-color);
+    }
+
     @media (max-width: 768px) {
         .form-grid {
             grid-template-columns: 1fr;
@@ -544,6 +559,62 @@
 </div>
 
 <!-- Modals -->
+<div id="deleteAccountModal" class="modal-overlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 class="text-red-600 font-bold">Delete Account</h3>
+            <button type="button" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="text-sm text-gray-600 mb-4">
+                <strong>Warning:</strong> Deleting your account is permanent. This action cannot be undone.
+            </p>
+
+            <div class="impact-summary bg-red-50 p-4 rounded-lg mb-4 border border-red-100">
+                <h4 class="text-red-800 text-sm font-bold mb-2">You will lose:</h4>
+                <ul class="text-xs text-red-700 list-disc list-inside space-y-1">
+                    @if($resourceCounts['quizzes'] > 0)
+                        <li>{{ $resourceCounts['quizzes'] }} Quizzes created</li>
+                    @endif
+                    @if($resourceCounts['videos'] > 0)
+                        <li>{{ $resourceCounts['videos'] }} Videos uploaded</li>
+                    @endif
+                    @if($resourceCounts['documents'] > 0)
+                        <li>{{ $resourceCounts['documents'] }} Documents shared</li>
+                    @endif
+                    @if($resourceCounts['progress'] > 0)
+                        <li>{{ $resourceCounts['progress'] }} Progress milestones</li>
+                    @endif
+                    <li>Access to all subscription benefits</li>
+                    <li>All personal profile data</li>
+                </ul>
+            </div>
+
+            <p class="text-xs text-gray-500 mb-4">
+                Active plans will be cancelled immediately without refund. All your data will be wiped from our servers according to our privacy policy.
+            </p>
+            <form id="deleteAccountForm" action="{{ route('profile.destroy') }}" method="POST">
+                @csrf
+                @method('DELETE')
+                
+                <div class="form-group mb-4">
+                    <label class="form-label" for="delete_confirmation_text">Type <strong>DELETE</strong> to confirm</label>
+                    <input type="text" id="delete_confirmation_text" class="form-input" placeholder="DELETE" required autocomplete="off">
+                </div>
+                
+                <div class="form-group mb-4">
+                    <label class="form-label" for="delete_password_confirm">Verify Password</label>
+                    <input type="password" id="delete_password_confirm" name="password" class="form-input" required autocomplete="current-password">
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary close-modal">Cancel</button>
+            <button type="submit" form="deleteAccountForm" class="btn btn-danger opacity-50 cursor-not-allowed" id="confirmDeleteBtn" disabled>Permanently Delete Account</button>
+        </div>
+    </div>
+</div>
+
 <div id="phoneModal" class="modal-overlay">
     <div class="modal-container">
         <div class="modal-header">
@@ -651,12 +722,37 @@
             closeModal('password');
         });
         
-        document.getElementById('deleteAccountBtn')?.addEventListener('click', function() {
-            if(confirm('Are you sure you want to delete your account? This action is permanent.')) {
-                // Submit delete request
-                alert('Account deletion request sent.');
+        // Delete Account Logic
+        const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+        const deleteAccountModal = document.getElementById('deleteAccountModal');
+        const deleteConfirmationText = document.getElementById('delete_confirmation_text');
+        const deletePasswordConfirm = document.getElementById('delete_password_confirm');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+        if (deleteAccountBtn && deleteAccountModal) {
+            deleteAccountBtn.addEventListener('click', () => {
+                deleteAccountModal.classList.add('active');
+                deleteConfirmationText.value = '';
+                deletePasswordConfirm.value = '';
+                confirmDeleteBtn.disabled = true;
+                confirmDeleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            });
+        }
+
+        function validateDeleteForm() {
+            if (deleteConfirmationText.value === 'DELETE' && deletePasswordConfirm.value.length >= 8) {
+                confirmDeleteBtn.disabled = false;
+                confirmDeleteBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                confirmDeleteBtn.disabled = true;
+                confirmDeleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
             }
-        });
+        }
+
+        if (deleteConfirmationText && deletePasswordConfirm) {
+            deleteConfirmationText.addEventListener('input', validateDeleteForm);
+            deletePasswordConfirm.addEventListener('input', validateDeleteForm);
+        }
     });
 </script>
 @endpush
