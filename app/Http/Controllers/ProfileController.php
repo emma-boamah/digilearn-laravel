@@ -75,13 +75,12 @@ class ProfileController extends Controller
             $subscriptionInfo = [
                 'plan_name' => $currentSubscription->pricingPlan->name,
                 'status' => $currentSubscription->status,
-                'start_date' => $currentSubscription->start_date->format('M d, Y'),
+                'start_date' => $currentSubscription->start_date ? $currentSubscription->start_date->format('M d, Y') : 'N/A',
                 'end_date' => $currentSubscription->end_date ? $currentSubscription->end_date->format('M d, Y') : 'N/A',
                 'days_remaining' => $currentSubscription->days_remaining,
                 'trial_days_remaining' => $currentSubscription->trial_days_remaining,
                 'is_trial' => $currentSubscription->isInTrial(),
                 'is_active' => $currentSubscription->isActive(),
-                'is_cancelled' => $currentSubscription->isCancelled(),
             ];
         }
 
@@ -89,6 +88,13 @@ class ProfileController extends Controller
         $nameParts = explode(' ', $user->name ?? '');
         $firstName = $nameParts[0] ?? '';
         $lastName = count($nameParts) > 1 ? end($nameParts) : '';
+
+        $resourceCounts = [
+            'quizzes' => $user->quizzes()->count(),
+            'videos' => $user->videos()->count(),
+            'documents' => $user->documents()->count(),
+            'progress' => $user->progress()->count(),
+        ];
 
         return compact(
             'user', 
@@ -99,7 +105,8 @@ class ProfileController extends Controller
             'userSubjectPreferences', 
             'gradeOptOuts', 
             'allGradeLevels',
-            'subscriptionInfo'
+            'subscriptionInfo',
+            'resourceCounts'
         );
     }
 
@@ -473,10 +480,14 @@ class ProfileController extends Controller
 
         // Verify current password
         if (!Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'The provided password is incorrect.'
-            ], 422);
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The provided password is incorrect.'
+                ], 422);
+            }
+
+            return redirect()->back()->withErrors(['password' => 'The provided password is incorrect.'])->with('error', 'Account deletion failed: Incorrect password.');
         }
 
         try {

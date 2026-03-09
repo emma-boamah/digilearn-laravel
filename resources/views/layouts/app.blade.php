@@ -187,6 +187,53 @@
             }
         }
 
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            color: var(--gray-700);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--gray-50);
+            color: var(--gray-900);
+        }
+
+        .dropdown-icon {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            color: var(--gray-500);
+        }
+
+        .dropdown-item-form {
+            margin: 0;
+            padding: 0;
+            background: none;
+            border: none;
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            padding: 0;
+            color: inherit;
+            font: inherit;
+        }
+
+        .logout-btn:hover {
+            background: none;
+            color: inherit;
+        }
+
         @media (max-width: 480px) {
             .logo-image {
                 height: 45px;
@@ -495,14 +542,27 @@
                                         <div style="font-size: 0.875rem; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ auth()->user()->email }}</div>
                                     </div>
                                     
-                                    <a href="{{ route('profile.show') }}" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none; transition: background 0.2s;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='transparent'">
-                                        Profile Settings
+                                    <a href="{{ route('profile.show') }}" class="dropdown-item">
+                                        <svg class="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                        </svg>
+                                        Profile
+                                    </a>
+                                    <a href="{{ route('settings') }}" class="dropdown-item">
+                                        <svg class="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        </svg>
+                                        Settings
                                     </a>
                                     
-                                    <form action="{{ route('logout') }}" method="POST" style="margin: 0;">
+                                    <form action="{{ route('logout') }}" method="POST" class="dropdown-item-form">
                                         @csrf
-                                        <button type="submit" style="width: 100%; text-align: left; padding: 0.75rem 1rem; border: none; background: none; color: #E11E2D; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='transparent'">
-                                            Log Out
+                                        <button type="submit" class="dropdown-item logout-btn">
+                                            <svg class="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                            </svg>
+                                            Logout
                                         </button>
                                     </form>
                                 </div>
@@ -532,7 +592,8 @@
                     <a href="{{ route('contact') }}" class="mobile-menu-item">Contact</a>
                     @auth
                         <a href="{{ route('dashboard.main') }}" class="mobile-menu-item" style="color: var(--secondary-blue);">Learning Hub</a>
-                        <a href="{{ route('profile.show') }}" class="mobile-menu-item">Profile Settings</a>
+                        <a href="{{ route('profile.show') }}" class="mobile-menu-item">Profile</a>
+                        <a href="{{ route ('settings') }}" class="mobile-menu-item">Settings</a>
                         <form action="{{ route('logout') }}" method="POST" style="width: 100%;">
                             @csrf
                             <button type="submit" class="mobile-menu-item" style="width: 100%; color: var(--primary-red); border: none; background: none; cursor: pointer;">Log Out</button>
