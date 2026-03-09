@@ -233,7 +233,6 @@
     }
 
     /* Responsive Design */
-    }
  
     /* Empty State */
     .empty-state {
@@ -246,6 +245,8 @@
         background-color: var(--white);
         border-radius: 1rem;
         border: 2px dashed var(--gray-200);
+        max-width: 600px;
+        margin: 2rem auto;
     }
  
     .empty-state-icon {
