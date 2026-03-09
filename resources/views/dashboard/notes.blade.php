@@ -40,25 +40,20 @@
                 @endforeach
             </div>
         @else
-            <!-- Sample notes for demo -->
-            <div class="notes-grid">
-                @for($i = 1; $i <= 12; $i++)
-                <div class="note-card" data-note-id="{{ $i }}" data-encoded-id="{{ \App\Services\UrlObfuscator::encode($i) }}" data-title="Living and Non Living organism" data-content="Detailed notes about living and non-living organisms...">
-                    <h3 class="note-title">Living and Non Living organism</h3>
-                    <p class="note-subject">(Science -Note G1-3)</p>
-                    <p class="note-date">April 2025</p>
-
-                    <div class="note-actions">
-                        <button class="note-action-btn open" onclick="window.location.href='{{ route('dashboard.notes.view', \App\Services\UrlObfuscator::encode($i)) }}'">
-                            <i class="fas fa-eye"></i>
-                            Open
-                        </button>
-                        <button class="note-action-btn delete" onclick="deleteNote({{ $i }}, '{{ \App\Services\UrlObfuscator::encode($i) }}')">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-sticky-note"></i>
                 </div>
-                @endfor
+                <h3 class="empty-state-title">No notes found</h3>
+                <p class="empty-state-description">
+                    You haven't saved any lesson notes yet. Start saving notes during your lessons to see them here.
+                </p>
+                @if(!Auth::user()->hasActiveSubscription())
+                    <a href="{{ route('pricing') }}" class="btn-upgrade">
+                        <i class="fas fa-crown"></i>
+                        Subscribe to start saving notes
+                    </a>
+                @endif
             </div>
         @endif
     </div>
@@ -238,6 +233,69 @@
     }
 
     /* Responsive Design */
+    }
+ 
+    /* Empty State */
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 5rem 2rem;
+        text-align: center;
+        background-color: var(--white);
+        border-radius: 1rem;
+        border: 2px dashed var(--gray-200);
+    }
+ 
+    .empty-state-icon {
+        width: 80px;
+        height: 80px;
+        background-color: var(--gray-50);
+        color: var(--gray-300);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        margin-bottom: 1.5rem;
+    }
+ 
+    .empty-state-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: 0.75rem;
+    }
+ 
+    .empty-state-description {
+        color: var(--gray-600);
+        font-size: 1rem;
+        max-width: 400px;
+        margin-bottom: 2rem;
+        line-height: 1.6;
+    }
+ 
+    .btn-upgrade {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.875rem 2rem;
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        color: var(--gray-900);
+        text-decoration: none;
+        border-radius: 2rem;
+        font-weight: 700;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+    }
+ 
+    .btn-upgrade:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+    }
+ 
     @media (max-width: 768px) {
         .content-header {
             padding: 1.5rem 1rem 1rem;
