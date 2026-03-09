@@ -125,7 +125,7 @@
                                 <div class="pricing-options">
                                     @if($essentialPlusPlan)
                                         <button type="button" class="price-badge open-pricing-modal" data-plan-slug="{{ $essentialPlusPlan->slug }}" style="width: 100%; cursor: pointer;">
-                                            {{ $essentialPlusPlan->name }} - {{ $essentialPlusPlan->formatted_price }}
+                                            Explore this category
                                         </button>
                                     @else
                                         <button type="button" class="upgrade-btn open-pricing-modal" data-plan-slug="essential-plus">
@@ -143,7 +143,7 @@
                                 <div class="pricing-options">
                                     @if($essentialProPlan)
                                         <button type="button" class="price-badge open-pricing-modal" data-plan-slug="{{ $essentialProPlan->slug }}" style="width: 100%; cursor: pointer;">
-                                            {{ $essentialProPlan->name }} - {{ $essentialProPlan->formatted_price }}
+                                            Explore this category
                                         </button>
                                     @else
                                         <button type="button" class="upgrade-btn open-pricing-modal" data-plan-slug="essential-pro">
@@ -155,12 +155,27 @@
                                     @endif
                                 </div>
                             @elseif(!$hasActiveSubscription)
+                                @php
+                                    $targetSlug = match($level['id']) {
+                                        'primary-lower', 'primary-upper', 'jhs' => 'essential',
+                                        'shs' => 'essential-plus',
+                                        'university' => 'essential-pro',
+                                        default => 'essential'
+                                    };
+                                    $targetPlan = $pricingPlans->where('slug', $targetSlug)->first();
+                                @endphp
                                 <div class="pricing-options">
-                                    @foreach($pricingPlans as $plan)
-                                        <button type="button" class="price-badge open-pricing-modal" data-plan-slug="{{ $plan->slug }}" style="width: 100%; cursor: pointer;">
-                                            {{ $plan->name }} - {{ $plan->formatted_price }}
+                                    @if($targetPlan)
+                                        <button type="button" class="price-badge open-pricing-modal" data-plan-slug="{{ $targetPlan->slug }}" style="width: 100%; cursor: pointer;">
+                                            Explore this category
                                         </button>
-                                    @endforeach
+                                    @else
+                                        @foreach($pricingPlans as $plan)
+                                            <button type="button" class="price-badge open-pricing-modal" data-plan-slug="{{ $plan->slug }}" style="width: 100%; cursor: pointer;">
+                                                Explore this category
+                                            </button>
+                                        @endforeach
+                                    @endif
                                 </div>
                             @else
                                 <button type="button" class="upgrade-btn upgrade-trigger" data-level-title="{{ $level['title'] }}" data-level-id="{{ $level['id'] }}">
