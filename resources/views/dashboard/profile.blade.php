@@ -347,12 +347,6 @@
         <p class="text-secondary">Manage your personal information, security, and subscription.</p>
     </div>
 
-    @if (session('success'))
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-            <span class="block sm:inline">{{ session('success') }}</span>
-        </div>
-    @endif
-
     @if ($errors->any())
         <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
             <strong class="font-bold">Oops!</strong>
@@ -442,50 +436,30 @@
             <h2 class="section-title">Location & Education</h2>
             <div class="form-grid">
                 @php
-                    $detectedCountry = null;
-                    $detectedCity = null;
-                    
-                    if (!$user->country || !$user->city) {
-                        try {
-                            if ($position = \Stevebauman\Location\Facades\Location::get(get_client_ip())) {
-                                $detectedCountry = $position->countryName;
-                                $detectedCity = $position->cityName;
-                            }
-                        } catch (\Exception $e) {}
-                    }
-                    
-                    $currentCountry = $user->country ?? $detectedCountry ?? 'Ghana';
-                    $currentCity = $user->city ?? $detectedCity ?? '';
-                    $isCityDetected = !$user->city && $detectedCity;
-                    
                     $defaultCountries = ['Ghana', 'Nigeria', 'Kenya', 'South Africa', 'United Kingdom', 'United States'];
-                    if (!in_array($currentCountry, $defaultCountries)) {
-                        $defaultCountries[] = $currentCountry;
+                    if ($user->country && !in_array($user->country, $defaultCountries)) {
+                        $defaultCountries[] = $user->country;
                     }
                     sort($defaultCountries);
                 @endphp
                 <div class="form-group">
-                    <label for="country" class="form-label">Country
-                        @if(!$user->country && $detectedCountry)
-                            <span class="text-xs text-green-600 font-normal ml-2">(Auto-detected)</span>
-                        @endif
-                    </label>
+                    <label for="country" class="form-label">Country</label>
                     <select id="country" name="country" class="form-input">
                         @foreach($defaultCountries as $c)
-                            <option value="{{ $c }}" {{ $currentCountry === $c ? 'selected' : '' }}>{{ $c }}</option>
+                            <option value="{{ $c }}" {{ $user->country === $c ? 'selected' : '' }}>{{ $c }}</option>
                         @endforeach
                     </select>
                 </div>
                 
                 <div class="form-group">
                     <label for="city" class="form-label">City
-                        @if($isCityDetected)
-                            <span class="text-xs text-green-600 font-normal ml-2">(Auto-detected)</span>
+                        @if($user->city)
+                            <span class="text-xs text-green-600 font-normal ml-2">(Auto-saved)</span>
                         @endif
                     </label>
-                    <input type="text" id="city" name="city" class="form-input {{ $isCityDetected ? 'bg-gray-100 cursor-not-allowed' : '' }}" 
-                           value="{{ $currentCity }}" 
-                           {{ $isCityDetected ? 'readonly' : '' }}
+                    <input type="text" id="city" name="city" class="form-input {{ $user->city ? 'bg-gray-100 cursor-not-allowed' : '' }}" 
+                           value="{{ $user->city }}" 
+                           {{ $user->city ? 'readonly' : '' }}
                            placeholder="Enter your city">
                 </div>
                 
