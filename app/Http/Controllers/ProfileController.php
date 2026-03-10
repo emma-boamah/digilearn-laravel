@@ -96,6 +96,32 @@ class ProfileController extends Controller
             'progress' => $user->progress()->count(),
         ];
 
+        // Auto-detect and save location if missing
+        if (!$user->country || !$user->city) {
+            try {
+                if ($position = \Stevebauman\Location\Facades\Location::get(get_client_ip())) {
+                    $updates = [];
+                    if (!$user->country && $position->countryName) {
+                        $updates['country'] = $position->countryName;
+                        $user->country = $position->countryName;
+                    }
+                    if (!$user->city && $position->cityName) {
+                        $updates['city'] = $position->cityName;
+                        $user->city = $position->cityName;
+                    }
+                    if (!empty($updates)) {
+                        // Use DB update to avoid triggering model events unnecessarily 
+                        // just for a background detection save
+                        \Illuminate\Support\Facades\DB::table('users')
+                            ->where('id', $user->id)
+                            ->update($updates);
+                    }
+                }
+            } catch (\Exception $e) {
+                // Silently fail location detection
+            }
+        }
+
         return compact(
             'user', 
             'firstName',

@@ -574,6 +574,19 @@
         
         // Initial check
         setTimeout(updateScrollIndicator, 100);
+
+        // Auto-hide alert messages after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                const alerts = document.querySelectorAll('.alert-success, .alert-error');
+                alerts.forEach(alert => {
+                    // Smooth fade out
+                    alert.style.transition = 'opacity 0.5s ease';
+                    alert.style.opacity = '0';
+                    setTimeout(() => alert.remove(), 500);
+                });
+            }, 5000); // 5 seconds
+        });
     </script>
     @stack('scripts')
 </body>
