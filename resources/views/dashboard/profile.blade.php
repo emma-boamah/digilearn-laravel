@@ -443,14 +443,21 @@
             <div class="form-grid">
                 @php
                     $detectedCountry = null;
-                    if (!$user->country) {
+                    $detectedCity = null;
+                    
+                    if (!$user->country || !$user->city) {
                         try {
                             if ($position = \Stevebauman\Location\Facades\Location::get(get_client_ip())) {
                                 $detectedCountry = $position->countryName;
+                                $detectedCity = $position->cityName;
                             }
                         } catch (\Exception $e) {}
                     }
+                    
                     $currentCountry = $user->country ?? $detectedCountry ?? 'Ghana';
+                    $currentCity = $user->city ?? $detectedCity ?? '';
+                    $isCityDetected = !$user->city && $detectedCity;
+                    
                     $defaultCountries = ['Ghana', 'Nigeria', 'Kenya', 'South Africa', 'United Kingdom', 'United States'];
                     if (!in_array($currentCountry, $defaultCountries)) {
                         $defaultCountries[] = $currentCountry;
@@ -471,8 +478,15 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="city" class="form-label">City</label>
-                    <input type="text" id="city" name="city" class="form-input" value="{{ $user->city }}">
+                    <label for="city" class="form-label">City
+                        @if($isCityDetected)
+                            <span class="text-xs text-green-600 font-normal ml-2">(Auto-detected)</span>
+                        @endif
+                    </label>
+                    <input type="text" id="city" name="city" class="form-input {{ $isCityDetected ? 'bg-gray-100 cursor-not-allowed' : '' }}" 
+                           value="{{ $currentCity }}" 
+                           {{ $isCityDetected ? 'readonly' : '' }}
+                           placeholder="Enter your city">
                 </div>
                 
                 <div class="form-group">
