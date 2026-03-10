@@ -439,7 +439,6 @@ class ProfileController extends Controller
         }
     }
 
-    
 
     /**
      * Get the current user's avatar information
@@ -614,98 +613,56 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update user phone number with verification
+     * Update user phone number via AJAX
      */
     public function updatePhone(Request $request)
     {
-        $user = Auth::user();
-
-        // Rate limiting for phone updates
-        $key = 'phone-update:' . $user->id;
-        if (RateLimiter::tooManyAttempts($key, 3)) {
-            $seconds = RateLimiter::availableIn($key);
-            return response()->json([
-                'success' => false,
-                'message' => "Too many phone update attempts. Please try again in " . ceil($seconds / 60) . " minutes."
-            ], 429);
-        }
-
-        $validated = $request->validate([
-            'phone' => [
-                'required',
-                'string',
-                'max:20',
-                'regex:/^[\+]?[0-9\s\-()]+$/',
-                'unique:users,phone,' . $user->id
-            ],
-            'country_code' => [
-                'required',
-                'string',
-                'max:5',
-                'regex:/^\+[0-9]{1,4}$/'
-            ],
-            'current_password' => 'required|string'
-        ], [
-            'phone.unique' => 'This phone number is already registered to another account.',
-            'phone.regex' => 'Please enter a valid phone number.',
-            'country_code.regex' => 'Please select a valid country code.',
-            'current_password.required' => 'Please enter your current password to confirm this change.',
-        ]);
-
-        // Verify current password for security
-        if (!Hash::check($validated['current_password'], $user->password)) {
-            RateLimiter::hit($key, 900); // 15 minute penalty
-            
-            Log::warning('phone_update_invalid_password', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-                'ip' => $request->ip(),
-                'timestamp' => now()->toISOString()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'The provided password is incorrect.'
-            ], 422);
-        }
+        $user = auth()->user();
 
         try {
-            $fullPhoneNumber = $validated['country_code'] . ' ' . trim($validated['phone']);
-            
-            // Update phone number (unverified initially)
-            $user->phone = $fullPhoneNumber;
-            $user->phone_verified_at = null;
-            $user->save();
+            $validated = $request->validate([
+                'phone' => [
+                    'required',
+                    'string',
+                    'regex:/^\+?[0-9]{10,15}$/',
+                    \Illuminate\Validation\Rule::unique('users', 'phone')->ignore($user->id)
+                ],
+            ], [
+                'phone.regex' => 'The phone number format is invalid. Ensure it includes at least 10 digits.',
+                'phone.unique' => 'This phone number is already registered to another account.',
+            ]);
 
-            // Clear rate limiting on success
-            RateLimiter::clear($key);
+            $oldPhone = $user->phone;
+            $user->update([
+                'phone' => $validated['phone'],
+                'phone_verified_at' => null, // Reset verification on change
+            ]);
 
-            // Send verification SMS
-            $this->sendPhoneVerification($user);
-
-            // Log successful phone update
-            Log::info('phone_number_updated', [
+            \Log::info('phone_updated_ajax', [
                 'user_id' => $user->id,
-                'email' => $user->email,
-                'phone_masked' => $this->maskPhoneNumber($fullPhoneNumber),
+                'old_phone' => $oldPhone,
+                'new_phone' => $validated['phone'],
                 'ip' => $request->ip(),
-                'timestamp' => now()->toISOString()
+                'country' => get_country_code()
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Phone number updated successfully! Please check your phone for a verification code.',
-                'phone_masked' => $this->maskPhoneNumber($fullPhoneNumber)
+                'message' => 'Phone number updated successfully!',
+                'phone' => $validated['phone'],
+                'masked_phone' => substr($validated['phone'], 0, 4) . '****' . substr($validated['phone'], -2)
             ]);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
-            RateLimiter::hit($key, 900);
-            
-            Log::error('phone_update_error', [
+            \Log::error('phone_update_error_ajax', [
                 'user_id' => $user->id,
-                'error' => $e->getMessage(),
-                'ip' => $request->ip(),
-                'timestamp' => now()->toISOString()
+                'error' => $e->getMessage()
             ]);
 
             return response()->json([
@@ -715,37 +672,8 @@ class ProfileController extends Controller
         }
     }
 
+
     /**
-     * Verify phone number with SMS code
-     */
-    public function verifyPhone(Request $request)
-    {
-        $user = Auth::user();
-
-        // Rate limiting for verification attempts
-        $key = 'phone-verify:' . $user->id;
-        if (RateLimiter::tooManyAttempts($key, 5)) {
-            $seconds = RateLimiter::availableIn($key);
-            return response()->json([
-                'success' => false,
-                'message' => "Too many verification attempts. Please try again in " . ceil($seconds / 60) . " minutes."
-            ], 429);
-        }
-
-        $validated = $request->validate([
-            'verification_code' => [
-                'required',
-                'string',
-                'size:6',
-                'regex:/^[0-9]{6}$/'
-            ]
-        ], [
-            'verification_code.required' => 'Please enter the verification code.',
-            'verification_code.size' => 'Verification code must be 6 digits.',
-            'verification_code.regex' => 'Verification code must contain only numbers.',
-        ]);
-
-        // In production, verify against stored code
         // For now, we'll accept any 6-digit code for demo
         $isValidCode = $this->verifyPhoneCode($user, $validated['verification_code']);
 

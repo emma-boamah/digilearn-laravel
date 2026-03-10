@@ -214,7 +214,7 @@ Route::middleware(['auth'])->group(function () {
     
     // API endpoints
     Route::get('/api/user/avatar-info', [ProfileController::class, 'getAvatarInfo'])->name('api.user.avatar-info');
-    Route::put('/profile/phone', [ProfileController::class, 'updatePhone'])->name('profile.phone.update');
+    Route::post('/profile/phone', [ProfileController::class, 'updatePhone'])->name('profile.phone.update');
     Route::delete('/profile/phone', [ProfileController::class, 'removePhone'])->name('profile.phone.remove');
     Route::post('/profile/phone/verify', [ProfileController::class, 'verifyPhone'])->name('profile.phone.verify');
     Route::post('/profile/phone/resend-verification', [ProfileController::class, 'resendPhoneVerification'])->name('profile.phone.resend-verification');

@@ -441,12 +441,32 @@
         <div class="form-section">
             <h2 class="section-title">Location & Education</h2>
             <div class="form-grid">
+                @php
+                    $detectedCountry = null;
+                    if (!$user->country) {
+                        try {
+                            if ($position = \Stevebauman\Location\Facades\Location::get(get_client_ip())) {
+                                $detectedCountry = $position->countryName;
+                            }
+                        } catch (\Exception $e) {}
+                    }
+                    $currentCountry = $user->country ?? $detectedCountry ?? 'Ghana';
+                    $defaultCountries = ['Ghana', 'Nigeria', 'Kenya', 'South Africa', 'United Kingdom', 'United States'];
+                    if (!in_array($currentCountry, $defaultCountries)) {
+                        $defaultCountries[] = $currentCountry;
+                    }
+                    sort($defaultCountries);
+                @endphp
                 <div class="form-group">
-                    <label for="country" class="form-label">Country</label>
+                    <label for="country" class="form-label">Country
+                        @if(!$user->country && $detectedCountry)
+                            <span class="text-xs text-green-600 font-normal ml-2">(Auto-detected)</span>
+                        @endif
+                    </label>
                     <select id="country" name="country" class="form-input">
-                        <option value="Ghana" {{ $user->country == 'Ghana' ? 'selected' : '' }}>Ghana</option>
-                        <option value="Nigeria" {{ $user->country == 'Nigeria' ? 'selected' : '' }}>Nigeria</option>
-                        <option value="Kenya" {{ $user->country == 'Kenya' ? 'selected' : '' }}>Kenya</option>
+                        @foreach($defaultCountries as $c)
+                            <option value="{{ $c }}" {{ $currentCountry === $c ? 'selected' : '' }}>{{ $c }}</option>
+                        @endforeach
                     </select>
                 </div>
                 
@@ -708,12 +728,69 @@
             });
         });
 
-        // Add phone verification logic placeholders
+        // Add phone verification logic
         document.getElementById('savePhoneBtn')?.addEventListener('click', async function() {
             const phone = document.getElementById('new_phone').value;
-            // AJAX call to update phone
-            alert('Phone update logic would go here. For now, please use the main form.');
-            closeModal('phone');
+            const saveBtn = this;
+            const originalText = saveBtn.innerText;
+
+            if (!phone) {
+                alert('Please enter a phone number.');
+                return;
+            }
+
+            // Disable button and show loading state
+            saveBtn.disabled = true;
+            saveBtn.innerText = 'Updating...';
+
+            try {
+                const response = await fetch('{{ route("profile.phone.update") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ phone: phone })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update masked phone display if it exists
+                    const displayPhone = document.getElementById('display_phone');
+                    if (displayPhone) {
+                        displayPhone.value = data.masked_phone || data.phone;
+                    }
+
+                    // Update badges (remove verified badge if present)
+                    const verifiedBadge = document.querySelector('.verified-badge');
+                    if (verifiedBadge) {
+                        verifiedBadge.remove();
+                    }
+                    
+                    // Show success message
+                    alert(data.message);
+                    closeModal('phone');
+                    
+                    // Optionally reload to update all indicators if needed, 
+                    // but dynamic update is smoother.
+                    // window.location.reload(); 
+                } else {
+                    // Handle validation errors
+                    if (data.errors && data.errors.phone) {
+                        alert(data.errors.phone[0]);
+                    } else {
+                        alert(data.message || 'Failed to update phone number.');
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating phone:', error);
+                alert('An error occurred while updating the phone number. Please try again.');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerText = originalText;
+            }
         });
 
         document.getElementById('savePasswordBtn')?.addEventListener('click', async function() {

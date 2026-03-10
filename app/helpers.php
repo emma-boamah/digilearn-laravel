@@ -14,9 +14,9 @@ if (!function_exists('get_client_ip')) {
     {
         $request = app(Request::class);
         
-        // In development, just use request IP
-        if (app()->environment(['local', 'development', 'testing'])) {
-            return $request->ip() ?? '127.0.0.1';
+        // In development, return the location testing IP so GeoIP works locally
+        if (in_array(strtolower(app()->environment()), ['local', 'development', 'testing'])) {
+            return config('location.testing.ip', '66.102.0.0');
         }
         
         // In production, check common headers but trust Laravel's request IP
@@ -65,5 +65,24 @@ if (!function_exists('get_academic_year')) {
         // If before September, we are in the second half of the previous year's cycle
         $prevYear = $year - 1;
         return "{$prevYear}-{$year}";
+    }
+}
+
+if (!function_exists('get_country_code')) {
+    /**
+     * Get the country code for the current user's IP
+     * 
+     * @return string|null
+     */
+    function get_country_code(): ?string
+    {
+        try {
+            if ($position = \Stevebauman\Location\Facades\Location::get(get_client_ip())) {
+                return $position->countryCode;
+            }
+        } catch (\Exception $e) {
+            \Log::error('GeoIP detection failed: ' . $e->getMessage());
+        }
+        return null;
     }
 }
