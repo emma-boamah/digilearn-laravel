@@ -638,6 +638,26 @@
 
         .comment-submit-btn {
             display: none;
+            background: none;
+            border: none;
+            color: var(--secondary-blue);
+            cursor: pointer;
+            padding: 0.5rem;
+            margin-top: 2px;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            align-self: flex-start;
+        }
+
+        .comment-submit-btn:hover {
+            color: var(--secondary-blue-hover);
+            transform: scale(1.1);
+        }
+
+        .comment-submit-btn .loading-spinner {
+            width: 16px;
+            height: 16px;
+            border-width: 2px;
         }
 
         /* Comments List - Updated */
@@ -4378,14 +4398,18 @@
                 commentInput.addEventListener('keypress', function(e) {
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
-                        submitComment();
+                        const parentId = this.dataset.parentId || null;
+                        submitComment(parentId);
                     }
                 });
             }
 
             // Submit comment button click
             if (commentSubmitBtn) {
-                commentSubmitBtn.addEventListener('click', submitComment);
+                commentSubmitBtn.addEventListener('click', () => {
+                    const parentId = commentInput.dataset.parentId || null;
+                    submitComment(parentId);
+                });
             }
         }
 
@@ -4544,6 +4568,8 @@
             .then(data => {
                 if (data.success) {
                     commentInput.value = '';
+                    commentInput.placeholder = 'Add a comment...';
+                    delete commentInput.dataset.parentId;
                     submitBtn.style.display = 'none';
                     loadComments(); // Reload comments to show the new one
                     showSuccessMessage('Comment posted successfully!');
@@ -4614,13 +4640,8 @@
                     // Focus on input and set placeholder
                     commentInput.placeholder = 'Reply to this comment...';
                     commentInput.focus();
-
                     // Store parent comment ID for reply
                     commentInput.dataset.parentId = commentId;
-
-                    // Update submit handler to include parent ID
-                    const submitBtn = document.getElementById('commentSubmitBtn');
-                    submitBtn.onclick = () => submitComment(commentId);
                 });
             });
         }
