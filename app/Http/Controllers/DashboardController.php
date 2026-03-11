@@ -1520,8 +1520,8 @@ class DashboardController extends Controller
                     'content' => $comment->content,
                     'user' => [
                         'name' => $comment->user->name,
-                        'avatar' => $comment->user->avatar,
-                        'avatar_initial' => $comment->avatar_initial,
+                        'avatar' => $comment->user->avatar_url,
+                        'initials' => $comment->user->initials,
                     ],
                     'time_ago' => $comment->time_ago,
                     'likes_count' => $comment->likes_count,
@@ -1531,11 +1531,11 @@ class DashboardController extends Controller
                         return [
                             'id' => $reply->id,
                             'content' => $reply->content,
-                            'user' => [
-                                'name' => $reply->user->name,
-                                'avatar' => $reply->user->avatar,
-                                'avatar_initial' => $reply->avatar_initial,
-                            ],
+                                'user' => [
+                                    'name' => $reply->user->name,
+                                    'avatar' => $reply->user->avatar_url,
+                                    'initials' => $reply->user->initials,
+                                ],
                             'time_ago' => $reply->time_ago,
                             'likes_count' => $reply->likes_count,
                             'dislikes_count' => $reply->dislikes_count,

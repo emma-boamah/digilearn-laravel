@@ -613,6 +613,13 @@
             flex-shrink: 0;
             font-size: 0.875rem;
             box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+
+        .comment-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .comment-input {
@@ -3545,7 +3552,13 @@
                 </div>
 
                 <div class="comment-input-container">
-                    <div class="comment-avatar">{{ substr(auth()->user()->name ?? 'U', 0, 1) }}</div>
+                    <div class="comment-avatar">
+                        @if(auth()->user()->avatar_url && !str_contains(auth()->user()->avatar_url, 'ui-avatars.com'))
+                            <img src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }}">
+                        @else
+                            {{ auth()->user()->initials }}
+                        @endif
+                    </div>
                     <input type="text" class="comment-input" id="commentInput" placeholder="Add a comment..." />
                     <button class="comment-submit-btn" id="commentSubmitBtn">
                         <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
@@ -4482,7 +4495,11 @@
 
             const commentsHtml = comments.map(comment => `
                 <div class="comment" data-comment-id="${comment.id}">
-                    <div class="comment-avatar">${comment.user.avatar_initial}</div>
+                    <div class="comment-avatar">
+                        ${comment.user.avatar && !comment.user.avatar.includes('ui-avatars.com') 
+                            ? `<img src="${comment.user.avatar}" alt="${comment.user.name}">` 
+                            : comment.user.initials}
+                    </div>
                     <div class="comment-content">
                         <div class="comment-header">
                             <span class="comment-author">${comment.user.name}</span>
@@ -4506,7 +4523,11 @@
                             <div class="comment-replies">
                                 ${comment.replies.map(reply => `
                                     <div class="comment reply" data-comment-id="${reply.id}">
-                                        <div class="comment-avatar">${reply.user.avatar_initial}</div>
+                                        <div class="comment-avatar">
+                                            ${reply.user.avatar && !reply.user.avatar.includes('ui-avatars.com') 
+                                                ? `<img src="${reply.user.avatar}" alt="${reply.user.name}">` 
+                                                : reply.user.initials}
+                                        </div>
                                         <div class="comment-content">
                                             <div class="comment-header">
                                                 <span class="comment-author">${reply.user.name}</span>
@@ -4696,7 +4717,11 @@
             commentElement.setAttribute('data-comment-id', commentData.id);
 
             commentElement.innerHTML = `
-                <div class="comment-avatar">${commentData.user.avatar_initial}</div>
+                <div class="comment-avatar">
+                    ${commentData.user.avatar && !commentData.user.avatar.includes('ui-avatars.com') 
+                        ? `<img src="${commentData.user.avatar}" alt="${commentData.user.name}">` 
+                        : commentData.user.initials}
+                </div>
                 <div class="comment-content">
                     <div class="comment-header">
                         <span class="comment-author">${commentData.user.name}</span>
