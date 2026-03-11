@@ -36,7 +36,12 @@
      data-mux-playback-id="{{ $muxPlaybackId }}"
      data-title="{{ $title }}"
      data-thumbnail="{{ $thumbnail }}"
+     data-duration="{{ $duration }}"
+     data-instructor="{{ $instructor }}"
+     data-year="{{ $year }}"
      data-subject="{{ $attributes->get('data-subject', '') }}"
+     data-video-url="{{ $attributes->get('data-video-url', '') }}"
+     data-selected-level="{{ $attributes->get('data-selected-level', 'primary-lower') }}"
      data-loaded="false"
      data-access-level="{{ $isRestricted ? 'preview' : 'full' }}"
      @if($isRestricted) data-upgrade-prompt="{{ json_encode($upgradePrompt) }}" @endif
@@ -130,33 +135,22 @@
         {{ $slot }}
         @else
         <div class="lesson-actions">
-            @if(isset($course) && $course)
-            <a href="{{ route('dashboard.lesson.view', ['lessonId' => \App\Services\UrlObfuscator::encode($videoId), 'course_id' => \App\Services\UrlObfuscator::encode($courseId ?? $videoId)]) }}" class="lesson-action-btn primary">
-                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"/>
-                </svg>
-                Start Course
-            </a>
-            <a href="{{ $lesson['quiz_id'] ? route('quiz.instructions', ['quizId' => $lesson['encoded_quiz_id']]) : route('quiz.index') }}" class="lesson-action-btn secondary">
-                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-                Quiz
-            </a>
-            @else
-            <a href="{{ route('dashboard.lesson.view', ['lessonId' => \App\Services\UrlObfuscator::encode($videoId)]) }}" class="lesson-action-btn primary">
-                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"/>
-                </svg>
-                Watch
-            </a>
-            <a href="{{ route('quiz.index') }}" class="lesson-action-btn secondary">
-                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-                Quiz
-            </a>
-            @endif
+            <div class="action-icons-group">
+                <button class="action-icon-btn save-btn" title="Save for later" data-lesson-id="{{ \App\Services\UrlObfuscator::encode($videoId) }}" @if(isset($courseId)) data-course-id="{{ \App\Services\UrlObfuscator::encode($courseId) }}" @endif>
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                    </svg>
+                </button>
+                @php
+                    $targetQuizId = isset($lesson['encoded_quiz_id']) ? $lesson['encoded_quiz_id'] : null;
+                    $quizUrl = $targetQuizId ? route('quiz.instructions', ['quizId' => $targetQuizId]) : route('quiz.index');
+                @endphp
+                <a href="{{ $quizUrl }}" class="action-icon-btn quiz-btn" title="Take Quiz">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </a>
+            </div>
         </div>
         @endif
     </div>
@@ -316,6 +310,26 @@
     top: 0;
     left: 0;
     z-index: 1;
+}
+
+.video-preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2; /* Between thumbnail and badges */
+    pointer-events: none !important; /* CRITICAL: Allow clicks to pass through to the card */
+}
+
+.csp-facade-player {
+    width: 100% !important;
+    height: 100% !important;
+    border: none !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none !important; /* CRITICAL: Prevent iframe from stealing clicks */
 }
 
 .video-facade-card.playing .video-facade-thumbnail {

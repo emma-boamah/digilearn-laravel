@@ -23,6 +23,8 @@
     year="{{ $item['year'] }}"
     lessonId="{{ $encodedId }}"
     courseId="{{ $isUniversity ? $encodedId : null }}"
+    data-video-url="{{ $item['video_url'] ?? '' }}"
+    data-selected-level="{{ $selectedLevelGroup ?? 'primary-lower' }}"
     :showLevelBadge="true"
     :showDuration="true"
     :showPlayOverlay="true"
@@ -40,33 +42,36 @@
         </p>
         @endif
         <div class="lesson-actions">
-            <a href="{{ route('dashboard.lesson.view', ['lessonId' => $encodedId, 'course_id' => $encodedId]) }}" class="lesson-action-btn primary">
-                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"/>
-                </svg>
-                Start Course
-            </a>
-            <a href="{{ $encodedQuizId ? route('quiz.instructions', ['quizId' => $encodedQuizId]) : route('quiz.index') }}" class="lesson-action-btn secondary">
-                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-                Quiz
-            </a>
+            <div class="action-icons-group">
+                <button class="action-icon-btn save-btn" title="Save for later" data-course-id="{{ $encodedId }}">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                    </svg>
+                </button>
+                <a href="{{ $encodedQuizId ? route('quiz.instructions', ['quizId' => $encodedQuizId]) : route('quiz.index') }}" class="quiz-primary-btn" title="Take Quiz">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span>Take Quiz</span>
+                </a>
+            </div>
         </div>
     @else
         <div class="lesson-actions">
-            <a href="{{ route('dashboard.lesson.view', ['lessonId' => $encodedId]) }}" class="lesson-action-btn primary">
-                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"/>
-                </svg>
-                Watch
-            </a>
-            <a href="{{ $encodedQuizId ? route('quiz.instructions', ['quizId' => $encodedQuizId]) : route('quiz.index') }}" class="lesson-action-btn secondary">
-                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-                Quiz
-            </a>
+            {{-- Primary action is now clicking the card itself --}}
+            <div class="action-icons-group">
+                <button class="action-icon-btn save-btn" title="Save for later" data-lesson-id="{{ $encodedId }}">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                    </svg>
+                </button>
+                <a href="{{ $encodedQuizId ? route('quiz.instructions', ['quizId' => $encodedQuizId]) : route('quiz.index') }}" class="quiz-primary-btn" title="Take Quiz">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span>Take Quiz</span>
+                </a>
+            </div>
         </div>
     @endif
 </x-video-facade>
