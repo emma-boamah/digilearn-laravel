@@ -38,7 +38,7 @@
     }
 
     .pricing-content {
-        padding: 4rem 0;
+        padding: 2rem 0;
         background-color: var(--white);
     }
 
@@ -64,36 +64,45 @@
     .pricing-tabs {
         display: flex;
         justify-content: center;
-        margin: 2rem 0;
-        gap: 0;
-        background-color: var(--gray-100);
-        border-radius: 0.5rem;
-        padding: 0.25rem;
-        max-width: 400px;
+        gap: 2rem;
+        border-bottom: 2px solid #e5e7eb;
+        max-width: max-content;
         margin: 2rem auto;
+        padding: 0 1rem;
     }
 
     .pricing-tab {
-        flex: 1;
-        padding: 0.75rem 1rem;
+        padding: 1rem 1.5rem;
         text-align: center;
         text-decoration: none;
         color: var(--gray-600);
-        border-radius: 0.375rem;
-        transition: all 0.2s ease;
         font-weight: 500;
         cursor: pointer;
         border: none;
         background: transparent;
+        position: relative;
+        font-size: 1.05rem;
+        transition: color 0.2s ease;
     }
 
     .pricing-tab.active {
+        color: var(--secondary-blue);
+        font-weight: 600;
+    }
+
+    .pricing-tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        right: 0;
+        height: 3px;
         background-color: var(--secondary-blue);
-        color: var(--white);
+        border-radius: 3px 3px 0 0;
     }
 
     .pricing-tab:hover:not(.active) {
-        background-color: var(--gray-200);
+        color: var(--gray-900);
     }
 
     .pricing-plan-container {
@@ -260,15 +269,14 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: max(1.5rem, env(safe-area-inset-top)) 1.5rem 1rem 1.5rem;
-        border-bottom: 1px solid #e5e7eb;
+        padding: max(1.5rem, env(safe-area-inset-top)) 1.5rem 0.5rem 1.5rem;
         flex-shrink: 0;
         background: var(--white);
     }
 
     .modal-title {
-        font-size: 1.25rem;
-        font-weight: 600;
+        font-size: 1.75rem;
+        font-weight: 700;
         color: var(--gray-900);
     }
 
@@ -492,7 +500,17 @@
         }
 
         .pricing-header {
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .pricing-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .pricing-header p {
+            font-size: 0.9rem;
         }
 
         .pricing-hero h1 {
@@ -506,14 +524,15 @@
         .mobile-pricing-modal {
             display: flex !important;
             position: relative;
-            height: 100vh;
-            width: 100vw;
+            height: auto;
+            width: 100%;
             top: auto;
             left: auto;
             right: auto;
             bottom: auto;
             z-index: auto;
             animation: none;
+            overflow: visible;
         }
 
         .modal-overlay {
@@ -535,6 +554,7 @@
             padding-right: max(1.5rem, env(safe-area-inset-right));
             padding-left: max(1.5rem, env(safe-area-inset-left));
             padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+            overflow-y: visible;
         }
 
         .modal-footer {
@@ -566,7 +586,26 @@
 
         .pricing-tabs {
             flex-direction: column;
-            max-width: 200px;
+            gap: 1rem;
+            max-width: 100%;
+            margin: 1rem auto;
+            border-bottom: none;
+            padding: 0;
+        }
+        
+        .pricing-tab {
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 1rem;
+        }
+
+        .pricing-tab.active::after {
+            bottom: -2px;
+            border-radius: 0;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
         }
     }
 
@@ -670,7 +709,7 @@
     /* Disable hover effects on touch devices (mobile) */
     @media (hover: none) {
         .pricing-tab:hover:not(.active) {
-            background-color: transparent;
+            color: var(--gray-600);
         }
 
         .duration-option:hover {

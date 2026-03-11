@@ -247,7 +247,7 @@
 <footer class="footer">
     <div class="container">
         <!-- Our Associates Section -->
-        <div class="associates-section">
+        <!-- <div class="associates-section">
             <h3 class="associates-title">OUR ASSOCIATES</h3>
             <div class="associates-icons">
                 <div class="associates-group">
@@ -261,7 +261,7 @@
                     <div class="associate-icon gray"></div>
                 </div>
             </div>
-        </div>
+        </div> -->
 
         <!-- Horizontal Divider -->
         <div class="footer-divider"></div>
