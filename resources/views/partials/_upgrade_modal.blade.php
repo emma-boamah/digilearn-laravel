@@ -20,7 +20,7 @@
                     <ul class="pricing-features">
                         {{-- Features will be loaded dynamically --}}
                     </ul>
-                    <a href="{{-- Subscription link will be loaded dynamically --}}" class="pricing-btn">Upgrade Now</a>
+                    <a href="{{-- Subscription link will be loaded dynamically --}}" class="pricing-btn">{{ $hasActiveSubscription ? 'Upgrade Now' : 'Get Started' }}</a>
                 </div>
             </div>
         </div>
@@ -176,20 +176,21 @@
     .pricing-btn {
         width: 100%;
         padding: 0.75rem 1.5rem;
-        background-color: transparent;
-        border: 1px solid var(--secondary-blue, #2677B8);
-        color: var(--secondary-blue, #2677B8);
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        border: 2px solid #bfdbfe;
+        color: #1e40af;
         border-radius: 0.375rem;
         text-decoration: none;
         font-weight: 500;
         font-size: 1.15rem;
         letter-spacing: 0.05em;
-        transition: all 0.2s ease;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         display: inline-block;
     }
 
     .pricing-btn:hover {
-        background-color: var(--secondary-blue, #2677B8);
-        color: var(--white, #ffffff);
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
     }
 </style>

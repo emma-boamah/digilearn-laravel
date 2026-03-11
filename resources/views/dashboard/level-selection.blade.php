@@ -779,7 +779,7 @@
         }, 800);
     }
 
-    // Upgrade Modal Logic
+    const hasActiveSubscription = {{ $hasActiveSubscription ? 'true' : 'false' }};
     const upgradeModal = document.getElementById('upgradeModal');
 
     function openUpgradeModal(planSlug) {
@@ -795,6 +795,7 @@
         fetch(`/pricing-plan/${planSlug}`)
             .then(response => response.json())
             .then(data => {
+                const btnText = hasActiveSubscription ? 'Upgrade Now' : 'Get Started';
                 pricingCard.innerHTML = `
                     <div class="pricing-card" style="box-shadow: none; border: none; margin: 0;">
                         <div class="pricing-badge">${data.name || planSlug}</div>
@@ -804,7 +805,7 @@
                             <ul class="pricing-features">
                                 ${Array.isArray(data.features) && data.features.length > 0 ? data.features.map(feature => `<li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>${feature}</li>`).join('') : `<li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>Access to ${data.name || planSlug} features</li>`}
                             </ul>
-                            <a href="/pricing/pricing-details?planId=${data.obfuscated_id}" class="pricing-btn">Upgrade Now</a>
+                            <a href="/pricing/pricing-details?planId=${data.obfuscated_id}" class="pricing-btn">${btnText}</a>
                         </div>
                     </div>
                 `;
