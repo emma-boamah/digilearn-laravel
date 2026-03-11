@@ -1212,6 +1212,26 @@
             left: 0;
         }
 
+        .video-preview {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none !important; /* CRITICAL: Allow clicks to pass through to the card */
+        }
+
+        .csp-facade-player {
+            width: 100% !important;
+            height: 100% !important;
+            border: none !important;
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none !important; /* CRITICAL: Prevent iframe from stealing clicks */
+        }
+
         .video-thumb {
             width: 100%;
             height: 100%;
@@ -1242,7 +1262,9 @@
             pointer-events: none;
         }
 
-        .lesson-card.playing .play-overlay {
+        .lesson-card.playing .play-overlay,
+        .lesson-card.playing .video-thumb,
+        .lesson-card.playing .lesson-fallback-image {
             opacity: 0;
         }
 
@@ -1374,43 +1396,126 @@
 
         .lesson-actions {
             display: flex;
-            gap: 0.5rem;
-            margin-top: 1rem;
+            justify-content: flex-end;
+            margin-top: auto;
+            padding-top: 1rem;
+            position: relative;
+            z-index: 100; /* Ensure actions are on top of previews */
         }
 
-        .lesson-action-btn {
+        .action-icons-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .quiz-primary-btn {
             display: flex;
             align-items: center;
             gap: 0.5rem;
             padding: 0.5rem 1rem;
-            border: 1px solid var(--secondary-blue);
-            border-radius: 0.375rem;
-            font-size: 0.875rem;
-            font-weight: 500;
-            text-decoration: none;
-            transition: all 0.2s ease;
-            flex: 1;
-            justify-content: center;
-        }
-
-        .lesson-action-btn.primary {
-            background-color: transparent;
-            color: var(--secondary-blue);
-        }
-
-        .lesson-action-btn.primary:hover {
-            background-color: rgba(38, 119, 184, 0.05);
-        }
-
-        .lesson-action-btn.secondary {
             background-color: var(--white);
-            color: var(--gray-900);
-            border: 1px solid var(--primary-red);
+            color: var(--gray-700);
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--gray-200);
+            white-space: nowrap;
         }
 
-        .lesson-action-btn.secondary:hover {
-            background-color: #fceaed;
-            color: var(--primary-red);
+        .quiz-primary-btn:hover {
+            background-color: white;
+            color: var(--secondary-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30, 64, 175, 0.15);
+        }
+
+        .quiz-primary-btn svg {
+            transition: transform 0.2s;
+        }
+
+        .quiz-primary-btn:hover svg {
+            transform: scale(1.1);
+        }
+
+        .success-message {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem;
+            background-color: #10b981;
+            color: white;
+            border-radius: 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 9999;
+            animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .loading-spinner {
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .action-icon-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: var(--gray-50);
+            color: var(--gray-600);
+            border: 1px solid var(--gray-200);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .action-icon-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .action-icon-btn.save-btn:hover {
+            background-color: #c7e6feff;
+            color: var(--secondary-blue);
+            border-color: var(--secondary-blue);
+        }
+
+        .action-icon-btn.quiz-btn:hover {
+            background-color: #dbeafe;
+            color: var(--secondary-blue);
+            border-color: #3b82f6;
+        }
+
+        .action-icon-btn svg {
+            transition: transform 0.2s ease;
+        }
+
+        .action-icon-btn:active {
+            transform: translateY(0) scale(0.95);
         }
 
         .mobile-search-toggle {
@@ -2227,10 +2332,8 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
             // Initialize all functionality
             initializeMobileUI();
             initializeSidebar();
-            console.log("hellow")
             initializeDropdowns();
             initializeSubjectFilter();
-            // initializeVideoCards(); // Disabled - now using video facade manager
             initializeSearch();
             initializeInfiniteScroll();
 
@@ -2239,11 +2342,32 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                 console.log('Video facade manager already initialized');
             } else if (typeof VideoFacadeManager !== 'undefined') {
                 window.videoFacadeManager = new VideoFacadeManager({ autoPlay: true });
-                console.log('Video facade manager initialized with auto-play');
-            } else {
-                console.log('Video facade manager not found, it should auto-initialize');
+                window.videoFacadeManager.initializeCards();
+                console.log('Video facade manager initialized');
             }
+
+            // Sync save status for all initial cards
+            initializeAllSaveButtons();
         });
+
+        async function initializeAllSaveButtons() {
+            const cards = document.querySelectorAll('.video-facade-card');
+            for (const card of cards) {
+                const lessonId = card.dataset.lessonId;
+                if (!lessonId) continue;
+
+                try {
+                    const response = await fetch(`/dashboard/lesson/${lessonId}/check-saved`);
+                    const data = await response.json();
+                    const saveBtn = card.querySelector('.save-btn');
+                    if (saveBtn) {
+                        updateSaveButtonState(saveBtn, data.saved);
+                    }
+                } catch (e) {
+                    console.error('Failed to check save status for:', lessonId, e);
+                }
+            }
+        }
 
         window.addEventListener('pageshow', function(event) {
             if (event.persisted) {
@@ -2671,143 +2795,159 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
             });
         }
 
-        // Optimized hover-to-play functionality following YouTube/Netflix pattern
-        function initializeVideoCards() {
-            let hoverTimer = null;
-            let activePlayer = null;
-            let hasPreconnected = false;
 
-            // Mobile detection
-            const isMobile = 'ontouchstart' in window;
 
-            document.querySelectorAll('.hover-video-card').forEach(card => {
-                const videoPreview = card.querySelector('.video-preview');
+        // Handle Lesson Card and Icon Clicks (Global Delegation)
+        document.addEventListener('click', function(e) {
+            const actionIcon = e.target.closest('.action-icon-btn');
+            // Support both .lesson-card and .video-facade-card
+            const lessonCard = e.target.closest('.lesson-card') || e.target.closest('.video-facade-card');
 
-                if (isMobile) {
-                    // Mobile: use click instead of hover
-                    card.addEventListener('click', function(e) {
-                        // Don't trigger if clicking on action buttons
-                        if (e.target.closest('.lesson-action-btn')) return;
+            console.log('Global click detected. Target:', e.target);
+            if (lessonCard) console.log('Click is inside lesson card:', lessonCard.dataset.title);
 
-                        e.preventDefault();
-                        if (card.dataset.loaded === 'false') {
-                            activatePreview(card);
-                        }
-                    });
-                } else {
-                    // Desktop: hover with debounce
-                    card.addEventListener('mouseenter', () => {
-                        hoverTimer = setTimeout(() => {
-                            activatePreview(card);
-                        }, 250); // prevents accidental hover
-                    });
-
-                    card.addEventListener('mouseleave', () => {
-                        clearTimeout(hoverTimer);
-                        deactivatePreview(card);
-                    });
-                }
-            });
-
-            function activatePreview(card) {
-                if (card.dataset.loaded === 'true') return;
-
-                // Kill previous preview
-                if (activePlayer) {
-                    activePlayer.pause();
-                    activePlayer = null;
-                    document.querySelectorAll('.video-preview').forEach(p => p.innerHTML = '');
-                    document.querySelectorAll('.hover-video-card').forEach(c => c.dataset.loaded = 'false');
-                }
-
-                const videoId = card.dataset.vimeoId || card.dataset.externalVideoId;
-                const videoSource = card.dataset.videoSource;
-                const preview = card.querySelector('.video-preview');
-
-                if (!videoId) return; // No video to preview
-
-                // Preconnect to Vimeo on first hover
-                if (!hasPreconnected && (videoSource === 'vimeo' || videoSource === 'youtube')) {
-                    const link = document.createElement('link');
-                    link.rel = 'preconnect';
-                    link.href = videoSource === 'vimeo' ? 'https://player.vimeo.com' : 'https://www.youtube.com';
-                    document.head.appendChild(link);
-                    hasPreconnected = true;
-                }
-
-                if (videoSource === 'vimeo') {
-                    const iframe = document.createElement('iframe');
-                    iframe.src = `https://player.vimeo.com/video/${videoId}?autoplay=1&muted=1&background=1`;
-                    iframe.allow = 'autoplay';
-                    iframe.loading = 'lazy';
-                    iframe.frameBorder = '0';
-                    iframe.style.width = '100%';
-                    iframe.style.height = '100%';
-                    iframe.style.position = 'absolute';
-                    iframe.style.top = '0';
-                    iframe.style.left = '0';
-
-                    preview.appendChild(iframe);
-
-                    activePlayer = new Vimeo.Player(iframe);
-                } else if (videoSource === 'youtube') {
-                    const iframe = document.createElement('iframe');
-                    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&loop=1&playlist=${videoId}`;
-                    iframe.allow = 'autoplay';
-                    iframe.loading = 'lazy';
-                    iframe.frameBorder = '0';
-                    iframe.style.width = '100%';
-                    iframe.style.height = '100%';
-                    iframe.style.position = 'absolute';
-                    iframe.style.top = '0';
-                    iframe.style.left = '0';
-
-                    preview.appendChild(iframe);
-
-                    // For YouTube, we can't easily get a player instance, so we'll handle cleanup differently
-                    activePlayer = { pause: () => {}, element: iframe };
-                }
-
-                card.dataset.loaded = 'true';
-            }
-
-            function deactivatePreview(card) {
-                card.dataset.loaded = 'false';
-
-                const preview = card.querySelector('.video-preview');
-                preview.innerHTML = ''; // destroy iframe
-
-                if (activePlayer) {
-                    activePlayer.pause();
-                    activePlayer = null;
-                }
-            }
-
-            // Handle lesson link clicks
-            document.addEventListener('click', function(e) {
-                if (e.target.closest('.lesson-link')) {
+            if (actionIcon) {
+                console.log('Action icon clicked:', actionIcon.className);
+                // Prevent card click bubbling, but only prevent default if not a link
+                e.stopPropagation();
+                
+                if (actionIcon.classList.contains('save-btn')) {
                     e.preventDefault();
-                    const link = e.target.closest('.lesson-link');
-                    const lessonId = link.getAttribute('data-lesson-id');
+                    const lessonId = actionIcon.dataset.lessonId || actionIcon.dataset.lessonid || actionIcon.dataset.courseId || actionIcon.dataset.courseid;
+                    console.log('Extracted ID for saving:', lessonId);
                     if (lessonId) {
-                        window.location.href = `/dashboard/lesson/${lessonId}`;
+                        handleSaveLesson(lessonId, actionIcon);
+                    } else {
+                        console.error('No ID found on save button:', actionIcon);
                     }
                 }
-            });
+                return;
+            }
 
-            // Set periodic ping to keep session alive
-            setInterval(() => {
-                if (document.visibilityState === 'visible') {
-                    fetch('/ping', {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                            'Accept': 'application/json'
-                        }
-                    });
+            if (lessonCard && !e.target.closest('.action-icon-btn')) {
+                const lessonId = lessonCard.dataset.lessonId;
+                const courseId = lessonCard.dataset.courseId;
+                
+                console.log('Navigating to lesson:', lessonId);
+
+                if (lessonId && lessonId !== 'null' && lessonId !== 'undefined') {
+                    // Correct build for URL - matching lesson-view patterns
+                    let url = `/dashboard/lesson/${lessonId}`;
+                    if (courseId && courseId !== 'null' && courseId !== 'undefined') {
+                        url += `?course_id=${courseId}`;
+                    }
+                    window.location.href = url;
+                } else {
+                    console.log('No valid lessonId found for card click:', lessonCard);
+                    const firstLink = lessonCard.querySelector('a');
+                    if (firstLink) window.location.href = firstLink.href;
                 }
-            }, 300000); // 5 minutes
+            }
+        });
+
+        async function handleSaveLesson(id, btn) {
+            console.log('handleSaveLesson triggered for ID:', id);
+            const card = btn.closest('.video-facade-card') || btn.closest('.lesson-card');
+            if (!card) {
+                console.error('Could not find parent card for save button');
+                return;
+            }
+
+            console.log('Parent card found:', card.className, card.dataset.title);
+
+            const isSaved = btn.dataset.saved === 'true';
+            const originalHTML = btn.innerHTML;
+            
+            // UI feedback early
+            btn.innerHTML = '<div class="loading-spinner"></div>';
+            btn.disabled = true;
+
+            const url = isSaved ? `/dashboard/lesson/${id}/unsave` : `/dashboard/lesson/${id}/save`;
+            const method = isSaved ? 'DELETE' : 'POST';
+
+            // Gather metadata required by DashboardController.saveLesson
+            // Support both data-title and data-lesson-title patterns if they exist
+            const lessonData = isSaved ? {} : {
+                lesson_title: card.dataset.title || 'Untitled',
+                lesson_subject: card.dataset.subject || 'General',
+                lesson_instructor: card.dataset.instructor || 'Unknown',
+                lesson_year: card.dataset.year || new Date().getFullYear().toString(),
+                lesson_duration: card.dataset.duration || '0:00',
+                lesson_thumbnail: card.dataset.thumbnail || '',
+                lesson_video_url: card.dataset.videoUrl || card.dataset.videourl || '',
+                selected_level: card.dataset.selectedLevel || card.dataset.selectedlevel || 'primary-lower'
+            };
+
+            console.log('Sending save request to:', url, 'with data:', lessonData);
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(lessonData)
+                });
+
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                
+                const data = await response.json();
+                if (data.success) {
+                    updateSaveButtonState(btn, data.saved);
+                    showSuccessMessage(data.message);
+                } else {
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                    console.error('Save failed:', data.message);
+                }
+            } catch (error) {
+                console.error('Save error:', error);
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+                alert('Connection error. Please try again.');
+            }
         }
+
+        function updateSaveButtonState(btn, isSaved) {
+            btn.innerHTML = `
+                <svg width="20" height="20" fill="${isSaved ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                </svg>
+            `;
+            btn.dataset.saved = isSaved ? 'true' : 'false';
+            btn.style.color = isSaved ? '#d97706' : ''; // Amber if saved
+            btn.style.backgroundColor = isSaved ? '#fef3c7' : '';
+            btn.title = isSaved ? 'Remove from Watch Later' : 'Save for later';
+            btn.disabled = false;
+        }
+
+        function showSuccessMessage(message) {
+            const el = document.createElement('div');
+            el.className = 'success-message';
+            el.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            document.body.appendChild(el);
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateX(20px)';
+                el.style.transition = 'all 0.3s ease';
+                setTimeout(() => el.remove(), 300);
+            }, 3000);
+        }
+
+        // Set periodic ping to keep session alive
+        setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                fetch('/ping', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    }
+                });
+            }
+        }, 300000); // 5 minutes
 
         // Enhanced search functionality
         function initializeSearch() {
@@ -3030,7 +3170,21 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                 const escapedInstructor = escapeHTML(lesson.instructor);
 
                 html += `
-                    <div class="lesson-card hover-video-card" data-lesson-id="${lesson.encoded_id}" data-video-id="${lesson.id}" data-subject="${escapedSubject}" data-title="${escapedTitle}" data-video-source="${lesson.video_source || 'local'}" data-vimeo-id="${lesson.vimeo_id || ''}" data-external-video-id="${lesson.external_video_id || ''}" data-mux-playback-id="${lesson.mux_playback_id || ''}" data-loaded="false">
+                    <div class="lesson-card hover-video-card" 
+                        data-lesson-id="${lesson.encoded_id}" 
+                        data-video-id="${lesson.id}" 
+                        data-subject="${escapedSubject}" 
+                        data-title="${escapedTitle}" 
+                        data-video-source="${lesson.video_source || 'local'}" 
+                        data-vimeo-id="${lesson.vimeo_id || ''}" 
+                        data-external-video-id="${lesson.external_video_id || ''}" 
+                        data-mux-playback-id="${lesson.mux_playback_id || ''}" 
+                        data-duration="${lesson.duration || ''}"
+                        data-instructor="${escapedInstructor}"
+                        data-year="${lesson.year || ''}"
+                        data-video-url="${lesson.video_url || ''}"
+                        data-selected-level="${lesson.selected_level || 'primary-lower'}"
+                        data-loaded="false">
                         <div class="lesson-thumbnail">
                             <img
                                 src="${lesson.thumbnail}"
@@ -3061,17 +3215,16 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                             </div>
                             ${documentsHtml}
                             <div class="lesson-actions">
-                                <a href="#" data-lesson-id="${lesson.encoded_id}" class="lesson-action-btn primary lesson-link">
-                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M8 5v14l11-7z"/>
+                                <button class="action-icon-btn save-btn" title="Save for later" data-lesson-id="${lesson.encoded_id}">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
                                     </svg>
-                                    Watch
-                                </a>
-                                <a href="${lesson.encoded_quiz_id ? `/quiz/${lesson.encoded_quiz_id}/instructions` : '/quiz'}" class="lesson-action-btn secondary">
-                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                                </button>
+                                <a href="${lesson.encoded_quiz_id ? `/quiz/${lesson.encoded_quiz_id}/instructions` : '/quiz'}" class="quiz-primary-btn" title="Take Quiz">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                         <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                     </svg>
-                                    Quiz
+                                    <span>Take Quiz</span>
                                 </a>
                             </div>
                         </div>
@@ -3081,16 +3234,22 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
 
             grid.innerHTML = html;
 
-            // Re-initialize video cards for the new content
-            initializeVideoCards();
+            // Re-initialize cards and save buttons for the new content
+            if (window.videoFacadeManager) {
+                window.videoFacadeManager.initializeCards();
+            }
+            initializeAllSaveButtons();
         }
 
         function restoreOriginalLessons() {
             const grid = document.querySelector('.content-grid');
             if (grid && originalLessonsHTML) {
                 grid.innerHTML = originalLessonsHTML;
-                // Re-initialize video cards for restored content
-                initializeVideoCards();
+                // Re-initialize video cards and save buttons for restored content
+                if (window.videoFacadeManager) {
+                    window.videoFacadeManager.initializeCards();
+                }
+                initializeAllSaveButtons();
             }
         }
 

@@ -135,22 +135,27 @@ class VideoFacadeManager {
         const thumbnail = card.querySelector('.video-facade-thumbnail');
 
         if (this.isMobile) {
-            // Mobile: Click to play
+            // Mobile: Use card data attributes for navigation while allowing action buttons
             card.addEventListener('click', (e) => {
-                const actionBtn = e.target.closest('.lesson-action-btn');
-                if (actionBtn) return; // Allow action buttons to handle their own navigation
+                const actionBtn = e.target.closest('.lesson-action-btn, .action-icon-btn');
+                if (actionBtn) {
+                    console.log('Action button clicked on mobile, bypassing card click');
+                    return;
+                }
 
                 if (card.dataset.accessLevel === 'preview') {
+                    console.log('Restricted access on mobile');
                     e.preventDefault();
                     this.handleRestrictedAccess(card);
                     return;
                 }
 
-                e.preventDefault();
+                // If no specific link, falling back to data-lesson-id
+                console.log('Card clicked on mobile, navigating via handlePlayClick');
                 this.handlePlayClick(card);
             });
         } else {
-            // Desktop: Hover to preview
+            // Desktop: Hover to preview, click naturally flows to global listener
             card.addEventListener('mouseenter', () => {
                 if (card.dataset.accessLevel === 'preview') return;
 
@@ -165,14 +170,7 @@ class VideoFacadeManager {
             });
         }
 
-        // Handle clicks on action buttons
-        card.addEventListener('click', (e) => {
-            const actionBtn = e.target.closest('.lesson-action-btn');
-            if (actionBtn) {
-                e.stopPropagation();
-                // Let the link handle navigation
-            }
-        });
+        // Desktop clicks are handled by the global delegation in digilearn.blade.php
     }
 
     loadVideoThumbnail(card) {
@@ -197,6 +195,9 @@ class VideoFacadeManager {
         const lessonLink = card.querySelector('.lesson-action-btn.primary');
         if (lessonLink) {
             window.location.href = lessonLink.href;
+        } else if (card.dataset.lessonId) {
+            // Fallback for redesigned cards where the card itself is the primary link
+            window.location.href = `/dashboard/lesson/${card.dataset.lessonId}`;
         }
     }
 
@@ -338,6 +339,7 @@ class VideoFacadeManager {
         iframe.loading = 'lazy';
         iframe.frameBorder = '0';
         iframe.className = 'csp-facade-player';
+        iframe.style.pointerEvents = 'none'; // CRITICAL: Prevent iframe from stealing clicks from the card
 
         preview.appendChild(iframe);
 
@@ -392,6 +394,7 @@ class VideoFacadeManager {
         iframe.loading = 'lazy';
         iframe.frameBorder = '0';
         iframe.className = 'csp-facade-player';
+        iframe.style.pointerEvents = 'none'; // CRITICAL: Prevent iframe from stealing clicks from the card
 
         preview.appendChild(iframe);
 
