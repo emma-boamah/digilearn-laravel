@@ -680,6 +680,19 @@
       overflow: hidden;
   }
 
+  .minimalist-quiz-card .quiz-level-badge-minimal {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      background-color: rgba(38, 119, 184, 0.1);
+      color: var(--secondary-blue);
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+  }
+
   .minimalist-quiz-card .rating-stars {
       display: flex;
       gap: 2px;

@@ -4,6 +4,51 @@
         <!-- Level Indicator (Anchor Tag) -->
         <x-level-indicator :selectedLevel="$selectedLevelGroup" />
 
+        <div class="current-level-display">
+            @if(isset($canonicalGrades) && count($canonicalGrades) > 0)
+                @foreach($canonicalGrades as $grade)
+                    @php
+                        $isUnlocked = in_array($grade, $unlockedGrades ?? []);
+                        $userLevel = \App\Models\Level::where('slug', auth()->user()->grade)
+                                      ->orWhere('title', auth()->user()->grade)
+                                      ->first();
+                        
+                        // Active tab is either the specifically selected grade OR the user's current grade (if none selected)
+                        $isActive = false;
+                        if (isset($validSelectedGrade) && $validSelectedGrade) {
+                            $isActive = ($validSelectedGrade === $grade);
+                        } elseif ($userLevel) {
+                            $isActive = ($userLevel->title === $grade);
+                        }
+                        
+                        // Fallback abbreviate function if not defined
+                        if(!function_exists('abbreviateGrade')) {
+                            function abbreviateGrade($g) {
+                                $gStr = strtolower((string) $g);
+                                $parts = preg_split('/[- ]+/', $gStr);
+                                $lastPart = trim(end($parts));
+                                if (str_contains($gStr, 'primary')) return 'P' . $lastPart;
+                                if (str_contains($gStr, 'jhs')) return 'JHS' . $lastPart;
+                                if (str_contains($gStr, 'shs')) return 'SHS' . $lastPart;
+                                if (str_contains($gStr, 'level')) return 'L' . $lastPart;
+                                if (str_contains($gStr, 'year')) return 'Y' . $lastPart;
+                                return $g;
+                            }
+                        }
+                    @endphp
+                    <a href="{{ $isUnlocked ? route('quiz.index', ['grade' => $grade]) : '#' }}" 
+                       class="grade-tab {{ $isUnlocked ? '' : 'locked' }} {{ $isActive ? 'active' : '' }}"
+                       {!! $isUnlocked ? '' : 'title="Complete current lessons to unlock '. $grade . '"' !!}>
+                        @if(!$isUnlocked)
+                            <i class="fas fa-lock"></i>
+                        @endif
+                        <span class="grade-full-name">{{ $grade }}</span>
+                        <span class="grade-short-name">{{ abbreviateGrade($grade) }}</span>
+                    </a>
+                @endforeach
+            @endif
+        </div>
+
         <form action="{{ route('quiz.index') }}" method="GET" class="search-box" id="mobileSearchBox">
             <input type="text" name="search" class="search-input" placeholder="Search quizzes..." id="quizSearchInput" value="{{ request('search') }}">
             <button type="submit" class="search-button">
@@ -72,6 +117,74 @@
         flex: 1;
         min-width: 200px;
         display: flex;
+    }
+
+    .current-level-display {
+        display: inline-flex;
+        align-items: center;
+        gap: 1.25rem;
+        margin-left: 0.5rem;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        padding: 2px 4px;
+    }
+
+    .current-level-display::-webkit-scrollbar { display: none; }
+
+    .grade-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: #fff;
+        border: 2px solid var(--gray-200);
+        border-radius: 2rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--gray-500);
+        text-decoration: none;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+        height: 40px;
+        box-sizing: border-box;
+    }
+
+    .grade-tab:hover:not(.locked) {
+        border-color: var(--secondary-blue);
+        color: var(--secondary-blue);
+        background: rgba(38,119,184,0.05);
+    }
+
+    .grade-tab.active {
+        background: rgba(38, 119, 184, 0.05);
+        border-color: var(--secondary-blue);
+        color: var(--secondary-blue);
+        box-shadow: 0 4px 12px rgba(38,119,184,0.2);
+    }
+
+    .grade-tab.locked {
+        opacity: 0.6;
+        background-color: var(--gray-50);
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    .grade-tab i {
+        font-size: 0.75rem;
+    }
+
+    .grade-tab.locked i {
+        color: var(--gray-400);
+    }
+
+    /* Responsive grade name handling */
+    .grade-full-name {
+        display: inline;
+    }
+
+    .grade-short-name {
+        display: none;
     }
 
     .search-input {
@@ -242,6 +355,24 @@
         .level-container {
             flex-shrink: 0;
             width: auto;
+        }
+
+        .current-level-display {
+            padding-bottom: 0.5rem; /* Add some padding for touch target safely */
+            gap: 0.75rem;
+        }
+
+        .grade-tab {
+            padding: 0.5rem 0.75rem;
+            height: 36px;
+        }
+
+        .grade-full-name {
+            display: none;
+        }
+
+        .grade-short-name {
+            display: inline;
         }
     }
 

@@ -10,6 +10,10 @@
         <div class="title-section">
             <h3 class="card-title" title="{{ $quiz['title'] }}">{{ $quiz['title'] }}</h3>
             
+            <div class="quiz-level-badge-minimal">
+                {{ $quiz['level_display'] ?? 'All Levels' }}
+            </div>
+            
             <!-- Rating Stars -->
             <div class="rating-stars">
                 @php
