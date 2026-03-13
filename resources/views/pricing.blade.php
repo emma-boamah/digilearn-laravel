@@ -11,6 +11,37 @@
     <meta property="og:image" content="{{ secure_asset('images/shoutoutgh-logo.png') }}">
     <meta property="og:url" content="{{ url('/pricing') }}">
     <meta property="og:type" content="website">
+
+    <!-- Structured Data (JSON-LD) -->
+    @php
+        $schema = [
+            '@context' => 'https://schema.org',
+            '@graph' => []
+        ];
+        
+        foreach($pricingPlans as $plan) {
+            $schema['@graph'][] = [
+                '@type' => 'Product',
+                'name' => $plan->name,
+                'description' => $plan->description ?? 'Comprehensive learning package with access to platform features.',
+                'image' => secure_asset('images/shoutoutgh-logo.png'),
+                'brand' => [
+                    '@type' => 'Brand',
+                    'name' => 'ShoutOutGH'
+                ],
+                'offers' => [
+                    '@type' => 'Offer',
+                    'url' => url('/pricing'),
+                    'priceCurrency' => $plan->currency,
+                    'price' => (string)$plan->price,
+                    'availability' => 'https://schema.org/InStock'
+                ]
+            ];
+        }
+    @endphp
+    <script type="application/ld+json">
+        {!! json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) !!}
+    </script>
 @endsection
 
 @section('content')

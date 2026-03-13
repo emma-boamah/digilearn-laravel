@@ -2917,8 +2917,8 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                 </svg>
             `;
             btn.dataset.saved = isSaved ? 'true' : 'false';
-            btn.style.color = isSaved ? '#d97706' : ''; // Amber if saved
-            btn.style.backgroundColor = isSaved ? '#fef3c7' : '';
+            btn.style.color = isSaved ? 'var(--secondary-blue)' : ''; // Blue if saved
+            btn.style.backgroundColor = isSaved ? '#dbeafe' : '';
             btn.title = isSaved ? 'Remove from Watch Later' : 'Save for later';
             btn.disabled = false;
         }
