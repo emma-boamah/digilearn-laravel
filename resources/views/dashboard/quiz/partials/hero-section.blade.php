@@ -17,7 +17,7 @@
     /* Hero Section */
     .hero-section {
         position: relative;
-        height: 300px;
+        height: clamp(180px, 22vh, 280px); /* Responsive height instead of fixed 300px */
         overflow: hidden;
     }
 

@@ -46,19 +46,39 @@ class QuizController extends Controller
             }
         }
 
+        // --- Grade Unification & Locked Logic ---
+        $group = \App\Models\LevelGroup::where('slug', $selectedLevelGroup)->with('levels')->first();
+        $canonicalGrades = $group ? $group->levels->pluck('title')->toArray() : [];
+        $unlockedGrades = $canonicalGrades;
+
+        $selectedGrade = $request->query('grade');
+        $validSelectedGrade = null;
+
+        if ($selectedGrade) {
+            if (in_array($selectedGrade, $unlockedGrades)) {
+                $validSelectedGrade = $selectedGrade;
+            } else {
+                session()->flash('warning', 'Invalid grade selected.');
+            }
+        }
+        // --- End Grade Unification ---
+
         // Cache key for base quiz data (changes less frequently)
-        $cacheKey = "quizzes.{$selectedLevelGroup}";
+        $cacheKey = "quizzes.{$selectedLevelGroup}." . ($validSelectedGrade ?? 'all');
         $cacheDuration = 300; // 5 minutes
 
         // Get search term from request
         $search = $request->query('search');
 
         // Get base quiz data with caching
-        $baseQuizzes = Cache::remember($cacheKey, $cacheDuration, function () use ($selectedLevelGroup, $userId, $allowedGradeLevels, $requiresSubscription, $user) {
+        $baseQuizzes = Cache::remember($cacheKey, $cacheDuration, function () use ($selectedLevelGroup, $validSelectedGrade, $userId, $allowedGradeLevels, $requiresSubscription, $user) {
             $query = \App\Models\Quiz::with(['uploader', 'ratings', 'attempts', 'subject']);
 
             // Filter by grade level if specified
-            if ($selectedLevelGroup && $selectedLevelGroup !== 'all') {
+            if ($validSelectedGrade) {
+                // If a specific grade within the group is selected, filter by it
+                $query->where('grade_level', $validSelectedGrade);
+            } elseif ($selectedLevelGroup && $selectedLevelGroup !== 'all') {
                 $mapping = $this->getGradeLevelMapping();
                 if (isset($mapping[$selectedLevelGroup])) {
                     $query->whereIn('grade_level', $mapping[$selectedLevelGroup]);
@@ -177,7 +197,7 @@ class QuizController extends Controller
         // Get available subjects for the subjects filter
         $subjects = $this->getSubjectsFromQuizzes($quizzes);
 
-        return view('dashboard.quiz.index', compact('quizzes', 'selectedLevelGroup', 'requiresSubscription', 'subjects'));
+        return view('dashboard.quiz.index', compact('quizzes', 'selectedLevelGroup', 'requiresSubscription', 'subjects', 'canonicalGrades', 'unlockedGrades', 'validSelectedGrade'));
     }
 
     /**
