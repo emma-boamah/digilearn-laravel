@@ -670,7 +670,9 @@
                 <select id="contextFilter" class="toolbar-select">
                     <option value="">All Categories</option>
                     @foreach($categories as $category)
-                        <option value="{{ $category->slug }}">{{ $category->name }}</option>
+                        @if(strtolower($category->slug) !== 'normal')
+                            <option value="{{ $category->slug }}">{{ $category->name }}</option>
+                        @endif
                     @endforeach
                 </select>
             </div>
@@ -1113,13 +1115,18 @@
 
                 <!-- Categories -->
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Content Categories</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Content Categories 
+                        <span class="text-xs font-normal text-gray-500 italic ml-1">(Leave blank for normal content)</span>
+                    </label>
                     <div class="grid grid-cols-2 gap-2">
                         @foreach($categories as $category)
-                            <label class="flex items-center p-2 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                                <input type="checkbox" name="upload_category_ids[]" value="{{ $category->id }}" class="mr-2 h-4 w-4 text-blue-600 rounded">
-                                <span class="text-sm text-gray-700">{{ $category->name }}</span>
-                            </label>
+                            @if(strtolower($category->slug) !== 'normal')
+                                <label class="flex items-center p-2 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                                    <input type="checkbox" name="upload_category_ids[]" value="{{ $category->id }}" class="mr-2 h-4 w-4 text-blue-600 rounded">
+                                    <span class="text-sm text-gray-700">{{ $category->name }}</span>
+                                </label>
+                            @endif
                         @endforeach
                     </div>
                 </div>
