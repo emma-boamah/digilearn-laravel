@@ -102,4 +102,12 @@ class Document extends Model
 
         return $document;
     }
+
+    /**
+     * Get all of the categories for the document.
+     */
+    public function categories()
+    {
+        return $this->morphToMany(ContentCategory::class, 'categorizable');
+    }
 }

@@ -213,7 +213,7 @@ class RelatedLessonsService
         
         $query = Video::approved()
             ->whereIn('grade_level', $gradeLevels)
-            ->with(['uploader', 'subject'])
+            ->with(['uploader', 'subject', 'categories'])
             ->where('id', '!=', $currentLesson['id']);
             
         // Apply subject filter if specified
@@ -253,6 +253,13 @@ class RelatedLessonsService
                 'documents_count' => $video->documents->count(),
                 'has_quiz' => !empty($video->quiz),
                 'quiz_id' => $video->quiz ? $video->quiz->id : null,
+                'categories' => $video->categories ? $video->categories->map(function($cat) {
+                    return [
+                        'id' => $cat->id,
+                        'name' => $cat->name,
+                        'slug' => $cat->slug
+                    ];
+                })->toArray() : [],
             ];
         }
         
@@ -330,7 +337,7 @@ class RelatedLessonsService
     private function generateCacheKey(int $lessonId, int $userId, array $filters): string
     {
         $filterHash = md5(serialize($filters));
-        return "related_lessons_v4:{$lessonId}:{$userId}:{$filterHash}";
+        return "related_lessons_v6:{$lessonId}:{$userId}:{$filterHash}";
     }
     
     private function getCacheTTL(): int

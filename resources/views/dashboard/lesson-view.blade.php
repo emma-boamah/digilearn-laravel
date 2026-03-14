@@ -1396,6 +1396,38 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
+        .category-badges-container {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            z-index: 10;
+        }
+
+        .category-badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 0.25rem;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            min-width: 50px;
+        }
+
+        .bece-badge {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #000;
+        }
+
+        .wassce-badge {
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+        }
+
         .lesson-level-badge {
             position: absolute;
             top: 0.5rem;
@@ -3741,6 +3773,24 @@
                             
                             @if(!empty($relatedLesson['level_display']))
                                 <div class="lesson-level-badge">{{ $relatedLesson['level_display'] }}</div>
+                            @endif
+
+                            <!-- Category Badges -->
+                            @if(!empty($relatedLesson['categories']))
+                                <div class="category-badges-container">
+                                    @foreach($relatedLesson['categories'] as $category)
+                                        @php
+                                            $slug = strtolower($category['slug'] ?? '');
+                                            $isBece = str_contains($slug, 'bece');
+                                            $isWassce = str_contains($slug, 'wassce');
+                                        @endphp
+                                        @if($isBece || $isWassce)
+                                            <div class="category-badge {{ $isBece ? 'bece-badge' : 'wassce-badge' }}">
+                                                {{ strtoupper($category['name']) }}
+                                            </div>
+                                        @endif
+                                    @endforeach
+                                </div>
                             @endif
                             
                             @if($isRestricted)

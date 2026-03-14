@@ -260,11 +260,11 @@
       margin-left: var(--sidebar-width-expanded);
       width: calc(100vw - var(--sidebar-width-expanded));
       max-width: calc(100vw - var(--sidebar-width-expanded));
-      margin-top: calc(186px + var(--safe-area-inset-top, 0px)) !important; /* Fixed headers height */
+      margin-top: calc(250px + var(--safe-area-inset-top, 0px)) !important; /* Header (60) + Filter (56) = 116 */
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       overflow-x: hidden;
-      min-height: calc(100vh - 186px);
-      min-height: calc(100dvh - 186px);
+      min-height: calc(100vh - 250px);
+      min-height: calc(100dvh - 250px);
   }
 
   
@@ -688,9 +688,44 @@
       border-radius: 4px;
       font-size: 0.7rem;
       font-weight: 600;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0;
       text-transform: uppercase;
       letter-spacing: 0.025em;
+  }
+
+  .minimalist-quiz-card .badges-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+  }
+
+  .minimalist-quiz-card .category-badges-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+      margin-bottom: 0;
+  }
+
+  .minimalist-quiz-card .category-badge {
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: white;
+      text-align: center;
+  }
+
+  .minimalist-quiz-card .bece-badge {
+      background: linear-gradient(135deg, #FFD700, #FFA500);
+      color: #000;
+  }
+
+  .minimalist-quiz-card .wassce-badge {
+      background: linear-gradient(135deg, #1e3a8a, #3b82f6);
   }
 
   .minimalist-quiz-card .rating-stars {
@@ -1478,10 +1513,9 @@
           width: 100vw !important;
           max-width: 100vw !important;
           margin-left: 0 !important;
-          margin-top: 46.5px !important;
-          padding-top: 1rem !important;
+          margin-top: calc(210px + var(--safe-area-inset-top, 0px)) !important;
+          padding-top: 0 !important;
       }
-
       .youtube-sidebar {
           position: fixed;
           left: 0;
@@ -1558,24 +1592,9 @@
           z-index: 1001;
       }
 
-      .filter-bar {
-          flex-direction: column;
-          gap: 12px;
-          padding: 12px;
-          position: relative;
-          overflow-x: hidden;
-          width: 100%;
-          max-width: 100%;
-      }
-
-      .search-box {
-          min-width: 100%;
-          width: 100%;
-          max-width: 100%;
-      }
-
       .content-section {
-          padding: 1rem 0.75rem;
+          min-height: calc(100vh - 210px);
+          padding: 1.5rem 0.75rem 2rem !important;
           overflow-x: hidden;
           width: 100%;
           max-width: 100%;

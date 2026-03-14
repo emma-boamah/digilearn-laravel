@@ -29,7 +29,7 @@
             <div class="content-section">
                 <div class="content-grid">
                     @forelse($quizzes ?? [] as $quiz)
-                        @include('dashboard.quiz.partials.quiz-card', ['quiz' => $quiz])
+                        @include('dashboard.quiz.partials.quiz-card', ['quiz' => $quiz, 'selectedLevelGroup' => $selectedLevelGroup ?? 'primary-lower'])
                     @empty
                         <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
                             <div style="background-color: var(--white); border-radius: 1rem; padding: 3rem; box-shadow: var(--shadow-sm);">

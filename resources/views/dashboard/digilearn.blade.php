@@ -326,14 +326,13 @@
             width: calc(100vw - var(--sidebar-width-expanded)) !important;
             max-width: calc(100vw - var(--sidebar-width-expanded)) !important;
             margin-left: var(--sidebar-width-expanded) !important;
-            margin-top: calc(201.4px + var(--safe-area-inset-top)) !important; /*Account for both headers: 60px header + 56px filter bar */
+            margin-top: calc(255px + var(--safe-area-inset-top)) !important; /* Adjusted for dual-pill filter bar */
             /* padding-top: 1rem !important; Internal padding */
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-sizing: border-box;
             overflow-x: hidden;
             overflow-y: auto;
-            overflow-y: auto;
-            height: calc(100vh - (201.4px + var(--safe-area-inset-top))) !important; /* Full height minus headers */
+            height: calc(100vh - (255px + var(--safe-area-inset-top))) !important; /* Full height minus headers */
         }
 
         .youtube-sidebar.collapsed ~ .main-content {
@@ -768,13 +767,16 @@
             border-bottom: 1px solid var(--gray-200);
             padding-left: var(--sidebar-width-expanded);
             padding-right: 1rem;
-            padding-top: 0.75rem;
-            padding-bottom: 0.75rem;
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
             overflow: hidden; /* Hide overflow on container */
             box-sizing: border-box; /* Ensure padding is included in width */
             z-index: 997 !important;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
         }
         .youtube-sidebar.collapsed ~ .subjects-filter-container {
             padding-left: calc(var(--sidebar-width-collapsed) + 0.75rem);
@@ -1610,12 +1612,40 @@
             .subjects-filter-container {
                 left: 0 !important;
                 width: 100vw !important;
-                padding: 0 1rem !important;
-                height: 56px !important;
+                padding: 0.5rem 0 !important;
+                height: auto !important;
                 display: flex !important;
-                align-items: center !important;
+                flex-direction: column !important;
+                align-items: flex-start !important;
                 top: calc(116px + var(--safe-area-inset-top)) !important;
                 z-index: 997 !important;
+                gap: 0 !important;
+                background-color: var(--white);
+            }
+
+            .subjects-filter {
+                display: flex !important;
+                flex-wrap: nowrap !important;
+                align-items: center !important;
+                gap: 0.75rem !important;
+                overflow-x: auto !important;
+                padding: 0.5rem 1rem !important;
+                width: 100% !important;
+                height: auto !important;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+
+            .subjects-filter::-webkit-scrollbar {
+                display: none;
+            }
+
+            .subject-chip {
+                flex-shrink: 0 !important;
+                padding: 0.5rem 1.25rem !important;
+                font-size: 0.875rem !important;
+                white-space: nowrap !important;
             }
 
             .youtube-sidebar {
@@ -2260,13 +2290,35 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
             </div>
         </div>
 
-        <!-- Sepaarate Horizontal Subjects Filter -->
+        <!-- Sepaarate Horizontal Filters (Context & Subjects) -->
         <div class="subjects-filter-container">
+            <!-- Row 1: Context Filter -->
+            <div class="subjects-filter context-filter">
+                <div class="subject-chip {{ $context === 'all' ? 'active' : '' }}" data-context="all">
+                    <i class="fas fa-th-large"></i> All
+                </div>
+                @foreach($categories as $category)
+                    @php
+                        $catSlug = strtolower($category->slug ?? '');
+                        $isBece = str_contains($catSlug, 'bece');
+                        $isWassce = str_contains($catSlug, 'wassce');
+                        $levelGroup = $selectedLevelGroup ?? session('selected_level_group', Auth::user()->current_level_group ?? 'primary-lower');
+                    @endphp
+                    @if($catSlug !== 'normal' && ($isBece || ($isWassce && str_contains(strtolower($levelGroup), 'shs')) || (!$isBece && !$isWassce)))
+                        <div class="subject-chip {{ $context === $category->slug ? 'active' : '' }}" data-context="{{ $category->slug }}">
+                            <i class="{{ $catSlug === 'bece' ? 'fas fa-graduation-cap' : ($catSlug === 'wassce' ? 'fas fa-university' : 'fas fa-book') }}"></i> 
+                            {{ $category->name }}
+                        </div>
+                    @endif
+                @endforeach
+            </div>
+
+            <!-- Row 2: Subjects Filter -->
             <div class="subjects-filter">
                 @foreach($subjects ?? [] as $subject)
-                    <div class="subject-chip {{ $subject['slug'] === 'all' ? 'active' : '' }}" data-subject="{{ $subject['slug'] }}">
-                        {!! $subjectIcons[$subject['slug']] ?? $defaultIcon !!}
-                        {{ $subject['name'] }}
+                    <div class="subject-chip {{ ($subject['slug'] ?? '') === 'all' ? 'active' : '' }}" data-subject="{{ $subject['slug'] ?? '' }}">
+                        {!! $subjectIcons[$subject['slug'] ?? ''] ?? $defaultIcon !!}
+                        {{ $subject['name'] ?? '' }}
                     </div>
                 @endforeach
             </div>
@@ -2333,6 +2385,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
             initializeMobileUI();
             initializeSidebar();
             initializeDropdowns();
+            initializeContextFilter();
             initializeSubjectFilter();
             initializeSearch();
             initializeInfiniteScroll();
@@ -2762,8 +2815,32 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
         }
 
         // Subject filter functionality
+        function initializeContextFilter() {
+            const contextChips = document.querySelectorAll('.context-filter .subject-chip');
+            contextChips.forEach(chip => {
+                chip.addEventListener('click', function() {
+                    const context = this.getAttribute('data-context');
+                    const url = new URL(window.location.href);
+                    
+                    if (context === 'all') {
+                        url.searchParams.delete('context');
+                    } else {
+                        url.searchParams.set('context', context);
+                    }
+                    
+                    // Keep level_group if it exists
+                    // url.searchParams.delete('grade'); // Remove specific grade when switching context?
+                    
+                    // Reset subject filter when context changes
+                    url.searchParams.delete('subject');
+                    window.location.href = url.toString();
+                });
+            });
+        }
+
         function initializeSubjectFilter() {
-            const subjectChips = document.querySelectorAll('.subject-chip');
+            // Only targets chips with data-subject attribute (Row 2)
+            const subjectChips = document.querySelectorAll('.subjects-filter:not(.context-filter) .subject-chip');
 
             subjectChips.forEach(chip => {
                 chip.addEventListener('click', function() {

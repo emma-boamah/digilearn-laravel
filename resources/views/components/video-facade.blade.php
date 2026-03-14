@@ -23,7 +23,8 @@
     'showPlayOverlay' => true,
     'lazyLoad' => true,
     'isRestricted' => false,
-    'upgradePrompt' => null
+    'upgradePrompt' => null,
+    'categories' => []
 ])
 
 <div class="{{ $class }} video-facade-card hover-video-card"
@@ -78,6 +79,25 @@
         <!-- Level Badge -->
         @if($showLevelBadge && $levelDisplay)
         <div class="lesson-level-badge">{{ $levelDisplay }}</div>
+        @endif
+
+        <!-- Category Badges -->
+        @if(!empty($categories))
+            <div class="category-badges-container">
+                @foreach($categories as $category)
+                    @php
+                        $catSlug = strtolower($category['slug'] ?? '');
+                        $isBece = str_contains($catSlug, 'bece');
+                        $isWassce = str_contains($catSlug, 'wassce');
+                        $currentLevelGroup = $attributes->get('data-selected-level', session('selected_level_group', Auth::user()->current_level_group ?? 'primary-lower'));
+                    @endphp
+                    @if($isBece || ($isWassce && str_contains(strtolower($currentLevelGroup), 'shs')))
+                        <div class="category-badge {{ $isBece ? 'bece-badge' : 'wassce-badge' }}">
+                            {{ strtoupper($category['name']) }}
+                        </div>
+                    @endif
+                @endforeach
+            </div>
         @endif
 
         <!-- Play Overlay -->
@@ -204,6 +224,38 @@
     letter-spacing: 0.025em;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     z-index: 10;
+}
+
+.category-badges-container {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    z-index: 10;
+}
+
+.category-badge {
+    padding: 0.2rem 0.6rem;
+    border-radius: 0.25rem;
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    min-width: 50px;
+}
+
+.bece-badge {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: #000;
+}
+
+.wassce-badge {
+    background: linear-gradient(135deg, #1e3a8a, #3b82f6);
 }
 
 .play-overlay {

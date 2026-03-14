@@ -325,8 +325,10 @@ class DashboardController extends Controller
     public function digilearn(Request $request)
     {
         $user = Auth::user();
-        $selectedLevelGroup = $user->current_level_group;
-
+        $levelGroups = \App\Models\LevelGroup::with('levels')->orderBy('display_order')->get();
+        $context = $request->query('context', 'all');
+        $selectedLevelGroup = $request->query('level_group', $user->current_level_group);
+        
         if (!$selectedLevelGroup) {
             // Fallback to session for backward compatibility
             $selectedLevelGroup = session('selected_level_group');
@@ -377,14 +379,14 @@ class DashboardController extends Controller
             }
             
             if ($internalLevelKey) {
-                $lessons = $this->getLessonsForLevel($internalLevelKey);
+                $lessons = $this->getLessonsForLevel($internalLevelKey, $context);
             } else {
                 // Fallback to all if internal key not found (unlikely)
-                $lessons = $this->getLessonsForLevelGroup($selectedLevelGroup);
+                $lessons = $this->getLessonsForLevelGroup($selectedLevelGroup, $context);
             }
         } else {
             // Default: Show all lessons for the level group (or we could default to user's current grade)
-            $lessons = $this->getLessonsForLevelGroup($selectedLevelGroup);
+            $lessons = $this->getLessonsForLevelGroup($selectedLevelGroup, $context);
         }
 
         // --- End Grade Unification ---
@@ -417,6 +419,7 @@ class DashboardController extends Controller
         $lessons = array_slice($lessons, 0, 12);
 
         $subjects = $this->getSubjectsFromLessons($lessons);
+        $categories = \App\Models\ContentCategory::orderBy('name')->get();
 
         return view('dashboard.digilearn', compact(
             'selectedLevelGroup', 
@@ -425,7 +428,10 @@ class DashboardController extends Controller
             'canonicalGrades', 
             'unlockedGrades', 
             'validSelectedGrade',
-            'totalLessons'
+            'totalLessons',
+            'levelGroups',
+            'context',
+            'categories'
         ));
     }
 
@@ -826,16 +832,23 @@ class DashboardController extends Controller
     /**
      * Get lessons for a specific level (grade level)
      */
-    private function getLessonsForLevel($level)
+    private function getLessonsForLevel($level, $categorySlug = null)
     {
         try {
             // Convert level format from "primary-1" to "Primary 1" to match database
             $dbLevel = $this->convertLevelFormat($level);
 
             // Query approved videos for the specific grade level
-            $videos = Video::approved()
-                ->where('grade_level', $dbLevel)
-                ->with(['uploader', 'documents', 'quiz', 'subject'])
+            $query = Video::approved()
+                ->where('grade_level', $dbLevel);
+
+            if ($categorySlug && $categorySlug !== 'all') {
+                $query->whereHas('categories', function($q) use ($categorySlug) {
+                    $q->where('slug', $categorySlug);
+                });
+            }
+
+            $videos = $query->with(['uploader', 'documents', 'quiz', 'subject', 'categories'])
                 ->orderBy('created_at', 'desc')
                 ->get();
 
@@ -877,6 +890,13 @@ class DashboardController extends Controller
                     'vimeo_id' => $video->vimeo_id,
                     'external_video_id' => $video->external_video_id,
                     'mux_playback_id' => $video->mux_playback_id,
+                    'categories' => $video->categories->map(function($cat) {
+                        return [
+                            'id' => $cat->id,
+                            'name' => $cat->name,
+                            'slug' => $cat->slug
+                        ];
+                    })->toArray(),
                     'documents_count' => $video->documents->count(),
                     'documents' => $video->documents->map(function($doc) {
                         return [
@@ -1705,7 +1725,26 @@ class DashboardController extends Controller
      */
     public function savedLessons()
     {
-        $savedLessons = SavedLesson::getSavedLessons(Auth::id());
+        $savedLessons = SavedLesson::where('user_id', Auth::id())
+            ->orderBy('saved_at', 'desc')
+            ->get();
+            
+        // Because lesson_id in saved_lessons is an encoded string, the standard Eloquent 
+        // relationship won't work automatically if it expects an integer ID.
+        // We'll manually decode and fetch the videos.
+        $decodedIds = $savedLessons->map(function($sl) {
+            return \App\Services\UrlObfuscator::decode($sl->lesson_id);
+        })->filter()->unique()->toArray();
+        
+        $videos = Video::with('categories')->whereIn('id', $decodedIds)->get()->keyBy('id');
+        
+        // Populate the relation manually
+        foreach ($savedLessons as $savedLesson) {
+            $decodedId = \App\Services\UrlObfuscator::decode($savedLesson->lesson_id);
+            if ($decodedId && isset($videos[$decodedId])) {
+                $savedLesson->setRelation('video', $videos[$decodedId]);
+            }
+        }
         
         return view('dashboard.saved-lessons', compact('savedLessons'));
     }
@@ -2405,7 +2444,7 @@ class DashboardController extends Controller
     /**
      * Get lessons for a level group (combines all levels in the group)
      */
-    private function getLessonsForLevelGroup($groupId)
+    private function getLessonsForLevelGroup($groupId, $categorySlug = null)
     {
         $levelGroups = $this->getLevelGroups();
         
@@ -2423,7 +2462,7 @@ class DashboardController extends Controller
         // Get lessons from all individual levels in the group
         foreach ($levels as $levelData) {
             $levelId = $levelData['id'];
-            $levelLessons = $this->getLessonsForLevel($levelId);
+            $levelLessons = $this->getLessonsForLevel($levelId, $categorySlug);
             
             // Add level information to each lesson
             foreach ($levelLessons as &$lesson) {

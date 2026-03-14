@@ -192,10 +192,18 @@ class Quiz extends Model
 
         // Optional: Verify slug matches for SEO purposes
         if ($quiz && $parsed['slug'] !== UrlObfuscator::generateSlug($quiz->title)) {
-            // Slug doesn't match, but we still return the quiz for flexibility
+            // Slug doesn't match, but we still return the video for flexibility
             // In production, you might want to redirect to the correct URL
         }
 
         return $quiz;
+    }
+
+    /**
+     * Get all of the categories for the quiz.
+     */
+    public function categories()
+    {
+        return $this->morphToMany(ContentCategory::class, 'categorizable');
     }
 }

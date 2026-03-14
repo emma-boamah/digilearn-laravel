@@ -32,11 +32,14 @@ class QuizController extends Controller
      */
     public function index(Request $request)
     {
-        $selectedLevelGroup = session('selected_level_group', 'grade-1-3');
+        $user = Auth::user();
+        $levelGroups = \App\Models\LevelGroup::with('levels')->orderBy('display_order')->get();
+        
+        $context = $request->query('context', 'all');
+        $selectedLevelGroup = $request->query('level_group', session('selected_level_group', 'grade-1-3'));
         $userId = Auth::id();
 
         // Determine subscription access outside cache
-        $user = Auth::user();
         $requiresSubscription = false;
         $allowedGradeLevels = [];
         if (!$user || !$user->is_superuser) {
@@ -46,7 +49,7 @@ class QuizController extends Controller
             }
         }
 
-        // --- Grade Unification & Locked Logic ---
+        // Grade Unification & Locked Logic
         $group = \App\Models\LevelGroup::where('slug', $selectedLevelGroup)->with('levels')->first();
         $canonicalGrades = $group ? $group->levels->pluck('title')->toArray() : [];
         $unlockedGrades = $canonicalGrades;
@@ -61,30 +64,43 @@ class QuizController extends Controller
                 session()->flash('warning', 'Invalid grade selected.');
             }
         }
-        // --- End Grade Unification ---
+        // End Grade Unification
 
         // Cache key for base quiz data (changes less frequently)
-        $cacheKey = "quizzes.{$selectedLevelGroup}." . ($validSelectedGrade ?? 'all');
+        $cacheKey = "quizzes_v2.{$selectedLevelGroup}." . ($validSelectedGrade ?? 'all') . ".context.{$context}";
         $cacheDuration = 300; // 5 minutes
 
         // Get search term from request
         $search = $request->query('search');
 
         // Get base quiz data with caching
-        $baseQuizzes = Cache::remember($cacheKey, $cacheDuration, function () use ($selectedLevelGroup, $validSelectedGrade, $userId, $allowedGradeLevels, $requiresSubscription, $user) {
-            $query = \App\Models\Quiz::with(['uploader', 'ratings', 'attempts', 'subject']);
+        $baseQuizzes = Cache::remember($cacheKey, $cacheDuration, function () use ($selectedLevelGroup, $validSelectedGrade, $userId, $allowedGradeLevels, $requiresSubscription, $user, $context) {
+            $query = \App\Models\Quiz::with(['uploader', 'ratings', 'attempts', 'subject', 'categories']);
+
+            if ($context && $context !== 'all') {
+                $query->whereHas('categories', function($q) use ($context) {
+                    $q->where('slug', $context);
+                });
+            }
 
             // Filter by grade level if specified
             if ($validSelectedGrade) {
                 // If a specific grade within the group is selected, filter by it
                 $query->where('grade_level', $validSelectedGrade);
             } elseif ($selectedLevelGroup && $selectedLevelGroup !== 'all') {
-                $mapping = $this->getGradeLevelMapping();
-                if (isset($mapping[$selectedLevelGroup])) {
-                    $query->whereIn('grade_level', $mapping[$selectedLevelGroup]);
+                // Try to find levels belonging to this group
+                $group = \App\Models\LevelGroup::where('slug', $selectedLevelGroup)->with('levels')->first();
+                if ($group && $group->levels->count() > 0) {
+                    $query->whereIn('grade_level', $group->levels->pluck('title')->toArray());
                 } else {
-                    // Fallback to exact match if no mapping exists
-                    $query->where('grade_level', $selectedLevelGroup);
+                    // Fallback to mapping for legacy support
+                    $mapping = $this->getGradeLevelMapping();
+                    if (isset($mapping[$selectedLevelGroup])) {
+                        $query->whereIn('grade_level', $mapping[$selectedLevelGroup]);
+                    } else {
+                        // Fallback to exact match if no mapping exists
+                        $query->where('grade_level', $selectedLevelGroup);
+                    }
                 }
             }
 
@@ -99,26 +115,6 @@ class QuizController extends Controller
                 $quizzes = collect(); // No quizzes if no access
             }
             // Super users have access to all quizzes regardless of subscription
-
-            // Debug logging
-            $debugAllowedGradeLevels = $user && !$user->is_superuser ? \App\Services\SubscriptionAccessService::getAllowedGradeLevels($user) : ['all'];
-            Log::info("Quiz filtering debug", [
-                'selectedLevelGroup' => $selectedLevelGroup,
-                'cacheKey' => "quizzes.{$selectedLevelGroup}",
-                'total_quizzes_found' => $quizzes->count(),
-                'grade_levels_in_db' => $quizzes->pluck('grade_level')->unique()->toArray(),
-                'sample_quiz_titles' => $quizzes->take(3)->pluck('title')->toArray(),
-                'session_selected_level_group' => session('selected_level_group'),
-                'user_id' => $userId,
-                'user_is_superuser' => $user ? $user->is_superuser : false,
-                'allowed_grade_levels' => $debugAllowedGradeLevels,
-                'requires_subscription' => $requiresSubscription,
-                'query_sql' => $query->toSql(),
-                'query_bindings' => $query->getBindings(),
-                'filtered_quizzes_count' => $quizzes->count(),
-                'all_quizzes_count' => \App\Models\Quiz::count(),
-                'grade_level_mapping_used' => isset($this->getGradeLevelMapping()[$selectedLevelGroup]) ? $this->getGradeLevelMapping()[$selectedLevelGroup] : null
-            ]);
 
             return $quizzes;
         });
@@ -142,7 +138,7 @@ class QuizController extends Controller
         // Personalize with user-specific data (cached per user)
         $quizzes = $baseQuizzes->map(function ($quiz) use ($userId) {
             // Cache user-specific data for this quiz
-            $userCacheKey = "quiz_user_data.{$userId}.{$quiz->id}";
+            $userCacheKey = "quiz_user_data_v2.{$userId}.{$quiz->id}";
             $userCacheDuration = 60; // 1 minute for user data
 
             return Cache::remember($userCacheKey, $userCacheDuration, function () use ($quiz, $userId) {
@@ -189,6 +185,13 @@ class QuizController extends Controller
                         'total' => (int) ($userAttempts->first()->total_questions ?? 0),
                         'percentage' => (int) round($userAttempts->first()->score_percentage ?? 0),
                     ] : null,
+                    'categories' => $quiz->categories->map(function($cat) {
+                        return [
+                            'id' => $cat->id,
+                            'name' => $cat->name,
+                            'slug' => $cat->slug
+                        ];
+                    })->toArray(),
                     'created_at' => $quiz->created_at,
                 ];
             });
@@ -196,8 +199,9 @@ class QuizController extends Controller
 
         // Get available subjects for the subjects filter
         $subjects = $this->getSubjectsFromQuizzes($quizzes);
+        $categories = \App\Models\ContentCategory::orderBy('name')->get();
 
-        return view('dashboard.quiz.index', compact('quizzes', 'selectedLevelGroup', 'requiresSubscription', 'subjects', 'canonicalGrades', 'unlockedGrades', 'validSelectedGrade'));
+        return view('dashboard.quiz.index', compact('quizzes', 'selectedLevelGroup', 'requiresSubscription', 'subjects', 'canonicalGrades', 'unlockedGrades', 'validSelectedGrade', 'levelGroups', 'context', 'categories'));
     }
 
     /**
