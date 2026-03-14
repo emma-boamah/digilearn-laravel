@@ -661,6 +661,18 @@
                     <i class="fas fa-search"></i>
                     <input type="text" placeholder="Search contents..." value="{{ $query }}" id="searchInput">
                 </div>
+                <select id="levelGroupFilter" class="toolbar-select">
+                    <option value="">All Levels</option>
+                    @foreach($levelGroups as $group)
+                        <option value="{{ $group->slug }}">{{ $group->title }}</option>
+                    @endforeach
+                </select>
+                <select id="contextFilter" class="toolbar-select">
+                    <option value="">All Categories</option>
+                    @foreach($categories as $category)
+                        <option value="{{ $category->slug }}">{{ $category->name }}</option>
+                    @endforeach
+                </select>
             </div>
             <button class="toolbar-btn primary" id="uploadBtn">
                 <i class="fas fa-upload"></i>
@@ -678,7 +690,9 @@
                     </th>
                     <th>Content</th>
                     <th>Subject</th>
+                    <th>Level Group</th>
                     <th>Grade Level</th>
+                    <th>Categories</th>
                     <th>Date</th>
                     <th class="stats-cell">Views</th>
                     <th class="stats-cell">Comments</th>
@@ -734,10 +748,32 @@
                     </td>
                     <td>
                         @if($content->grade_level)
+                            @php
+                                $level = \App\Models\Level::where('title', $content->grade_level)->with('levelGroup')->first();
+                                $levelGroupTitle = $level ? $level->levelGroup->title : 'Unknown';
+                            @endphp
+                            {{ $levelGroupTitle }}
+                        @else
+                            <span class="text-gray-500">—</span>
+                        @endif
+                    </td>
+                    <td>
+                        @if($content->grade_level)
                             {{ $content->grade_level }}
                         @else
                             <span class="text-gray-500">—</span>
                         @endif
+                    </td>
+                    <td>
+                        <div class="flex flex-wrap gap-1">
+                            @forelse($content->categories as $category)
+                                <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                                    {{ $category->name }}
+                                </span>
+                            @empty
+                                <span class="text-gray-400 text-xs italic">Normal</span>
+                            @endforelse
+                        </div>
                     </td>
                     <td class="date-cell">
                         <div class="date-primary">{{ $content->published_date }}</div>
@@ -1075,6 +1111,19 @@
                     </select>
                 </div>
 
+                <!-- Categories -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Content Categories</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        @foreach($categories as $category)
+                            <label class="flex items-center p-2 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                                <input type="checkbox" name="upload_category_ids[]" value="{{ $category->id }}" class="mr-2 h-4 w-4 text-blue-600 rounded">
+                                <span class="text-sm text-gray-700">{{ $category->name }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+
                 <!-- Thumbnail -->
                 <div class="mb-4">
                     <label for="thumbnail_file" class="block text-sm font-medium text-gray-700 mb-2">Thumbnail Image <span class="text-sm text-gray-500">(Optional)</span></label>
@@ -1363,6 +1412,46 @@
                     url.searchParams.set('q', this.value);
                     window.location.href = url.toString();
                 }
+            });
+        }
+
+        // Level Group Filter
+        const levelGroupFilter = document.getElementById('levelGroupFilter');
+        if (levelGroupFilter) {
+            // Set initial value from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('level_group')) {
+                levelGroupFilter.value = urlParams.get('level_group');
+            }
+
+            levelGroupFilter.addEventListener('change', function() {
+                const url = new URL(window.location);
+                if (this.value) {
+                    url.searchParams.set('level_group', this.value);
+                } else {
+                    url.searchParams.delete('level_group');
+                }
+                window.location.href = url.toString();
+            });
+        }
+
+        // Context (Category) Filter
+        const contextFilter = document.getElementById('contextFilter');
+        if (contextFilter) {
+            // Set initial value from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('context')) {
+                contextFilter.value = urlParams.get('context');
+            }
+
+            contextFilter.addEventListener('change', function() {
+                const url = new URL(window.location);
+                if (this.value) {
+                    url.searchParams.set('context', this.value);
+                } else {
+                    url.searchParams.delete('context');
+                }
+                window.location.href = url.toString();
             });
         }
 
@@ -1693,6 +1782,7 @@
             thumbnail: null,
             video_source: 'local',
             external_video_url: '',
+            category_ids: [],
             documents: [],
             quiz: {
                 questions: [],
@@ -1756,6 +1846,7 @@
             uploadData = {
                 video: null,
                 thumbnail: null,
+                category_ids: [],
                 documents: [],
                 quiz: {
                     questions: [],
@@ -1796,6 +1887,10 @@
             if (subjectId) subjectId.value = '';
             if (description) description.value = '';
             if (gradeLevel) gradeLevel.value = '';
+
+            // Clear category checkboxes
+            document.querySelectorAll('input[name="upload_category_ids[]"]').forEach(cb => cb.checked = false);
+
             if (fileUploadArea) fileUploadArea.innerHTML = `
                 <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
                 <p class="text-gray-600">Click to upload or drag and drop</p>
@@ -2779,6 +2874,11 @@
                     return;
                 }
 
+                // Collect selected category IDs
+                const selectedCategoryIds = Array.from(document.querySelectorAll('input[name="upload_category_ids[]"]:checked'))
+                    .map(cb => cb.value);
+                uploadData.category_ids = selectedCategoryIds;
+
                 // Log the data being sent for debugging
                 console.log('Upload data collected:', {
                     hasVideo: !!uploadData.video,
@@ -2801,7 +2901,8 @@
                         grade_level: gradeLevelValue,
                         video_source: uploadData.video_source,
                         external_video_url: uploadData.external_video_url,
-                        upload_destination: uploadData.upload_destination
+                        upload_destination: uploadData.upload_destination,
+                        category_ids: uploadData.category_ids
                     },
                     documents: uploadData.documents,
                     quiz: uploadData.quiz
@@ -3113,6 +3214,12 @@
                 finalFormData.append('video_source', finalData.video.video_source);
                 finalFormData.append('upload_destination', finalData.video.upload_destination);
 
+                if (finalData.video.category_ids && finalData.video.category_ids.length > 0) {
+                    finalData.video.category_ids.forEach(id => {
+                        finalFormData.append('category_ids[]', id);
+                    });
+                }
+
                 if (uploadData.thumbnail) {
                     finalFormData.append('thumbnail_file', uploadData.thumbnail);
                 }
@@ -3171,6 +3278,12 @@
                     formData.append('description', finalData.video.description);
                     formData.append('grade_level', finalData.video.grade_level);
                     formData.append('video_source', finalData.video.video_source);
+
+                    if (finalData.video.category_ids && finalData.video.category_ids.length > 0) {
+                        finalData.video.category_ids.forEach(id => {
+                            formData.append('category_ids[]', id);
+                        });
+                    }
 
                     if (finalData.video.video_source === 'vimeo') {
                         formData.append('vimeo_url', finalData.video.external_video_url);
@@ -3244,6 +3357,12 @@
                     formData.append('description', finalData.video.description);
                     formData.append('grade_level', finalData.video.grade_level);
                     formData.append('video_source', finalData.video.video_source);
+
+                    if (finalData.video.category_ids && finalData.video.category_ids.length > 0) {
+                        finalData.video.category_ids.forEach(id => {
+                            formData.append('category_ids[]', id);
+                        });
+                    }
 
                     if (finalData.video.video_source === 'local') {
                         formData.append('video_file', finalData.video.file);

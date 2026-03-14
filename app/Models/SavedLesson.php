@@ -37,6 +37,14 @@ class SavedLesson extends Model
     }
 
     /**
+     * Get the video associated with this saved lesson
+     */
+    public function video(): BelongsTo
+    {
+        return $this->belongsTo(Video::class, 'lesson_id');
+    }
+
+    /**
      * Check if a lesson is saved by a user
      */
     public static function isSaved($userId, $lessonId): bool

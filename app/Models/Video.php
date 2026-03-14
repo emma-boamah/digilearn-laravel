@@ -117,6 +117,14 @@ class Video extends Model
     }
 
     /**
+     * Get all of the categories for the video.
+     */
+    public function categories()
+    {
+        return $this->morphToMany(ContentCategory::class, 'categorizable');
+    }
+
+    /**
      * Get the comments for this video.
      */
     public function comments()

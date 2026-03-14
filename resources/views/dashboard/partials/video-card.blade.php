@@ -29,6 +29,7 @@
     :showDuration="true"
     :showPlayOverlay="true"
     :lazyLoad="true"
+    :categories="$item['categories'] ?? []"
 >
     @if($isUniversity)
         @if(isset($item['description']))

@@ -2979,9 +2979,11 @@ class AdminController extends Controller
         $query = $request->get('q', '');
         $type = $request->get('type', 'all'); // all, videos, documents, quizzes
         $sort = $request->get('sort', 'newest'); // newest, oldest, most_viewed, most_liked
+        $levelGroup = $request->get('level_group', '');
+        $context = $request->get('context', '');
 
         // Get all content with unified structure
-        $contents = $this->getUnifiedContents($query, $type, $sort);
+        $contents = $this->getUnifiedContents($query, $type, $sort, $levelGroup, $context);
 
         // Get content statistics
         $stats = [
@@ -2992,22 +2994,26 @@ class AdminController extends Controller
             'pending_reviews' => Video::pending()->count(),
         ];
 
+        // Get level groups for filters
+        $levelGroups = \App\Models\LevelGroup::with('levels')->orderBy('display_order')->get();
         // Get subjects for the upload modal
         $subjects = Subject::orderBy('name')->get();
+        // Get categories for filters
+        $categories = \App\Models\ContentCategory::orderBy('name')->get();
 
-        return view('admin.contents.index', compact('contents', 'stats', 'query', 'type', 'sort', 'subjects'));
+        return view('admin.contents.index', compact('contents', 'stats', 'query', 'type', 'sort', 'subjects', 'levelGroups', 'context', 'categories'));
     }
 
     /**
-     * Get unified contents for the dashboard
+     * Get unified contents from all sources (Video, Document, Quiz)
      */
-    private function getUnifiedContents($query = '', $type = 'all', $sort = 'newest')
+    private function getUnifiedContents($query = '', $type = 'all', $sort = 'newest', $levelGroupSlug = '', $contextSlug = '')
     {
         $contents = collect();
 
-        // Get videos (always included, with attachment counts)
+        // Get videos
         if ($type === 'all' || $type === 'videos' || $type === 'pending') {
-            $videoQuery = Video::with(['uploader:id,name,email', 'quiz', 'documents', 'quizzes', 'comments', 'subject:id,name'])
+            $videoQuery = Video::with(['uploader:id,name,email', 'subject:id,name', 'documents', 'quizzes', 'categories'])
                 ->when($query, function($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
                       ->orWhere('description', 'like', "%{$query}%");
@@ -3016,6 +3022,22 @@ class AdminController extends Controller
             // Filter for pending videos if type is 'pending'
             if ($type === 'pending') {
                 $videoQuery->where('status', 'pending');
+            }
+
+            // Filter by level group
+            if ($levelGroupSlug) {
+                $levelGroup = \App\Models\LevelGroup::where('slug', $levelGroupSlug)->with('levels')->first();
+                if ($levelGroup) {
+                    $levelTitles = $levelGroup->levels->pluck('title')->toArray();
+                    $videoQuery->whereIn('grade_level', $levelTitles);
+                }
+            }
+
+            // Filter by category (context)
+            if ($contextSlug) {
+                $videoQuery->whereHas('categories', function($catQ) use ($contextSlug) {
+                    $catQ->where('slug', $contextSlug);
+                });
             }
 
             $videos = $videoQuery->select([
@@ -3047,6 +3069,18 @@ class AdminController extends Controller
                     $q->where('title', 'like', "%{$query}%")
                       ->orWhere('description', 'like', "%{$query}%");
                 })
+                ->when($levelGroupSlug, function($q) use ($levelGroupSlug) {
+                    $levelGroup = \App\Models\LevelGroup::where('slug', $levelGroupSlug)->with('levels')->first();
+                    if ($levelGroup) {
+                        $levelTitles = $levelGroup->levels->pluck('title')->toArray();
+                        $q->whereIn('grade_level', $levelTitles);
+                    }
+                })
+                ->when($contextSlug, function($q) use ($contextSlug) {
+                    $q->whereHas('categories', function($catQ) use ($contextSlug) {
+                        $catQ->where('slug', $contextSlug);
+                    });
+                })
                 ->select([
                     'id', 'title', 'description', 'file_path', 'views', 'created_at',
                     'uploaded_by', 'grade_level',
@@ -3077,6 +3111,18 @@ class AdminController extends Controller
                       ->orWhereHas('subject', function($subQ) use ($query) {
                           $subQ->where('name', 'like', "%{$query}%");
                       });
+                })
+                ->when($levelGroupSlug, function($q) use ($levelGroupSlug) {
+                    $levelGroup = \App\Models\LevelGroup::where('slug', $levelGroupSlug)->with('levels')->first();
+                    if ($levelGroup) {
+                        $levelTitles = $levelGroup->levels->pluck('title')->toArray();
+                        $q->whereIn('grade_level', $levelTitles);
+                    }
+                })
+                ->when($contextSlug, function($q) use ($contextSlug) {
+                    $q->whereHas('categories', function($catQ) use ($contextSlug) {
+                        $catQ->where('slug', $contextSlug);
+                    });
                 })
                 ->select([
                     'id', 'title', 'created_at', 'uploaded_by',
@@ -3189,6 +3235,11 @@ class AdminController extends Controller
                 $video = Video::create($videoData);
                 $responseData['video_id'] = $video->id;
 
+                // Sync categories if provided
+                if ($request->has('category_ids')) {
+                    $video->categories()->sync($request->category_ids);
+                }
+
                 // Handle local video file upload (for Vimeo upload or local storage)
                 if ($request->hasFile('video_file')) {
                     $videoFile = $request->file('video_file');
@@ -3271,6 +3322,12 @@ class AdminController extends Controller
                     ];
 
                     $document = Document::create($docData);
+                    
+                    // Inherit categories from parent video
+                    if ($video && $video->categories()->count() > 0) {
+                        $document->categories()->sync($video->categories()->pluck('content_categories.id')->toArray());
+                    }
+
                     $documents[] = $document;
                     $this->notificationService->notifyNewDocument($document);
                 }
@@ -3297,6 +3354,11 @@ class AdminController extends Controller
                     ];
 
                     $quiz = Quiz::create($quizDataToCreate);
+
+                    // Inherit categories from parent video
+                    if ($video && $video->categories()->count() > 0) {
+                        $quiz->categories()->sync($video->categories()->pluck('content_categories.id')->toArray());
+                    }
 
                     // Update video's quiz_id for consistency
                     $video->quiz_id = $quiz->id;
@@ -3561,8 +3623,10 @@ class AdminController extends Controller
             $subjects = Subject::orderBy('name')->get();
             $availableQuizzes = Quiz::whereNull('video_id')->orWhere('video_id', $contentId)->get();
             $availableDocuments = Document::whereNull('video_id')->orWhere('video_id', $contentId)->get();
+            $levelGroups = \App\Models\LevelGroup::with('levels')->orderBy('display_order')->get();
+            $categories = \App\Models\ContentCategory::orderBy('name')->get();
 
-            return view('admin.contents.edit', compact('content', 'contentType', 'subjects', 'availableQuizzes', 'availableDocuments'));
+            return view('admin.contents.edit', compact('content', 'contentType', 'subjects', 'availableQuizzes', 'availableDocuments', 'levelGroups', 'categories'));
         }
 
         // For other content types, redirect to their specific edit pages
@@ -3587,7 +3651,9 @@ class AdminController extends Controller
             'quiz_id' => 'nullable|exists:quizzes,id',
             'document_ids' => 'nullable|array',
             'document_ids.*' => 'exists:documents,id',
-            'is_featured' => 'boolean'
+            'is_featured' => 'boolean',
+            'category_ids' => 'nullable|array',
+            'category_ids.*' => 'exists:content_categories,id'
         ]);
 
         // Find the video
@@ -3621,6 +3687,13 @@ class AdminController extends Controller
             } else {
                 // Remove all document associations
                 Document::where('video_id', $video->id)->update(['video_id' => null]);
+            }
+
+            // Sync categories
+            if ($request->has('category_ids')) {
+                $video->categories()->sync($request->category_ids);
+            } else {
+                $video->categories()->detach();
             }
 
             DB::commit();
@@ -3941,6 +4014,15 @@ class AdminController extends Controller
 
             $video = Video::create($videoData);
 
+            // Sync categories if provided
+            if ($request->has('category_ids')) {
+                $video->categories()->sync($request->category_ids);
+                Log::info('Video categories synced', [
+                    'video_id' => $video->id,
+                    'category_ids' => $request->category_ids
+                ]);
+            }
+
             // Notify if video is approved immediately (e.g. external URL)
             if ($video->status === 'approved') {
                 $this->notificationService->notifyNewVideo($video);
@@ -4129,6 +4211,13 @@ class AdminController extends Controller
                 ];
 
                 $document = Document::create($docData);
+                
+                // Inherit categories from parent video
+                $categoryIds = $video->categories()->pluck('content_categories.id')->toArray();
+                if (!empty($categoryIds)) {
+                    $document->categories()->sync($categoryIds);
+                }
+
                 $documents[] = $document;
                 $this->notificationService->notifyNewDocument($document);
             }
@@ -4199,6 +4288,12 @@ class AdminController extends Controller
             ];
 
             $quiz = Quiz::create($quizDataToCreate);
+
+            // Inherit categories from parent video
+            $categoryIds = $video->categories()->pluck('content_categories.id')->toArray();
+            if (!empty($categoryIds)) {
+                $quiz->categories()->sync($categoryIds);
+            }
 
             // Handle quiz image uploads
             if ($request->hasFile('question_images')) {

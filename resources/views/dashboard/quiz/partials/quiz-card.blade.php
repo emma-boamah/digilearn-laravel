@@ -10,8 +10,28 @@
         <div class="title-section">
             <h3 class="card-title" title="{{ $quiz['title'] }}">{{ $quiz['title'] }}</h3>
             
-            <div class="quiz-level-badge-minimal">
-                {{ $quiz['level_display'] ?? 'All Levels' }}
+            <div class="badges-row">
+                <div class="quiz-level-badge-minimal">
+                    {{ $quiz['level_display'] ?? 'All Levels' }}
+                </div>
+                
+                @if(isset($quiz['categories']) && count($quiz['categories']) > 0)
+                    <div class="category-badges-container">
+                        @foreach($quiz['categories'] as $category)
+                            @php
+                                $slug = strtolower($category['slug'] ?? '');
+                                $isBece = $slug === 'bece';
+                                $isWassce = $slug === 'wassce';
+                                $levelGroup = $selectedLevelGroup ?? session('selected_level_group', Auth::user()->current_level_group ?? 'primary-lower');
+                            @endphp
+                            @if($isBece || ($isWassce && str_contains(strtolower($levelGroup), 'shs')))
+                                <span class="category-badge {{ $slug }}-badge">
+                                    {{ strtoupper($category['slug']) }}
+                                </span>
+                            @endif
+                        @endforeach
+                    </div>
+                @endif
             </div>
             
             <!-- Rating Stars -->

@@ -68,16 +68,31 @@
                 <select id="grade_level" name="grade_level" required
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">Select Grade Level</option>
-                    <option value="Primary 1" {{ $content->grade_level == 'Primary 1' ? 'selected' : '' }}>Primary 1</option>
-                    <option value="Primary 2" {{ $content->grade_level == 'Primary 2' ? 'selected' : '' }}>Primary 2</option>
-                    <option value="Primary 3" {{ $content->grade_level == 'Primary 3' ? 'selected' : '' }}>Primary 3</option>
-                    <option value="JHS 1" {{ $content->grade_level == 'JHS 1' ? 'selected' : '' }}>JHS 1</option>
-                    <option value="JHS 2" {{ $content->grade_level == 'JHS 2' ? 'selected' : '' }}>JHS 2</option>
-                    <option value="JHS 3" {{ $content->grade_level == 'JHS 3' ? 'selected' : '' }}>JHS 3</option>
-                    <option value="SHS 1" {{ $content->grade_level == 'SHS 1' ? 'selected' : '' }}>SHS 1</option>
-                    <option value="SHS 2" {{ $content->grade_level == 'SHS 2' ? 'selected' : '' }}>SHS 2</option>
-                    <option value="SHS 3" {{ $content->grade_level == 'SHS 3' ? 'selected' : '' }}>SHS 3</option>
+                    @foreach($levelGroups as $group)
+                        <optgroup label="{{ $group->title }}">
+                            @foreach($group->levels as $level)
+                                <option value="{{ $level->title }}" {{ $content->grade_level == $level->title ? 'selected' : '' }}>
+                                    {{ $level->title }}
+                                </option>
+                            @endforeach
+                        </optgroup>
+                    @endforeach
                 </select>
+            </div>
+            <!-- Content Categories (BECE/WASSCE/Normal) -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Content Context / Exam Category</label>
+                <div class="flex flex-wrap gap-4">
+                    @foreach($categories as $category)
+                        <label class="flex items-center">
+                            <input type="checkbox" name="category_ids[]" value="{{ $category->id }}"
+                                   {{ $content->categories->contains($category->id) ? 'checked' : '' }}
+                                   class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <span class="text-sm text-gray-700">{{ $category->name }}</span>
+                        </label>
+                    @endforeach
+                </div>
+                <p class="text-xs text-gray-500 mt-2">Select if this content specifically belongs to BECE, WASSCE or is Regular content</p>
             </div>
 
             <!-- Associated Quizzes -->

@@ -456,145 +456,14 @@
             gap: 1.5rem;
         }
 
-        .lesson-card {
-            background-color: var(--white);
-            border-radius: 0.75rem;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            transition: all 0.2s ease;
-            cursor: pointer;
-            position: relative;
-        }
-
-        .lesson-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-        }
-
-        .lesson-thumbnail {
-            position: relative;
-            aspect-ratio: 16/9;
-            overflow: hidden;
-        }
-
-        .lesson-video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: opacity 0.3s ease;
-            pointer-events: none;
-        }
-
-        .lesson-fallback-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-
-        .lesson-duration {
-            position: absolute;
-            bottom: 0.5rem;
-            right: 0.5rem;
-            background-color: rgba(0, 0, 0, 0.8);
-            color: var(--white);
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.25rem;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-
-        .saved-badge {
-            position: absolute;
-            top: 0.5rem;
-            left: 0.5rem;
-            background-color: var(--primary-red);
-            color: var(--white);
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.25rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-
-        .play-overlay {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: rgba(0, 0, 0, 0.3);
-            opacity: 1;
-            transition: opacity 0.3s ease;
-            pointer-events: none;
-        }
-
-        .lesson-card.playing .play-overlay {
-            opacity: 0;
-        }
-
-        .lesson-card:not(.playing):hover .play-overlay {
-            opacity: 1;
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-
-        .play-button {
-            width: 60px;
-            height: 60px;
-            background-color: rgba(255, 255, 255, 0.9);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--primary-red);
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .lesson-card:hover .play-button {
-            background-color: var(--primary-red);
-            color: var(--white);
-            transform: scale(1.1);
-        }
-
-        .lesson-info {
-            padding: 1.25rem;
-        }
-
-        .lesson-title {
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: var(--gray-900);
-            margin-bottom: 0.5rem;
-            line-height: 1.4;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .lesson-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: var(--gray-500);
-            font-size: 0.875rem;
-            margin-bottom: 1rem;
-        }
-
-        .lesson-subject {
-            color: var(--secondary-blue);
-            font-weight: 500;
-        }
-
         .lesson-actions {
             display: flex;
-            gap: 0.5rem;
+            gap: 1rem;
             justify-content: space-between;
             align-items: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--gray-100);
         }
 
         .saved-date {
@@ -619,9 +488,11 @@
         }
 
         .unsave-btn:hover {
-            border-color: var(--primary-red);
-            color: var(--primary-red);
-            background-color: rgba(225, 30, 45, 0.05);
+            background-color: #fee2e2;
+            color: #ef4444;
+            border-color: #fecaca;
+        }
+
         }
 
         /* Empty State */
@@ -792,46 +663,39 @@
             <div class="content-section">
                 @if($savedLessons->count() > 0)
                     <div class="content-grid" id="lessonsGrid">
-                        @foreach($savedLessons as $savedLesson)
-                        <div class="lesson-card hover-video-card" 
-                             data-lesson-id="{{ $savedLesson->lesson_id }}" 
-                             data-subject="{{ $savedLesson->lesson_subject }}"
-                             data-level="{{ $savedLesson->selected_level }}"
-                             data-title="{{ strtolower($savedLesson->lesson_title) }}">
-                            <div class="lesson-thumbnail">
-                                <!-- Saved badge -->
-                                <div class="saved-badge">
-                                    <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
-                                    </svg>
-                                    Saved
-                                </div>
-
-                                <!-- Fallback image -->
-                                <img 
-                                    src="{{ asset($savedLesson->lesson_thumbnail) }}" 
-                                    alt="{{ $savedLesson->lesson_title }}" 
-                                    class="lesson-fallback-image"
-                                    onerror="this.src='https://via.placeholder.com/400x225/E11E2D/ffffff?text=Video+Lesson'"
-                                >
-                                
-                                <div class="lesson-duration">{{ $savedLesson->lesson_duration }}</div>
-                                
-                                <!-- Play overlay -->
-                                <div class="play-overlay">
-                                    <div class="play-button">
-                                        <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M8 5v14l11-7z"/>
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="lesson-info">
-                                <h3 class="lesson-title">{{ $savedLesson->lesson_title }}</h3>
-                                <div class="lesson-meta">
-                                    <span class="lesson-subject">({{ $savedLesson->lesson_subject }})</span>
-                                    <span>{{ $savedLesson->lesson_instructor }} | {{ $savedLesson->lesson_year }}</span>
-                                </div>
+                         @foreach($savedLessons as $savedLesson)
+                            @php
+                                $levelMapping = [
+                                    'primary-1' => 'Primary 1', 'primary-2' => 'Primary 2', 'primary-3' => 'Primary 3',
+                                    'primary-4' => 'Primary 4', 'primary-5' => 'Primary 5', 'primary-6' => 'Primary 6',
+                                    'jhs-1' => 'JHS 1', 'jhs-2' => 'JHS 2', 'jhs-3' => 'JHS 3',
+                                    'shs-1' => 'SHS 1', 'shs-2' => 'SHS 2', 'shs-3' => 'SHS 3',
+                                ];
+                                $levelDisplay = $levelMapping[$savedLesson->selected_level] ?? ucwords(str_replace('-', ' ', $savedLesson->selected_level));
+                                // lesson_id in the database is ALREADY encoded.
+                                $lessonEncodedId = $savedLesson->lesson_id;
+                            @endphp
+                            
+                            <x-video-facade
+                                videoId="{{ $savedLesson->video->id ?? 0 }}"
+                                videoSource="{{ $savedLesson->video->video_source ?? 'local' }}"
+                                vimeoId="{{ $savedLesson->video->vimeo_id ?? '' }}"
+                                externalVideoId="{{ $savedLesson->video->external_video_id ?? '' }}"
+                                muxPlaybackId="{{ $savedLesson->video->mux_playback_id ?? '' }}"
+                                thumbnail="{{ asset($savedLesson->lesson_thumbnail) }}"
+                                :title="$savedLesson->lesson_title"
+                                duration="{{ $savedLesson->lesson_duration }}"
+                                :levelDisplay="$levelDisplay"
+                                :subject="$savedLesson->lesson_subject"
+                                data-subject="{{ Str::slug($savedLesson->lesson_subject) }}"
+                                :instructor="$savedLesson->lesson_instructor"
+                                year="{{ $savedLesson->lesson_year }}"
+                                :lessonId="$lessonEncodedId"
+                                data-video-url="{{ $savedLesson->lesson_video_url }}"
+                                data-level="{{ $savedLesson->selected_level }}"
+                                data-selected-level="{{ $savedLesson->selected_level }}"
+                                :categories="isset($savedLesson->video) ? $savedLesson->video->categories->toArray() : []"
+                            >
                                 <div class="lesson-actions">
                                     <span class="saved-date">Saved {{ $savedLesson->saved_at->diffForHumans() }}</span>
                                     <button class="unsave-btn" data-lesson-id="{{ $savedLesson->lesson_id }}">
@@ -841,8 +705,7 @@
                                         Remove
                                     </button>
                                 </div>
-                            </div>
-                        </div>
+                            </x-video-facade>
                         @endforeach
                     </div>
                 @else
