@@ -4974,11 +4974,15 @@
                     if (accessLevel === 'preview') {
                         // Restricted content - show upgrade prompt
                         const promptData = JSON.parse(this.dataset.upgradePrompt || '{}');
-                        if (typeof showUpgradeModal === 'function') {
-                            showUpgradeModal(promptData);
+                        const planSlug = promptData.required_plan_slug || 'essential';
+                        
+                        if (window.videoFacadeManager && window.videoFacadeManager.handleRestrictedAccess) {
+                            window.videoFacadeManager.handleRestrictedAccess(this);
+                        } else if (window.openUpgradeModal) {
+                            window.openUpgradeModal(planSlug);
                         } else {
                             // Fallback if modal function not available
-                            const planName = promptData.required_plan || 'Essential';
+                            const planName = promptData.required_plan || 'Essential Plus';
                             if (confirm(`This lesson requires the ${planName} plan. Would you like to view our pricing plans?`)) {
                                 window.location.href = '/pricing';
                             }

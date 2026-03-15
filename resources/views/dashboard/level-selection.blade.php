@@ -779,47 +779,7 @@
         }, 800);
     }
 
-    const hasActiveSubscription = {{ $hasActiveSubscription ? 'true' : 'false' }};
-    const upgradeModal = document.getElementById('upgradeModal');
-
-    function openUpgradeModal(planSlug) {
-        // Show loading state in modal
-        const pricingCard = upgradeModal.querySelector('.pricing-card');
-        if(!pricingCard) return;
-
-        pricingCard.innerHTML = '<p style="padding: 2rem;">Loading plan details...</p>';
-        upgradeModal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-
-        // Fetch plan details
-        fetch(`/pricing-plan/${planSlug}`)
-            .then(response => response.json())
-            .then(data => {
-                const btnText = hasActiveSubscription ? 'Upgrade Now' : 'Get Started';
-                pricingCard.innerHTML = `
-                    <div class="pricing-card" style="box-shadow: none; border: none; margin: 0;">
-                        <div class="pricing-badge">${data.name || planSlug}</div>
-                        <div class="pricing-card-content">
-                            <p class="pricing-description">${data.description || 'Comprehensive learning package with access to platform features.'}</p>
-                            <div class="pricing-price">${data.currency || 'GHS'} ${parseFloat(data.price || 0).toFixed(2)}</div>
-                            <ul class="pricing-features">
-                                ${Array.isArray(data.features) && data.features.length > 0 ? data.features.map(feature => `<li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>${feature}</li>`).join('') : `<li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>Access to ${data.name || planSlug} features</li>`}
-                            </ul>
-                            <a href="/pricing/pricing-details?planId=${data.obfuscated_id}" class="pricing-btn">${btnText}</a>
-                        </div>
-                    </div>
-                `;
-            })
-            .catch(error => {
-                console.error('Error fetching pricing plan:', error);
-                pricingCard.innerHTML = '<p style="padding: 2rem; color: #dc2626;">Sorry, we could not load the plan details. Please try again later.</p>';
-            });
-    }
-
-    function closeUpgradeModal() {
-        upgradeModal.style.display = 'none';
-        document.body.style.overflow = '';
-    }
+    // Modal logic is now handled in partials._upgrade_modal
 
     // Admission Modal Logic
     const admissionModal = document.getElementById('admissionModal');

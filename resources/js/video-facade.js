@@ -173,6 +173,20 @@ class VideoFacadeManager {
         // Desktop clicks are handled by the global delegation in digilearn.blade.php
     }
 
+    handleRestrictedAccess(card) {
+        const upgradePrompt = card.dataset.upgradePrompt ? JSON.parse(card.dataset.upgradePrompt) : null;
+        const planSlug = (upgradePrompt && upgradePrompt.required_plan_slug) ? upgradePrompt.required_plan_slug : 'essential';
+        
+        console.log('Handling restricted access for:', card.dataset.title, 'Required plan:', planSlug);
+
+        if (window.openUpgradeModal) {
+            window.openUpgradeModal(planSlug);
+        } else {
+            console.warn('openUpgradeModal not found, redirecting to pricing');
+            window.location.href = '/pricing';
+        }
+    }
+
     loadVideoThumbnail(card) {
         const thumbnail = card.querySelector('.video-facade-thumbnail');
         if (!thumbnail) return;

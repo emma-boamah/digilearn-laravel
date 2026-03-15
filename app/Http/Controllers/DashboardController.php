@@ -21,11 +21,14 @@ use App\Models\PricingPlan;
 class DashboardController extends Controller
 {
     private $relatedLessonsService;
+    private $subscriptionPreviewService;
     
     public function __construct(
-        RelatedLessonsService $relatedLessonsService
+        RelatedLessonsService $relatedLessonsService,
+        \App\Services\SubscriptionPreviewService $subscriptionPreviewService
     ) {
         $this->relatedLessonsService = $relatedLessonsService;
+        $this->subscriptionPreviewService = $subscriptionPreviewService;
     }
     
     public function index()
@@ -394,6 +397,7 @@ class DashboardController extends Controller
         if ($selectedLevelGroup === 'university') {
             $universityCourses = $this->getUniversityCourses();
             $universityCourses = $this->filterCoursesBySubscription($user, $universityCourses);
+            $universityCourses = $this->subscriptionPreviewService->processRelatedLessons($universityCourses, $user);
             $subjects = $this->getSubjectsFromCourses($universityCourses);
             
             // Default initializations to prevent undefined variable errors in view
@@ -413,6 +417,7 @@ class DashboardController extends Controller
         }
 
         $lessons = $this->filterLessonsBySubscription($user, $lessons);
+        $lessons = $this->subscriptionPreviewService->processRelatedLessons($lessons, $user);
         
         // Paginate for initial load (show 12 lessons)
         $totalLessons = count($lessons);
@@ -472,6 +477,9 @@ class DashboardController extends Controller
 
         // Apply subscription filters
         $lessons = $this->filterLessonsBySubscription($user, $lessons);
+        
+        // Process for preview logic
+        $lessons = $this->subscriptionPreviewService->processRelatedLessons($lessons, $user);
 
         // Apply subject filter if active
         if ($subjectFilter && $subjectFilter !== 'all') {
@@ -1261,6 +1269,7 @@ class DashboardController extends Controller
                     return $l['id'] !== $lessonId;
                 }));
                 $relatedLessons = array_slice($relatedLessons, 0, 8);
+                $relatedLessons = $this->subscriptionPreviewService->processRelatedLessons($relatedLessons, $user);
 
                 Log::channel('security')->info('lesson_viewed', [
                     'user_id' => Auth::id(),
@@ -1388,6 +1397,7 @@ class DashboardController extends Controller
                 'sort_by' => 'related_score'
             ]
         );
+        $relatedLessons = $this->subscriptionPreviewService->processRelatedLessons($relatedLessons, $user);
 
         // Fetch user notes for the lesson
         $note = UserNote::forUserAndVideo(Auth::id(), $lesson['id'])->first();
@@ -3179,6 +3189,9 @@ class DashboardController extends Controller
 
              // Apply subscription filtering
              $filteredLessons = $this->filterLessonsBySubscription($user, $lessons);
+             
+             // Process for preview logic
+             $filteredLessons = $this->subscriptionPreviewService->processRelatedLessons($filteredLessons, $user);
 
              Log::info('search_lessons_executed', [
                  'user_id' => Auth::id(),
