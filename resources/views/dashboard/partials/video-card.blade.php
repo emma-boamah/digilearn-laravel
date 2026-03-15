@@ -29,6 +29,8 @@
     :showDuration="true"
     :showPlayOverlay="true"
     :lazyLoad="true"
+    :isRestricted="($item['access_info']['level'] ?? 'full') === 'preview'"
+    :upgradePrompt="$item['access_info']['upgrade_prompt'] ?? null"
     :categories="$item['categories'] ?? []"
 >
     @if($isUniversity)

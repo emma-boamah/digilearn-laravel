@@ -436,6 +436,7 @@
     @stack('styles')
 </head>
 <body>
+    @include('partials._upgrade_modal')
     <div class="main-container">
         @include('components.dashboard-sidebar')
 

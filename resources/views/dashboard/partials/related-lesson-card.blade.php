@@ -11,7 +11,7 @@
      
     <div class="lesson-thumbnail">
         <img src="{{ $lesson['thumbnail'] }}" alt="{{ $lesson['title'] }}"
-             onerror="this.src='/placeholder.svg?height=78&width=140'"
+             data-fallback="/placeholder.svg?height=78&width=140"
              loading="lazy">
         
         @if($isPreview)
@@ -56,8 +56,8 @@
     
     @if($isPreview)
         <div class="upgrade-prompt">
-            <button class="btn-upgrade" 
-                    @click="showUpgradeModal({{ json_encode($lesson['access_info']['upgrade_prompt']) }})">
+            <button class="btn-upgrade upgrade-modal-trigger" 
+                    data-plan-slug="{{ $lesson['access_info']['required_plan_slug'] ?? 'essential' }}">
                 <i class="fas fa-crown"></i>
                 {{ $lesson['access_info']['upgrade_prompt']['cta_text'] }}
             </button>
@@ -76,3 +76,36 @@
         </div>
     @endif
 </div>
+
+@once
+    @push('scripts')
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        document.addEventListener('click', function(e) {
+            const upgradeBtn = e.target.closest('.upgrade-modal-trigger');
+            if (upgradeBtn) {
+                e.preventDefault();
+                const planSlug = upgradeBtn.dataset.planSlug || 'essential';
+                if (window.openUpgradeModal) {
+                    window.openUpgradeModal(planSlug);
+                } else {
+                    window.location.href = '/pricing';
+                }
+            }
+        });
+
+        // Global image error handler for data-fallback
+        if (!window.hasImageFallbackHandler) {
+            document.addEventListener('error', function (e) {
+                if (e.target && e.target.tagName && e.target.tagName.toLowerCase() === 'img') {
+                    const fallback = e.target.getAttribute('data-fallback');
+                    if (fallback && e.target.src !== fallback) {
+                        e.target.src = fallback;
+                        e.target.removeAttribute('data-fallback');
+                    }
+                }
+            }, true);
+            window.hasImageFallbackHandler = true;
+        }
+    </script>
+    @endpush
+@endonce

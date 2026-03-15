@@ -70,7 +70,10 @@ class RelatedLessonsTest extends TestCase
     {
         $essentialUser = User::factory()->create();
         
-        $premiumLesson = Video::factory()->create(['grade_level' => 'University']);
+        $premiumLesson = Video::factory()->create([
+            'grade_level' => 'University',
+            'vimeo_id' => '123456'
+        ]);
         
         $relatedLessons = $this->relatedLessonsService->getRelatedLessons(
             $premiumLesson->toArray(),
@@ -81,8 +84,48 @@ class RelatedLessonsTest extends TestCase
             if ($lesson['grade_level'] === 'University') {
                 $this->assertEquals('preview', $lesson['access_info']['level']);
                 $this->assertArrayHasKey('upgrade_prompt', $lesson['access_info']);
+                
+                // Verify field stripping
+                $this->assertEquals('', $lesson['video_url']);
+                $this->assertNull($lesson['quiz_id']);
+                $this->assertEquals(0, $lesson['documents_count']);
             }
         }
+    }
+
+    public function test_next_level_lessons_are_restricted_for_essential_plan()
+    {
+        // Essential plan only allows primary and jhs
+        $essentialPlan = \App\Models\PricingPlan::factory()->create(['slug' => 'essential', 'name' => 'Essential']);
+        $user = User::factory()->create();
+        \App\Models\UserSubscription::factory()->create([
+            'user_id' => $user->id,
+            'pricing_plan_id' => $essentialPlan->id,
+            'status' => 'active'
+        ]);
+
+        $jhsLesson = Video::factory()->create(['grade_level' => 'JHS 3']);
+        $shsLesson = Video::factory()->create([
+            'grade_level' => 'SHS 1',
+            'vimeo_id' => '123456'
+        ]);
+
+        $relatedLessons = $this->relatedLessonsService->getRelatedLessons(
+            $jhsLesson->toArray(),
+            $user
+        );
+
+        $shsInResults = false;
+        foreach ($relatedLessons as $lesson) {
+            if ($lesson['id'] === $shsLesson->id) {
+                $shsInResults = true;
+                $this->assertEquals('preview', $lesson['access_info']['level']);
+                $this->assertEquals('', $lesson['video_url']);
+                $this->assertArrayHasKey('upgrade_prompt', $lesson['access_info']);
+            }
+        }
+
+        $this->assertTrue($shsInResults, 'SHS lesson should be in related results for JHS student');
     }
     
     public function test_subject_similarity_scoring()

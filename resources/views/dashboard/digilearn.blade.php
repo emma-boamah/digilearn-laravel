@@ -2902,6 +2902,21 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
             }
 
             if (lessonCard && !e.target.closest('.action-icon-btn')) {
+                // Check for restricted access
+                if (lessonCard.dataset.accessLevel === 'preview') {
+                    console.log('Restricted access detected in global listener');
+                    if (window.videoFacadeManager && window.videoFacadeManager.handleRestrictedAccess) {
+                        window.videoFacadeManager.handleRestrictedAccess(lessonCard);
+                    } else if (window.openUpgradeModal) {
+                        const upgradePrompt = lessonCard.dataset.upgradePrompt ? JSON.parse(lessonCard.dataset.upgradePrompt) : null;
+                        const planSlug = (upgradePrompt && upgradePrompt.required_plan_slug) ? upgradePrompt.required_plan_slug : 'essential';
+                        window.openUpgradeModal(planSlug);
+                    } else {
+                        window.location.href = '/pricing';
+                    }
+                    return;
+                }
+
                 const lessonId = lessonCard.dataset.lessonId;
                 const courseId = lessonCard.dataset.courseId;
                 
@@ -3261,6 +3276,8 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                         data-year="${lesson.year || ''}"
                         data-video-url="${lesson.video_url || ''}"
                         data-selected-level="${lesson.selected_level || 'primary-lower'}"
+                        data-access-level="${lesson.access_info ? lesson.access_info.level : 'full'}"
+                        data-upgrade-prompt="${lesson.access_info && lesson.access_info.upgrade_prompt ? JSON.stringify(lesson.access_info.upgrade_prompt).replace(/"/g, '&quot;') : ''}"
                         data-loaded="false">
                         <div class="lesson-thumbnail">
                             <img
@@ -3347,5 +3364,6 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
             }
         }
     </script>
+    @include('partials._upgrade_modal')
 </body>
 </html>
