@@ -2877,8 +2877,8 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
         // Handle Lesson Card and Icon Clicks (Global Delegation)
         document.addEventListener('click', function(e) {
             const actionIcon = e.target.closest('.action-icon-btn');
-            // Support both .lesson-card and .video-facade-card
-            const lessonCard = e.target.closest('.lesson-card') || e.target.closest('.video-facade-card');
+            // Support .lesson-card, .video-facade-card, and .related-video-item
+            const lessonCard = e.target.closest('.lesson-card') || e.target.closest('.video-facade-card') || e.target.closest('.related-video-item');
 
             console.log('Global click detected. Target:', e.target);
             if (lessonCard) console.log('Click is inside lesson card:', lessonCard.dataset.title);
@@ -2939,9 +2939,23 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
 
         async function handleSaveLesson(id, btn) {
             console.log('handleSaveLesson triggered for ID:', id);
-            const card = btn.closest('.video-facade-card') || btn.closest('.lesson-card');
+            const card = btn.closest('.video-facade-card') || btn.closest('.lesson-card') || btn.closest('.related-video-item');
             if (!card) {
                 console.error('Could not find parent card for save button');
+                return;
+            }
+
+            // Check for restricted access
+            if (card.dataset.accessLevel === 'preview') {
+                console.log('Restricted access detected in save handler');
+                const upgradePrompt = card.dataset.upgradePrompt ? JSON.parse(card.dataset.upgradePrompt) : null;
+                const planSlug = (upgradePrompt && upgradePrompt.required_plan_slug) ? upgradePrompt.required_plan_slug : 'essential';
+                
+                if (window.openUpgradeModal) {
+                    window.openUpgradeModal(planSlug);
+                } else {
+                    alert('Failed to save: please upgrade your current plan to save this lesson.');
+                }
                 return;
             }
 
@@ -2983,15 +2997,31 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                     body: JSON.stringify(lessonData)
                 });
 
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                if (!response.ok) {
+                    if (data && data.message) {
+                        alert(data.message);
+                    } else {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                    return;
+                }
                 
-                const data = await response.json();
                 if (data.success) {
                     updateSaveButtonState(btn, data.saved);
                     showSuccessMessage(data.message);
                 } else {
                     btn.innerHTML = originalHTML;
                     btn.disabled = false;
+                    if (data.message) alert(data.message);
                     console.error('Save failed:', data.message);
                 }
             } catch (error) {
