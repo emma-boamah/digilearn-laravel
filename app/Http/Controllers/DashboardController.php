@@ -846,9 +846,42 @@ class DashboardController extends Controller
             // Convert level format from "primary-1" to "Primary 1" to match database
             $dbLevel = $this->convertLevelFormat($level);
 
-            // Query approved videos for the specific grade level
+            // Query approved videos for the specific grade level,
+            // with dynamic cross-level category fetching for BECE and WASSCE
             $query = Video::approved()
-                ->where('grade_level', $dbLevel);
+                ->where(function($q) use ($dbLevel, $categorySlug) {
+                    
+                    // Base case: Videos specifically for this grade level
+                    $q->where('grade_level', $dbLevel);
+                    
+                    // Dynamic cross-level category fetching logic
+                    if ($categorySlug) {
+                        $isShs = str_contains(strtoupper($dbLevel), 'SHS');
+                        $isJhs = str_contains(strtoupper($dbLevel), 'JHS');
+                        
+                        // If WASSCE category is selected, SHS students can see JHS content tagged WASSCE
+                        if (($categorySlug === 'wassce' || $categorySlug === 'all') && $isShs) {
+                            $q->orWhere(function($subQ) {
+                                $subQ->whereIn('grade_level', ['JHS 1', 'JHS 2', 'JHS 3'])
+                                     ->whereHas('categories', function($catQ) {
+                                         $catQ->where('slug', 'wassce')
+                                              ->orWhere('name', 'LIKE', '%WASSCE%');
+                                     });
+                            });
+                        }
+                        
+                        // If BECE category is selected, SHS students can see JHS content tagged BECE
+                        if (($categorySlug === 'bece' || $categorySlug === 'all') && $isShs) {
+                            $q->orWhere(function($subQ) {
+                                $subQ->whereIn('grade_level', ['JHS 1', 'JHS 2', 'JHS 3'])
+                                     ->whereHas('categories', function($catQ) {
+                                         $catQ->where('slug', 'bece')
+                                              ->orWhere('name', 'LIKE', '%BECE%');
+                                     });
+                            });
+                        }
+                    }
+                });
 
             if ($categorySlug && $categorySlug !== 'all') {
                 $query->whereHas('categories', function($q) use ($categorySlug) {
