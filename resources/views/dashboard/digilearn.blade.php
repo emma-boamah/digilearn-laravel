@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'ShoutOutGh') }}</title>
-    
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
@@ -71,11 +72,14 @@
             top: 0 !important;
             left: 0 !important;
             width: var(--sidebar-width-expanded) !important;
-            height: 100vh !important; /* Does not grow with content */
-            max-height: 100vh !important; /* Enforce maximum height */
+            height: 100vh !important;
+            /* Does not grow with content */
+            max-height: 100vh !important;
+            /* Enforce maximum height */
             background-color: var(--white);
             border-right: 1px solid var(--gray-200);
-            z-index: 2000; /* Much higher than overlay */
+            z-index: 2000;
+            /* Much higher than overlay */
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
             overflow-y: scroll;
             display: flex;
@@ -135,6 +139,7 @@
             height: 32px;
             width: auto;
         }
+
         .sidebar-brand {
             font-size: 1.125rem;
             font-weight: 700;
@@ -145,13 +150,17 @@
 
         .sidebar-content {
             padding: 1rem 0;
-            flex: 1; /* takes all available space */
-            overflow-y: auto !important; /* force scrollbar */
+            flex: 1;
+            /* takes all available space */
+            overflow-y: auto !important;
+            /* force scrollbar */
             overflow-x: hidden;
             display: flex;
             flex-direction: column;
-            scrollbar-width: thin; /* For Firefox */
-            scrollbar-color: var(--gray-400) transparent; /* For Firefox */
+            scrollbar-width: thin;
+            /* For Firefox */
+            scrollbar-color: var(--gray-400) transparent;
+            /* For Firefox */
             scroll-behavior: smooth;
             max-height: calc(100vh - (64px + var(--safe-area-inset-top))) !important;
         }
@@ -184,24 +193,31 @@
         /* Ensure sidebar sections distribute space properly */
         .sidebar-section {
             margin-bottom: 0.75rem;
-            flex-shrink: 0; /* Prevents sections from shrinking */
+            flex-shrink: 0;
+            /* Prevents sections from shrinking */
         }
 
         /* Account section should stick to the bottom */
         .sidebar-section:last-of-type {
             position: relative;
-            margin-top: 0; /* Pushes account section to the bottom */
-            margin-bottom: 1rem; /* Add some bottom spacing */
-            padding-top: 0.75rem; /* Add subtle separation */
-            border-top: 1px solid var(--gray-100); /* Visual Separator */
+            margin-top: 0;
+            /* Pushes account section to the bottom */
+            margin-bottom: 1rem;
+            /* Add some bottom spacing */
+            padding-top: 0.75rem;
+            /* Add subtle separation */
+            border-top: 1px solid var(--gray-100);
+            /* Visual Separator */
         }
 
         .sidebar-section:nth-last-of-type(2)::after {
             content: '';
             display: block;
             flex-grow: 1;
-            min-height: 1rem; /* Minimum spacing */
-            max-height: 3rem; /* Maximim spacing to prevent excessive gap */
+            min-height: 1rem;
+            /* Minimum spacing */
+            max-height: 3rem;
+            /* Maximim spacing to prevent excessive gap */
         }
 
         .sidebar-section:last-child {
@@ -326,16 +342,18 @@
             width: calc(100vw - var(--sidebar-width-expanded)) !important;
             max-width: calc(100vw - var(--sidebar-width-expanded)) !important;
             margin-left: var(--sidebar-width-expanded) !important;
-            margin-top: calc(255px + var(--safe-area-inset-top)) !important; /* Adjusted for dual-pill filter bar */
+            margin-top: calc(255px + var(--safe-area-inset-top)) !important;
+            /* Adjusted for dual-pill filter bar */
             /* padding-top: 1rem !important; Internal padding */
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-sizing: border-box;
             overflow-x: hidden;
             overflow-y: auto;
-            height: calc(100vh - (255px + var(--safe-area-inset-top))) !important; /* Full height minus headers */
+            height: calc(100vh - (255px + var(--safe-area-inset-top))) !important;
+            /* Full height minus headers */
         }
 
-        .youtube-sidebar.collapsed ~ .main-content {
+        .youtube-sidebar.collapsed~.main-content {
             width: calc(100vw - var(--sidebar-width-collapsed)) !important;
             max-width: calc(100vw - var(--sidebar-width-collapsed)) !important;
             margin-left: var(--sidebar-width-collapsed) !important;
@@ -351,17 +369,22 @@
         .top-header {
             position: fixed !important;
             top: 0 !important;
-            left: 0 !important; /* Changed from sidebar-width to 0 for full width */
-            width: 100vw !important; /* Changed to full viewport width */
+            left: 0 !important;
+            /* Changed from sidebar-width to 0 for full width */
+            width: 100vw !important;
+            /* Changed to full viewport width */
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0.75rem;
             padding-right: 1rem;
             padding-left: var(--sidebar-width-expanded);
-            background-color: rgba(255, 255, 255, 0.8); /* More transparent for glassmorphism */
-            backdrop-filter: blur(12px) saturate(180%); /* Enhanced blur effect */
-            -webkit-backdrop-filter: blur(12px) saturate(180%); /* Safari support */
+            background-color: rgba(255, 255, 255, 0.8);
+            /* More transparent for glassmorphism */
+            backdrop-filter: blur(12px) saturate(180%);
+            /* Enhanced blur effect */
+            -webkit-backdrop-filter: blur(12px) saturate(180%);
+            /* Safari support */
             border-bottom: 1px solid rgba(229, 231, 235, 0.6);
             z-index: 999 !important;
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -369,7 +392,7 @@
             padding-top: calc(0.75rem + var(--safe-area-inset-top));
         }
 
-        .youtube-sidebar.collapsed ~ .top-header {
+        .youtube-sidebar.collapsed~.top-header {
             padding-left: var(--sidebar-width-collapsed) !important;
         }
 
@@ -568,10 +591,14 @@
         /* Updated filter bar to span full width with glassmorphism and proper positioning */
         .filter-bar {
             position: fixed !important;
-            top: calc(60px + var(--safe-area-inset-top)) !important; /* Directly below the header */
-            left: 0; /* Start from left edge for full width */
-            width: 100vw; /* Full viewport width */
-            padding-left: calc(var(--sidebar-width-expanded) + 0.75rem); /* Account for sidebar */
+            top: calc(60px + var(--safe-area-inset-top)) !important;
+            /* Directly below the header */
+            left: 0;
+            /* Start from left edge for full width */
+            width: 100vw;
+            /* Full viewport width */
+            padding-left: calc(var(--sidebar-width-expanded) + 0.75rem);
+            /* Account for sidebar */
             padding-right: 0.75rem;
             padding-top: 0.75rem;
             padding-bottom: 0.75rem;
@@ -579,9 +606,12 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            background-color: rgba(255, 255, 255, 0.75); /* Transparent for glassmorphism */
-            backdrop-filter: blur(10px) saturate(160%); /* Glassmorphism effect */
-            -webkit-backdrop-filter: blur(10px) saturate(160%); /* Safari support */
+            background-color: rgba(255, 255, 255, 0.75);
+            /* Transparent for glassmorphism */
+            backdrop-filter: blur(10px) saturate(160%);
+            /* Glassmorphism effect */
+            -webkit-backdrop-filter: blur(10px) saturate(160%);
+            /* Safari support */
             border-bottom: 1px solid var(--gray-200);
             flex-wrap: nowrap;
             overflow-x: hidden;
@@ -590,14 +620,16 @@
             box-sizing: border-box;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            pointer-events: none; /* Allow clicks to pass through glassmorphism layer */
+            pointer-events: none;
+            /* Allow clicks to pass through glassmorphism layer */
         }
 
         .filter-bar * {
-            pointer-events: auto; /* Restore pointer events for interactive elements */
+            pointer-events: auto;
+            /* Restore pointer events for interactive elements */
         }
 
-        .youtube-sidebar.collapsed ~ .filter-bar {
+        .youtube-sidebar.collapsed~.filter-bar {
             padding-left: calc(var(--sidebar-width-collapsed) + 0.75rem);
         }
 
@@ -628,17 +660,27 @@
         }
 
         @keyframes searchProgress {
-            0% { transform: translateX(-100%); }
-            50% { transform: translateX(0%); }
-            100% { transform: translateX(100%); }
+            0% {
+                transform: translateX(-100%);
+            }
+
+            50% {
+                transform: translateX(0%);
+            }
+
+            100% {
+                transform: translateX(100%);
+            }
         }
 
         .search-close {
-            display: none; /* Changed: hidden by default */
+            display: none;
+            /* Changed: hidden by default */
             align-items: center;
             justify-content: center;
             position: absolute;
-            right: 52px; /* Increased spacing from search button */
+            right: 52px;
+            /* Increased spacing from search button */
             top: 50%;
             transform: translateY(-50%);
             background: none;
@@ -668,7 +710,8 @@
             border-radius: 0.5rem;
             width: 100%;
             font-size: 0.875rem;
-            padding-right: 5.5rem; /* Increased to accommodate the close button + search button */
+            padding-right: 5.5rem;
+            /* Increased to accommodate the close button + search button */
             background: var(--white);
             color: var(--gray-900);
         }
@@ -693,8 +736,10 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            z-index: 20; /* Ensure it's above other elements */
-            pointer-events: auto; /* Ensure it receives click events */
+            z-index: 20;
+            /* Ensure it's above other elements */
+            pointer-events: auto;
+            /* Ensure it receives click events */
         }
 
         .search-button:hover {
@@ -748,12 +793,13 @@
             background-color: var(--white);
             border-radius: 0.5rem;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            z-index: 1100; 
+            z-index: 1100;
             opacity: 0;
             visibility: hidden;
             transform: translateY(-10px);
             transition: all 0.3s ease;
-            max-height: 60vh; /* Limit height for long dropdowns */
+            max-height: 60vh;
+            /* Limit height for long dropdowns */
             overflow-y: auto;
         }
 
@@ -769,8 +815,10 @@
             padding-right: 1rem;
             padding-top: 0.5rem;
             padding-bottom: 0.5rem;
-            overflow: hidden; /* Hide overflow on container */
-            box-sizing: border-box; /* Ensure padding is included in width */
+            overflow: hidden;
+            /* Hide overflow on container */
+            box-sizing: border-box;
+            /* Ensure padding is included in width */
             z-index: 997 !important;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -778,7 +826,8 @@
             flex-direction: column;
             gap: 0.25rem;
         }
-        .youtube-sidebar.collapsed ~ .subjects-filter-container {
+
+        .youtube-sidebar.collapsed~.subjects-filter-container {
             padding-left: calc(var(--sidebar-width-collapsed) + 0.75rem);
         }
 
@@ -789,14 +838,28 @@
             overflow-x: auto;
             overflow-y: hidden;
             padding: 0.5rem 0;
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
+            -ms-overflow-style: none;
+            /* IE and Edge */
             scroll-behavior: smooth;
             width: 100%;
         }
 
         .subjects-filter::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera */
+            display: none;
+            /* Chrome, Safari, Opera */
+        }
+
+        .filter-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            white-space: nowrap;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
         }
 
         .subject-chip {
@@ -823,13 +886,14 @@
         }
 
         .subject-chip.active {
-            background-color: var(--secondary-blue);
+            background: rgba(38, 119, 184, 0.05);
             border-color: var(--secondary-blue);
-            color: var(--white);
+            color: var(--secondary-blue);
+            box-shadow: 0 4px 12px rgba(38, 119, 184, 0.2);
         }
 
         .subject-chip.active:hover {
-            background-color: var(--secondary-blue-hover);
+            background-color: rgba(38, 119, 184, 0.05);
             border-color: var(--secondary-blue-hover);
         }
 
@@ -837,7 +901,8 @@
             opacity: 1;
             visibility: visible;
             transform: translateY(0);
-            z-index: 1100; /* Ensure dropdown is above other content */
+            z-index: 1100;
+            /* Ensure dropdown is above other content */
         }
 
         .custom-dropdown.open .dropdown-chevron {
@@ -938,7 +1003,9 @@
             padding: 2px 4px;
         }
 
-        .current-level-display::-webkit-scrollbar { display: none; }
+        .current-level-display::-webkit-scrollbar {
+            display: none;
+        }
 
         .grade-tab {
             display: inline-flex;
@@ -961,14 +1028,14 @@
         .grade-tab:hover:not(.locked) {
             border-color: var(--secondary-blue);
             color: var(--secondary-blue);
-            background: rgba(38,119,184,0.05);
+            background: rgba(38, 119, 184, 0.05);
         }
 
         .grade-tab.active {
             background: rgba(38, 119, 184, 0.05);
             border-color: var(--secondary-blue);
             color: var(--secondary-blue);
-            box-shadow: 0 4px 12px rgba(38,119,184,0.2);
+            box-shadow: 0 4px 12px rgba(38, 119, 184, 0.2);
         }
 
         .grade-tab.locked {
@@ -995,7 +1062,7 @@
             display: none;
         }
 
-    /* Right on desktop */
+        /* Right on desktop */
         }
 
         .level-indicator {
@@ -1036,7 +1103,7 @@
             pointer-events: none;
         }
 
-        #level-modal-toggle:checked ~ .level-modal {
+        #level-modal-toggle:checked~.level-modal {
             opacity: 1;
             visibility: visible;
         }
@@ -1052,7 +1119,7 @@
         .level-modal .modal-overlay {
             position: absolute;
             inset: 0;
-            background: rgba(0,0,0,0.4);
+            background: rgba(0, 0, 0, 0.4);
         }
 
         .modal-content {
@@ -1088,14 +1155,15 @@
             background-color: var(--gray-50);
         }
 
-        .level-option + .level-option {
+        .level-option+.level-option {
             margin-top: 0.5rem;
         }
 
         /* Hero Section */
         .hero-section {
             position: relative;
-            height: clamp(180px, 22vh, 280px); /* Responsive height instead of fixed 300px */
+            height: clamp(180px, 22vh, 280px);
+            /* Responsive height instead of fixed 300px */
             min-height: 180px;
             overflow: hidden;
             width: 100%;
@@ -1147,7 +1215,8 @@
         /* Content Section */
         .content-section {
             flex: 1;
-            min-height: 50vh; /* Replaced rigid calc */
+            min-height: 50vh;
+            /* Replaced rigid calc */
             padding: 2rem 1rem 3rem;
             width: 100%;
             max-width: 100%;
@@ -1221,7 +1290,8 @@
             width: 100%;
             height: 100%;
             z-index: 2;
-            pointer-events: none !important; /* CRITICAL: Allow clicks to pass through to the card */
+            pointer-events: none !important;
+            /* CRITICAL: Allow clicks to pass through to the card */
         }
 
         .csp-facade-player {
@@ -1231,7 +1301,8 @@
             position: absolute;
             top: 0;
             left: 0;
-            pointer-events: none !important; /* CRITICAL: Prevent iframe from stealing clicks */
+            pointer-events: none !important;
+            /* CRITICAL: Prevent iframe from stealing clicks */
         }
 
         .video-thumb {
@@ -1336,8 +1407,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .lesson-card.video-error .lesson-video {
@@ -1402,7 +1478,8 @@
             margin-top: auto;
             padding-top: 1rem;
             position: relative;
-            z-index: 100; /* Ensure actions are on top of previews */
+            z-index: 100;
+            /* Ensure actions are on top of previews */
         }
 
         .action-icons-group {
@@ -1463,8 +1540,15 @@
         }
 
         @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
 
         .loading-spinner {
@@ -1477,7 +1561,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .action-icon-btn {
@@ -1521,7 +1607,8 @@
         }
 
         .mobile-search-toggle {
-            display: flex; /* Shown by default, hidden on desktop */
+            display: flex;
+            /* Shown by default, hidden on desktop */
             background: var(--secondary-blue);
             border: none;
             border-radius: 0.5rem;
@@ -1541,6 +1628,7 @@
             * {
                 -webkit-tap-highlight-color: transparent;
             }
+
             body {
                 width: 100%;
                 max-width: 100vw;
@@ -1549,19 +1637,24 @@
                 padding: 0;
                 font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
                 background-color: #f9fafb;
-                font-size: 16px; /* Prevents iOS zoom on input focus */
+                font-size: 16px;
+                /* Prevents iOS zoom on input focus */
                 line-height: 1.5;
                 -webkit-font-smoothing: antialiased;
                 -moz-osx-font-smoothing: grayscale;
                 /* Enable smooth scrolling */
                 scroll-behavior: smooth;
-                
+
             }
 
-            button, a, input {
-                min-height: 44px; /* Apple's recommended touch target */
+            button,
+            a,
+            input {
+                min-height: 44px;
+                /* Apple's recommended touch target */
                 min-width: 44px;
             }
+
             .main-content {
                 width: 100vw !important;
                 max-width: 100vw !important;
@@ -1593,10 +1686,13 @@
                 -webkit-overflow-scrolling: touch;
             }
 
-            .current-level-display::-webkit-scrollbar { display: none; }
+            .current-level-display::-webkit-scrollbar {
+                display: none;
+            }
 
             .grade-tab {
-                padding: 0.5rem 0.75rem; /* Smaller padding for mobile */
+                padding: 0.5rem 0.75rem;
+                /* Smaller padding for mobile */
             }
 
             .grade-full-name {
@@ -1649,7 +1745,8 @@
             }
 
             .youtube-sidebar {
-                width: 280px; /* Full width on mobile */
+                width: 280px;
+                /* Full width on mobile */
                 transform: translateX(-100%);
                 transition: transform 0.3s ease, width 0.3s ease;
             }
@@ -1665,7 +1762,8 @@
 
             /* Ensure mobile sidebar does not overflow viewport */
             .sidebar-content {
-                padding-bottom: env(safe-area-inset-bottom, 1rem); /* Account for mobile notches */
+                padding-bottom: env(safe-area-inset-bottom, 1rem);
+                /* Account for mobile notches */
             }
         }
 
@@ -1713,7 +1811,8 @@
         @media (max-height: 500px) {
             .sidebar-menu-item {
                 padding: 0.375rem 1rem;
-                min-height: 36px; /* Minimum touch target */
+                min-height: 36px;
+                /* Minimum touch target */
             }
 
             .sidebar-menu-icon {
@@ -1743,6 +1842,7 @@
 
         /* Responsive Design */
         @media (max-width: 768px) {
+
             /* Mobile design logic consolidated from previous redundant blocks */
             .level-container {
                 display: flex;
@@ -1793,18 +1893,22 @@
             .search-close {
                 display: none;
             }
+
             .main-container {
                 flex-direction: column;
                 overflow-y: auto;
                 overflow-x: hidden;
                 width: 100vw;
             }
+
             .youtube-sidebar {
                 height: 100vh;
-                height: 100dvh; /* Dynamic viewport height for mobile browsers */
+                height: 100dvh;
+                /* Dynamic viewport height for mobile browsers */
                 transform: translateX(-100%);
                 transition: transform 0.3s ease, width 0.3s ease;
-                width: 280px; /* Adjusted width for mobile */
+                width: 280px;
+                /* Adjusted width for mobile */
             }
 
             .youtube-sidebar.mobile-open {
@@ -1817,7 +1921,7 @@
                 max-width: 100vw;
             }
 
-            .youtube-sidebar.collapsed ~ .main-content {
+            .youtube-sidebar.collapsed~.main-content {
                 margin-left: 0;
                 width: 100vw;
                 max-width: 100vw;
@@ -1839,12 +1943,13 @@
             .sidebar-toggle-btn {
                 display: flex;
             }
+
             .sidebar-logo {
                 justify-content: center;
             }
 
             /* Search box initially hidden on mobile */
-            
+
             .content-section {
                 min-height: calc(100vh - 60px -120px - 200px);
                 padding: 1rem 0.75rem 2rem;
@@ -1882,7 +1987,8 @@
                 right: 0;
                 bottom: 0;
                 background-color: rgba(0, 0, 0, 0.6);
-                z-index: 1999; /* BELOW sidebar (2000) but ABOVE content */
+                z-index: 1999;
+                /* BELOW sidebar (2000) but ABOVE content */
                 opacity: 0;
                 visibility: hidden;
                 transition: all 0.3s ease;
@@ -1924,7 +2030,8 @@
             }
 
             .filter-button {
-                min-width: calc(50% - 6px); /* Two columns with gap */
+                min-width: calc(50% - 6px);
+                /* Two columns with gap */
                 text-align: center;
                 padding: 0.75rem;
                 font-size: 0.8rem;
@@ -1935,7 +2042,8 @@
             .custom-dropdown,
             .filter-button {
                 flex: 1 1 auto;
-                min-width: calc(50% - 6px); /* Two columns with gap */
+                min-width: calc(50% - 6px);
+                /* Two columns with gap */
             }
 
             .hero-overlay {
@@ -1948,14 +2056,15 @@
             .lesson-card {
                 border-radius: 12px;
                 overflow: hidden;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             }
         }
 
         /* CRITICAL FIX: On mobile, overlay should NOT cover sidebar area */
         @media (max-width: 768px) {
             .sidebar-overlay {
-                left: var(--sidebar-width-expanded); /* 280px - don't block sidebar */
+                left: var(--sidebar-width-expanded);
+                /* 280px - don't block sidebar */
             }
         }
 
@@ -1967,6 +2076,7 @@
         }
 
         @media (min-width: 640px) {
+
             /* Two column layout for small tablets */
             .content-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -1978,6 +2088,7 @@
         }
 
         @media (min-width: 768px) {
+
             /* Show desktop layout on tablets and above */
             .filter-bar {
                 gap: 0.75rem;
@@ -2032,6 +2143,7 @@
         }
 
         @media (min-width: 1280px) {
+
             /* Four column layout for large screens */
             .content-grid {
                 grid-template-columns: repeat(4, 1fr);
@@ -2061,8 +2173,9 @@
             background: var(--white);
             padding: 12px 16px;
             border-bottom: 1px solid var(--gray-200);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            color: var(--gray-900); /* Ensure text color contrast */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            color: var(--gray-900);
+            /* Ensure text color contrast */
         }
 
         .mobile-header-left {
@@ -2133,7 +2246,9 @@
         }
 
         /* Better tap targets for mobile */
-        .sidebar-menu-item, .dropdown-option, .filter-button {
+        .sidebar-menu-item,
+        .dropdown-option,
+        .filter-button {
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
         }
@@ -2168,16 +2283,16 @@
             .sidebar-section {
                 margin-bottom: 1rem;
             }
-            
+
             .sidebar-section-title {
                 padding: 0.5rem 1.5rem;
                 margin-bottom: 0.5rem;
             }
-            
+
             .sidebar-menu-item {
                 padding: 0.875rem 1.5rem;
             }
-            
+
             /* Allow slightly more space on tall screens */
             .sidebar-section:nth-last-of-type(2)::after {
                 max-height: 4rem;
@@ -2190,9 +2305,10 @@
         }
     </style>
 </head>
+
 <body>
-@php
-function abbreviateGrade($grade) {
+    @php
+    function abbreviateGrade($grade) {
     $gradeStr = strtolower((string) $grade);
     $parts = preg_split('/[- ]+/', $gradeStr); // Split on one or more hyphens or spaces
     $lastPart = trim(end($parts));
@@ -2204,67 +2320,108 @@ function abbreviateGrade($grade) {
     if (str_contains($gradeStr, 'year')) return 'Y' . $lastPart;
 
     return $grade; // Fallback to original
-}
+    }
 
-$subjectIcons = [
-    'all' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>',
-    'mathematics' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>',
-    'science' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>',
-    'english' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>',
-    'social-studies' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>',
-    'history' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
-    'chemistry' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>',
-    'physics' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>',
-    'biology' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>',
-    'geography' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
-    'art' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4 4 4 0 004-4V5z"/></svg>',
-    'music' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>',
-];
-$defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>';
-@endphp
+    $subjectIcons = [
+    'all' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+    </svg>',
+    'mathematics' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+    </svg>',
+    'science' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+    </svg>',
+    'english' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+    </svg>',
+    'social-studies' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>',
+    'history' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>',
+    'chemistry' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+    </svg>',
+    'physics' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+    </svg>',
+    'biology' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+    </svg>',
+    'geography' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>',
+    'art' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4 4 4 0 004-4V5z" />
+    </svg>',
+    'music' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+    </svg>',
+    ];
+    $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+    </svg>';
+    @endphp
     <!-- Sidebar Overlay for Mobile - Moved outside main-container -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <div class="main-container">
         @include('components.dashboard-sidebar')
         @include('components.dashboard-header')
-            
+
         <!-- Search/Filter Bar -->
         <div class="filter-bar" id="filterBar">
             <x-level-indicator :selectedLevel="$selectedLevelGroup" />
 
             <div class="current-level-display">
                 @foreach($canonicalGrades as $grade)
-                    @php
-                        $isUnlocked = in_array($grade, $unlockedGrades);
-                        $userLevel = \App\Models\Level::where('slug', auth()->user()->grade)
-                                      ->orWhere('title', auth()->user()->grade)
-                                      ->first();
-                        
-                        // Active tab is either the specifically selected grade OR the user's current grade (if none selected)
-                        $isActive = false;
-                        if ($validSelectedGrade) {
-                            $isActive = ($validSelectedGrade === $grade);
-                        } elseif ($userLevel) {
-                            $isActive = ($userLevel->title === $grade);
-                        }
-                    @endphp
-                    <a href="{{ $isUnlocked ? route('dashboard.digilearn', ['grade' => $grade]) : '#' }}" 
-                       class="grade-tab {{ $isUnlocked ? '' : 'locked' }} {{ $isActive ? 'active' : '' }}"
-                       {!! $isUnlocked ? '' : 'title="Complete current lessons to unlock '. $grade . '"' !!}>
-                        @if(!$isUnlocked)
-                            <i class="fas fa-lock"></i>
-                        @endif
-                        <span class="grade-full-name">{{ $grade }}</span>
-                        <span class="grade-short-name">{{ abbreviateGrade($grade) }}</span>
-                    </a>
+                @php
+                $isUnlocked = in_array($grade, $unlockedGrades);
+                $userLevel = \App\Models\Level::where('slug', auth()->user()->grade)
+                ->orWhere('title', auth()->user()->grade)
+                ->first();
+
+                // Active tab is either the specifically selected grade OR the user's current grade (if none selected)
+                $isActive = false;
+                if ($validSelectedGrade) {
+                $isActive = ($validSelectedGrade === $grade);
+                } elseif ($userLevel) {
+                $isActive = ($userLevel->title === $grade);
+                }
+                @endphp
+                <a href="{{ $isUnlocked ? route('dashboard.digilearn', ['grade' => $grade]) : '#' }}"
+                    class="grade-tab {{ $isUnlocked ? '' : 'locked' }} {{ $isActive ? 'active' : '' }}" {!! $isUnlocked
+                    ? '' : 'title="Complete current lessons to unlock ' . $grade . '"' !!}>
+                    @if(!$isUnlocked)
+                    <i class="fas fa-lock"></i>
+                    @endif
+                    <span class="grade-full-name">{{ $grade }}</span>
+                    <span class="grade-short-name">{{ abbreviateGrade($grade) }}</span>
+                </a>
                 @endforeach
             </div>
 
             <!-- Mobile Search Toggle Button -->
             <button class="mobile-search-toggle" id="mobileSearchToggle">
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M17.5 17.5L12.5001 12.5M14.1667 8.33333C14.1667 11.555 11.555 14.1667 8.33333 14.1667C5.11167 14.1667 2.5 11.555 2.5 8.33333C2.5 5.11167 5.11167 2.5 8.33333 2.5C11.555 2.5 14.1667 5.11167 14.1667 8.33333Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path
+                        d="M17.5 17.5L12.5001 12.5M14.1667 8.33333C14.1667 11.555 11.555 14.1667 8.33333 14.1667C5.11167 14.1667 2.5 11.555 2.5 8.33333C2.5 5.11167 5.11167 2.5 8.33333 2.5C11.555 2.5 14.1667 5.11167 14.1667 8.33333Z"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
             </button>
 
@@ -2272,14 +2429,17 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                 <div class="search-box" id="mobileSearchBox">
                     <input type="text" class="search-input" placeholder="Search">
                     <button type="button" class="search-button">
-                        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                     </button>
                     <!-- Close button for mobile search -->
                     <button class="search-close" id="searchClose">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
@@ -2294,32 +2454,39 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
         <div class="subjects-filter-container">
             <!-- Row 1: Context Filter -->
             <div class="subjects-filter context-filter">
+                <span class="filter-label">Category:</span>
                 <div class="subject-chip {{ $context === 'all' ? 'active' : '' }}" data-context="all">
                     <i class="fas fa-th-large"></i> All
                 </div>
                 @foreach($categories as $category)
-                    @php
-                        $catSlug = strtolower($category->slug ?? '');
-                        $isBece = str_contains($catSlug, 'bece');
-                        $isWassce = str_contains($catSlug, 'wassce');
-                        $levelGroup = $selectedLevelGroup ?? session('selected_level_group', Auth::user()->current_level_group ?? 'primary-lower');
-                    @endphp
-                    @if($catSlug !== 'normal' && ($isBece || ($isWassce && str_contains(strtolower($levelGroup), 'shs')) || (!$isBece && !$isWassce)))
-                        <div class="subject-chip {{ $context === $category->slug ? 'active' : '' }}" data-context="{{ $category->slug }}">
-                            <i class="{{ $catSlug === 'bece' ? 'fas fa-graduation-cap' : ($catSlug === 'wassce' ? 'fas fa-university' : 'fas fa-book') }}"></i> 
-                            {{ $category->name }}
-                        </div>
-                    @endif
+                @php
+                $catSlug = strtolower($category->slug ?? '');
+                $isBece = str_contains($catSlug, 'bece');
+                $isWassce = str_contains($catSlug, 'wassce');
+                $levelGroup = $selectedLevelGroup ?? session('selected_level_group', Auth::user()->current_level_group
+                ?? 'primary-lower');
+                @endphp
+                @if($catSlug !== 'normal' && ($isBece || ($isWassce && str_contains(strtolower($levelGroup), 'shs')) ||
+                (!$isBece && !$isWassce)))
+                <div class="subject-chip {{ $context === $category->slug ? 'active' : '' }}"
+                    data-context="{{ $category->slug }}">
+                    <i
+                        class="{{ $catSlug === 'bece' ? 'fas fa-graduation-cap' : ($catSlug === 'wassce' ? 'fas fa-university' : 'fas fa-book') }}"></i>
+                    {{ $category->name }}
+                </div>
+                @endif
                 @endforeach
             </div>
 
             <!-- Row 2: Subjects Filter -->
             <div class="subjects-filter">
+                <span class="filter-label">Subjects:</span>
                 @foreach($subjects ?? [] as $subject)
-                    <div class="subject-chip {{ ($subject['slug'] ?? '') === 'all' ? 'active' : '' }}" data-subject="{{ $subject['slug'] ?? '' }}">
-                        {!! $subjectIcons[$subject['slug'] ?? ''] ?? $defaultIcon !!}
-                        {{ $subject['name'] ?? '' }}
-                    </div>
+                <div class="subject-chip {{ ($subject['slug'] ?? '') === 'all' ? 'active' : '' }}"
+                    data-subject="{{ $subject['slug'] ?? '' }}">
+                    {!! $subjectIcons[$subject['slug'] ?? ''] ?? $defaultIcon !!}
+                    {{ $subject['name'] ?? '' }}
+                </div>
                 @endforeach
             </div>
         </div>
@@ -2340,37 +2507,40 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                     </div>
                 </div>
             </div>
-            
+
             <!-- Content Section with Lessons/Courses Grid -->
             <div class="content-section">
                 <div class="content-grid">
                     @if(isset($universityCourses))
-                        {{-- Display University Courses --}}
-                        @forelse($universityCourses as $course)
-                            @include('dashboard.partials.video-card', ['course' => $course, 'universityCourses' => true])
-                        @empty
-                        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
-                            <h3 style="color: var(--gray-600); margin-bottom: 1rem;">No courses available</h3>
-                            <p style="color: var(--gray-500);">University courses are coming soon!</p>
-                        </div>
-                        @endforelse
+                    {{-- Display University Courses --}}
+                    @forelse($universityCourses as $course)
+                    @include('dashboard.partials.video-card', ['course' => $course, 'universityCourses' => true])
+                    @empty
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                        <h3 style="color: var(--gray-600); margin-bottom: 1rem;">No courses available</h3>
+                        <p style="color: var(--gray-500);">University courses are coming soon!</p>
+                    </div>
+                    @endforelse
                     @else
-                        {{-- Display Regular Lessons --}}
-                        @forelse($lessons ?? [] as $lesson)
-                            @include('dashboard.partials.video-card', ['lesson' => $lesson])
-                        @empty
-                        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
-                            <h3 style="color: var(--gray-600); margin-bottom: 1rem;">No lessons available</h3>
-                            <p style="color: var(--gray-500);">Lessons for {{ ucwords(str_replace('-', ' ', $selectedLevelGroup)) }} are coming soon!</p>
-                        </div>
-                        @endforelse
+                    {{-- Display Regular Lessons --}}
+                    @forelse($lessons ?? [] as $lesson)
+                    @include('dashboard.partials.video-card', ['lesson' => $lesson])
+                    @empty
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;">
+                        <h3 style="color: var(--gray-600); margin-bottom: 1rem;">No lessons available</h3>
+                        <p style="color: var(--gray-500);">Lessons for {{ ucwords(str_replace('-', ' ',
+                            $selectedLevelGroup)) }} are coming soon!</p>
+                    </div>
+                    @endforelse
                     @endif
                 </div>
 
                 {{-- Infinite Scroll Sentinel --}}
-                <div id="scroll-sentinel" style="height: 50px; display: flex; align-items: center; justify-content: center; margin-top: 2rem;">
+                <div id="scroll-sentinel"
+                    style="height: 50px; display: flex; align-items: center; justify-content: center; margin-top: 2rem;">
                     @if(($totalLessons ?? 0) > count($lessons ?? []))
-                        <div class="loading-spinner" id="infinite-loader" style="width: 30px; height: 30px; border-width: 2px;"></div>
+                    <div class="loading-spinner" id="infinite-loader"
+                        style="width: 30px; height: 30px; border-width: 2px;"></div>
                     @endif
                 </div>
             </div>
@@ -2380,7 +2550,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         let isSearching = false;
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Initialize all functionality
             initializeMobileUI();
             initializeSidebar();
@@ -2422,11 +2592,11 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
             }
         }
 
-        window.addEventListener('pageshow', function(event) {
+        window.addEventListener('pageshow', function (event) {
             if (event.persisted) {
                 // Page was loaded from bfcache, reset search state
                 isSearching = false;
-                
+
                 const activeSearchBox = document.querySelector('.search-container .search-box') || document.querySelector('#mobileSearchBox');
                 if (activeSearchBox) {
                     activeSearchBox.classList.remove('searching');
@@ -2437,9 +2607,9 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                     // If there was text in search, clear it to avoid confusion
                     searchInput.value = '';
                 }
-                
+
                 restoreOriginalLessons();
-                
+
                 // Also reset subject filter to 'all'
                 const subjectChips = document.querySelectorAll('.subject-chip');
                 subjectChips.forEach(chip => {
@@ -2453,25 +2623,25 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
         function preventBodyScroll() {
             const youtubeSidebar = document.getElementById('youtubeSidebar');
             const sidebarOverlay = document.getElementById('sidebarOverlay');
-            
+
             // Disable body scroll when mobile sidebar is open
             if (youtubeSidebar && sidebarOverlay) {
-                youtubeSidebar.addEventListener('mouseenter', function() {
-                if (window.innerWidth <= 768 && this.classList.contains('mobile-open')) {
-                    document.body.style.overflow = 'hidden';
-                }
+                youtubeSidebar.addEventListener('mouseenter', function () {
+                    if (window.innerWidth <= 768 && this.classList.contains('mobile-open')) {
+                        document.body.style.overflow = 'hidden';
+                    }
                 });
-                
-                youtubeSidebar.addEventListener('mouseleave', function() {
-                document.body.style.overflow = '';
+
+                youtubeSidebar.addEventListener('mouseleave', function () {
+                    document.body.style.overflow = '';
                 });
-                
-                sidebarOverlay.addEventListener('click', function() {
-                document.body.style.overflow = '';
+
+                sidebarOverlay.addEventListener('click', function () {
+                    document.body.style.overflow = '';
                 });
             }
         }
-        
+
         // Call the new function
         preventBodyScroll();
 
@@ -2510,7 +2680,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
             // Get current filters
             const activeGrade = document.querySelector('.grade-tab.active');
             const gradeTitle = activeGrade ? activeGrade.querySelector('.grade-full-name').textContent.trim() : null;
-            
+
             const activeSubjectChip = document.querySelector('.subject-chip.active');
             const subjectSlug = activeSubjectChip ? activeSubjectChip.getAttribute('data-subject') : 'all';
 
@@ -2526,7 +2696,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                         const contentGrid = document.querySelector('.content-grid');
                         // Use insertAdjacentHTML instead of innerHTML += to preserve existing event listeners/elements
                         contentGrid.insertAdjacentHTML('beforeend', data.html);
-                        
+
                         // If we are currently filtering client-side, we need to hide the new elements that don't match
                         if (subjectSlug !== 'all') {
                             const newElements = contentGrid.querySelectorAll('.content-grid > *:nth-last-child(-n+' + data.count + ')');
@@ -2543,7 +2713,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                         const loader = document.getElementById('infinite-loader');
                         if (loader) loader.style.display = 'none';
                     }
-                    
+
                     isLoading = false;
                 })
                 .catch(error => {
@@ -2579,7 +2749,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
             const filterBar = document.getElementById('filterBar');
 
             if (mobileSearchToggle && filterBar && searchInput) {
-                mobileSearchToggle.addEventListener('click', function() {
+                mobileSearchToggle.addEventListener('click', function () {
                     filterBar.classList.add('search-active');
                     setTimeout(() => {
                         searchInput.focus();
@@ -2592,11 +2762,11 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                 searchClose.style.display = searchInput.value ? 'flex' : 'none';
 
                 // Listen for typing
-                searchInput.addEventListener('input', function() {
+                searchInput.addEventListener('input', function () {
                     searchClose.style.display = searchInput.value ? 'flex' : 'none';
                 });
 
-                searchClose.addEventListener('click', function() {
+                searchClose.addEventListener('click', function () {
                     if (searchInput.value) {
                         // Clear input if it has content
                         searchInput.value = '';
@@ -2611,7 +2781,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
 
             // Optional: Enter key to close search
             if (searchInput && filterBar) {
-                searchInput.addEventListener('keydown', function(e) {
+                searchInput.addEventListener('keydown', function (e) {
                     if (e.key === 'Enter') {
                         // Close search on Enter
                         filterBar.classList.remove('search-active');
@@ -2620,7 +2790,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
             }
 
             // Close search when pressing Escape
-            document.addEventListener('keydown', function(e) {
+            document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape' && filterBar.classList.contains('search-active')) {
                     if (searchInput && searchInput.value) {
                         searchInput.value = '';
@@ -2647,7 +2817,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                     youtubeSidebar.classList.toggle('mobile-open');
                     sidebarOverlay.classList.toggle('active');
                     body.classList.toggle('sidebar-open');
-    
+
                     // Reset scroll position when opening sidebar
                     if (youtubeSidebar.classList.contains('mobile-open') && sidebarContent) {
                         sidebarContent.scrollTop = 0;
@@ -2655,17 +2825,17 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                 } else {
                     // Desktop behavior - layout changes
                     youtubeSidebar.classList.toggle('collapsed');
-    
+
                     // Update header position
                     updateHeaderPosition();
-    
+
                     // Reset scroll position when collapsing/expanding
                     if (sidebarContent) {
                         sidebarContent.scrollTop = 0;
                     }
                 }
             }
-    
+
             // function updateHeaderPosition() {
             //     const topHeader = document.querySelector('.top-header');
             //     const filterBar = document.querySelector('.filter-bar');
@@ -2711,7 +2881,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
 
             // Close sidebar when clicking overlay
             if (sidebarOverlay) {
-                sidebarOverlay.addEventListener('click', function(e) {
+                sidebarOverlay.addEventListener('click', function (e) {
                     youtubeSidebar.classList.remove('mobile-open');
                     sidebarOverlay.classList.remove('active');
                     body.classList.remove('sidebar-open');
@@ -2720,11 +2890,11 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
 
             // Prevent scrolling when sidebar is open on mobile
             if (youtubeSidebar) {
-                youtubeSidebar.addEventListener('touchmove', function(e) {
+                youtubeSidebar.addEventListener('touchmove', function (e) {
                     if (window.innerWidth <= 768 && this.classList.contains('mobile-open')) {
                         e.preventDefault();
                     }
-                }, {passive: false });
+                }, { passive: false });
             }
 
 
@@ -2761,7 +2931,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
             handleResize();
 
             // Keyboard shortcuts
-            document.addEventListener('keydown', function(e) {
+            document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape' && youtubeSidebar.classList.contains('mobile-open')) {
                     youtubeSidebar.classList.remove('mobile-open');
                     sidebarOverlay.classList.remove('active');
@@ -2771,7 +2941,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
 
             // Prevent body scroll when sidebar is open on mobile
             if (sidebarOverlay) {
-                sidebarOverlay.addEventListener('touchmove', function(e) {
+                sidebarOverlay.addEventListener('touchmove', function (e) {
                     if (this.classList.contains('active')) {
                         e.preventDefault();
                     }
@@ -2783,29 +2953,29 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
         // Custom dropdown functionality
         function initializeDropdowns() {
             const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
-    
+
             dropdownToggles.forEach(toggle => {
-                toggle.addEventListener('click', function(e) {
+                toggle.addEventListener('click', function (e) {
                     e.stopPropagation();
                     const dropdown = this.closest('.custom-dropdown');
                     dropdown.classList.toggle('open');
                 });
             });
-            
+
             // Handle option selection
             document.querySelectorAll('.dropdown-option').forEach(option => {
-                option.addEventListener('click', function() {
+                option.addEventListener('click', function () {
                     const text = this.querySelector('span') ? this.querySelector('span').textContent : this.textContent;
                     const toggle = this.closest('.custom-dropdown').querySelector('.dropdown-toggle span');
                     toggle.textContent = text;
                     this.closest('.custom-dropdown').classList.remove('open');
-                    
+
                     console.log('Selected option:', text);
                 });
             });
-            
+
             // Close dropdowns when clicking outside
-            document.addEventListener('click', function(e) {
+            document.addEventListener('click', function (e) {
                 if (!e.target.closest('.custom-dropdown')) {
                     document.querySelectorAll('.custom-dropdown').forEach(dropdown => {
                         dropdown.classList.remove('open');
@@ -2818,19 +2988,19 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
         function initializeContextFilter() {
             const contextChips = document.querySelectorAll('.context-filter .subject-chip');
             contextChips.forEach(chip => {
-                chip.addEventListener('click', function() {
+                chip.addEventListener('click', function () {
                     const context = this.getAttribute('data-context');
                     const url = new URL(window.location.href);
-                    
+
                     if (context === 'all') {
                         url.searchParams.delete('context');
                     } else {
                         url.searchParams.set('context', context);
                     }
-                    
+
                     // Keep level_group if it exists
                     // url.searchParams.delete('grade'); // Remove specific grade when switching context?
-                    
+
                     // Reset subject filter when context changes
                     url.searchParams.delete('subject');
                     window.location.href = url.toString();
@@ -2843,7 +3013,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
             const subjectChips = document.querySelectorAll('.subjects-filter:not(.context-filter) .subject-chip');
 
             subjectChips.forEach(chip => {
-                chip.addEventListener('click', function() {
+                chip.addEventListener('click', function () {
                     const selectedSubject = this.getAttribute('data-subject');
 
                     // Update active state
@@ -2875,7 +3045,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
 
 
         // Handle Lesson Card and Icon Clicks (Global Delegation)
-        document.addEventListener('click', function(e) {
+        document.addEventListener('click', function (e) {
             const actionIcon = e.target.closest('.action-icon-btn');
             // Support .lesson-card, .video-facade-card, and .related-video-item
             const lessonCard = e.target.closest('.lesson-card') || e.target.closest('.video-facade-card') || e.target.closest('.related-video-item');
@@ -2887,7 +3057,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                 console.log('Action icon clicked:', actionIcon.className);
                 // Prevent card click bubbling, but only prevent default if not a link
                 e.stopPropagation();
-                
+
                 if (actionIcon.classList.contains('save-btn')) {
                     e.preventDefault();
                     const lessonId = actionIcon.dataset.lessonId || actionIcon.dataset.lessonid || actionIcon.dataset.courseId || actionIcon.dataset.courseid;
@@ -2919,7 +3089,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
 
                 const lessonId = lessonCard.dataset.lessonId;
                 const courseId = lessonCard.dataset.courseId;
-                
+
                 console.log('Navigating to lesson:', lessonId);
 
                 if (lessonId && lessonId !== 'null' && lessonId !== 'undefined') {
@@ -2950,7 +3120,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                 console.log('Restricted access detected in save handler');
                 const upgradePrompt = card.dataset.upgradePrompt ? JSON.parse(card.dataset.upgradePrompt) : null;
                 const planSlug = (upgradePrompt && upgradePrompt.required_plan_slug) ? upgradePrompt.required_plan_slug : 'essential';
-                
+
                 if (window.openUpgradeModal) {
                     window.openUpgradeModal(planSlug);
                 } else {
@@ -2963,7 +3133,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
 
             const isSaved = btn.dataset.saved === 'true';
             const originalHTML = btn.innerHTML;
-            
+
             // UI feedback early
             btn.innerHTML = '<div class="loading-spinner"></div>';
             btn.disabled = true;
@@ -3014,7 +3184,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                     btn.disabled = false;
                     return;
                 }
-                
+
                 if (data.success) {
                     updateSaveButtonState(btn, data.saved);
                     showSuccessMessage(data.message);
@@ -3114,7 +3284,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
             }
 
             // Add global click listener for debugging
-            document.addEventListener('click', function(e) {
+            document.addEventListener('click', function (e) {
                 if (e.target.classList.contains('search-button')) {
                     console.log('Search button clicked globally');
                 }
@@ -3126,7 +3296,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
             let isSearching = false;
 
             // Store original content on page load
-            document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('DOMContentLoaded', function () {
                 const grid = document.querySelector('.content-grid');
                 if (grid) {
                     originalLessonsHTML = grid.innerHTML;
@@ -3136,7 +3306,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
             // Handle input changes (debounced search)
             if (searchInput) {
                 console.log('Adding input event listener');
-                searchInput.addEventListener('input', function() {
+                searchInput.addEventListener('input', function () {
                     console.log('Input event triggered, value:', this.value);
                     const query = this.value.trim();
 
@@ -3144,13 +3314,13 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
                         // Restore original content immediately when cleared
                         restoreOriginalLessons();
                     }
-                    
+
                     // Note: Automatic search-as-you-type removed for scalability.
                     // Search now only triggers via Enter key or Search button click.
                 });
 
                 // Handle Enter key
-                searchInput.addEventListener('keydown', function(e) {
+                searchInput.addEventListener('keydown', function (e) {
                     console.log('Keydown event:', e.key);
                     if (e.key === 'Enter') {
                         e.preventDefault();
@@ -3169,7 +3339,7 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
             // Handle search button click
             if (searchButton) {
                 console.log('Adding search button click listener');
-                searchButton.addEventListener('click', function(e) {
+                searchButton.addEventListener('click', function (e) {
                     e.preventDefault();
                     console.log('Search button clicked');
                     clearTimeout(searchTimeout);
@@ -3396,4 +3566,5 @@ $defaultIcon = '<svg class="subject-icon" fill="none" stroke="currentColor" view
     </script>
     @include('partials._upgrade_modal')
 </body>
+
 </html>
