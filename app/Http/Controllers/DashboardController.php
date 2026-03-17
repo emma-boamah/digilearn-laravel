@@ -1420,10 +1420,51 @@ class DashboardController extends Controller
      */
     private function hasLessonAccess($user, $lesson)
     {
+        // If a specific level (group) string like 'primary-lower' is passed directly
+        if (isset($lesson['level']) && !isset($lesson['grade_level'])) {
+            // Check if it's a known level group slug first (e.g. from the level selection)
+            $validLevelGroups = ['primary-lower', 'primary-upper', 'jhs', 'shs', 'university'];
+            if (in_array($lesson['level'], $validLevelGroups)) {
+                return \App\Services\SubscriptionAccessService::canAccessLevelGroup($user, $lesson['level']);
+            }
+        }
+
         $gradeLevel = $lesson['grade_level'] ?? null;
 
         if (!$gradeLevel && isset($lesson['level'])) {
             $gradeLevel = $this->convertLevelFormat($lesson['level']);
+        }
+
+        // If we still don't have a grade level but we have an ID, we need to fetch the lesson to check its true level
+        if (!$gradeLevel && isset($lesson['id'])) {
+            $decodedId = \App\Services\UrlObfuscator::decode($lesson['id']) ?? $lesson['id'];
+            $video = \App\Models\Video::find($decodedId);
+            if ($video) {
+                // Determine grade level based on the video's properties (adjust to your model's actual fields if different)
+                // We'll search for the relevant level group/grade level using the findVideoByLessonId equivalent logic if needed,
+                // but videos usually belong to a category or have some attached metadata.
+                // Assuming it has a $video->level or similar if it's a direct Video model.
+                // For safety, let's keep the default fallback if no explicit grade level can be derived.
+                
+                // Let's try to find it in the level groups to get its proper level
+                $foundGradeLevel = null;
+                $levelGroups = $this->getLevelGroups();
+                foreach ($levelGroups as $group) {
+                    $levels = $group['levels'] ?? $group['years'] ?? [];
+                    foreach ($levels as $levelData) {
+                        $levelLessons = $this->getLessonsForLevel($levelData['id']);
+                        foreach ($levelLessons as $l) {
+                            if ($l['id'] == $lesson['id'] || $l['video_id'] == $video->id) {
+                                $foundGradeLevel = $this->convertLevelFormat($l['level'] ?? $levelData['id']);
+                                break 3;
+                            }
+                        }
+                    }
+                }
+                if ($foundGradeLevel) {
+                    $gradeLevel = $foundGradeLevel;
+                }
+            }
         }
 
         // Use the centralized subscription access service
@@ -1764,6 +1805,18 @@ class DashboardController extends Controller
      */
     public function saveLesson(Request $request, $lessonId)
     {
+        $user = Auth::user();
+
+        // Check if user has access to this lesson before saving
+        // This prevents users from saving premium content they aren't subscribed to
+        if (!$this->hasLessonAccess($user, ['id' => $lessonId, 'level' => $request->selected_level])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save: please upgrade your current plan to save this lesson.',
+                'saved' => false
+            ], 403);
+        }
+
         $request->validate([
             'lesson_title' => 'required|string|max:255',
             'lesson_subject' => 'required|string|max:100',

@@ -49,6 +49,10 @@
             --safe-area-inset-top: env(safe-area-inset-top, 0px);
         }
 
+        .no-pointer-events {
+            pointer-events: none !important;
+        }
+
         * {
             margin: 0;
             padding: 0;

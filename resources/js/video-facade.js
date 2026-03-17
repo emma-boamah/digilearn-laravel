@@ -353,7 +353,7 @@ class VideoFacadeManager {
         iframe.loading = 'lazy';
         iframe.frameBorder = '0';
         iframe.className = 'csp-facade-player';
-        iframe.style.pointerEvents = 'none'; // CRITICAL: Prevent iframe from stealing clicks from the card
+        iframe.classList.add('no-pointer-events'); // CRITICAL: Prevent iframe from stealing clicks from the card
 
         preview.appendChild(iframe);
 

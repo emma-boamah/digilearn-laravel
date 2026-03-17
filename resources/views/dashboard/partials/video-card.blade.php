@@ -7,6 +7,21 @@
     $encodedQuizId = $item['encoded_quiz_id'] ?? ($quizId ? \App\Services\UrlObfuscator::encode($quizId) : null);
 @endphp
 
+@pushonce('styles')
+<style nonce="{{ request()->attributes->get('csp_nonce') }}">
+    .dashboard-course-description {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+        margin: 0.5rem 0;
+    }
+    .dashboard-course-lessons-count {
+        font-size: 0.75rem;
+        color: var(--secondary-blue);
+        font-weight: 500;
+    }
+</style>
+@endpushonce
+
 <x-video-facade
     videoId="{{ $id }}"
     videoSource="{{ $item['video_source'] ?? 'local' }}"
@@ -35,12 +50,12 @@
 >
     @if($isUniversity)
         @if(isset($item['description']))
-        <p class="course-description" style="font-size: 0.875rem; color: var(--gray-600); margin: 0.5rem 0;">
+        <p class="course-description dashboard-course-description">
             {{ $item['description'] }}
         </p>
         @endif
         @if(isset($item['lessons_count']))
-        <p class="course-lessons-count" style="font-size: 0.75rem; color: var(--secondary-blue); font-weight: 500;">
+        <p class="course-lessons-count dashboard-course-lessons-count">
             {{ $item['lessons_count'] }} lessons • {{ $item['credit_hours'] ?? 3 }} credit hours
         </p>
         @endif
@@ -51,12 +66,14 @@
                         <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
                     </svg>
                 </button>
-                <a href="{{ $encodedQuizId ? route('quiz.instructions', ['quizId' => $encodedQuizId]) : route('quiz.index') }}" class="quiz-primary-btn" title="Take Quiz">
+                @if($encodedQuizId)
+                <a href="{{ route('quiz.instructions', ['quizId' => $encodedQuizId]) }}" class="quiz-primary-btn" title="Take Quiz">
                     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                     <span>Take Quiz</span>
                 </a>
+                @endif
             </div>
         </div>
     @else
@@ -68,12 +85,14 @@
                         <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
                     </svg>
                 </button>
-                <a href="{{ $encodedQuizId ? route('quiz.instructions', ['quizId' => $encodedQuizId]) : route('quiz.index') }}" class="quiz-primary-btn" title="Take Quiz">
+                @if($encodedQuizId)
+                <a href="{{ route('quiz.instructions', ['quizId' => $encodedQuizId]) }}" class="quiz-primary-btn" title="Take Quiz">
                     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                     <span>Take Quiz</span>
                 </a>
+                @endif
             </div>
         </div>
     @endif

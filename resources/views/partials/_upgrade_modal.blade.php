@@ -1,7 +1,7 @@
 @php
     $hasActiveSubscription = $hasActiveSubscription ?? (auth()->check() && auth()->user()->hasActiveSubscription());
 @endphp
-<div class="modal-backdrop" id="upgradeModal" style="display: none;">
+<div class="modal-backdrop hidden" id="upgradeModal">
     <div class="modal-container">
         <div class="modal-header">
             <h2 class="modal-title">Upgrade Your Plan</h2>
@@ -196,6 +196,46 @@
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
     }
+
+    /* CSP compliance: classes to replace inline styles */
+    .hidden {
+        display: none !important;
+    }
+    
+    .loading-plan-container {
+        padding: 4rem 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .modal-loading-spinner {
+        border-top-color: var(--secondary-blue, #2677B8);
+        width: 40px;
+        height: 40px;
+    }
+
+    .pricing-card-reset {
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 !important;
+    }
+
+    .error-plan-container {
+        padding: 3rem 2rem;
+        text-align: center;
+    }
+
+    .text-error-red {
+        color: #dc2626;
+        margin-bottom: 1.5rem;
+    }
+
+    .flex-display {
+        display: flex !important;
+    }
 </style>
 
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
@@ -211,8 +251,9 @@
             if(!pricingCard) return;
 
             const originalContent = pricingCard.innerHTML;
-            pricingCard.innerHTML = '<div style="padding: 4rem 2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;"><div class="loading-spinner" style="border-top-color: var(--secondary-blue, #2677B8); width: 40px; height: 40px;"></div><p>Loading plan details...</p></div>';
-            upgradeModal.style.display = 'flex';
+            pricingCard.innerHTML = '<div class="loading-plan-container"><div class="loading-spinner modal-loading-spinner"></div><p>Loading plan details...</p></div>';
+            upgradeModal.classList.remove('hidden');
+            upgradeModal.classList.add('flex-display');
             document.body.style.overflow = 'hidden';
 
             // Fetch plan details
@@ -224,7 +265,7 @@
                 .then(data => {
                     const btnText = hasActiveSubscription ? 'Upgrade Now' : 'Get Started';
                     pricingCard.innerHTML = `
-                        <div class="pricing-card" style="box-shadow: none; border: none; margin: 0;">
+                        <div class="pricing-card pricing-card-reset">
                             <div class="pricing-badge">${data.name || planSlug}</div>
                             <div class="pricing-card-content">
                                 <p class="pricing-description">${data.description || 'Comprehensive learning package with access to platform features.'}</p>
@@ -242,8 +283,8 @@
                 .catch(error => {
                     console.error('Error fetching pricing plan:', error);
                     pricingCard.innerHTML = `
-                        <div style="padding: 3rem 2rem; text-align: center;">
-                            <p style="color: #dc2626; margin-bottom: 1.5rem;">Sorry, we could not load the plan details. Please try again later.</p>
+                        <div class="error-plan-container">
+                            <p class="text-error-red">Sorry, we could not load the plan details. Please try again later.</p>
                             <a href="/pricing" class="pricing-btn">View All Pricing Plans</a>
                         </div>
                     `;
@@ -251,7 +292,8 @@
         };
 
         window.closeUpgradeModal = function() {
-            upgradeModal.style.display = 'none';
+            upgradeModal.classList.add('hidden');
+            upgradeModal.classList.remove('flex-display');
             document.body.style.overflow = '';
         };
 

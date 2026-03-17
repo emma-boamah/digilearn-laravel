@@ -462,7 +462,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($standards as $standard)
+                @forelse ($standards as $standard)
                     <tr>
                         <td class="font-medium">
                             {{ $levelGroups[$standard->level_group] ?? $standard->level_group }}
