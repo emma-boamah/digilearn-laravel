@@ -179,15 +179,16 @@ class CookieController extends Controller
     /**
      * Admin cookie statistics page
      */
-    public function adminStatsPage()
+    public function adminStatsPage(Request $request)
     {
         $stats = CookieConsent::getConsentStats();
         $managerStats = $this->cookieManager->getStats();
+        $limit = $request->get('limit', 20);
 
-        // Get recent consents (without user relationships since they may not exist)
+        // Get recent consents
         $recentConsents = CookieConsent::recent(30)
             ->orderBy('consented_at', 'desc')
-            ->take(20)
+            ->take($limit)
             ->get();
 
         // Get consent trends for the last 7 days
@@ -203,6 +204,64 @@ class CookieController extends Controller
 
         $countryBreakdown = CookieConsent::getCountryBreakdown();
 
-        return view('admin.cookie-stats', compact('stats', 'managerStats', 'recentConsents', 'consentTrends', 'countryBreakdown'));
+        return view('admin.cookie-stats', compact('stats', 'managerStats', 'recentConsents', 'consentTrends', 'countryBreakdown', 'limit'));
+    }
+
+    /**
+     * Export cookie consent logs as CSV
+     */
+    public function exportCsv()
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="cookie-consent-logs-' . now()->format('Y-m-d') . '.csv"',
+        ];
+
+        $callback = function () {
+            $file = fopen('php://output', 'w');
+            
+            // CSV Header
+            fputcsv($file, [
+                'ID',
+                'IP Address',
+                'Device',
+                'Browser',
+                'Country',
+                'City',
+                'Region',
+                'Consent Categories',
+                'Page URL',
+                'Date Created'
+            ]);
+
+            // CSV Data
+            CookieConsent::orderBy('consented_at', 'desc')->chunk(100, function ($consents) use ($file) {
+                foreach ($consents as $consent) {
+                    $categories = [];
+                    $data = $consent->consent_data ?? [];
+                    
+                    if ($data['preference'] ?? false) $categories[] = 'Essential';
+                    if ($data['analytics'] ?? false) $categories[] = 'Analytics';
+                    if ($data['marketing'] ?? false) $categories[] = 'Marketing'; // Future proofing
+                    
+                    fputcsv($file, [
+                        $consent->id,
+                        $consent->ip_address,
+                        $consent->device_type,
+                        $consent->browser,
+                        $consent->country ?? 'Unknown',
+                        $consent->city ?? 'Unknown',
+                        $consent->region ?? 'Unknown',
+                        implode(', ', $categories),
+                        $consent->page_url ?? 'N/A',
+                        $consent->consented_at->format('Y-m-d H:i:s')
+                    ]);
+                }
+            });
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

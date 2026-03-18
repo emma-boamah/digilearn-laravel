@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Log;
+use Stevebauman\Location\Facades\Location;
 
 class CookieManager
 {
@@ -243,17 +244,37 @@ class CookieManager
     private function storeConsentRecord(array $consent, array $gpsData = []): void
     {
         try {
+            $ip = request()->ip();
+            $country = $gpsData['country'] ?? null;
+            $city = $gpsData['city'] ?? null;
+            $region = $gpsData['region'] ?? null;
+
+            // Fallback to Server-side GeoIP if frontend data is missing
+            if (!$country || $country === 'Unknown') {
+                try {
+                    $location = Location::get($ip === '127.0.0.1' ? '66.102.0.0' : $ip);
+                    if ($location) {
+                        $country = $location->countryName;
+                        $city = $location->cityName;
+                        $region = $location->regionName;
+                        Log::info('GeoIP fallback success', ['ip' => $ip, 'country' => $country]);
+                    }
+                } catch (\Exception $geoEx) {
+                    Log::warning('GeoIP fallback failed', ['ip' => $ip, 'error' => $geoEx->getMessage()]);
+                }
+            }
+
             \App\Models\CookieConsent::create([
-                'ip_address' => request()->ip(),
+                'ip_address' => $ip,
                 'user_agent' => request()->userAgent(),
                 'consent_data' => $consent,
                 'consent_hash' => md5(json_encode($consent)),
                 'consented_at' => now(),
                 'latitude' => $gpsData['latitude'] ?? null,
                 'longitude' => $gpsData['longitude'] ?? null,
-                'country' => $gpsData['country'] ?? null,
-                'city' => $gpsData['city'] ?? null,
-                'region' => $gpsData['region'] ?? null,
+                'country' => $country,
+                'city' => $city,
+                'region' => $region,
                 'page_url' => $gpsData['page_url'] ?? null,
             ]);
         } catch (\Exception $e) {
