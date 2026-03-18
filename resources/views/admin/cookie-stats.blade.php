@@ -248,12 +248,15 @@
                                      <span class="font-medium">{{ $consent->device_info }}</span>
                                  </div>
                              </td>
-                             <td
-                                class="px-6 py-4 text-[11px] text-slate-500 border-r border-slate-100 leading-relaxed max-w-[200px]">
-                                <div class="text-rose-500 font-bold mb-0.5">Necessary Cookies,</div>
-                                <div class="text-rose-500 font-bold mb-0.5">Preferences Cookies,</div>
-                                <div class="text-rose-500 font-bold">Marketing Cookies.</div>
-                            </td>
+                             <td class="px-6 py-4 text-[11px] text-slate-500 border-r border-slate-100 leading-relaxed max-w-[200px]">
+                                 @php
+                                     $hasAnalytics = $consent->consent_data['analytics'] ?? false;
+                                     $hasPreference = $consent->consent_data['preference'] ?? false;
+                                 @endphp
+                                 <div class="text-slate-500 font-bold mb-0.5">Necessary Cookies (Req)</div>
+                                 <div class="{{ $hasPreference ? 'text-emerald-500' : 'text-rose-500' }} font-bold mb-0.5">Preferences Cookies ({{ $hasPreference ? 'Yes' : 'No' }})</div>
+                                 <div class="{{ $hasAnalytics ? 'text-emerald-500' : 'text-rose-500' }} font-bold mb-0.5">Analytics Cookies ({{ $hasAnalytics ? 'Yes' : 'No' }})</div>
+                             </td>
                             <td
                                 class="px-6 py-4 text-sm text-blue-500 hover:underline border-r border-slate-100 max-w-[250px] truncate">
                                 <a href="{{ $consent->page_url ?? '#' }}" target="_blank">{{ $consent->page_url ?? 'N/A'

@@ -3022,7 +3022,19 @@ class AdminController extends Controller
         $context = $request->get('context', '');
 
         // Get all content with unified structure
-        $contents = $this->getUnifiedContents($query, $type, $sort, $levelGroup, $context);
+        $allContents = $this->getUnifiedContents($query, $type, $sort, $levelGroup, $context);
+
+        // Paginate the collection manually
+        $page = \Illuminate\Pagination\Paginator::resolveCurrentPage() ?: 1;
+        $perPage = 15;
+        $contents = new \Illuminate\Pagination\LengthAwarePaginator(
+            $allContents->forPage($page, $perPage),
+            $allContents->count(),
+            $perPage,
+            $page,
+            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+        );
+        $contents->appends($request->all());
 
         // Get content statistics
         $stats = [
