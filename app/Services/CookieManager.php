@@ -248,16 +248,31 @@ class CookieManager
             $country = $gpsData['country'] ?? null;
             $city = $gpsData['city'] ?? null;
             $region = $gpsData['region'] ?? null;
+            $latitude = $gpsData['latitude'] ?? null;
+            $longitude = $gpsData['longitude'] ?? null;
 
-            // Fallback to Server-side GeoIP if frontend data is missing
-            if (!$country || $country === 'Unknown') {
+            // Better detection for local/private IPs (common in Docker/Sail/Local Dev)
+            // 172.22.0.1 and others are private and won't resolve to a country
+            $isPublicIp = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+            $lookupIp = ($isPublicIp && $ip !== '127.0.0.1' && $ip !== '::1') ? $ip : '66.102.0.0';
+
+            // Fallback to Server-side GeoIP if frontend data is missing or local IP
+            if (!$country || $country === 'Unknown' || !$isPublicIp) {
                 try {
-                    $location = Location::get($ip === '127.0.0.1' ? '66.102.0.0' : $ip);
+                    $location = Location::get($lookupIp);
                     if ($location) {
-                        $country = $location->countryName;
-                        $city = $location->cityName;
-                        $region = $location->regionName;
-                        Log::info('GeoIP fallback success', ['ip' => $ip, 'country' => $country]);
+                        $country = $location->countryName ?? $country;
+                        $city = $location->cityName ?? $city;
+                        $region = $location->regionName ?? $region;
+                        // Also fill coordinates if missing to make the map work!
+                        $latitude = $latitude ?? $location->latitude;
+                        $longitude = $longitude ?? $location->longitude;
+                        
+                        Log::info('GeoIP fallback success', [
+                            'requested_ip' => $ip,
+                            'lookup_ip' => $lookupIp,
+                            'country' => $country
+                        ]);
                     }
                 } catch (\Exception $geoEx) {
                     Log::warning('GeoIP fallback failed', ['ip' => $ip, 'error' => $geoEx->getMessage()]);
@@ -270,8 +285,8 @@ class CookieManager
                 'consent_data' => $consent,
                 'consent_hash' => md5(json_encode($consent)),
                 'consented_at' => now(),
-                'latitude' => $gpsData['latitude'] ?? null,
-                'longitude' => $gpsData['longitude'] ?? null,
+                'latitude' => $latitude,
+                'longitude' => $longitude,
                 'country' => $country,
                 'city' => $city,
                 'region' => $region,

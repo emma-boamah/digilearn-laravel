@@ -327,13 +327,36 @@ function cookieConsentBanner() {
             consent: true
         },
         locationData: {},
+        userAgentHints: {},
         showLocationPrompt: false,
 
-        init() {
+        async init() {
+            await this.captureUserAgentHints();
             setTimeout(() => {
                 this.showBanner = true;
                 this.requestLocationPermission();
             }, 500);
+        },
+
+        async captureUserAgentHints() {
+            if (navigator.userAgentData) {
+                try {
+                    // Capture high-entropy values for 100% reliable device detection
+                    const hints = await navigator.userAgentData.getHighEntropyValues([
+                        'architecture', 
+                        'model', 
+                        'platform', 
+                        'platformVersion', 
+                        'fullVersionList'
+                    ]);
+                    this.userAgentHints = hints;
+                    console.log('Client Hints captured:', hints);
+                } catch (e) {
+                    console.warn('Failed to capture Client Hints:', e);
+                }
+            } else {
+                console.log('Client Hints API not supported');
+            }
         },
 
         toggleDetails() {
@@ -431,6 +454,7 @@ function cookieConsentBanner() {
             const consentData = {
                 ...this.selectedCookies,
                 ...this.locationData,
+                client_hints: this.userAgentHints,
                 page_url: window.location.href,
                 latitude: this.locationData.latitude || null,
                 longitude: this.locationData.longitude || null
