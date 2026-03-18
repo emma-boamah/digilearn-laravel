@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +11,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+        integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -80,11 +83,11 @@
             justify-content: space-between;
         }
 
-        .space-x-4 > * + * {
+        .space-x-4>*+* {
             margin-left: 1rem;
         }
 
-        .space-y-2 > * + * {
+        .space-y-2>*+* {
             margin-top: 0.5rem;
         }
 
@@ -108,7 +111,7 @@
             width: 4rem;
         }
 
-        .sidebar.collapsed + .main-content {
+        .sidebar.collapsed+.main-content {
             margin-left: 4rem;
         }
 
@@ -266,7 +269,8 @@
         .content-wrapper {
             max-width: 80rem;
             margin: 0 auto;
-            padding: 1.5rem;
+            padding: 1rem;
+
         }
 
         /* Alert styles */
@@ -326,35 +330,108 @@
             font-size: 0.75rem;
         }
 
-        .mb-2 { margin-bottom: 0.5rem; }
-        .mb-4 { margin-bottom: 1rem; }
-        .mb-8 { margin-bottom: 2rem; }
-        .mt-2 { margin-top: 0.5rem; }
-        .mt-4 { margin-top: 1rem; }
-        .mt-auto { margin-top: auto; }
-        .mr-3 { margin-right: 0.75rem; }
-        .ml-2 { margin-left: 0.5rem; }
-        .ml-6 { margin-left: 1.5rem; }
+        .mb-2 {
+            margin-bottom: 0.5rem;
+        }
 
-        .p-2 { padding: 0.5rem; }
-        .p-4 { padding: 1rem; }
-        .px-4 { padding-left: 1rem; padding-right: 1rem; }
-        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-        .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
-        .pt-4 { padding-top: 1rem; }
+        .mb-4 {
+            margin-bottom: 1rem;
+        }
 
-        .w-5 { width: 1.25rem; }
-        .w-6 { width: 1.5rem; }
-        .w-8 { width: 2rem; }
-        .h-5 { height: 1.25rem; }
-        .h-6 { height: 1.5rem; }
-        .h-8 { height: 2rem; }
+        .mb-8 {
+            margin-bottom: 2rem;
+        }
 
-        .rounded { border-radius: 0.25rem; }
-        .rounded-lg { border-radius: 0.5rem; }
-        .rounded-full { border-radius: 9999px; }
+        .mt-2 {
+            margin-top: 0.5rem;
+        }
 
-        .border-t { border-top: 1px solid var(--gray-700); }
+        .mt-4 {
+            margin-top: 1rem;
+        }
+
+        .mt-auto {
+            margin-top: auto;
+        }
+
+        .mr-3 {
+            margin-right: 0.75rem;
+        }
+
+        .ml-2 {
+            margin-left: 0.5rem;
+        }
+
+        .ml-6 {
+            margin-left: 1.5rem;
+        }
+
+        .p-2 {
+            padding: 0.5rem;
+        }
+
+        .p-4 {
+            padding: 1rem;
+        }
+
+        .px-4 {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .py-2 {
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+
+        .py-4 {
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        .pt-4 {
+            padding-top: 1rem;
+        }
+
+        .w-5 {
+            width: 1.25rem;
+        }
+
+        .w-6 {
+            width: 1.5rem;
+        }
+
+        .w-8 {
+            width: 2rem;
+        }
+
+        .h-5 {
+            height: 1.25rem;
+        }
+
+        .h-6 {
+            height: 1.5rem;
+        }
+
+        .h-8 {
+            height: 2rem;
+        }
+
+        .rounded {
+            border-radius: 0.25rem;
+        }
+
+        .rounded-lg {
+            border-radius: 0.5rem;
+        }
+
+        .rounded-full {
+            border-radius: 9999px;
+        }
+
+        .border-t {
+            border-top: 1px solid var(--gray-700);
+        }
 
         /* Logo styles */
         .logo {
@@ -495,7 +572,7 @@
             .sidebar {
                 width: 4rem;
             }
-            
+
             .sidebar-link-text {
                 display: none;
             }
@@ -507,6 +584,7 @@
     </style>
     @stack('styles')
 </head>
+
 <body>
     <div class="min-h-screen flex">
         <!-- Sidebar -->
@@ -515,7 +593,9 @@
                 <div class="flex items-center">
                     <div class="logo">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                            </path>
                         </svg>
                     </div>
                     <h1 class="text-xl font-bold sidebar-link-text">ShoutoutGH Admin</h1>
@@ -526,41 +606,48 @@
             </div>
 
             <nav class="flex-1 space-y-2">
-                <a href="{{ route('admin.dashboard') }}" class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+                <a href="{{ route('admin.dashboard') }}"
+                    class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
                     <i class="fas fa-tachometer-alt"></i>
                     <span class="sidebar-link-text">Dashboard</span>
                 </a>
 
-                <a href="{{ route('admin.users') }}" class="nav-link {{ request()->routeIs('admin.users*') ? 'active' : '' }}">
+                <a href="{{ route('admin.users') }}"
+                    class="nav-link {{ request()->routeIs('admin.users*') ? 'active' : '' }}">
                     <i class="fas fa-users"></i>
                     <span class="sidebar-link-text">Users</span>
                 </a>
 
                 <!-- Student Progress Management -->
-                <a href="{{ route('admin.progress.overview') }}" class="nav-link {{ request()->routeIs('admin.progress*') ? 'active' : '' }}">
+                <a href="{{ route('admin.progress.overview') }}"
+                    class="nav-link {{ request()->routeIs('admin.progress*') ? 'active' : '' }}">
                     <i class="fas fa-chart-line"></i>
                     <span class="sidebar-link-text">Student Progress</span>
                 </a>
 
                 <!-- Added notifications link to sidebar -->
-                <a href="{{ route('admin.notifications.index') }}" class="nav-link {{ request()->routeIs('admin.notifications*') ? 'active' : '' }}">
+                <a href="{{ route('admin.notifications.index') }}"
+                    class="nav-link {{ request()->routeIs('admin.notifications*') ? 'active' : '' }}">
                     <i class="fas fa-bell"></i>
                     <span class="sidebar-link-text">Notifications</span>
                 </a>
 
                 <!-- Pricing Plans -->
-                <a href="{{ route('admin.pricing.index') }}" class="nav-link {{ request()->routeIs('admin.pricing*') ? 'active' : '' }}">
+                <a href="{{ route('admin.pricing.index') }}"
+                    class="nav-link {{ request()->routeIs('admin.pricing*') ? 'active' : '' }}">
                     <i class="fas fa-dollar-sign"></i>
                     <span class="sidebar-link-text">Pricing Plans</span>
                 </a>
 
                 <!-- Simplified Contents Section -->
-                <a href="{{ route('admin.contents.index') }}" class="nav-link {{ request()->routeIs('admin.contents*') ? 'active' : '' }}">
+                <a href="{{ route('admin.contents.index') }}"
+                    class="nav-link {{ request()->routeIs('admin.contents*') ? 'active' : '' }}">
                     <i class="fas fa-folder-open"></i>
                     <span class="sidebar-link-text">Contents</span>
                 </a>
 
-                <a href="{{ route('admin.revenue') }}" class="nav-link {{ request()->routeIs('admin.revenue*') ? 'active' : '' }}">
+                <a href="{{ route('admin.revenue') }}"
+                    class="nav-link {{ request()->routeIs('admin.revenue*') ? 'active' : '' }}">
                     <i class="fas fa-dollar-sign"></i>
                     <span class="sidebar-link-text">Revenue Analytics</span>
                 </a>
@@ -581,7 +668,8 @@
                 </a>
 
                 @if(Auth::user()->is_superuser)
-                <a href="{{ route('admin.classes.create') }}" class="nav-link {{ request()->routeIs('admin.classes.create') ? 'active' : '' }}">
+                <a href="{{ route('admin.classes.create') }}"
+                    class="nav-link {{ request()->routeIs('admin.classes.create') ? 'active' : '' }}">
                     <i class="fas fa-chalkboard-teacher"></i>
                     <span class="sidebar-link-text">Create Class</span>
                 </a>
@@ -634,7 +722,8 @@
                                     </a>
                                     <a href="#" class="dropdown-item">
                                         <div class="notification-title">Security alert</div>
-                                        <div class="notification-subtitle">Multiple failed login attempts - 5 minutes ago</div>
+                                        <div class="notification-subtitle">Multiple failed login attempts - 5 minutes
+                                            ago</div>
                                     </a>
                                 </div>
                             </div>
@@ -662,25 +751,25 @@
             <main class="content-wrapper">
                 <!-- Flash Messages -->
                 @if(session('success'))
-                    <div class="alert alert-success">
-                        <span>{{ session('success') }}</span>
-                    </div>
+                <div class="alert alert-success">
+                    <span>{{ session('success') }}</span>
+                </div>
                 @endif
 
                 @if(session('error'))
-                    <div class="alert alert-error">
-                        <span>{{ session('error') }}</span>
-                    </div>
+                <div class="alert alert-error">
+                    <span>{{ session('error') }}</span>
+                </div>
                 @endif
 
                 @if($errors->any())
-                    <div class="alert alert-error">
-                        <ul class="error-list">
-                            @foreach($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
+                <div class="alert alert-error">
+                    <ul class="error-list">
+                        @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
                 @endif
 
                 @yield('content')
@@ -696,16 +785,16 @@
                 console.error('Dropdown not found:', dropdownId);
                 return;
             }
-            
+
             const isOpen = dropdown.classList.contains('open');
-            
+
             // Close all dropdowns
             document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
-            
+
             // Toggle current dropdown
             if (!isOpen) {
                 dropdown.classList.add('open');
-                
+
                 // Special handling for content dropdown
                 if (dropdownId === 'contentDropdown') {
                     const contentMenu = document.getElementById('contentDropdownMenu');
@@ -727,11 +816,11 @@
         }
 
         // Close dropdowns when clicking outside
-        document.addEventListener('click', function(event) {
+        document.addEventListener('click', function (event) {
             if (!event.target.closest('.dropdown')) {
                 document.querySelectorAll('.dropdown').forEach(d => {
                     d.classList.remove('open');
-                    
+
                     // Special handling for content dropdown
                     if (d.id === 'contentDropdown') {
                         const contentMenu = document.getElementById('contentDropdownMenu');
@@ -745,13 +834,13 @@
         });
 
         // Sidebar toggle functionality
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const sidebar = document.querySelector('.sidebar');
             const sidebarToggle = document.querySelector('#sidebar-toggle');
             const mainContent = document.querySelector('.main-content');
 
             if (sidebarToggle) {
-                sidebarToggle.addEventListener('click', function() {
+                sidebarToggle.addEventListener('click', function () {
                     sidebar.classList.toggle('collapsed');
                     const icon = this.querySelector('i');
                     icon.classList.toggle('fa-chevron-left');
@@ -770,14 +859,14 @@
 
             const notificationDropdownBtn = document.getElementById('notificationDropdownBtn');
             if (notificationDropdownBtn) {
-                notificationDropdownBtn.addEventListener('click', function() {
+                notificationDropdownBtn.addEventListener('click', function () {
                     toggleDropdown('notificationDropdown');
                 });
             }
 
             const userDropdownBtn = document.getElementById('userDropdownBtn');
             if (userDropdownBtn) {
-                userDropdownBtn.addEventListener('click', function() {
+                userDropdownBtn.addEventListener('click', function () {
                     toggleDropdown('userDropdown');
                 });
             }
@@ -797,154 +886,155 @@
         }, 300000); // 5 minutes
     </script>
     @stack('scripts')
-<script src="/js/avatar-updater.js"></script>
+    <script src="/js/avatar-updater.js"></script>
 
 
-<script nonce="{{ request()->attributes->get('csp_nonce') }}">
-    // Header upload modal functionality
-    document.addEventListener('DOMContentLoaded', function() {
-        const headerUploadBtn = document.getElementById('headerUploadBtn');
-        const headerUploadModal = document.getElementById('headerUploadModal');
-        const closeHeaderModal = document.getElementById('closeHeaderModal');
-        const headerCancelUpload = document.getElementById('headerCancelUpload');
-        const headerFileUploadArea = document.getElementById('headerFileUploadArea');
-        const headerFileInput = document.getElementById('headerFileInput');
-        const headerUploadForm = document.getElementById('headerUploadForm');
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        // Header upload modal functionality
+        document.addEventListener('DOMContentLoaded', function () {
+            const headerUploadBtn = document.getElementById('headerUploadBtn');
+            const headerUploadModal = document.getElementById('headerUploadModal');
+            const closeHeaderModal = document.getElementById('closeHeaderModal');
+            const headerCancelUpload = document.getElementById('headerCancelUpload');
+            const headerFileUploadArea = document.getElementById('headerFileUploadArea');
+            const headerFileInput = document.getElementById('headerFileInput');
+            const headerUploadForm = document.getElementById('headerUploadForm');
 
-        // Open modal
-        headerUploadBtn.addEventListener('click', () => {
-            headerUploadModal.classList.add('show');
-        });
+            // Open modal
+            headerUploadBtn.addEventListener('click', () => {
+                headerUploadModal.classList.add('show');
+            });
 
-        // Close modal
-        [closeHeaderModal, headerCancelUpload].forEach(btn => {
-            btn.addEventListener('click', () => {
-                headerUploadModal.classList.remove('show');
-                headerUploadForm.reset();
-                headerFileUploadArea.innerHTML = `
+            // Close modal
+            [closeHeaderModal, headerCancelUpload].forEach(btn => {
+                btn.addEventListener('click', () => {
+                    headerUploadModal.classList.remove('show');
+                    headerUploadForm.reset();
+                    headerFileUploadArea.innerHTML = `
                     <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
                     <p class="text-gray-600">Click to upload or drag and drop</p>
                     <p class="text-sm text-gray-500">MP4, PDF, DOC, DOCX up to 600MB</p>
                 `;
+                });
             });
-        });
 
-        // File upload area click
-        headerFileUploadArea.addEventListener('click', () => {
-            headerFileInput.click();
-        });
+            // File upload area click
+            headerFileUploadArea.addEventListener('click', () => {
+                headerFileInput.click();
+            });
 
-        // File input change
-        headerFileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                updateHeaderFileUploadArea(file);
+            // File input change
+            headerFileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    updateHeaderFileUploadArea(file);
+                }
+            });
+
+            // Drag and drop
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                headerFileUploadArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
             }
-        });
 
-        // Drag and drop
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            headerFileUploadArea.addEventListener(eventName, preventDefaults, false);
-        });
+            ['dragenter', 'dragover'].forEach(eventName => {
+                headerFileUploadArea.addEventListener(eventName, highlight, false);
+            });
 
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
+            ['dragleave', 'drop'].forEach(eventName => {
+                headerFileUploadArea.addEventListener(eventName, unhighlight, false);
+            });
 
-        ['dragenter', 'dragover'].forEach(eventName => {
-            headerFileUploadArea.addEventListener(eventName, highlight, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            headerFileUploadArea.addEventListener(eventName, unhighlight, false);
-        });
-
-        function highlight() {
-            headerFileUploadArea.classList.add('dragover');
-        }
-
-        function unhighlight() {
-            headerFileUploadArea.classList.remove('dragover');
-        }
-
-        headerFileUploadArea.addEventListener('drop', handleDrop, false);
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-
-            if (files.length > 0) {
-                headerFileInput.files = files;
-                updateHeaderFileUploadArea(files[0]);
+            function highlight() {
+                headerFileUploadArea.classList.add('dragover');
             }
-        }
 
-        function updateHeaderFileUploadArea(file) {
-            const fileSize = (file.size / (1024 * 1024)).toFixed(2);
-            headerFileUploadArea.innerHTML = `
+            function unhighlight() {
+                headerFileUploadArea.classList.remove('dragover');
+            }
+
+            headerFileUploadArea.addEventListener('drop', handleDrop, false);
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+
+                if (files.length > 0) {
+                    headerFileInput.files = files;
+                    updateHeaderFileUploadArea(files[0]);
+                }
+            }
+
+            function updateHeaderFileUploadArea(file) {
+                const fileSize = (file.size / (1024 * 1024)).toFixed(2);
+                headerFileUploadArea.innerHTML = `
                 <i class="fas fa-file text-2xl text-blue-600 mb-2"></i>
                 <p class="text-gray-900 font-medium">${file.name}</p>
                 <p class="text-sm text-gray-500">${fileSize} MB</p>
             `;
-        }
+            }
 
-        // Form submission
-        headerUploadForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+            // Form submission
+            headerUploadForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
 
-            const formData = new FormData(headerUploadForm);
-            const contentType = formData.get('content_type');
+                const formData = new FormData(headerUploadForm);
+                const contentType = formData.get('content_type');
 
-            try {
-                let response;
-                if (contentType === 'video') {
-                    response = await fetch('{{ route("admin.content.videos.store") }}', {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        }
-                    });
-                } else if (contentType === 'document') {
-                    response = await fetch('{{ route("admin.content.documents.store") }}', {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        }
-                    });
-                } else if (contentType === 'quiz') {
-                    response = await fetch('{{ route("admin.contents.store") }}', {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        }
-                    });
-                }
+                try {
+                    let response;
+                    if (contentType === 'video') {
+                        response = await fetch('{{ route("admin.content.videos.store") }}', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            }
+                        });
+                    } else if (contentType === 'document') {
+                        response = await fetch('{{ route("admin.content.documents.store") }}', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            }
+                        });
+                    } else if (contentType === 'quiz') {
+                        response = await fetch('{{ route("admin.contents.store") }}', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            }
+                        });
+                    }
 
-                if (response.ok) {
-                    headerUploadModal.classList.remove('show');
-                    headerUploadForm.reset();
-                    headerFileUploadArea.innerHTML = `
+                    if (response.ok) {
+                        headerUploadModal.classList.remove('show');
+                        headerUploadForm.reset();
+                        headerFileUploadArea.innerHTML = `
                         <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
                         <p class="text-gray-600">Click to upload or drag and drop</p>
                         <p class="text-sm text-gray-500">MP4, PDF, DOC, DOCX up to 600MB</p>
                     `;
-                    // Redirect to contents page to see new content
-                    window.location.href = '{{ route("admin.contents.index") }}';
-                } else {
-                    const error = await response.json();
-                    alert('Upload failed: ' + (error.message || 'Unknown error'));
+                        // Redirect to contents page to see new content
+                        window.location.href = '{{ route("admin.contents.index") }}';
+                    } else {
+                        const error = await response.json();
+                        alert('Upload failed: ' + (error.message || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    alert('Upload failed. Please try again.');
                 }
-            } catch (error) {
-                console.error('Upload error:', error);
-                alert('Upload failed. Please try again.');
-            }
+            });
         });
-    });
-</script>
+    </script>
 
 </body>
+
 </html>

@@ -1664,7 +1664,7 @@ class AdminController extends Controller
 
         $videos = $query->orderBy('created_at', 'desc')->paginate(10);
 
-        $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3']; // Example grades
+        $gradeLevels = \App\Models\Level::orderBy('id')->pluck('title')->toArray(); // Example grades
         $quizzes = Quiz::all(); // For associating quizzes
 
         // Get pending videos for review section
@@ -1786,7 +1786,7 @@ class AdminController extends Controller
 
     public function editVideo(Video $video)
     {
-        $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3'];
+        $gradeLevels = \App\Models\Level::orderBy('id')->pluck('title')->toArray();
         return response()->json($video); // Return JSON for modal
     }
 
@@ -2323,7 +2323,7 @@ class AdminController extends Controller
 
         $quizzes = $query->orderBy('created_at', 'desc')->paginate(10);
 
-        $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3'];
+        $gradeLevels = \App\Models\Level::orderBy('id')->pluck('title')->toArray();
         $videos = Video::select('id', 'title')->get(); // For video course filter
         $uploaders = User::whereHas('quizzes')->select('id', 'name')->get(); // Users who have uploaded quizzes
         $subjects = Subject::select('id', 'name', DB::raw('COUNT(quizzes.id) as count'))
@@ -2361,7 +2361,7 @@ class AdminController extends Controller
 
     public function editQuiz(Quiz $quiz)
     {
-        $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3'];
+        $gradeLevels = \App\Models\Level::orderBy('id')->pluck('title')->toArray();
         $videos = Video::select('id', 'title')->get();
         return view('admin.content.quizzes.edit', compact('quiz', 'gradeLevels', 'videos'));
     }
@@ -2431,7 +2431,7 @@ class AdminController extends Controller
 
         $documents = $query->orderBy('created_at', 'desc')->paginate(10);
 
-        $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3'];
+        $gradeLevels = \App\Models\Level::orderBy('id')->pluck('title')->toArray();
         $uploaders = User::whereHas('documents')->select('id', 'name')->get(); // Users who have uploaded documents
 
         return view('admin.content.documents.index', compact('documents', 'gradeLevels', 'uploaders'));
@@ -2465,7 +2465,7 @@ class AdminController extends Controller
 
     public function editDocument(Document $document)
     {
-        $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3'];
+        $gradeLevels = \App\Models\Level::orderBy('id')->pluck('title')->toArray();
         return response()->json($document); // Return JSON for modal
     }
 

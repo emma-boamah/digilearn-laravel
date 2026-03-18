@@ -24,7 +24,9 @@
                 '@type' => 'Product',
                 'name' => $plan->name,
                 'description' => $plan->description ?? 'Comprehensive learning package with access to platform features.',
-                'image' => secure_asset('images/shoutoutgh-logo.png'),
+                'image' => [
+                    secure_asset('images/shoutoutgh-logo.png')
+                ],
                 'brand' => [
                     '@type' => 'Brand',
                     'name' => 'ShoutOutGH'
@@ -33,8 +35,13 @@
                     '@type' => 'Offer',
                     'url' => url('/pricing'),
                     'priceCurrency' => $plan->currency,
-                    'price' => (string)$plan->price,
-                    'availability' => 'https://schema.org/InStock'
+                    'price' => (float)$plan->price,
+                    'availability' => 'https://schema.org/InStock',
+                    'hasMerchantReturnPolicy' => [
+                        '@type' => 'MerchantReturnPolicy',
+                        'applicableCountry' => 'GH',
+                        'returnPolicyCategory' => 'https://schema.org/NoReturns'
+                    ]
                 ]
             ];
         }
