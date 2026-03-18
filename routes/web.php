@@ -517,6 +517,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
         // Cookie Analytics
         Route::get('/cookie-stats', [CookieController::class , 'adminStatsPage'])->name('cookie-stats');
+        Route::get('/cookie-stats/export', [CookieController::class , 'exportCsv'])->name('cookie-stats.export');
 
         // Payment Analytics Export
         Route::get('/payments/export', [AdminController::class , 'exportPayments'])->name('payments.export');

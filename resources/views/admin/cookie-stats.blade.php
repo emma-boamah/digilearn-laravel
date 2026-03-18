@@ -137,22 +137,23 @@
                     <h2 class="font-bold text-slate-800">Consent Logs <span
                             class="text-slate-400 ml-2 font-normal">Total: {{ number_format($stats['total_consents'])
                             }}</span></h2>
-                    <div class="flex items-center gap-3">
+                    <form action="{{ route('admin.cookie-stats') }}" method="GET" class="flex items-center gap-3">
                         <div class="flex items-center gap-2 text-sm text-slate-500">
                             Logs to load:
-                            <select class="border border-slate-200 rounded px-2 py-1 bg-slate-50">
-                                <option>50</option>
-                                <option>100</option>
-                                <option>200</option>
+                            <select name="limit" class="border border-slate-200 rounded px-2 py-1 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                                <option value="20" {{ $limit == 20 ? 'selected' : '' }}>20</option>
+                                <option value="50" {{ $limit == 50 ? 'selected' : '' }}>50</option>
+                                <option value="100" {{ $limit == 100 ? 'selected' : '' }}>100</option>
+                                <option value="200" {{ $limit == 200 ? 'selected' : '' }}>200</option>
                             </select>
                         </div>
-                        <button
+                        <button type="submit"
                             class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-semibold transition-all shadow-sm">Load
                             Logs</button>
-                        <button
+                        <a href="{{ route('admin.cookie-stats.export') }}"
                             class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-semibold transition-all shadow-sm">Export
-                            CSV</button>
-                    </div>
+                            CSV</a>
+                    </form>
                 </div>
             </div>
 
