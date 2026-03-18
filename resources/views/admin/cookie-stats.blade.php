@@ -284,6 +284,37 @@
         height: 100% !important;
         border-radius: 0.75rem;
     }
+    .jvm-tooltip {
+        background: rgba(15, 23, 42, 0.9) !important;
+        backdrop-filter: blur(8px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 8px !important;
+        padding: 10px 14px !important;
+        font-family: 'Inter', sans-serif !important;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
+        color: #fff !important;
+        font-size: 12px !important;
+        line-height: 1.5 !important;
+    }
+    .jvm-tooltip-title {
+        font-weight: 700;
+        margin-bottom: 4px;
+        color: #fff;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 4px;
+        display: block;
+    }
+    .jvm-tooltip-stat {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        color: #94a3b8;
+    }
+    .jvm-tooltip-count {
+        color: #60a5fa;
+        font-weight: 800;
+    }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/jsvectormap"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsvectormap/dist/maps/world.js"></script>
@@ -330,7 +361,8 @@
         const commonCodes = { 
             'Ghana': 'GH', 'United States': 'US', 'United Kingdom': 'GB', 
             'France': 'FR', 'Nigeria': 'NG', 'Canada': 'CA', 'Germany': 'DE',
-            'India': 'IN', 'China': 'CN', 'Japan': 'JP', 'Brazil': 'BR'
+            'India': 'IN', 'China': 'CN', 'Japan': 'JP', 'Brazil': 'BR',
+            'Norway': 'NO', 'South Africa': 'ZA', 'Kenya': 'KE'
         };
 
         Object.keys(countryData).forEach(country => {
@@ -348,19 +380,27 @@
             bindResize: true,
             regionStyle: {
                 initial: { fill: '#e2e8f0', stroke: '#fff', strokeWidth: 0.5 },
-                hover: { fill: '#94a3b8' }
+                hover: { fill: '#3b82f6' }
             },
             series: {
                 regions: [{
                     values: mapData,
-                    scale: ['#dcfce7', '#22c55e'],
+                    scale: ['#dbeafe', '#2563eb'],
                     normalizeFunction: 'polynomial'
                 }]
             },
             onRegionTooltipShow(event, tooltip, code) {
                 const count = mapData[code] || 0;
                 const countryName = tooltip.text();
-                tooltip.text(`<b>${countryName}</b><br/>Consents: ${count}`);
+                
+                tooltip.text(
+                    `<div class="jvm-tooltip-title">${countryName}</div>` +
+                    `<div class="jvm-tooltip-stat">` +
+                        `<span>Total Consents:</span>` +
+                        `<span class="jvm-tooltip-count">${count}</span>` +
+                    `</div>`,
+                    true
+                );
             }
         });
 

@@ -95,7 +95,7 @@ class CookieController extends Controller
      */
     public function acceptAll(Request $request): JsonResponse
     {
-        $gpsData = $request->only(['latitude', 'longitude', 'country', 'city', 'region']);
+        $gpsData = $request->only(['latitude', 'longitude', 'country', 'city', 'region', 'page_url']);
         $this->cookieManager->acceptAllWithGPS($gpsData);
 
         return response()->json([
@@ -110,7 +110,7 @@ class CookieController extends Controller
      */
     public function rejectAll(Request $request): JsonResponse
     {
-        $gpsData = $request->only(['latitude', 'longitude', 'country', 'city', 'region']);
+        $gpsData = $request->only(['latitude', 'longitude', 'country', 'city', 'region', 'page_url']);
         $this->cookieManager->rejectAllWithGPS($gpsData);
 
         return response()->json([
