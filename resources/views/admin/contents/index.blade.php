@@ -1984,76 +1984,55 @@
                     const subjectIdValue = subjectId.value;
                     const gradeLevelValue = gradeLevel.value;
 
-                    if (uploadData.video_source === 'local') {
-                        if (!uploadData.video) {
-                            alert('Please upload a video file.');
-                            return false;
-                        }
-                    } else if (uploadData.video_source === 'vimeo') {
-                        // Check Vimeo method
-                        const vimeoMethod = document.querySelector('input[name="vimeo_method"]:checked');
-                        if (vimeoMethod && vimeoMethod.value === 'file') {
-                            if (!uploadData.video) {
-                                alert('Please upload a video file.');
-                                return false;
-                            }
-                        } else {
-                            const externalVideoUrl = document.getElementById('external_video_url');
-                            if (!externalVideoUrl) {
-                                console.error('External video URL element not found');
-                                return false;
-                            }
-
-                            const externalUrl = externalVideoUrl.value.trim();
-                            if (!externalUrl) {
-                                alert('Please enter a Vimeo video URL.');
-                                return false;
-                            }
-                            // Basic URL validation
-                            try {
-                                new URL(externalUrl);
-                            } catch {
-                                alert('Please enter a valid URL.');
-                                return false;
-                            }
-                            uploadData.external_video_url = externalUrl;
-                        }
-                    } else {
-                        const externalVideoUrl = document.getElementById('external_video_url');
-                        if (!externalVideoUrl) {
-                            console.error('External video URL element not found');
-                            return false;
-                        }
-
-                        const externalUrl = externalVideoUrl.value.trim();
-                        if (!externalUrl) {
-                            alert('Please enter a video URL.');
-                            return false;
-                        }
-                        // Basic URL validation
-                        try {
-                            new URL(externalUrl);
-                        } catch {
-                            alert('Please enter a valid URL.');
-                            return false;
-                        }
-                        uploadData.external_video_url = externalUrl;
-                    }
-
                     if (!titleValue) {
-                        alert('Please enter a title.');
+                        alert('Please enter a title for this lesson.');
                         return false;
                     }
+
                     if (!subjectIdValue) {
                         alert('Please select a subject.');
                         return false;
                     }
+
                     if (!gradeLevelValue) {
                         alert('Please select a grade level.');
                         return false;
                     }
+
+                    // Video is now optional, but if a URL is provided, it must be valid
+                    if (uploadData.video_source === 'vimeo') {
+                        const vimeoMethod = document.querySelector('input[name="vimeo_method"]:checked');
+                        if (vimeoMethod && vimeoMethod.value === 'url') {
+                            const externalVideoUrl = document.getElementById('external_video_url');
+                            const externalUrl = externalVideoUrl ? externalVideoUrl.value.trim() : '';
+                            
+                            if (externalUrl) {
+                                try {
+                                    new URL(externalUrl);
+                                    uploadData.external_video_url = externalUrl;
+                                } catch {
+                                    alert('Please enter a valid URL.');
+                                    return false;
+                                }
+                            }
+                        }
+                    } else if (uploadData.video_source === 'youtube') {
+                        const externalVideoUrl = document.getElementById('external_video_url');
+                        const externalUrl = externalVideoUrl ? externalVideoUrl.value.trim() : '';
+                        
+                        if (externalUrl) {
+                            try {
+                                new URL(externalUrl);
+                                uploadData.external_video_url = externalUrl;
+                            } catch {
+                                alert('Please enter a valid URL.');
+                                return false;
+                            }
+                        }
+                    }
+                    
                     return true;
-                default:
+                 default:
                     return true;
             }
         }
@@ -2790,57 +2769,18 @@
         // Final submission with progress tracking
         async function submitWizard() {
             try {
-                // Validate that a video has been selected based on source
-                let hasValidVideoInput = false;
-
+                // Video is now optional, so we'll just handle it by the backend
+                
+                // If a URL was provided but is empty, that's fine too now
                 switch (uploadData.video_source) {
-                    case 'local':
-                        if (!uploadData.video) {
-                            alert('Please select a video file first.');
-                            console.error('No video file selected for local upload');
-                            return;
-                        }
-                        hasValidVideoInput = true;
-                        break;
-
                     case 'youtube':
                     case 'mux':
-                        if (!uploadData.external_video_url || uploadData.external_video_url.trim() === '') {
-                            alert('Please enter a video URL.');
-                            console.error('No video URL provided for ' + uploadData.video_source);
-                            return;
-                        }
-                        hasValidVideoInput = true;
-                        break;
-
                     case 'vimeo':
-                        // Vimeo can be either file upload or URL
-                        const vimeoMethod = document.querySelector('input[name="vimeo_method"]:checked');
-                        if (vimeoMethod && vimeoMethod.value === 'file') {
-                            if (!uploadData.video) {
-                                alert('Please select a video file first.');
-                                console.error('No video file selected for Vimeo upload');
-                                return;
-                            }
-                        } else {
-                            if (!uploadData.external_video_url || uploadData.external_video_url.trim() === '') {
-                                alert('Please enter a Vimeo video URL.');
-                                console.error('No Vimeo URL provided');
-                                return;
-                            }
+                        // Basic cleanup for empty strings if needed
+                        if (uploadData.external_video_url && uploadData.external_video_url.trim() === '') {
+                            uploadData.external_video_url = null;
                         }
-                        hasValidVideoInput = true;
                         break;
-
-                    default:
-                        alert('Please select a video source.');
-                        console.error('No video source selected');
-                        return;
-                }
-
-                if (!hasValidVideoInput) {
-                    alert('Please provide video input based on selected source.');
-                    return;
                 }
 
                 // Get form elements - try multiple selectors to be sure
@@ -2985,6 +2925,10 @@
                 } else {
                     errors.push(`Video upload failed: ${videoResult.error}`);
                     updateProgress('video', 100, 'Failed', true);
+                    // Stop if video/lesson creation fails
+                    showUploadErrors(errors);
+                    updateOverallProgress(100, 'Upload failed at video step');
+                    return;
                 }
 
                 // Step 2: Upload Documents
@@ -3338,19 +3282,20 @@
                         return { success: false, error: error.message || 'Unknown error' };
                     }
                 } else {
-                    // Handle file-based uploads (local files or Vimeo file uploads)
-                    const fileSize = finalData.video.file.size;
+                    // Handle file-based uploads or metadata-only
+                    const videoFile = finalData.video.file;
+                    const fileSize = videoFile ? videoFile.size : 0;
                     const maxSize = 30 * 1024 * 1024 * 1024; // 30GB in bytes
                     const largeFileThreshold = 0.008 * maxSize; // 0.8% of max size ≈ 245MB
 
-                    if (fileSize > largeFileThreshold) {
+                    if (videoFile && fileSize > largeFileThreshold) {
                         return await uploadVideoInChunksHybrid(finalData);
                     }
 
-                    // Direct upload for smaller files (non-chunked)
+                    // Direct upload for smaller files or metadata-only (no video)
                     const startTime = Date.now();
 
-                    updateProgress('video', 0, 'Preparing video data...', false, {
+                    updateProgress('video', 0, videoFile ? 'Preparing video data...' : 'Creating lesson record...', false, {
                         uploadedBytes: 0,
                         totalBytes: fileSize,
                         speed: 0,
@@ -3363,7 +3308,7 @@
                     formData.append('subject_id', finalData.video.subject_id);
                     formData.append('description', finalData.video.description);
                     formData.append('grade_level', finalData.video.grade_level);
-                    formData.append('video_source', finalData.video.video_source);
+                    formData.append('video_source', videoFile ? finalData.video.video_source : 'none');
 
                     if (finalData.video.category_ids && finalData.video.category_ids.length > 0) {
                         finalData.video.category_ids.forEach(id => {
@@ -3371,20 +3316,21 @@
                         });
                     }
 
-                    if (finalData.video.video_source === 'local') {
-                        formData.append('video_file', finalData.video.file);
-                        formData.append('upload_destination', finalData.video.upload_destination);
-                    } else if (finalData.video.video_source === 'vimeo') {
-                        // This should be Vimeo file upload (since URL case is handled above)
-                        formData.append('video_file', finalData.video.file);
-                        formData.append('upload_destination', 'vimeo');
+                    if (videoFile) {
+                        if (finalData.video.video_source === 'local') {
+                            formData.append('video_file', videoFile);
+                            formData.append('upload_destination', finalData.video.upload_destination);
+                        } else if (finalData.video.video_source === 'vimeo') {
+                            formData.append('video_file', videoFile);
+                            formData.append('upload_destination', 'vimeo');
+                        }
                     }
 
                     if (uploadData.thumbnail) {
                         formData.append('thumbnail_file', uploadData.thumbnail);
                     }
 
-                    updateProgress('video', 30, 'Uploading video file...', false, {
+                    updateProgress('video', 30, videoFile ? 'Uploading video file...' : 'Finalizing...', false, {
                         uploadedBytes: fileSize * 0.3,
                         totalBytes: fileSize,
                         speed: 0

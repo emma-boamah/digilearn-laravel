@@ -216,7 +216,7 @@ class AdminController extends Controller
         }
 
         // Filter by plan type with partial matching
-        if ($request->filled('plan_type')) {
+        if ($request->filled('plan_type') && $request->plan_type !== 'all') {
             $query->whereHas('currentSubscription', function($q) use ($request) {
                 $q->whereHas('pricingPlan', function($p) use ($request) {
                     $p->where('name', 'like', "%{$request->plan_type}%");
@@ -3189,7 +3189,7 @@ class AdminController extends Controller
                 'questions_count' => 0
             ];
 
-            // Step 1: Upload and store the video (only if video data is provided)
+            // Step 1: Upload and store the video (only if video data or title/metadata is provided)
             $video = null;
             if ($request->hasFile('video_file') || $request->filled('external_video_url') || $request->filled('vimeo_url') || $request->filled('title')) {
                 $videoData = [
@@ -3199,8 +3199,14 @@ class AdminController extends Controller
                     'grade_level' => $request->grade_level,
                     'uploaded_by' => Auth::id(),
                     'video_source' => $request->video_source ?? 'local',
-                    'status' => 'pending' // Videos need approval
+                    'status' => 'pending' // Videos need approval by default
                 ];
+
+                // If no video content is actually provided, mark as approved and source 'none'
+                if (!$request->hasFile('video_file') && !$request->filled('external_video_url') && !$request->filled('vimeo_url')) {
+                    $videoData['status'] = 'approved';
+                    $videoData['video_source'] = 'none';
+                }
 
                 // Handle Vimeo URL input (when Vimeo upload is selected)
                 if ($request->filled('vimeo_url') && $request->video_source === 'vimeo') {
@@ -3954,8 +3960,9 @@ class AdminController extends Controller
             ];
             
             if (!$isChunkedUpload) {
-                // Only require video_file for direct uploads
-                $validationRules['video_file'] = 'nullable|file|mimes:' . implode(',', $uploadConfig['video']['mimes']) . '|max:' . $videoMaxSize;
+                // Only require video_file for direct uploads if source is local or vimeo-file
+                $isLocalOrVimeoFile = in_array($request->video_source, ['local', 'vimeo']) && !$request->filled('vimeo_url') && !$request->filled('external_video_url');
+                $validationRules['video_file'] = ($isLocalOrVimeoFile ? 'required' : 'nullable') . '|file|mimes:' . implode(',', $uploadConfig['video']['mimes']) . '|max:' . $videoMaxSize;
             } else {
                 // For chunked uploads, require upload_id
                 $validationRules['upload_id'] = 'required|string';
@@ -3980,14 +3987,16 @@ class AdminController extends Controller
 
             DB::beginTransaction();
 
+            $hasVideoContent = $request->hasFile('video_file') || $request->filled('vimeo_url') || $request->filled('external_video_url') || $request->filled('upload_id');
+
             $videoData = [
                 'title' => $request->title,
                 'subject_id' => $request->subject_id,
                 'description' => $request->description,
                 'grade_level' => $request->grade_level,
                 'uploaded_by' => Auth::id(),
-                'video_source' => $request->video_source ?? 'local',
-                'status' => 'pending'
+                'video_source' => $hasVideoContent ? ($request->video_source ?? 'local') : 'none',
+                'status' => $hasVideoContent ? 'pending' : 'approved'
             ];
 
             // Handle different video sources
