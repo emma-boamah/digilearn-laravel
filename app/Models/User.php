@@ -88,6 +88,19 @@ class User extends Authenticatable implements MustVerifyEmail
     ];
 
     /**
+     * Get user's online status dynamically based on last activity
+     */
+    public function getIsOnlineAttribute($value)
+    {
+        // If the user has recent activity (last 3 minutes), they are online
+        if ($this->last_activity_at) {
+            return $this->last_activity_at->gt(now()->subMinutes(3));
+        }
+
+        return (bool) $value;
+    }
+
+    /**
      * Get user's subscriptions
      */
     public function subscriptions()
