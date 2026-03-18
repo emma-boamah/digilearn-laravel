@@ -109,9 +109,79 @@ class CookieConsent extends Model
     }
 
     /**
-     * Get the device type from the user agent
+     * Identify the device type with improved accuracy
      */
+    public function getDeviceAttribute()
+    {
+        // 1. Try Client Hints (Highly Reliable)
+        $hints = $this->consent_data['client_hints'] ?? [];
+        if (isset($hints['mobile'])) {
+            if ($this->getDeviceInfoAttribute() === 'Bot') return 'Bot'; // Check bot first
+            return $hints['mobile'] ? 'Mobile' : 'Desktop';
+        }
 
+        $agent = $this->user_agent;
+        if (empty($agent)) return 'Unknown';
+
+        // 2. Fallback to Regex (Standard Logic)
+        if (preg_match('/bot|crawl|slurp|spider|mediapartners/i', $agent)) return 'Bot';
+        if (preg_match('/tablet|ipad|playbook|silk/i', $agent)) return 'Tablet';
+        if (preg_match('/mobile|phone|iphone|ipod|blackberry|opera mini|iemobile/i', $agent)) return 'Mobile';
+
+        return 'Desktop';
+    }
+
+    /**
+     * Get detailed OS and Device info
+     */
+    public function getDeviceInfoAttribute()
+    {
+        $hints = $this->consent_data['client_hints'] ?? [];
+        
+        // 1. Use Client Hints if available (100% Reliable)
+        if (!empty($hints['platform'])) {
+            $os = $hints['platform'];
+            $device = $this->getDeviceAttribute();
+            
+            // If we have a specific model from hints (e.g. "Pixel 6" or "SM-G991B")
+            if (!empty($hints['model'])) {
+                return "$os ($hints[model]) | $device";
+            }
+            
+            return "$os | $device";
+        }
+
+        // 2. Fallback to Refined Regex
+        $agent = $this->user_agent;
+        if (empty($agent)) return 'Unknown Device';
+
+        $os = 'Unknown OS';
+        $device = $this->getDeviceAttribute();
+
+        $osRules = [
+            'Windows' => '/windows|win32/i',
+            'macOS'   => '/macintosh|mac os x/i',
+            'iOS'     => '/iphone|ipad|ipod/i',
+            'Android' => '/android/i',
+            'Linux'   => '/linux/i',
+            'Ubuntu'  => '/ubuntu/i',
+            'ChromeOS'=> '/cros/i',
+        ];
+
+        foreach ($osRules as $name => $regex) {
+            if (preg_match($regex, $agent)) {
+                $os = $name;
+                break;
+            }
+        }
+
+        if ($os === 'macOS' && preg_match('/Touch/i', $agent)) {
+            $os = 'iOS (iPadOS)';
+            $device = 'Tablet';
+        }
+
+        return "$os | $device";
+    }
 
     /**
      * Get the browser name from the user agent

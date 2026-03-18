@@ -178,7 +178,16 @@
                                  Country</th>
                              <th
                                  class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider border-r border-slate-100">
-                                 Device/Browser</th>
+                                 City</th>
+                             <th
+                                 class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider border-r border-slate-100">
+                                 Region</th>
+                             <th
+                                 class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider border-r border-slate-100">
+                                 Browser</th>
+                             <th
+                                 class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider border-r border-slate-100">
+                                 Device</th>
                              <th
                                  class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider border-r border-slate-100">
                                 Consent Info</th>
@@ -211,14 +220,32 @@
                                  </div>
                              </td>
                              <td class="px-6 py-4 text-sm text-slate-600 border-r border-slate-100">
+                                 <span class="font-medium">{{ $consent->city ?? 'Unknown' }}</span>
+                             </td>
+                             <td class="px-6 py-4 text-sm text-slate-600 border-r border-slate-100">
+                                 <span class="font-medium">{{ $consent->region ?? 'Unknown' }}</span>
+                             </td>
+                             <td class="px-6 py-4 text-sm text-slate-600 border-r border-slate-100">
                                  <div class="flex items-center gap-2">
                                      @php $browser = strtolower($consent->browser); @endphp
                                      <i class="fab fa-{{ in_array($browser, ['chrome', 'firefox', 'edge', 'safari', 'opera']) ? $browser : 'chrome' }} text-slate-400"></i>
                                      <span class="font-medium">{{ $consent->browser }}</span>
-                                     <span class="mx-1.5 text-slate-300">|</span>
-                                     @php $device = strtolower($consent->device); @endphp
-                                     <i class="fas fa-{{ $device === 'mobile' ? 'mobile-alt' : ($device === 'tablet' ? 'tablet-alt' : 'desktop') }} text-slate-400"></i>
-                                     <span class="text-xs text-slate-500">{{ $consent->device }}</span>
+                                 </div>
+                             </td>
+                             <td class="px-6 py-4 text-sm text-slate-600 border-r border-slate-100">
+                                 <div class="flex items-center gap-2">
+                                     @php 
+                                        $deviceInfo = strtolower($consent->device_info);
+                                        $osIcon = 'desktop';
+                                        if (str_contains($deviceInfo, 'bot')) $osIcon = 'robot';
+                                        elseif (str_contains($deviceInfo, 'windows')) $osIcon = 'windows';
+                                        elseif (str_contains($deviceInfo, 'macos')) $osIcon = 'apple';
+                                        elseif (str_contains($deviceInfo, 'android')) $osIcon = 'android';
+                                        elseif (str_contains($deviceInfo, 'ios')) $osIcon = 'mobile-screen-button';
+                                        elseif (str_contains($deviceInfo, 'linux')) $osIcon = 'linux';
+                                     @endphp
+                                     <i class="fab fa-{{ $osIcon }} {{ in_array($osIcon, ['desktop', 'mobile-screen-button', 'robot']) ? 'fas' : 'fab' }} text-slate-400"></i>
+                                     <span class="font-medium">{{ $consent->device_info }}</span>
                                  </div>
                              </td>
                              <td
