@@ -1836,11 +1836,50 @@ class AdminController extends Controller
         return redirect()->route('admin.content.videos.index')->with('success', 'Video updated successfully!');
     }
 
-    public function destroyVideo(Video $video)
+    public function destroyVideo(Video $video, $deleteRelated = true)
     {
-        // Safely delete all associated files
-        $video->deleteFiles();
-        $video->delete();
+        if ($deleteRelated) {
+            // Delete related documents and their files
+            foreach ($video->documents as $document) {
+                if ($document->file_path && Storage::disk('public')->exists($document->file_path)) {
+                    Storage::disk('public')->delete($document->file_path);
+                }
+                $document->delete();
+            }
+
+            // Delete related quizzes
+            foreach ($video->quizzes as $quiz) {
+                $quiz->delete();
+            }
+
+            // Handle single standalone quiz if attached
+            if ($video->quiz) {
+                $video->quiz->delete();
+            }
+
+            // Safely delete all associated files for the video itself
+            $video->deleteFiles();
+            $video->delete();
+        } else {
+            // Only delete video files/urls, keep as video-less lesson
+            $disk = Storage::disk('public');
+            if ($video->video_path && $disk->exists($video->video_path)) {
+                $disk->delete($video->video_path);
+            }
+            if ($video->temp_file_path && $disk->exists($video->temp_file_path)) {
+                $disk->delete($video->temp_file_path);
+            }
+            $video->video_path = null;
+            $video->temp_file_path = null;
+            $video->video_source = 'none';
+            $video->vimeo_id = null;
+            $video->external_video_id = null;
+            $video->mux_playback_id = null;
+            $video->mux_asset_id = null;
+            $video->duration = 0;
+            $video->duration_formatted = '00:00:00';
+            $video->save();
+        }
 
         return redirect()->route('admin.content.videos.index')->with('success', 'Video deleted successfully!');
     }
@@ -3803,10 +3842,12 @@ class AdminController extends Controller
                 }
             }
 
+            $deleteRelated = $request->input('delete_related', true);
+
             // Delete the content from database
             switch ($contentType) {
                 case 'video':
-                    $this->destroyVideo($content);
+                    $this->destroyVideo($content, $deleteRelated);
                     break;
                 case 'document':
                     $this->destroyDocument($content);
@@ -3821,12 +3862,14 @@ class AdminController extends Controller
             // Prepare response message based on deletion results
             if ($contentType === 'video' && $content->video_source === 'vimeo') {
                 if ($vimeoDeletionSuccess) {
-                    $message = 'Video deleted successfully from both database and Vimeo!';
+                    $message = $deleteRelated ? 'Video and related content deleted fully!' : 'Video media deleted successfully. Related content preserved.';
                 } else {
-                    $message = $vimeoDeletionError ?: 'Video deleted from database, but Vimeo deletion failed.';
+                    $message = $vimeoDeletionError ?: 'Video removed in database, but Vimeo deletion might have failed.';
                 }
             } elseif ($contentType === 'video' && $content->video_source === 'youtube') {
-                $message = 'Video deleted successfully from database (YouTube video remains unchanged)!';
+                $message = $deleteRelated ? 'Video (from db) and related content deleted fully!' : 'Video media info cleared. Related content preserved.';
+            } elseif ($contentType === 'video') {
+                $message = $deleteRelated ? 'Content package deleted successfully!' : 'Video media deleted successfully. Related content preserved.';
             } else {
                 $message = ucfirst($contentType) . ' deleted successfully!';
             }

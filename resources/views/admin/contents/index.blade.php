@@ -892,7 +892,7 @@
                             <button class="action-btn edit-btn" title="Edit" data-content-id="{{ $content->id }}" data-content-type="{{ $content->content_type }}">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="action-btn delete delete-btn" title="Delete" data-content-id="{{ $content->id }}" data-content-type="{{ $content->content_type }}" data-video-source="{{ $content->video_source ?? '' }}">
+                            <button class="action-btn delete delete-btn" title="Delete" data-content-id="{{ $content->id }}" data-content-type="{{ $content->content_type }}" data-video-source="{{ $content->video_source ?? '' }}" data-has-docs="{{ ($content->documents_count ?? 0) > 0 || !empty($content->document_path) ? 'true' : 'false' }}" data-has-quizzes="{{ ($content->quizzes_count ?? 0) > 0 || !empty($content->quiz_id) ? 'true' : 'false' }}">
                                 <i class="fas fa-trash"></i>
                             </button>
                             <button class="action-btn" title="More">
@@ -1482,17 +1482,37 @@
                 const contentId = deleteBtn.getAttribute('data-content-id');
                 const contentType = deleteBtn.getAttribute('data-content-type');
                 const videoSource = deleteBtn.getAttribute('data-video-source');
+                const hasDocs = deleteBtn.getAttribute('data-has-docs') === 'true';
+                const hasQuizzes = deleteBtn.getAttribute('data-has-quizzes') === 'true';
 
                 let confirmMessage = 'Are you sure you want to delete this content? This action cannot be undone.';
 
-                if (contentType === 'video' && videoSource === 'vimeo') {
-                    confirmMessage = 'Are you sure you want to delete this video? This will permanently delete the video from both the database AND Vimeo. This action cannot be undone.';
-                } else if (contentType === 'video' && videoSource === 'youtube') {
-                    confirmMessage = 'Are you sure you want to delete this video? This will only delete the video from the database (YouTube videos cannot be deleted remotely). This action cannot be undone.';
-                }
+                if (contentType === 'video') {
+                    if (videoSource === 'vimeo') {
+                        confirmMessage = 'Are you sure you want to delete this video? This will permanently delete the video from both the database AND Vimeo. This action cannot be undone.';
+                    } else if (videoSource === 'youtube') {
+                        confirmMessage = 'Are you sure you want to delete this video? This will only delete the video from the database (YouTube videos cannot be deleted remotely). This action cannot be undone.';
+                    }
 
-                if (confirm(confirmMessage)) {
-                    deleteContent(contentId, contentType, videoSource);
+                    if (confirm(confirmMessage)) {
+                        let deleteRelated = true;
+                        if (hasDocs || hasQuizzes) {
+                            let relatedText = [];
+                            if (hasDocs) relatedText.push('documents');
+                            if (hasQuizzes) relatedText.push('quizzes');
+                            
+                            // Using standard confirm for the second stage
+                            deleteRelated = confirm('This lesson has related ' + relatedText.join(' and ') + '.\n\nDo you ALSO want to delete these related items?\n\n(Click "Cancel" to ONLY delete the video media and keep the documents/quizzes as a video-less lesson)');
+                        }
+                        
+                        deleteContent(contentId, contentType, videoSource, deleteRelated);
+                    }
+                } else {
+                    // For standalone docs/quizzes
+                    confirmMessage = 'Are you sure you want to delete this content? This action cannot be undone.';
+                    if (confirm(confirmMessage)) {
+                        deleteContent(contentId, contentType, videoSource, true);
+                    }
                 }
             }
         });
@@ -1544,7 +1564,7 @@
             }
         });
 
-        async function deleteContent(contentId, contentType, videoSource) {
+        async function deleteContent(contentId, contentType, videoSource, deleteRelated = true) {
             try {
                 // Use unified delete endpoint
                 const response = await fetch(`{{ route("admin.contents.destroy", ":contentId") }}`.replace(':contentId', contentId), {
@@ -1553,7 +1573,8 @@
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
-                    }
+                    },
+                    body: JSON.stringify({ delete_related: deleteRelated })
                 });
 
                 const result = await response.json();
