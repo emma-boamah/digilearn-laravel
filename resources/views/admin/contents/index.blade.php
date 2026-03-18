@@ -935,7 +935,7 @@
             <div class="flex items-center">
                 <div class="step-indicator active" data-step="1">
                     <span class="step-number">1</span>
-                    <span class="step-label">Video</span>
+                    <span class="step-label">Lesson Info</span>
                 </div>
                 <div class="step-connector"></div>
                 <div class="step-indicator" data-step="2">
@@ -952,12 +952,18 @@
 
         <!-- Step Content -->
         <div class="step-content">
-            <!-- Step 1: Video Upload -->
+            <!-- Step 1: Lesson Details & Video (Optional) -->
             <div class="step-pane active" id="step1">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Upload Video</h3>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Lesson Details & Video <span class="text-sm font-normal text-gray-500">(Video is optional)</span></h3>
+                <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p class="text-sm text-blue-700">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        <strong>Tip:</strong> You can create quiz-only or document-only content! Simply fill in the Title, Subject & Grade below, select <strong>"No Video"</strong> as the source, then click Next to add your documents or quizzes.
+                    </p>
+                </div>
 
                 <!-- Video Preview -->
-                <div class="mb-4">
+                <div class="mb-4" id="videoPreviewWrapper">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Video Preview</label>
                     <div id="videoPreviewContainer" class="video-preview hidden">
                         <video id="videoPreview" controls></video>
@@ -1014,6 +1020,18 @@
                                     <div>
                                         <div class="font-medium text-gray-900">Mux</div>
                                         <div class="text-sm text-gray-500">Paste Mux stream URL</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="relative">
+                            <input type="radio" name="video_source" value="none" class="sr-only peer">
+                            <div class="p-4 border-2 border-gray-200 rounded-lg cursor-pointer peer-checked:border-emerald-500 peer-checked:bg-emerald-50 hover:border-gray-300 transition-colors">
+                                <div class="flex items-center">
+                                    <i class="fas fa-file-alt text-2xl text-emerald-600 mr-3"></i>
+                                    <div>
+                                        <div class="font-medium text-gray-900">No Video</div>
+                                        <div class="text-sm text-gray-500">Quiz / Documents only</div>
                                     </div>
                                 </div>
                             </div>
@@ -2725,12 +2743,21 @@
             const externalVideoUrl = document.getElementById('external_video_url');
             const fileInput = document.getElementById('fileInput');
             const videoPreviewContainer = document.getElementById('videoPreviewContainer');
+            const videoPreviewWrapper = document.getElementById('videoPreviewWrapper');
+            const videoSourceLabel = document.querySelector('label[for="video_source_label"]');
 
             // Hide all sections first
             if (localSection) localSection.classList.add('hidden');
             if (externalSection) externalSection.classList.add('hidden');
             if (uploadDestinationSection) uploadDestinationSection.classList.add('hidden');
             if (vimeoUploadOptions) vimeoUploadOptions.classList.add('hidden');
+
+            // Show/hide video preview wrapper based on source
+            if (source === 'none') {
+                if (videoPreviewWrapper) videoPreviewWrapper.classList.add('hidden');
+            } else {
+                if (videoPreviewWrapper) videoPreviewWrapper.classList.remove('hidden');
+            }
 
             if (source === 'local') {
                 if (localSection) localSection.classList.remove('hidden');
@@ -2749,6 +2776,13 @@
                 if (fileInput) fileInput.value = '';
                 uploadData.video = null;
                 // Hide video preview
+                if (videoPreviewContainer) videoPreviewContainer.classList.add('hidden');
+            } else if (source === 'none') {
+                // No video - hide all video-related upload sections
+                if (fileInput) fileInput.value = '';
+                if (externalVideoUrl) externalVideoUrl.value = '';
+                uploadData.video = null;
+                uploadData.external_video_url = '';
                 if (videoPreviewContainer) videoPreviewContainer.classList.add('hidden');
             }
         }
