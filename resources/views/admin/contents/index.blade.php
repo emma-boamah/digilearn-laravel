@@ -911,6 +911,12 @@
             <p>Get started by uploading your first video, document, or quiz.</p>
         </div>
         @endif
+
+        @if($contents->hasPages())
+        <div class="mt-6 mb-4 px-4 sm:px-6 border-t border-gray-100 pt-4">
+            {{ $contents->appends(request()->query())->links() }}
+        </div>
+        @endif
     </div>
 </div>
 

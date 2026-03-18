@@ -277,6 +277,26 @@ class CookieManager
                 } catch (\Exception $geoEx) {
                     Log::warning('GeoIP fallback failed', ['ip' => $ip, 'error' => $geoEx->getMessage()]);
                 }
+
+                // Critical Secondary Fallback: If Location::get didn't work (e.g. rate limit / db missing)
+                if ((!$country || $country === 'Unknown') && $isPublicIp) {
+                    try {
+                        $ctx = stream_context_create(['http' => ['timeout' => 2]]);
+                        $response = @file_get_contents("http://ip-api.com/json/{$lookupIp}", false, $ctx);
+                        if ($response) {
+                            $data = json_decode($response);
+                            if ($data && isset($data->status) && $data->status === 'success') {
+                                $country = $data->country ?? $country;
+                                $city = $data->city ?? $city;
+                                $region = $data->regionName ?? $region;
+                                $latitude = $latitude ?? $data->lat;
+                                $longitude = $longitude ?? $data->lon;
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        // ignore secondary fallback error
+                    }
+                }
             }
 
             \App\Models\CookieConsent::create([
