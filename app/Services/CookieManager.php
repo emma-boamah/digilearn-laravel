@@ -254,6 +254,7 @@ class CookieManager
                 'country' => $gpsData['country'] ?? null,
                 'city' => $gpsData['city'] ?? null,
                 'region' => $gpsData['region'] ?? null,
+                'page_url' => $gpsData['page_url'] ?? null,
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to store cookie consent record', [
