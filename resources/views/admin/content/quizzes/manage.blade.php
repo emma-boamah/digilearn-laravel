@@ -125,12 +125,16 @@
                                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                                         <option value="">Select Grade Level</option>
                                         @php
-                                            $gradeLevels = ['Primary 1', 'Primary 2', 'Primary 3', 'JHS 1', 'JHS 2', 'JHS 3', 'SHS 1', 'SHS 2', 'SHS 3'];
+                                            $allLevelGroups = \App\Models\LevelGroup::with('levels')->orderBy('display_order')->get();
                                         @endphp
-                                        @foreach($gradeLevels as $level)
-                                            <option value="{{ $level }}" {{ (old('grade_level', $quiz->grade_level ?? '') == $level) ? 'selected' : '' }}>
-                                                {{ $level }}
-                                            </option>
+                                        @foreach($allLevelGroups as $group)
+                                            <optgroup label="{{ $group->name }}">
+                                                @foreach($group->levels as $level)
+                                                    <option value="{{ $level->title }}" {{ (old('grade_level', $quiz->grade_level ?? '') == $level->title) ? 'selected' : '' }}>
+                                                        {{ $level->title }}
+                                                    </option>
+                                                @endforeach
+                                            </optgroup>
                                         @endforeach
                                     </select>
                                     @error('grade_level')

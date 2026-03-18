@@ -1125,15 +1125,13 @@
                     <select id="grade_level"
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">Select Grade Level</option>
-                        <option value="Primary 1">Primary 1</option>
-                        <option value="Primary 2">Primary 2</option>
-                        <option value="Primary 3">Primary 3</option>
-                        <option value="JHS 1">JHS 1</option>
-                        <option value="JHS 2">JHS 2</option>
-                        <option value="JHS 3">JHS 3</option>
-                        <option value="SHS 1">SHS 1</option>
-                        <option value="SHS 2">SHS 2</option>
-                        <option value="SHS 3">SHS 3</option>
+                        @foreach($levelGroups as $group)
+                            <optgroup label="{{ $group->name }}">
+                                @foreach($group->levels as $level)
+                                    <option value="{{ $level->title }}">{{ $level->title }}</option>
+                                @endforeach
+                            </optgroup>
+                        @endforeach
                     </select>
                 </div>
 
