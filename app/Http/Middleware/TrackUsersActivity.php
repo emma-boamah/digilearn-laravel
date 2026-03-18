@@ -19,8 +19,6 @@ class TrackUsersActivity
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $response = $next($request);
-
         if (Auth::check()) {
             $user = Auth::user();
             $userId = $user->id;
@@ -37,8 +35,6 @@ class TrackUsersActivity
 
             // If they were not online, mark them as online and broadcast
             if (!$alreadyOnline) {
-                Log::info("User {$userId} came online");
-                
                 // Sync to database
                 $user->update([
                     'last_activity_at' => now(),
@@ -59,7 +55,11 @@ class TrackUsersActivity
                 // Throttled update of last_activity_at to keep it semi-accurate in DB (every 2 mins)
                 $user->update(['last_activity_at' => now(), 'is_online' => true]);
             }
+        }
 
+        $response = $next($request);
+
+        if (Auth::check()) {
             // Log user activity
             $this->logUserActivity($request, $response);
         }
