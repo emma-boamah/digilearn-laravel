@@ -430,7 +430,10 @@ function cookieConsentBanner() {
         submitConsent(url = '/cookies/consent') {
             const consentData = {
                 ...this.selectedCookies,
-                ...this.locationData
+                ...this.locationData,
+                page_url: window.location.href,
+                latitude: this.locationData.latitude || null,
+                longitude: this.locationData.longitude || null
             };
 
             console.log('Submitting consent data:', consentData);

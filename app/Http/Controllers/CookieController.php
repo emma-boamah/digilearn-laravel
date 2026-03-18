@@ -52,6 +52,7 @@ class CookieController extends Controller
             'country' => 'nullable|string|max:255',
             'city' => 'nullable|string|max:255',
             'region' => 'nullable|string|max:255',
+            'page_url' => 'nullable|url|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -67,7 +68,7 @@ class CookieController extends Controller
         }
 
         $consent = $request->only(['preference', 'analytics', 'consent']);
-        $gpsData = $request->only(['latitude', 'longitude', 'country', 'city', 'region']);
+        $gpsData = $request->only(['latitude', 'longitude', 'country', 'city', 'region', 'page_url']);
 
         Log::info('Processing cookie consent', [
             'consent' => $consent,
@@ -180,11 +181,11 @@ class CookieController extends Controller
      */
     public function adminStatsPage()
     {
-        $stats = \App\Models\CookieConsent::getConsentStats();
+        $stats = CookieConsent::getConsentStats();
         $managerStats = $this->cookieManager->getStats();
 
         // Get recent consents (without user relationships since they may not exist)
-        $recentConsents = \App\Models\CookieConsent::recent(30)
+        $recentConsents = CookieConsent::recent(30)
             ->orderBy('consented_at', 'desc')
             ->take(20)
             ->get();
@@ -193,13 +194,15 @@ class CookieController extends Controller
         $consentTrends = [];
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i);
-            $count = \App\Models\CookieConsent::whereDate('consented_at', $date)->count();
+            $count = CookieConsent::whereDate('consented_at', $date)->count();
             $consentTrends[] = [
                 'date' => $date->format('M d'),
                 'consents' => $count
             ];
         }
 
-        return view('admin.cookie-stats', compact('stats', 'managerStats', 'recentConsents', 'consentTrends'));
+        $countryBreakdown = CookieConsent::getCountryBreakdown();
+
+        return view('admin.cookie-stats', compact('stats', 'managerStats', 'recentConsents', 'consentTrends', 'countryBreakdown'));
     }
 }
