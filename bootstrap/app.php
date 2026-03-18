@@ -31,7 +31,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(RealIpMiddleware::class);
         $middleware->append(SecurityHeaders::class);
         $middleware->append(CheckWebsiteLock::class);
-        $middleware->append(TrackUsersActivity::class);
         $middleware->append(HandleJsonRequestErrors::class);
 
         // Web middleware group
@@ -40,11 +39,13 @@ return Application::configure(basePath: dirname(__DIR__))
             ShareErrorsFromSession::class,
             CookieConsentMiddleware::class,
             CheckSuspended::class,
+            TrackUsersActivity::class,
         ]);
         
         // API middleware group
         $middleware->api(append: [
             // Add API-specific middleware here if needed
+            TrackUsersActivity::class,
         ]);
 
         // Named middleware aliases
