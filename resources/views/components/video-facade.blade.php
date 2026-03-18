@@ -72,7 +72,7 @@
         <div class="video-preview"></div>
 
         <!-- Duration Badge -->
-        @if($duration)
+        @if($duration && $videoSource !== 'none')
         <div class="lesson-duration">{{ $duration }}</div>
         @endif
 
@@ -101,7 +101,7 @@
         @endif
 
         <!-- Play Overlay -->
-        @if($showPlayOverlay)
+        @if($showPlayOverlay && $videoSource !== 'none')
         <div class="play-overlay">
             <div class="play-button">
                 <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">

@@ -849,6 +849,7 @@ class DashboardController extends Controller
             // Query approved videos for the specific grade level,
             // with dynamic cross-level category fetching for BECE and WASSCE
             $query = Video::approved()
+                ->where('video_source', '!=', 'none')
                 ->where(function($q) use ($dbLevel, $categorySlug) {
                     
                     // Base case: Videos specifically for this grade level
