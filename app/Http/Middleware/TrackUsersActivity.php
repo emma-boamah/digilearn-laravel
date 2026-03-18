@@ -25,7 +25,7 @@ class TrackUsersActivity
             $user = Auth::user();
             $userId = $user->id;
             $redisKey = "user:{$userId}:last_seen";
-            $ttl = 300; // 5 minutes
+            $ttl = 120; // 2 minutes (Strict real-time tracking)
 
             $now = Carbon::now()->timestamp;
 
@@ -38,6 +38,13 @@ class TrackUsersActivity
             // If they were not online, mark them as online and broadcast
             if (!$alreadyOnline) {
                 Log::info("User {$userId} came online");
+                
+                // Sync to database
+                $user->update([
+                    'last_activity_at' => now(),
+                    'is_online' => true
+                ]);
+
                 try {
                     broadcast(new UserCameOnline($user))->toOthers();
                 } catch (\Exception $e) {
@@ -48,6 +55,9 @@ class TrackUsersActivity
                         'path' => $request->path()
                     ]);
                 }
+            } elseif (!$user->last_activity_at || $user->last_activity_at->diffInMinutes(now()) >= 2) {
+                // Throttled update of last_activity_at to keep it semi-accurate in DB (every 2 mins)
+                $user->update(['last_activity_at' => now(), 'is_online' => true]);
             }
 
             // Log user activity
