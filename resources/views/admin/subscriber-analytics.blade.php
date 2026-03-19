@@ -160,8 +160,14 @@
                     <tr class="hover:bg-gray-50/50 transition-colors group">
                         <td class="px-6 py-4">
                             <div class="flex items-center space-x-3">
-                                <div class="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm uppercase">
-                                    {{ substr($activity->user->name ?? 'U', 0, 2) }}
+                                <div class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center bg-gray-100 shadow-sm border border-gray-100">
+                                    @if($activity->user && $activity->user->avatar_url)
+                                        <img src="{{ $activity->user->avatar_url }}" alt="{{ $activity->user->name }}" class="w-full h-full object-cover">
+                                    @else
+                                        <div class="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold uppercase tracking-wider">
+                                            {{ $activity->user ? $activity->user->initials : 'U' }}
+                                        </div>
+                                    @endif
                                 </div>
                                 <span class="font-bold text-gray-900">{{ $activity->user->name ?? 'Unknown User' }}</span>
                             </div>

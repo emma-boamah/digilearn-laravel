@@ -15,6 +15,7 @@ class QuizViolation extends Model
         'quiz_id',
         'violation_type',
         'details',
+        'points',
         'occurred_at',
     ];
 
@@ -51,13 +52,14 @@ class QuizViolation extends Model
     /**
      * Record a new violation.
      */
-    public static function recordViolation($userId, $quizId, $violationType, $details = null)
+    public static function recordViolation($userId, $quizId, $violationType, $details = null, $points = 1)
     {
         return static::create([
             'user_id' => $userId,
             'quiz_id' => $quizId,
             'violation_type' => $violationType,
             'details' => $details,
+            'points' => $points,
             'occurred_at' => now(),
         ]);
     }
