@@ -425,6 +425,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/content', [AdminController::class , 'content'])->name('content');
     Route::get('/revenue', [AdminController::class , 'revenue'])->name('revenue');
     Route::get('/analytics', [AdminController::class , 'analytics'])->name('analytics');
+    Route::get('/subscriber-analytics', [AdminController::class , 'subscriberAnalytics'])->name('subscriber-analytics');
     Route::get('/security', [AdminController::class , 'security'])->name('security');
     Route::get('/security/data', [AdminController::class , 'getSecurityDataAjax'])->name('security.data');
     Route::get('/activities', [AdminController::class , 'activities'])->name('activities');

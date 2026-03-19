@@ -501,6 +501,74 @@ class AdminController extends Controller
     }
 
     /**
+     * Show subscriber analytics page
+     */
+    public function subscriberAnalytics()
+    {
+        // Total Subscribers
+        $totalSubscribers = \App\Models\User::whereHas('subscriptions', function($q) {
+            $q->whereIn('status', ['active', 'trial']);
+        })->count();
+
+        // Monthly Recurring Revenue (MRR)
+        $mrr = \App\Models\UserSubscription::whereIn('status', ['active', 'trial'])->sum('amount_paid');
+
+        // Churn Rate - Simple calculation for last 30 days
+        $thirtyDaysAgo = now()->subDays(30);
+        $expiredCount = \App\Models\UserSubscription::where('status', 'expired')
+            ->where('updated_at', '>=', $thirtyDaysAgo)
+            ->count();
+        $totalAtStart = \App\Models\UserSubscription::where('started_at', '<=', $thirtyDaysAgo)
+            ->count() ?: 1;
+        $churnRate = ($expiredCount / $totalAtStart) * 100;
+
+        // Avg Revenue Per User (ARPU)
+        $arpu = $totalSubscribers > 0 ? $mrr / $totalSubscribers : 0;
+
+        // Subscriber Growth Trend (Last 12 Months)
+        $growthData = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $monthStart = now()->subMonths($i)->startOfMonth();
+            $monthEnd = now()->subMonths($i)->endOfMonth();
+            $count = \App\Models\UserSubscription::where('started_at', '<=', $monthEnd)->count();
+            $growthData[] = [
+                'month' => $monthStart->format('M'),
+                'count' => $count
+            ];
+        }
+
+        // Subscription Plans Distribution
+        $planDistribution = \App\Models\UserSubscription::whereIn('status', ['active', 'trial'])
+            ->with('pricingPlan')
+            ->get()
+            ->groupBy('pricing_plan_id')
+            ->map(function($subs, $planId) use ($totalSubscribers) {
+                $plan = $subs->first()->pricingPlan;
+                return [
+                    'name' => $plan ? $plan->name : 'N/A',
+                    'count' => $subs->count(),
+                    'percentage' => $totalSubscribers > 0 ? round(($subs->count() / $totalSubscribers) * 100) : 0
+                ];
+            })->values()->toArray();
+
+        // Recent Subscriber Activity
+        $recentActivity = \App\Models\UserSubscription::with(['user', 'pricingPlan'])
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        return view('admin.subscriber-analytics', compact(
+            'totalSubscribers',
+            'mrr',
+            'churnRate',
+            'arpu',
+            'growthData',
+            'planDistribution',
+            'recentActivity'
+        ));
+    }
+
+    /**
      * Show security monitoring page
      */
     public function security()
