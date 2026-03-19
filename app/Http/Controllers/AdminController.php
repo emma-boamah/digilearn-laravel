@@ -2969,7 +2969,7 @@ class AdminController extends Controller
         $metadataAnalytics = $this->getPaymentMetadataAnalytics();
 
         // Recent payments
-        $recentPayments = \App\Models\Payment::with(['user:id,name,email', 'pricingPlan:id,name'])
+        $recentPayments = \App\Models\Payment::with(['user:id,name,email,avatar,google_avatar', 'pricingPlan:id,name'])
             ->orderBy('created_at', 'desc')
             ->limit(50)
             ->get()
@@ -2978,6 +2978,8 @@ class AdminController extends Controller
                     'id' => $payment->id,
                     'user_name' => $payment->user->name ?? 'Unknown',
                     'user_email' => $payment->user->email ?? '',
+                    'user_avatar_url' => $payment->user ? $payment->user->avatar_url : null,
+                    'user_initials' => $payment->user ? $payment->user->initials : 'U',
                     'plan_name' => $payment->pricingPlan->name ?? 'Unknown',
                     'amount' => (float) $payment->amount,
                     'currency' => $payment->currency,
@@ -2991,7 +2993,7 @@ class AdminController extends Controller
 
         // Top paying users
         $topPayingUsers = \App\Models\Payment::where('status', 'success')
-            ->with('user:id,name,email')
+            ->with('user:id,name,email,avatar,google_avatar')
             ->selectRaw('user_id, COUNT(*) as payment_count, SUM(amount) as total_amount')
             ->groupBy('user_id')
             ->orderBy('total_amount', 'desc')
@@ -3001,6 +3003,8 @@ class AdminController extends Controller
                 return [
                     'user_name' => $payment->user->name ?? 'Unknown',
                     'user_email' => $payment->user->email ?? '',
+                    'user_avatar_url' => $payment->user ? $payment->user->avatar_url : null,
+                    'user_initials' => $payment->user ? $payment->user->initials : 'U',
                     'payment_count' => $payment->payment_count,
                     'total_amount' => (float) $payment->total_amount,
                 ];

@@ -632,8 +632,14 @@
                         <tr class="hover:bg-gray-50 transition-colors duration-150">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
-                                    <div class="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-500 rounded-lg flex items-center justify-center text-white text-sm font-medium">
-                                        {{ substr($payment['user_name'], 0, 1) }}
+                                    <div class="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-gray-100">
+                                        @if($payment['user_avatar_url'])
+                                            <img src="{{ $payment['user_avatar_url'] }}" alt="{{ $payment['user_name'] }}" class="w-full h-full object-cover">
+                                        @else
+                                            <div class="w-full h-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-white text-sm font-medium">
+                                                {{ $payment['user_initials'] }}
+                                            </div>
+                                        @endif
                                     </div>
                                     <div class="ml-3">
                                         <div class="text-sm font-medium text-gray-900">{{ $payment['user_name'] }}</div>
@@ -683,9 +689,18 @@
                     @foreach($paymentAnalytics['top_users'] as $index => $user)
                     <div class="bg-gradient-to-br from-white to-gray-50 rounded-xl p-4 border border-gray-100 hover:shadow-sm transition-shadow duration-200">
                         <div class="flex items-center justify-between mb-3">
-                            <div class="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center text-white text-lg font-bold">
-                                {{ $index + 1 }}
-                            </div>
+                            <div class="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-gray-100 relative">
+                                        @if($user['user_avatar_url'])
+                                            <img src="{{ $user['user_avatar_url'] }}" alt="{{ $user['user_name'] }}" class="w-full h-full object-cover">
+                                            <div class="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center text-white text-[10px] font-bold border-2 border-white shadow-sm">
+                                                {{ $index + 1 }}
+                                            </div>
+                                        @else
+                                            <div class="w-full h-full bg-gradient-to-r from-yellow-400 to-orange-500 flex items-center justify-center text-white text-lg font-bold">
+                                                {{ $index + 1 }}
+                                            </div>
+                                        @endif
+                                    </div>
                             <div class="text-right">
                                 <div class="text-lg font-bold text-gray-900">GH₵{{ number_format($user['total_amount'], 0) }}</div>
                                 <div class="text-xs text-gray-500">{{ $user['payment_count'] }} payments</div>

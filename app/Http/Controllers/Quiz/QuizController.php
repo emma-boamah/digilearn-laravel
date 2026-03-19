@@ -345,17 +345,52 @@ class QuizController extends Controller
         $request->validate([
             'type' => 'required|string',
             'details' => 'nullable|string',
+            'points' => 'nullable|integer',
         ]);
+
+        $points = $request->input('points', 1);
+        $userId = Auth::id();
 
         // Store violation record
         \App\Models\QuizViolation::recordViolation(
-            Auth::id(),
+            $userId,
             $quizId,
             $request->input('type'),
-            $request->input('details')
+            $request->input('details'),
+            $points
         );
 
-        return response()->json(['status' => 'ok']);
+        // Update total points in cache for this attempt
+        $cacheKey = "quiz_points_{$userId}_{$quizId}";
+        $currentPoints = Cache::get($cacheKey, 0);
+        $newPoints = $currentPoints + $points;
+        Cache::put($cacheKey, $newPoints, 3600); // 1 hour
+
+        return response()->json([
+            'status' => 'ok',
+            'current_points' => $newPoints,
+            'max_points' => 10 // Threshold
+        ]);
+    }
+
+    /**
+     * Heartbeat (anti-cheat)
+     */
+    public function heartbeat(Request $request, $quizId)
+    {
+        $userId = Auth::id();
+        $cacheKey = "quiz_heartbeat_{$userId}_{$quizId}";
+        Cache::put($cacheKey, now()->timestamp, 3600);
+
+        // Also return current points to sync frontend if needed
+        $pointsKey = "quiz_points_{$userId}_{$quizId}";
+        $currentPoints = Cache::get($pointsKey, 0);
+
+        return response()->json([
+            'status' => 'ok',
+            'current_points' => $currentPoints,
+            'max_points' => 10
+        ]);
     }
 
     /**
@@ -420,6 +455,41 @@ class QuizController extends Controller
 
         $timeSpent = (int) $timeSpentInput;
         $failedDueToViolation = $request->input('failed_due_to_violation', false);
+
+        // Anti-cheat heartbeat & points verification
+        $userId = Auth::id();
+        $heartbeatKey = "quiz_heartbeat_{$userId}_{$quizId}";
+        $pointsKey = "quiz_points_{$userId}_{$quizId}";
+        
+        $lastHeartbeat = Cache::get($heartbeatKey);
+        $currentPoints = Cache::get($pointsKey, 0);
+        
+        // If no heartbeat found or it's too old (> 2 minutes), it's a violation
+        // We give 2 minutes because a user might have a slow connection or brief dip
+        if (!$lastHeartbeat || (now()->timestamp - $lastHeartbeat > 120)) {
+            Log::warning('Quiz heartbeat failed during submission', [
+                'user_id' => $userId,
+                'quiz_id' => $quizId,
+                'last_heartbeat' => $lastHeartbeat
+            ]);
+            $failedDueToViolation = true;
+            
+            \App\Models\QuizViolation::recordViolation(
+                $userId,
+                $quizId,
+                'heartbeat_failure',
+                'Quiz submitted without active heartbeat pings (potential script bypass).'
+            );
+        }
+
+        // Final points check
+        if ($currentPoints >= 10) {
+            $failedDueToViolation = true;
+        }
+
+        // Clear cache after submission
+        Cache::forget($heartbeatKey);
+        Cache::forget($pointsKey);
 
         Log::info('Parsed answers', [
             'original_answers' => $answersInput,

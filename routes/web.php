@@ -253,6 +253,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/{quizId}/submit', [QuizController::class , 'submit'])->name('submit');
             Route::post('/{quizId}/essay/submit', [QuizController::class , 'submitEssay'])->name('essay.submit');
             Route::post('/{quizId}/violation', [QuizController::class , 'violation'])->name('violation');
+            Route::post('/{quizId}/heartbeat', [QuizController::class , 'heartbeat'])->name('heartbeat');
             Route::post('/{quizId}/rate', [QuizController::class , 'rate'])->name('rate');
             Route::get('/results', [QuizController::class , 'results'])->name('results');
         }

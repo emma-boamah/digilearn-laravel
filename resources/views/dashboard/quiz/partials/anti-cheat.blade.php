@@ -1,435 +1,351 @@
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
 (function() {
   const quizId = {!! json_encode($quiz['id'] ?? null) !!};
-  const violationUrl = quizId ? '{{ url("/dashboard/quiz") }}/' + quizId + '/violation' : null;
-  let violations = 0;
-  const maxViolations = 1; // Render failed on first violation
-  let lastVisibilityChange = Date.now();
-  let visibilityChangeCount = 0;
+  // Use the verified route structure
+  const baseUrl = '{{ url("/quiz") }}/' + quizId;
+  const violationUrl = baseUrl + '/violation';
+  const heartbeatUrl = baseUrl + '/heartbeat';
+  
+  let violationPoints = 0;
+  const MAX_POINTS = 10;
+  let isLockedOut = false;
   let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  // Weighted Points Configuration
+  const POINT_VALUES = {
+    'copy': 10,
+    'cut': 10,
+    'paste': 10,
+    'screenshot': 10,
+    'dev_tools': 10,
+    'share_attempt': 10,
+    'fullscreen_exit': 5,
+    'tab_switch': 3,
+    'window_blur': 2,
+    'selection': 2,
+    'context_menu': 2,
+    'drag': 2,
+    'image_save': 2,
+    'multi_touch': 3,
+    'zoom_gesture': 2,
+    'long_press': 3
+  };
 
-  async function reportViolation(type, details) {
-    violations += 1;
+  // State Tracking
+  let lastBlurTime = null;
+  let lastVisibilityHiddenTime = null;
+
+  /**
+   * Sync heartbeat with server
+   */
+  async function sendHeartbeat() {
+    if (isLockedOut) return;
     try {
-      if (violationUrl) {
-        await fetch(violationUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-          },
-          body: JSON.stringify({ type, details })
-        });
+      const response = await fetch(heartbeatUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+          'Accept': 'application/json'
+        }
+      });
+      const data = await response.json();
+      if (data.current_points !== undefined) {
+        // Sync local points with server state to handle refreshes
+        violationPoints = data.current_points;
+        if (violationPoints >= MAX_POINTS) {
+          triggerLockout('server_sync', 'Integrity threshold reached on server.');
+        }
       }
-    } catch (e) {}
-
-    showViolationModal(type, details);
+    } catch (e) {
+      console.error('Heartbeat failed', e);
+    }
   }
 
-  function showViolationModal(type, details) {
-    // Remove any existing modal
-    const existingModal = document.getElementById('violation-modal');
-    if (existingModal) {
-      existingModal.remove();
+  // Start heartbeat interval
+  setInterval(sendHeartbeat, 30000);
+  sendHeartbeat(); // Initial ping
+
+  /**
+   * Specialized Violation Handler
+   */
+  async function reportViolation(type, details, pointsOverride = null) {
+    if (isLockedOut) return;
+
+    let points = pointsOverride !== null ? pointsOverride : (POINT_VALUES[type] || 1);
+    
+    // Grace Period Logic: If returning within 3 seconds, reduce/negate points for blur events
+    if (type === 'window_blur' || type === 'tab_switch') {
+      // Points will be finalized on "focus" or "visibilitychange" to visible
+      return; 
     }
 
-    // Create violation modal
+    violationPoints += points;
+    await syncViolation(type, details, points);
+
+    if (violationPoints >= MAX_POINTS) {
+      triggerLockout(type, details);
+    } else if (points > 0) {
+      showWarningModal(type, details, MAX_POINTS - violationPoints);
+    }
+  }
+
+  async function syncViolation(type, details, points) {
+    try {
+      await fetch(violationUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ type, details, points })
+      });
+    } catch (e) {}
+  }
+
+  /**
+   * UI: Lockout Modal (Permanent)
+   */
+  function triggerLockout(type, details) {
+    if (isLockedOut) return;
+    isLockedOut = true;
+    
+    // Hide quiz content immediately
+    const quizForm = document.querySelector('form[data-quiz-form]');
+    if (quizForm) quizForm.style.display = 'none';
+
+    renderModal({
+      id: 'lockout-modal',
+      title: 'Academic Integrity Lockout',
+      message: 'This quiz attempt has been terminated due to persistent integrity violations.',
+      type: 'error',
+      details: details || getViolationDisplayName(type),
+      primaryAction: {
+        text: 'Submit & Exit',
+        callback: () => submitQuizWithViolation(true)
+      },
+      secondaryAction: {
+        text: 'Appeal to Instructor',
+        callback: () => requestAppeal(type)
+      },
+      autoSubmit: true
+    });
+  }
+
+  /**
+   * UI: Warning Modal (Temporary)
+   */
+  function showWarningModal(type, details, pointsLeft) {
+    renderModal({
+      id: 'warning-modal',
+      title: 'Integrity Warning',
+      message: `Suspicious activity detected. Future violations will result in automatic failure.`,
+      type: 'warning',
+      details: `Reason: ${getViolationDisplayName(type)} (${pointsLeft} points remaining)`,
+      primaryAction: {
+        text: 'I Understand, Continue',
+        callback: (modal) => {
+          modal.remove();
+          document.body.style.overflow = '';
+          ensureFullscreen();
+        }
+      }
+    });
+  }
+
+  /**
+   * UI: General Modal Renderer
+   */
+  function renderModal(config) {
+    const existing = document.getElementById(config.id);
+    if (existing) existing.remove();
+
+    const color = config.type === 'error' ? '#E11E2D' : '#F59E0B';
+    const bg = config.type === 'error' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.6)';
+
     const modal = document.createElement('div');
-    modal.id = 'violation-modal';
+    modal.id = config.id;
+    modal.style = `position:fixed;top:0;left:0;right:0;bottom:0;background:${bg};z-index:100000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);font-family:'Inter',sans-serif;`;
+    
     modal.innerHTML = `
-      <div style="
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: rgba(0, 0, 0, 0.8);
-        z-index: 10000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        backdrop-filter: blur(4px);
-      ">
-        <div style="
-          background: white;
-          border-radius: 1rem;
-          padding: 2rem;
-          max-width: 500px;
-          width: 90%;
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
-          border: 2px solid #E11E2D;
-          animation: modalSlideIn 0.3s ease-out;
-        ">
-          <div style="text-align: center; margin-bottom: 1.5rem;">
-            <div style="
-              width: 64px;
-              height: 64px;
-              background: #E11E2D;
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              margin: 0 auto 1rem;
-              animation: warningPulse 2s infinite;
-            ">
-              <svg width="32" height="32" fill="white" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-              </svg>
-            </div>
-            <h2 style="
-              color: #E11E2D;
-              font-size: 1.5rem;
-              font-weight: 700;
-              margin-bottom: 0.5rem;
-              font-family: 'Inter', sans-serif;
-            ">Academic Integrity Violation</h2>
-            <p style="
-              color: #374151;
-              font-size: 1rem;
-              margin-bottom: 1rem;
-              font-family: 'Inter', sans-serif;
-            ">Your quiz attempt has been terminated due to a detected violation.</p>
-          </div>
-
-          <div style="
-            background: #FEF2F2;
-            border: 1px solid #FECACA;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-          ">
-            <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
-              <svg width="20" height="20" fill="#DC2626" viewBox="0 0 24 24" style="margin-top: 0.125rem; flex-shrink: 0;">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-              </svg>
-              <div>
-                <p style="
-                  color: #991B1B;
-                  font-weight: 600;
-                  margin-bottom: 0.25rem;
-                  font-family: 'Inter', sans-serif;
-                ">Violation Detected: ${getViolationDisplayName(type)}</p>
-                <p style="
-                  color: #7F1D1D;
-                  font-size: 0.875rem;
-                  margin: 0;
-                  font-family: 'Inter', sans-serif;
-                ">${details || 'This action violates our academic integrity policy.'}</p>
-              </div>
-            </div>
-          </div>
-
-          <div style="
-            background: #F3F4F6;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-          ">
-            <p style="
-              color: #374151;
-              font-size: 0.875rem;
-              margin: 0;
-              text-align: center;
-              font-family: 'Inter', sans-serif;
-            ">
-              <strong>Your quiz will be submitted automatically in <span id="countdown" style="color: #E11E2D; font-weight: 700;">5</span> seconds...</strong>
-            </p>
-          </div>
-
-          <div style="text-align: center;">
-            <button id="submit-now-btn" style="
-              background: linear-gradient(135deg, #E11E2D, #C41E2A);
-              color: white;
-              border: none;
-              padding: 0.75rem 2rem;
-              border-radius: 0.5rem;
-              font-size: 1rem;
-              font-weight: 600;
-              cursor: pointer;
-              transition: all 0.2s ease;
-              font-family: 'Inter', sans-serif;
-            " onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 6px -1px rgba(0, 0, 0, 0.1)'"
-               onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
-              Submit Quiz Now
-            </button>
-          </div>
+      <div style="background:white;border-radius:1.5rem;padding:2.5rem;max-width:480px;width:90%;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);border-top:8px solid ${color};text-align:center;">
+        <div style="width:72px;height:72px;background:${config.type === 'error' ? '#FEE2E2' : '#FEF3C7'};border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;">
+          <svg width="36" height="36" fill="${color}" viewBox="0 0 24 24">
+             ${config.type === 'error' ? '<path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>' : '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>'}
+          </svg>
         </div>
+        <h2 style="color:#111827;font-size:1.5rem;font-weight:800;margin-bottom:0.75rem;">${config.title}</h2>
+        <p style="color:#4B5563;font-size:1rem;line-height:1.5;margin-bottom:1.5rem;">${config.message}</p>
+        <div style="background:#F9FAFB;border-radius:1rem;padding:1rem;margin-bottom:2rem;font-size:0.875rem;color:#6B7280;font-weight:500;">
+          ${config.details}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.75rem;">
+          <button id="modal-primary-btn" style="background:${color};color:white;border:none;padding:1rem;border-radius:0.75rem;font-weight:700;cursor:pointer;transition:transform 0.1s;">${config.primaryAction.text}</button>
+          ${config.secondaryAction ? `<button id="modal-secondary-btn" style="background:transparent;color:#6B7280;border:none;padding:0.5rem;font-size:0.875rem;font-weight:600;cursor:pointer;">${config.secondaryAction.text}</button>` : ''}
+        </div>
+        ${config.autoSubmit ? '<p style="margin-top:1.5rem;font-size:0.75rem;color:#9CA3AF;font-weight:bold;">Automatic submission in <span id="countdown">5</span>s</p>' : ''}
       </div>
-
-      <style>
-        @keyframes modalSlideIn {
-          from {
-            opacity: 0;
-            transform: scale(0.9) translateY(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-          }
-        }
-
-        @keyframes warningPulse {
-          0%, 100% {
-            transform: scale(1);
-            box-shadow: 0 0 0 0 rgba(225, 30, 45, 0.4);
-          }
-          50% {
-            transform: scale(1.05);
-            box-shadow: 0 0 0 8px rgba(225, 30, 45, 0);
-          }
-        }
-      </style>
     `;
 
     document.body.appendChild(modal);
     document.body.style.overflow = 'hidden';
 
-    // Countdown timer
-    let countdown = 5;
-    const countdownEl = modal.querySelector('#countdown');
-    const submitBtn = modal.querySelector('#submit-now-btn');
+    // Actions
+    modal.querySelector('#modal-primary-btn').onclick = () => config.primaryAction.callback(modal);
+    if (config.secondaryAction) {
+      modal.querySelector('#modal-secondary-btn').onclick = () => config.secondaryAction.callback(modal);
+    }
 
-    const timer = setInterval(() => {
-      countdown--;
-      countdownEl.textContent = countdown;
+    if (config.autoSubmit) {
+      let count = 5;
+      const interval = setInterval(() => {
+        count--;
+        if (modal.querySelector('#countdown')) modal.querySelector('#countdown').textContent = count;
+        if (count <= 0) {
+          clearInterval(interval);
+          config.primaryAction.callback(modal);
+        }
+      }, 1000);
+    }
+  }
 
-      if (countdown <= 0) {
-        clearInterval(timer);
-        submitQuizWithViolation();
+  /**
+   * Mandatory Fullscreen Enforcement
+   */
+  const contentOverlay = document.createElement('div');
+  contentOverlay.id = 'fullscreen-enforcer';
+  contentOverlay.style = 'position:fixed;top:0;left:0;right:0;bottom:0;background:white;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;';
+  contentOverlay.innerHTML = `
+    <div style="text-align:center;padding:2rem;">
+      <h1 style="font-size:1.5rem;font-weight:800;margin-bottom:1rem;">Fullscreen Required</h1>
+      <p style="color:#6B7280;margin-bottom:2rem;">This quiz must be taken in fullscreen mode to ensure a focus-rich learning environment.</p>
+      <button id="start-fullscreen" style="background:#2563EB;color:white;border:none;padding:1rem 2.5rem;border-radius:0.75rem;font-weight:700;cursor:pointer;font-size:1.125rem;">Enter Fullscreen & Start</button>
+    </div>
+  `;
+
+  function checkFullscreen() {
+    if (isLockedOut) return;
+    if (!document.fullscreenElement && !isMobile) {
+      if (!document.getElementById('fullscreen-enforcer')) {
+        document.body.appendChild(contentOverlay);
       }
-    }, 1000);
+    } else {
+      const enforcer = document.getElementById('fullscreen-enforcer');
+      if (enforcer) enforcer.remove();
+    }
+  }
 
-    // Submit now button
-    submitBtn.addEventListener('click', () => {
-      clearInterval(timer);
-      submitQuizWithViolation();
+  function ensureFullscreen() {
+    if (isMobile) return;
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  }
+
+  document.addEventListener('click', (e) => {
+    if (e.target.id === 'start-fullscreen') {
+      ensureFullscreen();
+    }
+  });
+
+  document.addEventListener('fullscreenchange', checkFullscreen);
+  setInterval(checkFullscreen, 1000);
+
+
+  /**
+   * Event Listeners (Enhanced)
+   */
+
+  // 1. Visibility & Blur (With Grace Period)
+  window.addEventListener('blur', () => { lastBlurTime = Date.now(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) lastVisibilityHiddenTime = Date.now(); });
+
+  window.addEventListener('focus', () => handleReturn('window_blur'));
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) handleReturn('tab_switch'); });
+
+  async function handleReturn(type) {
+    if (isLockedOut) return;
+    const lastTime = type === 'window_blur' ? lastBlurTime : lastVisibilityHiddenTime;
+    if (!lastTime) return;
+
+    const awayDuration = (Date.now() - lastTime) / 1000;
+    
+    if (awayDuration < 3) {
+      // Small grace period violation (0 or 1 point)
+      reportViolation(type, `Brief absence (${Math.round(awayDuration, 1)}s)`, 1);
+    } else {
+      // Normal violation
+      reportViolation(type, `Extended absence (${Math.round(awayDuration)}s)`, POINT_VALUES[type]);
+    }
+    
+    lastBlurTime = null;
+    lastVisibilityHiddenTime = null;
+    checkFullscreen();
+  }
+
+  // 2. High Intent Violations
+  ['copy', 'cut', 'paste'].forEach(evt => {
+    document.addEventListener(evt, (e) => {
+      e.preventDefault();
+      reportViolation('copy', `Intentional Content ${evt.toUpperCase()}`);
     });
+  });
+
+  document.addEventListener('selectstart', (e) => {
+    if (!e.target.closest('.option') && !e.target.closest('.question-text')) {
+      e.preventDefault();
+      reportViolation('selection', 'Unauthorized text selection attempt');
+    }
+  });
+
+  document.addEventListener('contextmenu', (e) => { e.preventDefault(); reportViolation('context_menu', 'Right-click menu blocked'); });
+
+  // 3. DevTools & Fullscreen Exit
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) || ((e.ctrlKey || e.metaKey) && e.key === 'U')) {
+      e.preventDefault();
+      reportViolation('dev_tools', 'Developer Tools shortcut detected');
+    }
+    if (e.key === 'PrintScreen') { e.preventDefault(); reportViolation('screenshot', 'PrintScreen key pressed'); }
+  });
+
+  // 4. Mobile & Gestures
+  if (isMobile) {
+    document.addEventListener('touchstart', (e) => {
+      if (e.touches.length > 1) reportViolation('multi_touch', 'Multi-touch gesture suspicious');
+    }, { passive: false });
+    
+    document.addEventListener('gesturestart', (e) => { e.preventDefault(); reportViolation('zoom_gesture', 'Zooming disabled during quiz'); });
+  }
+
+  /**
+   * Utilities
+   */
+  function submitQuizWithViolation(isFinal) {
+    const form = document.querySelector('form[data-quiz-form]');
+    if (form) {
+      if (isFinal) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'failed_due_to_violation';
+        input.value = '1';
+        form.appendChild(input);
+      }
+      form.submit();
+    } else {
+      window.location.href = baseUrl;
+    }
+  }
+
+  function requestAppeal() {
+    alert("An appeal has been logged. Your instructor will review the activity logs for this attempt.");
+    submitQuizWithViolation(true);
   }
 
   function getViolationDisplayName(type) {
-    const names = {
-      'copy': 'Copying Content',
-      'cut': 'Cutting Content',
-      'paste': 'Pasting Content',
-      'selection': 'Text Selection',
-      'screenshot': 'Screenshot Attempt',
-      'context_menu': 'Right Click Menu',
-      'tab_switch': 'Tab Switching',
-      'window_blur': 'Window Focus Loss',
-      'mobile_app_switch': 'App Switching (Mobile)',
-      'long_press': 'Long Press Gesture',
-      'multi_touch': 'Multi-Touch Gesture',
-      'zoom_gesture': 'Zoom Gesture',
-      'rapid_visibility_change': 'Rapid App Switching',
-      'orientation_app_switch': 'Device Rotation During App Switch',
-      'share_attempt': 'Content Sharing Attempt',
-      'drag': 'Content Dragging',
-      'image_save': 'Image Saving Attempt',
-      'dev_tools': 'Developer Tools Detected',
-      'fullscreen_exit': 'Fullscreen Mode Exit',
-      'page_exit': 'Page Navigation Attempt',
-      'extended_absence': 'Extended Absence'
-    };
-    return names[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   }
-
-  function submitQuizWithViolation() {
-    console.log('Submitting quiz with violation...');
-    const form = document.querySelector('form[data-quiz-form]');
-    if (form) {
-      console.log('Found quiz form, adding violation flag');
-      // Mark as failed
-      const failed = document.createElement('input');
-      failed.type = 'hidden';
-      failed.name = 'failed_due_to_violation';
-      failed.value = '1';
-      form.appendChild(failed);
-      console.log('Submitting form...');
-      form.submit();
-    } else {
-      console.log('No quiz form found, redirecting to index');
-      window.location.href = '{{ route('quiz.index') }}';
-    }
-  }
-
-  // Block copying and text selection
-  document.addEventListener('copy', function(e) {
-    e.preventDefault();
-    reportViolation('copy', 'User attempted to copy text');
-  });
-  document.addEventListener('cut', function(e) {
-    e.preventDefault();
-    reportViolation('cut', 'User attempted to cut text');
-  });
-  document.addEventListener('paste', function(e) {
-    e.preventDefault();
-    reportViolation('paste', 'User attempted to paste text');
-  });
-
-  // Prevent text selection (only for non-quiz elements)
-  document.addEventListener('selectstart', function(e) {
-    // Allow text selection on quiz options and question text
-    if (e.target.closest('.option') || e.target.closest('.question-text')) {
-      return; // Allow selection
-    }
-    e.preventDefault();
-    reportViolation('selection', 'User attempted to select text');
-  });
-
-  // Prevent context menu (right-click and long press on mobile)
-  document.addEventListener('contextmenu', function(e) {
-    e.preventDefault();
-    reportViolation('context_menu', 'Context menu triggered (right-click/long press)');
-  });
-
-  // Enhanced screenshot detection
-  document.addEventListener('keydown', function(e) {
-    // PrintScreen key
-    if (e.key === 'PrintScreen') {
-      e.preventDefault();
-      reportViolation('screenshot', 'PrintScreen key detected');
-    }
-    // Common screenshot shortcuts
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-      e.preventDefault();
-      reportViolation('screenshot', 'Screenshot shortcut detected (Ctrl+S/Cmd+S)');
-    }
-  });
-
-  // Advanced visibility change detection for screenshots and app switching
-  document.addEventListener('visibilitychange', function() {
-    const now = Date.now();
-    const timeDiff = now - lastVisibilityChange;
-    lastVisibilityChange = now;
-    visibilityChangeCount++;
-
-    if (document.hidden) {
-      let details = 'Document hidden';
-
-      // Detect suspicious patterns
-      if (timeDiff < 1000 && visibilityChangeCount > 1) {
-        details += ' - Rapid visibility changes detected (possible screenshot attempt)';
-        reportViolation('rapid_visibility_change', details);
-      } else if (isMobile && timeDiff < 2000) {
-        details += ' - Quick app switch on mobile (possible screenshot)';
-        reportViolation('mobile_app_switch', details);
-      } else {
-        details += ' - Tab switch or minimize detected';
-        reportViolation('tab_switch', details);
-      }
-    } else {
-      // Document became visible again
-      if (timeDiff > 5000) {
-        reportViolation('extended_absence', `User was away for ${Math.round(timeDiff/1000)} seconds`);
-      }
-    }
-  });
-
-  // Window blur detection (switching apps/windows)
-  window.addEventListener('blur', function() {
-    if (isMobile) {
-      reportViolation('mobile_app_switch', 'Window lost focus on mobile device');
-    } else {
-      reportViolation('window_blur', 'Window lost focus (app switch)');
-    }
-  });
-
-  // Mobile-specific detections
-  if (isMobile) {
-    // Detect long press (common screenshot method on mobile)
-    let longPressTimer;
-    document.addEventListener('touchstart', function(e) {
-      if (e.touches.length > 1) {
-        reportViolation('multi_touch', 'Multiple touch points detected');
-        return;
-      }
-
-      longPressTimer = setTimeout(function() {
-        reportViolation('long_press', 'Long press detected (potential screenshot attempt)');
-      }, 500);
-    }, { passive: false });
-
-    document.addEventListener('touchend', function() {
-      clearTimeout(longPressTimer);
-    }, { passive: true });
-
-    document.addEventListener('touchmove', function() {
-      clearTimeout(longPressTimer);
-    }, { passive: true });
-
-    // Detect device orientation changes (may indicate app switching)
-    window.addEventListener('orientationchange', function() {
-      // Allow some time for legitimate orientation changes
-      setTimeout(function() {
-        if (document.hidden) {
-          reportViolation('orientation_app_switch', 'Orientation change while app hidden');
-        }
-      }, 1000);
-    });
-
-    // Prevent zoom gestures
-    document.addEventListener('gesturestart', function(e) {
-      e.preventDefault();
-      reportViolation('zoom_gesture', 'Zoom gesture detected');
-    });
-
-    document.addEventListener('gesturechange', function(e) {
-      e.preventDefault();
-    });
-
-    document.addEventListener('gestureend', function(e) {
-      e.preventDefault();
-    });
-
-    // Detect when user tries to leave the page (back button, etc.)
-    window.addEventListener('beforeunload', function(e) {
-      reportViolation('page_exit', 'User attempted to leave the page');
-    });
-
-    // Monitor for Web Share API usage (sharing screenshots)
-    if (navigator.share) {
-      const originalShare = navigator.share;
-      navigator.share = function(data) {
-        reportViolation('share_attempt', 'User attempted to share content (possible screenshot)');
-        return originalShare.apply(this, arguments);
-      };
-    }
-  }
-
-  // Additional security measures
-  // Prevent drag and drop
-  document.addEventListener('dragstart', function(e) {
-    e.preventDefault();
-    reportViolation('drag', 'Drag operation detected');
-  });
-
-  // Prevent image saving
-  document.addEventListener('mousedown', function(e) {
-    if (e.target.tagName === 'IMG') {
-      reportViolation('image_save', 'Attempted to interact with image');
-    }
-  });
-
-  // Detect if developer tools are opened (basic detection)
-  let devtoolsOpen = false;
-  const threshold = 160;
-  setInterval(function() {
-    if (window.outerHeight - window.innerHeight > threshold || window.outerWidth - window.innerWidth > threshold) {
-      if (!devtoolsOpen) {
-        devtoolsOpen = true;
-        reportViolation('dev_tools', 'Developer tools detected');
-      }
-    } else {
-      devtoolsOpen = false;
-    }
-  }, 500);
-
-  // Prevent fullscreen exit (common after screenshots)
-  document.addEventListener('fullscreenchange', function() {
-    if (!document.fullscreenElement) {
-      reportViolation('fullscreen_exit', 'Exited fullscreen mode');
-    }
-  });
 
 })();
 </script>
