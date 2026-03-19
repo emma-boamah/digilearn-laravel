@@ -675,6 +675,7 @@ class QuizController extends Controller
 
                 $questions[] = [
                     'question' => $question['question'] ?? 'Question not available',
+                    'preamble' => $question['preamble'] ?? null,
                     'options' => $question['options'] ?? [],
                     'correct_answer' => $correctAnswer,
                     'user_answer' => $userAnswer,

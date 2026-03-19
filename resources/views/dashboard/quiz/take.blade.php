@@ -471,6 +471,31 @@
             border-color: var(--primary-red-hover);
         }
 
+        /* Preamble Styling */
+        .preamble-box {
+            background-color: #f8fafc;
+            border-left: 4px solid var(--secondary-blue);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border-radius: 0.5rem;
+            font-size: 0.95rem;
+            color: var(--gray-700);
+            line-height: 1.6;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .preamble-header {
+            font-weight: 700;
+            color: var(--secondary-blue);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
         /* Mobile Responsive */
         @media (max-width: 1024px) {
             .main-layout {
@@ -861,11 +886,14 @@
                 <span class="answer-instruction">Select the correct answer</span>
             </div>
             
-            <!-- Image Container - Only shown when question has image -->
-            <div class="question-image-container" id="questionImageContainer" style="display: none;">
-                <img id="questionImage" class="question-image" src="" alt="Question Image">
+            <!-- Preamble Section - Only shown when question has preamble -->
+            <div id="preambleContainer" class="preamble-box" style="display: none;">
+                <div class="preamble-header">
+                    <i class="fas fa-align-left"></i> Preamble / Context
+                </div>
+                <div id="preambleText"></div>
             </div>
-            
+
             <div class="question-text" id="questionText">
                 Identify the component highlighted in the image above.
             </div>
@@ -1026,22 +1054,34 @@
             // Update question label
             document.getElementById('questionLabel').textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
             
+            // Handle preamble
+            const preambleContainer = document.getElementById('preambleContainer');
+            const preambleText = document.getElementById('preambleText');
+            if (question && question.preamble) {
+                preambleContainer.style.display = 'block';
+                preambleText.innerHTML = question.preamble;
+            } else {
+                preambleContainer.style.display = 'none';
+            }
+
             // Handle question image
             const imageContainer = document.getElementById('questionImageContainer');
             const questionImage = document.getElementById('questionImage');
 
             if (question && question.image) {
                 // Show image container and set image source
-                imageContainer.style.display = 'block';
-                questionImage.src = question.image;
-                questionImage.alt = `Question ${currentQuestion + 1} Image`;
+                if (imageContainer) imageContainer.style.display = 'block';
+                if (questionImage) {
+                    questionImage.src = question.image;
+                    questionImage.alt = `Question ${currentQuestion + 1} Image`;
+                }
             } else {
                 // Hide image container if no image
-                imageContainer.style.display = 'none';
+                if (imageContainer) imageContainer.style.display = 'none';
             }
 
-            // Set question text
-            document.getElementById('questionText').textContent = question ? question.question : 'Question not available';
+            // Set question text (using innerHTML for rich text)
+            document.getElementById('questionText').innerHTML = question ? question.question : 'Question not available';
 
             // Render options
             const optionsContainer = document.getElementById('optionsContainer');

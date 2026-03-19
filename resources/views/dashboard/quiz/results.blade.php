@@ -796,6 +796,32 @@
             transition: all 0.3s ease;
         }
 
+        /* Preamble Styling for Results */
+        .preamble-box {
+            background-color: var(--gray-50);
+            border-left: 4px solid var(--primary-blue);
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: var(--gray-700);
+            line-height: 1.6;
+            border: 1px solid var(--gray-200);
+            border-left-width: 4px;
+        }
+
+        .preamble-header {
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+        }
+
         .modal-overlay.active {
             opacity: 1;
             visibility: visible;
@@ -1241,8 +1267,17 @@
                                         {{ $question['user_correct'] ? 'Correct' : ($isSkipped ? 'Skipped' : 'Incorrect') }}
                                     </span>
                                </div>
-                               
-                               <h3 class="question-text">{{ $question['question'] }}</h3>
+                                
+                                @if(!empty($question['preamble']))
+                                    <div class="preamble-box">
+                                        <div class="preamble-header">
+                                            <i class="fas fa-align-left"></i> Preamble / Context
+                                        </div>
+                                        <div class="preamble-text">{!! $question['preamble'] !!}</div>
+                                    </div>
+                                @endif
+
+                               <h3 class="question-text">{!! $question['question'] !!}</h3>
    
                                <div class="question-layout">
                                    @if($question['image'])
@@ -1260,7 +1295,7 @@
                                                 {{ $optIndex === $question['user_answer'] && !$question['user_correct'] ? 'incorrect' : '' }}
                                             ">
                                                <div class="option-label">{{ $labels[$optIndex] }}</div>
-                                               <span class="option-text">{{ $option }}</span>
+                                               <span class="option-text">{!! $option !!}</span>
                                                
                                                @if($optIndex == $question['correct_answer'])
                                                    <i class="fas fa-check-circle check-icon"></i>

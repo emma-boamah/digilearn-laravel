@@ -4447,6 +4447,17 @@ class AdminController extends Controller
             // Use the subject associated with the video
             $subject = Subject::find($video->subject_id);
 
+            // Handle quiz image uploads before creating the quiz record
+            if ($request->hasFile('question_images')) {
+                $quizData = $this->processQuizImageFiles($quizData, $request);
+                
+                // Also process any base64 images that might be present
+                $quizData = $this->processQuizImages($quizData, $request);
+            } else {
+                // If no files, still check for base64 images
+                $quizData = $this->processQuizImages($quizData, $request);
+            }
+
             $quizDataToCreate = [
                 'title' => 'Quiz for: ' . $video->title,
                 'subject_id' => $subject->id,
@@ -4463,11 +4474,6 @@ class AdminController extends Controller
             $categoryIds = $video->categories()->pluck('content_categories.id')->toArray();
             if (!empty($categoryIds)) {
                 $quiz->categories()->sync($categoryIds);
-            }
-
-            // Handle quiz image uploads
-            if ($request->hasFile('question_images')) {
-                $this->saveQuizImages($quizData, $request, $quiz->id);
             }
 
             // Update video's quiz_id for consistency
