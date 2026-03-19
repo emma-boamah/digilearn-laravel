@@ -25,6 +25,16 @@
         color: white;
     }
 
+    .revenue-bar-group:hover .revenue-tooltip {
+        display: block !important;
+    }
+
+    .revenue-bar-group:hover .revenue-bar {
+        background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%) !important;
+        transform: scaleY(1.02);
+        transform-origin: bottom;
+    }
+
     .sortable:hover {
         cursor: pointer;
         background-color: #f9fafb;
@@ -165,7 +175,7 @@
             </div>
         </div>
 
-        <!-- Revenue Trend Chart (Full Width) -->
+        <!-- Revenue Trend Chart (Full Width) - Pure CSS -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8" id="revenue-chart">
             <div class="flex items-center justify-between mb-6">
                 <div>
@@ -174,27 +184,89 @@
                 </div>
                 <div class="flex items-center space-x-4">
                     <div class="flex items-center space-x-2">
-                        <button
-                            class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors time-filter active"
-                            data-period="12M">12M</button>
-                        <button
-                            class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors time-filter"
-                            data-period="6M">6M</button>
-                        <button
-                            class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors time-filter"
-                            data-period="3M">3M</button>
-                        <button
-                            class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors time-filter"
-                            data-period="1M">1M</button>
+                        <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
+                            <span class="w-2 h-2 rounded-full bg-blue-500 mr-1"></span>Revenue
+                        </span>
+                        <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>Subscriptions
+                        </span>
                     </div>
                     <button class="text-gray-400 hover:text-gray-600 export-btn" title="Export data">
                         <i class="fas fa-download"></i>
                     </button>
                 </div>
             </div>
-            <div class="relative">
-                <canvas id="revenueChart" height="450"
-                    data-revenue-trends="{{ json_encode($revenueTrends ?? []) }}"></canvas>
+
+            @php
+                $trends = $revenueTrends ?? [];
+                $maxRevenue = collect($trends)->max('revenue') ?: 1;
+                $maxSubs = collect($trends)->max('subscriptions') ?: 1;
+            @endphp
+
+            <div style="display: flex; align-items: flex-end; gap: 6px; height: 320px; padding: 20px 0 0 0; border-bottom: 2px solid #e5e7eb; position: relative;">
+                {{-- Y-axis labels --}}
+                <div style="position: absolute; left: -5px; top: 20px; bottom: 0; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none;">
+                    <span style="font-size: 10px; color: #9ca3af;">GH₵{{ number_format($maxRevenue, 0) }}</span>
+                    <span style="font-size: 10px; color: #9ca3af;">GH₵{{ number_format($maxRevenue / 2, 0) }}</span>
+                    <span style="font-size: 10px; color: #9ca3af;">GH₵0</span>
+                </div>
+
+                {{-- Grid lines --}}
+                <div style="position: absolute; left: 50px; right: 0; top: 20px; height: 1px; background: #f3f4f6;"></div>
+                <div style="position: absolute; left: 50px; right: 0; top: 50%; height: 1px; background: #f3f4f6;"></div>
+
+                {{-- Bars --}}
+                <div style="display: flex; align-items: flex-end; gap: 6px; flex: 1; margin-left: 55px; height: 100%;">
+                    @foreach($trends as $trend)
+                        @php
+                            $barHeight = $maxRevenue > 0 ? ($trend['revenue'] / $maxRevenue) * 100 : 0;
+                            $barHeight = max($barHeight, 2); // min height for visibility
+                            $subsHeight = $maxSubs > 0 ? ($trend['subscriptions'] / $maxSubs) * 80 : 0;
+                            $monthShort = \Illuminate\Support\Str::before($trend['month'], ' ');
+                        @endphp
+                        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; position: relative;"
+                             class="revenue-bar-group">
+                            {{-- Tooltip --}}
+                            <div class="revenue-tooltip" style="display: none; position: absolute; bottom: calc({{ $barHeight }}% + 10px); left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 8px 12px; border-radius: 8px; font-size: 11px; white-space: nowrap; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.15);">
+                                <div style="font-weight: 600; margin-bottom: 2px;">{{ $trend['month'] }}</div>
+                                <div><span style="color: #93c5fd;">Revenue:</span> GH₵{{ number_format($trend['revenue'], 0) }}</div>
+                                <div><span style="color: #6ee7b7;">Subs:</span> {{ $trend['subscriptions'] }}</div>
+                                <div style="position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%) rotate(45deg); width: 8px; height: 8px; background: #1e293b;"></div>
+                            </div>
+                            {{-- Subscription indicator dot --}}
+                            @if($trend['subscriptions'] > 0)
+                            <div style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; margin-bottom: 4px; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);"></div>
+                            @endif
+                            {{-- Revenue bar --}}
+                            <div style="width: 100%; max-width: 40px; height: {{ $barHeight }}%; background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%); border-radius: 6px 6px 0 0; transition: all 0.2s ease; cursor: pointer; position: relative;"
+                                 class="revenue-bar"></div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- X-axis labels --}}
+            <div style="display: flex; gap: 6px; margin-left: 55px; margin-top: 8px;">
+                @foreach($trends as $trend)
+                    @php $monthShort = \Illuminate\Support\Str::before($trend['month'], ' '); @endphp
+                    <div style="flex: 1; text-align: center; font-size: 11px; color: #6b7280; font-weight: 500;">{{ $monthShort }}</div>
+                @endforeach
+            </div>
+
+            {{-- Summary row --}}
+            <div style="display: flex; gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #f3f4f6;">
+                <div style="flex: 1; text-align: center; padding: 8px; background: #eff6ff; border-radius: 8px;">
+                    <div style="font-size: 11px; color: #6b7280; font-weight: 500;">Total Revenue</div>
+                    <div style="font-size: 18px; font-weight: 700; color: #1e40af;">GH₵{{ number_format(collect($trends)->sum('revenue'), 0) }}</div>
+                </div>
+                <div style="flex: 1; text-align: center; padding: 8px; background: #ecfdf5; border-radius: 8px;">
+                    <div style="font-size: 11px; color: #6b7280; font-weight: 500;">Total Subscriptions</div>
+                    <div style="font-size: 18px; font-weight: 700; color: #065f46;">{{ number_format(collect($trends)->sum('subscriptions')) }}</div>
+                </div>
+                <div style="flex: 1; text-align: center; padding: 8px; background: #faf5ff; border-radius: 8px;">
+                    <div style="font-size: 11px; color: #6b7280; font-weight: 500;">Avg Monthly</div>
+                    <div style="font-size: 18px; font-weight: 700; color: #7e22ce;">GH₵{{ number_format(collect($trends)->avg('revenue'), 0) }}</div>
+                </div>
             </div>
         </div>
 
@@ -919,94 +991,7 @@
 
     // Initialize all charts
     function initializeCharts() {
-        initializeRevenueChart();
         initializeSubscriptionChart();
-    }
-
-    // Initialize revenue chart
-    function initializeRevenueChart() {
-        const canvas = document.getElementById('revenueChart');
-        if (!canvas) return;
-
-        // Get data from data attribute or use sample data
-        let revenueData = [];
-        try {
-            const dataAttr = canvas.getAttribute('data-revenue-trends');
-            revenueData = dataAttr ? JSON.parse(dataAttr) : [];
-        } catch (e) {
-            revenueData = [];
-        }
-
-        const labels = revenueData.length > 0 ? revenueData.map(item => item.month) : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-        const revenue = revenueData.length > 0 ? revenueData.map(item => item.revenue) : [8500, 9200, 8800, 9600, 9100, 9800];
-        const subscriptions = revenueData.length > 0 ? revenueData.map(item => item.subscriptions) : [45, 48, 42, 52, 49, 55];
-
-        new Chart(canvas, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Revenue (GH₵)',
-                    data: revenue,
-                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
-                    borderColor: 'rgba(59, 130, 246, 1)',
-                    borderWidth: 1,
-                    yAxisID: 'y'
-                }, {
-                    label: 'New Subscriptions',
-                    data: subscriptions,
-                    type: 'line',
-                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
-                    borderColor: 'rgba(16, 185, 129, 1)',
-                    borderWidth: 2,
-                    yAxisID: 'y1'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false,
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function (context) {
-                                if (context.datasetIndex === 0) {
-                                    return 'Revenue: GH₵' + context.parsed.y.toLocaleString();
-                                } else {
-                                    return 'New Subscriptions: ' + context.parsed.y;
-                                }
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        type: 'linear',
-                        display: true,
-                        position: 'left',
-                        title: {
-                            display: true,
-                            text: 'Revenue (GH₵)'
-                        }
-                    },
-                    y1: {
-                        type: 'linear',
-                        display: true,
-                        position: 'right',
-                        title: {
-                            display: true,
-                            text: 'Subscriptions'
-                        },
-                        grid: {
-                            drawOnChartArea: false,
-                        },
-                    }
-                }
-            }
-        });
     }
 
     // Initialize subscription distribution chart

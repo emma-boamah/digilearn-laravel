@@ -976,12 +976,7 @@ class AdminController extends Controller
      */
     private function getUserActivities($userId)
     {
-        // This would typically come from an activity log table
-        return [
-            ['action' => 'login', 'description' => 'User logged in', 'ip' => '192.168.1.1', 'created_at' => now()->subHours(2)],
-            ['action' => 'lesson_view', 'description' => 'Viewed lesson: Basic Mathematics', 'ip' => '192.168.1.1', 'created_at' => now()->subHours(3)],
-            ['action' => 'profile_update', 'description' => 'Updated profile information', 'ip' => '192.168.1.1', 'created_at' => now()->subDays(1)],
-        ];
+        return \App\Services\UserActivityService::getActivitiesByUser($userId, 10);
     }
 
     /**
@@ -989,13 +984,52 @@ class AdminController extends Controller
      */
     private function getUserLessonProgress($userId)
     {
-        // This would typically come from a lesson progress table
+        $allProgress = \App\Models\UserProgress::where('user_id', $userId)->get();
+        
+        if ($allProgress->isEmpty()) {
+            return [
+                'completed_lessons' => 0,
+                'total_lessons' => 0,
+                'completion_rate' => 0,
+                'favorite_subject' => 'N/A',
+                'total_watch_time' => '0 minutes'
+            ];
+        }
+
+        $totalCompleted = $allProgress->sum('completed_lessons');
+        $totalLessonsInLevels = $allProgress->sum('total_lessons_in_level');
+        $totalSeconds = $allProgress->sum('total_time_spent_seconds');
+        
+        // Use weighted average for completion rate or just the overall average
+        $avgCompletionRate = $totalLessonsInLevels > 0 
+            ? round(($totalCompleted / $totalLessonsInLevels) * 100, 1)
+            : $allProgress->avg('completion_percentage');
+
+        // Find favorite subject from the most active progress record
+        $mostActive = $allProgress->sortByDesc('completed_lessons')->first();
+        $favoriteSubject = $mostActive->metadata['favorite_subject'] ?? 'N/A';
+        
+        // If still N/A, try to guess from metadata of other records
+        if ($favoriteSubject === 'N/A') {
+            foreach ($allProgress as $p) {
+                if (isset($p->metadata['favorite_subject']) && $p->metadata['favorite_subject'] !== 'N/A') {
+                    $favoriteSubject = $p->metadata['favorite_subject'];
+                    break;
+                }
+            }
+        }
+
+        // Calculate watch time from seconds
+        $hours = floor($totalSeconds / 3600);
+        $minutes = floor(($totalSeconds % 3600) / 60);
+        $watchTime = $hours > 0 ? "{$hours} hours {$minutes} minutes" : "{$minutes} minutes";
+
         return [
-            'completed_lessons' => 15,
-            'total_lessons' => 50,
-            'completion_rate' => 30,
-            'favorite_subject' => 'Mathematics',
-            'total_watch_time' => '5 hours 30 minutes'
+            'completed_lessons' => $totalCompleted,
+            'total_lessons' => $totalLessonsInLevels,
+            'completion_rate' => round($avgCompletionRate, 1),
+            'favorite_subject' => $favoriteSubject,
+            'total_watch_time' => $watchTime
         ];
     }
 
