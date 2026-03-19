@@ -2454,13 +2454,14 @@
     </section> -->
 
         <!-- Pricing Plans -->
-        <section class="pricing-section bg-white" aria-labelledby="pricing-title" itemscope itemtype="https://schema.org/Service">
+        <!-- Pricing Plans -->
+        <section class="pricing-section bg-white" aria-labelledby="pricing-title">
             <div class="container">
                 <!-- Pricing Header -->
                 <header class="pricing-header-new">
                     <div class="pricing-header-content-new">
                         <div class="pricing-text-center">
-                            <h2 id="pricing-title" class="pricing-main-title" itemprop="name">Choose Your Learning Plan</h2>
+                            <h2 id="pricing-title" class="pricing-main-title">Choose Your Learning Plan</h2>
                             <p class="pricing-subtitle">Select your membership plan tailored to your needs.<br>customize your subscription for a seamless fit.</p>
                             <div class="pricing-monthly-section">
                                 <button class="monthly-btn" aria-label="Switch to monthly billing">Annually</button>
@@ -2476,38 +2477,31 @@
                 <!-- Pricing Cards -->
                 <div class="pricing-grid {{ $pricingPlans->count() === 1 ? 'single-card' : '' }}" @if($pricingPlans->count() > 0) role="list" aria-label="Available pricing plans" @endif>
                     @forelse($pricingPlans as $plan)
-                        <article class="pricing-card" role="listitem" itemscope itemtype="https://schema.org/Product">
-                            <meta itemprop="name" content="{{ $plan->name }} Plan">
-                            <meta itemprop="description" content="{{ $plan->description ?? 'Comprehensive learning package with access to all platform features.' }}">
+                        <article class="pricing-card" role="listitem">
                             <div class="pricing-badge {{ strtolower(str_replace(' ', '-', $plan->name)) }}">{{ $plan->name }}</div>
                             <div class="pricing-body">
                                 <p class="pricing-description">{{ $plan->description ?? 'Comprehensive learning package with access to all platform features.' }}</p>
-                                <div class="pricing-price-section" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
-                                    <meta itemprop="priceCurrency" content="{{ $plan->currency }}">
-                                    <meta itemprop="price" content="{{ $plan->price }}">
+                                <div class="pricing-price-section">
                                     <span class="price">{{ $plan->currency }} {{ number_format($plan->price, 2) }}</span>
                                 </div>
-                                <ul class="pricing-features" itemscope itemtype="https://schema.org/ItemList">
-                                    {{-- The issue is in this nested conditional logic --}}
+                                <ul class="pricing-features">
                                     @if(!empty($plan->features) && is_array($plan->features))
                                         @foreach($plan->features as $index => $feature)
-                                            <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
-                                                <meta itemprop="position" content="{{ $index + 1 }}">
+                                            <li>
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                                                     <polyline points="22 4 12 14.01 9 11.01"></polyline>
                                                 </svg>
-                                                <span itemprop="name">{{ $feature }}</span>
+                                                <span>{{ $feature }}</span>
                                             </li>
                                         @endforeach
                                     @else
-                                        <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
-                                            <meta itemprop="position" content="1">
+                                        <li>
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                                                 <polyline points="22 4 12 14.01 9 11.01"></polyline>
                                             </svg>
-                                            <span itemprop="name">Access to {{ $plan->name }} features</span>
+                                            <span>Access to {{ $plan->name }} features</span>
                                         </li>
                                     @endif
                                 </ul>

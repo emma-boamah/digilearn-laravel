@@ -604,6 +604,174 @@
             max-height: 50vh;
         }
     }
+
+    /* Grade Picker Dropdown */
+    .grade-picker-dropdown {
+        position: relative;
+    }
+
+    .grade-picker-trigger {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 10px 14px;
+        background: #fff;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #6b7280;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .grade-picker-trigger:hover {
+        border-color: #93a3f8;
+    }
+
+    .grade-picker-trigger.has-value {
+        color: #1f2937;
+        border-color: #4f46e5;
+        background: #f5f3ff;
+    }
+
+    .grade-picker-arrow {
+        transition: transform 0.2s ease;
+        flex-shrink: 0;
+        color: #9ca3af;
+    }
+
+    .grade-picker-dropdown.open .grade-picker-arrow {
+        transform: rotate(180deg);
+    }
+
+    .grade-picker-panel {
+        display: none;
+        margin-top: 6px;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        animation: gradePickerSlideDown 0.15s ease-out;
+    }
+
+    .grade-picker-dropdown.open .grade-picker-panel {
+        display: block;
+    }
+
+    @keyframes gradePickerSlideDown {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Grade Picker Grid */
+    .grade-picker-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0;
+    }
+
+    .grade-picker-column {
+        border-right: 1px solid #f0f0f0;
+    }
+
+    .grade-picker-column:last-child {
+        border-right: none;
+    }
+
+    .grade-picker-header {
+        padding: 14px 16px;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .grade-picker-header::before {
+        content: '';
+        display: block;
+        width: 4px;
+        height: 20px;
+        border-radius: 2px;
+        background: #a0aec0;
+        flex-shrink: 0;
+    }
+
+    .grade-picker-column:nth-child(1) .grade-picker-header::before { background: #7c8dff; }
+    .grade-picker-column:nth-child(2) .grade-picker-header::before { background: #818cf8; }
+    .grade-picker-column:nth-child(3) .grade-picker-header::before { background: #6366f1; }
+    .grade-picker-column:nth-child(4) .grade-picker-header::before { background: #4338ca; }
+
+    .grade-picker-header-text {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #374151;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+    .grade-picker-items {
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-height: 120px;
+    }
+
+    .grade-picker-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 14px;
+        border-radius: 8px;
+        border: 2px solid transparent;
+        background: transparent;
+        color: #374151;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        text-align: left;
+        width: 100%;
+    }
+
+    .grade-picker-item:hover {
+        background: #f0f4ff;
+        color: #4f46e5;
+    }
+
+    .grade-picker-item.selected {
+        background: #4f46e5;
+        color: #fff;
+        border-color: #4f46e5;
+        box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+    }
+
+    .grade-picker-check {
+        display: none;
+        flex-shrink: 0;
+    }
+
+    .grade-picker-item.selected .grade-picker-check {
+        display: block;
+        color: #fff;
+    }
+
+    /* Grade picker responsive */
+    @media (max-width: 640px) {
+        .grade-picker-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .grade-picker-column:nth-child(2) {
+            border-right: none;
+        }
+        .grade-picker-column:nth-child(1),
+        .grade-picker-column:nth-child(2) {
+            border-bottom: 1px solid #f0f0f0;
+        }
+    }
 </style>
 @endpush
 
@@ -1121,18 +1289,40 @@
 
                 <!-- Grade Level -->
                 <div class="mb-4">
-                    <label for="grade_level" class="block text-sm font-medium text-gray-700 mb-2">Grade Level</label>
-                    <select id="grade_level"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">Select Grade Level</option>
-                        @foreach($levelGroups as $group)
-                            <optgroup label="{{ $group->name }}">
-                                @foreach($group->levels as $level)
-                                    <option value="{{ $level->title }}">{{ $level->title }}</option>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Grade Level</label>
+                    <input type="hidden" id="grade_level" value="">
+                    <div class="grade-picker-dropdown" id="gradePickerDropdown">
+                        <button type="button" class="grade-picker-trigger" id="gradePickerTrigger" onclick="toggleGradePicker()">
+                            <span class="grade-picker-trigger-text" id="gradePickerTriggerText">Select Grade Level</span>
+                            <svg class="grade-picker-arrow" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </button>
+                        <div class="grade-picker-panel" id="gradePickerPanel">
+                            <div class="grade-picker-grid">
+                                @foreach($levelGroups as $group)
+                                    <div class="grade-picker-column">
+                                        <div class="grade-picker-header">
+                                            <span class="grade-picker-header-text">{{ strtoupper($group->name) }}</span>
+                                        </div>
+                                        <div class="grade-picker-items">
+                                            @foreach($group->levels as $level)
+                                                <button type="button"
+                                                        class="grade-picker-item"
+                                                        data-grade="{{ $level->title }}"
+                                                        onclick="selectGrade(this, '{{ $level->title }}')">
+                                                    <span class="grade-picker-label">{{ $level->title }}</span>
+                                                    <svg class="grade-picker-check" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                                    </svg>
+                                                </button>
+                                            @endforeach
+                                        </div>
+                                    </div>
                                 @endforeach
-                            </optgroup>
-                        @endforeach
-                    </select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Categories -->
@@ -1417,6 +1607,37 @@
 </div>
 
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    // Grade picker toggle
+    function toggleGradePicker() {
+        const dropdown = document.getElementById('gradePickerDropdown');
+        dropdown.classList.toggle('open');
+    }
+
+    // Grade picker selection handler
+    function selectGrade(el, gradeValue) {
+        // Deselect all
+        document.querySelectorAll('.grade-picker-item.selected').forEach(item => item.classList.remove('selected'));
+        // Select clicked
+        el.classList.add('selected');
+        // Update hidden input
+        document.getElementById('grade_level').value = gradeValue;
+        // Update trigger text
+        const trigger = document.getElementById('gradePickerTrigger');
+        const triggerText = document.getElementById('gradePickerTriggerText');
+        triggerText.textContent = gradeValue;
+        trigger.classList.add('has-value');
+        // Close dropdown
+        document.getElementById('gradePickerDropdown').classList.remove('open');
+    }
+
+    // Close grade picker when clicking outside
+    document.addEventListener('click', function(e) {
+        const dropdown = document.getElementById('gradePickerDropdown');
+        if (dropdown && !dropdown.contains(e.target)) {
+            dropdown.classList.remove('open');
+        }
+    });
+
     // Multi-step upload wizard and table functionality
     document.addEventListener('DOMContentLoaded', function() {
         // Table functionality
@@ -1937,6 +2158,14 @@
             if (subjectId) subjectId.value = '';
             if (description) description.value = '';
             if (gradeLevel) gradeLevel.value = '';
+            // Clear grade picker visual selection and trigger text
+            document.querySelectorAll('.grade-picker-item.selected').forEach(el => el.classList.remove('selected'));
+            const gradePickerTrigger = document.getElementById('gradePickerTrigger');
+            const gradePickerTriggerText = document.getElementById('gradePickerTriggerText');
+            if (gradePickerTrigger) gradePickerTrigger.classList.remove('has-value');
+            if (gradePickerTriggerText) gradePickerTriggerText.textContent = 'Select Grade Level';
+            const gradePickerDropdown = document.getElementById('gradePickerDropdown');
+            if (gradePickerDropdown) gradePickerDropdown.classList.remove('open');
 
             // Clear category checkboxes
             document.querySelectorAll('input[name="upload_category_ids[]"]').forEach(cb => cb.checked = false);
