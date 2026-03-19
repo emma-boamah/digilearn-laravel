@@ -8,7 +8,7 @@
     <title>@yield('title', 'Admin Dashboard') - ShoutoutGH</title>
 
     <!-- Chart.js for analytics -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
 
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
