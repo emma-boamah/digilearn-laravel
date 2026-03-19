@@ -772,6 +772,126 @@
             border-bottom: 1px solid #f0f0f0;
         }
     }
+    /* Quiz Editor Enhancements */
+    .rich-text-toolbar {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 8px;
+        background: #f8fafc;
+        padding: 4px;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        width: fit-content;
+    }
+
+    .toolbar-tool {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        background: white;
+        border: 1px solid #e2e8f0;
+    }
+
+    .toolbar-tool:hover {
+        background: #f1f5f9;
+        color: #2563eb;
+    }
+
+    .toolbar-tool.active {
+        background: #e0e7ff;
+        color: #4338ca;
+        border-color: #c7d2fe;
+    }
+
+    .rich-text-editor {
+        min-height: 48px;
+        padding: 10px 14px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        background: white;
+        font-size: 0.9375rem;
+        line-height: 1.5;
+        color: #1e293b;
+        outline: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .rich-text-editor:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .rich-text-editor[placeholder]:empty:before {
+        content: attr(placeholder);
+        color: #94a3b8;
+        cursor: text;
+    }
+
+    .preamble-section {
+        background: #f0f4ff;
+        border: 1px solid #dbeafe;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .preamble-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #4f46e5;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .add-preamble-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: #4f46e5;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.15s ease;
+        margin-bottom: 12px;
+    }
+
+    .add-preamble-btn:hover {
+        background: #f5f3ff;
+        text-decoration: underline;
+    }
+
+    /* Premium Question Card */
+    .question-item {
+        background: white !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+        padding: 24px !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+    }
+
+    .question-item:hover {
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 </style>
 @endpush
 
@@ -2679,6 +2799,7 @@
                 id: questionId,
                 type: type,
                 question: '',
+                preamble: null, // New field for optional context
                 options: type === 'mcq' ? ['', '', '', ''] : null,
                 correct_answer: type === 'mcq' ? 0 : '',
                 points: 1,
@@ -2759,153 +2880,203 @@
 
         function createQuestionElement(question) {
             const div = document.createElement('div');
-            div.className = 'question-item bg-white border border-gray-200 rounded-lg p-4 mb-4';
+            div.className = 'question-item bg-white border border-gray-200 rounded-lg p-6 mb-6';
             div.dataset.questionId = question.id;
 
-            if (question.type === 'mcq') {
-                div.innerHTML = `
-                    <div class="flex justify-between items-center mb-4">
-                        <h4 class="font-medium text-gray-900">Multiple Choice Question</h4>
-                        <button type="button" class="text-red-600 hover:text-red-800 remove-question">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
+            const questionHeading = question.type === 'mcq' ? 'Multiple Choice Question' : 'Essay Question';
 
-                    <!-- Image Upload Section -->
-                    <div class="mb-4 question-image-section">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Add Question Image (Optional)</label>
-                        <div class="space-y-4">
-                            <!-- Image Upload Button -->
-                            <div id="questionImageUpload_${question.id}" class="question-image-upload ${question.image ? 'hidden' : ''}">
-                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer bg-gray-50 question-image-upload-area">
-                                    <i class="fas fa-image text-3xl text-gray-400 mb-3"></i>
-                                    <p class="text-gray-600 font-medium mb-1">Click to upload image</p>
-                                    <p class="text-sm text-gray-500">PNG, JPG, or WEBP up to 5MB</p>
-                                    <input type="file" class="hidden question-image-input" accept=".png,.jpg,.jpeg,.webp">
+            div.innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h4 class="font-bold text-gray-900 flex items-center gap-2">
+                        <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs">
+                            ${uploadData.quiz.questions.indexOf(question) + 1}
+                        </span>
+                        ${questionHeading}
+                    </h4>
+                    <button type="button" class="text-gray-400 hover:text-red-600 transition-colors remove-question" title="Remove Question">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+
+                <!-- Preamble Section (Optional) -->
+                <div class="preamble-container mb-4">
+                    <div id="preambleSection_${question.id}" class="preamble-section ${question.preamble ? '' : 'hidden'}">
+                        <div class="preamble-label">
+                            <i class="fas fa-align-left"></i> Preamble / Context
+                        </div>
+                        <div class="rich-text-editor preamble-text" contenteditable="true" 
+                             placeholder="Enter optional preamble or reading passage here..."
+                             aria-label="Preamble text">${question.preamble || ''}</div>
+                    </div>
+                    <button type="button" class="add-preamble-btn ${question.preamble ? 'hidden' : ''}" 
+                            id="addPreambleBtn_${question.id}">
+                        <i class="fas fa-plus"></i> Add Preamble
+                    </button>
+                </div>
+
+                <!-- Image Upload Section -->
+                <div class="mb-6 question-image-section">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Question Illustration (Optional)</label>
+                    <div class="space-y-4">
+                        <!-- Image Upload Button -->
+                        <div id="questionImageUpload_${question.id}" class="question-image-upload ${question.image ? 'hidden' : ''}">
+                            <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors cursor-pointer bg-gray-50 question-image-upload-area">
+                                <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                <p class="text-gray-600 font-semibold mb-1">Click to upload image</p>
+                                <p class="text-xs text-gray-500 text-uppercase">PNG, JPG, or WEBP up to 5MB</p>
+                                <input type="file" class="hidden question-image-input" accept=".png,.jpg,.jpeg,.webp">
+                            </div>
+                        </div>
+
+                        <!-- Image Preview -->
+                        <div id="questionImagePreview_${question.id}" class="question-image-preview ${question.image ? '' : 'hidden'}">
+                            <div class="relative border border-gray-200 rounded-xl overflow-hidden bg-gray-50 p-2">
+                                <img src="${question.image || ''}" alt="Question image" class="w-full h-auto max-h-64 object-contain rounded-lg question-preview-img">
+                                <div class="absolute top-4 right-4 flex space-x-2">
+                                    <button type="button" class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-50 transition-colors remove-question-image" title="Remove image">
+                                        <i class="fas fa-trash-alt text-red-600"></i>
+                                    </button>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
-                            <!-- Image Preview -->
-                            <div id="questionImagePreview_${question.id}" class="question-image-preview ${question.image ? '' : 'hidden'}">
-                                <div class="relative border border-gray-200 rounded-lg overflow-hidden bg-gray-100">
-                                    <img src="${question.image || ''}" alt="Question image" class="w-full h-auto max-h-48 object-contain question-preview-img">
-                                    <div class="absolute top-2 right-2 flex space-x-2">
-                                        <button type="button" class="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 remove-question-image" title="Remove image">
-                                            <i class="fas fa-trash text-red-600 text-sm"></i>
-                                        </button>
+                <!-- Question Text -->
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Question Text</label>
+                    <div class="rich-text-toolbar">
+                        <button type="button" class="toolbar-tool" data-command="bold" title="Bold"><i class="fas fa-bold"></i></button>
+                        <button type="button" class="toolbar-tool" data-command="italic" title="Italic"><i class="fas fa-italic"></i></button>
+                        <button type="button" class="toolbar-tool" data-command="underline" title="Underline"><i class="fas fa-underline"></i></button>
+                    </div>
+                    <div class="rich-text-editor question-text" contenteditable="true" 
+                         placeholder="Type your question here..."
+                         aria-label="Question text">${question.question}</div>
+                </div>
+
+                ${question.type === 'mcq' ? `
+                    <!-- MCQ Options -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-semibold text-gray-700 mb-4">Answer Options</label>
+                        <div class="space-y-4">
+                            ${question.options.map((option, index) => `
+                                <div class="flex items-start gap-4 p-4 border border-gray-100 rounded-xl bg-gray-50 group transition-all hover:bg-white hover:border-blue-200">
+                                    <div class="mt-2">
+                                        <input type="radio" name="correct_${question.id}" value="${index}"
+                                            class="h-5 w-5 text-blue-600 focus:ring-blue-500 correct-answer" ${question.correct_answer === index ? 'checked' : ''}>
+                                    </div>
+                                    <div class="flex-1">
+                                         <div class="rich-text-editor option-text" contenteditable="true" 
+                                             placeholder="Option ${String.fromCharCode(65 + index)}"
+                                             aria-label="Option ${index + 1}">${option}</div>
                                     </div>
                                 </div>
-                                <p class="text-xs text-gray-500 mt-1 text-center">Click the trash icon to remove the image</p>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : `
+                    <!-- Essay Sample Answer -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Reference Answer (Sample)</label>
+                         <div class="rich-text-editor correct-answer" contenteditable="true" 
+                             placeholder="Describe the expected answer for grading reference..."
+                             aria-label="Sample answer">${question.correct_answer}</div>
+                    </div>
+                `}
+
+                <div class="flex items-center justify-between border-t pt-6">
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm font-semibold text-gray-700">Points:</label>
+                            <div class="relative w-24">
+                                <input type="number" class="w-full pl-3 pr-8 py-2 border border-gray-300 rounded-lg question-points focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    value="${question.points}" min="1" max="100">
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">pts</span>
                             </div>
                         </div>
                     </div>
+                </div>
+            `;
 
-                    <!-- Question Text -->
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Question</label>
-                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg question-text focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter your question..." value="${question.question}">
-                    </div>
+            // Setup rich text editor behaviors
+            const editors = div.querySelectorAll('.rich-text-editor');
+            const toolbars = div.querySelectorAll('.rich-text-toolbar');
 
-                    <!-- Options -->
-                    <div class="space-y-3 mb-4">
-                        ${question.options.map((option, index) => `
-                            <div class="flex items-center space-x-3">
-                                <input type="radio" name="correct_${question.id}" value="${index}"
-                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 correct-answer" ${question.correct_answer === index ? 'checked' : ''}>
-                                <input type="text" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg option-text focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Option ${String.fromCharCode(65 + index)}" value="${option}">
-                            </div>
-                        `).join('')}
-                    </div>
+            editors.forEach(editor => {
+                editor.addEventListener('input', (e) => {
+                    if (editor.classList.contains('question-text')) {
+                        question.question = editor.innerHTML;
+                    } else if (editor.classList.contains('preamble-text')) {
+                        question.preamble = editor.innerHTML;
+                    } else if (editor.classList.contains('option-text')) {
+                        const allOptions = div.querySelectorAll('.option-text');
+                        const index = Array.from(allOptions).indexOf(editor);
+                        if (index !== -1) question.options[index] = editor.innerHTML;
+                    } else if (editor.classList.contains('correct-answer')) {
+                        question.correct_answer = editor.innerHTML;
+                    }
+                });
 
-                    <!-- Points -->
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <label class="mr-2 text-sm font-medium text-gray-700">Points:</label>
-                            <input type="number" class="w-20 px-2 py-1 border border-gray-300 rounded question-points focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                value="${question.points}" min="1" max="10">
-                        </div>
-                    </div>
-                `;
-            } else {
-                div.innerHTML = `
-                    <div class="flex justify-between items-center mb-4">
-                        <h4 class="font-medium text-gray-900">Essay Question</h4>
-                        <button type="button" class="text-red-600 hover:text-red-800 remove-question">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
+                // Prevent pasting formatted text
+                editor.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+                    document.execCommand('insertHTML', false, text);
+                });
+            });
 
-                    <!-- Image Upload Section -->
-                    <div class="mb-4 question-image-section">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Add Question Image (Optional)</label>
-                        <div class="space-y-4">
-                            <!-- Image Upload Button -->
-                            <div id="questionImageUpload_${question.id}" class="question-image-upload ${question.image ? 'hidden' : ''}">
-                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer bg-gray-50 question-image-upload-area">
-                                    <i class="fas fa-image text-3xl text-gray-400 mb-3"></i>
-                                    <p class="text-gray-600 font-medium mb-1">Click to upload image</p>
-                                    <p class="text-sm text-gray-500">PNG, JPG, or WEBP up to 5MB</p>
-                                    <input type="file" class="hidden question-image-input" accept=".png,.jpg,.jpeg,.webp">
-                                </div>
-                            </div>
+            // Setup toolbar tools
+            div.querySelectorAll('.toolbar-tool').forEach(tool => {
+                tool.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const command = tool.dataset.command;
+                    document.execCommand(command, false, null);
+                    tool.classList.toggle('active', document.queryCommandState(command));
+                    
+                    // Focus back to the active editor if needed
+                    const container = tool.closest('.mb-6');
+                    const editor = container.querySelector('.rich-text-editor');
+                    if (editor) editor.focus();
+                });
+            });
 
-                            <!-- Image Preview -->
-                            <div id="questionImagePreview_${question.id}" class="question-image-preview ${question.image ? '' : 'hidden'}">
-                                <div class="relative border border-gray-200 rounded-lg overflow-hidden bg-gray-100">
-                                    <img src="${question.image || ''}" alt="Question image" class="w-full h-auto max-h-48 object-contain question-preview-img">
-                                    <div class="absolute top-2 right-2 flex space-x-2">
-                                        <button type="button" class="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-50 remove-question-image" title="Remove image">
-                                            <i class="fas fa-trash text-red-600 text-sm"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <p class="text-xs text-gray-500 mt-1 text-center">Click the trash icon to remove the image</p>
-                            </div>
-                        </div>
-                    </div>
+            // Toggle active state based on selection
+            div.addEventListener('keyup', () => updateToolbarState(div));
+            div.addEventListener('mouseup', () => updateToolbarState(div));
 
-                    <!-- Question Text -->
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Question</label>
-                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg question-text focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter your essay question..." value="${question.question}">
-                    </div>
-
-                    <!-- Sample Answer -->
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Sample Answer (for reference)</label>
-                        <textarea class="w-full px-3 py-2 border border-gray-300 rounded-lg correct-answer focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3"
-                            placeholder="Enter sample answer...">${question.correct_answer}</textarea>
-                    </div>
-
-                    <!-- Points -->
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <label class="mr-2 text-sm font-medium text-gray-700">Points:</label>
-                            <input type="number" class="w-20 px-2 py-1 border border-gray-300 rounded question-points focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                value="${question.points}" min="1" max="10">
-                        </div>
-                    </div>
-                `;
+            function updateToolbarState(container) {
+                container.querySelectorAll('.toolbar-tool').forEach(tool => {
+                    const command = tool.dataset.command;
+                    tool.classList.toggle('active', document.queryCommandState(command));
+                });
             }
 
-            // Add existing event listeners (remove question, text changes, etc.)
+            // Preamble toggle
+            const addPreambleBtn = div.querySelector(`#addPreambleBtn_${question.id}`);
+            const preambleSection = div.querySelector(`#preambleSection_${question.id}`);
+            if (addPreambleBtn && preambleSection) {
+                addPreambleBtn.addEventListener('click', () => {
+                    preambleSection.classList.remove('hidden');
+                    addPreambleBtn.classList.add('hidden');
+                    const editor = preambleSection.querySelector('.rich-text-editor');
+                    if (editor) editor.focus();
+                });
+            }
+
+            // Standard event listeners
             const removeBtn = div.querySelector('.remove-question');
-            const questionText = div.querySelector('.question-text');
             const questionPoints = div.querySelector('.question-points');
 
             if (removeBtn) {
                 removeBtn.addEventListener('click', () => {
                     uploadData.quiz.questions = uploadData.quiz.questions.filter(q => q.id !== question.id);
                     div.remove();
-                });
-            }
-
-            if (questionText) {
-                questionText.addEventListener('input', (e) => {
-                    question.question = e.target.value;
+                    // Update question numbers
+                    document.querySelectorAll('.question-item').forEach((qDiv, idx) => {
+                        const numSpan = qDiv.querySelector('.bg-blue-100');
+                        if (numSpan) numSpan.textContent = idx + 1;
+                    });
                 });
             }
 
@@ -2915,35 +3086,16 @@
                 });
             }
 
-            // Add image upload functionality
+            // Image upload handling
             setupQuestionImageUpload(div, question);
 
             if (question.type === 'mcq') {
-                const optionTexts = div.querySelectorAll('.option-text');
                 const correctAnswers = div.querySelectorAll('.correct-answer');
-
-                optionTexts.forEach((input, index) => {
-                    if (input) {
-                        input.addEventListener('input', (e) => {
-                            question.options[index] = e.target.value;
-                        });
-                    }
-                });
-
                 correctAnswers.forEach((radio, index) => {
-                    if (radio) {
-                        radio.addEventListener('change', () => {
-                            question.correct_answer = index;
-                        });
-                    }
-                });
-            } else {
-                const correctAnswer = div.querySelector('.correct-answer');
-                if (correctAnswer) {
-                    correctAnswer.addEventListener('input', (e) => {
-                        question.correct_answer = e.target.value;
+                    radio.addEventListener('change', () => {
+                        question.correct_answer = index;
                     });
-                }
+                });
             }
 
             return div;
@@ -3743,6 +3895,7 @@
                         id: question.id,
                         type: question.type,
                         question: question.question,
+                        preamble: question.preamble, // Include preamble
                         points: question.points
                     };
 
