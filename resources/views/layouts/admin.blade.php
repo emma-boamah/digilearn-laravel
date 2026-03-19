@@ -652,6 +652,12 @@
                     <span class="sidebar-link-text">Revenue Analytics</span>
                 </a>
 
+                <a href="{{ route('admin.subscriber-analytics') }}"
+                    class="nav-link {{ request()->routeIs('admin.subscriber-analytics*') ? 'active' : '' }}">
+                    <i class="fas fa-chart-pie"></i>
+                    <span class="sidebar-link-text">Subscriber Analytics</span>
+                </a>
+
                 <a href="#" class="nav-link">
                     <i class="fas fa-chart-line"></i>
                     <span class="sidebar-link-text">Reports & Web Analytics</span>
@@ -1035,6 +1041,7 @@
         });
     </script>
 
+    @stack('scripts')
 </body>
 
 </html>
