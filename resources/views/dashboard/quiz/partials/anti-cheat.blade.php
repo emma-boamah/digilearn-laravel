@@ -323,19 +323,50 @@
    * Utilities
    */
   function submitQuizWithViolation(isFinal) {
-    const form = document.querySelector('form[data-quiz-form]');
-    if (form) {
-      if (isFinal) {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'failed_due_to_violation';
-        input.value = '1';
-        form.appendChild(input);
+    let form = document.querySelector('form[data-quiz-form]');
+    
+    // If form doesn't exist ( lockout before user clicks submit), create it
+    if (!form) {
+      form = document.createElement('form');
+      form.method = 'POST';
+      form.action = baseUrl + '/submit';
+      form.setAttribute('data-quiz-form', 'true');
+
+      // Use global variables from take.blade.php if available
+      if (typeof answers !== 'undefined') {
+        const answersInput = document.createElement('input');
+        answersInput.type = 'hidden';
+        answersInput.name = 'answers';
+        answersInput.value = JSON.stringify(answers);
+        form.appendChild(answersInput);
       }
-      form.submit();
-    } else {
-      window.location.href = baseUrl;
+
+      if (typeof timeLimitMinutes !== 'undefined' && typeof timeRemaining !== 'undefined') {
+        const timeSpentInput = document.createElement('input');
+        timeSpentInput.type = 'hidden';
+        timeSpentInput.name = 'time_spent';
+        timeSpentInput.value = (timeLimitMinutes * 60) - timeRemaining;
+        form.appendChild(timeSpentInput);
+      }
+
+      const csrfInput = document.createElement('input');
+      csrfInput.type = 'hidden';
+      csrfInput.name = '_token';
+      csrfInput.value = document.querySelector('meta[name="csrf-token"]').content;
+      form.appendChild(csrfInput);
+      
+      document.body.appendChild(form);
     }
+
+    if (isFinal) {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'failed_due_to_violation';
+      input.value = '1';
+      form.appendChild(input);
+    }
+    
+    form.submit();
   }
 
   function requestAppeal() {
