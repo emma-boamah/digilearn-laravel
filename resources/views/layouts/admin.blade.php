@@ -613,18 +613,22 @@
                     <span class="sidebar-link-text">Dashboard</span>
                 </a>
 
+                @role('super-admin')
                 <a href="{{ route('admin.users') }}"
                     class="nav-link {{ request()->routeIs('admin.users*') ? 'active' : '' }}">
                     <i class="fas fa-users"></i>
                     <span class="sidebar-link-text">Users</span>
                 </a>
+                @endrole
 
                 <!-- Student Progress Management -->
+                @role('super-admin')
                 <a href="{{ route('admin.progress.overview') }}"
                     class="nav-link {{ request()->routeIs('admin.progress*') ? 'active' : '' }}">
                     <i class="fas fa-chart-line"></i>
                     <span class="sidebar-link-text">Student Progress</span>
                 </a>
+                @endrole
 
                 <!-- Added notifications link to sidebar -->
                 <a href="{{ route('admin.notifications.index') }}"
@@ -634,11 +638,13 @@
                 </a>
 
                 <!-- Pricing Plans -->
+                @role('super-admin')
                 <a href="{{ route('admin.pricing.index') }}"
                     class="nav-link {{ request()->routeIs('admin.pricing*') ? 'active' : '' }}">
                     <i class="fas fa-dollar-sign"></i>
                     <span class="sidebar-link-text">Pricing Plans</span>
                 </a>
+                @endrole
 
                 <!-- Simplified Contents Section -->
                 <a href="{{ route('admin.contents.index') }}"
@@ -647,33 +653,44 @@
                     <span class="sidebar-link-text">Contents</span>
                 </a>
 
+                @role('super-admin')
                 <a href="{{ route('admin.revenue') }}"
                     class="nav-link {{ request()->routeIs('admin.revenue*') ? 'active' : '' }}">
                     <i class="fas fa-dollar-sign"></i>
                     <span class="sidebar-link-text">Revenue Analytics</span>
                 </a>
-
+ 
                 <a href="{{ route('admin.subscriber-analytics') }}"
                     class="nav-link {{ request()->routeIs('admin.subscriber-analytics*') ? 'active' : '' }}">
                     <i class="fas fa-chart-pie"></i>
                     <span class="sidebar-link-text">Subscriber Analytics</span>
                 </a>
+                @endrole
 
+                <a href="{{ route('admin.tasks.index') }}"
+                    class="nav-link {{ request()->routeIs('admin.tasks*') ? 'active' : '' }}">
+                    <i class="fas fa-tasks"></i>
+                    <span class="sidebar-link-text">Tasks</span>
+                </a>
+
+                @role('super-admin')
                 <a href="#" class="nav-link">
                     <i class="fas fa-chart-line"></i>
                     <span class="sidebar-link-text">Reports & Web Analytics</span>
                 </a>
-
+ 
                 <a href="#" class="nav-link">
                     <i class="fas fa-shield-alt"></i>
                     <span class="sidebar-link-text">Security</span>
                 </a>
-
+ 
                 <a href="#" class="nav-link">
                     <i class="fas fa-cog"></i>
                     <span class="sidebar-link-text">Settings</span>
                 </a>
+                @endrole
 
+                @role('super-admin')
                 @if(Auth::user()->is_superuser)
                 <a href="{{ route('admin.classes.create') }}"
                     class="nav-link {{ request()->routeIs('admin.classes.create') ? 'active' : '' }}">
@@ -681,6 +698,7 @@
                     <span class="sidebar-link-text">Create Class</span>
                 </a>
                 @endif
+                @endrole
             </nav>
 
             <div class="mt-auto pt-4 border-t">

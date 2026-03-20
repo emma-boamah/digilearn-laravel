@@ -57,6 +57,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'throttle.redirect' => ThrottleRequestsWithRedirect::class,
             'check.suspended' => CheckSuspended::class,
             'decode.obfuscated' => DecodeObfuscatedIds::class,
+            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
 
         // Rate limiting configuration

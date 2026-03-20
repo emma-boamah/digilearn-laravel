@@ -13,6 +13,11 @@
                     <p class="text-gray-600 mt-1">Manage and monitor user accounts</p>
                 </div>
                 <div class="flex space-x-3">
+                    @if(auth()->user()->hasRole('super-admin') || auth()->user()->is_superuser)
+                    <a href="{{ route('admin.users.invite') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+                        <i class="fas fa-user-plus mr-2"></i>Invite Admin
+                    </a>
+                    @endif
                     <button onclick="exportUsers()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
                         <i class="fas fa-download mr-2"></i>Export
                     </button>

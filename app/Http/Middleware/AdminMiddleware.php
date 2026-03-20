@@ -21,12 +21,11 @@ class AdminMiddleware
         // Check if user is admin (you can modify this logic based on your needs)
         $user = Auth::user();
         
-        // For now, we'll check if user email contains 'admin' or has an 'is_admin' field
-        // In production, you should have a proper role/permission system
         $isAdmin = $user->is_admin ?? false;
+        $hasAdminRole = $user->hasRole('super-admin') || $user->hasRole('restricted-admin');
         
         // Alternative: check by email domain or specific emails
-        if (!$isAdmin && !in_array($user->email, ['admin@digilearn.com', 'administrator@digilearn.com','admin@shoutoutgh.com', 'contact@shoutoutgh.com'])) {
+        if (!$isAdmin && !$hasAdminRole && !in_array($user->email, ['admin@digilearn.com', 'administrator@digilearn.com','admin@shoutoutgh.com', 'contact@shoutoutgh.com'])) {
             // Log unauthorized admin access attempt
             Log::channel('security')->warning('unauthorized_admin_access_attempt', [
                 'user_id' => $user->id,
