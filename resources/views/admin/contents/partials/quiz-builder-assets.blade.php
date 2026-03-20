@@ -116,6 +116,118 @@
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
     }
 
+    /* Quiz Navigation & Pagination */
+    .quiz-navigation-wrapper {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 24px;
+    }
+
+    .quiz-nav-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-start;
+    }
+
+    .quiz-nav-item {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: white;
+        border: 1px solid #e2e8f0;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .quiz-nav-item:hover {
+        border-color: #3b82f6;
+        background: #eff6ff;
+        color: #3b82f6;
+    }
+
+    .quiz-nav-item.active {
+        background: #3b82f6;
+        border-color: #3b82f6;
+        color: white;
+        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+    }
+
+    .quiz-nav-item.mcq { border-bottom: 3px solid #3b82f6; }
+    .quiz-nav-item.essay { border-bottom: 3px solid #8b5cf6; }
+
+    .pagination-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .nav-btn-group {
+        display: flex;
+        gap: 12px;
+    }
+
+    .btn-nav {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        border: 1px solid #e2e8f0;
+        background: white;
+        color: #475569;
+        cursor: pointer;
+    }
+
+    .btn-nav:hover:not(:disabled) {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+    }
+
+    .btn-nav:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .btn-nav.primary {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+    }
+
+    .btn-nav.primary:hover:not(:disabled) {
+        background: #2563eb;
+    }
+
+    /* Question Item Visibility */
+    .question-item {
+        display: none; /* Hidden by default */
+        animation: slideIn 0.3s ease-out;
+    }
+
+    .question-item.active-question {
+        display: block !important;
+    }
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(10px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(-4px); }
         to { opacity: 1; transform: translateY(0); }
@@ -129,6 +241,7 @@
      * Shared Quiz Builder Functions
      * Expects a global 'uploadData' object with 'quiz' property.
      */
+    let currentQuestionIndex = 0;
 
     function initializeQuizStep() {
         const addMcqBtn = document.getElementById('addMcqBtn');
@@ -149,6 +262,16 @@
 
         newMcqBtn.addEventListener('click', () => addQuestion('mcq'));
         newEssayBtn.addEventListener('click', () => addQuestion('essay'));
+
+        // Initialize Pagination Controls
+        const prevBtn = document.getElementById('prevQuestionBtn');
+        const nextBtn = document.getElementById('nextQuestionBtn');
+
+        if (prevBtn) prevBtn.addEventListener('click', () => showQuestion(currentQuestionIndex - 1));
+        if (nextBtn) nextBtn.addEventListener('click', () => showQuestion(currentQuestionIndex + 1));
+
+        renderQuestionNavigation();
+        showQuestion(0);
     }
 
     function initializeQuizSettings() {
@@ -196,6 +319,59 @@
 
         const questionElement = createQuestionElement(question);
         questionsList.appendChild(questionElement);
+
+        renderQuestionNavigation();
+        showQuestion(uploadData.quiz.questions.length - 1);
+    }
+
+    function renderQuestionNavigation() {
+        const navGrid = document.getElementById('quizNavGrid');
+        if (!navGrid) return;
+
+        navGrid.innerHTML = '';
+        uploadData.quiz.questions.forEach((q, index) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `quiz-nav-item ${q.type} ${index === currentQuestionIndex ? 'active' : ''}`;
+            btn.textContent = index + 1;
+            btn.addEventListener('click', () => showQuestion(index));
+            navGrid.appendChild(btn);
+        });
+    }
+
+    function showQuestion(index) {
+        const questions = uploadData.quiz.questions;
+        if (index < 0 || index >= questions.length && questions.length > 0) return;
+
+        currentQuestionIndex = index;
+
+        // Toggle question visibility
+        const questionElements = document.querySelectorAll('.question-item');
+        questionElements.forEach((el, idx) => {
+            if (idx === index) {
+                el.classList.add('active-question');
+            } else {
+                el.classList.remove('active-question');
+            }
+        });
+
+        // Update nav active state
+        document.querySelectorAll('.quiz-nav-item').forEach((btn, idx) => {
+            btn.classList.toggle('active', idx === index);
+        });
+
+        // Update Pagination Buttons
+        const prevBtn = document.getElementById('prevQuestionBtn');
+        const nextBtn = document.getElementById('nextQuestionBtn');
+        const currentLabel = document.getElementById('currentQuestionLabel');
+
+        if (prevBtn) prevBtn.disabled = (index <= 0);
+        if (nextBtn) nextBtn.disabled = (index >= questions.length - 1);
+        if (currentLabel) {
+            currentLabel.textContent = questions.length > 0 
+                ? `Question ${index + 1} of ${questions.length}`
+                : 'No questions added';
+        }
     }
 
     function setupQuestionImageUpload(questionElement, question) {
@@ -437,7 +613,16 @@
             removeBtn.addEventListener('click', () => {
                 uploadData.quiz.questions = uploadData.quiz.questions.filter(q => q.id !== question.id);
                 div.remove();
-                // Update question numbers
+                
+                // Update navigation and current index
+                if (currentQuestionIndex >= uploadData.quiz.questions.length) {
+                    currentQuestionIndex = Math.max(0, uploadData.quiz.questions.length - 1);
+                }
+                
+                renderQuestionNavigation();
+                showQuestion(currentQuestionIndex);
+
+                // Update question numbers in headings (if still showing all)
                 document.querySelectorAll('.question-item').forEach((qDiv, idx) => {
                     const numSpan = qDiv.querySelector('.bg-blue-100');
                     if (numSpan) numSpan.textContent = idx + 1;

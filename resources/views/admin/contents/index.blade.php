@@ -1534,11 +1534,39 @@
                         </div>
                     </div>
 
-                    <div id="questionsList">
-                        <!-- Questions will be added here -->
+                    <div class="mt-8 border-t pt-6">
+                        <h4 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <i class="fas fa-edit text-blue-600"></i>
+                            Quiz Content
+                        </h4>
+
+                        <!-- Question Navigation -->
+                        <div id="quizNavigation" class="quiz-navigation-wrapper mb-6">
+                            <div class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Question Navigation</div>
+                            <div id="quizNavGrid" class="quiz-nav-grid">
+                                <!-- Navigation items injected via JS -->
+                            </div>
+                        </div>
+
+                        <div id="questionsList" class="space-y-6">
+                            <!-- Questions will be added here -->
+                        </div>
+
+                        <!-- Pagination Footer -->
+                        <div class="pagination-footer mt-8">
+                            <div id="currentQuestionLabel" class="text-sm font-semibold text-gray-600">No questions added</div>
+                            <div class="nav-btn-group">
+                                <button type="button" id="prevQuestionBtn" class="btn-nav">
+                                    <i class="fas fa-chevron-left"></i> Previous
+                                </button>
+                                <button type="button" id="nextQuestionBtn" class="btn-nav">
+                                    Next <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="flex space-x-2">
+                    <div class="flex space-x-2 mt-6">
                         <button type="button" id="addMcqBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                             <i class="fas fa-plus mr-2"></i>Add MCQ
                         </button>
