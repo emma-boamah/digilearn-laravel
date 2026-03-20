@@ -208,8 +208,29 @@
                             </div>
                         </div>
 
+                        <!-- Question Navigation -->
+                        <div id="quizNavigation" class="quiz-navigation-wrapper mb-6">
+                            <div class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Question Navigation</div>
+                            <div id="quizNavGrid" class="quiz-nav-grid">
+                                <!-- Navigation items injected via JS -->
+                            </div>
+                        </div>
+
                         <div id="questionsList" class="space-y-6">
                             <!-- Questions initialized via JS -->
+                        </div>
+
+                        <!-- Pagination Footer -->
+                        <div class="pagination-footer mt-8">
+                            <div id="currentQuestionLabel" class="text-sm font-semibold text-gray-600">Question 1 of 1</div>
+                            <div class="nav-btn-group">
+                                <button type="button" id="prevQuestionBtn" class="btn-nav">
+                                    <i class="fas fa-chevron-left"></i> Previous
+                                </button>
+                                <button type="button" id="nextQuestionBtn" class="btn-nav">
+                                    Next <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
