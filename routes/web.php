@@ -425,6 +425,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/users/invite', [AdminController::class , 'storeAdminInvite'])->name('users.invite.store');
         Route::get('/users/{id}', [AdminController::class , 'showUser'])->name('users.show');
         Route::post('/users/{id}/toggle-status', [AdminController::class , 'toggleUserStatus'])->name('users.toggle-status');
+        Route::post('/users/{id}/demote', [AdminController::class , 'demoteAdmin'])->name('users.demote');
         Route::post('/users/{id}/update-avatar', [AdminController::class , 'updateUserAvatar'])->name('users.update-avatar');
         Route::delete('/users/{id}/delete-avatar', [AdminController::class , 'deleteUserAvatar'])->name('users.delete-avatar');
         Route::post('/users/bulk-action', [AdminController::class , 'bulkAction'])->name('users.bulk-action');

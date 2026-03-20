@@ -183,7 +183,14 @@
                                         <x-user-avatar :user="$user" :size="30" id="user-avatar" />
                                     </div>
                                     <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">{{ $user->name }}</div>
+                                        <div class="text-sm font-medium text-gray-900 flex items-center">
+                                            {{ $user->name }}
+                                            @if($user->hasRole('super-admin'))
+                                                <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 uppercase">Super Admin</span>
+                                            @elseif($user->hasRole('restricted-admin'))
+                                                <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 uppercase">Admin</span>
+                                            @endif
+                                        </div>
                                         <div class="text-sm text-gray-500">ID: {{ $user->id }}</div>
                                     </div>
                                 </div>
@@ -225,6 +232,14 @@
                                             class="text-{{ $user->suspended_at ? 'green' : 'red' }}-600 hover:text-{{ $user->suspended_at ? 'green' : 'red' }}-900">
                                         <i class="fas fa-{{ $user->suspended_at ? 'unlock' : 'ban' }}"></i>
                                     </button>
+                                    @role('super-admin')
+                                        @if($user->hasRole('restricted-admin'))
+                                            <button onclick="demoteAdmin({{ $user->id }}, '{{ $user->name }}')" 
+                                                    class="text-orange-600 hover:text-orange-900" title="Demote from Admin">
+                                                <i class="fas fa-user-minus"></i>
+                                            </button>
+                                        @endif
+                                    @endrole
                                 </div>
                             </td>
                         </tr>
@@ -314,6 +329,39 @@
 
     function closeBulkActions() {
         document.getElementById('bulkActionsModal').classList.add('hidden');
+    }
+
+    function demoteAdmin(userId, userName) {
+        if (!confirm(`Are you sure you want to demote ${userName} to a regular user? This will revoke all administrative privileges.`)) {
+            return;
+        }
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (!csrfToken) {
+            alert('CSRF token not found. Please refresh the page.');
+            return;
+        }
+
+        fetch(`/admin/users/${userId}/demote`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + (data.message || 'Unknown error occurred'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        });
     }
 
     function toggleUserStatus(userId, action) {

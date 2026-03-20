@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Mail;
 use ZohoMail\LaravelZeptoMail\Transport\ZeptoMailTransport;
 use Closure;
+use Illuminate\Support\Facades\Gate;
 
 
 class AppServiceProvider extends ServiceProvider
@@ -74,6 +75,12 @@ class AppServiceProvider extends ServiceProvider
                 config('services.zeptomail.token'),
                 $host
             );
+        });
+
+        // Implicitly grant "super-admin" role all permissions
+        // This works in the SPA context for Spatie Laravel Permission
+        Gate::before(function ($user, $ability) {
+            return $user->hasRole('super-admin') ? true : null;
         });
     }
 

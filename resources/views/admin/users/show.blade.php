@@ -20,11 +20,10 @@
                 <div>
                     <div class="flex items-center space-x-3">
                         <h1 class="text-3xl font-bold text-gray-900">{{ $user->name }}</h1>
-                        @if($user->is_superuser)
+                        @if($user->hasRole('super-admin'))
                         <span
-                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 uppercase tracking-wider">Super
-                            Admin</span>
-                        @elseif($user->is_verified)
+                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 uppercase tracking-wider">Super Admin</span>
+                        @elseif($user->hasRole('restricted-admin'))
                         <span
                             class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 uppercase tracking-wider">Admin</span>
                         @else
@@ -659,6 +658,14 @@
                                 class="w-full flex items-center px-4 py-3 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors text-sm font-semibold text-purple-700 border border-purple-100">
                                 <i class="fas fa-user-secret text-purple-500 mr-3 text-base"></i>Impersonate User
                             </button>
+                            @role('super-admin')
+                            @if($user->hasRole('restricted-admin'))
+                            <button onclick="demoteAdmin({{ $user->id }})"
+                                class="w-full flex items-center px-4 py-3 bg-red-50 rounded-xl hover:bg-red-100 transition-colors text-sm font-semibold text-red-700 border border-red-100">
+                                <i class="fas fa-user-minus text-red-500 mr-3 text-base"></i>Demote from Admin
+                            </button>
+                            @endif
+                            @endrole
                         </div>
                     </div>
                 </div>
@@ -796,6 +803,39 @@
 </div>
 
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    function demoteAdmin(userId) {
+        if (!confirm('Are you sure you want to demote this administrator to a regular user? This will revoke all administrative privileges.')) {
+            return;
+        }
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+        if (!csrfToken) {
+            alert('CSRF token not found. Please refresh the page.');
+            return;
+        }
+
+        fetch(`/admin/users/${userId}/demote`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + (data.message || 'Unknown error occurred'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        });
+    }
+
     function toggleUserStatus(userId, action) {
         const message = action === 'suspend' ? 'suspend this user' : 'unsuspend this user';
         if (!confirm(`Are you sure you want to ${message}?`)) {
