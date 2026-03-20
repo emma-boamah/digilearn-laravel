@@ -9,9 +9,11 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
+use Spatie\Permission\Traits\HasRoles;
+
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasFactory, Notifiable, SoftDeletes;
+    use HasFactory, Notifiable, SoftDeletes, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -476,5 +478,21 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getCurrentLevelAttribute()
     {
         return $this->activeProgress?->current_level;
+    }
+
+    /**
+     * Get the tasks assigned to the user.
+     */
+    public function assignedTasks()
+    {
+        return $this->hasMany(Task::class, 'assignee_id');
+    }
+
+    /**
+     * Get the tasks created by the user.
+     */
+    public function createdTasks()
+    {
+        return $this->hasMany(Task::class, 'creator_id');
     }
 }

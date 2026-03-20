@@ -66,6 +66,7 @@
                     <div class="text-sm text-gray-500">
                         Last updated: {{ now()->format('M d, Y H:i') }}
                     </div>
+                    @role('super-admin')
                     <button id="refreshButton"
                         class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
                         <i class="fas fa-sync-alt mr-2"></i>Refresh
@@ -75,6 +76,7 @@
                         <i class="fas @if($websiteLocked) fa-unlock @else fa-lock @endif mr-2"></i>
                         @if($websiteLocked) Unlock Website @else Lock Website @endif
                     </button>
+                    @endrole
                 </div>
             </div>
         </div>
@@ -127,6 +129,7 @@
                 </div>
             </div>
 
+            @role('super-admin')
             <!-- Total Revenue -->
             <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-lg transition-all duration-200 cursor-pointer kpi-card"
                 data-target="revenue-chart">
@@ -173,8 +176,9 @@
                     </div>
                 </div>
             </div>
+            @endrole
         </div>
-
+        @role('super-admin')
         <!-- Revenue Trend Chart (Full Width) - Pure CSS -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8" id="revenue-chart">
             <div class="flex items-center justify-between mb-6">
@@ -269,7 +273,9 @@
                 </div>
             </div>
         </div>
+        @endrole
 
+        @role('super-admin')
         <!-- Charts Row -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <!-- Subscription Distribution -->
@@ -345,7 +351,9 @@
                 </div>
             </div>
         </div>
+        @endrole
 
+        @role('super-admin')
         <!-- Plan Performance Table -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8" id="plan-performance">
             <div class="flex items-center justify-between mb-6">
@@ -418,7 +426,9 @@
                 </table>
             </div>
         </div>
+        @endrole
 
+        @role('super-admin')
         <!-- Cookie Consent Stats -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
             <div class="flex items-center justify-between mb-4">
@@ -473,7 +483,9 @@
                 </div>
             </div>
         </div>
+        @endrole
 
+        @role('super-admin')
         <!-- Storage Monitoring Dashboard -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
             <div class="flex items-center justify-between mb-4">
@@ -519,37 +531,37 @@
 
                 <!-- Storage Status -->
                 <div class="bg-gradient-to-r
-                    @if($systemHealth['storage_usage']['status'] === 'critical') from-red-50 to-red-100 border-red-200
-                    @elseif($systemHealth['storage_usage']['status'] === 'warning') from-yellow-50 to-yellow-100 border-yellow-200
-                    @elseif($systemHealth['storage_usage']['status'] === 'caution') from-orange-50 to-orange-100 border-orange-200
+                    @if(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'critical') from-red-50 to-red-100 border-red-200
+                    @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'warning') from-yellow-50 to-yellow-100 border-yellow-200
+                    @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'caution') from-orange-50 to-orange-100 border-orange-200
                     @else from-green-50 to-green-100 border-green-200
                     @endif rounded-lg p-4 border">
                     <div class="flex items-center justify-between">
                         <div>
                             <h3 class="text-sm font-semibold
-                                @if($systemHealth['storage_usage']['status'] === 'critical') text-red-900
-                                @elseif($systemHealth['storage_usage']['status'] === 'warning') text-yellow-900
-                                @elseif($systemHealth['storage_usage']['status'] === 'caution') text-orange-900
+                                @if(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'critical') text-red-900
+                                @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'warning') text-yellow-900
+                                @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'caution') text-orange-900
                                 @else text-green-900
                                 @endif">Status</h3>
                             <p class="text-xl font-bold
-                                @if($systemHealth['storage_usage']['status'] === 'critical') text-red-800
-                                @elseif($systemHealth['storage_usage']['status'] === 'warning') text-yellow-800
-                                @elseif($systemHealth['storage_usage']['status'] === 'caution') text-orange-800
+                                @if(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'critical') text-red-800
+                                @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'warning') text-yellow-800
+                                @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'caution') text-orange-800
                                 @else text-green-800
                                 @endif">{{ ucfirst($systemHealth['storage_usage']['status'] ?? 'Unknown') }}</p>
                         </div>
                         <div class="
-                            @if($systemHealth['storage_usage']['status'] === 'critical') text-red-600
-                            @elseif($systemHealth['storage_usage']['status'] === 'warning') text-yellow-600
-                            @elseif($systemHealth['storage_usage']['status'] === 'caution') text-orange-600
+                            @if(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'critical') text-red-600
+                            @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'warning') text-yellow-600
+                            @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'caution') text-orange-600
                             @else text-green-600
                             @endif">
-                            @if($systemHealth['storage_usage']['status'] === 'critical')
+                            @if(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'critical')
                             <i class="fas fa-exclamation-triangle text-2xl"></i>
-                            @elseif($systemHealth['storage_usage']['status'] === 'warning')
+                            @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'warning')
                             <i class="fas fa-exclamation-circle text-2xl"></i>
-                            @elseif($systemHealth['storage_usage']['status'] === 'caution')
+                            @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'caution')
                             <i class="fas fa-exclamation text-2xl"></i>
                             @else
                             <i class="fas fa-check-circle text-2xl"></i>
@@ -614,7 +626,7 @@
                 </div>
                 <div class="bg-gray-200 rounded-full h-3">
                     @php
-                    $percentage = str_replace('%', '', $systemHealth['storage_usage']['used_percentage'] ?? '0');
+                    $percentage = isset($systemHealth['storage_usage']['used_percentage']) ? str_replace('%', '', $systemHealth['storage_usage']['used_percentage']) : '0';
                     $percentage = min(100, max(0, floatval($percentage)));
                     @endphp
                     <div class="h-3 rounded-full transition-all duration-300 storage-progress-bar
@@ -651,11 +663,13 @@
             </div>
             @endif
         </div>
+        @endrole
 
         <!-- Main Content Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         </div>
 
+        @role('super-admin')
         <!-- Subscription Plans Badges -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
             <div class="flex items-center justify-between mb-4">
@@ -690,6 +704,7 @@
                 @endforeach
             </div>
         </div>
+        @endrole
 
         <!-- Main Content Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -763,6 +778,7 @@
                 </div>
             </div>
 
+            @role('super-admin')
             <!-- System Health -->
             <div class="space-y-6">
                 <!-- System Status -->
@@ -777,7 +793,7 @@
                                 <span
                                     class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                     <i class="fas fa-circle text-green-400 mr-1 text-xs"></i>
-                                    {{ ucfirst($systemHealth['server_status']) }}
+                                    {{ ucfirst($systemHealth['server_status'] ?? 'Running') }}
                                 </span>
                             </div>
                             <div class="flex items-center justify-between">
@@ -785,7 +801,7 @@
                                 <span
                                     class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                     <i class="fas fa-circle text-green-400 mr-1 text-xs"></i>
-                                    {{ ucfirst($systemHealth['database_status']['status']) }}
+                                    {{ ucfirst($systemHealth['database_status']['status'] ?? 'Connected') }}
                                 </span>
                             </div>
                             <div class="flex items-center justify-between">
@@ -793,7 +809,7 @@
                                 <span
                                     class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                     <i class="fas fa-circle text-green-400 mr-1 text-xs"></i>
-                                    {{ ucfirst($systemHealth['cache_status']['status']) }}
+                                    {{ ucfirst($systemHealth['cache_status']['status'] ?? 'Ready') }}
                                 </span>
                             </div>
                             <div class="pt-4 border-t border-gray-200">
@@ -802,7 +818,7 @@
                                         <div class="flex justify-between text-sm">
                                             <span class="text-gray-600">Storage Usage</span>
                                             <span class="text-gray-900">{{
-                                                $systemHealth['storage_usage']['used_percentage'] }}</span>
+                                                $systemHealth['storage_usage']['used_percentage'] ?? '0%' }}</span>
                                         </div>
                                         <div class="mt-1 bg-gray-200 rounded-full h-2">
                                             <div class="bg-blue-600 h-2 rounded-full progress-bar-storage"></div>
@@ -811,7 +827,7 @@
                                     <div>
                                         <div class="flex justify-between text-sm">
                                             <span class="text-gray-600">Memory Usage</span>
-                                            <span class="text-gray-900">{{ $systemHealth['memory_usage'] }}</span>
+                                            <span class="text-gray-900">{{ $systemHealth['memory_usage'] ?? 'N/A' }}</span>
                                         </div>
                                         <div class="mt-1 bg-gray-200 rounded-full h-2">
                                             <div class="bg-yellow-500 h-2 rounded-full progress-bar-memory"></div>
@@ -820,7 +836,7 @@
                                     <div>
                                         <div class="flex justify-between text-sm">
                                             <span class="text-gray-600">CPU Usage</span>
-                                            <span class="text-gray-900">{{ $systemHealth['cpu_usage'] }}</span>
+                                            <span class="text-gray-900">{{ $systemHealth['cpu_usage'] ?? 'N/A' }}</span>
                                         </div>
                                         <div class="mt-1 bg-gray-200 rounded-full h-2">
                                             <div class="bg-green-500 h-2 rounded-full progress-bar-cpu"></div>
@@ -839,12 +855,13 @@
                                 </div>
                             </div>
                             <div class="pt-4 border-t border-gray-200 text-xs text-gray-500">
-                                <p>Uptime: {{ $systemHealth['uptime'] }}</p>
-                                <p>Last Backup: {{ $systemHealth['last_backup'] }}</p>
+                                <p>Uptime: {{ $systemHealth['uptime'] ?? 'N/A' }}</p>
+                                <p>Last Backup: {{ $systemHealth['last_backup'] ?? 'N/A' }}</p>
                             </div>
                         </div>
                     </div>
                 </div>
+            @endrole
 
                 <!-- Quick Actions -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -853,6 +870,7 @@
                     </div>
                     <div class="p-6">
                         <div class="space-y-3">
+                            @role('super-admin')
                             <a href="{{ route('admin.users') }}"
                                 class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
                                 <div class="bg-blue-100 p-2 rounded-lg mr-3">
@@ -863,6 +881,8 @@
                                     <p class="text-xs text-gray-500">View and manage user accounts</p>
                                 </div>
                             </a>
+                            @endrole
+                            
                             <a href="{{ route('admin.contents.index') }}"
                                 class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
                                 <div class="bg-purple-100 p-2 rounded-lg mr-3">
@@ -873,6 +893,7 @@
                                     <p class="text-xs text-gray-500">Manage lessons and content</p>
                                 </div>
                             </a>
+                            
                             <a href="{{ route('admin.subjects.index') }}"
                                 class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
                                 <div class="bg-teal-100 p-2 rounded-lg mr-3">
@@ -883,6 +904,8 @@
                                     <p class="text-xs text-gray-500">Organize content by subjects</p>
                                 </div>
                             </a>
+                            
+                            @role('super-admin')
                             <a href="{{ route('admin.analytics') }}"
                                 class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
                                 <div class="bg-green-100 p-2 rounded-lg mr-3">
@@ -893,6 +916,7 @@
                                     <p class="text-xs text-gray-500">View platform analytics</p>
                                 </div>
                             </a>
+                            
                             <a href="{{ route('admin.security') }}"
                                 class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
                                 <div class="bg-red-100 p-2 rounded-lg mr-3">
@@ -903,6 +927,7 @@
                                     <p class="text-xs text-gray-500">Monitor security events</p>
                                 </div>
                             </a>
+                            @endrole
                         </div>
                     </div>
                 </div>
@@ -914,6 +939,21 @@
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
     // Initialize everything when DOM is loaded
     document.addEventListener('DOMContentLoaded', function () {
+        // Attach critical administrative listeners first for resilience
+        const refreshBtn = document.getElementById('refreshButton');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', function () {
+                location.reload();
+            });
+        }
+
+        const toggleLockBtn = document.getElementById('toggleLockButton');
+        if (toggleLockBtn) {
+            toggleLockBtn.addEventListener('click', function () {
+                handleToggleLock.call(this);
+            });
+        }
+
         initializeProgressBars();
         initializeSparklines();
         initializeCharts();
@@ -1000,9 +1040,8 @@
         if (!ctx) return;
 
         // Get data from PHP variables
-        const subscriptionData = {!! json_encode($subscriptionAnalytics ?? [])!!
-    };
-    const labels = subscriptionData.map(item => item.name);
+        const subscriptionData = {!! json_encode($subscriptionAnalytics ?? []) !!};
+        const labels = subscriptionData.map(item => item.name);
     const data = subscriptionData.map(item => item.revenue);
 
     new Chart(ctx, {
@@ -1128,13 +1167,8 @@
         });
     }
 
-    // Refresh button handler
-    document.getElementById('refreshButton').addEventListener('click', function () {
-        location.reload();
-    });
-
-    // Toggle lock button handler
-    document.getElementById('toggleLockButton').addEventListener('click', function () {
+    // Refactored Toggle Lock logic for reuse
+    function handleToggleLock() {
         // Show loading state
         const originalText = this.innerHTML;
         this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
@@ -1161,7 +1195,8 @@
                 }
 
                 const icon = this.querySelector('i');
-                const textNode = this.childNodes[this.childNodes.length - 1];
+                const textNodes = Array.from(this.childNodes).filter(node => node.nodeType === 3);
+                const textNode = textNodes[textNodes.length - 1];
 
                 if (data.locked) {
                     icon.className = 'fas fa-unlock mr-2';
@@ -1183,7 +1218,7 @@
                 this.disabled = false;
                 alert('An error occurred. Please try again.');
             });
-    });
+    }
 
     // Function to show recovery code warning modal
     function showRecoveryCodeWarning() {

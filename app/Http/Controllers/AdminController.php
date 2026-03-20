@@ -23,6 +23,7 @@ use App\Models\Video; // Import the Video model
 use App\Models\Quiz; // Import the Quiz model
 use App\Models\Document; // Import the Document model
 use App\Models\ActivityLog;
+use Illuminate\Support\Facades\Password;
 use App\Models\UserSubscription; // Import the UserSubscription model
 use App\Models\PricingPlan; // Import the PricingPlan model
 use App\Models\ProgressionStandard; // Import the ProgressionStandard model
@@ -34,6 +35,8 @@ use App\Models\Comment;
 use Illuminate\Support\Facades\Storage; // For file uploads
 use App\Services\NotificationService;
 use App\Services\UserActivityService;
+use App\Http\Requests\Admin\AdminInviteRequest;
+use App\Notifications\AdminNotification;
 
 class AdminController extends Controller
 {
@@ -100,38 +103,48 @@ class AdminController extends Controller
         // Get dashboard statistics
         $stats = $this->getDashboardStats();
 
-        // Get recent activities
+        // Get recent activities (only for super-admins or own activities for restricted)
         $recentActivities = $this->getRecentActivities();
 
-        // Get system health
-        $systemHealth = $this->getSystemHealth();
+        // Initialize sensitive data variables as empty if restricted
+        $revenueData = [];
+        $revenueTrends = [];
+        $topPlans = [];
+        $subscriptionAnalytics = [];
+        $systemHealth = [];
+        $popularLessons = [];
 
-        // Get popular lessons
-        $popularLessons = $this->getPopularLessons();
-
-        // Get revenue data
-        $revenueData = $this->getRevenueData();
-
-        // Get revenue trends
-        $revenueTrends = $this->getRevenueTrends();
-
-        // Get top performing plans
-        $topPlans = $this->getTopPerformingPlans();
-
-        // Get subscription analytics
-        $subscriptionAnalytics = $this->getSubscriptionAnalytics();
+        if (Auth::user()->hasRole('super-admin')) {
+            $systemHealth = $this->getSystemHealth();
+            $popularLessons = $this->getPopularLessons();
+            $revenueData = $this->getRevenueData();
+            $revenueTrends = $this->getRevenueTrends();
+            $topPlans = $this->getTopPerformingPlans();
+            $subscriptionAnalytics = $this->getSubscriptionAnalytics();
+        }
 
         // Check if website is locked
         $websiteLocked = WebsiteLockSetting::first()->is_locked ?? false;
 
         Log::channel('security')->info('admin_dashboard_accessed', [
             'admin_id' => Auth::id(),
+            'role' => Auth::user()->getRoleNames(),
             'ip' => get_client_ip(),
             'user_agent' => request()->userAgent(),
             'timestamp' => now()->toISOString()
         ]);
 
-        return view('admin.dashboard', compact('stats', 'recentActivities', 'systemHealth', 'popularLessons', 'revenueData', 'revenueTrends', 'topPlans', 'subscriptionAnalytics', 'websiteLocked'));
+        return view('admin.dashboard', compact(
+            'stats', 
+            'recentActivities', 
+            'systemHealth', 
+            'popularLessons', 
+            'revenueData', 
+            'revenueTrends', 
+            'topPlans', 
+            'subscriptionAnalytics', 
+            'websiteLocked'
+        ));
     }
 
     /**
@@ -473,6 +486,82 @@ class AdminController extends Controller
         ]);
 
         return redirect()->back()->with('success', "Bulk {$action} completed. {$affectedCount} users affected.");
+    }
+
+    /**
+     * Show the form for inviting a new admin
+     */
+    public function inviteAdmin()
+    {
+        return view('admin.users.invite');
+    }
+
+    /**
+     * Store the admin invitation and send reset link
+     */
+    public function storeAdminInvite(AdminInviteRequest $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            $user = User::where('email', $request->email)->first();
+            $isNewUser = !$user;
+
+            if ($isNewUser) {
+                $user = User::create([
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'password' => Hash::make(Str::random(16)), // Temporary password
+                    'is_admin' => true,
+                    'is_superuser' => false,
+                ]);
+            } else {
+                $user->update(['is_admin' => true]);
+            }
+
+            // Assign the restricted role if they don't have it
+            if (!$user->hasRole('restricted-admin') && !$user->hasRole('super-admin')) {
+                $user->assignRole('restricted-admin');
+                
+                // Send in-app notification
+                $this->notificationService->sendToUser($user, new AdminNotification(
+                    'Admin Access Granted',
+                    'You have been assigned the Restricted Admin role. You now have access to the admin dashboard.',
+                    route('admin.dashboard')
+                ));
+            }
+
+            if ($isNewUser) {
+                // Send invitation (password reset link) for new users
+                $token = Password::getRepository()->create($user);
+                $user->sendPasswordResetNotification($token);
+                $message = "Admin invited successfully. An email has been sent to {$user->email} to set their password.";
+            } else {
+                $message = "User already exists. The 'Restricted Admin' role has been assigned to {$user->email}.";
+            }
+
+            DB::commit();
+
+            Log::channel('security')->info($isNewUser ? 'admin_invited' : 'admin_role_assigned_to_existing_user', [
+                'admin_id' => Auth::id(),
+                'target_user_id' => $user->id,
+                'target_user_email' => $user->email,
+                'is_new' => $isNewUser,
+                'ip' => get_client_ip(),
+                'timestamp' => now()->toISOString()
+            ]);
+
+            return redirect()->route('admin.users')->with('success', $message);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('admin_invite_error', [
+                'error' => $e->getMessage(),
+                'admin_id' => Auth::id(),
+                'ip' => get_client_ip()
+            ]);
+
+            return redirect()->back()->with('error', 'Failed to handle admin invitation: ' . $e->getMessage())->withInput();
+        }
     }
 
     /**
@@ -3820,6 +3909,7 @@ class AdminController extends Controller
     {
         $request->validate([
             'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
             'subject_id' => 'required|exists:subjects,id',
             'grade_level' => 'required|string',
             'quiz_id' => 'nullable|exists:quizzes,id', // For video associations
@@ -3853,6 +3943,7 @@ class AdminController extends Controller
                 // Update video info
                 $content->update([
                     'title' => $request->title,
+                    'description' => $request->description,
                     'subject_id' => $request->subject_id,
                     'grade_level' => $request->grade_level,
                     'is_featured' => $request->has('is_featured'),
@@ -3897,6 +3988,13 @@ class AdminController extends Controller
                     'time_limit_minutes' => $request->quiz_time_limit,
                     'quiz_data' => !empty($quizData) ? json_encode($quizData) : $content->quiz_data,
                 ]);
+
+                // Update description in the associated video container if it exists
+                if ($content->video_id) {
+                    Video::where('id', $content->video_id)->update([
+                        'description' => $request->description
+                    ]);
+                }
             }
 
             // Sync categories (common for both)
