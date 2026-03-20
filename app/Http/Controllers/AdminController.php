@@ -435,6 +435,68 @@ class AdminController extends Controller
     }
 
     /**
+     * Demote an admin user by removing their administrative role
+     */
+    public function demoteAdmin(Request $request, $id)
+    {
+        try {
+            // 1. Check if the current user is a Super-Admin
+            if (!Auth::user()->hasRole('super-admin')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Only Super-Admins can demote other admins.'
+                ], 403);
+            }
+
+            // 2. Find the target user
+            $targetUser = User::findOrFail($id);
+
+            // 3. Prevent a Super-Admin from demoting themselves
+            if (Auth::id() === (int)$id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You cannot demote yourself!'
+                ], 400);
+            }
+
+            // 4. Strip the administrative role
+            // We strip 'restricted-admin' as that's the role we assign in the invitation system
+            if ($targetUser->hasRole('restricted-admin')) {
+                $targetUser->removeRole('restricted-admin');
+            }
+
+            // Handle legacy is_admin flag
+            $targetUser->is_admin = false;
+            $targetUser->save();
+
+            // Log the action
+            Log::channel('security')->info('admin_demoted', [
+                'admin_id' => Auth::id(),
+                'target_user_id' => $targetUser->id,
+                'target_user_email' => $targetUser->email,
+                'ip' => $request->ip(),
+                'timestamp' => now()->toISOString()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$targetUser->name} has been demoted successfully."
+            ]);
+        } catch (\Exception $e) {
+            Log::error('demote_admin_error', [
+                'admin_id' => Auth::id(),
+                'user_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while demoting the user.'
+            ], 500);
+        }
+    }
+
+    /**
      * Bulk user operations
      */
     public function bulkUserAction(Request $request)
@@ -595,19 +657,19 @@ class AdminController extends Controller
     public function subscriberAnalytics()
     {
         // Total Subscribers
-        $totalSubscribers = \App\Models\User::whereHas('subscriptions', function($q) {
+        $totalSubscribers = User::whereHas('subscriptions', function($q) {
             $q->whereIn('status', ['active', 'trial']);
         })->count();
 
         // Monthly Recurring Revenue (MRR)
-        $mrr = \App\Models\UserSubscription::whereIn('status', ['active', 'trial'])->sum('amount_paid');
+        $mrr = UserSubscription::whereIn('status', ['active', 'trial'])->sum('amount_paid');
 
         // Churn Rate - Simple calculation for last 30 days
         $thirtyDaysAgo = now()->subDays(30);
-        $expiredCount = \App\Models\UserSubscription::where('status', 'expired')
+        $expiredCount = UserSubscription::where('status', 'expired')
             ->where('updated_at', '>=', $thirtyDaysAgo)
             ->count();
-        $totalAtStart = \App\Models\UserSubscription::where('started_at', '<=', $thirtyDaysAgo)
+        $totalAtStart = UserSubscription::where('started_at', '<=', $thirtyDaysAgo)
             ->count() ?: 1;
         $churnRate = ($expiredCount / $totalAtStart) * 100;
 
@@ -619,7 +681,7 @@ class AdminController extends Controller
         for ($i = 11; $i >= 0; $i--) {
             $monthStart = now()->subMonths($i)->startOfMonth();
             $monthEnd = now()->subMonths($i)->endOfMonth();
-            $count = \App\Models\UserSubscription::where('started_at', '<=', $monthEnd)->count();
+            $count = UserSubscription::where('started_at', '<=', $monthEnd)->count();
             $growthData[] = [
                 'month' => $monthStart->format('M'),
                 'count' => $count
@@ -627,7 +689,7 @@ class AdminController extends Controller
         }
 
         // Subscription Plans Distribution
-        $planDistribution = \App\Models\UserSubscription::whereIn('status', ['active', 'trial'])
+        $planDistribution = UserSubscription::whereIn('status', ['active', 'trial'])
             ->with('pricingPlan')
             ->get()
             ->groupBy('pricing_plan_id')
@@ -641,7 +703,7 @@ class AdminController extends Controller
             })->values()->toArray();
 
         // Recent Subscriber Activity
-        $recentActivity = \App\Models\UserSubscription::with(['user', 'pricingPlan'])
+        $recentActivity = UserSubscription::with(['user', 'pricingPlan'])
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
