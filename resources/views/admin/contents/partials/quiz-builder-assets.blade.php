@@ -1,0 +1,469 @@
+@push('extra-css')
+<style>
+    /* Quiz Editor Enhancements */
+    .rich-text-toolbar {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 8px;
+        background: #f8fafc;
+        padding: 4px;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        width: fit-content;
+    }
+
+    .toolbar-tool {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        background: white;
+        border: 1px solid #e2e8f0;
+    }
+
+    .toolbar-tool:hover {
+        background: #f1f5f9;
+        color: #2563eb;
+    }
+
+    .toolbar-tool.active {
+        background: #e0e7ff;
+        color: #4338ca;
+        border-color: #c7d2fe;
+    }
+
+    .rich-text-editor {
+        min-height: 48px;
+        padding: 10px 14px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        background: white;
+        font-size: 0.9375rem;
+        line-height: 1.5;
+        color: #1e293b;
+        outline: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .rich-text-editor:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .rich-text-editor[placeholder]:empty:before {
+        content: attr(placeholder);
+        color: #94a3b8;
+        cursor: text;
+    }
+
+    .preamble-section {
+        background: #f0f4ff;
+        border: 1px solid #dbeafe;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .preamble-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #4f46e5;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .add-preamble-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: #4f46e5;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.15s ease;
+        margin-bottom: 12px;
+    }
+
+    .add-preamble-btn:hover {
+        background: #f5f3ff;
+        text-decoration: underline;
+    }
+
+    /* Premium Question Card */
+    .question-item {
+        background: white !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+        padding: 24px !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+    }
+
+    .question-item:hover {
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+@endpush
+
+@push('scripts')
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    /**
+     * Shared Quiz Builder Functions
+     * Expects a global 'uploadData' object with 'quiz' property.
+     */
+
+    function initializeQuizStep() {
+        const addMcqBtn = document.getElementById('addMcqBtn');
+        const addEssayBtn = document.getElementById('addEssayBtn');
+
+        if (!addMcqBtn || !addEssayBtn) {
+            console.error('Quiz builder elements not found');
+            return;
+        }
+
+        // Clean up any existing listeners by replacing the elements (standard trick for single-page style apps)
+        // or just ensure we don't double-attach if possible.
+        const newMcqBtn = addMcqBtn.cloneNode(true);
+        const newEssayBtn = addEssayBtn.cloneNode(true);
+        
+        addMcqBtn.parentNode.replaceChild(newMcqBtn, addMcqBtn);
+        addEssayBtn.parentNode.replaceChild(newEssayBtn, addEssayBtn);
+
+        newMcqBtn.addEventListener('click', () => addQuestion('mcq'));
+        newEssayBtn.addEventListener('click', () => addQuestion('essay'));
+    }
+
+    function initializeQuizSettings() {
+        const difficultySelect = document.getElementById('quiz_difficulty');
+        const timeLimitInput = document.getElementById('quiz_time_limit');
+
+        if (difficultySelect) {
+            difficultySelect.value = uploadData.quiz.difficulty_level || 'medium';
+            difficultySelect.addEventListener('change', (e) => {
+                uploadData.quiz.difficulty_level = e.target.value;
+            });
+        }
+
+        if (timeLimitInput) {
+            timeLimitInput.value = uploadData.quiz.time_limit_minutes || 15;
+            timeLimitInput.addEventListener('input', (e) => {
+                uploadData.quiz.time_limit_minutes = parseInt(e.target.value) || 15;
+            });
+        }
+    }
+
+    function addQuestion(type, existingData = null) {
+        const questionsList = document.getElementById('questionsList');
+        if (!questionsList) {
+            console.error('Questions list element not found');
+            return;
+        }
+
+        const questionId = existingData ? (existingData.id || Date.now()) : Date.now();
+        const question = existingData || {
+            id: questionId,
+            type: type,
+            question: '',
+            preamble: null,
+            options: type === 'mcq' ? ['', '', '', ''] : null,
+            correct_answer: type === 'mcq' ? 0 : '',
+            points: 1,
+            image: null,
+            imageFile: null
+        };
+
+        if (!existingData) {
+            uploadData.quiz.questions.push(question);
+        }
+
+        const questionElement = createQuestionElement(question);
+        questionsList.appendChild(questionElement);
+    }
+
+    function setupQuestionImageUpload(questionElement, question) {
+        const uploadArea = questionElement.querySelector('.question-image-upload-area');
+        const fileInput = questionElement.querySelector('.question-image-input');
+        const uploadDiv = questionElement.querySelector(`#questionImageUpload_${question.id}`);
+        const previewDiv = questionElement.querySelector(`#questionImagePreview_${question.id}`);
+        const previewImg = previewDiv ? previewDiv.querySelector('.question-preview-img') : null;
+        const removeImageBtn = previewDiv ? previewDiv.querySelector('.remove-question-image') : null;
+
+        if (uploadArea) {
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+        }
+
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Image size must be less than 5MB');
+                    return;
+                }
+
+                const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+                if (!validTypes.includes(file.type)) {
+                    alert('Please upload a PNG, JPG, or WEBP image');
+                    return;
+                }
+
+                const objectUrl = URL.createObjectURL(file);
+                question.imageFile = file;
+                question.image = objectUrl;
+
+                if (previewImg) previewImg.src = objectUrl;
+                if (uploadDiv) uploadDiv.classList.add('hidden');
+                if (previewDiv) previewDiv.classList.remove('hidden');
+            });
+        }
+
+        if (removeImageBtn) {
+            removeImageBtn.addEventListener('click', () => {
+                if (question.image && question.image.startsWith('blob:')) {
+                    URL.revokeObjectURL(question.image);
+                }
+
+                question.imageFile = null;
+                question.image = null;
+
+                if (fileInput) fileInput.value = '';
+                if (uploadDiv) uploadDiv.classList.remove('hidden');
+                if (previewDiv) previewDiv.classList.add('hidden');
+            });
+        }
+    }
+
+    function createQuestionElement(question) {
+        const div = document.createElement('div');
+        div.className = 'question-item bg-white border border-gray-200 rounded-lg p-6 mb-6';
+        div.dataset.questionId = question.id;
+
+        const questionHeading = question.type === 'mcq' ? 'Multiple Choice Question' : 'Essay Question';
+
+        div.innerHTML = `
+            <div class="flex justify-between items-center mb-6">
+                <h4 class="font-bold text-gray-900 flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs">
+                        ${uploadData.quiz.questions.indexOf(question) + 1}
+                    </span>
+                    ${questionHeading}
+                </h4>
+                <button type="button" class="text-gray-400 hover:text-red-600 transition-colors remove-question" title="Remove Question">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+
+            <div class="preamble-container mb-4">
+                <div id="preambleSection_${question.id}" class="preamble-section ${question.preamble ? '' : 'hidden'}">
+                    <div class="preamble-label">
+                        <i class="fas fa-align-left"></i> Preamble / Context
+                    </div>
+                    <div class="rich-text-editor preamble-text" contenteditable="true" 
+                         placeholder="Enter optional preamble or reading passage here..."
+                         aria-label="Preamble text">${question.preamble || ''}</div>
+                </div>
+                <button type="button" class="add-preamble-btn ${question.preamble ? 'hidden' : ''}" 
+                        id="addPreambleBtn_${question.id}">
+                    <i class="fas fa-plus"></i> Add Preamble
+                </button>
+            </div>
+
+            <div class="mb-6 question-image-section">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Question Illustration (Optional)</label>
+                <div class="space-y-4">
+                    <div id="questionImageUpload_${question.id}" class="question-image-upload ${question.image ? 'hidden' : ''}">
+                        <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors cursor-pointer bg-gray-50 question-image-upload-area">
+                            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                            <p class="text-gray-600 font-semibold mb-1">Click to upload image</p>
+                            <p class="text-xs text-gray-500 text-uppercase">PNG, JPG, or WEBP up to 5MB</p>
+                            <input type="file" class="hidden question-image-input" accept=".png,.jpg,.jpeg,.webp">
+                        </div>
+                    </div>
+
+                    <div id="questionImagePreview_${question.id}" class="question-image-preview ${question.image ? '' : 'hidden'}">
+                        <div class="relative border border-gray-200 rounded-xl overflow-hidden bg-gray-50 p-2">
+                            <img src="${question.image || ''}" alt="Question image" class="w-full h-auto max-h-64 object-contain rounded-lg question-preview-img">
+                            <div class="absolute top-4 right-4 flex space-x-2">
+                                <button type="button" class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-50 transition-colors remove-question-image" title="Remove image">
+                                    <i class="fas fa-trash-alt text-red-600"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Question Text</label>
+                <div class="rich-text-toolbar">
+                    <button type="button" class="toolbar-tool" data-command="bold" title="Bold"><i class="fas fa-bold"></i></button>
+                    <button type="button" class="toolbar-tool" data-command="italic" title="Italic"><i class="fas fa-italic"></i></button>
+                    <button type="button" class="toolbar-tool" data-command="underline" title="Underline"><i class="fas fa-underline"></i></button>
+                </div>
+                <div class="rich-text-editor question-text" contenteditable="true" 
+                     placeholder="Type your question here..."
+                     aria-label="Question text">${question.question}</div>
+            </div>
+
+            ${question.type === 'mcq' ? `
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-4">Answer Options</label>
+                    <div class="space-y-4">
+                        ${question.options.map((option, index) => `
+                            <div class="flex items-start gap-4 p-4 border border-gray-100 rounded-xl bg-gray-50 group transition-all hover:bg-white hover:border-blue-200">
+                                <div class="mt-2">
+                                    <input type="radio" name="correct_${question.id}" value="${index}"
+                                        class="h-5 w-5 text-blue-600 focus:ring-blue-500 correct-answer" ${parseInt(question.correct_answer) === index ? 'checked' : ''}>
+                                </div>
+                                <div class="flex-1">
+                                     <div class="rich-text-editor option-text" contenteditable="true" 
+                                         placeholder="Option ${String.fromCharCode(65 + index)}"
+                                         aria-label="Option ${index + 1}">${option}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : `
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Reference Answer (Sample)</label>
+                     <div class="rich-text-editor correct-answer" contenteditable="true" 
+                         placeholder="Describe the expected answer for grading reference..."
+                         aria-label="Sample answer">${question.correct_answer}</div>
+                </div>
+            `}
+
+            <div class="flex items-center justify-between border-t pt-6">
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm font-semibold text-gray-700">Points:</label>
+                        <div class="relative w-24">
+                            <input type="number" class="w-full pl-3 pr-8 py-2 border border-gray-300 rounded-lg question-points focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                value="${question.points}" min="1" max="100">
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">pts</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Setup rich text editor behaviors
+        const editors = div.querySelectorAll('.rich-text-editor');
+        
+        editors.forEach(editor => {
+            editor.addEventListener('input', (e) => {
+                if (editor.classList.contains('question-text')) {
+                    question.question = editor.innerHTML;
+                } else if (editor.classList.contains('preamble-text')) {
+                    question.preamble = editor.innerHTML;
+                } else if (editor.classList.contains('option-text')) {
+                    const allOptions = div.querySelectorAll('.option-text');
+                    const index = Array.from(allOptions).indexOf(editor);
+                    if (index !== -1) question.options[index] = editor.innerHTML;
+                } else if (editor.classList.contains('correct-answer')) {
+                    question.correct_answer = editor.innerHTML;
+                }
+            });
+
+            editor.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+                document.execCommand('insertHTML', false, text);
+            });
+        });
+
+        // Setup toolbar tools
+        div.querySelectorAll('.toolbar-tool').forEach(tool => {
+            tool.addEventListener('click', (e) => {
+                e.preventDefault();
+                const command = tool.dataset.command;
+                document.execCommand(command, false, null);
+                tool.classList.toggle('active', document.queryCommandState(command));
+                
+                const container = tool.closest('.mb-6');
+                const editor = container.querySelector('.rich-text-editor');
+                if (editor) editor.focus();
+            });
+        });
+
+        div.addEventListener('keyup', () => updateToolbarState(div));
+        div.addEventListener('mouseup', () => updateToolbarState(div));
+
+        function updateToolbarState(container) {
+            container.querySelectorAll('.toolbar-tool').forEach(tool => {
+                const command = tool.dataset.command;
+                tool.classList.toggle('active', document.queryCommandState(command));
+            });
+        }
+
+        // Preamble toggle
+        const addPreambleBtn = div.querySelector(`#addPreambleBtn_${question.id}`);
+        const preambleSection = div.querySelector(`#preambleSection_${question.id}`);
+        if (addPreambleBtn && preambleSection) {
+            addPreambleBtn.addEventListener('click', () => {
+                preambleSection.classList.remove('hidden');
+                addPreambleBtn.classList.add('hidden');
+                const editor = preambleSection.querySelector('.rich-text-editor');
+                if (editor) editor.focus();
+            });
+        }
+
+        // Standard event listeners
+        const removeBtn = div.querySelector('.remove-question');
+        const questionPoints = div.querySelector('.question-points');
+
+        if (removeBtn) {
+            removeBtn.addEventListener('click', () => {
+                uploadData.quiz.questions = uploadData.quiz.questions.filter(q => q.id !== question.id);
+                div.remove();
+                // Update question numbers
+                document.querySelectorAll('.question-item').forEach((qDiv, idx) => {
+                    const numSpan = qDiv.querySelector('.bg-blue-100');
+                    if (numSpan) numSpan.textContent = idx + 1;
+                });
+            });
+        }
+
+        if (questionPoints) {
+            questionPoints.addEventListener('input', (e) => {
+                question.points = parseInt(e.target.value) || 1;
+            });
+        }
+
+        // Image upload handling
+        setupQuestionImageUpload(div, question);
+
+        if (question.type === 'mcq') {
+            const correctAnswers = div.querySelectorAll('.correct-answer');
+            correctAnswers.forEach((radio, index) => {
+                radio.addEventListener('change', () => {
+                    question.correct_answer = index;
+                });
+            });
+        }
+
+        return div;
+    }
+</script>
+@endpush

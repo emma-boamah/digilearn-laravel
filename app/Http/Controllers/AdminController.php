@@ -3781,13 +3781,19 @@ class AdminController extends Controller
             return redirect()->route('admin.contents.index')->withErrors(['content' => 'Content not found.']);
         }
 
-        // For videos, show the unified edit form
-        if ($contentType === 'video') {
+        // For videos and quizzes, show the unified edit form
+        if ($contentType === 'video' || $contentType === 'quiz') {
             $subjects = Subject::orderBy('name')->get();
-            $availableQuizzes = Quiz::whereNull('video_id')->orWhere('video_id', $contentId)->get();
-            $availableDocuments = Document::whereNull('video_id')->orWhere('video_id', $contentId)->get();
             $levelGroups = \App\Models\LevelGroup::with('levels')->orderBy('display_order')->get();
             $categories = \App\Models\ContentCategory::orderBy('name')->get();
+
+            if ($contentType === 'video') {
+                $availableQuizzes = Quiz::whereNull('video_id')->orWhere('video_id', $contentId)->get();
+                $availableDocuments = Document::whereNull('video_id')->orWhere('video_id', $contentId)->get();
+            } else {
+                $availableQuizzes = collect();
+                $availableDocuments = collect();
+            }
 
             return view('admin.contents.edit', compact('content', 'contentType', 'subjects', 'availableQuizzes', 'availableDocuments', 'levelGroups', 'categories'));
         }
@@ -3796,8 +3802,6 @@ class AdminController extends Controller
         switch ($contentType) {
             case 'document':
                 return redirect()->route('admin.content.documents.edit', $content);
-            case 'quiz':
-                return redirect()->route('admin.content.quizzes.edit', $content);
             default:
                 return redirect()->route('admin.contents.index')->withErrors(['content' => 'Unknown content type.']);
         }
@@ -3809,54 +3813,91 @@ class AdminController extends Controller
     public function updateContent(Request $request, $contentId)
     {
         $request->validate([
+            'title' => 'required|string|max:255',
             'subject_id' => 'required|exists:subjects,id',
             'grade_level' => 'required|string',
-            'quiz_id' => 'nullable|exists:quizzes,id',
+            'quiz_id' => 'nullable|exists:quizzes,id', // For video associations
             'document_ids' => 'nullable|array',
             'document_ids.*' => 'exists:documents,id',
             'is_featured' => 'boolean',
             'category_ids' => 'nullable|array',
-            'category_ids.*' => 'exists:content_categories,id'
+            'category_ids.*' => 'exists:content_categories,id',
+            'quiz_data' => 'nullable|string', // JSON string from builder
+            'quiz_difficulty' => 'nullable|string',
+            'quiz_time_limit' => 'nullable|integer'
         ]);
 
-        // Find the video
-        $video = Video::findOrFail($contentId);
+        // Find the content
+        $content = Video::find($contentId);
+        $contentType = 'video';
+        
+        if (!$content) {
+            $content = Quiz::find($contentId);
+            $contentType = 'quiz';
+        }
+
+        if (!$content) {
+            return redirect()->route('admin.contents.index')->withErrors(['content' => 'Content not found.']);
+        }
 
         try {
             DB::beginTransaction();
 
-            // Update video basic info
-            $video->update([
-                'subject_id' => $request->subject_id,
-                'grade_level' => $request->grade_level,
-                'is_featured' => $request->has('is_featured'),
-            ]);
+            if ($contentType === 'video') {
+                // Update video info
+                $content->update([
+                    'title' => $request->title,
+                    'subject_id' => $request->subject_id,
+                    'grade_level' => $request->grade_level,
+                    'is_featured' => $request->has('is_featured'),
+                    'quiz_id' => $request->quiz_id,
+                ]);
 
-            // Update quiz association
-            if ($request->filled('quiz_id')) {
-                $video->quiz_id = $request->quiz_id;
-                $video->save();
+                // Update document associations
+                if ($request->has('document_ids')) {
+                    Document::where('video_id', $content->id)->update(['video_id' => null]);
+                    Document::whereIn('id', $request->document_ids)->update(['video_id' => $content->id]);
+                } else {
+                    Document::where('video_id', $content->id)->update(['video_id' => null]);
+                }
+
+                // If quiz_data is provided, update the *associated* quiz
+                if ($request->filled('quiz_data') && $content->quiz_id) {
+                    $quiz = Quiz::find($content->quiz_id);
+                    if ($quiz) {
+                        $quizData = json_decode($request->quiz_data, true);
+                        $quizData = $this->processQuizImages($quizData, $request);
+                        
+                        $quiz->update([
+                            'quiz_data' => json_encode($quizData),
+                            'difficulty_level' => $request->quiz_difficulty ?? $quiz->difficulty_level,
+                            'time_limit_minutes' => $request->quiz_time_limit ?? $quiz->time_limit_minutes,
+                        ]);
+                    }
+                }
             } else {
-                $video->quiz_id = null;
-                $video->save();
+                // Update standalone quiz info
+                $quizData = [];
+                if ($request->filled('quiz_data')) {
+                    $quizData = json_decode($request->quiz_data, true);
+                    $quizData = $this->processQuizImages($quizData, $request);
+                }
+
+                $content->update([
+                    'title' => $request->title,
+                    'subject_id' => $request->subject_id,
+                    'grade_level' => $request->grade_level,
+                    'difficulty_level' => $request->quiz_difficulty,
+                    'time_limit_minutes' => $request->quiz_time_limit,
+                    'quiz_data' => !empty($quizData) ? json_encode($quizData) : $content->quiz_data,
+                ]);
             }
 
-            // Update document associations
-            if ($request->has('document_ids')) {
-                // Remove existing associations
-                Document::where('video_id', $video->id)->update(['video_id' => null]);
-                // Add new associations
-                Document::whereIn('id', $request->document_ids)->update(['video_id' => $video->id]);
-            } else {
-                // Remove all document associations
-                Document::where('video_id', $video->id)->update(['video_id' => null]);
-            }
-
-            // Sync categories
+            // Sync categories (common for both)
             if ($request->has('category_ids')) {
-                $video->categories()->sync($request->category_ids);
+                $content->categories()->sync($request->category_ids);
             } else {
-                $video->categories()->detach();
+                $content->categories()->detach();
             }
 
             DB::commit();
@@ -3865,15 +3906,15 @@ class AdminController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-
             Log::error('Content update failed', [
                 'content_id' => $contentId,
+                'type' => $contentType,
                 'error' => $e->getMessage()
             ]);
-
-            return redirect()->back()->withErrors(['error' => 'Failed to update content: ' . $e->getMessage()])->withInput();
+            return back()->withErrors(['error' => 'Update failed: ' . $e->getMessage()])->withInput();
         }
     }
+
 
     /**
      * Delete content from unified contents page

@@ -583,6 +583,7 @@
         }
     </style>
     @stack('styles')
+    @stack('extra-css')
 </head>
 
 <body>
@@ -891,7 +892,6 @@
             }
         }, 300000); // 5 minutes
     </script>
-    @stack('scripts')
     <script src="/js/avatar-updater.js"></script>
 
 
@@ -1042,6 +1042,7 @@
     </script>
 
     @stack('scripts')
+    @stack('extra-js')
 </body>
 
 </html>
