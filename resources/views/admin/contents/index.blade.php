@@ -964,7 +964,7 @@
                     @endforeach
                 </select>
             </div>
-            <button class="toolbar-btn primary" id="uploadBtn">
+            <button class="toolbar-btn primary" id="uploadBtnToolbar">
                 <i class="fas fa-upload"></i>
                 Upload
             </button>
@@ -1727,10 +1727,26 @@
 </div>
 
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    // Global state for upload wizard
+    let uploadData = {
+        video: null,
+        thumbnail: null,
+        video_source: 'local',
+        external_video_url: '',
+        category_ids: [],
+        documents: [],
+        quiz: {
+            questions: [],
+            difficulty_level: 'medium',
+            time_limit_minutes: 15
+        }
+    };
+    let currentStep = 1;
+
     // Grade picker toggle
     function toggleGradePicker() {
         const dropdown = document.getElementById('gradePickerDropdown');
-        dropdown.classList.toggle('open');
+        if (dropdown) dropdown.classList.toggle('open');
     }
 
     // Grade picker selection handler
@@ -1740,26 +1756,29 @@
         // Select clicked
         el.classList.add('selected');
         // Update hidden input
-        document.getElementById('grade_level').value = gradeValue;
+        const gradeInput = document.getElementById('grade_level');
+        if (gradeInput) gradeInput.value = gradeValue;
         // Update trigger text
         const trigger = document.getElementById('gradePickerTrigger');
         const triggerText = document.getElementById('gradePickerTriggerText');
-        triggerText.textContent = gradeValue;
-        trigger.classList.add('has-value');
+        if (triggerText) triggerText.textContent = gradeValue;
+        if (trigger) trigger.classList.add('has-value');
         // Close dropdown
-        document.getElementById('gradePickerDropdown').classList.remove('open');
+        const dropdown = document.getElementById('gradePickerDropdown');
+        if (dropdown) dropdown.classList.remove('open');
     }
 
     // Close grade picker when clicking outside
     document.addEventListener('click', function(e) {
         const dropdown = document.getElementById('gradePickerDropdown');
-        if (dropdown && !dropdown.contains(e.target)) {
+        if (dropdown && !dropdown.contains(e.target) && !e.target.closest('#gradePickerTrigger')) {
             dropdown.classList.remove('open');
         }
     });
 
     // Multi-step upload wizard and table functionality
-    document.addEventListener('DOMContentLoaded', function() {
+    function initializeDigilearn() {
+        console.log('DigiLearn Content Management Initializing...');
         // Table functionality
         const selectAll = document.getElementById('selectAll');
         const contentCheckboxes = document.querySelectorAll('.content-checkbox');
@@ -1825,23 +1844,25 @@
             });
         }
 
-        // Edit functionality
+        // Table actions delegation
         document.addEventListener('click', function(e) {
-            if (e.target.closest('.action-btn.edit-btn')) {
+            const target = e.target;
+            
+            // Edit button
+            const editBtn = target.closest('.action-btn.edit-btn');
+            if (editBtn) {
                 e.preventDefault();
-                const editBtn = e.target.closest('.action-btn.edit-btn');
                 const contentId = editBtn.getAttribute('data-content-id');
-
-                // Redirect to edit page
-                window.location.href = `{{ route("admin.contents.edit", ":contentId") }}`.replace(':contentId', contentId);
+                if (contentId) {
+                    window.location.href = `{{ route("admin.contents.edit", ":contentId") }}`.replace(':contentId', contentId);
+                }
+                return;
             }
-        });
 
-        // Delete functionality
-        document.addEventListener('click', function(e) {
-            if (e.target.closest('.action-btn.delete-btn')) {
+            // Delete button
+            const deleteBtn = target.closest('.action-btn.delete-btn');
+            if (deleteBtn) {
                 e.preventDefault();
-                const deleteBtn = e.target.closest('.action-btn.delete-btn');
                 const contentId = deleteBtn.getAttribute('data-content-id');
                 const contentType = deleteBtn.getAttribute('data-content-type');
                 const videoSource = deleteBtn.getAttribute('data-video-source');
@@ -1849,81 +1870,65 @@
                 const hasQuizzes = deleteBtn.getAttribute('data-has-quizzes') === 'true';
 
                 let confirmMessage = 'Are you sure you want to delete this content? This action cannot be undone.';
-
                 if (contentType === 'video') {
                     if (videoSource === 'vimeo') {
                         confirmMessage = 'Are you sure you want to delete this video? This will permanently delete the video from both the database AND Vimeo. This action cannot be undone.';
                     } else if (videoSource === 'youtube') {
                         confirmMessage = 'Are you sure you want to delete this video? This will only delete the video from the database (YouTube videos cannot be deleted remotely). This action cannot be undone.';
                     }
+                }
 
-                    if (confirm(confirmMessage)) {
-                        let deleteRelated = true;
-                        if (hasDocs || hasQuizzes) {
-                            let relatedText = [];
-                            if (hasDocs) relatedText.push('documents');
-                            if (hasQuizzes) relatedText.push('quizzes');
-                            
-                            // Using standard confirm for the second stage
-                            deleteRelated = confirm('This lesson has related ' + relatedText.join(' and ') + '.\n\nDo you ALSO want to delete these related items?\n\n(Click "Cancel" to ONLY delete the video media and keep the documents/quizzes as a video-less lesson)');
-                        }
-                        
+                if (confirm(confirmMessage)) {
+                    let deleteRelated = true;
+                    if (contentType === 'video' && (hasDocs || hasQuizzes)) {
+                        let relatedText = [];
+                        if (hasDocs) relatedText.push('documents');
+                        if (hasQuizzes) relatedText.push('quizzes');
+                        deleteRelated = confirm('This lesson has related ' + relatedText.join(' and ') + '.\n\nDo you ALSO want to delete these related items?\n\n(Click "Cancel" to ONLY delete the video media and keep the documents/quizzes as a video-less lesson)');
+                    }
+                    if (typeof deleteContent === 'function') {
                         deleteContent(contentId, contentType, videoSource, deleteRelated);
                     }
-                } else {
-                    // For standalone docs/quizzes
-                    confirmMessage = 'Are you sure you want to delete this content? This action cannot be undone.';
-                    if (confirm(confirmMessage)) {
-                        deleteContent(contentId, contentType, videoSource, true);
-                    }
                 }
+                return;
             }
-        });
 
-        // Preview video functionality
-        document.addEventListener('click', function(e) {
-            console.log('Click event:', e.target);
-            if (e.target.closest('.action-btn.preview-btn')) {
+            // Preview button
+            const previewBtn = target.closest('.action-btn.preview-btn');
+            if (previewBtn) {
                 e.preventDefault();
-                console.log('Preview button found');
-                const previewBtn = e.target.closest('.action-btn.preview-btn');
                 const videoId = previewBtn.getAttribute('data-video-id');
                 const videoTitle = previewBtn.getAttribute('data-video-title');
                 const videoUrl = previewBtn.getAttribute('data-video-url');
-
-                console.log('Preview button clicked:', { videoId, videoTitle, videoUrl });
-
                 if (!videoUrl || videoUrl === 'null') {
-                    alert('Video URL is not available. The video file may have expired or been deleted.');
+                    alert('Video URL is not available.');
                     return;
                 }
-
-                openVideoPreview(videoId, videoTitle, videoUrl);
-            }
-        });
-
-        // Approve video functionality
-        document.addEventListener('click', function(e) {
-            if (e.target.closest('.action-btn.approve-btn')) {
-                e.preventDefault();
-                const approveBtn = e.target.closest('.action-btn.approve-btn');
-                const videoId = approveBtn.getAttribute('data-video-id');
-
-                if (confirm('Are you sure you want to approve this video? It will be uploaded to the selected platform.')) {
-                    approveVideo(videoId);
+                if (typeof openVideoPreview === 'function') {
+                    openVideoPreview(videoId, videoTitle, videoUrl);
                 }
+                return;
             }
-        });
 
-        // Reject video functionality
-        document.addEventListener('click', function(e) {
-            if (e.target.closest('.action-btn.reject-btn')) {
+            // Approve button
+            const approveBtn = target.closest('.action-btn.approve-btn');
+            if (approveBtn) {
                 e.preventDefault();
-                const rejectBtn = e.target.closest('.action-btn.reject-btn');
-                const videoId = rejectBtn.getAttribute('data-video-id');
+                const videoId = approveBtn.getAttribute('data-video-id');
+                if (confirm('Are you sure you want to approve this video?')) {
+                    if (typeof approveVideo === 'function') approveVideo(videoId);
+                }
+                return;
+            }
 
+            // Reject button
+            const rejectBtn = target.closest('.action-btn.reject-btn');
+            if (rejectBtn) {
+                e.preventDefault();
+                const videoId = rejectBtn.getAttribute('data-video-id');
                 const reason = prompt('Please provide a reason for rejection (optional):');
-                rejectVideo(videoId, reason);
+                if (typeof rejectVideo === 'function') rejectVideo(videoId, reason);
+                return;
             }
         });
 
@@ -2167,37 +2172,26 @@
         const stepIndicators = document.querySelectorAll('.step-indicator');
         const stepPanes = document.querySelectorAll('.step-pane');
 
-        // Form data storage
-        let uploadData = {
-            video: null,
-            thumbnail: null,
-            video_source: 'local',
-            external_video_url: '',
-            category_ids: [],
-            documents: [],
-            quiz: {
-                questions: [],
-                difficulty_level: 'medium',
-                time_limit_minutes: 15
-            }
-        };
+        // Wizard state handled globally
 
-        let currentStep = 1;
 
         // Initialize wizard
         initializeWizard();
 
         function initializeWizard() {
-            if (!uploadBtn || !uploadModal || !closeModal || !prevBtn || !nextBtn || !skipBtn || !finishBtn) {
+            if (!uploadModal || !closeModal || !prevBtn || !nextBtn || !skipBtn || !finishBtn) {
                 console.error('Required modal elements not found');
                 return;
             }
 
             // Open modal
-            uploadBtn.addEventListener('click', () => {
+            const openModal = () => {
                 uploadModal.classList.add('show');
                 resetWizard();
-            });
+            };
+            if (uploadBtn) uploadBtn.addEventListener('click', openModal);
+            const uploadBtnToolbar = document.getElementById('uploadBtnToolbar');
+            if (uploadBtnToolbar) uploadBtnToolbar.addEventListener('click', openModal);
 
             // Close modal
             closeModal.addEventListener('click', () => {
@@ -4018,6 +4012,13 @@
 
             console.log('Upload progress broadcasting initialized');
         }
-    });
+    }
+
+    // Robust document ready handling
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeDigilearn);
+    } else {
+        initializeDigilearn();
+    }
 </script>
 @endsection
