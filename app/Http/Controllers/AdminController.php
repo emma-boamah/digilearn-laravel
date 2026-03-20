@@ -3218,10 +3218,12 @@ class AdminController extends Controller
             }));
         }
 
-        // Get standalone documents (only when specifically filtering for documents)
-        if ($type === 'documents') {
-            $documents = Document::with(['uploader:id,name,email'])
-                ->whereNull('video_id') // Only standalone documents
+        // Get standalone documents (when specifically filtering for documents OR when 'all' is selected)
+        if ($type === 'all' || $type === 'documents') {
+            $documentsQuery = Document::with(['uploader:id,name,email'])
+                ->when($type === 'all', function($q) {
+                    $q->whereNull('video_id'); // Only standalone in 'all' view
+                })
                 ->when($query, function($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
                       ->orWhere('description', 'like', "%{$query}%");
@@ -3237,8 +3239,9 @@ class AdminController extends Controller
                     $q->whereHas('categories', function($catQ) use ($contextSlug) {
                         $catQ->where('slug', $contextSlug);
                     });
-                })
-                ->select([
+                });
+
+            $documents = $documentsQuery->select([
                     'id', 'title', 'description', 'file_path', 'views', 'created_at',
                     'uploaded_by', 'grade_level',
                     DB::raw("'document' as content_type"),
@@ -3259,10 +3262,12 @@ class AdminController extends Controller
             }));
         }
 
-        // Get standalone quizzes (only when specifically filtering for quizzes)
-        if ($type === 'quizzes') {
-            $quizzes = Quiz::with(['uploader:id,name,email', 'ratings', 'subject:id,name'])
-                ->whereNull('video_id') // Only standalone quizzes
+        // Get quizzes (when specifically filtering for quizzes OR when 'all' is selected)
+        if ($type === 'all' || $type === 'quizzes') {
+            $quizzesQuery = Quiz::with(['uploader:id,name,email', 'ratings', 'subject:id,name'])
+                ->when($type === 'all', function($q) {
+                    $q->whereNull('video_id'); // Only standalone in 'all' view to avoid lesson duplicates
+                })
                 ->when($query, function($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
                       ->orWhereHas('subject', function($subQ) use ($query) {
@@ -3280,12 +3285,13 @@ class AdminController extends Controller
                     $q->whereHas('categories', function($catQ) use ($contextSlug) {
                         $catQ->where('slug', $contextSlug);
                     });
-                })
-                ->select([
+                });
+
+            $quizzes = $quizzesQuery->select([
                     'id', 'title', 'created_at', 'uploaded_by',
-                    'grade_level', 'is_featured', 'subject_id',
+                    'grade_level', 'is_featured', 'subject_id', 'video_id',
                     DB::raw("'quiz' as content_type"),
-                    DB::raw('0 as views'),
+                    DB::raw('attempts_count as views'), // Use attempts_count for sorting by views
                     DB::raw('0 as likes'),
                     DB::raw('0 as dislikes'),
                     DB::raw('0 as comments_count'),
