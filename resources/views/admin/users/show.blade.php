@@ -814,7 +814,9 @@
             return;
         }
 
-        fetch(`/admin/users/${userId}/demote`, {
+        const url = "{{ route('admin.users.demote', $user->id) }}";
+
+        fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
