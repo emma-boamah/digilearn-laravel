@@ -158,8 +158,13 @@
     }
 
     @keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     /* Mobile: Reduce padding and gap on filter bar */
@@ -1461,12 +1466,13 @@
     }
 
     .bece-badge {
-        background: linear-gradient(135deg, #FFD700, #FFA500);
-        color: #000;
+        background: #FCE8EA;
+        color: #E11E2D;
     }
 
     .wassce-badge {
-        background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+        background: #FCE8EA;
+        color: #E11E2D;
     }
 
     .lesson-level-badge {
@@ -5826,12 +5832,12 @@ $selectedLevel = $lesson['level_group'] ?? 'primary-lower';
             e.stopPropagation();
 
             const card = saveBtn.closest('.related-video-item');
-            
+
             // Check for restricted access
             if (card && card.classList.contains('restricted-lesson')) {
                 const upgradePrompt = card.dataset.upgradePrompt ? JSON.parse(card.dataset.upgradePrompt) : null;
                 const planSlug = (upgradePrompt && upgradePrompt.required_plan_slug) ? upgradePrompt.required_plan_slug : 'essential';
-                
+
                 if (window.openUpgradeModal) {
                     window.openUpgradeModal(planSlug);
                 } else {

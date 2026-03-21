@@ -1,68 +1,56 @@
 @php
-    use Illuminate\Support\Str;
+use Illuminate\Support\Str;
 @endphp
 
 @props([
-    'videoId' => null,
-    'videoSource' => 'local',
-    'vimeoId' => null,
-    'externalVideoId' => null,
-    'muxPlaybackId' => null,
-    'thumbnail' => null,
-    'title' => '',
-    'duration' => '',
-    'levelDisplay' => '',
-    'subject' => '',
-    'instructor' => '',
-    'year' => '',
-    'lessonId' => null,
-    'courseId' => null,
-    'class' => 'lesson-card',
-    'showLevelBadge' => true,
-    'showDuration' => true,
-    'showPlayOverlay' => true,
-    'lazyLoad' => true,
-    'isRestricted' => false,
-    'upgradePrompt' => null,
-    'categories' => []
+'videoId' => null,
+'videoSource' => 'local',
+'vimeoId' => null,
+'externalVideoId' => null,
+'muxPlaybackId' => null,
+'thumbnail' => null,
+'title' => '',
+'duration' => '',
+'levelDisplay' => '',
+'subject' => '',
+'instructor' => '',
+'year' => '',
+'lessonId' => null,
+'courseId' => null,
+'class' => 'lesson-card',
+'showLevelBadge' => true,
+'showDuration' => true,
+'showPlayOverlay' => true,
+'lazyLoad' => true,
+'isRestricted' => false,
+'upgradePrompt' => null,
+'categories' => []
 ])
 
-<div class="{{ $class }} video-facade-card hover-video-card"
-     data-video-id="{{ $videoId }}"
-     data-lesson-id="{{ $lessonId }}"
-     data-course-id="{{ $courseId }}"
-     data-video-source="{{ $videoSource }}"
-     data-vimeo-id="{{ $vimeoId }}"
-     data-external-video-id="{{ $externalVideoId }}"
-     data-mux-playback-id="{{ $muxPlaybackId }}"
-     data-title="{{ $title }}"
-     data-thumbnail="{{ $thumbnail }}"
-     data-duration="{{ $duration }}"
-     data-instructor="{{ $instructor }}"
-     data-year="{{ $year }}"
-     data-subject="{{ $attributes->get('data-subject', '') }}"
-     data-video-url="{{ $attributes->get('data-video-url', '') }}"
-     data-selected-level="{{ $attributes->get('data-selected-level', 'primary-lower') }}"
-     data-loaded="false"
-     data-access-level="{{ $isRestricted ? 'preview' : 'full' }}"
-     @if($isRestricted) data-upgrade-prompt="{{ json_encode($upgradePrompt) }}" @endif
-     @if($lazyLoad) data-lazy="true" @endif>
+<div class="{{ $class }} video-facade-card hover-video-card" data-video-id="{{ $videoId }}"
+    data-lesson-id="{{ $lessonId }}" data-course-id="{{ $courseId }}" data-video-source="{{ $videoSource }}"
+    data-vimeo-id="{{ $vimeoId }}" data-external-video-id="{{ $externalVideoId }}"
+    data-mux-playback-id="{{ $muxPlaybackId }}" data-title="{{ $title }}" data-thumbnail="{{ $thumbnail }}"
+    data-duration="{{ $duration }}" data-instructor="{{ $instructor }}" data-year="{{ $year }}"
+    data-subject="{{ $attributes->get('data-subject', '') }}"
+    data-video-url="{{ $attributes->get('data-video-url', '') }}"
+    data-selected-level="{{ $attributes->get('data-selected-level', 'primary-lower') }}" data-loaded="false"
+    data-access-level="{{ $isRestricted ? 'preview' : 'full' }}" @if($isRestricted)
+    data-upgrade-prompt="{{ json_encode($upgradePrompt) }}" @endif @if($lazyLoad) data-lazy="true" @endif>
 
     <div class="lesson-thumbnail">
         <!-- Static Thumbnail Image -->
-        <img
-            src="{{ $thumbnail ?: asset('images/placeholder.png') }}"
-            alt="{{ $title }}"
-            class="video-facade-thumbnail"
+        <img src="{{ $thumbnail ?: asset('images/placeholder.png') }}" alt="{{ $title }}" class="video-facade-thumbnail"
             loading="{{ $lazyLoad ? 'lazy' : 'eager' }}"
-            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-        />
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
 
         <!-- Fallback when image fails to load -->
-        <div class="thumbnail-fallback" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #E11E2D, #2677B8); align-items: center; justify-content: center; color: white; font-weight: 600;">
+        <div class="thumbnail-fallback"
+            style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #E11E2D, #2677B8); align-items: center; justify-content: center; color: white; font-weight: 600;">
             <div style="text-align: center;">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" style="margin-bottom: 8px; opacity: 0.8;">
-                    <path d="M8 5v14l11-7z"/>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor"
+                    style="margin-bottom: 8px; opacity: 0.8;">
+                    <path d="M8 5v14l11-7z" />
                 </svg>
                 <div style="font-size: 14px;">{{ Str::limit($title, 20) }}</div>
             </div>
@@ -83,21 +71,22 @@
 
         <!-- Category Badges -->
         @if(!empty($categories))
-            <div class="category-badges-container">
-                @foreach($categories as $category)
-                    @php
-                        $catSlug = strtolower($category['slug'] ?? '');
-                        $isBece = str_contains($catSlug, 'bece');
-                        $isWassce = str_contains($catSlug, 'wassce');
-                        $currentLevelGroup = $attributes->get('data-selected-level', session('selected_level_group', Auth::user()->current_level_group ?? 'primary-lower'));
-                    @endphp
-                    @if($isBece || ($isWassce && str_contains(strtolower($currentLevelGroup), 'shs')))
-                        <div class="category-badge {{ $isBece ? 'bece-badge' : 'wassce-badge' }}">
-                            {{ strtoupper($category['name']) }}
-                        </div>
-                    @endif
-                @endforeach
+        <div class="category-badges-container">
+            @foreach($categories as $category)
+            @php
+            $catSlug = strtolower($category['slug'] ?? '');
+            $isBece = str_contains($catSlug, 'bece');
+            $isWassce = str_contains($catSlug, 'wassce');
+            $currentLevelGroup = $attributes->get('data-selected-level', session('selected_level_group',
+            Auth::user()->current_level_group ?? 'primary-lower'));
+            @endphp
+            @if($isBece || ($isWassce && str_contains(strtolower($currentLevelGroup), 'shs')))
+            <div class="category-badge {{ $isBece ? 'bece-badge' : 'wassce-badge' }}">
+                {{ strtoupper($category['name']) }}
             </div>
+            @endif
+            @endforeach
+        </div>
         @endif
 
         <!-- Play Overlay -->
@@ -105,7 +94,7 @@
         <div class="play-overlay">
             <div class="play-button">
                 <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"/>
+                    <path d="M8 5v14l11-7z" />
                 </svg>
             </div>
         </div>
@@ -116,7 +105,8 @@
         <div class="premium-badge">Premium</div>
         <div class="premium-lock-overlay">
             <div class="lock-icon-circle">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                     <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
@@ -156,18 +146,22 @@
         @else
         <div class="lesson-actions">
             <div class="action-icons-group">
-                <button class="action-icon-btn save-btn" title="Save for later" data-lesson-id="{{ \App\Services\UrlObfuscator::encode($videoId) }}" @if(isset($courseId)) data-course-id="{{ \App\Services\UrlObfuscator::encode($courseId) }}" @endif>
+                <button class="action-icon-btn save-btn" title="Save for later"
+                    data-lesson-id="{{ \App\Services\UrlObfuscator::encode($videoId) }}" @if(isset($courseId))
+                    data-course-id="{{ \App\Services\UrlObfuscator::encode($courseId) }}" @endif>
                     <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                        <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                     </svg>
                 </button>
                 @php
-                    $targetQuizId = isset($lesson['encoded_quiz_id']) ? $lesson['encoded_quiz_id'] : null;
-                    $quizUrl = $targetQuizId ? route('quiz.instructions', ['quizId' => $targetQuizId]) : route('quiz.index');
+                $targetQuizId = isset($lesson['encoded_quiz_id']) ? $lesson['encoded_quiz_id'] : null;
+                $quizUrl = $targetQuizId ? route('quiz.instructions', ['quizId' => $targetQuizId]) :
+                route('quiz.index');
                 @endphp
                 <a href="{{ $quizUrl }}" class="action-icon-btn quiz-btn" title="Take Quiz">
                     <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        <path
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                 </a>
             </div>
@@ -177,322 +171,341 @@
 </div>
 
 <style nonce="{{ request()->attributes->get('csp_nonce') }}">
-.video-facade-card {
-    display: flex;
-    flex-direction: column;
-    background-color: var(--white);
-    border-radius: 0.75rem;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: all 0.2s ease;
-    cursor: pointer;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.lesson-thumbnail {
-    position: relative;
-    aspect-ratio: 16/9;
-    overflow: hidden;
-    flex: 1;
-    min-height: 180px;
-}
-
-.lesson-duration {
-    position: absolute;
-    bottom: 0.5rem;
-    right: 0.5rem;
-    background-color: rgba(0, 0, 0, 0.8);
-    color: var(--white);
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    z-index: 10;
-}
-
-.lesson-level-badge {
-    position: absolute;
-    top: 0.5rem;
-    left: 0.5rem;
-    background-color: var(--secondary-blue);
-    color: var(--white);
-    padding: 0.25rem 0.75rem;
-    border-radius: 1rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    z-index: 10;
-}
-
-.category-badges-container {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    z-index: 10;
-}
-
-.category-badge {
-    padding: 0.2rem 0.6rem;
-    border-radius: 0.25rem;
-    font-size: 0.65rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    text-align: center;
-    min-width: 50px;
-}
-
-.bece-badge {
-    background: linear-gradient(135deg, #FFD700, #FFA500);
-    color: #000;
-}
-
-.wassce-badge {
-    background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-}
-
-.play-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(0, 0, 0, 0.2);
-    opacity: 1;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-    z-index: 5;
-}
-
-.video-facade-card.playing .play-overlay {
-    opacity: 0;
-}
-
-.video-facade-card:not(.playing):hover .play-overlay {
-    opacity: 1;
-    background-color: rgba(0, 0, 0, 0.4);
-}
-
-/* Premium Restricted Styles */
-.premium-lock-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(0, 0, 0, 0.4);
-    z-index: 6;
-    color: white;
-}
-
-.premium-badge {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    color: white;
-    padding: 0.25rem 0.75rem;
-    border-radius: 0.25rem;
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    z-index: 7;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.lock-icon-circle {
-    width: 50px;
-    height: 50px;
-    background-color: rgba(0, 0, 0, 0.6);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    transition: all 0.3s ease;
-}
-
-.video-facade-card:hover .lock-icon-circle {
-    transform: scale(1.1);
-    background-color: rgba(0, 0, 0, 0.82);
-    border-color: rgba(255, 255, 255, 0.4);
-}
-
-.video-facade-card[data-access-level="preview"] .play-overlay {
-    display: none !important;
-}
-
-.play-button {
-    width: 60px;
-    height: 60px;
-    background-color: rgba(255, 255, 255, 0.9);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--primary-red);
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-}
-
-.video-facade-card:hover .play-button {
-    background-color: var(--primary-red);
-    color: var(--white);
-    transform: scale(1.1);
-}
-
-.video-facade-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
-.video-facade-thumbnail {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 1;
-}
-
-.video-preview {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 2; /* Between thumbnail and badges */
-    pointer-events: none !important; /* CRITICAL: Allow clicks to pass through to the card */
-}
-
-.csp-facade-player {
-    width: 100% !important;
-    height: 100% !important;
-    border: none !important;
-    position: absolute;
-    top: 0;
-    left: 0;
-    pointer-events: none !important; /* CRITICAL: Prevent iframe from stealing clicks */
-}
-
-.video-facade-card.playing .video-facade-thumbnail {
-    opacity: 0;
-}
-
-.video-facade-card.playing .play-overlay {
-    opacity: 0;
-}
-
-/* Loading state */
-.video-facade-card.loading .video-facade-thumbnail {
-    filter: blur(2px);
-}
-
-.video-facade-card.loading::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    border-top: 3px solid var(--primary-red);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    z-index: 2;
-}
-
-@keyframes spin {
-    0% { transform: translate(-50%, -50%) rotate(0deg); }
-    100% { transform: translate(-50%, -50%) rotate(360deg); }
-}
-
-/* Error state */
-.video-facade-card.error .video-facade-thumbnail {
-    filter: grayscale(100%);
-    opacity: 0.5;
-}
-
-.video-facade-card.error::before {
-    content: '⚠️ Video unavailable';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 12px;
-    z-index: 2;
-}
-
-/* Lazy loading placeholder */
-.video-facade-card[data-lazy="true"]:not(.loaded) .video-facade-thumbnail {
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: loading-shimmer 1.5s infinite;
-}
-
-@keyframes loading-shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-}
-
-.video-facade-card.loaded .video-facade-thumbnail {
-    animation: none;
-}
-
-/* Preconnect hints for external video sources */
-.video-facade-card[data-video-source="vimeo"] {
-    /* Preconnect to Vimeo domains */
-}
-
-.video-facade-card[data-video-source="youtube"] {
-    /* Preconnect to YouTube domains */
-}
-
-.video-facade-card[data-video-source="mux"] {
-    /* Preconnect to Mux domains */
-}
-
-/* Optimized thumbnail loading */
-.video-facade-thumbnail {
-    transition: opacity 0.3s ease;
-    will-change: opacity;
-}
-
-.video-facade-thumbnail.loaded {
-    opacity: 1;
-}
-
-/* Reduced motion for accessibility */
-@media (prefers-reduced-motion: reduce) {
     .video-facade-card {
-        transition: none;
+        display: flex;
+        flex-direction: column;
+        background-color: var(--white);
+        border-radius: 0.75rem;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s ease;
+        cursor: pointer;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .lesson-thumbnail {
+        position: relative;
+        aspect-ratio: 16/9;
+        overflow: hidden;
+        flex: 1;
+        min-height: 180px;
+    }
+
+    .lesson-duration {
+        position: absolute;
+        bottom: 0.5rem;
+        right: 0.5rem;
+        background-color: rgba(0, 0, 0, 0.8);
+        color: var(--white);
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        z-index: 10;
+    }
+
+    .lesson-level-badge {
+        position: absolute;
+        top: 0.5rem;
+        left: 0.5rem;
+        background-color: var(--secondary-blue);
+        color: var(--white);
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        z-index: 10;
+    }
+
+    .category-badges-container {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        z-index: 10;
+    }
+
+    .category-badge {
+        padding: 0.2rem 0.6rem;
+        border-radius: 0.25rem;
+        font-size: 0.65rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        text-align: center;
+        min-width: 50px;
+    }
+
+    .bece-badge {
+        background: #FCE8EA;
+        color: #E11E2D;
+    }
+
+    .wassce-badge {
+        background: #FCE8EA;
+        color: #E11E2D;
+    }
+
+    .play-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(0, 0, 0, 0.2);
+        opacity: 1;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+        z-index: 5;
+    }
+
+    .video-facade-card.playing .play-overlay {
+        opacity: 0;
+    }
+
+    .video-facade-card:not(.playing):hover .play-overlay {
+        opacity: 1;
+        background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    /* Premium Restricted Styles */
+    .premium-lock-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(0, 0, 0, 0.4);
+        z-index: 6;
+        color: white;
+    }
+
+    .premium-badge {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.25rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        z-index: 7;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .lock-icon-circle {
+        width: 50px;
+        height: 50px;
+        background-color: rgba(0, 0, 0, 0.6);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all 0.3s ease;
+    }
+
+    .video-facade-card:hover .lock-icon-circle {
+        transform: scale(1.1);
+        background-color: rgba(0, 0, 0, 0.82);
+        border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .video-facade-card[data-access-level="preview"] .play-overlay {
+        display: none !important;
+    }
+
+    .play-button {
+        width: 60px;
+        height: 60px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary-red);
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .video-facade-card:hover .play-button {
+        background-color: var(--primary-red);
+        color: var(--white);
+        transform: scale(1.1);
     }
 
     .video-facade-card:hover {
-        transform: none;
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
     }
 
     .video-facade-thumbnail {
-        transition: none;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 1;
+    }
+
+    .video-preview {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 2;
+        /* Between thumbnail and badges */
+        pointer-events: none !important;
+        /* CRITICAL: Allow clicks to pass through to the card */
+    }
+
+    .csp-facade-player {
+        width: 100% !important;
+        height: 100% !important;
+        border: none !important;
+        position: absolute;
+        top: 0;
+        left: 0;
+        pointer-events: none !important;
+        /* CRITICAL: Prevent iframe from stealing clicks */
+    }
+
+    .video-facade-card.playing .video-facade-thumbnail {
+        opacity: 0;
+    }
+
+    .video-facade-card.playing .play-overlay {
+        opacity: 0;
+    }
+
+    /* Loading state */
+    .video-facade-card.loading .video-facade-thumbnail {
+        filter: blur(2px);
+    }
+
+    .video-facade-card.loading::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-top: 3px solid var(--primary-red);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        z-index: 2;
+    }
+
+    @keyframes spin {
+        0% {
+            transform: translate(-50%, -50%) rotate(0deg);
+        }
+
+        100% {
+            transform: translate(-50%, -50%) rotate(360deg);
+        }
+    }
+
+    /* Error state */
+    .video-facade-card.error .video-facade-thumbnail {
+        filter: grayscale(100%);
+        opacity: 0.5;
+    }
+
+    .video-facade-card.error::before {
+        content: '⚠️ Video unavailable';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        z-index: 2;
+    }
+
+    /* Lazy loading placeholder */
+    .video-facade-card[data-lazy="true"]:not(.loaded) .video-facade-thumbnail {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading-shimmer 1.5s infinite;
     }
 
     @keyframes loading-shimmer {
-        0% { background-position: 0 0; }
-        100% { background-position: 0 0; }
+        0% {
+            background-position: -200% 0;
+        }
+
+        100% {
+            background-position: 200% 0;
+        }
     }
-}
+
+    .video-facade-card.loaded .video-facade-thumbnail {
+        animation: none;
+    }
+
+    /* Preconnect hints for external video sources */
+    .video-facade-card[data-video-source="vimeo"] {
+        /* Preconnect to Vimeo domains */
+    }
+
+    .video-facade-card[data-video-source="youtube"] {
+        /* Preconnect to YouTube domains */
+    }
+
+    .video-facade-card[data-video-source="mux"] {
+        /* Preconnect to Mux domains */
+    }
+
+    /* Optimized thumbnail loading */
+    .video-facade-thumbnail {
+        transition: opacity 0.3s ease;
+        will-change: opacity;
+    }
+
+    .video-facade-thumbnail.loaded {
+        opacity: 1;
+    }
+
+    /* Reduced motion for accessibility */
+    @media (prefers-reduced-motion: reduce) {
+        .video-facade-card {
+            transition: none;
+        }
+
+        .video-facade-card:hover {
+            transform: none;
+        }
+
+        .video-facade-thumbnail {
+            transition: none;
+        }
+
+        @keyframes loading-shimmer {
+            0% {
+                background-position: 0 0;
+            }
+
+            100% {
+                background-position: 0 0;
+            }
+        }
+    }
 </style>
