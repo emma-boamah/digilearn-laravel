@@ -2450,7 +2450,7 @@
             </div>
         </div>
 
-        <!-- Sepaarate Horizontal Filters (Context & Subjects) -->
+        <!-- Separate Horizontal Filters (Context & Subjects) -->
         <div class="subjects-filter-container">
             <!-- Row 1: Context Filter -->
             <div class="subjects-filter context-filter">
