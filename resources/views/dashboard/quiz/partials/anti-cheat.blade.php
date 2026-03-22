@@ -1,5 +1,6 @@
-<style>
-  .question-text, .option {
+<style nonce="{{ request()->attributes->get('csp_nonce') }}">
+  .question-text,
+  .option {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -7,30 +8,31 @@
   }
 </style>
 <script id="security-script" nonce="{{ request()->attributes->get('csp_nonce') }}">
-(function() {
-  const quizId = {!! json_encode($quiz['id'] ?? null) !!};
+  (function () {
+    const quizId = {!! json_encode($quiz['id'] ?? null)!!
+  };
   // Use the verified route structure
   const baseUrl = '{{ url("/quiz") }}/' + quizId;
   const violationUrl = baseUrl + '/violation';
   const heartbeatUrl = baseUrl + '/heartbeat';
-  
+
   let violationPoints = 0;
   const MAX_POINTS = 10;
   let isLockedOut = false;
   let isClearingBlocker = false;
   let isInitialLoad = true; // Prevents instant lockout on page load
-  
+
   // Enhanced Mobile Detection (Hardware-Level)
   const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-  
+
   // Detection logic for "Fake Mobile" (Desktop pretending to be mobile)
   let isMobile = isMobileUA; // Strictly follow UA for security enforcement
   const isRealMobile = isTouchDevice && isMobileUA;
-  
+
   // Randomized security identifier
   const SECURITY_ID = 'sb_' + Math.random().toString(36).substring(2, 9);
-  
+
   // Weighted Points Configuration
   const POINT_VALUES = {
     'copy': 10,
@@ -94,11 +96,11 @@
     if (isLockedOut || isInitialLoad) return;
 
     let points = pointsOverride !== null ? pointsOverride : (POINT_VALUES[type] || 1);
-    
+
     // Grace Period Logic: If returning within 3 seconds, reduce/negate points for blur events
     if (type === 'window_blur' || type === 'tab_switch') {
       // Points will be finalized on "focus" or "visibilitychange" to visible
-      return; 
+      return;
     }
 
     violationPoints += points;
@@ -122,7 +124,7 @@
         },
         body: JSON.stringify({ type, details, points })
       });
-    } catch (e) {}
+    } catch (e) { }
   }
 
   /**
@@ -131,7 +133,7 @@
   function triggerLockout(type, details) {
     if (isLockedOut) return;
     isLockedOut = true;
-    
+
     // Hide quiz content immediately
     const quizForm = document.querySelector('form[data-quiz-form]');
     if (quizForm) quizForm.style.display = 'none';
@@ -170,7 +172,7 @@
           modal.remove();
           document.body.style.overflow = '';
           if (!isMobile) {
-            document.documentElement.requestFullscreen().catch(() => {});
+            document.documentElement.requestFullscreen().catch(() => { });
           }
         }
       }
@@ -190,7 +192,7 @@
     const modal = document.createElement('div');
     modal.id = config.id;
     modal.style = `position:fixed;top:0;left:0;right:0;bottom:0;background:${bg};z-index:100000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);font-family:'Inter',sans-serif;`;
-    
+
     modal.innerHTML = `
       <div style="background:white;border-radius:1.5rem;padding:2.5rem;max-width:480px;width:90%;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);border-top:8px solid ${color};text-align:center;">
         <div style="width:72px;height:72px;background:${config.type === 'error' ? '#FEE2E2' : '#FEF3C7'};border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;">
@@ -237,12 +239,12 @@
    * Environmental Enforcement & Enhanced DevTools Detection
    */
   let devToolsOpenedByConsole = false;
-  
+
   // Method 1: The Getter Trap
   // When DevTools opens, it evaluates objects to display them. This triggers the getter.
   const element = new Image();
   Object.defineProperty(element, 'id', {
-    get: function() {
+    get: function () {
       // This ONLY runs if a human (or the DevTools UI) inspects the object
       devToolsOpenedByConsole = true;
     }
@@ -251,18 +253,18 @@
   function isDevToolsOpen() {
     // 1. Reset the getter flag
     devToolsOpenedByConsole = false;
-    
+
     // 2. The Getter Trap (Reliable for Firefox and Chrome)
     // We log the element. If DevTools is closed, the 'id' getter is never touched.
     console.log(element);
-    console.clear(); 
+    console.clear();
 
     // 3. Calibrated Dimension Analysis (Fixes Chrome false positives)
     // We increase the threshold to 200 to account for scrollbars/high-DPI scaling
-    const threshold = 200; 
+    const threshold = 200;
     const widthDiff = window.outerWidth - window.innerWidth > threshold;
     const heightDiff = window.outerHeight - window.innerHeight > threshold;
-    
+
     // 4. Firebug/External detection check
     const isFirebug = window.Firebug && window.Firebug.chrome && window.Firebug.chrome.isInitialized;
 
@@ -278,14 +280,14 @@
     // Logic: If the screen width is significantly larger than a standard monitor 
     // or the window's width, it usually means an extended desktop is active.
     const isExtendedDisplay = window.screen.width > 2560 && window.innerWidth < (window.screen.width / 1.1);
-    
+
     if (isExtendedDisplay) {
-        updateBlockerMessage(
-            "Multiple monitors or an ultra-wide extended display detected. Please disconnect external screens and use a single standard monitor.",
-            "I have disconnected extra screens",
-            () => { location.reload(); }
-        );
-        return true;
+      updateBlockerMessage(
+        "Multiple monitors or an ultra-wide extended display detected. Please disconnect external screens and use a single standard monitor.",
+        "I have disconnected extra screens",
+        () => { location.reload(); }
+      );
+      return true;
     }
     return false;
   }
@@ -294,7 +296,7 @@
   function runDebuggerTrap() {
     if (isDevToolsOpen() && !isInitialLoad) {
       const start = Date.now();
-      (function() { return false; })['constructor']('debugger')['call']();
+      (function () { return false; })['constructor']('debugger')['call']();
       const end = Date.now();
       // If the "debugger" line took more than 100ms to execute, 
       // it means a human was interacting with the breakpoint.
@@ -322,11 +324,11 @@
         <p style="color:#4B5563;margin-bottom:2rem;line-height:1.6;font-size:1rem;">${msg}</p>
         <button id="blocker-action-btn" style="background:#2563EB;color:white;padding:12px 24px;border-radius:0.75rem;border:none;cursor:pointer;font-weight:700;font-size:1.125rem;transition:transform 0.1s;">${buttonText}</button>
       </div>`;
-    
+
     if (!document.getElementById(SECURITY_ID)) {
       document.body.appendChild(blocker);
     }
-    
+
     document.getElementById('blocker-action-btn').onclick = buttonCallback;
   }
 
@@ -338,7 +340,7 @@
 
     // 1. DevTools Detection (The Getter Trap + Dimension)
     const devOpen = isDevToolsOpen();
-    
+
     if (!isRealMobile && devOpen) {
       updateBlockerMessage("Developer Tools detected. Please close all side panels/inspectors and refresh.");
       if (canReportEnv && !isInitialLoad) {
@@ -353,8 +355,8 @@
 
     // 3. Maximization Check (Desktop Only)
     // Checks if the browser window is at least 90% of the available screen area
-    const isNotMaximized = (window.screen.availWidth - window.outerWidth > 150) || 
-                           (window.screen.availHeight - window.outerHeight > 150);
+    const isNotMaximized = (window.screen.availWidth - window.outerWidth > 150) ||
+      (window.screen.availHeight - window.outerHeight > 150);
 
     if (!isMobile && isNotMaximized) {
       updateBlockerMessage(
@@ -368,11 +370,11 @@
     // 4. Fullscreen Enforcement (Desktop Only)
     if (!isMobile && !document.fullscreenElement) {
       updateBlockerMessage(
-        "Fullscreen mode is required to ensure a focused environment.", 
-        "Enter Fullscreen", 
+        "Fullscreen mode is required to ensure a focused environment.",
+        "Enter Fullscreen",
         () => {
           document.documentElement.requestFullscreen().catch(() => {
-              alert("Fullscreen failed. Please ensure you are not using a 'Private/Incognito' window that blocks it.");
+            alert("Fullscreen failed. Please ensure you are not using a 'Private/Incognito' window that blocks it.");
           });
         }
       );
@@ -397,7 +399,7 @@
           if (node.id === SECURITY_ID || node.id === 'security-script') {
             // Only lock if the blocker was removed while environment was still invalid
             if (!document.fullscreenElement && !isMobile) {
-                triggerLockout('tampering', 'Critical security modules were modified or removed.');
+              triggerLockout('tampering', 'Critical security modules were modified or removed.');
             }
           }
         });
@@ -437,7 +439,7 @@
     if (!lastTime) return;
 
     const awayDuration = (Date.now() - lastTime) / 1000;
-    
+
     if (awayDuration < 3) {
       // Small grace period violation (0 or 1 point)
       reportViolation(type, `Brief absence (${Math.round(awayDuration, 1)}s)`, 1);
@@ -445,7 +447,7 @@
       // Normal violation
       reportViolation(type, `Extended absence (${Math.round(awayDuration)}s)`, POINT_VALUES[type]);
     }
-    
+
     lastBlurTime = null;
     lastVisibilityHiddenTime = null;
     monitorEnvironment();
@@ -480,16 +482,16 @@
     // Block common cheat keys/shortcuts
     const blockedKeys = ['F12', 'PrintScreen', 'Alt', 'Meta', 'Control'];
     const isAppSwitch = (e.altKey && e.key === 'Tab') || (e.metaKey && e.key === 'Tab') || (e.key === 'Meta') || (e.key === 'OS');
-    
+
     if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) || ((e.ctrlKey || e.metaKey) && e.key === 'U')) {
       e.preventDefault();
       reportViolation('dev_tools', 'Developer Tools shortcut detected');
     }
     if (e.key === 'PrintScreen') { e.preventDefault(); reportViolation('screenshot', 'PrintScreen key pressed'); }
-    
+
     if (isAppSwitch) {
-        // We can't actually stop the OS from switching, but we can log the intent
-        reportViolation('window_blur', 'App switching attempt detected');
+      // We can't actually stop the OS from switching, but we can log the intent
+      reportViolation('window_blur', 'App switching attempt detected');
     }
   });
 
@@ -498,7 +500,7 @@
     document.addEventListener('touchstart', (e) => {
       if (e.touches.length > 1) reportViolation('multi_touch', 'Multi-touch gesture suspicious');
     }, { passive: false });
-    
+
     document.addEventListener('gesturestart', (e) => { e.preventDefault(); reportViolation('zoom_gesture', 'Zooming disabled during quiz'); });
   }
 
@@ -507,7 +509,7 @@
    */
   function submitQuizWithViolation(isFinal) {
     let form = document.querySelector('form[data-quiz-form]');
-    
+
     // If form doesn't exist ( lockout before user clicks submit), create it
     if (!form) {
       form = document.createElement('form');
@@ -537,7 +539,7 @@
       csrfInput.name = '_token';
       csrfInput.value = document.querySelector('meta[name="csrf-token"]').content;
       form.appendChild(csrfInput);
-      
+
       document.body.appendChild(form);
     }
 
@@ -548,7 +550,7 @@
       input.value = '1';
       form.appendChild(input);
     }
-    
+
     form.submit();
   }
 
@@ -561,5 +563,5 @@
     return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   }
 
-})();
+}) ();
 </script>
