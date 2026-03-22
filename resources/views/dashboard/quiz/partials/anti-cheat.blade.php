@@ -1,16 +1,29 @@
 <style nonce="{{ request()->attributes->get('csp_nonce') }}">
-  .question-text,
-  .option {
+  .question-text, .option {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
   }
+  .blocker-content-wrap { background:white; padding:3rem; border-radius:1.5rem; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1); max-width:500px; width:90%; border-top:8px solid #2563EB; }
+  .blocker-icon-wrap { width:64px; height:64px; background:#DBEAFE; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1.5rem; }
+  .blocker-title { color:#111827; margin-bottom:1rem; font-weight:800; font-size:1.5rem; }
+  .blocker-msg { color:#4B5563; margin-bottom:2rem; line-height:1.6; font-size:1rem; }
+  .blocker-btn { background:#2563EB; color:white; padding:12px 24px; border-radius:0.75rem; border:none; cursor:pointer; font-weight:700; font-size:1.125rem; transition:transform 0.1s; }
+  
+  .modal-container { background:white; border-radius:1.5rem; padding:2.5rem; max-width:480px; width:90%; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); text-align:center; }
+  .modal-icon-wrap { width:72px; height:72px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1.5rem; }
+  .modal-title { color:#111827; font-size:1.5rem; font-weight:800; margin-bottom:0.75rem; }
+  .modal-msg { color:#4B5563; font-size:1rem; line-height:1.5; margin-bottom:1.5rem; }
+  .modal-details { background:#F9FAFB; border-radius:1rem; padding:1rem; margin-bottom:2rem; font-size:0.875rem; color:#6B7280; font-weight:500; }
+  .modal-actions { display:flex; flex-direction:column; gap:0.75rem; }
+  .btn-primary { color:white; border:none; padding:1rem; border-radius:0.75rem; font-weight:700; cursor:pointer; transition:transform 0.1s; }
+  .btn-secondary { background:transparent; color:#6B7280; border:none; padding:0.5rem; font-size:0.875rem; font-weight:600; cursor:pointer; }
+  .modal-timer { margin-top:1.5rem; font-size:0.75rem; color:#9CA3AF; font-weight:bold; }
 </style>
 <script id="security-script" nonce="{{ request()->attributes->get('csp_nonce') }}">
-  (function () {
-    const quizId = {!! json_encode($quiz['id'] ?? null)!!
-  };
+(function() {
+  const quizId = {!! json_encode($quiz['id'] ?? null) !!};
   // Use the verified route structure
   const baseUrl = '{{ url("/quiz") }}/' + quizId;
   const violationUrl = baseUrl + '/violation';
@@ -93,20 +106,20 @@
    * Specialized Violation Handler
    */
   async function reportViolation(type, details, pointsOverride = null) {
-    if (isLockedOut || isInitialLoad) return;
+    if (isLockedOut) return;
 
     let points = pointsOverride !== null ? pointsOverride : (POINT_VALUES[type] || 1);
-
+    
     // Grace Period Logic: If returning within 3 seconds, reduce/negate points for blur events
     if (type === 'window_blur' || type === 'tab_switch') {
       // Points will be finalized on "focus" or "visibilitychange" to visible
-      return;
+      return; 
     }
 
     violationPoints += points;
     await syncViolation(type, details, points);
 
-    if (violationPoints >= MAX_POINTS) {
+    if (violationPoints >= MAX_POINTS && !isInitialLoad) {
       triggerLockout(type, details);
     } else if (points > 0) {
       showWarningModal(type, details, MAX_POINTS - violationPoints);
@@ -191,25 +204,38 @@
 
     const modal = document.createElement('div');
     modal.id = config.id;
-    modal.style = `position:fixed;top:0;left:0;right:0;bottom:0;background:${bg};z-index:100000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);font-family:'Inter',sans-serif;`;
+    Object.assign(modal.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      right: '0',
+      bottom: '0',
+      background: bg,
+      zIndex: '100000',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backdropFilter: 'blur(8px)',
+      fontFamily: "'Inter', sans-serif"
+    });
 
     modal.innerHTML = `
-      <div style="background:white;border-radius:1.5rem;padding:2.5rem;max-width:480px;width:90%;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);border-top:8px solid ${color};text-align:center;">
-        <div style="width:72px;height:72px;background:${config.type === 'error' ? '#FEE2E2' : '#FEF3C7'};border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;">
+      <div class="modal-container" style="border-top: 8px solid ${color}">
+        <div class="modal-icon-wrap" style="background: ${config.type === 'error' ? '#FEE2E2' : '#FEF3C7'}">
           <svg width="36" height="36" fill="${color}" viewBox="0 0 24 24">
              ${config.type === 'error' ? '<path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>' : '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>'}
           </svg>
         </div>
-        <h2 style="color:#111827;font-size:1.5rem;font-weight:800;margin-bottom:0.75rem;">${config.title}</h2>
-        <p style="color:#4B5563;font-size:1rem;line-height:1.5;margin-bottom:1.5rem;">${config.message}</p>
-        <div style="background:#F9FAFB;border-radius:1rem;padding:1rem;margin-bottom:2rem;font-size:0.875rem;color:#6B7280;font-weight:500;">
+        <h2 class="modal-title">${config.title}</h2>
+        <p class="modal-msg">${config.message}</p>
+        <div class="modal-details">
           ${config.details}
         </div>
-        <div style="display:flex;flex-direction:column;gap:0.75rem;">
-          <button id="modal-primary-btn" style="background:${color};color:white;border:none;padding:1rem;border-radius:0.75rem;font-weight:700;cursor:pointer;transition:transform 0.1s;">${config.primaryAction.text}</button>
-          ${config.secondaryAction ? `<button id="modal-secondary-btn" style="background:transparent;color:#6B7280;border:none;padding:0.5rem;font-size:0.875rem;font-weight:600;cursor:pointer;">${config.secondaryAction.text}</button>` : ''}
+        <div class="modal-actions">
+          <button id="modal-primary-btn" class="btn-primary" style="background: ${color}">${config.primaryAction.text}</button>
+          ${config.secondaryAction ? `<button id="modal-secondary-btn" class="btn-secondary">${config.secondaryAction.text}</button>` : ''}
         </div>
-        ${config.autoSubmit ? '<p style="margin-top:1.5rem;font-size:0.75rem;color:#9CA3AF;font-weight:bold;">Automatic submission in <span id="countdown">5</span>s</p>' : ''}
+        ${config.autoSubmit ? '<p class="modal-timer">Automatic submission in <span id="countdown">5</span>s</p>' : ''}
       </div>
     `;
 
@@ -217,9 +243,9 @@
     document.body.style.overflow = 'hidden';
 
     // Actions
-    modal.querySelector('#modal-primary-btn').onclick = () => config.primaryAction.callback(modal);
+    modal.querySelector('#modal-primary-btn').addEventListener('click', () => config.primaryAction.callback(modal));
     if (config.secondaryAction) {
-      modal.querySelector('#modal-secondary-btn').onclick = () => config.secondaryAction.callback(modal);
+      modal.querySelector('#modal-secondary-btn').addEventListener('click', () => config.secondaryAction.callback(modal));
     }
 
     if (config.autoSubmit) {
@@ -310,30 +336,64 @@
 
   const blocker = document.createElement('div');
   blocker.id = SECURITY_ID;
-  blocker.style = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(243, 244, 246, 0.95);z-index:999999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);font-family:\'Inter\',sans-serif;text-align:center;padding:20px;';
+  Object.assign(blocker.style, {
+    position: 'fixed',
+    top: '0',
+    left: '0',
+    right: '0',
+    bottom: '0',
+    background: 'rgba(243, 244, 246, 0.98)',
+    zIndex: '2147483647',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backdropFilter: 'blur(15px)',
+    fontFamily: "'Inter', sans-serif",
+    textAlign: 'center',
+    padding: '20px'
+  });
 
   function updateBlockerMessage(msg, buttonText = "Retry Connection", buttonCallback = () => location.reload()) {
+    blocker.style.display = 'flex';
     blocker.innerHTML = `
-      <div style="background:white;padding:3rem;border-radius:1.5rem;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);max-width:500px;width:90%;border-top:8px solid #2563EB;">
-        <div style="width:64px;height:64px;background:#DBEAFE;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;">
+      <div class="blocker-content-wrap">
+        <div class="blocker-icon-wrap">
           <svg width="32" height="32" fill="#2563EB" viewBox="0 0 24 24">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
           </svg>
         </div>
-        <h2 style="color:#111827;margin-bottom:1rem;font-weight:800;font-size:1.5rem;">Environment Check Required</h2>
-        <p style="color:#4B5563;margin-bottom:2rem;line-height:1.6;font-size:1rem;">${msg}</p>
-        <button id="blocker-action-btn" style="background:#2563EB;color:white;padding:12px 24px;border-radius:0.75rem;border:none;cursor:pointer;font-weight:700;font-size:1.125rem;transition:transform 0.1s;">${buttonText}</button>
+        <h2 class="blocker-title">Environment Check Required</h2>
+        <p class="blocker-msg">${msg}</p>
+        <button id="blocker-action-btn" class="blocker-btn">${buttonText}</button>
       </div>`;
 
     if (!document.getElementById(SECURITY_ID)) {
       document.body.appendChild(blocker);
     }
 
-    document.getElementById('blocker-action-btn').onclick = buttonCallback;
+    const actionBtn = blocker.querySelector('#blocker-action-btn');
+    if (actionBtn) {
+      actionBtn.addEventListener('click', buttonCallback);
+    }
   }
 
   function monitorEnvironment() {
     if (isLockedOut) return;
+    
+    // Auto-Correct: If screen is large, it's NOT a mobile device bypass
+    if (isMobile && window.screen.width > 1024) {
+        console.warn('[Security] Screen width > 1024 detected. Overriding isMobile to false.');
+        isMobile = false; 
+    }
+
+    // Diagnostic log
+    console.log('[Security] Environment Monitor:', { 
+        isMobile, 
+        isRealMobile, 
+        fullscreen: !!document.fullscreenElement,
+        res: `${window.screen.width}x${window.screen.height}`,
+        win: `${window.innerWidth}x${window.innerHeight}`
+    });
 
     const now = Date.now();
     const canReportEnv = (now - lastEnvViolationTime) > 10000; // 10s throttle
@@ -426,12 +486,27 @@
    * Event Listeners (Enhanced)
    */
 
-  // 1. Visibility & Blur (With Grace Period)
-  window.addEventListener('blur', () => { lastBlurTime = Date.now(); });
-  document.addEventListener('visibilitychange', () => { if (document.hidden) lastVisibilityHiddenTime = Date.now(); });
+  // 1. Visibility & Blur (With Grace Period & Screenshot Defense)
+  window.addEventListener('blur', () => { 
+    lastBlurTime = Date.now();
+    // Screenshot Defense: Instant Blur Overlay
+    updateBlockerMessage("Security Alert: Quiz content is hidden while browser focus is lost to prevent unauthorized captures.", "Resume Quiz", () => { window.focus(); });
+  });
 
-  window.addEventListener('focus', () => handleReturn('window_blur'));
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) handleReturn('tab_switch'); });
+  document.addEventListener('visibilitychange', () => { 
+    if (document.hidden) {
+      lastVisibilityHiddenTime = Date.now();
+      updateBlockerMessage("Security Alert: Quiz content is hidden while tab is inactive.", "Resume Quiz", () => { window.focus(); });
+    } else {
+      handleReturn('tab_switch');
+    }
+  });
+
+  window.addEventListener('focus', () => {
+    handleReturn('window_blur');
+    // Ensure environment is still clean
+    monitorEnvironment();
+  });
 
   async function handleReturn(type) {
     if (isLockedOut) return;
