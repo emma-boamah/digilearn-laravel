@@ -999,11 +999,11 @@
     @endphp
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-        // Quiz data and state
-        let currentQuestion = 0;
-        let timeLimitMinutes = {{ $quiz['time_limit_minutes'] ?? 3 }};
-        let timeRemaining = timeLimitMinutes * 60; 
-        let answers = {};
+        // Quiz data and state (Globally Exposed for Anti-Cheat)
+        window.currentQuestion = 0;
+        window.timeLimitMinutes = {{ $quiz['time_limit_minutes'] ?? 3 }};
+        window.timeRemaining = window.timeLimitMinutes * 60; 
+        window.answers = {};
         let timerInterval;
 
         // Updated questions array to include images

@@ -253,6 +253,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/{quizId}/submit', [QuizController::class , 'submit'])->name('submit');
             Route::post('/{quizId}/essay/submit', [QuizController::class , 'submitEssay'])->name('essay.submit');
             Route::post('/{quizId}/violation', [QuizController::class , 'violation'])->name('violation');
+            Route::post('/{quizId}/appeal', [QuizController::class , 'appeal'])->name('appeal');
             Route::post('/{quizId}/heartbeat', [QuizController::class , 'heartbeat'])->name('heartbeat');
             Route::post('/{quizId}/rate', [QuizController::class , 'rate'])->name('rate');
             Route::get('/results', [QuizController::class , 'results'])->name('results');
@@ -546,6 +547,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
         // Task Management
         Route::resource('tasks', App\Http\Controllers\Admin\TaskController::class);
+
+        // Quiz Review System
+        Route::prefix('quizzes')->name('quizzes.')->group(function () {
+            Route::get('/review', [App\Http\Controllers\Admin\QuizReviewController::class, 'index'])->name('review.index');
+            Route::get('/review/{id}', [App\Http\Controllers\Admin\QuizReviewController::class, 'show'])->name('review.show');
+            Route::post('/review/{id}/invalidate', [App\Http\Controllers\Admin\QuizReviewController::class, 'invalidate'])->name('review.invalidate');
+        });
     });
 
 /*

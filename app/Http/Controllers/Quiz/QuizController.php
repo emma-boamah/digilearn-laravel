@@ -279,21 +279,79 @@ class QuizController extends Controller
      */
     public function take($quizId)
     {
-        // Get quiz data and questions - replace with actual database queries
+        $userId = Auth::id();
+        // Get quiz data and questions
         $quiz = $this->getQuizById($quizId);
 
         if (!$quiz) {
             return redirect()->route('quiz.index')->with('error', 'Quiz not found.');
         }
 
+        // --- ANTI-CHEAT: SESSION LOCK ---
+        // Prevent concurrent access from multiple devices
+        $sessionLockKey = "quiz_session_lock_{$userId}_{$quizId}";
+        $existingSessionId = Cache::get($sessionLockKey);
+        $currentSessionId = session()->getId();
+
+        if ($existingSessionId && $existingSessionId !== $currentSessionId) {
+            // Check if existing session is still alive (heartbeat check is safer)
+            // For now, we allow taking over if the last heartbeat is old (> 1 min)
+            $heartbeatKey = "quiz_heartbeat_{$userId}_{$quizId}";
+            $lastHeartbeat = Cache::get($heartbeatKey);
+            
+            if ($lastHeartbeat && (now()->timestamp - $lastHeartbeat) < 60) {
+                 return redirect()->route('quiz.index')->with('error', 'This quiz is already active on another device/browser.');
+            }
+        }
+        
+        // Bind this session to the attempt
+        Cache::put($sessionLockKey, $currentSessionId, 3600);
+        // --- END SESSION LOCK ---
+
+        // --- ANTI-CHEAT: SEEDED SHUFFLING ---
+        // Seed ensures the order is unique to this user + quiz, but stays consistent if they refresh
+        $seed = Auth::id() + (int)$quizId;
+        
+        if (isset($quiz['questions']) && is_array($quiz['questions'])) {
+            $questions = collect($quiz['questions'])->shuffle($seed);
+            
+            // Shuffle options for each question and update correct_answer index
+            $quiz['questions'] = $questions->values()->map(function ($question, $qIndex) use ($seed) {
+                if (isset($question['options']) && is_array($question['options'])) {
+                    $originalOptions = $question['options'];
+                    $originalCorrectIndex = isset($question['correct_answer']) ? (int)$question['correct_answer'] : null;
+                    
+                    // Track correct option value to find its new index after shuffle
+                    $correctValue = ($originalCorrectIndex !== null && isset($originalOptions[$originalCorrectIndex])) 
+                                    ? $originalOptions[$originalCorrectIndex] 
+                                    : null;
+
+                    $options = collect($originalOptions)->shuffle($seed + $qIndex + 7)->values()->toArray();
+                    
+                    // Update correct_answer if we found a match
+                    if ($correctValue !== null) {
+                        foreach ($options as $newIndex => $val) {
+                            if ($val === $correctValue) {
+                                $question['correct_answer'] = $newIndex;
+                                break;
+                            }
+                        }
+                    }
+                    $question['options'] = $options;
+                }
+                return $question;
+            })->toArray();
+        }
+        // --- END SHUFFLING ---
+
         // Add encoded ID for URL generation
         $quiz['encoded_id'] = \App\Services\UrlObfuscator::encode($quizId);
 
-        // Convert duration to seconds - safe array access
+        // Convert duration to seconds
         $seconds = (is_array($quiz) && isset($quiz['time_limit_minutes']) ? $quiz['time_limit_minutes'] : 3) * 60;
 
         // Check if user has already taken this quiz
-         $hasAttempted = $this->checkUserAttempt($quizId, Auth::id());
+        $hasAttempted = $this->checkUserAttempt($quizId, Auth::id());
 
         return view('dashboard.quiz.take', compact('quiz', 'seconds', 'hasAttempted'));
     }
@@ -374,11 +432,57 @@ class QuizController extends Controller
     }
 
     /**
+     * Handle student appeal request (anti-cheat)
+     */
+    public function appeal(Request $request, $quizId)
+    {
+        $userId = Auth::id();
+        $quiz = $this->getQuizById($quizId);
+        
+        // 1. Record the appeal request as a violation entry
+        \App\Models\QuizViolation::recordViolation(
+            $userId,
+            $quizId,
+            'appeal_request',
+            'Student requested an appeal for their integrity lockout.'
+        );
+
+        // 2. Identify all superusers (admins)
+        $admins = \App\Models\User::where('is_superuser', true)->get();
+        
+        // 3. Prepare notification details
+        $studentName = Auth::user()->name;
+        $quizTitle = is_array($quiz) && isset($quiz['title']) ? $quiz['title'] : 'Quiz #' . $quizId;
+        
+        // 4. Send AdminNotification (In-App & Email)
+        foreach ($admins as $admin) {
+            $admin->notify(new \App\Notifications\AdminNotification(
+                "Quiz Appeal Requested",
+                "Student {$studentName} has requested an appeal for an integrity violation in '{$quizTitle}'.",
+                null // Could link to a specific admin view in the future
+            ));
+        }
+
+        return response()->json(['status' => 'ok']);
+    }
+
+    /**
      * Heartbeat (anti-cheat)
      */
     public function heartbeat(Request $request, $quizId)
     {
         $userId = Auth::id();
+        
+        // Session Lock Check
+        $sessionLockKey = "quiz_session_lock_{$userId}_{$quizId}";
+        if (Cache::has($sessionLockKey) && Cache::get($sessionLockKey) !== session()->getId()) {
+            return response()->json([
+                'status' => 'error',
+                'error' => 'session_conflict',
+                'message' => 'Multiple devices detected.'
+            ], 403);
+        }
+
         $cacheKey = "quiz_heartbeat_{$userId}_{$quizId}";
         Cache::put($cacheKey, now()->timestamp, 3600);
 
@@ -398,6 +502,23 @@ class QuizController extends Controller
      */
     public function submit(Request $request, $quizId)
     {
+        $userId = Auth::id();
+
+        // Session Lock Check
+        $sessionLockKey = "quiz_session_lock_{$userId}_{$quizId}";
+        if (Cache::has($sessionLockKey) && Cache::get($sessionLockKey) !== session()->getId()) {
+            \App\Models\QuizViolation::recordViolation(
+                $userId,
+                $quizId,
+                'session_hijack',
+                'Submission attempt from unauthorized session/device.'
+            );
+            return response()->json([
+                'status' => 'error',
+                'error' => 'session_conflict'
+            ], 403);
+        }
+
         // Comprehensive authentication debugging
         Log::info('Quiz submit method called - AUTH DEBUG', [
             'quiz_id' => $quizId,
@@ -422,6 +543,25 @@ class QuizController extends Controller
                 'referer' => $request->header('Referer'),
             ]
         ]);
+
+        // 1. Honey Pot (Bot Trap) Check
+        if ($request->has('honeypot') && $request->input('honeypot') === 'violation') {
+            Log::warning('Bot/Scraper detected via Honey Pot', [
+                'user_id' => Auth::id(),
+                'quiz_id' => $quizId,
+                'ip' => $request->ip()
+            ]);
+            
+            \App\Models\QuizViolation::recordViolation(
+                Auth::id(),
+                $quizId,
+                'bot_detected',
+                'Automated tool/scraper detected via hidden honeypot trap.',
+                10 // Instant lockout
+            );
+            
+            $request->merge(['failed_due_to_violation' => true]);
+        }
 
         // Early validation to prevent array offset errors
         $answersInput = $request->input('answers');
@@ -947,17 +1087,18 @@ class QuizController extends Controller
             $userAnswer = isset($answers[$index]) ? (int)$answers[$index] : null;
             $correctAnswer = isset($question['correct_answer']) ? (int)$question['correct_answer'] : null;
 
-            Log::info('Answer comparison', [
-                'question_index' => $index,
-                'user_answer' => $userAnswer,
-                'correct_answer' => $correctAnswer,
-                'question_data' => $question,
-                'is_correct' => $userAnswer === $correctAnswer
-            ]);
-
             if ($userAnswer === $correctAnswer) {
                 $correctAnswers++;
             }
+        }
+
+        // Integrity Override: If flagged as violation, force score to 0
+        if ($failedDueToViolation) {
+            $correctAnswers = 0;
+            Log::info('Scoring override: Violation detected, forcing score to 0.', [
+                'quiz_id' => $quizId,
+                'user_id' => $userId ?: Auth::id()
+            ]);
         }
 
         $percentage = $totalQuestions > 0 ? round(($correctAnswers / $totalQuestions) * 100) : 0;

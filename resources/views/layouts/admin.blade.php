@@ -628,6 +628,12 @@
                     <i class="fas fa-chart-line"></i>
                     <span class="sidebar-link-text">Student Progress</span>
                 </a>
+
+                <a href="{{ route('admin.quizzes.review.index') }}"
+                    class="nav-link {{ request()->routeIs('admin.quizzes.review*') ? 'active' : '' }}">
+                    <i class="fas fa-shield-alt"></i>
+                    <span class="sidebar-link-text">Quiz Integrity</span>
+                </a>
                 @endrole
 
                 <!-- Added notifications link to sidebar -->
