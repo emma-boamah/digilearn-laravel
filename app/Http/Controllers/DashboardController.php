@@ -849,6 +849,7 @@ class DashboardController extends Controller
             // Query approved videos for the specific grade level,
             // with dynamic cross-level category fetching for BECE and WASSCE
             $query = Video::approved()
+                ->distinct()
                 ->where('video_source', '!=', 'none')
                 ->where(function($q) use ($dbLevel, $categorySlug) {
                     
@@ -2570,7 +2571,8 @@ class DashboardController extends Controller
             $allLessons = array_merge($allLessons, $levelLessons);
         }
 
-        return $allLessons;
+        // Unique by ID to prevent duplicates from cross-level fetching logic
+        return collect($allLessons)->unique('id')->values()->all();
     }
 
     /**
