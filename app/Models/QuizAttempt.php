@@ -57,6 +57,68 @@ class QuizAttempt extends Model
     }
 
     /**
+     * Get the violations for this attempt.
+     */
+    public function violations()
+    {
+        return $this->hasMany(QuizViolation::class, 'quiz_attempt_id');
+    }
+
+    /**
+     * Get the trust score for this attempt.
+     */
+    public function getTrustScoreAttribute()
+    {
+        $totalPoints = $this->violations->sum('points');
+        return max(0, 100 - $totalPoints);
+    }
+
+    /**
+     * Get proctoring insights and alerts.
+     */
+    public function getProctoringInsightsAttribute()
+    {
+        $alerts = [];
+        
+        // 1. Speed Alert: If student averages < 5 seconds per question
+        if ($this->total_questions > 0 && $this->time_taken_seconds > 0) {
+            $secondsPerQuestion = $this->time_taken_seconds / $this->total_questions;
+            if ($secondsPerQuestion < 5 && $this->score_percentage >= 80) {
+                $alerts[] = [
+                    'type' => 'speed',
+                    'label' => 'High Speed Alert',
+                    'details' => "Finished in " . round($secondsPerQuestion, 1) . "s per question (Typical: 15-30s). Potential script/external help.",
+                    'severity' => 'high'
+                ];
+            }
+        }
+
+        // 2. Focus Alert: Check for tab switching duration or frequency
+        $tabSwitchCount = $this->violations->whereIn('violation_type', ['tab_switch', 'focus_loss'])->count();
+        if ($tabSwitchCount >= 5) {
+            $alerts[] = [
+                'type' => 'focus',
+                'label' => 'Significant Distraction',
+                'details' => "Student switched tabs or lost focus {$tabSwitchCount} times during the quiz.",
+                'severity' => $tabSwitchCount >= 10 ? 'high' : 'medium'
+            ];
+        }
+
+        // 3. Session Alert: Multi-device or session conflict
+        $sessionAlerts = $this->violations->whereIn('violation_type', ['session_conflict', 'session_hijack'])->count();
+        if ($sessionAlerts > 0) {
+            $alerts[] = [
+                'type' => 'session',
+                'label' => 'Session Security Alert',
+                'details' => "Multiple session/device conflicts detected during this attempt.",
+                'severity' => 'high'
+            ];
+        }
+
+        return $alerts;
+    }
+
+    /**
      * Record a quiz attempt
      */
     public static function recordAttempt($userId, $quizData, $answers, $timeTaken)

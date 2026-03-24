@@ -46,18 +46,11 @@ class QuizReviewController extends Controller
      */
     public function show($id)
     {
-        $attempt = QuizAttempt::with(['user', 'quiz'])->findOrFail($id);
+        $attempt = QuizAttempt::with(['user', 'quiz', 'violations' => function($query) {
+            $query->orderBy('occurred_at', 'asc');
+        }])->findOrFail($id);
         
-        // Fetch all violations for this user and quiz within a reasonable time window
-        // Or simply matching the quiz_id and user_id since attempts are usually sequential
-        $violations = QuizViolation::where('user_id', $attempt->user_id)
-            ->where('quiz_id', $attempt->quiz_id)
-            ->whereBetween('occurred_at', [
-                $attempt->started_at->subMinutes(5), 
-                $attempt->completed_at ? $attempt->completed_at->addMinutes(5) : now()
-            ])
-            ->orderBy('occurred_at', 'asc')
-            ->get();
+        $violations = $attempt->violations;
 
         return view('admin.quizzes.review.show', compact('attempt', 'violations'));
     }
@@ -80,7 +73,9 @@ class QuizReviewController extends Controller
             $attempt->user_id,
             $attempt->quiz_id,
             'manual_invalidation',
-            'This attempt was manually invalidated by an administrator after review.'
+            'This attempt was manually invalidated by an administrator after review.',
+            10, // Max severity
+            $attempt->id
         );
 
         return back()->with('success', 'Attempt has been invalidated successfully.');

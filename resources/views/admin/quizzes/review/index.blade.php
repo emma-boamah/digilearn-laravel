@@ -82,6 +82,10 @@
                                     <i class="fas fa-check-circle mr-1"></i> Clean Record
                                 </span>
                             @endif
+                            
+                            <div class="mt-1 text-[10px] font-bold uppercase tracking-wider {{ $attempt->trust_score < 70 ? 'text-red-500' : 'text-gray-400' }}">
+                                Trust Score: <span class="{{ $attempt->trust_score < 70 ? 'text-red-600' : 'text-gray-600' }}">{{ $attempt->trust_score }}%</span>
+                            </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {{ $attempt->completed_at ? $attempt->completed_at->format('M d, Y H:i') : 'In Progress' }}

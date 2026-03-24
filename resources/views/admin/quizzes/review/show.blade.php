@@ -57,33 +57,59 @@
             </div>
         </div>
 
-        <!-- Integrity Summary -->
+        <!-- Proctoring Report -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Integrity Status</h3>
-            <div class="flex items-center mb-4">
-                @if($attempt->failed_due_to_violation)
-                    <div class="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 mr-4">
-                        <i class="fas fa-exclamation-triangle"></i>
+            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Security & Proctoring</h3>
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                    <div class="h-10 w-10 rounded-full {{ $attempt->trust_score < 70 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600' }} flex items-center justify-center mr-3">
+                        <i class="fas {{ $attempt->trust_score < 70 ? 'fa-shield-alt' : 'fa-check-circle' }}"></i>
                     </div>
                     <div>
-                        <div class="text-sm font-bold text-red-800">VIOLATION DETECTED</div>
-                        <div class="text-xs text-red-600">Attempt was terminated or invalidated</div>
+                        <div class="text-sm font-bold {{ $attempt->trust_score < 70 ? 'text-red-800' : 'text-green-800' }}">TRUST SCORE</div>
+                        <div class="text-xs text-gray-500">Security assessment</div>
                     </div>
-                @else
-                    <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 mr-4">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <div>
-                        <div class="text-sm font-bold text-green-800">CLEAN RECORD</div>
-                        <div class="text-xs text-green-600">No critical violations recorded</div>
-                    </div>
-                @endif
+                </div>
+                <div class="text-2xl font-black {{ $attempt->trust_score < 70 ? 'text-red-600' : 'text-green-600' }}">
+                    {{ $attempt->trust_score }}%
+                </div>
             </div>
-            <div class="text-sm text-gray-600">
-                Total Security Events: <span class="font-bold">{{ count($violations) }}</span>
+            <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Violation Points</span>
+                    <span class="font-bold text-red-600">+{{ 100 - $attempt->trust_score }}</span>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-1.5">
+                    <div class="h-1.5 rounded-full {{ $attempt->trust_score < 70 ? 'bg-red-500' : 'bg-green-500' }}" style="width: {{ $attempt->trust_score }}%"></div>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Smart Analytics Alerts -->
+    @php $alerts = $attempt->proctoring_insights; @endphp
+    @if(count($alerts) > 0)
+    <div class="grid grid-cols-1 gap-4">
+        @foreach($alerts as $alert)
+        <div class="flex items-center p-4 rounded-xl border border-{{ $alert['severity'] === 'high' ? 'red' : 'yellow' }}-200 bg-{{ $alert['severity'] === 'high' ? 'red' : 'yellow' }}-50">
+            <div class="flex-shrink-0 mr-4">
+                <div class="h-10 w-10 rounded-full bg-{{ $alert['severity'] === 'high' ? 'red' : 'yellow' }}-100 flex items-center justify-center text-{{ $alert['severity'] === 'high' ? 'red' : 'yellow' }}-600">
+                    <i class="fas fa-robot text-lg"></i>
+                </div>
+            </div>
+            <div>
+                <h4 class="text-sm font-bold text-{{ $alert['severity'] === 'high' ? 'red' : 'yellow' }}-900">{{ $alert['label'] }}</h4>
+                <p class="text-xs text-{{ $alert['severity'] === 'high' ? 'red' : 'yellow' }}-700">{{ $alert['details'] }}</p>
+            </div>
+            <div class="ml-auto">
+                <span class="px-2 py-1 rounded text-[10px] font-bold uppercase bg-{{ $alert['severity'] === 'high' ? 'red' : 'yellow' }}-200 text-{{ $alert['severity'] === 'high' ? 'red' : 'yellow' }}-800">
+                    {{ $alert['severity'] }} Risk
+                </span>
+            </div>
+        </div>
+        @endforeach
+    </div>
+    @endif
 
     <!-- Forensic Timeline -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
