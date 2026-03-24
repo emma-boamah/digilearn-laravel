@@ -1,63 +1,68 @@
 @extends('layouts.app')
 
 @section('title', 'Pricing Plans - ShoutOutGH Online Learning Platform')
-@section('description', 'Choose the right learning plan for you on ShoutOutGH. Affordable online education plans for Ghanaian students with access to lessons, quizzes, and study materials.')
-@section('keywords', 'ShoutOutGH pricing, online education pricing ghana, affordable e-learning ghana, online school fees ghana, digital learning plans')
+@section('description', 'Choose the right learning plan for you on ShoutOutGH. Affordable online education plans for
+Ghanaian students with access to lessons, quizzes, and study materials.')
+@section('keywords', 'ShoutOutGH pricing, online education pricing ghana, affordable e-learning ghana, online school
+fees ghana, digital learning plans')
 
 @section('head')
-    <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="Pricing Plans - ShoutOutGH Online Learning Platform">
-    <meta property="og:description" content="Affordable online education plans for Ghanaian students. Choose the right plan for Primary, JHS, SHS, or University level.">
-    <meta property="og:image" content="{{ secure_asset('images/shoutoutgh-logo.png') }}">
-    <meta property="og:url" content="{{ url('/pricing') }}">
-    <meta property="og:type" content="website">
+<!-- Open Graph Meta Tags -->
+<meta property="og:title" content="Pricing Plans - ShoutOutGH Online Learning Platform">
+<meta property="og:description"
+    content="Affordable online education plans for Ghanaian students. Choose the right plan for Primary, JHS, SHS, or University level.">
+<meta property="og:image" content="{{ secure_asset('images/shoutoutgh-logo.png') }}">
+<meta property="og:url" content="{{ url('/pricing') }}">
+<meta property="og:type" content="website">
 
-    <!-- Structured Data (JSON-LD) -->
-    @php
-        $schema = [
-            '@context' => 'https://schema.org',
-            '@graph' => []
-        ];
-        
-        foreach($pricingPlans as $plan) {
-            $schema['@graph'][] = [
-                '@type' => 'Product',
-                'name' => $plan->name,
-                'description' => $plan->description ?? 'Comprehensive learning package with access to platform features.',
-                'image' => [
-                    secure_asset('images/shoutoutgh-logo.png')
-                ],
-                'brand' => [
-                    '@type' => 'Brand',
-                    'name' => 'ShoutOutGH'
-                ],
-                'offers' => [
-                    '@type' => 'Offer',
-                    'url' => url('/pricing'),
-                    'priceCurrency' => $plan->currency,
-                    'price' => (float)$plan->price,
-                    'availability' => 'https://schema.org/InStock',
-                    'hasMerchantReturnPolicy' => [
-                        '@type' => 'MerchantReturnPolicy',
-                        'applicableCountry' => 'GH',
-                        'returnPolicyCategory' => 'https://schema.org/NoReturns'
-                    ]
-                ]
-            ];
-        }
-    @endphp
-    <script type="application/ld+json">
+<!-- Structured Data (JSON-LD) -->
+@php
+$schema = [
+'@context' => 'https://schema.org',
+'@graph' => []
+];
+
+foreach($pricingPlans as $plan) {
+$schema['@graph'][] = [
+'@type' => 'Product',
+'name' => $plan->name,
+'description' => $plan->description ?? 'Comprehensive learning package with access to platform features.',
+'image' => [
+secure_asset('images/shoutoutgh-logo.png')
+],
+'brand' => [
+'@type' => 'Brand',
+'name' => 'ShoutOutGH'
+],
+'offers' => [
+'@type' => 'Offer',
+'url' => url('/pricing'),
+'priceCurrency' => $plan->currency,
+'price' => (float)$plan->price,
+'availability' => 'https://schema.org/InStock',
+'hasMerchantReturnPolicy' => [
+'@type' => 'MerchantReturnPolicy',
+'applicableCountry' => 'GH',
+'returnPolicyCategory' => 'https://schema.org/NoReturns'
+]
+]
+];
+}
+@endphp
+<script type="application/ld+json">
         {!! json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) !!}
     </script>
 @endsection
 
 @section('content')
 <style nonce="{{ request()->attributes->get('csp_nonce') }}">
-    html, body {
+    html,
+    body {
         width: 100%;
         max-width: 100vw;
         overflow-x: hidden;
     }
+
     /* Hero Section */
     .pricing-hero {
         position: relative;
@@ -108,7 +113,8 @@
 
     @media (min-width: 48rem) {
         .pricing-header h2 {
-            font-size: 3rem;         /* Your existing desktop size */
+            font-size: 3rem;
+            /* Your existing desktop size */
         }
     }
 
@@ -144,7 +150,8 @@
     .pricing-cards.single-card {
         display: flex;
         justify-content: center;
-        max-width: 400px; /* Limit width for single card */
+        max-width: 400px;
+        /* Limit width for single card */
     }
 
     .pricing-cards.single-card .pricing-card {
@@ -153,17 +160,64 @@
     }
 
     .pricing-card {
-        background-color: var(--white);
-        border: 1px solid #e5e7eb;
+        background-color: transparent;
+        border: none;
         border-radius: 0.5rem;
         padding: 2rem;
         text-align: center;
         position: relative;
+        z-index: 1;
         box-shadow: 0 4px 6px rgb(105, 158, 236);
         transition: transform 0.3s ease;
         width: 100%;
         max-width: 370px;
         justify-self: center;
+    }
+
+    .pricing-card-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        z-index: -1;
+    }
+
+    .pricing-card-bg::before {
+        content: '';
+        position: absolute;
+        z-index: -1;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: conic-gradient(transparent,
+                var(--primary-red),
+                transparent 30%,
+                var(--secondary-blue),
+                transparent 50%);
+        animation: rotate-border 8s linear infinite;
+    }
+
+    .pricing-card-bg::after {
+        content: '';
+        position: absolute;
+        z-index: -1;
+        inset: 2px;
+        background: var(--white);
+        border-radius: calc(0.5rem - 2px);
+    }
+
+    @keyframes rotate-border {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     .pricing-card:hover {
@@ -288,10 +342,11 @@
         <div class="pricing-cards {{ count($pricingPlans) === 1 ? 'single-card' : '' }}">
             @forelse($pricingPlans as $plan)
             <div class="pricing-card {{ $plan->is_featured ? 'featured' : '' }}">
+                <div class="pricing-card-bg"></div>
                 @if($plan->is_featured)
-                    <div class="pricing-badge">Most Popular</div>
+                <div class="pricing-badge">Most Popular</div>
                 @else
-                    <div class="pricing-badge">{{ $plan->name }}</div>
+                <div class="pricing-badge">{{ $plan->name }}</div>
                 @endif
                 <div class="pricing-card-content">
                     <p class="pricing-description">
@@ -300,26 +355,31 @@
                     <div class="pricing-price">{{ $plan->currency }} {{ number_format($plan->price, 2) }}</div>
                     <ul class="pricing-features">
                         @if($plan->features && is_array($plan->features))
-                            @foreach($plan->features as $feature)
-                            <li>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                </svg>
-                                {{ $feature }}
-                            </li>
-                            @endforeach
+                        @foreach($plan->features as $feature)
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                            {{ $feature }}
+                        </li>
+                        @endforeach
                         @else
-                            <li>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                </svg>
-                                Access to {{ $plan->name }} features
-                            </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                            Access to {{ $plan->name }} features
+                        </li>
                         @endif
                     </ul>
-                    <a href="{{ route('pricing-details', ['planId' => App\Services\UrlObfuscator::encode($plan->id)]) }}" class="pricing-btn">Get Started</a>
+                    <a href="{{ route('pricing-details', ['planId' => App\Services\UrlObfuscator::encode($plan->id)]) }}"
+                        class="pricing-btn">Get Started</a>
                 </div>
             </div>
             @empty

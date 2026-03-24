@@ -1,437 +1,513 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Quiz Instructions - {{ config('app.name', 'ShoutOutGh') }}</title>
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <style>
-        :root {
-            --primary-red: #E11E2D;
-            --primary-red-hover: #c41e2a;
-            --secondary-blue: #2677B8;
-            --secondary-blue-hover: #1e5a8a;
-            --white: #ffffff;
-            --gray-25: #fcfcfd;
-            --gray-50: #f9fafb;
-            --gray-100: #f3f4f6;
-            --gray-200: #e5e7eb;
-            --gray-300: #d1d5db;
-            --gray-400: #9ca3af;
-            --gray-500: #6b7280;
-            --gray-600: #4b5563;
-            --gray-700: #374151;
-            --gray-800: #1f2937;
-            --gray-900: #111827;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-        }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
+        :root {
+            --brand-red: #C52828;
+            --brand-red-hover: #A01E1E;
+            --brand-blue-deep: #1e5a8a;
+            /* Deep Navy for the "Environment" */
+            --brand-blue-card: #2677B8;
+            /* Lighter navy for containers */
+            --brand-blue-accent: #2677B8;
+            --text-white: #111827;
+            --text-muted: #94A3B8;
+            --integrity-red-bg: rgba(197, 40, 40, 0.1);
+            --white: #ffffff;
+            --gray-200: #e5e7eb;
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background-color: var(--gray-25);
-            color: var(--gray-900);
-            line-height: 1.6;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--white);
+            /* Dark blue environment */
+            color: var(--text-white);
+            margin: 0;
             min-height: 100vh;
-        }
-
-        /* Top Header */
-        .top-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 1rem;
-            background-color: var(--white);
-            border-bottom: 1px solid var(--gray-200);
-            position: sticky;
-            top: 0;
-            z-index: 999;
-            backdrop-filter: blur(8px);
-            background-color: rgba(255, 255, 255, 0.95);
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .back-button {
-            background: none;
-            border: none;
-            color: var(--gray-600);
-            cursor: pointer;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
+            padding: 2rem;
         }
 
-        .back-button:hover {
-            background-color: var(--gray-100);
-            color: var(--gray-900);
-        }
-
-        .sidebar-logo {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .sidebar-logo img {
-            height: 36px;
-            width: auto;
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .notification-btn {
-            position: relative;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            transition: all 0.2s ease;
-        }
-
-        .notification-btn:hover {
-            background-color: var(--gray-100);
-        }
-
-        .notification-icon {
-            width: 20px;
-            height: 20px;
-            color: var(--gray-600);
-        }
-
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary-red), var(--secondary-blue));
+        /* Go Back Button */
+        .btn-back {
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            background: var(--gray-200);
+            border: 1px solid var(--brand-blue-accent);
+            color: var(--text-muted);
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--white);
-            font-size: 0.875rem;
-            font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
-            box-shadow: var(--shadow-sm);
+            z-index: 10;
         }
 
-        .user-avatar:hover {
-            transform: scale(1.05);
-            box-shadow: var(--shadow-md);
+        .btn-back:hover {
+            color: var(--text-white);
+            border-color: var(--brand-red);
+            background: var(--brand-blue-accent);
         }
 
-        /* Main Content */
-        .main-content {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: calc(100vh - 64px);
-            padding: 2rem 1rem;
-        }
-
-        .instructions-container {
-            background-color: var(--white);
-            border-radius: 1rem;
-            padding: 3rem;
-            box-shadow: var(--shadow-lg);
-            border: 1px solid var(--gray-200);
-            max-width: 600px;
+        .main-wrapper {
             width: 100%;
+            max-width: 1000px;
+            padding: 3rem;
+            background: radial-gradient(circle at top right, #fcfcfd; , #ffffff);
+            border: 1.5px solid var(--brand-blue-accent);
+            border-radius: 28px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            position: relative;
         }
 
-        .instructions-header {
-            text-align: center;
-            margin-bottom: 2.5rem;
-        }
-
-        .instructions-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--gray-900);
+        /* Header: Title is now White with Red emphasis */
+        .head-section {
+            text-align: left;
             margin-bottom: 0.5rem;
         }
 
-        .instructions-subtitle {
-            color: var(--gray-600);
-            font-size: 1.125rem;
+        .main-title {
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            color: var(--text-white);
+            letter-spacing: -1px;
         }
 
-        .quiz-info {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-bottom: 2.5rem;
+        .main-title span {
+            color: var(--text-white);
+        }
+
+        .sub-description {
+            color: var(--text-white);
+            font-size: 1.1rem;
+            border-left: 3px solid var(--brand-red);
+            padding-left: 1rem;
+            max-width: 700px;
+            margin-bottom: 2rem;
+        }
+
+        /* Info Grid: High contrast navy cards */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin: 3rem 0;
+        }
+
+        .info-card {
+            background: var(--white);
+            border: 1px solid var(--brand-blue-accent);
+            border-radius: 20px;
             padding: 1.5rem;
-            background-color: var(--gray-50);
-            border-radius: 0.75rem;
-        }
-
-        .quiz-info-item {
-            text-align: center;
-        }
-
-        .quiz-info-label {
-            font-size: 0.875rem;
-            color: var(--gray-500);
-            font-weight: 500;
-            margin-bottom: 0.25rem;
-        }
-
-        .quiz-info-value {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--gray-900);
-        }
-
-        .instructions-list {
-            margin-bottom: 2.5rem;
-        }
-
-        .instruction-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            padding: 1rem;
-            background-color: var(--gray-50);
-            border-radius: 0.75rem;
-            border-left: 4px solid var(--primary-red);
-        }
-
-        .instruction-icon {
-            width: 24px;
-            height: 24px;
-            color: var(--primary-red);
-            flex-shrink: 0;
-            margin-top: 0.125rem;
-        }
-
-        .instruction-text {
-            font-size: 1rem;
-            color: var(--gray-700);
-            line-height: 1.6;
-        }
-
-        .start-button {
-            width: 100%;
-            background: linear-gradient(135deg, var(--primary-red), var(--primary-red-hover));
-            color: var(--white);
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 0.75rem;
-            font-size: 1.125rem;
-            font-weight: 600;
-            cursor: pointer;
             transition: all 0.2s ease;
-            box-shadow: var(--shadow-md);
         }
 
-        .start-button:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+        .info-card:hover {
+            border-color: var(--brand-red);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.3);
         }
 
-        .start-button:active {
-            transform: translateY(0);
+        .icon-box {
+            color: var(--brand-red);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
         }
 
-        /* Mobile Responsive */
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--brand-blue-card);
+            margin-bottom: 0.5rem;
+        }
+
+        .card-body {
+            font-size: 0.95rem;
+            color: var(--text-white);
+            line-height: 1.6;
+            font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+        }
+
+        /* Integrity Rules: Now looks like a secure "Warning" area */
+        .integrity-banner {
+            position: relative;
+            background: transparent;
+            border-radius: 20px;
+            padding: 2.5rem;
+            margin-bottom: 3rem;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .integrity-banner::before {
+            content: '';
+            position: absolute;
+            z-index: -1;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(transparent,
+                    var(--brand-red),
+                    transparent 30%,
+                    var(--brand-blue-deep),
+                    transparent 50%);
+        }
+
+        .ready-to-start .integrity-banner::before {
+            animation: rotate-border 4s linear infinite;
+        }
+
+        .integrity-banner::after {
+            content: '';
+            position: absolute;
+            z-index: -1;
+            inset: 1px;
+            background: #faeaea;
+            border-radius: 19px;
+        }
+
+        @keyframes rotate-border {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .banner-header {
+            color: var(--brand-red);
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            letter-spacing: 1px;
+        }
+
+        .rule-list {
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.25rem;
+        }
+
+        .rule-item {
+            color: var(--text-white);
+            display: flex;
+            gap: 1.25rem;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(197, 40, 40, 0.1);
+        }
+
+        .rule-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .rule-item i {
+            color: var(--brand-red);
+            font-size: 1.25rem;
+        }
+
+        .rule-item strong {
+            color: var(--text-white);
+            font-weight: 700;
+            margin-right: 0.5rem;
+        }
+
+        /* Action: Large, Glowing Start Button */
+        .action-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .btn-start {
+            background-color: var(--brand-red);
+            color: white;
+            width: 100%;
+            max-width: 250px;
+            padding: 1.5rem;
+            border-radius: 16px;
+            font-size: 1.25rem;
+            font-weight: 800;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 10px 20px -5px rgba(197, 40, 40, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .ready-to-start .btn-start {
+            animation: pulse-red 2s infinite;
+        }
+
+        .btn-start:hover {
+            background-color: var(--brand-red-hover);
+            box-shadow: 0 20px 30px -5px rgba(197, 40, 40, 0.6);
+            transform: translateY(-2px) scale(1.02);
+            animation: none;
+        }
+
+        @keyframes pulse-red {
+            0% {
+                box-shadow: 0 10px 20px -5px rgba(197, 40, 40, 0.4), 0 0 0 0 rgba(197, 40, 40, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 10px 20px -5px rgba(197, 40, 40, 0.4), 0 0 0 10px rgba(197, 40, 40, 0);
+            }
+
+            100% {
+                box-shadow: 0 10px 20px -5px rgba(197, 40, 40, 0.4), 0 0 0 0 rgba(197, 40, 40, 0);
+            }
+        }
+
+        .btn-start:active {
+            transform: scale(0.98);
+        }
+
+        .btn-essay {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+        }
+
+        .btn-essay:hover {
+            color: var(--text-white);
+            background-color: var(--brand-blue-card);
+        }
+
+        .footer-wrapper {
+            margin-top: 3rem;
+            border-top: 1px solid var(--brand-blue-accent);
+            padding-top: 2rem;
+            width: 100%;
+        }
+
+        .footer-info {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .support-link {
+            color: var(--brand-red);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        /* Responsive */
         @media (max-width: 768px) {
-            .main-content {
+            body {
                 padding: 1rem;
             }
 
-            .instructions-container {
-                padding: 2rem 1.5rem;
+            .info-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                margin: 2rem 0;
             }
 
-            .instructions-title {
-                font-size: 1.75rem;
+            .main-wrapper {
+                padding: 2rem;
+                border-radius: 16px;
             }
 
-            .instructions-subtitle {
-                font-size: 1rem;
+            .main-title {
+                font-size: 2rem;
             }
 
-            .quiz-info {
+            .btn-start {
+                max-width: 100%;
+            }
+
+            .footer-info {
                 flex-direction: column;
                 gap: 1rem;
                 text-align: center;
             }
-
-            .instruction-item {
-                padding: 0.75rem;
-            }
-
-            .instruction-text {
-                font-size: 0.875rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .instructions-container {
-                padding: 1.5rem 1rem;
-            }
-
-            .quiz-info {
-                padding: 1rem;
-            }
-
-            .start-button {
-                padding: 0.875rem 1.5rem;
-                font-size: 1rem;
-            }
         }
     </style>
 </head>
+
 <body>
-    <!-- Top Header -->
-    <div class="top-header">
-        <div class="header-left">
-            <button class="back-button" id="btnGoBack">
-                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                </svg>
-            </button>
-            
-            <div class="sidebar-logo">
-                <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
+    <div class="main-wrapper">
+        <!-- Back Button -->
+        <button class="btn-back" id="btnGoBack" title="Go Back">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+
+        <!-- Header -->
+        <div class="head-section">
+            <h1 class="main-title">Quiz Instructions - <span>{{ str_replace('Quiz for: ', '', $quiz['title'] ?? 'Quiz')
+                    }}</span></h1>
+            <p class="sub-description">
+                Please read the following guidelines carefully before starting your assessment.
+            </p>
+        </div>
+
+        <!-- Detailed Info Grid -->
+        <div class="info-grid">
+            <!-- Timer Details -->
+            <div class="info-card">
+                <div class="icon-box">
+                    <i class="fas fa-stopwatch"></i>
+                </div>
+                <h3 class="card-title">Timer Details</h3>
+                <p class="card-body">
+                    The quiz has a fixed duration of {{ $quiz['time_limit_minutes'] ?? '3' }} minutes.
+                    The timer starts immediately after clicking 'Start Quiz'.
+                </p>
+            </div>
+
+            <!-- Navigation Details -->
+            <div class="info-card">
+                <div class="icon-box">
+                    <i class="fas fa-step-forward"></i>
+                </div>
+                <h3 class="card-title">Skip Questions</h3>
+                <p class="card-body">
+                    You can skip difficult questions and return to them later using the navigation panel on the right
+                    during the exam.
+                </p>
+            </div>
+
+            <!-- Results Details -->
+            <div class="info-card">
+                <div class="icon-box">
+                    <i class="fas fa-poll"></i>
+                </div>
+                <h3 class="card-title">Immediate Scoring</h3>
+                <p class="card-body">
+                    Your final score will be displayed immediately upon submission, including a detailed breakdown of
+                    correct answers.
+                </p>
             </div>
         </div>
-        
-        <div class="header-right">
-            <button class="notification-btn">
-                <svg class="notification-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v0.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-            </button>
-            
-            <x-user-avatar :user="auth()->user()" :size="36" class="border-2 border-white" />
+
+        <!-- Strict Integrity Rules -->
+        <div class="integrity-banner">
+            <div class="banner-header">
+                <i class="fas fa-shield-halved"></i>
+                Security Protocol
+            </div>
+            <ul class="rule-list">
+                <li class="rule-item">
+                    <i class="fas fa-circle-xmark"></i>
+                    <span><strong>No Tab Switching</strong> Leaving this tab or opening new windows will be
+                        flagged.</span>
+                </li>
+                <li class="rule-item">
+                    <i class="fas fa-video-slash"></i>
+                    <span><strong>No Screen Capture</strong> Screenshot and recording tools are strictly
+                        prohibited.</span>
+                </li>
+                <li class="rule-item">
+                    <i class="fas fa-user-lock"></i>
+                    <span><strong>Session Locking</strong> Once the session begins, it cannot be paused or
+                        restarted.</span>
+                </li>
+            </ul>
         </div>
-    </div>
 
-    <!-- Main Content -->
-    <div class="main-content">
-        <div class="instructions-container">
-            <div class="instructions-header">
-                <h1 class="instructions-title">Quiz Guide</h1>
-                <p class="instructions-subtitle">{{ $quiz['title'] ?? 'Living and Non Living organism' }}</p>
-            </div>
+        <!-- Action Area -->
+        <div class="action-area">
+            <button class="btn-start" id="btnStartQuiz">
+                Start Quiz
+            </button>
 
-            <div class="quiz-info">
-                <div class="quiz-info-item">
-                    <div class="quiz-info-label">Questions</div>
-                    <div class="quiz-info-value">{{ $quiz['questions_count'] ?? '10' }}</div>
-                </div>
-                <div class="quiz-info-item">
-                    <div class="quiz-info-label">Duration</div>
-                    <div class="quiz-info-value">{{ $quiz['time_limit_minutes'] ?? '3' }} min</div>
-                </div>
-                <div class="quiz-info-item">
-                    <div class="quiz-info-label">Subject</div>
-                    <div class="quiz-info-value">{{ $quiz['subject'] ?? 'Science' }}</div>
-                </div>
-            </div>
-
-            <div class="instructions-list">
-                <div class="instruction-item">
-                    <svg class="instruction-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <div class="instruction-text">You are to select, choose or type in the correct answer from the options provided where necessary.</div>
-                </div>
-
-                <div class="instruction-item">
-                    <svg class="instruction-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <div class="instruction-text">You cannot go back to a previous question once you have moved to the next question.</div>
-                </div>
-
-                <div class="instruction-item">
-                    <svg class="instruction-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <div class="instruction-text">You can skip a question and come back to it later, but the timer will continue.</div>
-                </div>
-
-                <div class="instruction-item">
-                    <svg class="instruction-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <div class="instruction-text">You will see your score immediately after submitting the quiz.</div>
-                </div>
-
-                <div class="instruction-item">
-                    <svg class="instruction-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <div class="instruction-text">You have a maximum of {{ $quiz['time_limit_minutes'] ?? '3' }} min time allocated to the quiz</div>
-                </div>
-            </div>
-
-            <div class="warning-card" style="margin-top:1rem; border-left:4px solid #ef4444; background:#fef2f2; padding:1rem; border-radius:.5rem;">
-                <div style="display:flex; align-items:center; gap:.5rem; color:#991b1b; font-weight:600;">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    Anti‑Cheat Rules
-                </div>
-                <ul style="margin:.5rem 0 0 1.25rem; color:#7f1d1d;">
-                    <li>No screenshots. Attempting to capture the screen will fail the quiz.</li>
-                    <li>No copying or cutting content. Copy/Cut is disabled and flagged as a violation.</li>
-                    <li>No switching tabs/windows. Leaving this tab will fail the quiz.</li>
-                </ul>
-            </div>
-
-            <button class="start-button" id="btnStartQuiz">Start</button>
-            <a href="{{ route('quiz.essay', $quiz['encoded_id']) }}" class="action-button secondary">
+            @if(isset($quiz['encoded_id']))
+            <a href="{{ route('quiz.essay', $quiz['encoded_id']) }}" class="btn-essay">
                 <i class="fas fa-pen-nib"></i>
-                Essay Questions
+                View Essay Questions Format
             </a>
+            @endif
+        </div>
+
+        <!-- Footer Info -->
+        <div class="footer-wrapper">
+            <div class="footer-info">
+                <div class="technical-footer">
+                    <i class="fas fa-circle-info"></i>
+                    Need technical assistance? <a href="{{ route('contact') }}" class="support-link">Contact Proctoring
+                        Support</a>
+                </div>
+                <div class="branding-footer">
+                    Powered by ShoutOutGh Editorial Assessment Engine
+                </div>
+            </div>
         </div>
     </div>
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         document.addEventListener('DOMContentLoaded', () => {
+            // Activate animations after a brief delay to focus attention
+            setTimeout(() => {
+                document.body.classList.add('ready-to-start');
+            }, 1500);
+
             const btnBack = document.getElementById('btnGoBack');
-            if (btnBack) btnBack.addEventListener('click', () => window.history.back());
+            if (btnBack) btnBack.addEventListener('click', () => {
+                btnBack.style.opacity = '0.5';
+                window.history.back();
+            });
 
             const startBtn = document.getElementById('btnStartQuiz');
             if (startBtn) {
                 startBtn.addEventListener('click', () => {
                     startBtn.disabled = true;
-                    startBtn.textContent = 'Loading...';
-                    setTimeout(() => {
+                    startBtn.style.opacity = '0.7';
+                    startBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+
+                    @if (isset($quiz['encoded_id']))
                         window.location.href = `{{ route('quiz.take', $quiz['encoded_id']) }}`;
-                    }, 300);
+                    @endif
                 });
             }
         });
     </script>
 </body>
+
 </html>

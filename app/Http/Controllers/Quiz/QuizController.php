@@ -1163,6 +1163,15 @@ class QuizController extends Controller
                 'user_id' => $currentUserId
             ]);
 
+            // Link existing violations to this attempt
+            // We search for violations for this user/quiz that don't have an attempt_id yet
+            // and occurred within the last hour (to be safe)
+            \App\Models\QuizViolation::where('user_id', $currentUserId)
+                ->where('quiz_id', $quizId)
+                ->whereNull('quiz_attempt_id')
+                ->where('created_at', '>=', now()->subHour())
+                ->update(['quiz_attempt_id' => $attempt->id]);
+
         } catch (\Illuminate\Database\QueryException $e) {
             Log::error('Database error saving quiz attempt', [
                 'quiz_id' => $quizId,

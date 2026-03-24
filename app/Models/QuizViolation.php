@@ -13,6 +13,7 @@ class QuizViolation extends Model
     protected $fillable = [
         'user_id',
         'quiz_id',
+        'quiz_attempt_id',
         'violation_type',
         'details',
         'points',
@@ -40,6 +41,14 @@ class QuizViolation extends Model
     }
 
     /**
+     * Get the attempt where the violation occurred.
+     */
+    public function attempt(): BelongsTo
+    {
+        return $this->belongsTo(QuizAttempt::class, 'quiz_attempt_id');
+    }
+
+    /**
      * Get violations count for a user and quiz.
      */
     public static function getViolationCount($userId, $quizId)
@@ -52,11 +61,12 @@ class QuizViolation extends Model
     /**
      * Record a new violation.
      */
-    public static function recordViolation($userId, $quizId, $violationType, $details = null, $points = 1)
+    public static function recordViolation($userId, $quizId, $violationType, $details = null, $points = 1, $attemptId = null)
     {
         return static::create([
             'user_id' => $userId,
             'quiz_id' => $quizId,
+            'quiz_attempt_id' => $attemptId,
             'violation_type' => $violationType,
             'details' => $details,
             'points' => $points,
