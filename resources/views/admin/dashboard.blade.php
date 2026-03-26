@@ -1440,4 +1440,133 @@
     // Initial update
     setTimeout(fetchOnlineUsersCount, 2000);
 </script>
+
+@if(auth()->check() && (auth()->user()->hasRole('super-admin') || auth()->user()->is_superuser))
+    @if(!\Illuminate\Support\Facades\Cache::has('admin_invite_notice_seen_' . auth()->id()))
+    <!-- Invite Admin Feature Modal -->
+    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
+        .modal-card-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 1rem;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .modal-card-bg::before {
+            content: '';
+            position: absolute;
+            z-index: -1;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(transparent,
+                    #ef4444,
+                    transparent 30%,
+                    #3b82f6,
+                    transparent 50%);
+            animation: rotate-border-modal 8s linear infinite;
+        }
+
+        .modal-card-bg::after {
+            content: '';
+            position: absolute;
+            z-index: -1;
+            inset: 3px;
+            background: white;
+            border-radius: calc(1rem - 3px);
+        }
+
+        @keyframes rotate-border-modal {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+    <div id="inviteAdminNoticeModal" class="fixed inset-0 z-[100] flex items-center justify-center hidden" style="backdrop-filter: blur(4px);">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-40 transition-opacity" onclick="dismissInviteAdminNotice()"></div>
+        
+        <!-- Modal Content -->
+        <div class="relative rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all scale-95 opacity-0 duration-300 p-[3px]" id="inviteAdminNoticeContent">
+            
+            <div class="modal-card-bg"></div>
+            
+            <div class="p-8 bg-white rounded-[calc(1rem-3px)] relative z-10">
+                <div class="flex items-center justify-center w-16 h-16 mx-auto bg-indigo-50 text-indigo-600 rounded-full mb-6 ring-8 ring-indigo-50/50">
+                    <i class="fas fa-user-plus text-2xl"></i>
+                </div>
+                
+                <h3 class="text-2xl font-bold text-center text-gray-900 mb-2">New Feature Update!</h3>
+                <p class="text-center text-gray-600 mb-8 leading-relaxed">
+                    You can now invite other administrators and assign them restricted roles to collaboratively manage your learning platform.
+                </p>
+                
+                <div class="flex flex-col space-y-3">
+                    <a href="{{ route('admin.users') }}" onclick="dismissInviteAdminNotice()" class="w-full flex justify-center items-center px-4 py-3 border border-transparent text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-all">
+                        <i class="fas fa-users mr-2"></i> Try it out now
+                    </a>
+                    <button type="button" onclick="dismissInviteAdminNotice()" class="w-full flex justify-center items-center px-4 py-3 border border-gray-300 text-sm font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all">
+                        Maybe Later
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Close Button (X) -->
+            <button type="button" onclick="dismissInviteAdminNotice()" class="absolute top-4 right-4 z-20 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+    </div>
+
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('inviteAdminNoticeModal');
+            const content = document.getElementById('inviteAdminNoticeContent');
+            
+            // Short delay for animation effect
+            setTimeout(() => {
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    // Trigger reflow
+                    void modal.offsetWidth;
+                    content.classList.remove('scale-95', 'opacity-0');
+                    content.classList.add('scale-100', 'opacity-100');
+                }
+            }, 500);
+        });
+
+        function dismissInviteAdminNotice() {
+            const modal = document.getElementById('inviteAdminNoticeModal');
+            const content = document.getElementById('inviteAdminNoticeContent');
+            
+            // Animation out
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+
+            // Mark as seen in backend
+            fetch('{{ route("admin.mark-invite-notice-seen") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                }
+            })
+            .catch(error => console.error('Error marking notice as seen:', error));
+        }
+    </script>
+    @endif
+@endif
 @endsection

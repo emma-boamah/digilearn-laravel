@@ -90,6 +90,23 @@ class AdminController extends Controller
         ]);
     }
 
+    public function markInviteNoticeSeen(Request $request)
+    {
+        try {
+            if (!Auth::user()->hasRole('super-admin') && !Auth::user()->is_superuser) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+            }
+            Cache::forever('admin_invite_notice_seen_' . Auth::id(), true);
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            Log::error('mark_invite_notice_seen_error', [
+                'error' => $e->getMessage(),
+                'admin_id' => Auth::id()
+            ]);
+            return response()->json(['success' => false], 500);
+        }
+    }
+
     /**
      * Show the admin dashboard
      */

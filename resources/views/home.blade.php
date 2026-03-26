@@ -2661,7 +2661,7 @@ resources for students from primary to tertiary level.",
     <!-- Testimonials -->
     <section class="section bg-gray-50" aria-labelledby="testimonials-title">
         <div class="container">
-            <h2 id="testimonials-title" class="section-title text-center">What our customers say</h2>
+            <h2 id="testimonials-title" class="section-title text-center">What they say about us</h2>
             <div class="testimonials-slider-wrapper" x-data="{ 
                     scrollNext() { $refs.slider.scrollBy({ left: $refs.slider.offsetWidth * 0.8, behavior: 'smooth' }) },
                     scrollPrev() { $refs.slider.scrollBy({ left: -$refs.slider.offsetWidth * 0.8, behavior: 'smooth' }) }

@@ -14,7 +14,26 @@
                 </div>
                 <div class="flex space-x-3">
                     @if(auth()->user()->hasRole('super-admin') || auth()->user()->is_superuser)
-                    <a href="{{ route('admin.users.invite') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+                    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
+                        .btn-pulse-admin-invite {
+                            animation: pulse-blue-admin 2s 3; /* Pulses exactly 3 times, then stops acting as a permanent distraction */
+                        }
+                        .btn-pulse-admin-invite:hover {
+                            animation: none;
+                        }
+                        @keyframes pulse-blue-admin {
+                            0% {
+                                box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.8);
+                            }
+                            70% {
+                                box-shadow: 0 0 0 15px rgba(79, 70, 229, 0);
+                            }
+                            100% {
+                                box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+                            }
+                        }
+                    </style>
+                    <a href="{{ route('admin.users.invite') }}" class="btn-pulse-admin-invite bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
                         <i class="fas fa-user-plus mr-2"></i>Invite Admin
                     </a>
                     @endif
