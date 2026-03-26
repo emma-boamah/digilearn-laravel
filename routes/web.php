@@ -430,6 +430,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/users/{id}/update-avatar', [AdminController::class , 'updateUserAvatar'])->name('users.update-avatar');
         Route::delete('/users/{id}/delete-avatar', [AdminController::class , 'deleteUserAvatar'])->name('users.delete-avatar');
         Route::post('/users/bulk-action', [AdminController::class , 'bulkAction'])->name('users.bulk-action');
+        Route::post('/mark-invite-notice-seen', [AdminController::class , 'markInviteNoticeSeen'])->name('mark-invite-notice-seen');
         Route::get('/revenue', [AdminController::class , 'revenue'])->name('revenue');
         Route::get('/analytics', [AdminController::class , 'analytics'])->name('analytics');
         Route::get('/subscriber-analytics', [AdminController::class , 'subscriberAnalytics'])->name('subscriber-analytics');
