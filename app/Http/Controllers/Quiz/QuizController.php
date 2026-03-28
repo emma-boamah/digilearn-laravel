@@ -309,39 +309,7 @@ class QuizController extends Controller
         // --- END SESSION LOCK ---
 
         // --- ANTI-CHEAT: SEEDED SHUFFLING ---
-        // Seed ensures the order is unique to this user + quiz, but stays consistent if they refresh
-        $seed = Auth::id() + (int)$quizId;
-        
-        if (isset($quiz['questions']) && is_array($quiz['questions'])) {
-            $questions = collect($quiz['questions'])->shuffle($seed);
-            
-            // Shuffle options for each question and update correct_answer index
-            $quiz['questions'] = $questions->values()->map(function ($question, $qIndex) use ($seed) {
-                if (isset($question['options']) && is_array($question['options'])) {
-                    $originalOptions = $question['options'];
-                    $originalCorrectIndex = isset($question['correct_answer']) ? (int)$question['correct_answer'] : null;
-                    
-                    // Track correct option value to find its new index after shuffle
-                    $correctValue = ($originalCorrectIndex !== null && isset($originalOptions[$originalCorrectIndex])) 
-                                    ? $originalOptions[$originalCorrectIndex] 
-                                    : null;
-
-                    $options = collect($originalOptions)->shuffle($seed + $qIndex + 7)->values()->toArray();
-                    
-                    // Update correct_answer if we found a match
-                    if ($correctValue !== null) {
-                        foreach ($options as $newIndex => $val) {
-                            if ($val === $correctValue) {
-                                $question['correct_answer'] = $newIndex;
-                                break;
-                            }
-                        }
-                    }
-                    $question['options'] = $options;
-                }
-                return $question;
-            })->toArray();
-        }
+        $quiz = $this->applySeededShuffle($quiz, $userId);
         // --- END SHUFFLING ---
 
         // Add encoded ID for URL generation
@@ -796,6 +764,10 @@ class QuizController extends Controller
                 ->orderBy('completed_at', 'desc')
                 ->first();
 
+            // Apply identical seeded shuffle to ensure review matches the user's view
+            $userIdForShuffle = $lastAttempt ? $lastAttempt->user_id : Auth::id();
+            $quiz = $this->applySeededShuffle($quiz, $userIdForShuffle);
+
             $userAnswers = $lastAttempt ? json_decode($lastAttempt->answers ?? '[]', true) : [];
             $timeTaken = $lastAttempt ? $lastAttempt->time_taken_seconds : 0;
 
@@ -925,6 +897,69 @@ class QuizController extends Controller
     /**
      * Get quiz by ID from database with caching
      */
+    /**
+     * Apply seeded shuffle to quiz questions and options
+     * Ensures consistency between taking, submitting, and reviewing a quiz.
+     */
+    private function applySeededShuffle(array $quiz, $userId)
+    {
+        $quizId = $quiz['id'] ?? null;
+        if (!$quizId || !$userId || !isset($quiz['questions']) || !is_array($quiz['questions'])) {
+            return $quiz;
+        }
+
+        // Seed ensures the order is unique to this user + quiz, but stays consistent if they refresh
+        $seed = (int)$userId + (int)$quizId;
+        
+        // Prevent double shuffling if the quiz data is already marked as shuffled for this seed
+        if (isset($quiz['_shuffled_seed']) && $quiz['_shuffled_seed'] === $seed) {
+            return $quiz;
+        }
+
+        // Deterministic question shuffle
+        $questions = $quiz['questions'];
+        mt_srand($seed);
+        shuffle($questions);
+        mt_srand(); // Reset RNG
+        
+        // Shuffle options for each question and update correct_answer index
+        $quiz['questions'] = array_map(function ($question, $qIndex) use ($seed) {
+            if (isset($question['options']) && is_array($question['options'])) {
+                $originalOptions = $question['options'];
+                $originalCorrectIndex = isset($question['correct_answer']) ? (int)$question['correct_answer'] : null;
+                
+                // Track correct option value to find its new index after shuffle
+                $correctValue = ($originalCorrectIndex !== null && isset($originalOptions[$originalCorrectIndex])) 
+                                ? $originalOptions[$originalCorrectIndex] 
+                                : null;
+
+                // Deterministic option shuffle
+                $options = $originalOptions;
+                mt_srand($seed + $qIndex + 7);
+                shuffle($options);
+                mt_srand(); // Reset RNG
+                
+                // Update correct_answer if we found a match
+                if ($correctValue !== null) {
+                    $question['correct_answer'] = null; // Default if not found
+                    foreach ($options as $newIndex => $val) {
+                        if ($val === $correctValue) {
+                            $question['correct_answer'] = $newIndex;
+                            break;
+                        }
+                    }
+                }
+                $question['options'] = $options;
+            }
+            return $question;
+        }, $questions, array_keys($questions));
+
+        // Mark as shuffled with this seed to prevent redundant shuffles
+        $quiz['_shuffled_seed'] = $seed;
+
+        return $quiz;
+    }
+
     public function getQuizById($quizId)
     {
         Log::info('getQuizById called', ['quiz_id' => $quizId]);
@@ -1052,14 +1087,8 @@ class QuizController extends Controller
             ];
         }
 
-        // Diagnostic log before accessing array offset
-        Log::info('DIAGNOSTIC: Before array access', [
-            'quiz_id' => $quizId,
-            'quiz_type' => gettype($quiz),
-            'quiz_is_array' => is_array($quiz),
-            'questions_key_exists' => isset($quiz['questions']),
-            'questions_value_type' => isset($quiz['questions']) ? gettype($quiz['questions']) : 'key_not_set'
-        ]);
+        // Apply identical seeded shuffle to ensure marking matches the user's view
+        $quiz = $this->applySeededShuffle($quiz, $userId ?: Auth::id());
 
         $questions = $quiz['questions'];
         $totalQuestions = count($questions);

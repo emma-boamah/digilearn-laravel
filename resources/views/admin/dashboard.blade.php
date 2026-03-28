@@ -188,10 +188,12 @@
                 </div>
                 <div class="flex items-center space-x-4">
                     <div class="flex items-center space-x-2">
-                        <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
+                        <span
+                            class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
                             <span class="w-2 h-2 rounded-full bg-blue-500 mr-1"></span>Revenue
                         </span>
-                        <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                        <span
+                            class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
                             <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>Subscriptions
                         </span>
                     </div>
@@ -202,49 +204,59 @@
             </div>
 
             @php
-                $trends = $revenueTrends ?? [];
-                $maxRevenue = collect($trends)->max('revenue') ?: 1;
-                $maxSubs = collect($trends)->max('subscriptions') ?: 1;
+            $trends = $revenueTrends ?? [];
+            $maxRevenue = collect($trends)->max('revenue') ?: 1;
+            $maxSubs = collect($trends)->max('subscriptions') ?: 1;
             @endphp
 
-            <div style="display: flex; align-items: flex-end; gap: 6px; height: 320px; padding: 20px 0 0 0; border-bottom: 2px solid #e5e7eb; position: relative;">
+            <div
+                style="display: flex; align-items: flex-end; gap: 6px; height: 320px; padding: 20px 0 0 0; border-bottom: 2px solid #e5e7eb; position: relative;">
                 {{-- Y-axis labels --}}
-                <div style="position: absolute; left: -5px; top: 20px; bottom: 0; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none;">
+                <div
+                    style="position: absolute; left: -5px; top: 20px; bottom: 0; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none;">
                     <span style="font-size: 10px; color: #9ca3af;">GH₵{{ number_format($maxRevenue, 0) }}</span>
                     <span style="font-size: 10px; color: #9ca3af;">GH₵{{ number_format($maxRevenue / 2, 0) }}</span>
                     <span style="font-size: 10px; color: #9ca3af;">GH₵0</span>
                 </div>
 
                 {{-- Grid lines --}}
-                <div style="position: absolute; left: 50px; right: 0; top: 20px; height: 1px; background: #f3f4f6;"></div>
-                <div style="position: absolute; left: 50px; right: 0; top: 50%; height: 1px; background: #f3f4f6;"></div>
+                <div style="position: absolute; left: 50px; right: 0; top: 20px; height: 1px; background: #f3f4f6;">
+                </div>
+                <div style="position: absolute; left: 50px; right: 0; top: 50%; height: 1px; background: #f3f4f6;">
+                </div>
 
                 {{-- Bars --}}
                 <div style="display: flex; align-items: flex-end; gap: 6px; flex: 1; margin-left: 55px; height: 100%;">
                     @foreach($trends as $trend)
-                        @php
-                            $barHeight = $maxRevenue > 0 ? ($trend['revenue'] / $maxRevenue) * 100 : 0;
-                            $barHeight = max($barHeight, 2); // min height for visibility
-                            $subsHeight = $maxSubs > 0 ? ($trend['subscriptions'] / $maxSubs) * 80 : 0;
-                            $monthShort = \Illuminate\Support\Str::before($trend['month'], ' ');
-                        @endphp
-                        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; position: relative;"
-                             class="revenue-bar-group">
-                            {{-- Tooltip --}}
-                            <div class="revenue-tooltip" style="display: none; position: absolute; bottom: calc({{ $barHeight }}% + 10px); left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 8px 12px; border-radius: 8px; font-size: 11px; white-space: nowrap; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.15);">
-                                <div style="font-weight: 600; margin-bottom: 2px;">{{ $trend['month'] }}</div>
-                                <div><span style="color: #93c5fd;">Revenue:</span> GH₵{{ number_format($trend['revenue'], 0) }}</div>
-                                <div><span style="color: #6ee7b7;">Subs:</span> {{ $trend['subscriptions'] }}</div>
-                                <div style="position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%) rotate(45deg); width: 8px; height: 8px; background: #1e293b;"></div>
+                    @php
+                    $barHeight = $maxRevenue > 0 ? ($trend['revenue'] / $maxRevenue) * 100 : 0;
+                    $barHeight = max($barHeight, 2); // min height for visibility
+                    $subsHeight = $maxSubs > 0 ? ($trend['subscriptions'] / $maxSubs) * 80 : 0;
+                    $monthShort = \Illuminate\Support\Str::before($trend['month'], ' ');
+                    @endphp
+                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; position: relative;"
+                        class="revenue-bar-group">
+                        {{-- Tooltip --}}
+                        <div class="revenue-tooltip"
+                            style="display: none; position: absolute; bottom: calc({{ $barHeight }}% + 10px); left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 8px 12px; border-radius: 8px; font-size: 11px; white-space: nowrap; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.15);">
+                            <div style="font-weight: 600; margin-bottom: 2px;">{{ $trend['month'] }}</div>
+                            <div><span style="color: #93c5fd;">Revenue:</span> GH₵{{ number_format($trend['revenue'], 0)
+                                }}</div>
+                            <div><span style="color: #6ee7b7;">Subs:</span> {{ $trend['subscriptions'] }}</div>
+                            <div
+                                style="position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%) rotate(45deg); width: 8px; height: 8px; background: #1e293b;">
                             </div>
-                            {{-- Subscription indicator dot --}}
-                            @if($trend['subscriptions'] > 0)
-                            <div style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; margin-bottom: 4px; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);"></div>
-                            @endif
-                            {{-- Revenue bar --}}
-                            <div style="width: 100%; max-width: 40px; height: {{ $barHeight }}%; background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%); border-radius: 6px 6px 0 0; transition: all 0.2s ease; cursor: pointer; position: relative;"
-                                 class="revenue-bar"></div>
                         </div>
+                        {{-- Subscription indicator dot --}}
+                        @if($trend['subscriptions'] > 0)
+                        <div
+                            style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; margin-bottom: 4px; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);">
+                        </div>
+                        @endif
+                        {{-- Revenue bar --}}
+                        <div style="width: 100%; max-width: 40px; height: {{ $barHeight }}%; background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%); border-radius: 6px 6px 0 0; transition: all 0.2s ease; cursor: pointer; position: relative;"
+                            class="revenue-bar"></div>
+                    </div>
                     @endforeach
                 </div>
             </div>
@@ -252,8 +264,9 @@
             {{-- X-axis labels --}}
             <div style="display: flex; gap: 6px; margin-left: 55px; margin-top: 8px;">
                 @foreach($trends as $trend)
-                    @php $monthShort = \Illuminate\Support\Str::before($trend['month'], ' '); @endphp
-                    <div style="flex: 1; text-align: center; font-size: 11px; color: #6b7280; font-weight: 500;">{{ $monthShort }}</div>
+                @php $monthShort = \Illuminate\Support\Str::before($trend['month'], ' '); @endphp
+                <div style="flex: 1; text-align: center; font-size: 11px; color: #6b7280; font-weight: 500;">{{
+                    $monthShort }}</div>
                 @endforeach
             </div>
 
@@ -261,15 +274,18 @@
             <div style="display: flex; gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #f3f4f6;">
                 <div style="flex: 1; text-align: center; padding: 8px; background: #eff6ff; border-radius: 8px;">
                     <div style="font-size: 11px; color: #6b7280; font-weight: 500;">Total Revenue</div>
-                    <div style="font-size: 18px; font-weight: 700; color: #1e40af;">GH₵{{ number_format(collect($trends)->sum('revenue'), 0) }}</div>
+                    <div style="font-size: 18px; font-weight: 700; color: #1e40af;">GH₵{{
+                        number_format(collect($trends)->sum('revenue'), 0) }}</div>
                 </div>
                 <div style="flex: 1; text-align: center; padding: 8px; background: #ecfdf5; border-radius: 8px;">
                     <div style="font-size: 11px; color: #6b7280; font-weight: 500;">Total Subscriptions</div>
-                    <div style="font-size: 18px; font-weight: 700; color: #065f46;">{{ number_format(collect($trends)->sum('subscriptions')) }}</div>
+                    <div style="font-size: 18px; font-weight: 700; color: #065f46;">{{
+                        number_format(collect($trends)->sum('subscriptions')) }}</div>
                 </div>
                 <div style="flex: 1; text-align: center; padding: 8px; background: #faf5ff; border-radius: 8px;">
                     <div style="font-size: 11px; color: #6b7280; font-weight: 500;">Avg Monthly</div>
-                    <div style="font-size: 18px; font-weight: 700; color: #7e22ce;">GH₵{{ number_format(collect($trends)->avg('revenue'), 0) }}</div>
+                    <div style="font-size: 18px; font-weight: 700; color: #7e22ce;">GH₵{{
+                        number_format(collect($trends)->avg('revenue'), 0) }}</div>
                 </div>
             </div>
         </div>
@@ -557,11 +573,14 @@
                             @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'caution') text-orange-600
                             @else text-green-600
                             @endif">
-                            @if(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'critical')
+                            @if(isset($systemHealth['storage_usage']['status']) &&
+                            $systemHealth['storage_usage']['status'] === 'critical')
                             <i class="fas fa-exclamation-triangle text-2xl"></i>
-                            @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'warning')
+                            @elseif(isset($systemHealth['storage_usage']['status']) &&
+                            $systemHealth['storage_usage']['status'] === 'warning')
                             <i class="fas fa-exclamation-circle text-2xl"></i>
-                            @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'caution')
+                            @elseif(isset($systemHealth['storage_usage']['status']) &&
+                            $systemHealth['storage_usage']['status'] === 'caution')
                             <i class="fas fa-exclamation text-2xl"></i>
                             @else
                             <i class="fas fa-check-circle text-2xl"></i>
@@ -626,7 +645,8 @@
                 </div>
                 <div class="bg-gray-200 rounded-full h-3">
                     @php
-                    $percentage = isset($systemHealth['storage_usage']['used_percentage']) ? str_replace('%', '', $systemHealth['storage_usage']['used_percentage']) : '0';
+                    $percentage = isset($systemHealth['storage_usage']['used_percentage']) ? str_replace('%', '',
+                    $systemHealth['storage_usage']['used_percentage']) : '0';
                     $percentage = min(100, max(0, floatval($percentage)));
                     @endphp
                     <div class="h-3 rounded-full transition-all duration-300 storage-progress-bar
@@ -827,7 +847,8 @@
                                     <div>
                                         <div class="flex justify-between text-sm">
                                             <span class="text-gray-600">Memory Usage</span>
-                                            <span class="text-gray-900">{{ $systemHealth['memory_usage'] ?? 'N/A' }}</span>
+                                            <span class="text-gray-900">{{ $systemHealth['memory_usage'] ?? 'N/A'
+                                                }}</span>
                                         </div>
                                         <div class="mt-1 bg-gray-200 rounded-full h-2">
                                             <div class="bg-yellow-500 h-2 rounded-full progress-bar-memory"></div>
@@ -861,7 +882,7 @@
                         </div>
                     </div>
                 </div>
-            @endrole
+                @endrole
 
                 <!-- Quick Actions -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -882,7 +903,7 @@
                                 </div>
                             </a>
                             @endrole
-                            
+
                             <a href="{{ route('admin.contents.index') }}"
                                 class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
                                 <div class="bg-purple-100 p-2 rounded-lg mr-3">
@@ -893,7 +914,7 @@
                                     <p class="text-xs text-gray-500">Manage lessons and content</p>
                                 </div>
                             </a>
-                            
+
                             <a href="{{ route('admin.subjects.index') }}"
                                 class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
                                 <div class="bg-teal-100 p-2 rounded-lg mr-3">
@@ -904,7 +925,7 @@
                                     <p class="text-xs text-gray-500">Organize content by subjects</p>
                                 </div>
                             </a>
-                            
+
                             @role('super-admin')
                             <a href="{{ route('admin.analytics') }}"
                                 class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
@@ -916,7 +937,7 @@
                                     <p class="text-xs text-gray-500">View platform analytics</p>
                                 </div>
                             </a>
-                            
+
                             <a href="{{ route('admin.security') }}"
                                 class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
                                 <div class="bg-red-100 p-2 rounded-lg mr-3">
@@ -1041,7 +1062,7 @@
 
         // Get data from PHP variables
         const subscriptionData = {!! json_encode($subscriptionAnalytics ?? []) !!};
-        const labels = subscriptionData.map(item => item.name);
+    const labels = subscriptionData.map(item => item.name);
     const data = subscriptionData.map(item => item.revenue);
 
     new Chart(ctx, {
@@ -1260,7 +1281,7 @@
             this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
             this.disabled = true;
 
-            fetch('{{ route("admin.generate-recovery-codes") }}', {
+            fetch('{{ route("admin.credentials.recovery") }}', {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -1442,131 +1463,140 @@
 </script>
 
 @if(auth()->check() && (auth()->user()->hasRole('super-admin') || auth()->user()->is_superuser))
-    @if(!\Illuminate\Support\Facades\Cache::has('admin_invite_notice_seen_' . auth()->id()))
-    <!-- Invite Admin Feature Modal -->
-    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
-        .modal-card-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            border-radius: 1rem;
-            overflow: hidden;
-            z-index: -1;
+@if(!\Illuminate\Support\Facades\Cache::has('admin_invite_notice_seen_' . auth()->id()))
+<!-- Invite Admin Feature Modal -->
+<style nonce="{{ request()->attributes->get('csp_nonce') }}">
+    .modal-card-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 1rem;
+        overflow: hidden;
+        z-index: -1;
+    }
+
+    .modal-card-bg::before {
+        content: '';
+        position: absolute;
+        z-index: -1;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: conic-gradient(transparent,
+                #ef4444,
+                transparent 30%,
+                #3b82f6,
+                transparent 50%);
+        animation: rotate-border-modal 8s linear infinite;
+    }
+
+    .modal-card-bg::after {
+        content: '';
+        position: absolute;
+        z-index: -1;
+        inset: 3px;
+        background: white;
+        border-radius: calc(1rem - 3px);
+    }
+
+    @keyframes rotate-border-modal {
+        from {
+            transform: rotate(0deg);
         }
 
-        .modal-card-bg::before {
-            content: '';
-            position: absolute;
-            z-index: -1;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: conic-gradient(transparent,
-                    #ef4444,
-                    transparent 30%,
-                    #3b82f6,
-                    transparent 50%);
-            animation: rotate-border-modal 8s linear infinite;
+        to {
+            transform: rotate(360deg);
         }
-
-        .modal-card-bg::after {
-            content: '';
-            position: absolute;
-            z-index: -1;
-            inset: 3px;
-            background: white;
-            border-radius: calc(1rem - 3px);
-        }
-
-        @keyframes rotate-border-modal {
-            from {
-                transform: rotate(0deg);
-            }
-            to {
-                transform: rotate(360deg);
-            }
-        }
-    </style>
-    <div id="inviteAdminNoticeModal" class="fixed inset-0 z-[100] flex items-center justify-center hidden" style="backdrop-filter: blur(4px);">
-        <!-- Backdrop -->
-        <div class="absolute inset-0 bg-gray-900 bg-opacity-40 transition-opacity" onclick="dismissInviteAdminNotice()"></div>
-        
-        <!-- Modal Content -->
-        <div class="relative rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all scale-95 opacity-0 duration-300 p-[3px]" id="inviteAdminNoticeContent">
-            
-            <div class="modal-card-bg"></div>
-            
-            <div class="p-8 bg-white rounded-[calc(1rem-3px)] relative z-10">
-                <div class="flex items-center justify-center w-16 h-16 mx-auto bg-indigo-50 text-indigo-600 rounded-full mb-6 ring-8 ring-indigo-50/50">
-                    <i class="fas fa-user-plus text-2xl"></i>
-                </div>
-                
-                <h3 class="text-2xl font-bold text-center text-gray-900 mb-2">New Feature Update!</h3>
-                <p class="text-center text-gray-600 mb-8 leading-relaxed">
-                    You can now invite other administrators and assign them restricted roles to collaboratively manage your learning platform.
-                </p>
-                
-                <div class="flex flex-col space-y-3">
-                    <a href="{{ route('admin.users') }}" onclick="dismissInviteAdminNotice()" class="w-full flex justify-center items-center px-4 py-3 border border-transparent text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-all">
-                        <i class="fas fa-users mr-2"></i> Try it out now
-                    </a>
-                    <button type="button" onclick="dismissInviteAdminNotice()" class="w-full flex justify-center items-center px-4 py-3 border border-gray-300 text-sm font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all">
-                        Maybe Later
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Close Button (X) -->
-            <button type="button" onclick="dismissInviteAdminNotice()" class="absolute top-4 right-4 z-20 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none">
-                <i class="fas fa-times text-lg"></i>
-            </button>
-        </div>
+    }
+</style>
+<div id="inviteAdminNoticeModal" class="fixed inset-0 z-[100] flex items-center justify-center hidden"
+    style="backdrop-filter: blur(4px);">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-gray-900 bg-opacity-40 transition-opacity" onclick="dismissInviteAdminNotice()">
     </div>
 
-    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-        document.addEventListener('DOMContentLoaded', function() {
-            const modal = document.getElementById('inviteAdminNoticeModal');
-            const content = document.getElementById('inviteAdminNoticeContent');
-            
-            // Short delay for animation effect
-            setTimeout(() => {
-                if (modal) {
-                    modal.classList.remove('hidden');
-                    // Trigger reflow
-                    void modal.offsetWidth;
-                    content.classList.remove('scale-95', 'opacity-0');
-                    content.classList.add('scale-100', 'opacity-100');
-                }
-            }, 500);
-        });
+    <!-- Modal Content -->
+    <div class="relative rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all scale-95 opacity-0 duration-300 p-[3px]"
+        id="inviteAdminNoticeContent">
 
-        function dismissInviteAdminNotice() {
-            const modal = document.getElementById('inviteAdminNoticeModal');
-            const content = document.getElementById('inviteAdminNoticeContent');
-            
-            // Animation out
-            content.classList.remove('scale-100', 'opacity-100');
-            content.classList.add('scale-95', 'opacity-0');
-            
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 300);
+        <div class="modal-card-bg"></div>
 
-            // Mark as seen in backend
-            fetch('{{ route("admin.mark-invite-notice-seen") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Accept': 'application/json'
-                }
-            })
+        <div class="p-8 bg-white rounded-[calc(1rem-3px)] relative z-10">
+            <div
+                class="flex items-center justify-center w-16 h-16 mx-auto bg-indigo-50 text-indigo-600 rounded-full mb-6 ring-8 ring-indigo-50/50">
+                <i class="fas fa-user-plus text-2xl"></i>
+            </div>
+
+            <h3 class="text-2xl font-bold text-center text-gray-900 mb-2">New Feature Update!</h3>
+            <p class="text-center text-gray-600 mb-8 leading-relaxed">
+                You can now invite other administrators and assign them restricted roles to collaboratively manage the
+                learning platform.
+            </p>
+
+            <div class="flex flex-col space-y-3">
+                <a href="{{ route('admin.users') }}" onclick="dismissInviteAdminNotice()"
+                    class="w-full flex justify-center items-center px-4 py-3 border border-transparent text-sm font-semibold rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-all">
+                    <i class="fas fa-users mr-2"></i> Try it out now
+                </a>
+                <button type="button" onclick="dismissInviteAdminNotice()"
+                    class="w-full flex justify-center items-center px-4 py-3 border border-gray-300 text-sm font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all">
+                    Maybe Later
+                </button>
+            </div>
+        </div>
+
+        <!-- Close Button (X) -->
+        <button type="button" onclick="dismissInviteAdminNotice()"
+            class="absolute top-4 right-4 z-20 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none">
+            <i class="fas fa-times text-lg"></i>
+        </button>
+    </div>
+</div>
+
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    document.addEventListener('DOMContentLoaded', function () {
+        const modal = document.getElementById('inviteAdminNoticeModal');
+        const content = document.getElementById('inviteAdminNoticeContent');
+
+        // Short delay for animation effect
+        setTimeout(() => {
+            if (modal) {
+                modal.classList.remove('hidden');
+                // Trigger reflow
+                void modal.offsetWidth;
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }
+        }, 500);
+    });
+
+    function dismissInviteAdminNotice() {
+        const modal = document.getElementById('inviteAdminNoticeModal');
+        const content = document.getElementById('inviteAdminNoticeContent');
+
+        // Animation out
+        content.classList.remove('scale-100', 'opacity-100');
+        content.classList.add('scale-95', 'opacity-0');
+
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+
+        // Mark as seen in backend
+        fetch('{{ route("admin.mark-invite-notice-seen") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json'
+            }
+        })
             .catch(error => console.error('Error marking notice as seen:', error));
-        }
-    </script>
-    @endif
+    }
+</script>
+@endif
 @endif
 @endsection

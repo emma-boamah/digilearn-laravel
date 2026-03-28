@@ -322,6 +322,46 @@ secure_asset('images/shoutoutgh-logo.png')
             font-size: clamp(0.9rem, 5vw, 1.5rem);
         }
     }
+
+    /* Dark mode overrides */
+    [data-theme="dark"] .pricing-hero h1 {
+        color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .pricing-main {
+        background-color: var(--bg-main) !important;
+    }
+
+    [data-theme="dark"] .pricing-header h2,
+    [data-theme="dark"] .pricing-price {
+        color: var(--text-main) !important;
+    }
+
+    [data-theme="dark"] .pricing-header p,
+    [data-theme="dark"] .pricing-description,
+    [data-theme="dark"] .pricing-features li {
+        color: var(--text-muted) !important;
+    }
+
+    [data-theme="dark"] .pricing-card-bg::after {
+        background: var(--bg-surface) !important;
+    }
+
+    [data-theme="dark"] .pricing-badge {
+        background-color: var(--bg-surface) !important;
+        color: var(--text-main) !important;
+        border: 1px solid var(--accent) !important;
+    }
+
+    [data-theme="dark"] .pricing-btn {
+        border-color: var(--accent) !important;
+        color: var(--accent) !important;
+    }
+
+    [data-theme="dark"] .pricing-btn:hover {
+        background-color: var(--accent) !important;
+        color: #ffffff !important;
+    }
 </style>
 
 <!-- Hero Section -->

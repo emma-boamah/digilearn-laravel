@@ -21,26 +21,31 @@
         background: var(--grey-100);
         opacity: 0.5;
     }
-    
+
     /* Top Header */
     .top-header {
         display: flex;
         align-items: center;
         height: 60px;
-        background-color: rgba(255, 255, 255, 0.8); /* More transparent */
-        backdrop-filter: blur(12px) saturate(180%); /* Enhanced glassmorphism */
-        -webkit-backdrop-filter: blur(12px) saturate(180%); /* Safari support */
-        border-bottom: 1px solid rgba(229, 231, 235, 0.6);
+        background-color: rgba(255, 255, 255, 0.8);
+        /* More transparent */
+        backdrop-filter: blur(12px) saturate(180%);
+        /* Enhanced glassmorphism */
+        -webkit-backdrop-filter: blur(12px) saturate(180%);
+        /* Safari support */
+        border-bottom: 0.5px solid rgba(235, 237, 243, 0.6);
         position: fixed;
         top: 0;
-        left: 0; /* Changed to 0 for full width */
-        width: 100%; /* Full width */
+        left: 0;
+        /* Changed to 0 for full width */
+        width: 100%;
+        /* Full width */
         z-index: 999;
         transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         /* padding-left handled in including files */
     }
 
-    .youtube-sidebar.collapsed ~ .top-header {
+    .youtube-sidebar.collapsed~.top-header {
         padding-left: var(--sidebar-width-collapsed) !important;
     }
 
@@ -50,7 +55,8 @@
         padding: 0 1.5rem;
         border-right: 1px solid var(--gray-200);
         height: 100%;
-        flex-shrink: 0; /* Prevent squashing on small screens */
+        flex-shrink: 0;
+        /* Prevent squashing on small screens */
     }
 
     .header-right {
@@ -105,7 +111,8 @@
         padding: 0.75rem;
         border-radius: 0.5rem;
         transition: all 0.2s ease;
-        flex-shrink: 0; /* Prevent icons from disappearing */
+        flex-shrink: 0;
+        /* Prevent icons from disappearing */
     }
 
     .notification-btn:hover {
@@ -300,7 +307,8 @@
         position: absolute;
         top: 2px;
         right: 2px;
-        background: #E11E2D; /* Primary red */
+        background: #E11E2D;
+        /* Primary red */
         color: var(--white);
         border-radius: 50%;
         width: 14px;
@@ -311,7 +319,7 @@
         align-items: center;
         justify-content: center;
         border: 1.5px solid var(--white);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .dropdown-footer {
@@ -343,7 +351,8 @@
         padding: 0;
         border-radius: 0.5rem;
         transition: all 0.2s ease;
-        flex-shrink: 0; /* Critical for mini screens */
+        flex-shrink: 0;
+        /* Critical for mini screens */
     }
 
     .user-avatar-btn:hover {
@@ -697,10 +706,15 @@
         box-sizing: border-box;
     }
 
-    .youtube-sidebar.collapsed ~ .main-content {
+    .youtube-sidebar.collapsed~.main-content {
         width: calc(100vw - var(--sidebar-width-collapsed));
         max-width: calc(100vw - var(--sidebar-width-collapsed));
         margin-left: var(--sidebar-width-collapsed);
+    }
+
+    [data-theme="dark"] .top-header {
+        background-color: #000000;
+        border: none;
     }
 
     /* Mobile adjustments */
@@ -731,13 +745,13 @@
         .sidebar-logo img {
             height: 28px;
         }
-        
+
         .sidebar-toggle-btn {
             margin-right: 0.5rem;
             padding: 0.5rem;
         }
 
-        .main-content{
+        .main-content {
             margin-left: 0;
             max-width: 100%;
         }
@@ -748,7 +762,7 @@
             gap: 0.25rem;
             padding: 0 0.25rem;
         }
-        
+
         .sidebar-logo img {
             height: 24px;
         }
@@ -765,7 +779,7 @@
         <!-- Hamburger for sidebar toggle (always visible) -->
         <button class="sidebar-toggle-btn" id="sidebarToggle">
             <svg class="hamburger-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
         </button>
         <div class="sidebar-logo">
@@ -774,187 +788,187 @@
             </a>
         </div>
     </div>
-    
+
     <!-- Dark Mode Toggle Script -->
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-    document.addEventListener('DOMContentLoaded', function() {
-        const toggleButton = document.getElementById('toggledarkmodebutton');
-        const themeIcon = document.getElementById('themeIcon');
-        const body = document.body;
-    
-        // Check for saved theme preference or default to light mode
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        setTheme(savedTheme);
-    
-        // Toggle theme on button click
-        if (toggleButton) {
-            toggleButton.addEventListener('click', function() {
-                const currentTheme = body.getAttribute('data-theme') || 'light';
-                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-                setTheme(newTheme);
-                localStorage.setItem('theme', newTheme);
-            });
-        }
-    
-        function setTheme(theme) {
-            if (theme === 'dark') {
-                body.setAttribute('data-theme', 'dark');
-                if (themeIcon) {
-                    themeIcon.classList.remove('fa-moon');
-                    themeIcon.classList.add('fa-sun');
-                }
-                if (toggleButton) {
-                    toggleButton.setAttribute('title', 'Switch to Light Mode');
-                }
-            } else {
-                body.removeAttribute('data-theme');
-                if (themeIcon) {
-                    themeIcon.classList.remove('fa-sun');
-                    themeIcon.classList.add('fa-moon');
-                }
-                if (toggleButton) {
-                    toggleButton.setAttribute('title', 'Switch to Dark Mode');
-                }
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggleButton = document.getElementById('toggledarkmodebutton');
+            const themeIcon = document.getElementById('themeIcon');
+
+            // Read from document.documentElement which was seeded by the FOUC prevention script in head
+            const currentTheme = document.documentElement.getAttribute('data-theme') || localStorage.getItem('theme') || 'light';
+            setTheme(currentTheme);
+
+            // Toggle theme on button click
+            if (toggleButton) {
+                toggleButton.addEventListener('click', function () {
+                    const activeTheme = document.documentElement.getAttribute('data-theme') || 'light';
+                    const newTheme = activeTheme === 'light' ? 'dark' : 'light';
+                    setTheme(newTheme);
+                    try {
+                        localStorage.setItem('theme', newTheme);
+                    } catch (e) { }
+                });
             }
-        }
 
-        // User dropdown functionality
-        const userDropdownToggle = document.getElementById('userDropdownToggle');
-        const userDropdownMenu = document.getElementById('userDropdownMenu');
+            function setTheme(theme) {
+                const iconDark = document.getElementById('themeIconDark');
+                const iconLight = document.getElementById('themeIconLight');
 
-        if (userDropdownToggle && userDropdownMenu) {
-            userDropdownToggle.addEventListener('click', function(event) {
-                event.stopPropagation();
-                const isExpanded = userDropdownToggle.getAttribute('aria-expanded') === 'true';
-                userDropdownToggle.setAttribute('aria-expanded', !isExpanded);
-                userDropdownMenu.classList.toggle('active');
-            });
-
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(event) {
-                if (!userDropdownToggle.contains(event.target) && !userDropdownMenu.contains(event.target)) {
-                    userDropdownToggle.setAttribute('aria-expanded', 'false');
-                    userDropdownMenu.classList.remove('active');
-                }
-            });
-
-            // Close dropdown on escape key
-            document.addEventListener('keydown', function(event) {
-                if (event.key === 'Escape' && userDropdownMenu.classList.contains('active')) {
-                    userDropdownToggle.setAttribute('aria-expanded', 'false');
-                    userDropdownMenu.classList.remove('active');
-                }
-            });
-        }
-
-        // Notification dropdown functionality
-        const notificationButton = document.getElementById('notificationButton');
-        const notificationDropdown = document.getElementById('notificationDropdown');
-        const notificationList = document.getElementById('notificationList');
-        const markAllReadButton = document.querySelector('.mark-all-read');
-        const notificationBadge = document.querySelector('.notification-badge');
-
-        let notificationsLoaded = false;
-
-        if (notificationButton && notificationDropdown) {
-            notificationButton.addEventListener('click', function(event) {
-                event.stopPropagation();
-                const isActive = notificationDropdown.classList.contains('active');
-                notificationDropdown.classList.toggle('active');
-
-                if (!isActive && !notificationsLoaded) {
-                    loadNotifications();
-                }
-            });
-
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(event) {
-                if (!notificationButton.contains(event.target) && !notificationDropdown.contains(event.target)) {
-                    notificationDropdown.classList.remove('active');
-                }
-            });
-
-            // Close dropdown on escape key
-            document.addEventListener('keydown', function(event) {
-                if (event.key === 'Escape' && notificationDropdown.classList.contains('active')) {
-                    notificationDropdown.classList.remove('active');
-                }
-            });
-        }
-
-        // Mark all as read functionality
-        if (markAllReadButton) {
-            markAllReadButton.addEventListener('click', function(event) {
-                event.preventDefault();
-                markAllNotificationsAsRead();
-            });
-        }
-
-        function loadNotifications() {
-            fetch('/api/notifications?per_page=5', {
-                method: 'GET',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
-                    'Accept': 'application/json',
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    renderNotifications(data.notifications.data);
-                    updateBadge(data.unread_count);
-                    notificationsLoaded = true;
+                if (theme === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    if (iconDark) iconDark.style.display = 'none';
+                    if (iconLight) iconLight.style.display = 'block';
+                    if (toggleButton) {
+                        toggleButton.setAttribute('title', 'Switch to Light Mode');
+                    }
                 } else {
-                    showNotificationError('Failed to load notifications');
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    if (iconDark) iconDark.style.display = 'block';
+                    if (iconLight) iconLight.style.display = 'none';
+                    if (toggleButton) {
+                        toggleButton.setAttribute('title', 'Switch to Dark Mode');
+                    }
                 }
-            })
-            .catch(error => {
-                console.error('Error loading notifications:', error);
-                showNotificationError('Failed to load notifications');
-            });
-        }
-
-        function renderNotifications(notifications) {
-            const loadingItem = document.getElementById('loadingNotifications');
-            if (loadingItem) {
-                loadingItem.remove();
             }
 
-            if (notifications.length === 0) {
-                notificationList.innerHTML = `
+            // User dropdown functionality
+            const userDropdownToggle = document.getElementById('userDropdownToggle');
+            const userDropdownMenu = document.getElementById('userDropdownMenu');
+
+            if (userDropdownToggle && userDropdownMenu) {
+                userDropdownToggle.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    const isExpanded = userDropdownToggle.getAttribute('aria-expanded') === 'true';
+                    userDropdownToggle.setAttribute('aria-expanded', !isExpanded);
+                    userDropdownMenu.classList.toggle('active');
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function (event) {
+                    if (!userDropdownToggle.contains(event.target) && !userDropdownMenu.contains(event.target)) {
+                        userDropdownToggle.setAttribute('aria-expanded', 'false');
+                        userDropdownMenu.classList.remove('active');
+                    }
+                });
+
+                // Close dropdown on escape key
+                document.addEventListener('keydown', function (event) {
+                    if (event.key === 'Escape' && userDropdownMenu.classList.contains('active')) {
+                        userDropdownToggle.setAttribute('aria-expanded', 'false');
+                        userDropdownMenu.classList.remove('active');
+                    }
+                });
+            }
+
+            // Notification dropdown functionality
+            const notificationButton = document.getElementById('notificationButton');
+            const notificationDropdown = document.getElementById('notificationDropdown');
+            const notificationList = document.getElementById('notificationList');
+            const markAllReadButton = document.querySelector('.mark-all-read');
+            const notificationBadge = document.querySelector('.notification-badge');
+
+            let notificationsLoaded = false;
+
+            if (notificationButton && notificationDropdown) {
+                notificationButton.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    const isActive = notificationDropdown.classList.contains('active');
+                    notificationDropdown.classList.toggle('active');
+
+                    if (!isActive && !notificationsLoaded) {
+                        loadNotifications();
+                    }
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function (event) {
+                    if (!notificationButton.contains(event.target) && !notificationDropdown.contains(event.target)) {
+                        notificationDropdown.classList.remove('active');
+                    }
+                });
+
+                // Close dropdown on escape key
+                document.addEventListener('keydown', function (event) {
+                    if (event.key === 'Escape' && notificationDropdown.classList.contains('active')) {
+                        notificationDropdown.classList.remove('active');
+                    }
+                });
+            }
+
+            // Mark all as read functionality
+            if (markAllReadButton) {
+                markAllReadButton.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    markAllNotificationsAsRead();
+                });
+            }
+
+            function loadNotifications() {
+                fetch('/api/notifications?per_page=5', {
+                    method: 'GET',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+                        'Accept': 'application/json',
+                    },
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            renderNotifications(data.notifications.data);
+                            updateBadge(data.unread_count);
+                            notificationsLoaded = true;
+                        } else {
+                            showNotificationError('Failed to load notifications');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading notifications:', error);
+                        showNotificationError('Failed to load notifications');
+                    });
+            }
+
+            function renderNotifications(notifications) {
+                const loadingItem = document.getElementById('loadingNotifications');
+                if (loadingItem) {
+                    loadingItem.remove();
+                }
+
+                if (notifications.length === 0) {
+                    notificationList.innerHTML = `
                     <div class="notification-item">
                         <div class="notification-content">
                             <p>No notifications yet</p>
                         </div>
                     </div>
                 `;
-                return;
-            }
-
-            const notificationHtml = notifications.map(notification => {
-                const isUnread = !notification.read_at;
-                const unreadClass = isUnread ? 'unread' : '';
-                const timeAgo = formatTimeAgo(new Date(notification.created_at));
-                const contentType = notification.data?.content_type || 'system';
-                const icon = getNotificationIcon(notification.type, contentType);
-
-                let notificationContent = '';
-
-                switch (contentType) {
-                    case 'video':
-                        notificationContent = renderVideoNotification(notification, timeAgo);
-                        break;
-                    case 'document':
-                        notificationContent = renderDocumentNotification(notification, timeAgo);
-                        break;
-                    case 'quiz':
-                        notificationContent = renderQuizNotification(notification, timeAgo);
-                        break;
-                    default:
-                        notificationContent = renderSystemNotification(notification, timeAgo);
+                    return;
                 }
 
-                return `
+                const notificationHtml = notifications.map(notification => {
+                    const isUnread = !notification.read_at;
+                    const unreadClass = isUnread ? 'unread' : '';
+                    const timeAgo = formatTimeAgo(new Date(notification.created_at));
+                    const contentType = notification.data?.content_type || 'system';
+                    const icon = getNotificationIcon(notification.type, contentType);
+
+                    let notificationContent = '';
+
+                    switch (contentType) {
+                        case 'video':
+                            notificationContent = renderVideoNotification(notification, timeAgo);
+                            break;
+                        case 'document':
+                            notificationContent = renderDocumentNotification(notification, timeAgo);
+                            break;
+                        case 'quiz':
+                            notificationContent = renderQuizNotification(notification, timeAgo);
+                            break;
+                        default:
+                            notificationContent = renderSystemNotification(notification, timeAgo);
+                    }
+
+                    return `
                     <div class="notification-item ${unreadClass}" data-id="${notification.id}" data-url="${notification.data?.url || ''}" data-content-type="${contentType}">
                         <div class="notification-icon">
                             <i class="${icon}"></i>
@@ -962,32 +976,32 @@
                         ${notificationContent}
                     </div>
                 `;
-            }).join('');
+                }).join('');
 
-            notificationList.innerHTML = notificationHtml;
+                notificationList.innerHTML = notificationHtml;
 
-            // Add click handlers for individual notifications
-            document.querySelectorAll('.notification-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    const notificationId = this.getAttribute('data-id');
-                    const contentType = this.getAttribute('data-content-type');
-                    const url = this.getAttribute('data-url');
+                // Add click handlers for individual notifications
+                document.querySelectorAll('.notification-item').forEach(item => {
+                    item.addEventListener('click', function () {
+                        const notificationId = this.getAttribute('data-id');
+                        const contentType = this.getAttribute('data-content-type');
+                        const url = this.getAttribute('data-url');
 
-                    if (notificationId && this.classList.contains('unread')) {
-                        markAsRead(notificationId);
-                    }
+                        if (notificationId && this.classList.contains('unread')) {
+                            markAsRead(notificationId);
+                        }
 
-                    // Handle access control and redirection
-                    if (url) {
-                        handleNotificationClick(url, contentType);
-                    }
+                        // Handle access control and redirection
+                        if (url) {
+                            handleNotificationClick(url, contentType);
+                        }
+                    });
                 });
-            });
-        }
+            }
 
-        function renderVideoNotification(notification, timeAgo) {
-            const data = notification.data || {};
-            return `
+            function renderVideoNotification(notification, timeAgo) {
+                const data = notification.data || {};
+                return `
                 <div class="notification-content">
                     <div class="notification-header">
                         <span class="notification-badge video-badge">Video</span>
@@ -1002,11 +1016,11 @@
                     <span class="notification-time">${timeAgo}</span>
                 </div>
             `;
-        }
+            }
 
-        function renderDocumentNotification(notification, timeAgo) {
-            const data = notification.data || {};
-            return `
+            function renderDocumentNotification(notification, timeAgo) {
+                const data = notification.data || {};
+                return `
                 <div class="notification-content">
                     <div class="notification-header">
                         <span class="notification-badge document-badge">${data.document_type || 'Document'}</span>
@@ -1021,11 +1035,11 @@
                     <span class="notification-time">${timeAgo}</span>
                 </div>
             `;
-        }
+            }
 
-        function renderQuizNotification(notification, timeAgo) {
-            const data = notification.data || {};
-            return `
+            function renderQuizNotification(notification, timeAgo) {
+                const data = notification.data || {};
+                return `
                 <div class="notification-content">
                     <div class="notification-header">
                         <span class="notification-badge quiz-badge">Quiz</span>
@@ -1041,180 +1055,180 @@
                     <span class="notification-time">${timeAgo}</span>
                 </div>
             `;
-        }
+            }
 
-        function renderSystemNotification(notification, timeAgo) {
-            const data = notification.data || {};
-            return `
+            function renderSystemNotification(notification, timeAgo) {
+                const data = notification.data || {};
+                return `
                 <div class="notification-content">
                     <p class="notification-title">${data.title}</p>
                     <p class="notification-message">${data.message}</p>
                     <span class="notification-time">${timeAgo}</span>
                 </div>
             `;
-        }
-
-        function handleNotificationClick(url, contentType) {
-            // Check access before redirecting
-            checkAccessAndRedirect(url, contentType);
-        }
-
-        function checkAccessAndRedirect(url, contentType) {
-            // Check access based on content type
-            switch (contentType) {
-                case 'video':
-                case 'document':
-                case 'quiz':
-                    // Check if user has subscription or content is free
-                    checkSubscriptionAccess(url, contentType);
-                    break;
-                default:
-                    // System notifications - always allow
-                    window.location.href = url;
             }
-        }
 
-        function checkSubscriptionAccess(url, contentType) {
-            // Check if user has active subscription
-            fetch('/api/current-subscription', {
-                method: 'GET',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
-                    'Accept': 'application/json',
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success && data.subscription && data.subscription.status === 'active') {
-                    // User has active subscription - allow access
-                    window.location.href = url;
-                } else {
-                    // No active subscription - show upgrade prompt
-                    showUpgradePrompt(url, contentType);
+            function handleNotificationClick(url, contentType) {
+                // Check access before redirecting
+                checkAccessAndRedirect(url, contentType);
+            }
+
+            function checkAccessAndRedirect(url, contentType) {
+                // Check access based on content type
+                switch (contentType) {
+                    case 'video':
+                    case 'document':
+                    case 'quiz':
+                        // Check if user has subscription or content is free
+                        checkSubscriptionAccess(url, contentType);
+                        break;
+                    default:
+                        // System notifications - always allow
+                        window.location.href = url;
                 }
-            })
-            .catch(error => {
-                console.error('Error checking subscription:', error);
-                // On error, show upgrade prompt to be safe
-                showUpgradePrompt(url, contentType);
-            });
-        }
-
-        function showUpgradePrompt(url, contentType) {
-            const contentName = contentType.charAt(0).toUpperCase() + contentType.slice(1);
-            const confirmed = confirm(`${contentName} access requires an active subscription. Would you like to upgrade your plan to access this content?`);
-
-            if (confirmed) {
-                // Redirect to pricing page
-                window.location.href = '/pricing';
             }
-            // If cancelled, stay on current page
-        }
 
-        function markAsRead(notificationId) {
-            fetch(`/api/notifications/${notificationId}/read`, {
-                method: 'PUT',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
-                    'Accept': 'application/json',
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    updateBadge(data.unread_count);
-                    // Update UI
-                    const item = document.querySelector(`[data-id="${notificationId}"]`);
-                    if (item) {
-                        item.classList.remove('unread');
+            function checkSubscriptionAccess(url, contentType) {
+                // Check if user has active subscription
+                fetch('/api/current-subscription', {
+                    method: 'GET',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+                        'Accept': 'application/json',
+                    },
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.subscription && data.subscription.status === 'active') {
+                            // User has active subscription - allow access
+                            window.location.href = url;
+                        } else {
+                            // No active subscription - show upgrade prompt
+                            showUpgradePrompt(url, contentType);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking subscription:', error);
+                        // On error, show upgrade prompt to be safe
+                        showUpgradePrompt(url, contentType);
+                    });
+            }
+
+            function showUpgradePrompt(url, contentType) {
+                const contentName = contentType.charAt(0).toUpperCase() + contentType.slice(1);
+                const confirmed = confirm(`${contentName} access requires an active subscription. Would you like to upgrade your plan to access this content?`);
+
+                if (confirmed) {
+                    // Redirect to pricing page
+                    window.location.href = '/pricing';
+                }
+                // If cancelled, stay on current page
+            }
+
+            function markAsRead(notificationId) {
+                fetch(`/api/notifications/${notificationId}/read`, {
+                    method: 'PUT',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+                        'Accept': 'application/json',
+                    },
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            updateBadge(data.unread_count);
+                            // Update UI
+                            const item = document.querySelector(`[data-id="${notificationId}"]`);
+                            if (item) {
+                                item.classList.remove('unread');
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error marking notification as read:', error);
+                    });
+            }
+
+            function markAllNotificationsAsRead() {
+                fetch('/api/notifications/mark-all-read', {
+                    method: 'PUT',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+                        'Accept': 'application/json',
+                    },
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            updateBadge(0);
+                            // Update UI
+                            document.querySelectorAll('.notification-item.unread').forEach(item => {
+                                item.classList.remove('unread');
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error marking all notifications as read:', error);
+                    });
+            }
+
+            function updateBadge(count) {
+                if (notificationBadge) {
+                    if (count > 0) {
+                        notificationBadge.textContent = count > 99 ? '99+' : count;
+                        notificationBadge.style.display = 'flex';
+                    } else {
+                        notificationBadge.style.display = 'none';
                     }
                 }
-            })
-            .catch(error => {
-                console.error('Error marking notification as read:', error);
-            });
-        }
-
-        function markAllNotificationsAsRead() {
-            fetch('/api/notifications/mark-all-read', {
-                method: 'PUT',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
-                    'Accept': 'application/json',
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    updateBadge(0);
-                    // Update UI
-                    document.querySelectorAll('.notification-item.unread').forEach(item => {
-                        item.classList.remove('unread');
-                    });
-                }
-            })
-            .catch(error => {
-                console.error('Error marking all notifications as read:', error);
-            });
-        }
-
-        function updateBadge(count) {
-            if (notificationBadge) {
-                if (count > 0) {
-                    notificationBadge.textContent = count > 99 ? '99+' : count;
-                    notificationBadge.style.display = 'flex';
-                } else {
-                    notificationBadge.style.display = 'none';
-                }
             }
-        }
 
-        function showNotificationError(message) {
-            notificationList.innerHTML = `
+            function showNotificationError(message) {
+                notificationList.innerHTML = `
                 <div class="notification-item">
                     <div class="notification-content">
                         <p>${message}</p>
                     </div>
                 </div>
             `;
-        }
-
-        function formatTimeAgo(date) {
-            const now = new Date();
-            const diffInSeconds = Math.floor((now - date) / 1000);
-
-            if (diffInSeconds < 60) return 'Just now';
-            if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-            if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-            return `${Math.floor(diffInSeconds / 86400)}d ago`;
-        }
-
-        function getNotificationIcon(type, contentType) {
-            // First try content type specific icons
-            switch (contentType) {
-                case 'video':
-                    return 'fas fa-play-circle';
-                case 'document':
-                    return 'fas fa-file-alt';
-                case 'quiz':
-                    return 'fas fa-brain';
             }
 
-            // Fallback to type-specific icons
-            const iconMap = {
-                'App\\Notifications\\SystemAnnouncementNotification': 'fas fa-bullhorn',
-                'App\\Notifications\\PaymentSuccessfulNotification': 'fas fa-credit-card',
-                'App\\Notifications\\ClassStartedNotification': 'fas fa-chalkboard-teacher',
-                'App\\Notifications\\QuizCompletedNotification': 'fas fa-trophy',
-                'App\\Notifications\\LessonCompletedNotification': 'fas fa-check-circle',
-                'App\\Notifications\\MessageReceivedNotification': 'fas fa-envelope',
-                'App\\Notifications\\NewVideoNotification': 'fas fa-play-circle',
-                'App\\Notifications\\NewDocumentNotification': 'fas fa-file-alt',
-                'App\\Notifications\\NewQuizNotification': 'fas fa-brain',
-            };
-            return iconMap[type] || 'fas fa-bell';
-        }
-    });
+            function formatTimeAgo(date) {
+                const now = new Date();
+                const diffInSeconds = Math.floor((now - date) / 1000);
+
+                if (diffInSeconds < 60) return 'Just now';
+                if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+                if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+                return `${Math.floor(diffInSeconds / 86400)}d ago`;
+            }
+
+            function getNotificationIcon(type, contentType) {
+                // First try content type specific icons
+                switch (contentType) {
+                    case 'video':
+                        return 'fas fa-play-circle';
+                    case 'document':
+                        return 'fas fa-file-alt';
+                    case 'quiz':
+                        return 'fas fa-brain';
+                }
+
+                // Fallback to type-specific icons
+                const iconMap = {
+                    'App\\Notifications\\SystemAnnouncementNotification': 'fas fa-bullhorn',
+                    'App\\Notifications\\PaymentSuccessfulNotification': 'fas fa-credit-card',
+                    'App\\Notifications\\ClassStartedNotification': 'fas fa-chalkboard-teacher',
+                    'App\\Notifications\\QuizCompletedNotification': 'fas fa-trophy',
+                    'App\\Notifications\\LessonCompletedNotification': 'fas fa-check-circle',
+                    'App\\Notifications\\MessageReceivedNotification': 'fas fa-envelope',
+                    'App\\Notifications\\NewVideoNotification': 'fas fa-play-circle',
+                    'App\\Notifications\\NewDocumentNotification': 'fas fa-file-alt',
+                    'App\\Notifications\\NewQuizNotification': 'fas fa-brain',
+                };
+                return iconMap[type] || 'fas fa-bell';
+            }
+        });
     </script>
 
     <!-- Sidebar and User Dropdown Scripts -->
@@ -1249,13 +1263,22 @@
     <div class="header-right">
         <!-- Dark Mode Toggle -->
         <button class="notification-btn" id="toggledarkmodebutton" title="Toggle Dark Mode">
-            <i class="fas fa-moon" id="themeIcon"></i>
+            <svg id="themeIconDark" style="display: none; width: 22px; height: 22px;" fill="currentColor"
+                viewBox="0 0 20 20">
+                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+            </svg>
+            <svg id="themeIconLight" style="display: none; width: 22px; height: 22px;" fill="currentColor"
+                viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                    d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4.22 2.364a1 1 0 011.415 0l.707.707a1 1 0 01-1.414 1.415l-.707-.707a1 1 0 010-1.415zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zm-2.364 4.22a1 1 0 010 1.415l-.707.707a1 1 0 01-1.415-1.414l.707-.707a1 1 0 011.415 0zM10 16a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zm-4.22-2.364a1 1 0 01-1.415 0l-.707-.707a1 1 0 011.414-1.415l.707.707a1 1 0 010 1.415zM2 10a1 1 0 011-1h1a1 1 0 110 2H3a1 1 0 01-1-1zm2.364-4.22a1 1 0 010-1.415l.707-.707a1 1 0 011.415 1.414l-.707.707a1 1 0 01-1.415 0zM10 14a4 4 0 100-8 4 4 0 000 8z"
+                    clip-rule="evenodd"></path>
+            </svg>
         </button>
 
         <button class="notification-btn" id="notificationButton">
             <svg class="notification-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
             <span class="notification-badge">{{ auth()->user()->unreadNotifications->count() }}</span>
         </button>
@@ -1285,11 +1308,11 @@
         <div class="user-dropdown">
             <button class="user-avatar-btn" id="userDropdownToggle" aria-haspopup="true" aria-expanded="false">
                 @if(auth()->user()->avatar_url)
-                    <img src="{{ auth()->user()->avatar_url }}" alt="Profile" class="user-avatar">
+                <img src="{{ auth()->user()->avatar_url }}" alt="Profile" class="user-avatar">
                 @else
-                    <div class="user-avatar">
-                        <span>{{ auth()->user()->getInitialsAttribute() }}</span>
-                    </div>
+                <div class="user-avatar">
+                    <span>{{ auth()->user()->getInitialsAttribute() }}</span>
+                </div>
                 @endif
             </button>
 
@@ -1303,14 +1326,17 @@
                 <div class="user-dropdown-body">
                     <a href="{{ route('profile.show') }}" class="dropdown-item">
                         <svg class="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                         Profile
                     </a>
                     <a href="{{ route('settings') }}" class="dropdown-item">
                         <svg class="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                         Settings
                     </a>
@@ -1318,7 +1344,8 @@
                         @csrf
                         <button type="submit" class="dropdown-item logout-btn">
                             <svg class="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                             </svg>
                             Logout
                         </button>

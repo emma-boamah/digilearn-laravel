@@ -196,7 +196,7 @@ use Illuminate\Support\Str;
         bottom: 0.5rem;
         right: 0.5rem;
         background-color: rgba(0, 0, 0, 0.8);
-        color: var(--white);
+        color: #ffffff;
         padding: 0.25rem 0.5rem;
         border-radius: 0.25rem;
         font-size: 0.75rem;
@@ -340,7 +340,7 @@ use Illuminate\Support\Str;
 
     .video-facade-card:hover .play-button {
         background-color: var(--primary-red);
-        color: var(--white);
+        color: #ffffff;
         transform: scale(1.1);
     }
 

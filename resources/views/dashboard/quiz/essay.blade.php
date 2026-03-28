@@ -8,11 +8,33 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
     <style>
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#f9fafb; color:#111827; }
+        :root {
+            --bg-main: #f9fafb;
+            --text-main: #111827;
+            --card-bg: #ffffff;
+            --border-color: #e5e7eb;
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #000000;
+            --text-main: #ffffff;
+            --card-bg: #16181c;
+            --border-color: #2f3336;
+            color-scheme: dark;
+        }
+
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg-main); color: var(--text-main); }
         .container { max-width: 960px; margin: 0 auto; padding: 1.5rem; }
-        .card { background:#fff; border:1px solid #e5e7eb; border-radius: .75rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        .header { display:flex; justify-content:space-between; align-items:center; padding:1rem 1.25rem; border-bottom:1px solid #e5e7eb; position:sticky; top:0; background:#fff; z-index:10; }
+        .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: .75rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; background: var(--card-bg); z-index: 10; }
         .title { font-size:1.25rem; font-weight:700; }
         .timer { font-weight:600; color:#111827; background:#f3f4f6; border-radius:.5rem; padding:.25rem .5rem; }
         .content { padding:1.25rem; }

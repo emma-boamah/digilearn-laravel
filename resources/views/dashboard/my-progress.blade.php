@@ -54,8 +54,8 @@
 
     .hero-badge {
         display: inline-block;
-        background: rgba(255,255,255,0.15);
-        border: 1px solid rgba(255,255,255,0.3);
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.3);
         border-radius: 2rem;
         padding: 0.4rem 1rem;
         font-size: 0.75rem;
@@ -91,7 +91,8 @@
         min-width: 240px;
         flex: 0 0 320px;
         position: relative;
-        padding-top: 2.5rem; /* room for the big % number */
+        padding-top: 2.5rem;
+        /* room for the big % number */
         z-index: 1;
     }
 
@@ -112,7 +113,7 @@
     .hero-progress-bar {
         width: 100%;
         height: 12px;
-        background: rgba(255,255,255,0.2);
+        background: rgba(255, 255, 255, 0.2);
         border-radius: 1rem;
         overflow: hidden;
     }
@@ -133,14 +134,15 @@
     }
 
     .metric-tile {
-        background: #fff;
+        background: var(--bg-main);
         padding: 1.125rem 1.25rem;
         border-radius: 1rem;
         display: flex;
         align-items: center;
         gap: 1rem;
         box-shadow: var(--shadow-sm);
-        border: 1px solid rgba(0,0,0,0.03); /* Extremely subtle border */
+        border: 1px solid rgba(0, 0, 0, 0.03);
+        /* Extremely subtle border */
     }
 
     .metric-icon {
@@ -156,7 +158,7 @@
 
     .metric-label {
         font-size: 0.78rem;
-        color: var(--gray-500);
+        color: var(--gray-900);
         font-weight: 600;
         margin-bottom: 0.15rem;
     }
@@ -167,10 +169,25 @@
         color: var(--gray-900);
     }
 
-    .icon-lessons { color: var(--app-blue);     background: rgba(38,119,184,0.1); }
-    .icon-score   { color: #ef4444;              background: rgba(239,68,68,0.1);  }
-    .icon-time    { color: #eab308;              background: rgba(234,179,8,0.1);  }
-    .icon-streak  { color: #f97316;              background: rgba(249,115,22,0.1); }
+    .icon-lessons {
+        color: var(--app-blue);
+        background: rgba(38, 119, 184, 0.1);
+    }
+
+    .icon-score {
+        color: #ef4444;
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    .icon-time {
+        color: #eab308;
+        background: rgba(234, 179, 8, 0.1);
+    }
+
+    .icon-streak {
+        color: #f97316;
+        background: rgba(249, 115, 22, 0.1);
+    }
 
     /* ── Section header ── */
     .section-header {
@@ -192,7 +209,10 @@
         color: var(--app-blue);
         text-decoration: none;
     }
-    .view-report-link:hover { text-decoration: none; }
+
+    .view-report-link:hover {
+        text-decoration: none;
+    }
 
     /* ══════════════════════════════════════════════
        INDIVIDUAL GRADE PROGRESS — Negative-space layout
@@ -203,13 +223,14 @@
         /* Transparent — sits directly on page background */
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        column-gap: 2.5rem;   /* the "breathing room" between columns */
+        column-gap: 2.5rem;
+        /* the "breathing room" between columns */
         margin-bottom: 3rem;
     }
 
     /* Each grade column — Elevated Card Style */
     .grade-col {
-        background: #fff;
+        background: var(--bg-main);
         padding: 1.25rem;
         border-radius: 1rem;
         box-shadow: var(--shadow-sm);
@@ -224,7 +245,7 @@
     /* Locked grades: muted palette signals "not yet" */
     .grade-col.locked {
         opacity: 0.7;
-        background: rgba(255,255,255,0.6);
+        background: rgba(255, 255, 255, 0.6);
     }
 
     /* ── Grade header ── */
@@ -239,9 +260,18 @@
         padding-top: 0.75rem;
         border-top: 3px solid var(--gray-200);
     }
-    .grade-col.completed .grade-card-header  { border-top-color: var(--success-green); }
-    .grade-col.in-progress .grade-card-header { border-top-color: var(--app-blue); }
-    .grade-col.locked .grade-card-header     { border-top-color: var(--gray-200); }
+
+    .grade-col.completed .grade-card-header {
+        border-top-color: var(--success-green);
+    }
+
+    .grade-col.in-progress .grade-card-header {
+        border-top-color: var(--app-blue);
+    }
+
+    .grade-col.locked .grade-card-header {
+        border-top-color: var(--gray-200);
+    }
 
     .grade-card-locked {
         text-decoration: none;
@@ -253,7 +283,10 @@
         font-weight: 700;
         color: var(--gray-900);
     }
-    .grade-col.locked .grade-name { color: var(--gray-500); }
+
+    .grade-col.locked .grade-name {
+        color: var(--gray-500);
+    }
 
     .grade-name-i {
         font-size: 0.8rem;
@@ -278,12 +311,23 @@
         border: none;
         padding: 0;
     }
-    .status-badge.completed   { color: #16a34a; }
-    .status-badge.in-progress { color: var(--app-blue); }
-    .status-badge.locked      { color: var(--gray-400); }
+
+    .status-badge.completed {
+        color: #16a34a;
+    }
+
+    .status-badge.in-progress {
+        color: var(--app-blue);
+    }
+
+    .status-badge.locked {
+        color: var(--gray-400);
+    }
 
     /* ── Stat rows ── */
-    .grade-stat-row { margin-top: 0.6rem; }
+    .grade-stat-row {
+        margin-top: 0.6rem;
+    }
 
     .stat-label-flex {
         display: flex;
@@ -292,9 +336,19 @@
         font-weight: 600;
         margin-bottom: 0.35rem;
     }
-    .stat-label { color: var(--gray-500); }
-    .stat-value { color: var(--gray-900); font-weight: 700; }
-    .grade-col.locked .stat-value { color: var(--gray-400); }
+
+    .stat-label {
+        color: var(--gray-500);
+    }
+
+    .stat-value {
+        color: var(--gray-900);
+        font-weight: 700;
+    }
+
+    .grade-col.locked .stat-value {
+        color: var(--gray-400);
+    }
 
     /* ── Progress bars ── */
     .mini-progress-bar {
@@ -305,33 +359,52 @@
         margin-bottom: 0.75rem;
     }
 
-    .mini-progress-fill                               { height: 100%; background: var(--gray-200); border-radius: 1rem; }
-    .grade-col.completed   .mini-progress-fill        { background: var(--success-green); }
-    .grade-col.in-progress .mini-progress-fill.lessons { background: var(--app-blue); }
+    .mini-progress-fill {
+        height: 100%;
+        background: var(--gray-200);
+        border-radius: 1rem;
+    }
+
+    .grade-col.completed .mini-progress-fill {
+        background: var(--success-green);
+    }
+
+    .grade-col.in-progress .mini-progress-fill.lessons {
+        background: var(--app-blue);
+    }
 
     /* Stack columns on mobile */
     @media (max-width: 700px) {
-        .grades-panel { grid-template-columns: 1fr; row-gap: 2rem; }
-        .grade-card-header { padding-top: 0.5rem; }
+        .grades-panel {
+            grid-template-columns: 1fr;
+            row-gap: 2rem;
+        }
+
+        .grade-card-header {
+            padding-top: 0.5rem;
+        }
     }
 
     /* ── Learning Pathway ── */
-    .pathway-section { margin-bottom: 2rem; }
+    .pathway-section {
+        margin-bottom: 2rem;
+    }
 
     .pathway-container {
         position: relative;
-        background: #fff;
+        background: var(--bg-main);
         padding: 2rem 1.5rem 2.5rem;
         border-radius: 1.5rem;
         box-shadow: var(--shadow-sm);
-        border: 1px solid rgba(0,0,0,0.03);
+        border: 1px solid rgba(0, 0, 0, 0.03);
     }
 
     .pathway-line {
         position: absolute;
         /* center of the 58px icons: padding-top(32px) + icon-center(29px) = 45px */
         top: calc(2rem + 29px);
-        left: 6.25%;   /* roughly half of each 25%-wide step from the edge */
+        left: 6.25%;
+        /* roughly half of each 25%-wide step from the edge */
         right: 6.25%;
         height: 3px;
         background: var(--gray-200);
@@ -357,7 +430,7 @@
         width: 58px;
         height: 58px;
         border-radius: 50%;
-        background: #fff;
+        background: var(--bg-main);
         border: 4px solid var(--gray-200);
         display: flex;
         align-items: center;
@@ -370,7 +443,7 @@
     .pathway-step.active .step-icon {
         border-color: #bfdbfe;
         color: var(--app-blue);
-        box-shadow: 0 0 0 8px rgba(38,119,184,0.1);
+        box-shadow: 0 0 0 8px rgba(38, 119, 184, 0.1);
     }
 
     .pathway-step.completed .step-icon {
@@ -384,30 +457,53 @@
         color: var(--gray-300);
     }
 
-    .step-title  { font-size: 0.88rem; font-weight: 700; color: var(--gray-700); margin-bottom: 0.2rem; }
-    .step-status { font-size: 0.73rem; font-weight: 700; text-transform: uppercase; }
+    .step-title {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: var(--gray-700);
+        margin-bottom: 0.2rem;
+    }
 
-    .pathway-step.completed  .step-status { color: var(--success-green); }
-    .pathway-step.active     .step-status { color: var(--app-blue); }
-    .pathway-step.milestone  .step-status { color: var(--gray-500); }
-    .pathway-step.future     .step-status { color: var(--gray-400); }
+    .step-status {
+        font-size: 0.73rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .pathway-step.completed .step-status {
+        color: var(--success-green);
+    }
+
+    .pathway-step.active .step-status {
+        color: var(--app-blue);
+    }
+
+    .pathway-step.milestone .step-status {
+        color: var(--gray-500);
+    }
+
+    .pathway-step.future .step-status {
+        color: var(--gray-400);
+    }
 
     /* ── Grade Switcher ── */
     .report-tabs {
         display: flex;
         gap: 1.25rem;
-        background: #fff;
+        background: var(--bg-main);
         padding: 0.75rem 1.25rem;
         border-radius: 1rem;
         box-shadow: var(--shadow-sm);
         margin-bottom: 2rem;
-        border: 1px solid rgba(0,0,0,0.03);
+        border: 1px solid rgba(0, 0, 0, 0.03);
         overflow-x: auto;
         scrollbar-width: none;
         -ms-overflow-style: none;
     }
 
-    .report-tabs::-webkit-scrollbar { display: none; }
+    .report-tabs::-webkit-scrollbar {
+        display: none;
+    }
 
     .report-tab {
         display: inline-flex;
@@ -416,7 +512,7 @@
         padding: 0.5rem 1rem;
         font-size: 0.875rem;
         font-weight: 600;
-        color: var(--gray-500);
+        color: var(--gray-900);
         text-decoration: none;
         border-radius: 2rem;
         white-space: nowrap;
@@ -426,12 +522,12 @@
 
     .report-tab:hover:not(.locked) {
         color: var(--app-blue);
-        background: rgba(38,119,184,0.05);
+        background: rgba(38, 119, 184, 0.05);
     }
 
     .report-tab.active {
         color: var(--app-blue);
-        background: rgba(38,119,184,0.1);
+        background: rgba(38, 119, 184, 0.1);
         border-color: var(--app-blue);
     }
 
@@ -442,19 +538,30 @@
         background: var(--gray-50);
     }
 
-    .report-tab i { font-size: 0.75rem; }
+    .report-tab i {
+        font-size: 0.75rem;
+    }
 
     /* ── Animations ── */
     @keyframes fillUp {
-        from { width: 0; }
-        to   { width: var(--w); }
+        from {
+            width: 0;
+        }
+
+        to {
+            width: var(--w);
+        }
     }
-    .animate-fill { animation: fillUp 1.4s cubic-bezier(0.1,0.5,0.1,1) forwards; }
+
+    .animate-fill {
+        animation: fillUp 1.4s cubic-bezier(0.1, 0.5, 0.1, 1) forwards;
+    }
 
     /* ── Progression Action ── */
     .progression-action {
         margin-top: 1.5rem;
     }
+
     .btn-promote {
         background: var(--success-green);
         color: #fff;
@@ -471,15 +578,18 @@
         text-decoration: none;
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     }
+
     .btn-promote:hover {
         background: #059669;
         transform: translateY(-2px);
         box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4);
         color: #fff;
     }
+
     .btn-promote i {
         font-size: 1rem;
     }
+
     .promote-loading {
         display: none;
         margin-left: 0.5rem;
@@ -487,14 +597,41 @@
 
     /* ── Mobile ── */
     @media (max-width: 640px) {
-        .progress-page   { padding: 1rem; }
-        .hero-title      { font-size: 1.5rem; }
-        .hero-content-flex { flex-direction: column; }
-        .hero-progress-wrapper { flex: 1 1 100%; padding-top: 0; }
-        .hero-progress-percent { position: static; font-size: 1.75rem; margin-bottom: 0.5rem; }
-        .pathway-steps   { flex-wrap: wrap; gap: 1.5rem; }
-        .pathway-step    { width: 45%; }
-        .pathway-line    { display: none; }
+        .progress-page {
+            padding: 1rem;
+        }
+
+        .hero-title {
+            font-size: 1.5rem;
+        }
+
+        .hero-content-flex {
+            flex-direction: column;
+        }
+
+        .hero-progress-wrapper {
+            flex: 1 1 100%;
+            padding-top: 0;
+        }
+
+        .hero-progress-percent {
+            position: static;
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .pathway-steps {
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .pathway-step {
+            width: 45%;
+        }
+
+        .pathway-line {
+            display: none;
+        }
     }
 </style>
 @endpush
@@ -510,26 +647,27 @@
         <div class="hero-content-flex">
             <div class="hero-text">
                 @php
-                    $levelDisplayName = ucwords(str_replace('-', ' ', $currentLevel));
-                    if ($currentLevel === 'primary-upper') $levelDisplayName = 'Primary Upper / Grades 4-6';
-                    elseif ($currentLevel === 'primary-lower') $levelDisplayName = 'Primary Lower / Grades 1-3';
-                    elseif ($currentLevel === 'jhs') $levelDisplayName = 'JHS / Grades 7-9';
-                    elseif ($currentLevel === 'shs') $levelDisplayName = 'SHS / Grades 10-12';
+                $levelDisplayName = ucwords(str_replace('-', ' ', $currentLevel));
+                if ($currentLevel === 'primary-upper') $levelDisplayName = 'Primary Upper / Grades 4-6';
+                elseif ($currentLevel === 'primary-lower') $levelDisplayName = 'Primary Lower / Grades 1-3';
+                elseif ($currentLevel === 'jhs') $levelDisplayName = 'JHS / Grades 7-9';
+                elseif ($currentLevel === 'shs') $levelDisplayName = 'SHS / Grades 10-12';
                 @endphp
                 <h2 class="hero-title">{{ $levelDisplayName }}</h2>
                 <p class="hero-subtitle">
-                    You're making great progress! Keep going to progress to 
-                    {{ $progressionStatus['next_level'] ? ucwords(str_replace('-', ' ', $progressionStatus['next_level'])) . ' level.' : 'the next level.' }}
+                    You're making great progress! Keep going to progress to
+                    {{ $progressionStatus['next_level'] ? ucwords(str_replace('-', ' ',
+                    $progressionStatus['next_level'])) . ' level.' : 'the next level.' }}
                 </p>
 
                 @if($progressionStatus['eligible'])
-                    <div class="progression-action">
-                        <button id="btnPromote" class="btn-promote" data-level="{{ $currentLevel }}">
-                            <i class="fas fa-graduation-cap"></i>
-                            <span>Progress to Next Level</span>
-                            <i class="fas fa-spinner fa-spin promote-loading"></i>
-                        </button>
-                    </div>
+                <div class="progression-action">
+                    <button id="btnPromote" class="btn-promote" data-level="{{ $currentLevel }}">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span>Progress to Next Level</span>
+                        <i class="fas fa-spinner fa-spin promote-loading"></i>
+                    </button>
+                </div>
                 @endif
             </div>
 
@@ -537,8 +675,7 @@
                 <div class="hero-progress-percent">{{ round($progress->completion_percentage ?? 0) }}%</div>
                 <div class="hero-progress-label">Overall Completion</div>
                 <div class="hero-progress-bar">
-                    <div class="hero-progress-fill animate-fill"
-                         style="--w: {{ $progress->completion_percentage ?? 0 }}%;
+                    <div class="hero-progress-fill animate-fill" style="--w: {{ $progress->completion_percentage ?? 0 }}%;
                                 width: {{ $progress->completion_percentage ?? 0 }}%;">
                     </div>
                 </div>
@@ -552,7 +689,8 @@
             <div class="metric-icon icon-lessons"><i class="fas fa-play-circle"></i></div>
             <div>
                 <div class="metric-label">Lessons Completed</div>
-                <div class="metric-value">{{ $progress->completed_lessons ?? 0 }} / {{ $progress->total_lessons_in_level ?? '?' }}</div>
+                <div class="metric-value">{{ $progress->completed_lessons ?? 0 }} / {{ $progress->total_lessons_in_level
+                    ?? '?' }}</div>
             </div>
         </div>
 
@@ -584,16 +722,16 @@
     {{-- Grade Navigation Tabs --}}
     <div class="report-tabs">
         @foreach($canonicalGrades as $grade)
-            @php
-                $isUnlocked = in_array($grade, $unlockedGrades);
-                $isUserGrade = strcasecmp($grade, auth()->user()->grade) === 0;
-            @endphp
-            <a href="{{ $isUnlocked ? route('dashboard.digilearn', ['grade' => $grade]) : '#' }}" 
-               class="report-tab {{ $isUnlocked ? '' : 'locked' }} {{ $isUserGrade ? 'active' : '' }}"
-               {!! $isUnlocked ? '' : 'title="Locked"' !!}>
-                @if(!$isUnlocked) <i class="fas fa-lock"></i> @endif
-                {{ $grade }}
-            </a>
+        @php
+        $isUnlocked = in_array($grade, $unlockedGrades);
+        $isUserGrade = strcasecmp($grade, auth()->user()->grade) === 0;
+        @endphp
+        <a href="{{ $isUnlocked ? route('dashboard.digilearn', ['grade' => $grade]) : '#' }}"
+            class="report-tab {{ $isUnlocked ? '' : 'locked' }} {{ $isUserGrade ? 'active' : '' }}" {!! $isUnlocked ? ''
+            : 'title="Locked"' !!}>
+            @if(!$isUnlocked) <i class="fas fa-lock"></i> @endif
+            {{ $grade }}
+        </a>
         @endforeach
     </div>
 
@@ -605,109 +743,115 @@
 
     <div class="grades-panel">
         @foreach($gradeStats as $grade => $stats)
-            @php
-                $isUnlocked = in_array($grade, $unlockedGrades);
-                $statusClass = $stats['is_completed'] ? 'completed' : ($stats['is_in_progress'] ? 'in-progress' : 'locked');
-                if (!$isUnlocked) $statusClass = 'locked';
-                
-                $statusLabel = $stats['is_completed'] ? 'Completed' : ($stats['is_in_progress'] ? 'In Progress' : 'Locked');
-                if (!$isUnlocked) $statusLabel = 'Locked';
+        @php
+        $isUnlocked = in_array($grade, $unlockedGrades);
+        $statusClass = $stats['is_completed'] ? 'completed' : ($stats['is_in_progress'] ? 'in-progress' : 'locked');
+        if (!$isUnlocked) $statusClass = 'locked';
 
-                $subtitles = [
-                    'Grade 4' => 'Lower Transition',
-                    'Grade 5' => 'Current Focus',
-                    'Grade 6' => 'Final Stage',
-                    'Grade 1' => 'Foundation',
-                    'Grade 2' => 'Building Blocks',
-                    'Grade 3' => 'Upper Foundation',
-                    'Grade 7' => 'Junior High Entry',
-                    'Grade 8' => 'Middle Stage',
-                    'Grade 9' => 'Final JHS',
-                ];
-                $subtitle = $subtitles[$grade] ?? '';
-                $isUnlocked = in_array($grade, $unlockedGrades);
-            @endphp
-            <a href="{{ $isUnlocked ? route('dashboard.digilearn', ['grade' => $grade]) : '#' }}" 
-               class="grade-col {{ $statusClass }} grade-card-locked"
-               @if(!$isUnlocked) title="Locked" @endif>
-                <div class="grade-card-header">
-                    <div>
-                        <div class="grade-name">
-                            @if(!$isUnlocked) <i class="fas fa-lock grade-name-i"></i> @endif
-                            {{ $grade }}
-                        </div>
-                        @if($subtitle)
-                            <div class="grade-subtitle">{{ $subtitle }}</div>
-                        @endif
+        $statusLabel = $stats['is_completed'] ? 'Completed' : ($stats['is_in_progress'] ? 'In Progress' : 'Locked');
+        if (!$isUnlocked) $statusLabel = 'Locked';
+
+        $subtitles = [
+        'Grade 4' => 'Lower Transition',
+        'Grade 5' => 'Current Focus',
+        'Grade 6' => 'Final Stage',
+        'Grade 1' => 'Foundation',
+        'Grade 2' => 'Building Blocks',
+        'Grade 3' => 'Upper Foundation',
+        'Grade 7' => 'Junior High Entry',
+        'Grade 8' => 'Middle Stage',
+        'Grade 9' => 'Final JHS',
+        ];
+        $subtitle = $subtitles[$grade] ?? '';
+        $isUnlocked = in_array($grade, $unlockedGrades);
+        @endphp
+        <a href="{{ $isUnlocked ? route('dashboard.digilearn', ['grade' => $grade]) : '#' }}"
+            class="grade-col {{ $statusClass }} grade-card-locked" @if(!$isUnlocked) title="Locked" @endif>
+            <div class="grade-card-header">
+                <div>
+                    <div class="grade-name">
+                        @if(!$isUnlocked) <i class="fas fa-lock grade-name-i"></i> @endif
+                        {{ $grade }}
                     </div>
-                    <span class="status-badge {{ $statusClass }}">{{ $statusLabel }}</span>
+                    @if($subtitle)
+                    <div class="grade-subtitle">{{ $subtitle }}</div>
+                    @endif
                 </div>
+                <span class="status-badge {{ $statusClass }}">{{ $statusLabel }}</span>
+            </div>
 
-                {{-- 1. Lessons Attempted --}}
-                @php $attemptedLessonPerc = $stats['total_lessons'] > 0 ? min(100, ($stats['attempted_lessons'] / $stats['total_lessons']) * 100) : 0; @endphp
-                <div class="grade-stat-row">
-                    <div class="stat-label-flex">
-                        <span class="stat-label">Lessons Attempted</span>
-                        <span class="stat-value">{{ $stats['attempted_lessons'] }}/{{ $stats['total_lessons'] }}</span>
-                    </div>
-                    <div class="mini-progress-bar">
-                        <div class="mini-progress-fill lessons animate-fill"
-                             style="--w: {{ $attemptedLessonPerc }}%; width: {{ $attemptedLessonPerc }}%;"></div>
-                    </div>
+            {{-- 1. Lessons Attempted --}}
+            @php $attemptedLessonPerc = $stats['total_lessons'] > 0 ? min(100, ($stats['attempted_lessons'] /
+            $stats['total_lessons']) * 100) : 0; @endphp
+            <div class="grade-stat-row">
+                <div class="stat-label-flex">
+                    <span class="stat-label">Lessons Attempted</span>
+                    <span class="stat-value">{{ $stats['attempted_lessons'] }}/{{ $stats['total_lessons'] }}</span>
                 </div>
-
-                {{-- 2. Fully Watched Lessons --}}
-                @php $completedLessonPerc = $stats['total_lessons'] > 0 ? min(100, ($stats['completed_lessons'] / $stats['total_lessons']) * 100) : 0; @endphp
-                <div class="grade-stat-row">
-                    <div class="stat-label-flex">
-                        <span class="stat-label">Fully Watched</span>
-                        <span class="stat-value">{{ $stats['completed_lessons'] }}/{{ $stats['total_lessons'] }}</span>
-                    </div>
-                    <div class="mini-progress-bar">
-                        <div class="mini-progress-fill animate-fill"
-                             style="--w: {{ $completedLessonPerc }}%; width: {{ $completedLessonPerc }}%; background: #16a34a;"></div>
-                    </div>
+                <div class="mini-progress-bar">
+                    <div class="mini-progress-fill lessons animate-fill"
+                        style="--w: {{ $attemptedLessonPerc }}%; width: {{ $attemptedLessonPerc }}%;"></div>
                 </div>
+            </div>
 
-                {{-- 2.5. Partially Watched Lessons --}}
-                @php $partialLessonPerc = $stats['total_lessons'] > 0 ? min(100, ($stats['partially_watched'] / $stats['total_lessons']) * 100) : 0; @endphp
-                <div class="grade-stat-row">
-                    <div class="stat-label-flex">
-                        <span class="stat-label">Partially Watched</span>
-                        <span class="stat-value">{{ $stats['partially_watched'] }}/{{ $stats['total_lessons'] }}</span>
-                    </div>
-                    <div class="mini-progress-bar">
-                        <div class="mini-progress-fill animate-fill"
-                             style="--w: {{ $partialLessonPerc }}%; width: {{ $partialLessonPerc }}%; background: #fbbf24;"></div>
+            {{-- 2. Fully Watched Lessons --}}
+            @php $completedLessonPerc = $stats['total_lessons'] > 0 ? min(100, ($stats['completed_lessons'] /
+            $stats['total_lessons']) * 100) : 0; @endphp
+            <div class="grade-stat-row">
+                <div class="stat-label-flex">
+                    <span class="stat-label">Fully Watched</span>
+                    <span class="stat-value">{{ $stats['completed_lessons'] }}/{{ $stats['total_lessons'] }}</span>
+                </div>
+                <div class="mini-progress-bar">
+                    <div class="mini-progress-fill animate-fill"
+                        style="--w: {{ $completedLessonPerc }}%; width: {{ $completedLessonPerc }}%; background: #16a34a;">
                     </div>
                 </div>
+            </div>
 
-                {{-- 3. Quizzes Attempted --}}
-                @php $attemptedQuizPerc = $stats['total_quizzes'] > 0 ? min(100, ($stats['attempted_quizzes'] / $stats['total_quizzes']) * 100) : 0; @endphp
-                <div class="grade-stat-row">
-                    <div class="stat-label-flex">
-                        <span class="stat-label">Quizzes Attempted</span>
-                        <span class="stat-value">{{ $stats['attempted_quizzes'] }}/{{ $stats['total_quizzes'] }}</span>
-                    </div>
-                    <div class="mini-progress-bar">
-                        <div class="mini-progress-fill animate-fill"
-                             style="--w: {{ $attemptedQuizPerc }}%; width: {{ $attemptedQuizPerc }}%;"></div>
+            {{-- 2.5. Partially Watched Lessons --}}
+            @php $partialLessonPerc = $stats['total_lessons'] > 0 ? min(100, ($stats['partially_watched'] /
+            $stats['total_lessons']) * 100) : 0; @endphp
+            <div class="grade-stat-row">
+                <div class="stat-label-flex">
+                    <span class="stat-label">Partially Watched</span>
+                    <span class="stat-value">{{ $stats['partially_watched'] }}/{{ $stats['total_lessons'] }}</span>
+                </div>
+                <div class="mini-progress-bar">
+                    <div class="mini-progress-fill animate-fill"
+                        style="--w: {{ $partialLessonPerc }}%; width: {{ $partialLessonPerc }}%; background: #fbbf24;">
                     </div>
                 </div>
+            </div>
 
-                {{-- 4. Fully Completed Quizzes --}}
-                @php $passedQuizPerc = $stats['total_quizzes'] > 0 ? min(100, ($stats['passed_quizzes'] / $stats['total_quizzes']) * 100) : 0; @endphp
-                <div class="grade-stat-row">
-                    <div class="stat-label-flex">
-                        <span class="stat-label">Fully Completed</span>
-                        <span class="stat-value">{{ $stats['passed_quizzes'] }}/{{ $stats['total_quizzes'] }}</span>
-                    </div>
-                    <div class="mini-progress-bar">
-                        <div class="mini-progress-fill animate-fill"
-                             style="--w: {{ $passedQuizPerc }}%; width: {{ $passedQuizPerc }}%; background: #16a34a;"></div>
-                    </div>
+            {{-- 3. Quizzes Attempted --}}
+            @php $attemptedQuizPerc = $stats['total_quizzes'] > 0 ? min(100, ($stats['attempted_quizzes'] /
+            $stats['total_quizzes']) * 100) : 0; @endphp
+            <div class="grade-stat-row">
+                <div class="stat-label-flex">
+                    <span class="stat-label">Quizzes Attempted</span>
+                    <span class="stat-value">{{ $stats['attempted_quizzes'] }}/{{ $stats['total_quizzes'] }}</span>
                 </div>
-            </a>
+                <div class="mini-progress-bar">
+                    <div class="mini-progress-fill animate-fill"
+                        style="--w: {{ $attemptedQuizPerc }}%; width: {{ $attemptedQuizPerc }}%;"></div>
+                </div>
+            </div>
+
+            {{-- 4. Fully Completed Quizzes --}}
+            @php $passedQuizPerc = $stats['total_quizzes'] > 0 ? min(100, ($stats['passed_quizzes'] /
+            $stats['total_quizzes']) * 100) : 0; @endphp
+            <div class="grade-stat-row">
+                <div class="stat-label-flex">
+                    <span class="stat-label">Fully Completed</span>
+                    <span class="stat-value">{{ $stats['passed_quizzes'] }}/{{ $stats['total_quizzes'] }}</span>
+                </div>
+                <div class="mini-progress-bar">
+                    <div class="mini-progress-fill animate-fill"
+                        style="--w: {{ $passedQuizPerc }}%; width: {{ $passedQuizPerc }}%; background: #16a34a;"></div>
+                </div>
+            </div>
+        </a>
         @endforeach
     </div>
 
@@ -718,90 +862,84 @@
             <div class="pathway-line"></div>
             <div class="pathway-steps">
                 @php
-                    $allLevels = [
-                        ['id' => 'primary-lower', 'title' => 'Primary Lower'],
-                        ['id' => 'primary-upper', 'title' => 'Primary Upper'],
-                        ['id' => 'jhs',           'title' => 'JHS 1-3'],
-                        ['id' => 'shs',           'title' => 'SHS & University'],
-                    ];
-                    $levelOrder = ['primary-lower' => 0, 'primary-upper' => 1, 'jhs' => 2, 'shs' => 3];
-                    $currentIndex = $levelOrder[$currentLevel] ?? 0;
+                $allLevels = [
+                ['id' => 'primary-lower', 'title' => 'Primary Lower'],
+                ['id' => 'primary-upper', 'title' => 'Primary Upper'],
+                ['id' => 'jhs', 'title' => 'JHS 1-3'],
+                ['id' => 'shs', 'title' => 'SHS & University'],
+                ];
+                $levelOrder = ['primary-lower' => 0, 'primary-upper' => 1, 'jhs' => 2, 'shs' => 3];
+                $currentIndex = $levelOrder[$currentLevel] ?? 0;
                 @endphp
 
                 @foreach($allLevels as $levelItem)
-                    @php
-                        $itemIndex    = $levelOrder[$levelItem['id']];
-                        $isCompleted  = $itemIndex < $currentIndex;
-                        $isCurrent    = $levelItem['id'] === $currentLevel;
-                        $isFutureLast = $levelItem['id'] === 'shs' && !$isCurrent && !$isCompleted;
-
-                        $stepClass  = $isCompleted ? 'completed' : ($isCurrent ? 'active' : ($isFutureLast ? 'future' : 'milestone'));
-                        $statusText = $isCompleted ? 'Completed' : ($isCurrent ? 'Current Level' : ($isFutureLast ? 'Future' : 'Next Milestone'));
-
-                        if ($isCompleted)                  $icon = 'fas fa-check';
-                        elseif ($isCurrent)                $icon = 'fas fa-book-open';
-                        elseif ($levelItem['id'] === 'jhs') $icon = 'fas fa-bolt';
-                        else                               $icon = 'fas fa-flask';
-                    @endphp
-                    <div class="pathway-step {{ $stepClass }}">
-                        <div class="step-icon"><i class="{{ $icon }}"></i></div>
-                        <div class="step-title">{{ $levelItem['title'] }}</div>
-                        <div class="step-status">{{ $statusText }}</div>
-                    </div>
-                @endforeach
+                @php
+                $itemIndex = $levelOrder[$levelItem['id']];
+                $isCompleted = $itemIndex < $currentIndex; $isCurrent=$levelItem['id']===$currentLevel;
+                    $isFutureLast=$levelItem['id']==='shs' && !$isCurrent && !$isCompleted; $stepClass=$isCompleted
+                    ? 'completed' : ($isCurrent ? 'active' : ($isFutureLast ? 'future' : 'milestone' ));
+                    $statusText=$isCompleted ? 'Completed' : ($isCurrent ? 'Current Level' : ($isFutureLast ? 'Future'
+                    : 'Next Milestone' )); if ($isCompleted) $icon='fas fa-check' ; elseif ($isCurrent)
+                    $icon='fas fa-book-open' ; elseif ($levelItem['id']==='jhs' ) $icon='fas fa-bolt' ; else
+                    $icon='fas fa-flask' ; @endphp <div class="pathway-step {{ $stepClass }}">
+                    <div class="step-icon"><i class="{{ $icon }}"></i></div>
+                    <div class="step-title">{{ $levelItem['title'] }}</div>
+                    <div class="step-status">{{ $statusText }}</div>
             </div>
+            @endforeach
         </div>
     </div>
+</div>
 
 </div>
 @section('scripts')
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-document.addEventListener('DOMContentLoaded', function() {
-    const btnPromote = document.getElementById('btnPromote');
-    if (btnPromote) {
-        btnPromote.addEventListener('click', function() {
-            const level = this.getAttribute('data-level');
-            const loading = this.querySelector('.promote-loading');
-            const btnText = this.querySelector('span');
-            
-            if (confirm('Congratulations! You are eligible for the next level. Would you like to progress now?')) {
-                // Show loading
-                loading.style.display = 'inline-block';
-                this.disabled = true;
-                btnText.textContent = 'Promoting...';
+    document.addEventListener('DOMContentLoaded', function () {
+        const btnPromote = document.getElementById('btnPromote');
+        if (btnPromote) {
+            btnPromote.addEventListener('click', function () {
+                const level = this.getAttribute('data-level');
+                const loading = this.querySelector('.promote-loading');
+                const btnText = this.querySelector('span');
 
-                const url = "{{ route('dashboard.progress.check', ['level' => ':level']) }}".replace(':level', level);
-                fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Show success message and reload
-                        alert(data.message || 'Congratulations! You have been promoted to the next level.');
-                        window.location.reload();
-                    } else {
-                        alert(data.message || 'Progression check completed, but no changes were made.');
-                        loading.style.display = 'none';
-                        this.disabled = false;
-                        btnText.textContent = 'Progress to Next Level';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while processing your progression. Please try again later.');
-                    loading.style.display = 'none';
-                    this.disabled = false;
-                    btnText.textContent = 'Progress to Next Level';
-                });
-            }
-        });
-    }
-});
+                if (confirm('Congratulations! You are eligible for the next level. Would you like to progress now?')) {
+                    // Show loading
+                    loading.style.display = 'inline-block';
+                    this.disabled = true;
+                    btnText.textContent = 'Promoting...';
+
+                    const url = "{{ route('dashboard.progress.check', ['level' => ':level']) }}".replace(':level', level);
+                    fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Show success message and reload
+                                alert(data.message || 'Congratulations! You have been promoted to the next level.');
+                                window.location.reload();
+                            } else {
+                                alert(data.message || 'Progression check completed, but no changes were made.');
+                                loading.style.display = 'none';
+                                this.disabled = false;
+                                btnText.textContent = 'Progress to Next Level';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('An error occurred while processing your progression. Please try again later.');
+                            loading.style.display = 'none';
+                            this.disabled = false;
+                            btnText.textContent = 'Progress to Next Level';
+                        });
+                }
+            });
+        }
+    });
 </script>
 @endsection
 @endsection

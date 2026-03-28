@@ -11,6 +11,13 @@
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    
     <style>
         :root {
             --primary-red: #E11E2D;
@@ -33,6 +40,32 @@
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
             --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #000000;
+            --bg-surface: #16181c;
+            --text-main: #ffffff;
+            --text-muted: #71767b;
+            --border-color: #2f3336;
+            --header-bg: rgba(22, 24, 28, 0.8);
+            --filter-bg: rgba(22, 24, 28, 0.75);
+            --accent: #E11E2D;
+            color-scheme: dark;
+
+            /* Overrides for hardcoded grays */
+            --gray-25: #000000;
+            --gray-50: #16181c;
+            --gray-100: #202327;
+            --gray-200: #2f3336;
+            --gray-300: #3e4144;
+            --gray-400: #71767b;
+            --gray-500: #8b98a5;
+            --gray-600: #a4b1cd;
+            --gray-700: #e2e8f0;
+            --gray-800: #f1f5f9;
+            --gray-900: #ffffff;
+            --white: #16181c;
         }
 
         * {
@@ -391,6 +424,9 @@
             cursor: pointer;
             transition: all 0.2s ease;
             background-color: var(--white);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
         }
 
         .option:hover {
@@ -399,8 +435,50 @@
         }
 
         .option.selected {
-            border-color: var(--primary-red);
-            background-color: rgba(225, 30, 45, 0.05);
+            border-color: var(--secondary-blue);
+            background-color: rgba(38, 119, 184, 0.05);
+        }
+
+        .option.selected .option-letter {
+            background-color: var(--secondary-blue);
+            color: var(--white);
+        }
+
+        [data-theme="dark"] .option.selected {
+            border-color: transparent;
+            background-color: transparent;
+        }
+
+        [data-theme="dark"] .option.selected::before {
+            content: '';
+            position: absolute;
+            z-index: -2;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(
+                transparent,
+                var(--secondary-blue),
+                transparent 30%,
+                var(--primary-red),
+                transparent 50%
+            );
+            animation: rotate-border 4s linear infinite;
+        }
+
+        [data-theme="dark"] .option.selected::after {
+            content: '';
+            position: absolute;
+            z-index: -1;
+            inset: 2px;
+            background: #16181c;
+            border-radius: 0.65rem;
+        }
+
+        @keyframes rotate-border {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         .option-letter {
@@ -415,11 +493,6 @@
             font-weight: 600;
             flex-shrink: 0;
             transition: all 0.2s ease;
-        }
-
-        .option.selected .option-letter {
-            background-color: var(--primary-red);
-            color: var(--white);
         }
 
         .option-text {

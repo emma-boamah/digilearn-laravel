@@ -444,7 +444,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::get('/export', [AdminController::class , 'exportUsers'])->name('export');
         Route::get('/credentials', [AdminController::class , 'showCredentials'])->name('credentials');
         Route::post('/credentials/update', [AdminController::class , 'updateCredentials'])->name('credentials.update');
-        Route::post('/credentials/recovery', [AdminController::class , 'generateRecoveryCodes'])->name('generate-recovery-codes');
+        Route::post('/credentials/recovery', [AdminController::class , 'generateRecoveryCodes'])->name('credentials.recovery');
         Route::post('/toggle-lock', [AdminController::class , 'toggleLock'])->name('toggle-lock');
         
         // Class management

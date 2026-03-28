@@ -4,6 +4,12 @@
 'ShoutOutGh'))
 
 @section('head')
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    (function () {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+</script>
 <!-- Quill.js Rich Text Editor (Using multiple CDN fallbacks) -->
 <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.snow.css" rel="stylesheet">
@@ -61,29 +67,6 @@
 
 @section('content')
 <style nonce="{{ request()->attributes->get('csp_nonce') }}">
-    :root {
-        --primary-red: #E11E2D;
-        --primary-red-hover: #c41e2a;
-        --secondary-blue: #2677B8;
-        --secondary-blue-hover: #1e5a8a;
-        --white: #ffffff;
-        --gray-25: #fcfcfd;
-        --gray-50: #f9fafb;
-        --gray-100: #f3f4f6;
-        --gray-200: #e5e7eb;
-        --gray-300: #d1d5db;
-        --gray-400: #9ca3af;
-        --gray-500: #6b7280;
-        --gray-600: #4b5563;
-        --gray-700: #374151;
-        --gray-800: #1f2937;
-        --gray-900: #111827;
-        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-        --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-    }
-
     /* Enhanced sticky video styles with scroll-triggered transitions */
     .sticky-video-section {
         position: relative;
@@ -114,7 +97,7 @@
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        background-color: rgba(255, 255, 255, 0.75);
+        background-color: var(--white);
         /* Transparent for glassmorphism */
         backdrop-filter: blur(10px) saturate(160%);
         /* Glassmorphism effect */
@@ -815,8 +798,8 @@
         justify-content: center;
         gap: 0.5rem;
         padding: 1rem 1.5rem;
-        border: 2px solid var(--secondary-blue);
-        color: var(--gray-600);
+        border: 1px solid var(--secondary-blue);
+        color: var(--gray-900);
         border-radius: 0.5rem;
         font-size: 0.875rem;
         font-weight: 600;
@@ -3321,6 +3304,81 @@
         top: 0;
         left: 0;
         object-fit: cover;
+    }
+
+    /* Pure Black Dark Mode Refinements for Lesson View */
+    [data-theme="dark"] .lesson-page {
+        background-color: #000000 !important;
+    }
+
+    [data-theme="dark"] .lesson-info-card,
+    [data-theme="dark"] .comments-card,
+    [data-theme="dark"] .related-videos-card,
+    [data-theme="dark"] .notes-section,
+    [data-theme="dark"] .existing-note,
+    [data-theme="dark"] .filter-bar,
+    [data-theme="dark"] .course-item,
+    [data-theme="dark"] .empty-tab,
+    [data-theme="dark"] .course-header-card {
+        background-color: #000000 !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    [data-theme="dark"] .filter-bar {
+        border-bottom: none !important;
+    }
+
+    [data-theme="dark"] .lesson-title,
+    [data-theme="dark"] .video-info-title,
+    [data-theme="dark"] .video-title,
+    [data-theme="dark"] .comments-count,
+    [data-theme="dark"] .related-videos-title,
+    [data-theme="dark"] .notes-section h4,
+    [data-theme="dark"] .existing-note h4 {
+        color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .video-info-channel,
+    [data-theme="dark"] .video-info-meta,
+    [data-theme="dark"] .video-meta,
+    [data-theme="dark"] .lesson-meta-item,
+    [data-theme="dark"] .existing-note p {
+        color: #94a3b8 !important;
+        /* gray-400 */
+    }
+
+    [data-theme="dark"] .comment-input {
+        background-color: #16181c !important;
+        border-color: #2f3336 !important;
+        color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .action-icon-btn,
+    [data-theme="dark"] .action-btn-secondary {
+        background-color: #16181c !important;
+        border-color: #2f3336 !important;
+        color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .action-icon-btn:hover,
+    [data-theme="dark"] .action-btn-secondary:hover {
+        background-color: #2f3336 !important;
+        border-color: #4b5563 !important;
+    }
+
+    [data-theme="dark"] .video-item:hover {
+        background-color: #16181c !important;
+    }
+
+    [data-theme="dark"] .video-info-title,
+    [data-theme="dark"] .video-info-channel,
+    [data-theme="dark"] .video-info-meta {
+        color: inherit;
+    }
+
+    [data-theme="dark"] .video-item:hover .video-info-title {
+        color: #ffffff;
     }
 </style>
 

@@ -2341,13 +2341,64 @@ resources for students from primary to tertiary level.",
     .resources-btn:active {
         transform: scale(0.98);
     }
+
+    /* Dark Mode specific overrides for home page elements */
+    [data-theme="dark"] .bg-red,
+    [data-theme="dark"] .faq-section,
+    [data-theme="dark"] .study-journey-section,
+    [data-theme="dark"] .resources-red-section {
+        background-color: var(--bg-surface) !important;
+    }
+
+    [data-theme="dark"] .hero-background {
+        background-color: #000000 !important;
+    }
+
+    [data-theme="dark"] .testimonial-card {
+        background-color: var(--bg-surface) !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+    }
+
+    [data-theme="dark"] .faq-main-title,
+    [data-theme="dark"] .faq-question,
+    [data-theme="dark"] .faq-answer,
+    [data-theme="dark"] .study-journey-text h2,
+    [data-theme="dark"] .study-journey-text p,
+    [data-theme="dark"] .resources-main-title,
+    [data-theme="dark"] .resources-subtitle,
+    [data-theme="dark"] .explore-all-text {
+        color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .testimonial-content p,
+    [data-theme="dark"] .author-info h4,
+    [data-theme="dark"] .author-info span,
+    [data-theme="dark"] .faq-item h3,
+    [data-theme="dark"] .faq-item p {
+        color: #ffffff !important;
+    }
+
+    /* Invisible border overrides */
+    [data-theme="dark"] .testimonial-card,
+    [data-theme="dark"] .slider-nav-btn,
+    [data-theme="dark"] .pricing-card,
+    [data-theme="dark"] .pricing-btn-new {
+        border-color: transparent !important;
+    }
+
+    [data-theme="dark"] .pricing-btn-new:hover {
+        background-color: #282828 !important;
+        color: #ffffff !important;
+    }
 </style>
 
 <!-- Hero Section -->
 <header class="hero" role="banner" aria-labelledby="hero-title">
     <div class="hero-background">
         <video preload="auto" loading="lazy" autoplay muted loop playsinline
-            poster="{{ secure_asset('images/hero-image.png') }}" aria-hidden="true">
+            poster="{{ secure_asset('images/hero-image.png') }}" aria-hidden="true"
+            title="ShoutoutGH - Ghana's leading e-learning platform video background">
             <source
                 src="{{ secure_asset('videos/_users_ea54fd73-85a6-42d9-923f-e36dd7fc6d63_generated_d6bac217-3806-4c87-8cf8-16ea2b676063_generated_video.MP4') }}"
                 type="video/mp4">
@@ -2378,7 +2429,7 @@ resources for students from primary to tertiary level.",
             <div class="trusted-badge"
                 style="margin-top: 3rem; display: flex; align-items: center; justify-content: center; gap: 0.75rem; color: rgba(255, 255, 255, 0.6); font-family: 'Work Sans', sans-serif; font-size: clamp(0.65rem, 3vw, 0.875rem); font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; width: 100%;">
                 <div style="height: 1px; flex: 1; max-width: 40px; background: rgba(255, 255, 255, 0.3);"></div>
-                <span style="white-space: nowrap;">Trusted by 50,000+ Learners</span>
+                <span style="white-space: nowrap;">Trusted by 50,000+ Students across Ghana</span>
                 <div style="height: 1px; flex: 1; max-width: 40px; background: rgba(255, 255, 255, 0.3);"></div>
             </div>
         </div>

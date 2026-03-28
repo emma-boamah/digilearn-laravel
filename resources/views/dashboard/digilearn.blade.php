@@ -19,7 +19,8 @@
     @vite('resources/js/video-facade.js')
 
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
-        :root {
+        :root,
+        [data-theme="light"] {
             --primary-red: #E11E2D;
             --primary-red-hover: #c41e2a;
             --secondary-blue: #2677B8;
@@ -36,6 +37,21 @@
             --gray-700: #374151;
             --gray-800: #1f2937;
             --gray-900: #111827;
+
+            /* Semantic Light Mode Variables */
+            --bg-main: #fcfcfd;
+            /* match gray-25 */
+            --bg-surface: #ffffff;
+            --text-main: #111827;
+            /* gray-900 */
+            --text-muted: #6b7280;
+            /* gray-500 */
+            --border-color: #e5e7eb;
+            /* gray-200 */
+            --header-bg: rgba(255, 255, 255, 0.8);
+            --filter-bg: rgba(255, 255, 255, 0.75);
+            --accent: #E11E2D;
+
             --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
@@ -43,6 +59,36 @@
             --sidebar-width-expanded: 240px;
             --sidebar-width-collapsed: 72px;
             --safe-area-inset-top: env(safe-area-inset-top, 0px);
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #000000;
+            --bg-surface: #16181c;
+            --text-main: #ffffff;
+            --text-muted: #71767b;
+            --border-color: #2f3336;
+            --header-bg: rgba(22, 24, 28, 0.8);
+            --filter-bg: rgba(22, 24, 28, 0.75);
+            --accent: #E11E2D;
+            color-scheme: dark;
+
+            /* Overrides for hardcoded grays used across the huge file */
+            --gray-25: #000000;
+            --gray-50: #16181c;
+            --gray-100: #202327;
+            --gray-200: #2f3336;
+            --gray-300: #3e4144;
+            --gray-400: #71767b;
+            --gray-500: #8b98a5;
+            --gray-600: #a4b1cd;
+            --gray-700: #e2e8f0;
+            --gray-800: #f1f5f9;
+            --gray-900: #ffffff;
+            --white: #16181c;
+        }
+
+        [data-theme="dark"] .lesson-duration {
+            color: #ffffff !important;
         }
 
         * {
@@ -53,10 +99,11 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background-color: var(--gray-25);
-            color: var(--gray-900);
+            background-color: var(--bg-main);
+            color: var(--text-main);
             line-height: 1.6;
             overflow: hidden;
+            transition: background-color var(--transition-duration) ease, color var(--transition-duration) ease;
         }
 
         /* Main Layout Container */
@@ -73,13 +120,10 @@
             left: 0 !important;
             width: var(--sidebar-width-expanded) !important;
             height: 100vh !important;
-            /* Does not grow with content */
             max-height: 100vh !important;
-            /* Enforce maximum height */
-            background-color: var(--white);
-            border-right: 1px solid var(--gray-200);
+            background-color: var(--bg-surface);
+            border-right: 1px solid var(--border-color);
             z-index: 2000;
-            /* Much higher than overlay */
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
             overflow-y: scroll;
             display: flex;
@@ -95,7 +139,7 @@
             display: flex;
             align-items: center;
             padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--gray-200);
+            border-bottom: 1px solid var(--border-color);
             height: 64px;
             min-height: 64px;
         }
@@ -253,7 +297,7 @@
             align-items: center;
             gap: 1rem;
             padding: 0.75rem 1.5rem;
-            color: var(--gray-700);
+            color: var(--text-main);
             text-decoration: none;
             transition: all 0.2s ease;
             cursor: pointer;
@@ -271,9 +315,9 @@
         }
 
         .sidebar-menu-item:hover {
-            background-color: var(--gray-50);
-            color: var(--gray-900);
-            border-left-color: var(--gray-300);
+            background-color: var(--border-color);
+            color: var(--text-main);
+            border-left-color: var(--border-color);
         }
 
         .youtube-sidebar.collapsed .sidebar-menu-item:hover {
@@ -370,22 +414,17 @@
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
-            /* Changed from sidebar-width to 0 for full width */
             width: 100vw !important;
-            /* Changed to full viewport width */
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0.75rem;
             padding-right: 1rem;
             padding-left: var(--sidebar-width-expanded);
-            background-color: rgba(255, 255, 255, 0.8);
-            /* More transparent for glassmorphism */
+            background: var(--header-bg);
             backdrop-filter: blur(12px) saturate(180%);
-            /* Enhanced blur effect */
             -webkit-backdrop-filter: blur(12px) saturate(180%);
-            /* Safari support */
-            border-bottom: 1px solid rgba(229, 231, 235, 0.6);
+            border-bottom: 1px solid var(--border-color);
             z-index: 999 !important;
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             height: calc(60px + var(--safe-area-inset-top));
@@ -430,10 +469,10 @@
             position: absolute;
             top: calc(100% + 8px);
             right: 0;
-            background: var(--white);
+            background: var(--bg-surface);
             border-radius: 0.75rem;
             box-shadow: var(--shadow-xl);
-            border: 1px solid var(--gray-200);
+            border: 1px solid var(--border-color);
             width: 380px;
             max-width: 90vw;
             z-index: 1000;
@@ -592,13 +631,9 @@
         .filter-bar {
             position: fixed !important;
             top: calc(60px + var(--safe-area-inset-top)) !important;
-            /* Directly below the header */
             left: 0;
-            /* Start from left edge for full width */
             width: 100vw;
-            /* Full viewport width */
             padding-left: calc(var(--sidebar-width-expanded) + 0.75rem);
-            /* Account for sidebar */
             padding-right: 0.75rem;
             padding-top: 0.75rem;
             padding-bottom: 0.75rem;
@@ -606,13 +641,10 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            background-color: rgba(255, 255, 255, 0.75);
-            /* Transparent for glassmorphism */
+            background-color: var(--filter-bg);
             backdrop-filter: blur(10px) saturate(160%);
-            /* Glassmorphism effect */
             -webkit-backdrop-filter: blur(10px) saturate(160%);
-            /* Safari support */
-            border-bottom: 1px solid var(--gray-200);
+            border-bottom: 1px solid var(--border-color);
             flex-wrap: nowrap;
             overflow-x: hidden;
             overflow-y: hidden;
@@ -621,7 +653,6 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             pointer-events: none;
-            /* Allow clicks to pass through glassmorphism layer */
         }
 
         .filter-bar * {
@@ -713,7 +744,7 @@
             padding-right: 5.5rem;
             /* Increased to accommodate the close button + search button */
             background: var(--white);
-            color: var(--gray-900);
+            color: var(--gray-700);
         }
 
         .search-input:focus {
@@ -1012,12 +1043,12 @@
             align-items: center;
             gap: 0.5rem;
             padding: 0.5rem 1rem;
-            background: #fff;
+            background: var(--bg-main);
             border: 2px solid var(--gray-200);
             border-radius: 2rem;
             font-size: 0.875rem;
             font-weight: 600;
-            color: var(--gray-500);
+            color: var(--gray-700);
             text-decoration: none;
             white-space: nowrap;
             transition: all 0.2s ease;
@@ -1205,6 +1236,11 @@
             line-height: 1.2;
         }
 
+        [data-theme="dark"] .hero-content h1,
+        [data-theme="dark"] .hero-content p {
+            color: var(--gray-900);
+        }
+
         .hero-content p {
             font-size: 1.5rem;
             color: var(--white);
@@ -1315,8 +1351,8 @@
             position: absolute;
             bottom: 0.5rem;
             right: 0.5rem;
-            background-color: rgba(0, 0, 0, 0.8);
-            color: var(--white);
+            background-color: var(--bg-main);
+            color: var(--text-main);
             padding: 0.25rem 0.5rem;
             border-radius: 0.25rem;
             font-size: 0.75rem;
@@ -1349,7 +1385,7 @@
         .play-button {
             width: 60px;
             height: 60px;
-            background-color: rgba(255, 255, 255, 0.9);
+            background-color: var(--white);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -1636,7 +1672,7 @@
                 margin: 0;
                 padding: 0;
                 font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-                background-color: #f9fafb;
+                background-color: #000000;
                 font-size: 16px;
                 /* Prevents iOS zoom on input focus */
                 line-height: 1.5;
@@ -1670,6 +1706,9 @@
                 padding: 0 0.75rem !important;
                 gap: 0.5rem !important;
                 overflow: hidden !important;
+                background-color: #15181C !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
                 top: calc(60px + var(--safe-area-inset-top)) !important;
             }
 
@@ -1916,9 +1955,10 @@
             }
 
             .main-content {
-                margin-left: 0;
-                width: 100vw;
-                max-width: 100vw;
+                margin-left: 0 !important;
+                width: 100vw !important;
+                max-width: 100vw !important;
+                background-color: #000000 !important;
             }
 
             .youtube-sidebar.collapsed~.main-content {
@@ -2304,6 +2344,19 @@
             -webkit-overflow-scrolling: touch;
         }
     </style>
+    <!-- Theme Selection Script (Before Body to prevent FOUC) -->
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        (function () {
+            try {
+                var theme = localStorage.getItem('theme');
+                if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                }
+            } catch (e) { }
+        })();
+    </script>
 </head>
 
 <body>
@@ -2835,45 +2888,6 @@
                     }
                 }
             }
-
-            // function updateHeaderPosition() {
-            //     const topHeader = document.querySelector('.top-header');
-            //     const filterBar = document.querySelector('.filter-bar');
-            //     const subjectsFilter = document.querySelector('.subjects-filter-container');
-            //     if (window.innerWidth > 768) {
-            //         if (youtubeSidebar.classList.contains('collapsed')) {
-            //             // Header padding-left handled by CSS sibling selector
-            //             if (filterBar) {
-            //                 filterBar.style.left = 'var(--sidebar-width-collapsed)';
-            //                 filterBar.style.width = 'calc(100vw - var(--sidebar-width-collapsed))';
-            //             }
-            //             if (subjectsFilter) {
-            //                 subjectsFilter.style.left = 'var(--sidebar-width-collapsed)';
-            //                 subjectsFilter.style.width = 'calc(100vw - var(--sidebar-width-collapsed))';
-            //             }
-            //         } else {
-            //             // Header padding-left handled by CSS
-            //             if (filterBar) {
-            //                 filterBar.style.left = 'var(--sidebar-width-expanded)';
-            //                 filterBar.style.width = 'calc(100vw - var(--sidebar-width-expanded))';
-            //             }
-            //             if (subjectsFilter) {
-            //                 subjectsFilter.style.left = 'var(--sidebar-width-expanded)';
-            //                 subjectsFilter.style.width = 'calc(100vw - var(--sidebar-width-expanded))';
-            //             }
-            //         }
-            //     } else {
-            //         // Header padding-left handled by CSS
-            //         if (filterBar) {
-            //             filterBar.style.paddingLeft= '0';
-            //             filterBar.style.width = '100vw';
-            //         }
-            //         if (subjectsFilter) {
-            //             subjectsFilter.style.paddingLeft = '0';
-            //             subjectsFilter.style.width = '100vw';
-            //         }
-            //     }
-            // }
 
             if (sidebarToggle) {
                 sidebarToggle.addEventListener('click', toggleSidebar);
