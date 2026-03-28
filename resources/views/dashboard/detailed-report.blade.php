@@ -21,18 +21,18 @@
     .report-tabs {
         display: flex;
         gap: 2rem;
-        background: #fff;
+        background: var(--bg-main);
         padding: 0.75rem 1.5rem;
         border-radius: 1rem;
         box-shadow: var(--shadow-sm);
         margin-bottom: 2.5rem;
-        border: 1px solid rgba(0,0,0,0.03);
+        border: 1px solid rgba(0, 0, 0, 0.03);
     }
 
     .report-tab {
         font-size: 0.95rem;
         font-weight: 600;
-        color: var(--gray-400);
+        color: var(--gray-900);
         text-decoration: none;
         padding: 0.5rem 0;
         position: relative;
@@ -85,7 +85,7 @@
 
     .section-subtitle {
         font-size: 0.875rem;
-        color: var(--gray-400);
+        color: var(--gray-900);
         font-weight: 500;
     }
 
@@ -98,7 +98,7 @@
     }
 
     .summary-card {
-        background: #fff;
+        background: var(--bg-main);
         border-radius: 1rem;
         padding: 1.5rem;
         display: flex;
@@ -123,9 +123,21 @@
     }
 
     /* Icon theme: Blue for report */
-    .card-icon-wrapper.ranking { background: #fff7ed; color: #f97316; } /* Kept ranking gold-ish */
-    .card-icon-wrapper.average { background: #eff6ff; color: var(--app-blue); }
-    .card-icon-wrapper.time    { background: #f5f3ff; color: #7c3aed; }
+    .card-icon-wrapper.ranking {
+        background: #fff7ed;
+        color: #f97316;
+    }
+
+    /* Kept ranking gold-ish */
+    .card-icon-wrapper.average {
+        background: #eff6ff;
+        color: var(--app-blue);
+    }
+
+    .card-icon-wrapper.time {
+        background: #f5f3ff;
+        color: #7c3aed;
+    }
 
     .card-content {
         flex: 1;
@@ -134,7 +146,7 @@
     .card-label {
         font-size: 0.75rem;
         font-weight: 600;
-        color: var(--gray-400);
+        color: var(--gray-900);
         margin-bottom: 0.25rem;
     }
 
@@ -154,7 +166,9 @@
         gap: 0.25rem;
     }
 
-    .card-trend.up { color: var(--success-green); }
+    .card-trend.up {
+        color: var(--success-green);
+    }
 
     /* ── Main Layout Split ── */
     .report-main-split {
@@ -165,12 +179,13 @@
     }
 
     /* ── Quizzes Table Card ── */
-    .quizzes-card, .mastery-card {
-        background: #fff;
+    .quizzes-card,
+    .mastery-card {
+        background: var(-bg-main);
         border-radius: 1rem;
         padding: 1.75rem;
         box-shadow: var(--shadow-sm);
-        border: 1px solid rgba(0,0,0,0.03);
+        border: 1px solid rgba(0, 0, 0, 0.03);
     }
 
     .quizzes-table {
@@ -184,7 +199,7 @@
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        color: var(--gray-400);
+        color: var(--gray-900);
         padding-bottom: 1rem;
         border-bottom: 1px solid var(--gray-50);
     }
@@ -214,9 +229,20 @@
         font-weight: 700;
     }
 
-    .quiz-score-badge.high { background: #ecfdf5; color: #059669; }
-    .quiz-score-badge.med  { background: #fffbeb; color: #d97706; }
-    .quiz-score-badge.low  { background: #fef2f2; color: #dc2626; }
+    .quiz-score-badge.high {
+        background: #ecfdf5;
+        color: #059669;
+    }
+
+    .quiz-score-badge.med {
+        background: #fffbeb;
+        color: #d97706;
+    }
+
+    .quiz-score-badge.low {
+        background: #fef2f2;
+        color: #dc2626;
+    }
 
     .quiz-status-cell {
         font-size: 0.8rem;
@@ -234,7 +260,9 @@
         text-decoration: none;
     }
 
-    .view-all-link:hover { text-decoration: underline; }
+    .view-all-link:hover {
+        text-decoration: underline;
+    }
 
     /* ── Subject Mastery ── */
     .mastery-item {
@@ -245,7 +273,9 @@
         border-bottom: 1px solid var(--gray-50);
     }
 
-    .mastery-item:last-child { border-bottom: none; }
+    .mastery-item:last-child {
+        border-bottom: none;
+    }
 
     .mastery-info {
         display: flex;
@@ -263,9 +293,20 @@
         font-size: 1rem;
     }
 
-    .mastery-icon.math { background: #eff6ff; color: #2563eb; }
-    .mastery-icon.eng  { background: #ecfdf5; color: #059669; }
-    .mastery-icon.sci  { background: #fff7ed; color: #c2410c; }
+    .mastery-icon.math {
+        background: #eff6ff;
+        color: #2563eb;
+    }
+
+    .mastery-icon.eng {
+        background: #ecfdf5;
+        color: #059669;
+    }
+
+    .mastery-icon.sci {
+        background: #fff7ed;
+        color: #c2410c;
+    }
 
     .mastery-name {
         font-weight: 700;
@@ -281,8 +322,8 @@
         align-items: center;
         justify-content: center;
         position: relative;
-        background: radial-gradient(closest-side, white 79%, transparent 80% 100%),
-                    conic-gradient(var(--app-blue) calc(var(--p) * 1%), var(--gray-100) 0);
+        background: radial-gradient(closest-side, var(--bg-main) 79%, transparent 80% 100%),
+            conic-gradient(var(--app-blue) calc(var(--p) * 1%), var(--gray-100) 0);
     }
 
     .circular-progress::before {
@@ -365,11 +406,11 @@
 
     /* Sidebar */
     .library-sidebar {
-        background: #fff;
+        background: var(--bg-main);
         border-radius: 1.25rem;
         padding: 1.5rem;
         box-shadow: var(--shadow-sm);
-        border: 1px solid rgba(0,0,0,0.03);
+        border: 1px solid rgba(0, 0, 0, 0.03);
     }
 
     .sidebar-label {
@@ -410,7 +451,8 @@
     }
 
     .subject-btn.active {
-        background: #fff5f2; /* Light brand tint */
+        background: #fff5f2;
+        /* Light brand tint */
         color: var(--app-blue);
     }
 
@@ -425,11 +467,11 @@
         display: flex;
         justify-content: flex-end;
         gap: 1rem;
-        background: #fff;
+        background: var(--bg-main);
         padding: 1rem;
         border-radius: 1rem;
         box-shadow: var(--shadow-sm);
-        border: 1px solid rgba(0,0,0,0.03);
+        border: 1px solid rgba(0, 0, 0, 0.03);
     }
 
     .search-wrapper {
@@ -468,7 +510,7 @@
         font-size: 0.875rem;
         outline: none;
         cursor: pointer;
-        background: #fff;
+        background: var(--bg-main);
         appearance: none;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='Wait, I'll just use a fontawesome chevron' %3E%3C/path%3E%3C/svg%3E");
     }
@@ -480,10 +522,10 @@
     }
 
     .lesson-card {
-        background: #fff;
+        background: var(--bg-main);
         border-radius: 1.25rem;
         overflow: hidden;
-        border: 1px solid rgba(0,0,0,0.03);
+        border: 1px solid rgba(0, 0, 0, 0.03);
         box-shadow: var(--shadow-sm);
         transition: transform 0.2s, box-shadow 0.2s;
         height: 100%;
@@ -512,7 +554,7 @@
         position: absolute;
         bottom: 0.5rem;
         right: 0.5rem;
-        background: rgba(0,0,0,0.7);
+        background: rgba(0, 0, 0, 0.7);
         color: #fff;
         padding: 0.2rem 0.5rem;
         border-radius: 0.4rem;
@@ -537,8 +579,13 @@
         margin-bottom: 0.5rem;
     }
 
-    .meta-subject { color: var(--app-blue); }
-    .meta-unit { color: var(--gray-400); }
+    .meta-subject {
+        color: var(--app-blue);
+    }
+
+    .meta-unit {
+        color: var(--gray-400);
+    }
 
     .lesson-card-title {
         font-size: 0.95rem;
@@ -558,9 +605,17 @@
         margin-bottom: 0.5rem;
     }
 
-    .progress-text { color: var(--gray-400); }
-    .percent-text { color: var(--app-blue); }
-    .lesson-card.completed .percent-text { color: #16a34a; }
+    .progress-text {
+        color: var(--gray-400);
+    }
+
+    .percent-text {
+        color: var(--app-blue);
+    }
+
+    .lesson-card.completed .percent-text {
+        color: #16a34a;
+    }
 
     .lesson-card-progress {
         height: 6px;
@@ -603,15 +658,33 @@
 
     /* ── Responsive adjustments ── */
     @media (max-width: 1024px) {
-        .report-main-split { grid-template-columns: 1fr; }
-        .library-container { grid-template-columns: 1fr; }
-        .library-sidebar { display: none; } /* Hide sidebar on mobile for now or make it a horizontal list */
+        .report-main-split {
+            grid-template-columns: 1fr;
+        }
+
+        .library-container {
+            grid-template-columns: 1fr;
+        }
+
+        .library-sidebar {
+            display: none;
+        }
+
+        /* Hide sidebar on mobile for now or make it a horizontal list */
     }
 
     @media (max-width: 768px) {
-        .summary-grid { grid-template-columns: 1fr; }
-        .library-toolbar { flex-direction: column; }
-        .search-wrapper { max-width: 100%; }
+        .summary-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .library-toolbar {
+            flex-direction: column;
+        }
+
+        .search-wrapper {
+            max-width: 100%;
+        }
     }
 </style>
 @endpush
@@ -621,19 +694,19 @@
     {{-- Grade Navigation Tabs --}}
     <div class="report-tabs">
         @foreach($canonicalGrades as $grade)
-            @php
-                $isActive = $grade === $foundCanonical;
-                $isUnlocked = in_array($grade, $unlockedGrades);
-                $isUserActualGrade = strcasecmp($grade, auth()->user()->grade) === 0;
-                
-                $displayGrade = $isUserActualGrade ? $grade . ' (Current)' : $grade;
-            @endphp
-            <a href="{{ $isUnlocked ? route('dashboard.detailed-report', ['grade' => $grade]) : '#' }}" 
-               class="report-tab {{ $isActive ? 'active' : '' }} {{ $isUnlocked ? '' : 'locked' }}"
-               {!! $isUnlocked ? '' : 'title="Locked"' !!}>
-                @if(!$isUnlocked) <i class="fas fa-lock"></i> @endif
-                {{ $displayGrade }}
-            </a>
+        @php
+        $isActive = $grade === $foundCanonical;
+        $isUnlocked = in_array($grade, $unlockedGrades);
+        $isUserActualGrade = strcasecmp($grade, auth()->user()->grade) === 0;
+
+        $displayGrade = $isUserActualGrade ? $grade . ' (Current)' : $grade;
+        @endphp
+        <a href="{{ $isUnlocked ? route('dashboard.detailed-report', ['grade' => $grade]) : '#' }}"
+            class="report-tab {{ $isActive ? 'active' : '' }} {{ $isUnlocked ? '' : 'locked' }}" {!! $isUnlocked ? ''
+            : 'title="Locked"' !!}>
+            @if(!$isUnlocked) <i class="fas fa-lock"></i> @endif
+            {{ $displayGrade }}
+        </a>
         @endforeach
     </div>
 
@@ -652,7 +725,8 @@
             <div class="card-content">
                 <div class="card-label">Ranking Badge</div>
                 <div class="card-value">{{ $performanceSummary['ranking'] }}</div>
-                <div class="card-trend up"><i class="fas fa-chart-line"></i> {{ $performanceSummary['ranking_trend'] }}</div>
+                <div class="card-trend up"><i class="fas fa-chart-line"></i> {{ $performanceSummary['ranking_trend'] }}
+                </div>
             </div>
         </div>
 
@@ -663,7 +737,8 @@
             <div class="card-content">
                 <div class="card-label">Grade Average</div>
                 <div class="card-value">{{ $performanceSummary['grade_average'] }}%</div>
-                <div class="card-trend up"><i class="fas fa-chart-line"></i> {{ $performanceSummary['average_trend'] }}</div>
+                <div class="card-trend up"><i class="fas fa-chart-line"></i> {{ $performanceSummary['average_trend'] }}
+                </div>
             </div>
         </div>
 
@@ -674,7 +749,8 @@
             <div class="card-content">
                 <div class="card-label">Total Study Time</div>
                 <div class="card-value">{{ $performanceSummary['total_study_time'] }}</div>
-                <div class="card-trend up"><i class="fas fa-chart-line"></i> {{ $performanceSummary['time_trend'] }}</div>
+                <div class="card-trend up"><i class="fas fa-chart-line"></i> {{ $performanceSummary['time_trend'] }}
+                </div>
             </div>
         </div>
     </div>
@@ -698,21 +774,22 @@
                     </thead>
                     <tbody>
                         @forelse($recentQuizzes as $quiz)
-                            @php
-                                $scoreClass = $quiz->score >= 80 ? 'high' : ($quiz->score >= 60 ? 'med' : 'low');
-                            @endphp
-                            <tr>
-                                <td class="quiz-name-cell">{{ $quiz->quiz_name }}</td>
-                                <td class="quiz-subject-cell">{{ $quiz->subject }}</td>
-                                <td>
-                                    <span class="quiz-score-badge {{ $scoreClass }}">{{ round($quiz->score) }}%</span>
-                                </td>
-                                <td class="quiz-status-cell">{{ $quiz->completed_at->format('M d, Y') }}</td>
-                            </tr>
+                        @php
+                        $scoreClass = $quiz->score >= 80 ? 'high' : ($quiz->score >= 60 ? 'med' : 'low');
+                        @endphp
+                        <tr>
+                            <td class="quiz-name-cell">{{ $quiz->quiz_name }}</td>
+                            <td class="quiz-subject-cell">{{ $quiz->subject }}</td>
+                            <td>
+                                <span class="quiz-score-badge {{ $scoreClass }}">{{ round($quiz->score) }}%</span>
+                            </td>
+                            <td class="quiz-status-cell">{{ $quiz->completed_at->format('M d, Y') }}</td>
+                        </tr>
                         @empty
-                            <tr>
-                                <td colspan="4" class="text-center py-4 text-gray-400">No quizzes attempted yet in this level.</td>
-                            </tr>
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-gray-400">No quizzes attempted yet in this
+                                level.</td>
+                        </tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -727,35 +804,35 @@
             </div>
             <div class="mastery-card">
                 @php
-                    $subjectIcons = [
-                        'Mathematics' => ['icon' => 'fa-calculator', 'class' => 'math'],
-                        'English' => ['icon' => 'fa-book', 'class' => 'eng'],
-                        'Science' => ['icon' => 'fa-flask', 'class' => 'sci'],
-                    ];
+                $subjectIcons = [
+                'Mathematics' => ['icon' => 'fa-calculator', 'class' => 'math'],
+                'English' => ['icon' => 'fa-book', 'class' => 'eng'],
+                'Science' => ['icon' => 'fa-flask', 'class' => 'sci'],
+                ];
                 @endphp
                 @forelse($subjectMastery as $subject)
-                    @php
-                        $iconData = $subjectIcons[$subject->subject] ?? ['icon' => 'fa-graduation-cap', 'class' => 'math'];
-                        $perc = round($subject->average_score);
-                    @endphp
-                    <div class="mastery-item">
-                        <div class="mastery-info">
-                            <div class="mastery-icon {{ $iconData['class'] }}">
-                                <i class="fas {{ $iconData['icon'] }}"></i>
-                            </div>
-                            <span class="mastery-name">{{ $subject->subject }}</span>
+                @php
+                $iconData = $subjectIcons[$subject->subject] ?? ['icon' => 'fa-graduation-cap', 'class' => 'math'];
+                $perc = round($subject->average_score);
+                @endphp
+                <div class="mastery-item">
+                    <div class="mastery-info">
+                        <div class="mastery-icon {{ $iconData['class'] }}">
+                            <i class="fas {{ $iconData['icon'] }}"></i>
                         </div>
-                        <div class="circular-progress" style="--p: {{ $perc }}" data-percent="{{ $perc }}"></div>
+                        <span class="mastery-name">{{ $subject->subject }}</span>
                     </div>
+                    <div class="circular-progress" style="--p: {{ $perc }}" data-percent="{{ $perc }}"></div>
+                </div>
                 @empty
-                    <div class="text-gray-400 py-4 text-center">Take quizzes to see mastery data.</div>
+                <div class="text-gray-400 py-4 text-center">Take quizzes to see mastery data.</div>
                 @endforelse
 
                 <div class="mastery-footer">
                     <div class="mastery-footer-label">Progress Overview</div>
                     <div class="footer-progress-bar">
                         @php
-                            $overallMastery = $subjectMastery->avg('average_score') ?? 0;
+                        $overallMastery = $subjectMastery->avg('average_score') ?? 0;
                         @endphp
                         <div class="footer-progress-fill" style="width: {{ $overallMastery }}%"></div>
                     </div>
@@ -780,9 +857,9 @@
                         <i class="fas fa-th-large fa-fw mr-2"></i> All Lessons
                     </button>
                     @foreach($librarySubjects as $subject)
-                        <button class="subject-btn" data-subject="{{ $subject->name }}">
-                            <i class="fas fa-book fa-fw mr-2"></i> {{ $subject->name }}
-                        </button>
+                    <button class="subject-btn" data-subject="{{ $subject->name }}">
+                        <i class="fas fa-book fa-fw mr-2"></i> {{ $subject->name }}
+                    </button>
                     @endforeach
                 </div>
             </aside>
@@ -792,42 +869,43 @@
                 <div class="library-toolbar">
                     <div class="search-wrapper">
                         <i class="fas fa-search"></i>
-                        <input type="text" class="library-search-input" placeholder="Search lessons..." id="lessonSearch">
+                        <input type="text" class="library-search-input" placeholder="Search lessons..."
+                            id="lessonSearch">
                     </div>
                     <select class="unit-select" id="unitFilter">
                         <option value="all">All Units</option>
                         @foreach($libraryUnits as $unit)
-                            <option value="{{ $unit }}">{{ $unit }}</option>
+                        <option value="{{ $unit }}">{{ $unit }}</option>
                         @endforeach
                     </select>
                 </div>
 
                 <div class="library-grid" id="lessonGrid">
                     @foreach($libraryLessons as $lesson)
-                        @php $isDone = $lesson->progress_percent >= 90; @endphp
-                        <div class="lesson-card {{ $isDone ? 'completed' : '' }}" 
-                             data-subject="{{ $lesson->subject->name ?? 'Unknown' }}" 
-                             data-unit="{{ $lesson->unit_name ?? 'General' }}"
-                             data-title="{{ strtolower($lesson->title) }}">
-                            <div class="lesson-thumb-container">
-                                <img src="{{ $lesson->thumbnail_url }}" alt="{{ $lesson->title }}">
-                                <span class="lesson-duration-badge">{{ $lesson->duration_formatted }}</span>
+                    @php $isDone = $lesson->progress_percent >= 90; @endphp
+                    <div class="lesson-card {{ $isDone ? 'completed' : '' }}"
+                        data-subject="{{ $lesson->subject->name ?? 'Unknown' }}"
+                        data-unit="{{ $lesson->unit_name ?? 'General' }}" data-title="{{ strtolower($lesson->title) }}">
+                        <div class="lesson-thumb-container">
+                            <img src="{{ $lesson->thumbnail_url }}" alt="{{ $lesson->title }}">
+                            <span class="lesson-duration-badge">{{ $lesson->duration_formatted }}</span>
+                        </div>
+                        <div class="lesson-card-info">
+                            <div class="lesson-meta-top">
+                                <span class="meta-subject">{{ $lesson->subject->name ?? 'Subject' }}</span>
+                                <span class="meta-unit">{{ $lesson->unit_name ?? 'Unit' }}</span>
                             </div>
-                            <div class="lesson-card-info">
-                                <div class="lesson-meta-top">
-                                    <span class="meta-subject">{{ $lesson->subject->name ?? 'Subject' }}</span>
-                                    <span class="meta-unit">{{ $lesson->unit_name ?? 'Unit' }}</span>
-                                </div>
-                                <h3 class="lesson-card-title">{{ $lesson->title }}</h3>
-                                <div class="lesson-progress-row">
-                                    <span class="progress-text">{{ $lesson->watch_time_formatted }} / {{ $lesson->duration_formatted }}</span>
-                                    <span class="percent-text">{{ $lesson->progress_percent }}%</span>
-                                </div>
-                                <div class="lesson-card-progress">
-                                    <div class="lesson-card-fill" style="width: {{ $lesson->progress_percent }}%"></div>
-                                </div>
+                            <h3 class="lesson-card-title">{{ $lesson->title }}</h3>
+                            <div class="lesson-progress-row">
+                                <span class="progress-text">{{ $lesson->watch_time_formatted }} / {{
+                                    $lesson->duration_formatted }}</span>
+                                <span class="percent-text">{{ $lesson->progress_percent }}%</span>
+                            </div>
+                            <div class="lesson-card-progress">
+                                <div class="lesson-card-fill" style="width: {{ $lesson->progress_percent }}%"></div>
                             </div>
                         </div>
+                    </div>
                     @endforeach
                 </div>
 
@@ -842,83 +920,83 @@
 </div>
 
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-document.addEventListener('DOMContentLoaded', function() {
-    const lessonSearch = document.getElementById('lessonSearch');
-    const unitFilter = document.getElementById('unitFilter');
-    const subjectBtns = document.querySelectorAll('.subject-btn');
-    const lessonCards = document.querySelectorAll('.lesson-card');
-    const loadMoreBtn = document.getElementById('loadMoreBtn');
-    const remainingCountSpan = document.getElementById('remainingCount');
-    
-    let activeSubject = 'all';
-    let currentLimit = 12;
+    document.addEventListener('DOMContentLoaded', function () {
+        const lessonSearch = document.getElementById('lessonSearch');
+        const unitFilter = document.getElementById('unitFilter');
+        const subjectBtns = document.querySelectorAll('.subject-btn');
+        const lessonCards = document.querySelectorAll('.lesson-card');
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        const remainingCountSpan = document.getElementById('remainingCount');
 
-    function applyFilters() {
-        const searchTerm = lessonSearch.value.toLowerCase();
-        const selectedUnit = unitFilter.value;
-        let visibleCount = 0;
-        let totalMatches = 0;
+        let activeSubject = 'all';
+        let currentLimit = 12;
 
-        lessonCards.forEach(card => {
-            const cardSubject = card.getAttribute('data-subject');
-            const cardUnit = card.getAttribute('data-unit');
-            const cardTitle = card.getAttribute('data-title');
+        function applyFilters() {
+            const searchTerm = lessonSearch.value.toLowerCase();
+            const selectedUnit = unitFilter.value;
+            let visibleCount = 0;
+            let totalMatches = 0;
 
-            const subjectMatch = activeSubject === 'all' || cardSubject === activeSubject;
-            const unitMatch = selectedUnit === 'all' || cardUnit === selectedUnit;
-            const searchMatch = cardTitle.includes(searchTerm);
+            lessonCards.forEach(card => {
+                const cardSubject = card.getAttribute('data-subject');
+                const cardUnit = card.getAttribute('data-unit');
+                const cardTitle = card.getAttribute('data-title');
 
-            if (subjectMatch && unitMatch && searchMatch) {
-                totalMatches++;
-                if (visibleCount < currentLimit) {
-                    card.style.display = 'flex';
-                    visibleCount++;
+                const subjectMatch = activeSubject === 'all' || cardSubject === activeSubject;
+                const unitMatch = selectedUnit === 'all' || cardUnit === selectedUnit;
+                const searchMatch = cardTitle.includes(searchTerm);
+
+                if (subjectMatch && unitMatch && searchMatch) {
+                    totalMatches++;
+                    if (visibleCount < currentLimit) {
+                        card.style.display = 'flex';
+                        visibleCount++;
+                    } else {
+                        card.style.display = 'none';
+                    }
                 } else {
                     card.style.display = 'none';
                 }
+            });
+
+            // Update Load More visibility
+            const remaining = totalMatches - visibleCount;
+            const loadMoreSection = document.getElementById('loadMoreSection');
+            if (remaining > 0) {
+                loadMoreSection.style.display = 'flex';
+                remainingCountSpan.textContent = remaining;
             } else {
-                card.style.display = 'none';
+                loadMoreSection.style.display = 'none';
             }
-        });
-
-        // Update Load More visibility
-        const remaining = totalMatches - visibleCount;
-        const loadMoreSection = document.getElementById('loadMoreSection');
-        if (remaining > 0) {
-            loadMoreSection.style.display = 'flex';
-            remainingCountSpan.textContent = remaining;
-        } else {
-            loadMoreSection.style.display = 'none';
         }
-    }
 
-    lessonSearch.addEventListener('input', () => {
-        currentLimit = 12;
-        applyFilters();
-    });
-
-    unitFilter.addEventListener('change', () => {
-        currentLimit = 12;
-        applyFilters();
-    });
-
-    subjectBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            subjectBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            activeSubject = btn.getAttribute('data-subject');
+        lessonSearch.addEventListener('input', () => {
             currentLimit = 12;
             applyFilters();
         });
-    });
 
-    loadMoreBtn.addEventListener('click', () => {
-        currentLimit += 12;
+        unitFilter.addEventListener('change', () => {
+            currentLimit = 12;
+            applyFilters();
+        });
+
+        subjectBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                subjectBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                activeSubject = btn.getAttribute('data-subject');
+                currentLimit = 12;
+                applyFilters();
+            });
+        });
+
+        loadMoreBtn.addEventListener('click', () => {
+            currentLimit += 12;
+            applyFilters();
+        });
+
+        // Initial Filter
         applyFilters();
     });
-
-    // Initial Filter
-    applyFilters();
-});
 </script>
 @endsection

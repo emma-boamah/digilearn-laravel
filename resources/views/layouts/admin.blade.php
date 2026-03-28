@@ -15,8 +15,47 @@
         integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
 
+    <!-- Theme Selection Script (Before Body to prevent FOUC) -->
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        (function() {
+            try {
+                var theme = localStorage.getItem('theme');
+                if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                }
+            } catch (e) {}
+        })();
+    </script>
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+      tailwind.config = {
+        darkMode: ['class', '[data-theme="dark"]'],
+        theme: {
+          extend: {
+            colors: {
+              white: 'var(--tw-col-white, #ffffff)',
+              black: 'var(--tw-col-black, #000000)',
+              gray: {
+                50: 'var(--tw-col-gray-50, #f8fafc)',
+                100: 'var(--tw-col-gray-100, #f1f5f9)',
+                200: 'var(--tw-col-gray-200, #e2e8f0)',
+                300: 'var(--tw-col-gray-300, #cbd5e1)',
+                400: 'var(--tw-col-gray-400, #94a3b8)',
+                500: 'var(--tw-col-gray-500, #64748b)',
+                600: 'var(--tw-col-gray-600, #475569)',
+                700: 'var(--tw-col-gray-700, #334155)',
+                800: 'var(--tw-col-gray-800, #1e293b)',
+                900: 'var(--tw-col-gray-900, #0f172a)',
+              }
+            }
+          }
+        }
+      }
+    </script>
 
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -32,9 +71,10 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #f8fafc;
-            color: #1e293b;
+            background-color: var(--tw-col-gray-50, #f8fafc);
+            color: var(--tw-col-gray-900, #0f172a);
             line-height: 1.6;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         /* Color scheme variables */
@@ -56,6 +96,38 @@
             --gray-700: #334155;
             --gray-800: #1e293b;
             --gray-900: #0f172a;
+        }
+
+        [data-theme="dark"] {
+            /* Tailwind mappings override */
+            --tw-col-white: #16181c;
+            --tw-col-black: #ffffff;
+            --tw-col-gray-50: #000000;
+            --tw-col-gray-100: #202327;
+            --tw-col-gray-200: transparent;
+            --tw-col-gray-300: #3e4144;
+            --tw-col-gray-400: #71767b;
+            --tw-col-gray-500: #8b98a5;
+            --tw-col-gray-600: #a4b1cd;
+            --tw-col-gray-700: #e2e8f0;
+            --tw-col-gray-800: #f1f5f9;
+            --tw-col-gray-900: #ffffff;
+
+            /* Custom CSS variables override */
+            --white: #16181c;
+            --gray-50: #000000;
+            --gray-100: #202327;
+            --gray-200: transparent;
+            --gray-300: #3e4144;
+            --gray-400: #71767b;
+            --gray-500: #8b98a5;
+            --gray-600: #a4b1cd;
+            --gray-700: #e2e8f0;
+            --gray-800: #f1f5f9;
+            --gray-900: #ffffff;
+            --border-color: transparent;
+            
+            color-scheme: dark;
         }
 
         /* Layout styles */
@@ -759,6 +831,11 @@
                                 </div>
                             </div>
 
+                            <!-- Dark Mode Toggle -->
+                            <button id="toggledarkmodebutton" class="notification-btn" title="Toggle Dark Mode" style="margin-right: 0.5rem;">
+                                <i id="themeIcon" class="fas fa-moon w-5 h-5 text-gray-500 hover:text-gray-900 transition-colors"></i>
+                            </button>
+
                             <!-- User Menu -->
                             <div class="dropdown" id="userDropdown">
                                 <button id="userDropdownBtn" class="flex items-center user-dropdown-btn">
@@ -899,6 +976,45 @@
             if (userDropdownBtn) {
                 userDropdownBtn.addEventListener('click', function () {
                     toggleDropdown('userDropdown');
+                });
+            }
+
+            // Dark Mode Toggle Logic
+            const toggleButton = document.getElementById('toggledarkmodebutton');
+            const themeIcon = document.getElementById('themeIcon');
+        
+            if (toggleButton) {
+                const initialTheme = document.documentElement.getAttribute('data-theme') || 'light';
+                if (themeIcon) {
+                    if (initialTheme === 'dark') {
+                        themeIcon.classList.remove('fa-moon');
+                        themeIcon.classList.add('fa-sun');
+                        toggleButton.setAttribute('title', 'Switch to Light Mode');
+                    } else {
+                        themeIcon.classList.remove('fa-sun');
+                        themeIcon.classList.add('fa-moon');
+                        toggleButton.setAttribute('title', 'Switch to Dark Mode');
+                    }
+                }
+
+                toggleButton.addEventListener('click', function () {
+                    const activeTheme = document.documentElement.getAttribute('data-theme') || 'light';
+                    const newTheme = activeTheme === 'light' ? 'dark' : 'light';
+                    
+                    document.documentElement.setAttribute('data-theme', newTheme);
+                    try { localStorage.setItem('theme', newTheme); } catch(e) {}
+                    
+                    if (themeIcon) {
+                        if (newTheme === 'dark') {
+                            themeIcon.classList.remove('fa-moon');
+                            themeIcon.classList.add('fa-sun');
+                            toggleButton.setAttribute('title', 'Switch to Light Mode');
+                        } else {
+                            themeIcon.classList.remove('fa-sun');
+                            themeIcon.classList.add('fa-moon');
+                            toggleButton.setAttribute('title', 'Switch to Dark Mode');
+                        }
+                    }
                 });
             }
         });

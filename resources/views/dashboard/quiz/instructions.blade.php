@@ -12,6 +12,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
 
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         :root {
@@ -27,6 +34,24 @@
             --integrity-red-bg: rgba(197, 40, 40, 0.1);
             --white: #ffffff;
             --gray-200: #e5e7eb;
+        }
+
+        [data-theme="dark"] {
+            --brand-red: #E11E2D;
+            --brand-red-hover: #c41e2a;
+            --brand-blue-deep: #000000;
+            --brand-blue-card: #16181c;
+            --brand-blue-accent: #2f3336;
+            --text-white: #ffffff;
+            --text-muted: #71767b;
+            --integrity-red-bg: rgba(225, 30, 45, 0.1);
+            --white: #16181c;
+            --gray-200: #2f3336;
+            color-scheme: dark;
+        }
+
+        [data-theme="dark"] .integrity-banner::after {
+            background: #16181c;
         }
 
         body {

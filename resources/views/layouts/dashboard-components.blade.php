@@ -12,6 +12,20 @@
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- Theme Selection Script (Before Body to prevent FOUC) -->
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        (function() {
+            try {
+                var theme = localStorage.getItem('theme');
+                if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                }
+            } catch (e) {}
+        })();
+    </script>
+
     @yield('head')
 
     <!-- Alpine.js -->
@@ -24,7 +38,7 @@
 
 
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
-        :root {
+        :root, [data-theme="light"] {
             --primary-red: #E11E2D;
             --primary-red-hover: #c41e2a;
             --secondary-blue: #2677B8;
@@ -41,12 +55,49 @@
             --gray-700: #374151;
             --gray-800: #1f2937;
             --gray-900: #111827;
+            
+            /* Semantic Light Mode Variables */
+            --bg-main: #f8f9fa;
+            --bg-surface: #ffffff;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+            --header-bg: rgba(255, 255, 255, 0.8);
+            --filter-bg: rgba(255, 255, 255, 0.75);
+            --accent: #E11E2D;
+
             --shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.05);
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
             --sidebar-width-expanded: 240px;
             --sidebar-width-collapsed: 72px;
             --safe-area-inset-top: env(safe-area-inset-top, 0px);
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #000000;
+            --bg-surface: #16181c;
+            --text-main: #ffffff;
+            --text-muted: #71767b;
+            --border-color: transparent;
+            --header-bg: rgba(22, 24, 28, 0.8);
+            --filter-bg: rgba(22, 24, 28, 0.75);
+            --accent: #E11E2D;
+            color-scheme: dark;
+            
+            /* Overrides */
+            --gray-25: #000000;
+            --gray-50: #16181c;
+            --gray-100: #202327;
+            --gray-200: #2f3336;
+            --gray-300: #3e4144;
+            --gray-400: #71767b;
+            --gray-500: #8b98a5;
+            --gray-600: #a4b1cd;
+            --gray-700: #e2e8f0;
+            --gray-800: #f1f5f9;
+            --gray-900: #ffffff;
+            --white: #16181c;
         }
 
         .no-pointer-events {
@@ -61,10 +112,11 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background-color: var(--gray-25);
-            color: var(--gray-900);
+            background-color: var(--bg-main);
+            color: var(--text-main);
             line-height: 1.6;
             overflow-x: hidden;
+            transition: background-color var(--transition-duration) ease, color var(--transition-duration) ease;
         }
 
         /* YouTube-style Sidebar */
@@ -73,9 +125,11 @@
             top: calc(60px + var(--safe-area-inset-top)) !important; /* Directly below the header */
             left: 0; /* Start from left edge for full width */
             width: 100%;
-            background-color: var(--white);
-            border-bottom: 1px solid var(--gray-200);
+            background-color: var(--filter-bg);
+            border-bottom: 1px solid var(--border-color);
             z-index: 999 !important;
+            backdrop-filter: blur(10px) saturate(160%);
+            -webkit-backdrop-filter: blur(10px) saturate(160%);
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             height: calc(60px + var(--safe-area-inset-top));
             padding-top: calc(0.75rem + var(--safe-area-inset-top));
@@ -87,8 +141,8 @@
             width: var(--sidebar-width-expanded) !important;
             height: 100vh !important;
             max-height: 100vh !important;
-            background-color: var(--white);
-            border-right: 1px solid var(--gray-200);
+            background-color: var(--bg-surface);
+            border-right: 1px solid var(--border-color);
             z-index: 1000;
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease;
             overflow-y: scroll;
@@ -106,7 +160,7 @@
             display: flex;
             align-items: center;
             padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--gray-200);
+            border-bottom: 1px solid var(--border-color);
             height: 64px;
             min-height: 64px;
         }
@@ -233,7 +287,7 @@
             align-items: center;
             gap: 1rem;
             padding: 0.75rem 1.5rem;
-            color: var(--gray-700);
+            color: var(--text-main);
             text-decoration: none;
             transition: all 0.2s ease;
             cursor: pointer;
@@ -242,9 +296,9 @@
         }
 
         .sidebar-menu-item:hover {
-            background-color: var(--gray-50);
-            color: var(--gray-900);
-            border-left-color: var(--gray-300);
+            background-color: var(--border-color);
+            color: var(--text-main);
+            border-left-color: var(--border-color);
         }
 
         .sidebar-menu-item.active {
@@ -316,13 +370,12 @@
             visibility: visible;
         }
 
-        /* Main Content */
         .main-content {
             position: relative;
             margin-left: var(--sidebar-width-expanded) !important;
             margin-top: var(--safe-area-inset-top) !important;
             min-height: calc(100vh - 60px);
-            background-color: var(--gray-50);
+            background-color: var(--bg-main);
             /* Synchronise all three so nothing jumps to the right */
             transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
                         width 0.3s cubic-bezier(0.4, 0, 0.2, 1),

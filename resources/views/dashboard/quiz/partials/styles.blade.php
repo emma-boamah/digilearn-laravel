@@ -27,6 +27,32 @@
         --sidebar-width-collapsed: 72px;
     }
 
+    [data-theme="dark"] {
+        --bg-main: #000000;
+        --bg-surface: #16181c;
+        --text-main: #ffffff;
+        --text-muted: #71767b;
+        --border-color: #2f3336;
+        --header-bg: rgba(22, 24, 28, 0.8);
+        --filter-bg: rgba(22, 24, 28, 0.75);
+        --accent: #E11E2D;
+        color-scheme: dark;
+
+        /* Overrides for hardcoded grays */
+        --gray-25: #000000;
+        --gray-50: #16181c;
+        --gray-100: #202327;
+        --gray-200: #2f3336;
+        --gray-300: #3e4144;
+        --gray-400: #71767b;
+        --gray-500: #8b98a5;
+        --gray-600: #a4b1cd;
+        --gray-700: #e2e8f0;
+        --gray-800: #f1f5f9;
+        --gray-900: #ffffff;
+        --white: #16181c;
+    }
+
     * {
         margin: 0;
         padding: 0;
@@ -759,7 +785,7 @@
         align-items: center;
         gap: 0.375rem;
         font-size: 0.8rem;
-        color: var(--gray-500);
+        color: var(--gray-900);
     }
 
     .minimalist-quiz-card .meta-item i {
@@ -780,8 +806,8 @@
         width: 100%;
         padding: 0.75rem 1rem;
         background-color: transparent;
-        color: var(--secondary-blue);
-        border: 2px solid var(--secondary-blue);
+        color: var(--gray-900);
+        border: 1px solid var(--secondary-blue);
         border-radius: 8px;
         font-size: 0.875rem;
         font-weight: 600;
@@ -976,7 +1002,7 @@
     .quiz-start-btn {
         flex: 1;
         background: transparent;
-        color: var(--secondary-blue);
+        color: var(--gray-900);
         border: none;
         padding: 0.875rem 1.5rem;
         border-radius: 0.75rem;

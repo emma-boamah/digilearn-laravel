@@ -11,6 +11,13 @@
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         :root {
             --primary-red: #E11E2D;
@@ -36,6 +43,32 @@
             --sidebar-width-expanded: 240px;
             --sidebar-width-collapsed: 72px;
             --safe-area-inset-top: env(safe-area-inset-top, 0px);
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #000000;
+            --bg-surface: #16181c;
+            --text-main: #ffffff;
+            --text-muted: #71767b;
+            --border-color: #2f3336;
+            --header-bg: rgba(22, 24, 28, 0.8);
+            --filter-bg: rgba(22, 24, 28, 0.75);
+            --accent: #E11E2D;
+            color-scheme: dark;
+
+            /* Overrides for hardcoded grays */
+            --gray-25: #000000;
+            --gray-50: #16181c;
+            --gray-100: #202327;
+            --gray-200: #2f3336;
+            --gray-300: #3e4144;
+            --gray-400: #71767b;
+            --gray-500: #8b98a5;
+            --gray-600: #a4b1cd;
+            --gray-700: #e2e8f0;
+            --gray-800: #f1f5f9;
+            --gray-900: #ffffff;
+            --white: #16181c;
         }
 
         * {

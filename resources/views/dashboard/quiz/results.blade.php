@@ -1,16 +1,25 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Quiz Results - {{ trim(str_replace('Quiz for:', '', $quiz['title'] ?? 'Quiz')) }} - {{ config('app.name', 'ShoutOutGh') }}</title>
-    
+    <title>Quiz Results - {{ trim(str_replace('Quiz for:', '', $quiz['title'] ?? 'Quiz')) }} - {{ config('app.name',
+        'ShoutOutGh') }}</title>
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,701&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
+
+    <script>
+        (function () {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+
     <style>
         :root {
             --primary-blue: #2480f1ff;
@@ -40,7 +49,34 @@
             --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
         }
 
-        html, body {
+        [data-theme="dark"] {
+            --bg-main: #000000;
+            --bg-surface: #16181c;
+            --text-main: #ffffff;
+            --text-muted: #71767b;
+            --border-color: #2f3336;
+            --header-bg: rgba(22, 24, 28, 0.8);
+            --filter-bg: rgba(22, 24, 28, 0.75);
+            --accent: #E11E2D;
+            color-scheme: dark;
+
+            /* Overrides for hardcoded grays */
+            --gray-25: #000000;
+            --gray-50: #16181c;
+            --gray-100: #202327;
+            --gray-200: #2f3336;
+            --gray-300: #3e4144;
+            --gray-400: #71767b;
+            --gray-500: #8b98a5;
+            --gray-600: #a4b1cd;
+            --gray-700: #e2e8f0;
+            --gray-800: #f1f5f9;
+            --gray-900: #ffffff;
+            --white: #16181c;
+        }
+
+        html,
+        body {
             margin: 0;
             padding: 0;
             width: 100%;
@@ -62,7 +98,8 @@
         .app-container {
             display: flex;
             min-height: 100vh;
-            padding-top: 60px; /* Space for the fixed header */
+            padding-top: 60px;
+            /* Space for the fixed header */
         }
 
         /* YouTube-style Sidebar */
@@ -92,7 +129,8 @@
             flex: 1;
             padding: 1rem 0;
             overflow-y: auto;
-            overflow-x: hidden; /* Prevent horizontal scroll */
+            overflow-x: hidden;
+            /* Prevent horizontal scroll */
         }
 
         .nav-section {
@@ -240,7 +278,7 @@
             transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .youtube-sidebar.collapsed ~ .app-content {
+        .youtube-sidebar.collapsed~.app-content {
             margin-left: var(--sidebar-width-collapsed);
         }
 
@@ -270,7 +308,7 @@
         }
 
         .page-subtitle {
-            color: var(--gray-600);
+            color: var(--gray-900);
             font-size: 1rem;
         }
 
@@ -283,7 +321,7 @@
         }
 
         .stat-card {
-            background: white;
+            background: var(--white);
             padding: 1.25rem 1rem;
             border-radius: 16px;
             box-shadow: var(--shadow-sm);
@@ -343,9 +381,20 @@
             margin-bottom: 0.75rem;
         }
 
-        .stat-icon-wrapper.success { background-color: var(--success-green-light); color: var(--success-green); }
-        .stat-icon-wrapper.error { background-color: var(--error-red-light); color: var(--error-red); }
-        .stat-icon-wrapper.warning { background-color: rgba(245, 158, 11, 0.1); color: #F59E0B; }
+        .stat-icon-wrapper.success {
+            background-color: var(--success-green-light);
+            color: var(--success-green);
+        }
+
+        .stat-icon-wrapper.error {
+            background-color: var(--error-red-light);
+            color: var(--error-red);
+        }
+
+        .stat-icon-wrapper.warning {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: #F59E0B;
+        }
 
         .stat-value {
             font-size: 1.5rem;
@@ -357,7 +406,7 @@
         .stat-label {
             font-size: 0.75rem;
             font-weight: 600;
-            color: var(--gray-400);
+            color: var(--gray-900);
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
@@ -381,7 +430,7 @@
         .accuracy-card .accuracy-title {
             font-size: 1rem;
             font-weight: 600;
-            color: var(--gray-600);
+            color: var(--gray-900);
         }
 
         .accuracy-card .accuracy-icon {
@@ -411,7 +460,7 @@
         .accuracy-card .accuracy-status {
             font-size: 1rem;
             font-weight: 600;
-            color: var(--gray-400);
+            color: var(--gray-900);
         }
 
         .accuracy-card .skipped-text {
@@ -422,7 +471,7 @@
 
         /* Question ReviewSection */
         .review-section {
-            background: white;
+            background: var(--white);
             border-radius: 16px;
             box-shadow: var(--shadow-sm);
             overflow: hidden;
@@ -467,8 +516,15 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .question-info {
@@ -495,9 +551,20 @@
             font-weight: 600;
         }
 
-        .status-badge.correct { background-color: var(--success-green-light); color: var(--success-green); }
-        .status-badge.incorrect { background-color: var(--error-red-light); color: var(--error-red); }
-        .status-badge.skipped { background-color: var(--gray-100); color: var(--gray-600); }
+        .status-badge.correct {
+            background-color: var(--success-green-light);
+            color: var(--success-green);
+        }
+
+        .status-badge.incorrect {
+            background-color: var(--error-red-light);
+            color: var(--error-red);
+        }
+
+        .status-badge.skipped {
+            background-color: var(--gray-100);
+            color: var(--gray-600);
+        }
 
         .question-text {
             font-size: 1.25rem;
@@ -594,6 +661,10 @@
             border-top: 1px solid var(--gray-100);
         }
 
+        [data-theme="dark"] .review-footer {
+            background-color: #16181C;
+        }
+
         .nav-btn {
             display: flex;
             align-items: center;
@@ -605,13 +676,18 @@
             cursor: pointer;
             transition: all 0.2s;
             border: 1px solid transparent;
-            white-space: nowrap; /* Prevent line breaks */
+            white-space: nowrap;
+            /* Prevent line breaks */
         }
 
         .nav-btn.prev {
-            background: white;
+            background: var(--white);
             border-color: var(--gray-200);
-            color: var(--gray-700);
+            color: var(--gray-900);
+        }
+
+        [data-theme="dark"] .nav-btn.prev {
+            color: #ffffff;
         }
 
         .nav-btn.prev:hover:not(:disabled) {
@@ -620,7 +696,7 @@
 
         .nav-btn.next {
             background: var(--primary-blue);
-            color: white;
+            color: var(--white);
         }
 
         .nav-btn.next:hover:not(:disabled) {
@@ -640,7 +716,8 @@
             justify-content: center;
             gap: 1.5rem;
             margin-bottom: 3rem;
-            flex-wrap: nowrap; /* Force single row */
+            flex-wrap: nowrap;
+            /* Force single row */
         }
 
         .btn-action {
@@ -653,7 +730,8 @@
             font-size: 1rem;
             text-decoration: none;
             transition: all 0.2s;
-            white-space: nowrap; /* Prevent text wrapping inside buttons */
+            white-space: nowrap;
+            /* Prevent text wrapping inside buttons */
         }
 
         .btn-action.outline {
@@ -685,64 +763,92 @@
 
         /* Responsive */
         @media (max-width: 1024px) {
-            .youtube-sidebar { 
-                transform: translateX(-100%); 
+            .youtube-sidebar {
+                transform: translateX(-100%);
                 transition: transform 0.3s ease, width 0.3s ease;
                 width: var(--sidebar-width-expanded);
             }
+
             .youtube-sidebar.mobile-open {
                 transform: translateX(0);
             }
-            .app-content { 
-                margin-left: 0; 
+
+            .app-content {
+                margin-left: 0;
                 padding: 2rem;
                 padding-left: calc(2rem + env(safe-area-inset-left));
                 padding-right: calc(2rem + env(safe-area-inset-right));
             }
-            .youtube-sidebar.collapsed ~ .app-content { margin-left: 0; }
-            .stats-grid { grid-template-columns: 1fr; }
-            .question-layout { flex-direction: column; }
+
+            .youtube-sidebar.collapsed~.app-content {
+                margin-left: 0;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .question-layout {
+                flex-direction: column;
+            }
         }
 
         @media (max-width: 640px) {
-            .stats-grid { 
+            .stats-grid {
                 display: flex;
                 flex-wrap: wrap;
                 gap: 1rem;
             }
+
             .stat-card {
                 padding: 1rem 0.75rem;
                 flex: 1 1 calc(50% - 0.5rem);
                 min-width: 120px;
             }
+
             .stat-circle {
                 width: 60px;
                 height: 60px;
             }
+
             .stat-circle .percentage {
                 font-size: 1rem;
             }
+
             .stat-icon-wrapper {
                 width: 36px;
                 height: 36px;
                 font-size: 1.25rem;
             }
+
             .stat-value {
                 font-size: 1.125rem;
             }
+
             .stat-label {
                 font-size: 0.65rem;
             }
-            .content-header { text-align: center; }
-            .breadcrumbs { justify-content: center; }
-            .bottom-actions { 
-                flex-direction: row; 
-                align-items: center; 
-                gap: 0.75rem; /* Reduced gap */
+
+            .content-header {
+                text-align: center;
             }
+
+            .breadcrumbs {
+                justify-content: center;
+            }
+
+            .bottom-actions {
+                flex-direction: row;
+                align-items: center;
+                gap: 0.75rem;
+                /* Reduced gap */
+            }
+
             .btn-action {
-                padding: 0.625rem 1rem; /* Reduced padding */
-                font-size: 0.875rem; /* Smaller font */
+                padding: 0.625rem 1rem;
+                /* Reduced padding */
+                font-size: 0.875rem;
+                /* Smaller font */
                 gap: 0.5rem;
             }
 
@@ -751,17 +857,21 @@
                 padding: 1rem;
                 gap: 0.75rem;
             }
+
             .nav-btn {
                 padding: 0.5rem 0.875rem;
                 font-size: 0.8125rem;
             }
+
             .nav-btn .nav-btn-text-extra {
                 display: none;
             }
+
             .review-footer {
                 padding: 1rem 1.25rem;
                 gap: 0.75rem;
             }
+
             .nav-btn {
                 padding: 0.625rem 1rem;
                 font-size: 0.8125rem;
@@ -907,11 +1017,14 @@
             transition: color 0.2s;
         }
 
-        .star-label:hover, .star-label.filled {
+        .star-label:hover,
+        .star-label.filled {
             color: #F59E0B;
         }
 
-        .rating-stars-input input { display: none; }
+        .rating-stars-input input {
+            display: none;
+        }
 
         .rating-review textarea {
             width: 100%;
@@ -937,8 +1050,15 @@
             cursor: pointer;
         }
 
-        .submit-rating { background: var(--primary-blue); color: white; }
-        .skip-rating { background: var(--gray-100); color: var(--gray-600); }
+        .submit-rating {
+            background: var(--primary-blue);
+            color: white;
+        }
+
+        .skip-rating {
+            background: var(--gray-100);
+            color: var(--gray-600);
+        }
 
         /* Quick Navigation Styles */
         .review-layout {
@@ -950,12 +1070,13 @@
         }
 
         .quick-nav-card {
-            background: white;
+            background: var(--white);
             border-radius: 16px;
             box-shadow: var(--shadow-sm);
             padding: 1.5rem;
             position: sticky;
-            top: 100px; /* Adjust based on header/needs */
+            top: 100px;
+            /* Adjust based on header/needs */
         }
 
         .quick-nav-header {
@@ -1032,7 +1153,7 @@
             background-color: var(--success-green);
             color: white;
         }
-        
+
         .nav-box.active.incorrect {
             background-color: var(--error-red);
             color: white;
@@ -1044,9 +1165,9 @@
         }
 
         .nav-box.active.skipped {
-             background-color: var(--gray-800);
-             color: white;
-             border-color: var(--gray-800);
+            background-color: var(--gray-800);
+            color: white;
+            border-color: var(--gray-800);
         }
 
 
@@ -1072,17 +1193,27 @@
             border-radius: 50%;
         }
 
-        .legend-dot.correct { background-color: var(--success-green); }
-        .legend-dot.incorrect { background-color: var(--error-red); }
-        .legend-dot.skipped { background-color: var(--gray-400); }
+        .legend-dot.correct {
+            background-color: var(--success-green);
+        }
+
+        .legend-dot.incorrect {
+            background-color: var(--error-red);
+        }
+
+        .legend-dot.skipped {
+            background-color: var(--gray-400);
+        }
 
         @media (max-width: 1024px) {
             .review-layout {
                 grid-template-columns: 1fr;
             }
+
             .quick-nav-card {
                 position: static;
-                order: -1; /* Show Quick Nav above question on mobile? Or below? 
+                order: -1;
+                /* Show Quick Nav above question on mobile? Or below? 
                               User said "left side", implies desktop. On mobile, usually top or 
                               bottom. Let's keep it normal flow (top) or allow stickiness. 
                            */
@@ -1090,6 +1221,7 @@
         }
     </style>
 </head>
+
 <body>
     @include('components.dashboard-header')
     <div class="app-container">
@@ -1114,7 +1246,7 @@
                         <div class="tooltip">More Quizzes</div>
                     </a>
                 </div>
-                
+
                 <div class="nav-section">
                     <div class="nav-title">ACCOUNT</div>
                     <a href="{{ route('dashboard.main') }}" class="nav-item">
@@ -1124,42 +1256,44 @@
                     </a>
                 </div>
             </nav>
-            
+
             <div class="sidebar-footer">
                 <a href="{{ route('quiz.index') }}" class="exit-btn">
-                   <i class="fas fa-sign-out-alt"></i>
-                   <span>Exit Review</span>
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Exit Review</span>
                 </a>
             </div>
         </aside>
 
         <!-- Main Content -->
         <main class="app-content">
-             <div class="content-header">
+            <div class="content-header">
                 <div class="breadcrumbs">
-                    <span>{{ $quiz['subject'] ?? 'Library' }}</span> 
+                    <span>{{ $quiz['subject'] ?? 'Library' }}</span>
                     <i class="fas fa-chevron-right" style="font-size: 0.75rem;"></i>
                     <span class="active">Results Review</span>
                 </div>
                 <h1 class="page-title">Quiz Results: {{ trim(str_replace('Quiz for:', '', $quiz['title'])) }}</h1>
                 <p class="page-subtitle">
                     @if($percentage >= 80)
-                        Excellent work! You've mastered the foundational components of this topic.
+                    Excellent work! You've mastered the foundational components of this topic.
                     @elseif($percentage >= 50)
-                        Good job! You've grasped most concepts, but there's room for improvement.
+                    Good job! You've grasped most concepts, but there's room for improvement.
                     @else
-                        Keep practicing! Review the materials and try again to improve your score.
+                    Keep practicing! Review the materials and try again to improve your score.
                     @endif
                 </p>
-             </div>
+            </div>
 
-             <!-- Performance Cards -->
-             <div class="stats-grid">
+            <!-- Performance Cards -->
+            <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-circle">
                         <svg viewBox="0 0 36 36">
-                            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                            <path class="circle" stroke-dasharray="{{ $percentage }}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path class="circle-bg"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path class="circle" stroke-dasharray="{{ $percentage }}, 100"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                         </svg>
                         <div class="percentage">{{ $percentage }}%</div>
                     </div>
@@ -1167,10 +1301,10 @@
                 </div>
 
                 @php
-                    $displayQuestions = collect($questions);
-                    $skippedCount = $displayQuestions->filter(fn($q) => $q['user_answer'] === null)->count();
-                    $correctCount = $displayQuestions->filter(fn($q) => $q['user_correct'] === true)->count();
-                    $totalCount = $displayQuestions->count();
+                $displayQuestions = collect($questions);
+                $skippedCount = $displayQuestions->filter(fn($q) => $q['user_answer'] === null)->count();
+                $correctCount = $displayQuestions->filter(fn($q) => $q['user_correct'] === true)->count();
+                $totalCount = $displayQuestions->count();
                 @endphp
                 <div class="stat-card accuracy-card">
                     <div class="stat-header">
@@ -1182,7 +1316,8 @@
                         <span class="accuracy-status">Correct</span>
                     </div>
                     @if($skippedCount > 0)
-                        <p class="skipped-text">You skipped {{ $skippedCount }} {{ Str::plural('question', $skippedCount) }}</p>
+                    <p class="skipped-text">You skipped {{ $skippedCount }} {{ Str::plural('question', $skippedCount) }}
+                    </p>
                     @endif
                 </div>
 
@@ -1192,17 +1327,17 @@
                     </div>
                     <span class="stat-value">
                         @if($timeTaken > 0)
-                            {{ floor($timeTaken / 60) }}m {{ str_pad($timeTaken % 60, 2, '0', STR_PAD_LEFT) }}s
+                        {{ floor($timeTaken / 60) }}m {{ str_pad($timeTaken % 60, 2, '0', STR_PAD_LEFT) }}s
                         @else
-                            --:--
+                        --:--
                         @endif
                     </span>
                     <span class="stat-label">Duration</span>
                 </div>
-             </div>
+            </div>
 
-             <!-- Review Layout Grid -->
-             <div class="review-layout">
+            <!-- Review Layout Grid -->
+            <div class="review-layout">
                 <!-- Quick Navigation Sidebar -->
                 <div class="quick-nav-card">
                     <div class="quick-nav-header">
@@ -1212,19 +1347,18 @@
 
                     <div class="quick-nav-grid">
                         @foreach($questions as $index => $q)
-                            @php
-                                $statusClass = 'skipped';
-                                if($q['user_correct']) {
-                                    $statusClass = 'correct';
-                                } elseif($q['user_answer'] !== null) {
-                                    $statusClass = 'incorrect';
-                                }
-                            @endphp
-                            <div class="nav-box {{ $statusClass }} {{ $index == 0 ? 'active' : '' }}" 
-                                 onclick="goToQuestion({{ $index }})"
-                                 id="nav-box-{{ $index }}">
-                                {{ $index + 1 }}
-                            </div>
+                        @php
+                        $statusClass = 'skipped';
+                        if($q['user_correct']) {
+                        $statusClass = 'correct';
+                        } elseif($q['user_answer'] !== null) {
+                        $statusClass = 'incorrect';
+                        }
+                        @endphp
+                        <div class="nav-box {{ $statusClass }} {{ $index == 0 ? 'active' : '' }}"
+                            onclick="goToQuestion({{ $index }})" id="nav-box-{{ $index }}">
+                            {{ $index + 1 }}
+                        </div>
                         @endforeach
                     </div>
 
@@ -1242,102 +1376,106 @@
                 </div>
 
                 <!-- Question Review Section (Existing) -->
-                <div class="review-section" style="margin-bottom: 0;"> <!-- Remove bottom margin since grid handles gap -->
-                   <div class="review-header">
-                       <div style="display: flex; align-items: center; gap: 1rem;">
-                           <h2 class="review-title">Question Review</h2>
-                           @if($percentage == 100)
-                               <span class="all-correct-badge">
-                                   <i class="fas fa-star"></i> ALL CORRECT
-                               </span>
-                           @endif
-                       </div>
-                   </div>
-   
-                   <div class="questions-carousel">
-                       @foreach($questions as $index => $question)
-                           <div class="question-card {{ $index == 0 ? 'active' : '' }}" id="question-{{ $index }}">
-                               <div class="question-info">
-                                   <span class="question-count">QUESTION {{ $index + 1 }} OF {{ $total }}</span>
-                                    @php
-                                        $isSkipped = $question['user_answer'] === null;
-                                    @endphp
-                                    <span class="status-badge {{ $question['user_correct'] ? 'correct' : ($isSkipped ? 'skipped' : 'incorrect') }}">
-                                        <i class="fas fa-{{ $question['user_correct'] ? 'check-circle' : ($isSkipped ? 'minus-circle' : 'times-circle') }}"></i>
-                                        {{ $question['user_correct'] ? 'Correct' : ($isSkipped ? 'Skipped' : 'Incorrect') }}
-                                    </span>
-                               </div>
-                                
-                                @if(!empty($question['preamble']))
-                                    <div class="preamble-box">
-                                        <div class="preamble-header">
-                                            <i class="fas fa-align-left"></i> Preamble / Context
-                                        </div>
-                                        <div class="preamble-text">{!! $question['preamble'] !!}</div>
-                                    </div>
+                <div class="review-section" style="margin-bottom: 0;">
+                    <!-- Remove bottom margin since grid handles gap -->
+                    <div class="review-header">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <h2 class="review-title">Question Review</h2>
+                            @if($percentage == 100)
+                            <span class="all-correct-badge">
+                                <i class="fas fa-star"></i> ALL CORRECT
+                            </span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="questions-carousel">
+                        @foreach($questions as $index => $question)
+                        <div class="question-card {{ $index == 0 ? 'active' : '' }}" id="question-{{ $index }}">
+                            <div class="question-info">
+                                <span class="question-count">QUESTION {{ $index + 1 }} OF {{ $total }}</span>
+                                @php
+                                $isSkipped = $question['user_answer'] === null;
+                                @endphp
+                                <span
+                                    class="status-badge {{ $question['user_correct'] ? 'correct' : ($isSkipped ? 'skipped' : 'incorrect') }}">
+                                    <i
+                                        class="fas fa-{{ $question['user_correct'] ? 'check-circle' : ($isSkipped ? 'minus-circle' : 'times-circle') }}"></i>
+                                    {{ $question['user_correct'] ? 'Correct' : ($isSkipped ? 'Skipped' : 'Incorrect') }}
+                                </span>
+                            </div>
+
+                            @if(!empty($question['preamble']))
+                            <div class="preamble-box">
+                                <div class="preamble-header">
+                                    <i class="fas fa-align-left"></i> Preamble / Context
+                                </div>
+                                <div class="preamble-text">{!! $question['preamble'] !!}</div>
+                            </div>
+                            @endif
+
+                            <h3 class="question-text">{!! $question['question'] !!}</h3>
+
+                            <div class="question-layout">
+                                @if($question['image'])
+                                <div class="question-media">
+                                    <img src="{{ $question['image'] }}" alt="Question illustration">
+                                </div>
                                 @endif
 
-                               <h3 class="question-text">{!! $question['question'] !!}</h3>
-   
-                               <div class="question-layout">
-                                   @if($question['image'])
-                                       <div class="question-media">
-                                           <img src="{{ $question['image'] }}" alt="Question illustration">
-                                       </div>
-                                   @endif
-   
-                                   <div class="options-list">
-                                       @php $labels = ['A', 'B', 'C', 'D', 'E']; @endphp
-                                       @foreach($question['options'] as $optIndex => $option)
-                                            <div class="option-item 
+                                <div class="options-list">
+                                    @php $labels = ['A', 'B', 'C', 'D', 'E']; @endphp
+                                    @foreach($question['options'] as $optIndex => $option)
+                                    <div class="option-item 
                                                 {{ $optIndex === $question['correct_answer'] ? 'correct' : '' }}
                                                 {{ $optIndex === $question['user_answer'] ? 'user-choice' : '' }}
                                                 {{ $optIndex === $question['user_answer'] && !$question['user_correct'] ? 'incorrect' : '' }}
                                             ">
-                                               <div class="option-label">{{ $labels[$optIndex] }}</div>
-                                               <span class="option-text">{!! $option !!}</span>
-                                               
-                                               @if($optIndex == $question['correct_answer'])
-                                                   <i class="fas fa-check-circle check-icon"></i>
-                                               @endif
-                                                                                               @if($optIndex === $question['user_answer'] && !$question['user_correct'])
-                                                    <i class="fas fa-times-circle" style="margin-left: auto; color: var(--error-red);"></i>
-                                                @endif
-                                           </div>
-                                       @endforeach
-                                       
-                                   </div>
-                               </div>
-                           </div>
-                       @endforeach
-                   </div>
-   
-                   <div class="review-footer">
-                       <button class="nav-btn prev" id="prevBtn" onclick="navigateQuestion(-1)" disabled>
-                           <i class="fas fa-arrow-left"></i> Previous
-                       </button>
-                       
-   
-                       <button class="nav-btn next" id="nextBtn" onclick="navigateQuestion(1)">
-                           Next<span class="nav-btn-text-extra"> Question</span> <i class="fas fa-arrow-right"></i>
-                       </button>
-                   </div>
-                </div>
-             </div>
+                                        <div class="option-label">{{ $labels[$optIndex] }}</div>
+                                        <span class="option-text">{!! $option !!}</span>
 
-             <!-- Bottom Actions -->
-             <div class="bottom-actions">
+                                        @if($optIndex == $question['correct_answer'])
+                                        <i class="fas fa-check-circle check-icon"></i>
+                                        @endif
+                                        @if($optIndex === $question['user_answer'] && !$question['user_correct'])
+                                        <i class="fas fa-times-circle"
+                                            style="margin-left: auto; color: var(--error-red);"></i>
+                                        @endif
+                                    </div>
+                                    @endforeach
+
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+
+                    <div class="review-footer">
+                        <button class="nav-btn prev" id="prevBtn" onclick="navigateQuestion(-1)" disabled>
+                            <i class="fas fa-arrow-left"></i> Previous
+                        </button>
+
+
+                        <button class="nav-btn next" id="nextBtn" onclick="navigateQuestion(1)">
+                            Next<span class="nav-btn-text-extra"> Question</span> <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Actions -->
+            <div class="bottom-actions">
                 <a href="{{ route('quiz.take', $quiz['encoded_id']) }}" class="btn-action outline">
                     <i class="fas fa-redo"></i> Retake Quiz
                 </a>
                 <button class="btn-action dark" onclick="openShareModal()">
                     <i class="fas fa-share-alt"></i> Share Results
                 </button>
-             </div>
+            </div>
 
-             <footer class="app-footer">
+            <footer class="app-footer">
                 <p>&copy; {{ date('Y') }} ShoutOutGh. All rights reserved.</p>
-             </footer>
+            </footer>
         </main>
     </div>
 
@@ -1347,11 +1485,13 @@
             <button class="modal-close" onclick="closeShareModal()">×</button>
             <h3 style="font-size: 1.5rem; text-align: center; margin-bottom: 2rem;">Share Results</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                <a href="#" onclick="shareToX()" style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; text-decoration: none; color: inherit;">
+                <a href="#" onclick="shareToX()"
+                    style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; text-decoration: none; color: inherit;">
                     <i class="fab fa-x-twitter" style="font-size: 2rem; color: #000000;"></i>
                     <span style="font-size: 0.875rem;">Share on X</span>
                 </a>
-                <a href="#" onclick="shareToWhatsApp()" style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; text-decoration: none; color: inherit;">
+                <a href="#" onclick="shareToWhatsApp()"
+                    style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; text-decoration: none; color: inherit;">
                     <i class="fab fa-whatsapp" style="font-size: 2rem; color: #25D366;"></i>
                     <span style="font-size: 0.875rem;">WhatsApp</span>
                 </a>
@@ -1373,10 +1513,10 @@
             <form id="ratingForm" method="POST" action="{{ route('quiz.rate', $quiz['encoded_id']) }}">
                 @csrf
                 <div class="stars-container">
-                    @for($i = 1; $i <= 5; $i++)
-                        <input type="radio" id="star{{ $i }}" name="rating" value="{{ $i }}" required>
+                    @for($i = 1; $i <= 5; $i++) <input type="radio" id="star{{ $i }}" name="rating" value="{{ $i }}"
+                        required>
                         <label for="star{{ $i }}" class="star-label"><i class="fas fa-star"></i></label>
-                    @endfor
+                        @endfor
                 </div>
 
                 <div class="rating-review">
@@ -1406,19 +1546,15 @@
         function goToQuestion(index) {
             // Remove active class from old elements
             document.getElementById(`question-${currentQuestion}`).classList.remove('active');
-            
-            // Quick Nav Update
             const oldNav = document.getElementById(`nav-box-${currentQuestion}`);
-            if(oldNav) oldNav.classList.remove('active');
+            if (oldNav) oldNav.classList.remove('active');
 
             currentQuestion = index;
-            
+
             // Add active class to new elements
             document.getElementById(`question-${currentQuestion}`).classList.add('active');
-            
-            // Quick Nav Update
             const newNav = document.getElementById(`nav-box-${currentQuestion}`);
-            if(newNav) newNav.classList.add('active');
+            if (newNav) newNav.classList.add('active');
 
             // Update buttons
             document.getElementById('prevBtn').disabled = currentQuestion === 0;
@@ -1432,7 +1568,7 @@
 
         function openShareModal() { document.getElementById('shareModal').classList.add('active'); }
         function closeShareModal() { document.getElementById('shareModal').classList.remove('active'); }
-        
+
         function shareToX() {
             const score = "{{ $correctCount }}/{{ $totalCount }}";
             const quizTitle = "{{ trim(str_replace('Quiz for:', '', $quiz['title'])) }}";
@@ -1447,36 +1583,36 @@
             const text = `I just scored ${score} on the "${quizTitle}" quiz on ShoutOutGh! 🚀 Can you beat my score?\n\nCheck it out here: ${window.location.href}`;
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
         }
-        
+
         function openRatingModal() { document.getElementById('ratingModal').classList.add('active'); }
         function closeRatingModal() { document.getElementById('ratingModal').classList.remove('active'); }
 
         // Confetti effect
-        @if($percentage >= 80)
-        function createConfetti() {
-            for (let i = 0; i < 50; i++) {
-                const confetti = document.createElement('div');
-                confetti.className = 'confetti';
-                confetti.style.left = Math.random() * 100 + 'vw';
-                confetti.style.top = '-10px';
-                confetti.style.backgroundColor = ['#F15A24', '#10B981', '#2677B8', '#F59E0B'][Math.floor(Math.random() * 4)];
-                confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
-                document.body.appendChild(confetti);
+        @if ($percentage >= 80)
+            function createConfetti() {
+                for (let i = 0; i < 50; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.top = '-10px';
+                    confetti.style.backgroundColor = ['#F15A24', '#10B981', '#2677B8', '#F59E0B'][Math.floor(Math.random() * 4)];
+                    confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    document.body.appendChild(confetti);
 
-                const animation = confetti.animate([
-                    { transform: `translate3d(0, 0, 0) rotate(0deg)`, opacity: 1 },
-                    { transform: `translate3d(${(Math.random() - 0.5) * 200}px, 100vh, 0) rotate(${Math.random() * 3000}deg)`, opacity: 0 }
-                ], {
-                    duration: Math.random() * 3000 + 2000,
-                    easing: 'cubic-bezier(0, .9, .57, 1)'
-                });
+                    const animation = confetti.animate([
+                        { transform: `translate3d(0, 0, 0) rotate(0deg)`, opacity: 1 },
+                        { transform: `translate3d(${(Math.random() - 0.5) * 200}px, 100vh, 0) rotate(${Math.random() * 3000}deg)`, opacity: 0 }
+                    ], {
+                        duration: Math.random() * 3000 + 2000,
+                        easing: 'cubic-bezier(0, .9, .57, 1)'
+                    });
 
-                animation.onfinish = () => confetti.remove();
+                    animation.onfinish = () => confetti.remove();
+                }
             }
-        }
         window.onload = () => {
             createConfetti();
-            @if(!$hasRated)
+            @if (!$hasRated)
                 setTimeout(openRatingModal, 2000);
             @endif
         };
@@ -1491,10 +1627,10 @@
             });
         });
 
-        // AJAX submission for rating (copied from original)
+        // AJAX submission for rating
         const ratingForm = document.getElementById('ratingForm');
         if (ratingForm) {
-            ratingForm.addEventListener('submit', function(e) {
+            ratingForm.addEventListener('submit', function (e) {
                 e.preventDefault();
                 const formData = new FormData(this);
                 const submitBtn = this.querySelector('.submit-rating');
@@ -1504,16 +1640,22 @@
                 fetch(this.action, {
                     method: 'POST',
                     body: formData,
-                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        closeRatingModal();
-                        alert('Thank you for your feedback!');
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
                     }
                 })
-                .catch(() => { submitBtn.disabled = false; submitBtn.innerText = 'Submit Rating'; });
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            closeRatingModal();
+                            alert('Thank you for your feedback!');
+                        }
+                    })
+                    .catch(() => {
+                        submitBtn.disabled = false;
+                        submitBtn.innerText = 'Submit Rating';
+                    });
             });
         }
         // Sidebar Toggle Logic
@@ -1542,4 +1684,5 @@
         });
     </script>
 </body>
+
 </html>

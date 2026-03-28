@@ -17,7 +17,8 @@
     /* Hero Section */
     .hero-section {
         position: relative;
-        height: clamp(180px, 22vh, 280px); /* Responsive height instead of fixed 300px */
+        height: clamp(180px, 22vh, 280px);
+        /* Responsive height instead of fixed 300px */
         overflow: hidden;
     }
 
@@ -62,6 +63,11 @@
         opacity: 0.9;
     }
 
+    [data-theme="dark"] .hero-content h1,
+    [data-theme="dark"] .hero-content p {
+        color: #ffffff;
+    }
+
     /* Mobile adjustments */
     @media (max-width: 768px) {
         .hero-section {
@@ -72,7 +78,7 @@
             font-size: 24px;
             margin-bottom: 8px;
         }
-        
+
         .hero-content p {
             font-size: 16px;
             margin-bottom: 16px;
@@ -82,7 +88,7 @@
             padding: 0.5rem 1rem;
             font-size: 0.9rem;
         }
-        
+
         .hero-overlay {
             padding: 0 20px;
             flex-direction: column;

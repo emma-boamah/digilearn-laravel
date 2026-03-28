@@ -2,7 +2,7 @@
     /* Footer styles */
     .footer {
         background-color: var(--white);
-        border-top: 1px solid #e5e7eb;
+        border-top: 0.5px solid #6b7280;
         padding: 3rem 0 2rem;
     }
 
@@ -13,8 +13,10 @@
     .footer-brand {
         display: flex;
         flex-direction: column;
-        align-items: flex-end; /* Align logo and text to right */
-        margin-left: auto; /* Push to right side */
+        align-items: flex-end;
+        /* Align logo and text to right */
+        margin-left: auto;
+        /* Push to right side */
         text-align: right;
     }
 
@@ -102,8 +104,8 @@
     /* Horizontal divider */
     .footer-divider {
         width: 100%;
-        height: 1px;
-        background-color: #e5e7eb;
+        height: 0.5px;
+        background-color: #6b7280;
         margin: 2rem 0;
     }
 
@@ -123,11 +125,13 @@
     /* For larger screens - side by side layout */
     @media (min-width: 768px) {
         .footer-bottom {
-            flex-direction: row; /* Horizontal layout */
+            flex-direction: row;
+            /* Horizontal layout */
             justify-content: space-between;
-            align-items: flex-end; /* Align to bottom */
+            align-items: flex-end;
+            /* Align to bottom */
         }
-        
+
         .footer-brand {
             text-align: right;
         }
@@ -211,16 +215,16 @@
         .associates-icons {
             gap: 1rem;
         }
-        
+
         .associates-group {
             gap: 0.25rem;
         }
-        
+
         .footer-content {
             flex-direction: column;
             text-align: center;
         }
-        
+
         .footer-bottom {
             flex-direction: column;
             text-align: center;
@@ -228,18 +232,47 @@
         }
 
         .footer-links {
-            grid-template-columns: repeat(2, 1fr); /* Align links horizontally on small screens */
+            grid-template-columns: repeat(2, 1fr);
+            /* Align links horizontally on small screens */
             gap: 1rem;
         }
 
         .footer-brand {
             margin: 1rem auto 0;
-            align-items: center; /* Center logo and text */
+            align-items: center;
+            /* Center logo and text */
         }
 
         .copyright {
             margin-bottom: 1rem;
         }
+    }
+
+    /* Dark mode overrides for footer */
+    [data-theme="dark"] .footer {
+        background-color: var(--bg-main) !important;
+        border-top: none !important;
+    }
+
+    [data-theme="dark"] .footer-divider {
+        background-color: transparent !important;
+    }
+
+    [data-theme="dark"] .footer-bottom {
+        border-top: none !important;
+    }
+
+    [data-theme="dark"] .link-group h3,
+    [data-theme="dark"] .link-group a:hover,
+    [data-theme="dark"] .social-links a:hover {
+        color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .footer-brand p,
+    [data-theme="dark"] .copyright,
+    [data-theme="dark"] .link-group a,
+    [data-theme="dark"] .social-links a {
+        color: var(--text-muted) !important;
     }
 </style>
 
@@ -302,7 +335,8 @@
         <div class="footer-bottom">
             <div class="footer-brand">
                 <a href="{{ route('home') }}" class="brand-link">
-                    <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image image-logo-height">
+                    <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh"
+                        class="logo-image image-logo-height">
                 </a>
                 <p>Educating through Entertainment</p>
             </div>

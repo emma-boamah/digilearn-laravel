@@ -1,26 +1,43 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'ShoutOutGh') }} - Dashboard</title>
-    
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
-    
+
     <!-- Alpine.js -->
-    <script nonce="{{ request()->attributes->get('csp_nonce') }}" defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}" defer
+        src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+        integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <!-- Conditional Analytics -->
-    @if(auth()->check() ? $cookieManager->isAllowed('analytics') : (request()->cookie('digilearn_consent') ? json_decode(request()->cookie('digilearn_consent'), true)['analytics'] ?? false : false))
-        @include('partials.analytics')
+    @if(auth()->check() ? $cookieManager->isAllowed('analytics') : (request()->cookie('digilearn_consent') ?
+    json_decode(request()->cookie('digilearn_consent'), true)['analytics'] ?? false : false))
+    @include('partials.analytics')
     @endif
 
-    
+
+    <!-- Theme Initialization -->
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        (function () {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
-        :root {
+        :root,
+        [data-theme="light"] {
             --primary-red: #E11E2D;
             --primary-red-hover: #b91c1c;
             --secondary-blue: #2e7ab8ff;
@@ -37,6 +54,41 @@
             --gray-800: #1f2937;
             --gray-900: #111827;
             --safe-area-inset-top: env(safe-area-inset-top, 0px);
+
+            /* Semantic variables */
+            --bg-main: var(--gray-100);
+            --bg-surface: var(--white);
+            --text-main: var(--gray-900);
+            --text-muted: var(--gray-500);
+            --border-color: var(--gray-200);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #000000;
+            --bg-surface: #16181c;
+            --text-main: #ffffff;
+            --text-muted: #71767b;
+            --border-color: #2f3336;
+
+            /* Overrides for hardcoded grays */
+            --gray-50: #16181c;
+            --gray-100: #000000;
+            --gray-200: #2f3336;
+            --gray-300: #3e4144;
+            --gray-400: #71767b;
+            --gray-500: #8b98a5;
+            --gray-600: #a4b1cd;
+            --gray-700: #e2e8f0;
+            --gray-800: #f1f5f9;
+            --gray-900: #ffffff;
+            --white: #16181c;
+
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+
+            color-scheme: dark;
         }
 
         * {
@@ -47,9 +99,10 @@
 
         body {
             font-family: 'Figtree', sans-serif;
-            background-color: var(--gray-100);
-            color: var(--gray-900);
+            background-color: var(--bg-main);
+            color: var(--text-main);
             padding-top: var(--safe-area-inset-top);
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .container {
@@ -60,9 +113,9 @@
 
         /* Header Styles */
         .header {
-            background-color: var(--white);
+            background-color: var(--bg-surface);
             padding: 1rem 0;
-            border-bottom: 1px solid var(--gray-200);
+            border-bottom: 1px solid var(--border-color);
         }
 
         .header-content {
@@ -80,7 +133,7 @@
         .back-button {
             background: none;
             border: none;
-            color: var(--gray-800);
+            color: var(--text-main);
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -111,7 +164,7 @@
             font-weight: 600;
             font-size: 1rem;
         }
-        
+
         .shoutout-logo {
             display: flex;
             align-items: center;
@@ -151,13 +204,13 @@
         .notification-icon {
             width: 20px;
             height: 20px;
-            color: var(--gray-600);
+            color: var(--text-muted);
         }
 
         .header-divider {
             width: 1px;
             height: 24px;
-            background-color: var(--gray-300);
+            background-color: var(--border-color);
         }
 
         /* User Avatar Dropdown */
@@ -182,10 +235,10 @@
             position: absolute;
             top: calc(100% + 8px);
             right: 0;
-            background: var(--white);
+            background: var(--bg-surface);
             border-radius: 0.75rem;
             box-shadow: var(--shadow-xl);
-            border: 1px solid var(--gray-200);
+            border: 1px solid var(--border-color);
             width: 260px;
             max-width: 100vw;
             z-index: 1000;
@@ -207,19 +260,19 @@
 
         .user-dropdown-header {
             padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--gray-200);
+            border-bottom: 1px solid var(--border-color);
         }
 
         .user-info .user-name {
             font-size: 1rem;
             font-weight: 600;
-            color: var(--gray-900);
+            color: var(--text-main);
             margin-bottom: 0.25rem;
         }
 
         .user-info .user-email {
             font-size: 0.875rem;
-            color: var(--gray-500);
+            color: var(--text-muted);
         }
 
         .user-dropdown-body {
@@ -231,7 +284,7 @@
             align-items: center;
             gap: 0.75rem;
             padding: 0.75rem 1.5rem;
-            color: var(--gray-700);
+            color: var(--text-main);
             text-decoration: none;
             transition: all 0.2s ease;
             font-size: 0.875rem;
@@ -240,7 +293,7 @@
 
         .dropdown-item:hover {
             background-color: var(--gray-50);
-            color: var(--gray-900);
+            color: var(--text-main);
         }
 
         .dropdown-item-form {
@@ -270,7 +323,7 @@
             width: 18px;
             height: 18px;
             flex-shrink: 0;
-            color: var(--gray-500);
+            color: var(--text-muted);
         }
 
         .user-avatar {
@@ -287,29 +340,31 @@
         }
 
         .level-info-container {
-            background-color: var(--gray-50);
+            background-color: var(--bg-surface);
             padding: 0.75rem 0;
-            border-bottom: 1px solid var(--gray-200);
+            border-bottom: 1px solid var(--border-color);
             margin-top: 3.8rem;
         }
 
         /* Main Content */
         .main-content {
-            padding: 1rem 0 2rem 0; /* Added top padding for fixed header */
+            padding: 1rem 0 2rem 0;
+            /* Added top padding for fixed header */
         }
 
         /* Card Styles */
         .card {
-            background-color: var(--white);
+            background-color: var(--bg-surface);
             border-radius: 0.75rem;
             padding: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
             transition: all 0.2s ease;
         }
 
         .card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: var(--shadow-lg);
         }
 
         .card-image {
@@ -335,7 +390,7 @@
         }
 
         .card-description {
-            color: var(--gray-600);
+            color: var(--text-main);
             font-size: 0.875rem;
             line-height: 1.5;
             margin-bottom: 1.5rem;
@@ -406,24 +461,25 @@
                 flex-wrap: wrap;
                 gap: 1rem;
             }
-            
+
             .logo-section {
                 order: 1;
                 flex: 1;
             }
-            
+
             .page-title {
                 order: 2;
                 flex-basis: 100%;
                 text-align: center;
             }
-            
+
             .header-right {
                 order: 3;
             }
         }
     </style>
 </head>
+
 <body>
     @include('components.dashboard-header')
     @yield('content')
