@@ -372,6 +372,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/users/bulk-action', [AdminController::class , 'bulkAction'])->name('users.bulk-action');
         Route::post('/mark-invite-notice-seen', [AdminController::class , 'markInviteNoticeSeen'])->name('mark-invite-notice-seen');
         Route::get('/revenue', [AdminController::class , 'revenue'])->name('revenue');
+        Route::get('/revenue/export/{type}', [AdminController::class , 'exportRevenueSummary'])->name('revenue.export');
+        Route::get('/revenue/export-trends', [AdminController::class , 'exportRevenueTrends'])->name('revenue.export-trends');
+        Route::get('/revenue/export-payments', [AdminController::class , 'exportPayments'])->name('revenue.export-payments');
         Route::post('/revenue/aggregate', [AdminController::class , 'aggregateRevenue'])->name('revenue.aggregate');
         Route::get('/analytics', [AdminController::class , 'analytics'])->name('analytics');
         Route::get('/subscriber-analytics', [AdminController::class , 'subscriberAnalytics'])->name('subscriber-analytics');

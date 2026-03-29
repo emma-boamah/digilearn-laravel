@@ -1739,14 +1739,16 @@ class AdminController extends Controller
         $callback = function() use ($data) {
             $file = fopen('php://output', 'w');
 
-            // Add CSV headers
             if ($data->isNotEmpty()) {
-                fputcsv($file, array_keys($data->first()->toArray()));
-            }
+                $first = $data->first();
+                // If it's an object with toArray, call it; otherwise it might already be an array
+                $firstRow = is_object($first) && method_exists($first, 'toArray') ? $first->toArray() : (array)$first;
+                fputcsv($file, array_keys($firstRow));
 
-            // Add data rows
-            foreach ($data as $row) {
-                fputcsv($file, $row->toArray());
+                foreach ($data as $row) {
+                    $rowArr = is_object($row) && method_exists($row, 'toArray') ? $row->toArray() : (array)$row;
+                    fputcsv($file, $rowArr);
+                }
             }
 
             fclose($file);
@@ -2908,9 +2910,18 @@ class AdminController extends Controller
             $paymentAnalytics = $this->getPaymentAnalytics($request);
         }
 
-        // Get summary reports if that tab is active
-        $summaryReports = $activeTab === 'summary' ? $this->getSummaryReports($request) : null;
-
+        // Get summary reports and charts data if that tab is active
+        $summaryReports = null;
+        $summaryCharts = null;
+        if ($activeTab === 'summary') {
+            $summaryReports = $this->getSummaryReports($request);
+            $summaryCharts = [
+                'annual' => \App\Models\RevenueSummary::annual()->orderBy('period_date', 'asc')->get()->map(fn($s) => ['label' => $s->period_date->format('Y'), 'revenue' => (float)$s->revenue]),
+                'monthly' => \App\Models\RevenueSummary::monthly()->orderBy('period_date', 'asc')->limit(24)->get()->map(fn($s) => ['label' => $s->period_date->format('M Y'), 'revenue' => (float)$s->revenue]),
+                'weekly' => \App\Models\RevenueSummary::weekly()->orderBy('period_date', 'asc')->limit(20)->get()->map(fn($s) => ['label' => $s->period_date->format('M d'), 'revenue' => (float)$s->revenue]),
+            ];
+        }
+        
         Log::channel('security')->info('revenue_analytics_accessed', [
             'admin_id' => Auth::id(),
             'ip' => get_client_ip(),
@@ -2926,6 +2937,7 @@ class AdminController extends Controller
             'topPlans',
             'paymentAnalytics',
             'summaryReports',
+            'summaryCharts',
             'activeTab'
         ));
     }
@@ -5177,5 +5189,70 @@ class AdminController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Export revenue trends to CSV
+     */
+    public function exportRevenueTrends()
+    {
+        $trends = \App\Models\RevenueSummary::monthly()
+            ->orderBy('period_date', 'asc')
+            ->limit(12)
+            ->get()
+            ->map(fn($t) => [
+                'Month' => $t->period_date->format('M Y'),
+                'Revenue' => (float)$t->revenue,
+                'Payments' => $t->payments_count,
+                'Subscriptions' => $t->subscriptions_count
+            ]);
+
+        return $this->exportToCsv($trends, 'revenue_trends');
+    }
+
+    /**
+     * Export revenue summary data to CSV
+     */
+    public function exportRevenueSummary($type)
+    {
+        $validTypes = ['annual', 'monthly', 'weekly'];
+        if (!in_array($type, $validTypes)) {
+            return redirect()->back()->with('error', 'Invalid export type.');
+        }
+
+        $summaries = \App\Models\RevenueSummary::where('period_type', $type)
+            ->orderBy('period_date', 'desc')
+            ->get();
+
+        $filename = "revenue_summary_{$type}_" . now()->format('Y-m-d') . ".csv";
+
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $columns = ['Period', 'Revenue (GH₵)', 'Payments Count', 'Subscriptions Count'];
+
+        $callback = function() use($summaries, $columns, $type) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+
+            foreach ($summaries as $report) {
+                $period = $report->period_date ? $report->period_date->format($type === 'annual' ? 'Y' : ($type === 'monthly' ? 'M Y' : 'M d, Y')) : 'N/A';
+                fputcsv($file, [
+                    $period,
+                    (float)$report->revenue,
+                    $report->payments_count,
+                    $report->subscriptions_count
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

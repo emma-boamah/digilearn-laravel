@@ -97,7 +97,7 @@
                                 <i class="fas fa-arrow-up mr-1"></i>+{{ $stats['new_users_this_week'] }} this week
                             </p>
                             <div class="sparkline-container w-16 h-4">
-                                <canvas id="users-sparkline" width="64" height="16"></canvas>
+                                <div id="users-sparkline" style="min-height: 16px;"></div>
                             </div>
                         </div>
                     </div>
@@ -119,7 +119,7 @@
                                 {{ number_format(($stats['online_users'] / $stats['total_users']) * 100, 1) }}% of total
                             </p>
                             <div class="sparkline-container w-16 h-4">
-                                <canvas id="online-sparkline" width="64" height="16"></canvas>
+                                <div id="online-sparkline" style="min-height: 16px;"></div>
                             </div>
                         </div>
                     </div>
@@ -143,7 +143,7 @@
                                 <i class="fas fa-arrow-up mr-1"></i>+{{ $revenueData['revenue_growth'] ?? 0 }}%
                             </p>
                             <div class="sparkline-container w-16 h-4">
-                                <canvas id="revenue-sparkline" width="64" height="16"></canvas>
+                                <div id="revenue-sparkline" style="min-height: 16px;"></div>
                             </div>
                         </div>
                     </div>
@@ -167,7 +167,7 @@
                                 number_format($revenueData['new_subscriptions_today'] ?? 0) }} new today
                             </p>
                             <div class="sparkline-container w-16 h-4">
-                                <canvas id="subscriptions-sparkline" width="64" height="16"></canvas>
+                                <div id="subscriptions-sparkline" style="min-height: 16px;"></div>
                             </div>
                         </div>
                     </div>
@@ -203,73 +203,9 @@
                 </div>
             </div>
 
-            @php
-            $trends = $revenueTrends ?? [];
-            $maxRevenue = collect($trends)->max('revenue') ?: 1;
-            $maxSubs = collect($trends)->max('subscriptions') ?: 1;
-            @endphp
-
-            <div
-                style="display: flex; align-items: flex-end; gap: 6px; height: 320px; padding: 20px 0 0 0; border-bottom: 2px solid #e5e7eb; position: relative;">
-                {{-- Y-axis labels --}}
-                <div
-                    style="position: absolute; left: -5px; top: 20px; bottom: 0; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none;">
-                    <span style="font-size: 10px; color: #9ca3af;">GH₵{{ number_format($maxRevenue, 0) }}</span>
-                    <span style="font-size: 10px; color: #9ca3af;">GH₵{{ number_format($maxRevenue / 2, 0) }}</span>
-                    <span style="font-size: 10px; color: #9ca3af;">GH₵0</span>
-                </div>
-
-                {{-- Grid lines --}}
-                <div style="position: absolute; left: 50px; right: 0; top: 20px; height: 1px; background: #f3f4f6;">
-                </div>
-                <div style="position: absolute; left: 50px; right: 0; top: 50%; height: 1px; background: #f3f4f6;">
-                </div>
-
-                {{-- Bars --}}
-                <div style="display: flex; align-items: flex-end; gap: 6px; flex: 1; margin-left: 55px; height: 100%;">
-                    @foreach($trends as $trend)
-                    @php
-                    $barHeight = $maxRevenue > 0 ? ($trend['revenue'] / $maxRevenue) * 100 : 0;
-                    $barHeight = max($barHeight, 2); // min height for visibility
-                    $subsHeight = $maxSubs > 0 ? ($trend['subscriptions'] / $maxSubs) * 80 : 0;
-                    $monthShort = \Illuminate\Support\Str::before($trend['month'], ' ');
-                    @endphp
-                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; position: relative;"
-                        class="revenue-bar-group">
-                        {{-- Tooltip --}}
-                        <div class="revenue-tooltip"
-                            style="display: none; position: absolute; bottom: calc({{ $barHeight }}% + 10px); left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 8px 12px; border-radius: 8px; font-size: 11px; white-space: nowrap; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.15);">
-                            <div style="font-weight: 600; margin-bottom: 2px;">{{ $trend['month'] }}</div>
-                            <div><span style="color: #93c5fd;">Revenue:</span> GH₵{{ number_format($trend['revenue'], 0)
-                                }}</div>
-                            <div><span style="color: #6ee7b7;">Subs:</span> {{ $trend['subscriptions'] }}</div>
-                            <div
-                                style="position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%) rotate(45deg); width: 8px; height: 8px; background: #1e293b;">
-                            </div>
-                        </div>
-                        {{-- Subscription indicator dot --}}
-                        @if($trend['subscriptions'] > 0)
-                        <div
-                            style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; margin-bottom: 4px; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);">
-                        </div>
-                        @endif
-                        {{-- Revenue bar --}}
-                        <div style="width: 100%; max-width: 40px; height: {{ $barHeight }}%; background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%); border-radius: 6px 6px 0 0; transition: all 0.2s ease; cursor: pointer; position: relative;"
-                            class="revenue-bar"></div>
-                    </div>
-                    @endforeach
-                </div>
-            </div>
-
-            {{-- X-axis labels --}}
-            <div style="display: flex; gap: 6px; margin-left: 55px; margin-top: 8px;">
-                @foreach($trends as $trend)
-                @php $monthShort = \Illuminate\Support\Str::before($trend['month'], ' '); @endphp
-                <div style="flex: 1; text-align: center; font-size: 11px; color: #6b7280; font-weight: 500;">{{
-                    $monthShort }}</div>
-                @endforeach
-            </div>
-
+            @php $trends = $revenueTrends ?? []; @endphp
+            <div id="revenueTrendChart" style="min-height: 400px; padding: 10px;"></div>
+            
             {{-- Summary row --}}
             <div style="display: flex; gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #f3f4f6;">
                 <div style="flex: 1; text-align: center; padding: 8px; background: #eff6ff; border-radius: 8px;">
@@ -305,11 +241,11 @@
                         <i class="fas fa-download"></i>
                     </button>
                 </div>
-                <div class="flex items-center">
-                    <div class="flex-1">
-                        <canvas id="subscriptionChart" width="200" height="200"></canvas>
+                <div class="flex flex-col sm:flex-row items-center justify-between">
+                    <div class="w-full sm:w-3/5">
+                        <div id="subscriptionChart" style="min-height: 250px;"></div>
                     </div>
-                    <div class="ml-6 space-y-3" id="subscription-legend">
+                    <div class="w-full sm:w-2/5 mt-4 sm:mt-0 sm:ml-4 space-y-4" id="subscription-legend">
                         <!-- Legend will be populated by JavaScript -->
                     </div>
                 </div>
@@ -957,6 +893,7 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
     // Initialize everything when DOM is loaded
     document.addEventListener('DOMContentLoaded', function () {
@@ -1000,129 +937,110 @@
 
     // Initialize sparklines for KPI cards
     function initializeSparklines() {
-        // Sample data for sparklines
         const sparklineData = {
-            users: [1200, 1250, 1180, 1320, 1280, 1350, 1420],
-            online: [85, 92, 78, 95, 88, 102, 98],
-            revenue: [8500, 9200, 8800, 9600, 9100, 9800, 10200],
-            subscriptions: [45, 48, 42, 52, 49, 55, 58]
+            'users-sparkline': { data: [1200, 1250, 1180, 1320, 1280, 1350, 1420], color: '#3b82f6' },
+            'online-sparkline': { data: [85, 92, 78, 95, 88, 102, 98], color: '#10b981' },
+            'revenue-sparkline': { data: [8500, 9200, 8800, 9600, 9100, 9800, 10200], color: '#10b981' },
+            'subscriptions-sparkline': { data: [45, 48, 42, 52, 49, 55, 58], color: '#8b5cf6' }
         };
 
-        // Create sparklines
-        Object.keys(sparklineData).forEach(key => {
-            const canvas = document.getElementById(key + '-sparkline');
-            if (canvas) {
-                createSparkline(canvas, sparklineData[key]);
-            }
+        Object.keys(sparklineData).forEach(id => {
+            const options = {
+                series: [{ data: sparklineData[id].data }],
+                chart: { type: 'area', height: 40, sparkline: { enabled: true } },
+                stroke: { curve: 'smooth', width: 2 },
+                fill: {
+                    type: 'gradient',
+                    gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.1 }
+                },
+                colors: [sparklineData[id].color],
+                tooltip: { fixed: { enabled: false }, x: { show: false }, y: { title: { formatter: () => '' } }, marker: { show: false } }
+            };
+            const chart = new ApexCharts(document.querySelector("#" + id), options);
+            chart.render();
         });
-    }
-
-    // Create sparkline chart
-    function createSparkline(canvas, data) {
-        const ctx = canvas.getContext('2d');
-        const width = canvas.width;
-        const height = canvas.height;
-
-        // Clear canvas
-        ctx.clearRect(0, 0, width, height);
-
-        // Find min/max
-        const min = Math.min(...data);
-        const max = Math.max(...data);
-        const range = max - min || 1;
-
-        // Draw line
-        ctx.strokeStyle = '#3b82f6';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-
-        data.forEach((value, index) => {
-            const x = (index / (data.length - 1)) * width;
-            const y = height - ((value - min) / range) * height;
-
-            if (index === 0) {
-                ctx.moveTo(x, y);
-            } else {
-                ctx.lineTo(x, y);
-            }
-        });
-
-        ctx.stroke();
     }
 
     // Initialize all charts
     function initializeCharts() {
         initializeSubscriptionChart();
+        initializeRevenueTrendChart();
+    }
+
+    // Initialize revenue trend chart
+    function initializeRevenueTrendChart() {
+        const trends = Object.values(@json($revenueTrends ?? []));
+        if (trends.length === 0) return;
+
+        const revenueOptions = {
+            series: [
+                { name: 'Revenue', type: 'area', data: trends.map(t => t.revenue) },
+                { name: 'Subscriptions', type: 'line', data: trends.map(t => t.subscriptions) }
+            ],
+            chart: { height: 400, type: 'line', toolbar: { show: false }, zoom: { enabled: false } },
+            stroke: { curve: 'smooth', width: [3, 2] },
+            markers: { size: 4, hover: { size: 6 } },
+            fill: { type: ['gradient', 'solid'], gradient: { opacityFrom: 0.4, opacityTo: 0.1 } },
+            colors: ['#3b82f6', '#10b981'],
+            xaxis: { categories: trends.map(t => t.month) },
+            yaxis: [
+                { title: { text: 'Revenue (GH₵)' }, labels: { formatter: (v) => v ? "GH₵" + v.toLocaleString() : "GH₵0" } },
+                { opposite: true, title: { text: 'Subscriptions' } }
+            ],
+            tooltip: { theme: 'light', shared: true, intersect: false },
+            grid: { borderColor: '#f1f5f9', strokeDashArray: 4 }
+        };
+        const chart = new ApexCharts(document.querySelector("#revenueTrendChart"), revenueOptions);
+        chart.render();
     }
 
     // Initialize subscription distribution chart
     function initializeSubscriptionChart() {
-        const ctx = document.getElementById('subscriptionChart');
-        if (!ctx) return;
+        const subscriptionData = Object.values(@json($subscriptionAnalytics ?? []));
+        if (subscriptionData.length === 0) return;
 
-        // Get data from PHP variables
-        const subscriptionData = {!! json_encode($subscriptionAnalytics ?? []) !!};
-    const labels = subscriptionData.map(item => item.name);
-    const data = subscriptionData.map(item => item.revenue);
-
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: data,
-                backgroundColor: [
-                    'rgba(59, 130, 246, 0.8)',
-                    'rgba(16, 185, 129, 0.8)',
-                    'rgba(245, 158, 11, 0.8)',
-                    'rgba(239, 68, 68, 0.8)',
-                    'rgba(139, 92, 246, 0.8)'
-                ],
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false // We'll use custom legend
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = ((context.parsed / total) * 100).toFixed(1);
-                            return context.label + ': GH₵' + context.parsed.toLocaleString() + ' (' + percentage + '%)';
-                        }
+        const options = {
+            series: subscriptionData.map(item => item.revenue),
+            chart: { type: 'donut', height: 300 },
+            labels: subscriptionData.map(item => item.name),
+            colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+            dataLabels: { enabled: false },
+            legend: { show: false },
+            tooltip: {
+                y: {
+                    formatter: function(val, { seriesIndex, w }) {
+                        const total = w.globals.series.reduce((a, b) => a + b, 0);
+                        const percentage = ((val / total) * 100).toFixed(1);
+                        return "GH₵" + val.toLocaleString() + " (" + percentage + "%)";
                     }
                 }
             }
-        }
-    });
-
-    // Create custom legend
-    createSubscriptionLegend(subscriptionData);
+        };
+        const chart = new ApexCharts(document.querySelector("#subscriptionChart"), options);
+        chart.render();
+        createSubscriptionLegend(subscriptionData);
     }
 
     // Create custom legend for subscription chart
     function createSubscriptionLegend(data) {
         const legendContainer = document.getElementById('subscription-legend');
         if (!legendContainer) return;
-
         const total = data.reduce((sum, item) => sum + item.revenue, 0);
+        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-        legendContainer.innerHTML = data.map(item => {
+        legendContainer.innerHTML = data.map((item, i) => {
             const percentage = ((item.revenue / total) * 100).toFixed(1);
             return `
-                <div class="flex items-center justify-between py-1">
-                    <div class="flex items-center">
-                        <div class="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
-                        <span class="text-sm font-medium text-gray-900">${item.name}</span>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-sm font-semibold text-gray-900">GH₵${item.revenue.toLocaleString()}</div>
-                        <div class="text-xs text-gray-500">${percentage}%</div>
+                <div class="flex items-start py-2 border-b border-gray-50 last:border-0 hover:bg-gray-50/50 rounded transition-colors px-1">
+                    <div class="w-3 h-3 rounded-full flex-shrink-0 mt-1 mr-2" style="background-color: ${colors[i % colors.length]}"></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-semibold text-gray-900 truncate">${item.name}</span>
+                            <span class="text-xs font-bold text-gray-700 ml-2">GH₵${item.revenue.toLocaleString()}</span>
+                        </div>
+                        <div class="text-[10px] text-gray-500 mt-0.5 font-medium uppercase tracking-wider">
+                            ${percentage}% of total revenue
+                        </div>
                     </div>
                 </div>
             `;
