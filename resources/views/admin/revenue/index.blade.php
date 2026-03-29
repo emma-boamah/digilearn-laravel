@@ -16,10 +16,22 @@
                     <div class="text-sm text-gray-500">
                         Last updated: {{ now()->format('M d, Y H:i') }}
                     </div>
-                    <button onclick="exportRevenueData()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
-                        <i class="fas fa-download mr-2"></i>Export Data
-                    </button>
-                    <button onclick="location.reload()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    @if($activeTab === 'revenue')
+                        <div class="flex items-center space-x-3">
+                            <a href="{{ route('admin.revenue.export-trends') }}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors inline-flex items-center shadow-sm">
+                                <i class="fas fa-download mr-2"></i>Export Trends
+                            </a>
+                            <div class="flex items-center px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg text-blue-700 text-xs font-semibold shadow-sm">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Up to 12-month trends
+                            </div>
+                        </div>
+                    @elseif($activeTab === 'payments')
+                        <a href="{{ route('admin.revenue.export-payments', ['format' => 'csv']) }}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors inline-flex items-center shadow-sm">
+                            <i class="fas fa-download mr-2"></i>Export All Payments
+                        </a>
+                    @endif
+                    <button onclick="location.reload()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
                         <i class="fas fa-sync-alt mr-2"></i>Refresh
                     </button>
                 </div>
@@ -173,7 +185,7 @@
             </div>
             <div class="p-6">
                 <div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-4">
-                    <canvas id="revenueChart" style="height: 400px; width: 100%;"></canvas>
+                    <div id="revenueChart" style="min-height: 400px; width: 100%;"></div>
                 </div>
             </div>
         </div>
@@ -750,7 +762,15 @@
                                 <p class="text-sm text-gray-600">Year-over-year performance</p>
                             </div>
                         </div>
+                        <a href="{{ route('admin.revenue.export', ['type' => 'annual']) }}" class="inline-flex items-center px-4 py-2 bg-white border border-purple-200 text-purple-700 text-sm font-bold rounded-xl hover:bg-purple-50 transition-all shadow-sm">
+                            <i class="fas fa-download mr-2"></i>
+                            Export CSV
+                        </a>
                     </div>
+                </div>
+                <!-- Annual Trend Chart -->
+                <div class="p-6 bg-gray-50/50 border-b border-gray-100">
+                    <div id="annualSummaryChart" style="min-height: 200px;"></div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-100">
@@ -799,7 +819,15 @@
                                 <p class="text-sm text-gray-600">Month-by-month performance</p>
                             </div>
                         </div>
+                        <a href="{{ route('admin.revenue.export', ['type' => 'monthly']) }}" class="inline-flex items-center px-4 py-2 bg-white border border-blue-200 text-blue-700 text-sm font-bold rounded-xl hover:bg-blue-50 transition-all shadow-sm">
+                            <i class="fas fa-download mr-2"></i>
+                            Export CSV
+                        </a>
                     </div>
+                </div>
+                <!-- Monthly Trend Chart -->
+                <div class="p-6 bg-gray-50/50 border-b border-gray-100">
+                    <div id="monthlySummaryChart" style="min-height: 250px;"></div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-100">
@@ -860,7 +888,15 @@
                                 <p class="text-sm text-gray-600">Week-by-week performance</p>
                             </div>
                         </div>
+                        <a href="{{ route('admin.revenue.export', ['type' => 'weekly']) }}" class="inline-flex items-center px-4 py-2 bg-white border border-green-200 text-green-700 text-sm font-bold rounded-xl hover:bg-green-50 transition-all shadow-sm">
+                            <i class="fas fa-download mr-2"></i>
+                            Export CSV
+                        </a>
                     </div>
+                </div>
+                <!-- Weekly Trend Chart -->
+                <div class="p-6 bg-gray-50/50 border-b border-gray-100">
+                    <div id="weeklySummaryChart" style="min-height: 250px;"></div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-100">
@@ -924,71 +960,120 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
     @if($activeTab === 'revenue')
-    // Revenue Trend Chart
-    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-    const revenueData = {!! json_encode($revenueTrends) !!};
-    const revenueChart = new Chart(revenueCtx, {
-        type: 'bar',
-        data: {
-            labels: revenueData.map(item => item.month),
-            datasets: [{
-                label: 'Revenue (GH₵)',
-                data: revenueData.map(item => item.revenue),
-                backgroundColor: 'rgba(59, 130, 246, 0.8)',
-                borderColor: 'rgb(59, 130, 246)',
-                borderWidth: 1,
-                borderRadius: 4,
-                borderSkipped: false,
-            }]
+    // ApexCharts Modern Revenue Trend
+    const trends = @json($revenueTrends);
+    const revenueDataArr = trends.map(t => t.revenue);
+    const labels = trends.map(t => t.month);
+    
+    const revenueOptions = {
+        series: [{
+            name: 'Revenue',
+            data: revenueDataArr
+        }],
+        chart: {
+            type: 'area',
+            height: 400,
+            toolbar: { show: false },
+            zoom: { enabled: false },
+            fontFamily: 'Inter, sans-serif',
+            dropShadow: {
+                enabled: true,
+                top: 10,
+                left: 0,
+                blur: 3,
+                color: '#4f46e5',
+                opacity: 0.1
+            }
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const index = context.dataIndex;
-                            const item = revenueData[index];
-                            return [
-                                `Revenue: GH₵${item.revenue.toLocaleString()}`,
-                                `New Subscriptions: ${item.subscriptions}`
-                            ];
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    },
-                    ticks: {
-                        callback: function(value) {
-                            return 'GH₵' + value.toLocaleString();
-                        }
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
-            },
-            onClick: (event, elements) => {
-                if (elements.length > 0) {
-                    const index = elements[0].index;
-                    filterChartsByMonth(revenueData[index].month);
+        colors: ['#4f46e5'],
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.45,
+                opacityTo: 0.05,
+                stops: [20, 100]
+            }
+        },
+        dataLabels: { enabled: false },
+        stroke: {
+            curve: 'smooth',
+            width: 3,
+            lineCap: 'round'
+        },
+        xaxis: {
+            categories: labels,
+            axisBorder: { show: false },
+            axisTicks: { show: false },
+            labels: {
+                style: {
+                    colors: '#64748b',
+                    fontSize: '12px'
                 }
             }
+        },
+        yaxis: {
+            labels: {
+                formatter: function (val) {
+                    return "GH₵" + val.toLocaleString();
+                },
+                style: {
+                    colors: '#64748b',
+                    fontSize: '12px'
+                }
+            }
+        },
+        grid: {
+            borderColor: '#f1f5f9',
+            strokeDashArray: 4,
+            padding: {
+                left: 20,
+                right: 20
+            }
+        },
+        markers: {
+            size: 0,
+            hover: {
+                size: 6,
+                sizeOffset: 3
+            }
+        },
+        tooltip: {
+            theme: 'light',
+            x: { show: true },
+            custom: function({ series, seriesIndex, dataPointIndex, w }) {
+                const val = series[seriesIndex][dataPointIndex];
+                const label = w.globals.labels[dataPointIndex];
+                let growthTxt = '';
+                let growthColor = 'text-green-600';
+                
+                if (dataPointIndex > 0) {
+                    const prev = series[seriesIndex][dataPointIndex - 1];
+                    const change = prev > 0 ? ((val - prev) / prev * 100).toFixed(1) : 0;
+                    const isPositive = change >= 0;
+                    growthTxt = `${isPositive ? '+' : ''}${change}%`;
+                    growthColor = isPositive ? 'text-green-600' : 'text-red-600';
+                    growthBg = isPositive ? 'bg-green-50' : 'bg-red-50';
+                }
+
+                return `
+                    <div class="p-3 bg-white shadow-xl border border-gray-100 rounded-lg">
+                        <div class="text-xs font-medium text-gray-500 mb-1">${label}</div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-lg font-bold text-gray-900">GH₵${val.toLocaleString()}</span>
+                            ${growthTxt ? `<span class="text-xs font-bold ${growthColor} px-1.5 py-0.5 rounded ${isPositive ? 'bg-green-50' : 'bg-red-50'}">${growthTxt}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
         }
-    });
+    };
+
+    window.revenueChart = new ApexCharts(document.querySelector("#revenueChart"), revenueOptions);
+    revenueChart.render();
 
     // Subscription Distribution Chart
     const subscriptionCtx = document.getElementById('subscriptionChart').getContext('2d');
@@ -1041,9 +1126,47 @@
 
     // Functions
     function updateChart(chartType, period) {
-        // Implementation for updating chart data based on period
-        console.log(`Updating ${chartType} chart for ${period}`);
-        // Here you would fetch new data and update the chart
+        if (chartType !== 'revenue' || !window.revenueChart) return;
+
+        let filteredTrends = [...trends];
+        const now = new Date();
+        const currentYear = now.getFullYear();
+
+        if (period === '7d') filteredTrends = trends.slice(-1);
+        else if (period === '30d') filteredTrends = trends.slice(-3);
+        else if (period === '90d') filteredTrends = trends.slice(-6);
+        else if (period === 'ytd') {
+            filteredTrends = trends.filter(t => {
+                const parts = t.month.split(' ');
+                return parts[1] == currentYear;
+            });
+        }
+        // 'all' uses full trends
+
+        const newSeries = [{
+            name: 'Revenue',
+            data: filteredTrends.map(t => t.revenue)
+        }];
+        
+        const newLabels = filteredTrends.map(t => t.month);
+
+        window.revenueChart.updateSeries(newSeries);
+        window.revenueChart.updateOptions({
+            xaxis: { categories: newLabels }
+        });
+
+        // Update button styles for this chart section
+        const chartWrapper = document.querySelector('#revenueChart').closest('.bg-white');
+        const buttons = chartWrapper.querySelectorAll('button[onclick^="updateChart(\'revenue\'"]');
+        buttons.forEach(btn => {
+            if (btn.getAttribute('onclick').includes(`'${period}'`)) {
+                btn.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+                btn.classList.remove('bg-white', 'text-gray-700', 'border-gray-200');
+            } else {
+                btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
+                btn.classList.add('bg-white', 'text-gray-700', 'border-gray-200');
+            }
+        });
     }
 
     function filterChartsByMonth(month) {
@@ -1075,7 +1198,7 @@
     }
 
     function exportRevenueData() {
-        window.location.href = '/admin/revenue/export';
+        window.location.href = "{{ route('admin.revenue.export-trends') }}";
     }
 
     function generateReport() {
@@ -1095,6 +1218,54 @@
         // Refresh chart data
         location.reload();
     }, 300000);
+    @endif
+
+    @if($activeTab === 'summary' && $summaryCharts)
+    // Initialize Summary tab charts
+    document.addEventListener('DOMContentLoaded', function() {
+        // Annual Chart
+        const annualData = Object.values(@json($summaryCharts['annual']));
+        if (annualData.length > 0) {
+            new ApexCharts(document.querySelector("#annualSummaryChart"), {
+                series: [{ name: 'Revenue', data: annualData.map(d => d.revenue) }],
+                chart: { type: 'bar', height: 200, toolbar: { show: false } },
+                colors: ['#8b5cf6'],
+                xaxis: { categories: annualData.map(d => d.label) },
+                yaxis: { labels: { formatter: (v) => "GH₵" + v.toLocaleString() } },
+                tooltip: { y: { formatter: (v) => "GH₵" + v.toLocaleString() } }
+            }).render();
+        }
+
+        // Monthly Chart
+        const monthlyData = Object.values(@json($summaryCharts['monthly']));
+        if (monthlyData.length > 0) {
+            new ApexCharts(document.querySelector("#monthlySummaryChart"), {
+                series: [{ name: 'Revenue', data: monthlyData.map(d => d.revenue) }],
+                chart: { type: 'area', height: 250, toolbar: { show: false } },
+                colors: ['#3b82f6'],
+                stroke: { curve: 'smooth', width: 3 },
+                fill: { type: 'gradient', gradient: { opacityFrom: 0.4, opacityTo: 0.1 } },
+                xaxis: { categories: monthlyData.map(d => d.label) },
+                yaxis: { labels: { formatter: (v) => "GH₵" + v.toLocaleString() } },
+                tooltip: { y: { formatter: (v) => "GH₵" + v.toLocaleString() } }
+            }).render();
+        }
+
+        // Weekly Chart
+        const weeklyData = Object.values(@json($summaryCharts['weekly']));
+        if (weeklyData.length > 0) {
+            new ApexCharts(document.querySelector("#weeklySummaryChart"), {
+                series: [{ name: 'Revenue', data: weeklyData.map(d => d.revenue) }],
+                chart: { type: 'area', height: 250, toolbar: { show: false } },
+                colors: ['#10b981'],
+                stroke: { curve: 'smooth', width: 3 },
+                fill: { type: 'gradient', gradient: { opacityFrom: 0.4, opacityTo: 0.1 } },
+                xaxis: { categories: weeklyData.map(d => d.label) },
+                yaxis: { labels: { formatter: (v) => "GH₵" + v.toLocaleString() } },
+                tooltip: { y: { formatter: (v) => "GH₵" + v.toLocaleString() } }
+            }).render();
+        }
+    });
     @endif
 
     @if($activeTab === 'payments' && $paymentAnalytics)
@@ -1449,7 +1620,7 @@
     }
 
     function exportPaymentsData() {
-        window.location.href = '/admin/payments/export';
+        window.location.href = "{{ route('admin.revenue.export-payments') }}";
     }
 
     // Filter payments table
