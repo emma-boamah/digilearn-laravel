@@ -58,6 +58,19 @@
                             <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-green-500 to-green-600 rounded-t"></div>
                         @endif
                     </a>
+                    <a href="{{ route('admin.revenue', ['tab' => 'summary']) }}"
+                       class="group relative py-4 px-6 font-semibold text-sm rounded-t-lg transition-all duration-200 ease-in-out cursor-pointer
+                       {{ $activeTab === 'summary'
+                           ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-500 shadow-sm'
+                           : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 border-b-2 border-transparent hover:border-gray-300' }}">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-file-invoice-dollar {{ $activeTab === 'summary' ? 'text-purple-600' : 'text-gray-400 group-hover:text-gray-600' }}"></i>
+                            <span>Summary Reports</span>
+                        </div>
+                        @if($activeTab === 'summary')
+                            <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-500 to-purple-600 rounded-t"></div>
+                        @endif
+                    </a>
                 </nav>
             </div>
         </div>
@@ -669,6 +682,11 @@
                     </tbody>
                 </table>
             </div>
+            @if(isset($paymentAnalytics['recent_payments']) && method_exists($paymentAnalytics['recent_payments'], 'links') && $paymentAnalytics['recent_payments']->hasPages())
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                    {{ $paymentAnalytics['recent_payments']->links() }}
+                </div>
+            @endif
         </div>
 
         <!-- Top Paying Users -->
@@ -716,6 +734,193 @@
             </div>
         </div>
         @endif
+
+        @if($activeTab === 'summary' && $summaryReports)
+        <div class="space-y-8">
+            <!-- Annual Summary -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                <div class="p-6 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-white">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-white">
+                                <i class="fas fa-calendar text-lg"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-semibold text-gray-900">Annual Revenue Summary</h2>
+                                <p class="text-sm text-gray-600">Year-over-year performance</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-100">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Year</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Revenue</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Payments</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">New Subscriptions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-50">
+                            @foreach($summaryReports['annual'] as $report)
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{ $report->period_date ? $report->period_date->format('Y') : 'N/A' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">GH₵{{ number_format($report->revenue, 2) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ number_format($report->payments_count) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ number_format($report->subscriptions_count) }}</td>
+                            </tr>
+                            @endforeach
+                            @if($summaryReports['annual']->isEmpty())
+                            <tr>
+                                <td colspan="4" class="px-6 py-10 text-center text-gray-500">No annual data aggregated yet.</td>
+                            </tr>
+                            @endif
+                        </tbody>
+                    </table>
+                </div>
+                @if($summaryReports['annual']->hasPages())
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                    {{ $summaryReports['annual']->links() }}
+                </div>
+                @endif
+            </div>
+
+            <!-- Monthly Summary -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                <div class="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-white">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white">
+                                <i class="fas fa-calendar-alt text-lg"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-semibold text-gray-900">Monthly Revenue Summary</h2>
+                                <p class="text-sm text-gray-600">Month-by-month performance</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-100">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Month</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Revenue</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Payments</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">New Subscriptions</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Top Plan</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-50">
+                            @foreach($summaryReports['monthly'] as $report)
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{ $report->period_date ? $report->period_date->format('M Y') : 'N/A' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">GH₵{{ number_format($report->revenue, 2) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ number_format($report->payments_count) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ number_format($report->subscriptions_count) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                    @php
+                                        $breakdown = $report->metadata['plan_breakdown'] ?? [];
+                                        if (!empty($breakdown)) {
+                                            arsort($breakdown);
+                                            echo array_key_first($breakdown);
+                                        } else {
+                                            echo 'N/A';
+                                        }
+                                    @endphp
+                                </td>
+                            </tr>
+                            @endforeach
+                            @if($summaryReports['monthly']->isEmpty())
+                            <tr>
+                                <td colspan="5" class="px-6 py-10 text-center text-gray-500">No monthly data aggregated yet.</td>
+                            </tr>
+                            @endif
+                        </tbody>
+                    </table>
+                </div>
+                @if($summaryReports['monthly']->hasPages())
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                    {{ $summaryReports['monthly']->links() }}
+                </div>
+                @endif
+            </div>
+
+            <!-- Weekly Summary -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
+                <div class="p-6 border-b border-gray-100 bg-gradient-to-r from-green-50 to-white">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white">
+                                <i class="fas fa-layer-group text-lg"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-semibold text-gray-900">Weekly Revenue Summary</h2>
+                                <p class="text-sm text-gray-600">Week-by-week performance</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-100">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Week Starting</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Revenue</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Payments</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">New Subscriptions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-50">
+                            @foreach($summaryReports['weekly'] as $report)
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{ $report->period_date ? $report->period_date->format('M d, Y') : 'N/A' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">GH₵{{ number_format($report->revenue, 2) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ number_format($report->payments_count) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ number_format($report->subscriptions_count) }}</td>
+                            </tr>
+                            @endforeach
+                            @if($summaryReports['weekly']->isEmpty())
+                            <tr>
+                                <td colspan="4" class="px-6 py-10 text-center text-gray-500">No weekly data aggregated yet.</td>
+                            </tr>
+                            @endif
+                        </tbody>
+                    </table>
+                </div>
+                @if($summaryReports['weekly']->hasPages())
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                    {{ $summaryReports['weekly']->links() }}
+                </div>
+                @endif
+            </div>
+            
+            <!-- Quick Catchup Action -->
+            <div class="flex flex-col items-center py-4 pb-8">
+                <form id="recalculateForm" action="{{ route('admin.revenue.aggregate') }}" method="POST">
+                    @csrf
+                    <button id="recalculateBtn" type="submit" class="group relative inline-flex items-center px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg hover:shadow-indigo-200 active:scale-95 overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <i class="fas fa-sync-alt mr-2 group-hover:rotate-180 transition-transform duration-500"></i>
+                        <span>Recalculate All Summaries (Historical)</span>
+                    </button>
+                </form>
+                
+                <div id="recalculateLoading" class="hidden mt-6 text-center animate-pulse">
+                    <div class="inline-flex items-center px-6 py-3 bg-indigo-50 text-indigo-700 rounded-2xl border border-indigo-100 shadow-sm">
+                        <div class="flex flex-col items-center">
+                            <div class="flex items-center mb-1">
+                                <i class="fas fa-history mr-2 text-indigo-500"></i>
+                                <span class="font-bold italic">Processing historical data...</span>
+                            </div>
+                            <span class="text-xs text-indigo-600 opaicty-75">This may take up to 30 seconds. Please relax and do not refresh the page.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
     </div>
 </div>
 
@@ -752,8 +957,7 @@
                             const item = revenueData[index];
                             return [
                                 `Revenue: GH₵${item.revenue.toLocaleString()}`,
-                                `New Subs: ${item.new_subs || Math.floor(Math.random() * 50) + 10}`,
-                                `Churn: ${item.churn || Math.floor(Math.random() * 10) + 1}`
+                                `New Subscriptions: ${item.subscriptions}`
                             ];
                         }
                     }
@@ -1267,5 +1471,25 @@
         });
     });
     @endif
+    // Recalculate Form Handling
+    const recalculateForm = document.getElementById('recalculateForm');
+    if (recalculateForm) {
+        recalculateForm.addEventListener('submit', function() {
+            const btn = document.getElementById('recalculateBtn');
+            const loading = document.getElementById('recalculateLoading');
+            
+            if (btn) {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+                btn.querySelector('i').classList.add('fa-spin');
+                btn.querySelector('span').textContent = 'Processing...';
+            }
+            
+            if (loading) {
+                loading.classList.remove('hidden');
+                loading.classList.add('flex');
+            }
+        });
+    }
 </script>
 @endsection
