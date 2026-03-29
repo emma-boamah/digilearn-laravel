@@ -484,7 +484,7 @@ $isFromLessonView = $referrer && str_contains($referrer, '/dashboard/lesson/');
     }
 
     .modal-close:hover {
-        background: #f1f5f9;
+        background: var(--white);
         color: #475569;
     }
 
