@@ -43,6 +43,17 @@ class PaymentController extends Controller
         // Calculate amount based on duration
         $amount = $this->calculateAmount($plan, $request->duration);
 
+        // Check if user already had a trial
+        if ($request->duration === 'trial') {
+            $hasHadTrial = UserSubscription::where('user_id', $user->id)
+                ->whereNotNull('trial_ends_at')
+                ->exists();
+
+            if ($hasHadTrial) {
+                return back()->with('error', 'You have already used your trial period. Please choose a paid plan.');
+            }
+        }
+
         if ($amount == 0 && $request->duration !== 'trial') {
             return back()->withErrors(['error' => 'Invalid payment amount']);
         }

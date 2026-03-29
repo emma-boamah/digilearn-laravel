@@ -127,19 +127,22 @@ class User extends Authenticatable implements MustVerifyEmail
     public function currentSubscription()
     {
         return $this->hasOne(UserSubscription::class)
-                    ->whereIn('status', ['active', 'trial', 'grace_period'])
                     ->where(function ($query) {
-                        $query->whereNull('expires_at')
-                              ->orWhere('expires_at', '>', now())
-                              ->orWhere(function ($q) {
-                                  // Grace period: expires_at is past but grace_period_ends_at is future
-                                  $q->where('status', 'grace_period')
-                                    ->where('grace_period_ends_at', '>', now());
-                              });
-                    })
-                    ->where(function ($query) {
-                        $query->whereNull('trial_ends_at')
-                              ->orWhere('trial_ends_at', '>', now());
+                        $query->where(function ($active) {
+                            $active->where('status', 'active')
+                                   ->where(function ($dateQuery) {
+                                       $dateQuery->whereNull('expires_at')
+                                                 ->orWhere('expires_at', '>', now());
+                                   });
+                        })->orWhere(function ($trial) {
+                            $trial->where('status', 'trial')
+                                  ->whereNotNull('trial_ends_at')
+                                  ->where('trial_ends_at', '>', now());
+                        })->orWhere(function ($grace) {
+                            $grace->where('status', 'grace_period')
+                                  ->whereNotNull('grace_period_ends_at')
+                                  ->where('grace_period_ends_at', '>', now());
+                        });
                     })
                     ->with('pricingPlan')
                     ->orderBy('created_at', 'desc');
