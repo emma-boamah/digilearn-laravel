@@ -2905,8 +2905,11 @@ class AdminController extends Controller
         // Get payment analytics if payments tab is active
         $paymentAnalytics = null;
         if ($activeTab === 'payments') {
-            $paymentAnalytics = $this->getPaymentAnalytics();
+            $paymentAnalytics = $this->getPaymentAnalytics($request);
         }
+
+        // Get summary reports if that tab is active
+        $summaryReports = $activeTab === 'summary' ? $this->getSummaryReports($request) : null;
 
         Log::channel('security')->info('revenue_analytics_accessed', [
             'admin_id' => Auth::id(),
@@ -2922,6 +2925,7 @@ class AdminController extends Controller
             'revenueTrends',
             'topPlans',
             'paymentAnalytics',
+            'summaryReports',
             'activeTab'
         ));
     }
@@ -3022,32 +3026,39 @@ class AdminController extends Controller
     }
 
     /**
+     * Get paginated summary reports
+     */
+    private function getSummaryReports(\Illuminate\Http\Request $request): array
+    {
+        return [
+            'annual' => \App\Models\RevenueSummary::annual()->orderBy('period_date', 'desc')->paginate(5, ['*'], 'annual_page')->appends($request->all()),
+            'monthly' => \App\Models\RevenueSummary::monthly()->orderBy('period_date', 'desc')->paginate(12, ['*'], 'monthly_page')->appends($request->all()),
+            'weekly' => \App\Models\RevenueSummary::weekly()->orderBy('period_date', 'desc')->paginate(10, ['*'], 'weekly_page')->appends($request->all()),
+        ];
+    }
+
+    /**
      * Get revenue trends for charts
      */
     private function getRevenueTrends()
     {
-        $data = [];
-        for ($i = 11; $i >= 0; $i--) {
-            $date = now()->subMonths($i);
+        $trends = \App\Models\RevenueSummary::monthly()
+            ->orderBy('period_date', 'desc')
+            ->limit(12)
+            ->get();
 
-            // Get revenue for this month
-            $revenue = \App\Models\Payment::where('status', 'success')
-                ->whereYear('paid_at', $date->year)
-                ->whereMonth('paid_at', $date->month)
-                ->sum('amount');
-
-            // Get subscription count for this month
-            $subscriptions = \App\Models\UserSubscription::whereYear('created_at', $date->year)
-                ->whereMonth('created_at', $date->month)
-                ->count();
-
-            $data[] = [
-                'month' => $date->format('M Y'),
-                'revenue' => (float) $revenue,
-                'subscriptions' => $subscriptions
-            ];
+        if ($trends->isEmpty()) {
+            // Fallback for empty table
+            return [];
         }
-        return $data;
+
+        return $trends->reverse()->map(function($item) {
+            return [
+                'month' => $item->period_date->format('M Y'),
+                'revenue' => (float) $item->revenue,
+                'subscriptions' => $item->subscriptions_count
+            ];
+        })->values()->toArray();
     }
 
     /**
@@ -3099,7 +3110,7 @@ class AdminController extends Controller
     /**
      * Get payment analytics data
      */
-    private function getPaymentAnalytics()
+    private function getPaymentAnalytics(Request $request)
     {
         // Payment status distribution
         $statusDistribution = \App\Models\Payment::selectRaw('status, COUNT(*) as count')
@@ -3136,12 +3147,11 @@ class AdminController extends Controller
         // Payment metadata analytics
         $metadataAnalytics = $this->getPaymentMetadataAnalytics();
 
-        // Recent payments
+        // Recent payments with pagination
         $recentPayments = \App\Models\Payment::with(['user:id,name,email,avatar,google_avatar', 'pricingPlan:id,name'])
             ->orderBy('created_at', 'desc')
-            ->limit(50)
-            ->get()
-            ->map(function ($payment) {
+            ->paginate(20)
+            ->through(function ($payment) {
                 return [
                     'id' => $payment->id,
                     'user_name' => $payment->user->name ?? 'Unknown',
@@ -3158,6 +3168,9 @@ class AdminController extends Controller
                     'paid_at' => $payment->paid_at ? $payment->paid_at->format('M d, Y H:i') : null,
                 ];
             });
+        
+        // Ensure pagination links use the correct tab and other query params
+        $recentPayments->appends($request->all());
 
         // Top paying users
         $topPayingUsers = \App\Models\Payment::where('status', 'success')
@@ -3223,6 +3236,26 @@ class AdminController extends Controller
             'durations' => $durations,
             'plan_names' => $planNames,
         ];
+    }
+
+    /**
+     * Manually trigger revenue aggregation
+     */
+    public function aggregateRevenue(Request $request)
+    {
+        try {
+            // Run the aggregation for the last year to be safe
+            \Illuminate\Support\Facades\Artisan::call('app:aggregate-revenue', ['--back' => 365]);
+            
+            return back()->with('success', 'Revenue summaries recalculated successfully.');
+        } catch (\Exception $e) {
+            Log::error('failed_to_aggregate_revenue', [
+                'admin_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
+            
+            return back()->with('error', 'Failed to recalculate summaries: ' . $e->getMessage());
+        }
     }
 
     /**
