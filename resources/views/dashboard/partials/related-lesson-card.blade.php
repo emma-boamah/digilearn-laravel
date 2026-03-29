@@ -19,6 +19,18 @@
     .related-save-btn {
         margin-left: 0 !important;
     }
+    .lesson-duration {
+        position: absolute;
+        bottom: 0.5rem;
+        right: 0.5rem;
+        background-color: rgba(0, 0, 0, 0.8);
+        color: #ffffff;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        z-index: 10;
+    }
 </style>
 @endpushonce
 
@@ -62,6 +74,10 @@
                     @endif
                 @endforeach
             </div>
+        @endif
+        
+        @if(!empty($lesson['duration']) && ($lesson['video_source'] ?? 'local') !== 'none')
+            <div class="lesson-duration">{{ $lesson['duration'] }}</div>
         @endif
         
         @if($isPreview)

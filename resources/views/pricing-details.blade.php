@@ -2,11 +2,10 @@
 
 @section('content')
 <style nonce="{{ request()->attributes->get('csp_nonce') }}">
-
     li {
         list-style: none;
     }
-    
+
     /* Pricing page specific styles */
     .pricing-hero {
         position: relative;
@@ -112,7 +111,7 @@
 
     .pricing-plan-wrapper {
         background-color: var(--white);
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--white);
         border-radius: 1rem;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         overflow: hidden;
@@ -232,6 +231,7 @@
         from {
             opacity: 0;
         }
+
         to {
             opacity: 1;
         }
@@ -255,6 +255,7 @@
         from {
             transform: translateY(100vh);
         }
+
         to {
             transform: translateY(0);
         }
@@ -592,7 +593,7 @@
             border-bottom: none;
             padding: 0;
         }
-        
+
         .pricing-tab {
             border-bottom: 2px solid #e5e7eb;
             padding-bottom: 1rem;
@@ -755,96 +756,112 @@
         <!-- Pricing Tabs (Desktop) -->
         <div class="pricing-tabs">
             @foreach($plans as $plan)
-                <button class="pricing-tab {{ $loop->first ? 'active' : '' }}" data-plan="{{ $plan->slug }}">{{ $plan->name }}</button>
+            <button class="pricing-tab {{ $loop->first ? 'active' : '' }}" data-plan="{{ $plan->slug }}">{{ $plan->name
+                }}</button>
             @endforeach
         </div>
 
         <!-- Desktop Pricing Plans -->
         <div class="pricing-plan-container">
             @foreach($plans as $plan)
-                <div id="{{ $plan->slug }}-plan" class="pricing-plan-wrapper {{ $loop->first ? 'active' : '' }}">
-                    <div class="pricing-plan-grid">
-                        <div class="plan-features-section">
-                            <div class="plan-header">
-                                <div class="plan-name">{{ $plan->name }}</div>
-                            </div>
-
-                            <ul class="plan-features">
-                                @if(is_array($plan->features))
-                                    @foreach($plan->features as $index => $feature)
-                                        <li>
-                                            <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                            </svg>
-                                            <div class="feature-text">
-                                                <div class="feature-title">{{ $feature }}</div>
-                                                <div class="feature-description">Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides</div>
-                                            </div>
-                                        </li>
-                                    @endforeach
-                                @else
-                                    <li>
-                                        <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                        </svg>
-                                        <div class="feature-text">
-                                            <div class="feature-title">{{ $plan->features }}</div>
-                                            <div class="feature-description">Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides</div>
-                                        </div>
-                                    </li>
-                                @endif
-                            </ul>
+            <div id="{{ $plan->slug }}-plan" class="pricing-plan-wrapper {{ $loop->first ? 'active' : '' }}">
+                <div class="pricing-plan-grid">
+                    <div class="plan-features-section">
+                        <div class="plan-header">
+                            <div class="plan-name">{{ $plan->name }}</div>
                         </div>
 
-                        <div class="plan-duration-section">
-                            <form class="duration-form">
-                                <div class="duration-option">
-                                    <input type="radio" id="{{ $plan->slug }}-month" name="{{ $plan->slug }}-duration" value="month" class="duration-radio" checked>
-                                    <label for="{{ $plan->slug }}-month" class="duration-label-wrapper">
-                                        <div class="duration-info">
-                                            <div class="duration-label">1 month</div>
-                                            <div class="duration-price">
-                                                {{ $plan->getFormattedPriceForDuration('month') }}
-                                                @if($plan->getPriceForDuration('month') !== $plan->price)
-                                                    <span class="strikethrough-price">{{ $plan->currency }} {{ number_format($plan->price, 2) }}</span>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </label>
+                        <ul class="plan-features">
+                            @if(is_array($plan->features))
+                            @foreach($plan->features as $index => $feature)
+                            <li>
+                                <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg>
+                                <div class="feature-text">
+                                    <div class="feature-title">{{ $feature }}</div>
+                                    <div class="feature-description">Access to unlimited learning materials such as
+                                        demonstration videos, interactive videos presenting various subjects, learning
+                                        objectives, study guides</div>
                                 </div>
-                                @foreach($plan->discount_tiers ?? [] as $tier)
-                                    @php
-                                        $months = $tier['duration_months'] ?? 0;
-                                        $durationKey = $months . 'month';
-                                        $discountedPrice = $plan->getFormattedPriceForDuration($durationKey);
-                                        $originalPrice = $plan->currency . ' ' . number_format($plan->price * $months, 2);
-                                    @endphp
-                                    <div class="duration-option">
-                                        <input type="radio" id="{{ $plan->slug }}-{{ $durationKey }}" name="{{ $plan->slug }}-duration" value="{{ $durationKey }}" class="duration-radio">
-                                        <label for="{{ $plan->slug }}-{{ $durationKey }}" class="duration-label-wrapper">
-                                            <div class="duration-info">
-                                                <div class="duration-label">{{ $months }} months</div>
-                                                <div class="duration-price">
-                                                    {{ $discountedPrice }}
-                                                    @if($discountedPrice !== $originalPrice)
-                                                        <span style="text-decoration: line-through; color: #6b7280; font-size: 0.875rem;">{{ $originalPrice }}</span>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </label>
+                            </li>
+                            @endforeach
+                            @else
+                            <li>
+                                <svg class="feature-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg>
+                                <div class="feature-text">
+                                    <div class="feature-title">{{ $plan->features }}</div>
+                                    <div class="feature-description">Access to unlimited learning materials such as
+                                        demonstration videos, interactive videos presenting various subjects, learning
+                                        objectives, study guides</div>
+                                </div>
+                            </li>
+                            @endif
+                        </ul>
+                    </div>
+
+                    <div class="plan-duration-section">
+                        <form class="duration-form">
+                            <div class="duration-option">
+                                <input type="radio" id="{{ $plan->slug }}-month" name="{{ $plan->slug }}-duration"
+                                    value="month" class="duration-radio" checked>
+                                <label for="{{ $plan->slug }}-month" class="duration-label-wrapper">
+                                    <div class="duration-info">
+                                        <div class="duration-label">1 month</div>
+                                        <div class="duration-price">
+                                            {{ $plan->getFormattedPriceForDuration('month') }}
+                                            @if($plan->getPriceForDuration('month') !== $plan->price)
+                                            <span class="strikethrough-price">{{ $plan->currency }} {{
+                                                number_format($plan->price, 2) }}</span>
+                                            @endif
+                                        </div>
                                     </div>
-                                @endforeach
-                                @auth
-                                    <button type="submit" class="purchase-btn-main" onclick="initiatePayment(this)">Purchase</button>
-                                @else
-                                    <a href="{{ route('login', ['redirect_to' => url()->full()]) }}" class="purchase-btn-main login-link">Login to Purchase</a>
-                                @endauth
-                            </form>
-                        </div>
+                                </label>
+                            </div>
+                            @foreach($plan->discount_tiers ?? [] as $tier)
+                            @php
+                            $months = $tier['duration_months'] ?? 0;
+                            $durationKey = $months . 'month';
+                            $discountedPrice = $plan->getFormattedPriceForDuration($durationKey);
+                            $originalPrice = $plan->currency . ' ' . number_format($plan->price * $months, 2);
+                            @endphp
+                            <div class="duration-option">
+                                <input type="radio" id="{{ $plan->slug }}-{{ $durationKey }}"
+                                    name="{{ $plan->slug }}-duration" value="{{ $durationKey }}" class="duration-radio">
+                                <label for="{{ $plan->slug }}-{{ $durationKey }}" class="duration-label-wrapper">
+                                    <div class="duration-info">
+                                        <div class="duration-label">{{ $months }} months</div>
+                                        <div class="duration-price">
+                                            {{ $discountedPrice }}
+                                            @if($discountedPrice !== $originalPrice)
+                                            <span
+                                                style="text-decoration: line-through; color: #6b7280; font-size: 0.875rem;">{{
+                                                $originalPrice }}</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                            @endforeach
+                            @auth
+                            <button type="submit" class="purchase-btn-main"
+                                onclick="initiatePayment(this)">Purchase</button>
+                            @else
+                            <a href="{{ route('login', ['redirect_to' => url()->full()]) }}"
+                                class="purchase-btn-main login-link">Login to Purchase</a>
+                            @endauth
+                        </form>
                     </div>
                 </div>
+            </div>
             @endforeach
         </div>
 
@@ -886,9 +903,10 @@
 
     <div class="modal-footer">
         @auth
-            <button class="modal-purchase-btn" onclick="initiateModalPayment()">Next: Make Payment</button>
+        <button class="modal-purchase-btn" onclick="initiateModalPayment()">Next: Make Payment</button>
         @else
-            <a href="{{ route('login', ['redirect_to' => url()->full()]) }}" class="modal-purchase-btn modal-login-link">Login to Purchase</a>
+        <a href="{{ route('login', ['redirect_to' => url()->full()]) }}"
+            class="modal-purchase-btn modal-login-link">Login to Purchase</a>
         @endauth
     </div>
 </div>
@@ -897,23 +915,23 @@
 <script src="https://js.paystack.co/v1/inline.js"></script>
 @php
 $plansJson = $plans->map(function($plan) {
-    $formattedPrices = [
-        'month' => $plan->getFormattedPriceForDuration('month'),
-    ];
-    if ($plan->discount_tiers) {
-        foreach ($plan->discount_tiers as $tier) {
-            $months = $tier['duration_months'] ?? 0;
-            $durationKey = $months . 'month';
-            $formattedPrices[$durationKey] = $plan->getFormattedPriceForDuration($durationKey);
-        }
-    }
-    return [
-        'slug' => $plan->slug,
-        'name' => $plan->name,
-        'features' => $plan->features,
-        'formatted_prices' => $formattedPrices,
-        'discount_tiers' => $plan->discount_tiers,
-    ];
+$formattedPrices = [
+'month' => $plan->getFormattedPriceForDuration('month'),
+];
+if ($plan->discount_tiers) {
+foreach ($plan->discount_tiers as $tier) {
+$months = $tier['duration_months'] ?? 0;
+$durationKey = $months . 'month';
+$formattedPrices[$durationKey] = $plan->getFormattedPriceForDuration($durationKey);
+}
+}
+return [
+'slug' => $plan->slug,
+'name' => $plan->name,
+'features' => $plan->features,
+'formatted_prices' => $formattedPrices,
+'discount_tiers' => $plan->discount_tiers,
+];
 });
 @endphp
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
@@ -996,12 +1014,12 @@ $plansJson = $plans->map(function($plan) {
     }
 
     // Pricing tab functionality (Desktop)
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const tabs = document.querySelectorAll('.pricing-tab');
         const plans = document.querySelectorAll('.pricing-plan-wrapper');
 
         tabs.forEach(tab => {
-            tab.addEventListener('click', function() {
+            tab.addEventListener('click', function () {
                 tabs.forEach(t => t.classList.remove('active'));
                 this.classList.add('active');
                 plans.forEach(plan => plan.style.display = 'none');
@@ -1021,7 +1039,7 @@ $plansJson = $plans->map(function($plan) {
         const modalTabs = document.querySelectorAll('.modal-tab');
 
         // Open modal
-        openBtn.addEventListener('click', function() {
+        openBtn.addEventListener('click', function () {
             modal.classList.add('active');
             overlay.classList.add('active');
             document.body.style.overflow = 'hidden';
@@ -1039,7 +1057,7 @@ $plansJson = $plans->map(function($plan) {
 
         // Modal tab switching
         modalTabs.forEach(tab => {
-            tab.addEventListener('click', function() {
+            tab.addEventListener('click', function () {
                 const targetTab = this.getAttribute('data-tab');
 
                 modalTabs.forEach(t => t.classList.remove('active'));
@@ -1054,14 +1072,14 @@ $plansJson = $plans->map(function($plan) {
         });
 
         // Close modal with Escape key
-        document.addEventListener('keydown', function(event) {
+        document.addEventListener('keydown', function (event) {
             if (event.key === 'Escape' && modal.classList.contains('active')) {
                 closeModal();
             }
         });
 
         // Reset button states when page is shown (handles back button navigation)
-        window.addEventListener('pageshow', function(event) {
+        window.addEventListener('pageshow', function (event) {
             // Reset modal purchase button
             const modalBtn = document.querySelector('.modal-purchase-btn');
             if (modalBtn && modalBtn.disabled) {
@@ -1100,22 +1118,22 @@ $plansJson = $plans->map(function($plan) {
                 duration: duration
             })
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                window.location.href = data.authorization_url;
-            } else {
-                alert(data.message || 'Payment initiation failed');
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = data.authorization_url;
+                } else {
+                    alert(data.message || 'Payment initiation failed');
+                    button.disabled = false;
+                    button.textContent = 'Purchase';
+                }
+            })
+            .catch(error => {
+                console.error('Payment error:', error);
+                alert('An error occurred. Please try again.');
                 button.disabled = false;
                 button.textContent = 'Purchase';
-            }
-        })
-        .catch(error => {
-            console.error('Payment error:', error);
-            alert('An error occurred. Please try again.');
-            button.disabled = false;
-            button.textContent = 'Purchase';
-        });
+            });
     }
 
     function initiateModalPayment() {
@@ -1136,22 +1154,22 @@ $plansJson = $plans->map(function($plan) {
                 duration: duration
             })
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                window.location.href = data.authorization_url;
-            } else {
-                alert(data.message || 'Payment initiation failed');
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = data.authorization_url;
+                } else {
+                    alert(data.message || 'Payment initiation failed');
+                    button.disabled = false;
+                    button.textContent = 'Purchase';
+                }
+            })
+            .catch(error => {
+                console.error('Payment error:', error);
+                alert('An error occurred. Please try again.');
                 button.disabled = false;
                 button.textContent = 'Purchase';
-            }
-        })
-        .catch(error => {
-            console.error('Payment error:', error);
-            alert('An error occurred. Please try again.');
-            button.disabled = false;
-            button.textContent = 'Purchase';
-        });
+            });
     }
 </script>
 @endsection
