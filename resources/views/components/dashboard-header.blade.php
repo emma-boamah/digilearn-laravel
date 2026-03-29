@@ -27,7 +27,7 @@
         display: flex;
         align-items: center;
         height: 60px;
-        background-color: rgba(255, 255, 255, 0.8);
+        background-color: var(--white);
         /* More transparent */
         backdrop-filter: blur(12px) saturate(180%);
         /* Enhanced glassmorphism */
