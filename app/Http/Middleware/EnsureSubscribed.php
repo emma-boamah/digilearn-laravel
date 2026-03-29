@@ -19,6 +19,15 @@ class EnsureSubscribed
     {
         $user = Auth::user();
 
+        // Debugging
+        \Illuminate\Support\Facades\Log::info('EnsureSubscribed check', [
+            'user_id' => $user->id ?? 'guest',
+            'is_superuser' => $user->is_superuser ?? false,
+            'has_active_sub' => $user ? $user->hasActiveSubscription() : false,
+            'is_in_trial' => $user ? $user->isInTrial() : false,
+            'url' => $request->fullUrl()
+        ]);
+
         // Bypass for superusers or users with active/trial subscriptions
         if ($user && ($user->is_superuser || $user->hasActiveSubscription() || $user->isInTrial())) {
             return $next($request);

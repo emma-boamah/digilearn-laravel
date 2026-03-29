@@ -33,6 +33,11 @@ class QuizController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+        
+        Log::info('QuizController@index hit', [
+            'user_id' => $user->id ?? 'guest',
+            'url' => $request->fullUrl()
+        ]);
         $levelGroups = \App\Models\LevelGroup::with('levels')->orderBy('display_order')->get();
         
         $context = $request->query('context', 'all');
