@@ -254,6 +254,13 @@ number, ShoutOutGH email')
         </div>
         @endif
 
+        @if(session('error'))
+        <div class="error-msg"
+            style="padding: 1rem; margin: 1rem; background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; border-radius: 0;">
+            {{ session('error') }}
+        </div>
+        @endif
+
         @if($errors->any())
         <div class="error-msg"
             style="padding: 1rem; margin: 1rem; background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; border-radius: 0;">
@@ -368,3 +375,20 @@ number, ShoutOutGH email')
     </div>
 </section>
 @endsection
+
+@push('scripts')
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.success-msg, .error-msg');
+        alerts.forEach(alert => {
+            setTimeout(() => {
+                alert.style.transition = 'opacity 1s ease';
+                alert.style.opacity = '0';
+                setTimeout(() => {
+                    alert.remove();
+                }, 1000);
+            }, 5000);
+        });
+    });
+</script>
+@endpush

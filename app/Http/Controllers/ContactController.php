@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ContactFormMail;
+use App\Models\User;
+use App\Notifications\AdminNotification;
+use Illuminate\Support\Facades\Log;
 
 class ContactController extends Controller
 {
@@ -28,9 +31,21 @@ class ContactController extends Controller
             'phone' => $user->phone,
         ]);
 
-        Mail::to('contact@shoutoutgh.com')->send(new ContactFormMail($data));
+        try {
+            Mail::to('contact@shoutoutgh.com')->send(new ContactFormMail($data));
+            return redirect()->route('contact')->with('success', 'Thank you for your message. We will get back to you soon!');
+        } catch (\Exception $e) {
+            Log::error('Mail API error during contact submission: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error_details' => $e->getMessage()
+            ]);
 
-        return redirect()->route('contact')->with('success', 'Thank you for your message. We will get back to you soon!');
+            // Notify admins
+            $this->notifyAdminsOfMailFailure($user, 'Contact Form', $data['message']);
+
+            return redirect()->route('contact')->with('error', 'Failed to submit message. Please try again later.');
+        }
     }
 
     public function submitFeedback(Request $request)
@@ -44,8 +59,39 @@ class ContactController extends Controller
             'email' => $user->email,
         ]);
 
-        Mail::to('contact@shoutoutgh.com')->send(new ContactFormMail($data));
+        try {
+            Mail::to('contact@shoutoutgh.com')->send(new ContactFormMail($data));
+            return redirect()->route('contact')->with('success', 'Thank you for your feedback!');
+        } catch (\Exception $e) {
+            Log::error('Mail API error during feedback submission: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error_details' => $e->getMessage()
+            ]);
 
-        return redirect()->route('contact')->with('success', 'Thank you for your feedback!');
+            // Notify admins
+            $this->notifyAdminsOfMailFailure($user, 'Feedback Form', $data['feedback']);
+
+            return redirect()->route('contact')->with('error', 'Failed to submit feedback. Please try again later.');
+        }
+    }
+
+    /**
+     * Notify admins of a mail service failure.
+     */
+    private function notifyAdminsOfMailFailure($user, $source, $content)
+    {
+        $admins = User::where('is_superuser', true)
+            ->orWhereHas('roles', function($q) {
+                $q->whereIn('name', ['super-admin', 'restricted-admin']);
+            })
+            ->get();
+
+        $title = "Mail Service Failure: {$source}";
+        $message = "A mail submission from {$user->name} ({$user->email}) failed due to a service error (likely Zoho credits exhausted). Content: " . substr($content, 0, 100) . "...";
+
+        foreach ($admins as $admin) {
+            $admin->notify(new AdminNotification($title, $message));
+        }
     }
 }
