@@ -121,15 +121,108 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/main', [DashboardController::class , 'main'])->name('dashboard.main');
     Route::get('/dashboard/change-level', [DashboardController::class , 'levelSelection'])->name('dashboard.change-level');
 
-    // Routes requiring active subscription
+    // Profile & Settings (Unrestricted - Auth only)
+    Route::get('/profile', [ProfileController::class , 'show'])->name('profile.show');
+    Route::get('/settings', [ProfileController::class , 'settings'])->name('settings');
+    Route::get('/settings/notifications', [App\Http\Controllers\ProfileController::class , 'notifications'])->name('settings.notifications');
+    Route::get('/settings/billing', [ProfileController::class , 'billing'])->name('settings.billing');
+    Route::get('/settings/billing-history', [ProfileController::class , 'billingHistory'])->name('settings.billing-history');
+    Route::put('/profile', [ProfileController::class , 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class , 'destroy'])->name('profile.destroy');
+
+    // API endpoints (Unrestricted)
+    Route::get('/api/user/avatar-info', [ProfileController::class , 'getAvatarInfo'])->name('api.user.avatar-info');
+    Route::post('/profile/phone', [ProfileController::class , 'updatePhone'])->name('profile.phone.update');
+    Route::delete('/profile/phone', [ProfileController::class , 'removePhone'])->name('profile.phone.remove');
+    Route::post('/profile/phone/verify', [ProfileController::class , 'verifyPhone'])->name('profile.phone.verify');
+    Route::post('/profile/phone/resend-verification', [ProfileController::class , 'resendPhoneVerification'])->name('profile.phone.resend-verification');
+    Route::post('/profile/password', [ProfileController::class , 'updatePassword'])->name('profile.password.update');
+
+    // Subscription APIs (Unrestricted)
+    Route::get('/api/pricing-plans', [ProfileController::class , 'getPricingPlans'])->name('api.pricing-plans');
+    Route::get('/api/current-subscription', [ProfileController::class , 'getCurrentSubscription'])->name('api.current-subscription');
+    Route::post('/api/subscribe', [ProfileController::class , 'subscribeToPlan'])->name('api.subscribe');
+    Route::post('/api/cancel-subscription', [ProfileController::class , 'cancelSubscription'])->name('api.cancel-subscription');
+    
+    // Form Submissions (Unrestricted)
+    Route::middleware(['throttle:forms'])->group(function () {
+        Route::post('/contact/submit', [ContactController::class , 'submit'])->name('contact.submit');
+        Route::post('/feedback/submit', [ContactController::class , 'submitFeedback'])->name('feedback.submit');
+        Route::post('/newsletter/subscribe', [HomeController::class , 'subscribe'])->name('newsletter.subscribe');
+    });
+
+    // Activity ping endpoint - update user's last activity time
+    // This endpoint is called frequently during long-running uploads to keep session alive
+    Route::post('/ping', function (Request $request) {
+        try {
+            // Check if user is authenticated
+            if (!$request->user()) {
+                return response()->json(['status' => 'unauthenticated'], 401);
+            }
+
+            $user = $request->user();
+
+            // Only update if enough time has passed (throttle updates to prevent database stress)
+            $lastUpdate = $user->last_activity_at;
+            $now = now();
+
+            // Only update if more than 60 seconds have passed (increased throttle)
+            if (!$lastUpdate || $lastUpdate->diffInSeconds($now) > 60) {
+                try {
+                    // Use raw query update to avoid model overhead during uploads
+                    \Illuminate\Support\Facades\DB::table('users')
+                        ->where('id', $user->id)
+                        ->update(['last_activity_at' => $now]);
+                }
+                catch (\Exception $updateError) {
+                    // Log but don't fail the ping - session timeout is handled by Laravel
+                    \Illuminate\Support\Facades\Log::warning('Ping update failed (non-blocking)', [
+                        'user_id' => $user->id,
+                        'error' => $updateError->getMessage()
+                    ]);
+                }
+            }
+
+            // Return success quickly - don't wait for database response
+            return response()->json(['status' => 'ok'], 200);
+        }
+        catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Ping endpoint error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getFile() . ':' . $e->getLine()
+            ]);
+            // Return 200 even on error so uploads don't fail
+            // Session timeout is managed separately
+            return response()->json(['status' => 'ok'], 200);
+        }
+    })->name('ping');
+
+    Route::get('/online-users', function () {
+        try {
+            $keys = Redis::keys('user:*:last_seen');
+            $onlineUsers = [];
+            foreach ($keys as $key) {
+                $userId = str_replace(['user:', ':last_seen'], '', $key);
+                $user = User::find($userId);
+                if ($user) {
+                    $onlineUsers[] = ['id' => $user->id, 'name' => $user->name, 'avatar' => $user->avatar, 'last_seen' => Redis::get($key)];
+                }
+            }
+            return response()->json(['success' => true, 'online_users' => $onlineUsers, 'count' => count($onlineUsers)]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Unable to fetch online users', 'count' => 0]);
+        }
+    })->name('online-users');
+
+    // Restricted Premium Routes (Subscribed only)
     Route::middleware(['subscribed'])->group(function () {
         Route::get('/dashboard/digilearn', [DashboardController::class , 'digilearn'])->name('dashboard.digilearn');
         Route::get('/dashboard/load-more-lessons', [DashboardController::class , 'loadMoreLessons'])->name('dashboard.load-more-lessons');
         Route::get('/dashboard/personalized', [DashboardController::class , 'personalized'])->name('dashboard.personalized');
         Route::get('/dashboard/shop', [DashboardController::class , 'shop'])->name('dashboard.shop');
 
-    // Lessons
-    Route::middleware(['decode.obfuscated'])->group(function () {
+        // Lessons
+        Route::middleware(['decode.obfuscated'])->group(function () {
             Route::get('/dashboard/lesson/{lessonId}', [DashboardController::class , 'viewLesson'])->name('dashboard.lesson.view');
             Route::post('/dashboard/lesson/{lessonId}/notes', [DashboardController::class , 'saveNotes'])->name('dashboard.lesson.notes');
             Route::post('/dashboard/lesson/{lessonId}/comment', [DashboardController::class , 'postComment'])->name('dashboard.lesson.comment');
@@ -138,17 +231,13 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/dashboard/lesson/{lessonId}/unsave', [DashboardController::class , 'unsaveLesson'])->name('dashboard.lesson.unsave');
 
             // Documents
-            Route::get('/dashboard/lesson/{lessonId}/document/{type}', [DocumentController::class , 'viewDocument'])
-                ->name('dashboard.lesson.document')->where('type', 'pdf|ppt');
-            Route::get('/dashboard/lesson/{lessonId}/document/{type}/content', [DocumentController::class , 'viewDocumentContent'])
-                ->name('dashboard.lesson.document.content')->where('type', 'pdf|ppt');
-            Route::post('/dashboard/lesson/{lessonId}/document/{type}/save', [DocumentController::class , 'saveDocumentChanges'])
-                ->name('dashboard.lesson.document.save')->where('type', 'pdf|ppt');
+            Route::get('/dashboard/lesson/{lessonId}/document/{type}', [DocumentController::class , 'viewDocument'])->name('dashboard.lesson.document')->where('type', 'pdf|ppt');
+            Route::get('/dashboard/lesson/{lessonId}/document/{type}/content', [DocumentController::class , 'viewDocumentContent'])->name('dashboard.lesson.document.content')->where('type', 'pdf|ppt');
+            Route::post('/dashboard/lesson/{lessonId}/document/{type}/save', [DocumentController::class , 'saveDocumentChanges'])->name('dashboard.lesson.document.save')->where('type', 'pdf|ppt');
             Route::get('/dashboard/lesson/{lessonId}/ppt/create', [DocumentController::class , 'createPpt'])->name('dashboard.lesson.ppt.create');
             Route::post('/dashboard/lesson/{lessonId}/ppt/store', [DocumentController::class , 'storePpt'])->name('dashboard.lesson.ppt.store');
             Route::post('/dashboard/lesson/{lessonId}/ppt/{pptId}/update', [DocumentController::class , 'updatePpt'])->name('dashboard.lesson.ppt.update');
-        }
-        );
+        });
 
         // User Notes for Videos
         Route::post('/dashboard/lesson/{videoId}/user-notes', [DashboardController::class , 'saveUserNotes'])->name('dashboard.lesson.user-notes.save');
@@ -156,42 +245,22 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/dashboard/lesson/{videoId}/user-notes', [DashboardController::class , 'deleteUserNotes'])->name('dashboard.lesson.user-notes.delete');
         Route::get('/dashboard/user-notes', [DashboardController::class , 'getAllUserNotes'])->name('dashboard.user-notes.all');
 
-        // University years selection
-        Route::get('/dashboard/university/years', [DashboardController::class , 'universityYears'])
-            ->name('dashboard.university.years');
+        // University
+        Route::get('/dashboard/university/years', [DashboardController::class , 'universityYears'])->name('dashboard.university.years');
+        Route::post('/dashboard/university/year/{yearId}', [DashboardController::class , 'selectUniversityYear'])->name('dashboard.university.select-year');
+        Route::get('/dashboard/university/{yearId}/programs', [DashboardController::class , 'universityPrograms'])->name('dashboard.university.programs');
+        Route::get('/dashboard/university/{yearId}/program/{programId}/courses', [DashboardController::class , 'programCourses'])->name('dashboard.university.program.courses');
+        Route::get('/dashboard/university/{yearId}/program/{programId}/course/{courseId}/lessons', [DashboardController::class , 'courseLessons'])->name('dashboard.university.course.lessons');
+        Route::get('/dashboard/university/course/{courseId}/lessons', [DashboardController::class , 'courseLessonsById'])->name('dashboard.university.course.lessons.by-id');
 
-        // University year selection
-        Route::post('/dashboard/university/year/{yearId}', [DashboardController::class , 'selectUniversityYear'])
-            ->name('dashboard.university.select-year');
-
-        // University programs for specific year
-        Route::get('/dashboard/university/{yearId}/programs', [DashboardController::class , 'universityPrograms'])
-            ->name('dashboard.university.programs');
-
-        // Program courses (DigiLearn style)
-        Route::get('/dashboard/university/{yearId}/program/{programId}/courses', [DashboardController::class , 'programCourses'])
-            ->name('dashboard.university.program.courses');
-
-        // Course lessons
-        Route::get('/dashboard/university/{yearId}/program/{programId}/course/{courseId}/lessons', [DashboardController::class , 'courseLessons'])
-            ->name('dashboard.university.course.lessons');
-
-        // Course lessons by course ID only (direct from DigiLearn university view)
-        Route::get('/dashboard/university/course/{courseId}/lessons', [DashboardController::class , 'courseLessonsById'])
-            ->name('dashboard.university.course.lessons.by-id');
-
-        // Saved lessons
+        // Saved & Progress
         Route::get('/dashboard/saved-lessons', [DashboardController::class , 'savedLessons'])->name('dashboard.saved-lessons');
-
-
-        // Progress
         Route::get('/dashboard/my-progress', [ProgressController::class , 'index'])->name('dashboard.my-progress');
         Route::get('/dashboard/detailed-report/{grade?}', [ProgressController::class , 'detailedReport'])->name('dashboard.detailed-report');
         Route::middleware(['decode.obfuscated'])->group(function () {
             Route::post('/dashboard/lesson/{lessonId}/progress', [ProgressController::class , 'recordLessonProgress'])->name('dashboard.lesson.progress');
             Route::post('/dashboard/quiz/{quizId}/attempt', [ProgressController::class , 'recordQuizAttempt'])->name('dashboard.quiz.attempt');
-        }
-        );
+        });
         Route::get('/dashboard/progress/check/{level}', [ProgressController::class , 'checkProgression'])->name('dashboard.progress.check');
         Route::post('/dashboard/progress/manual/{userId}/{toLevel}', [ProgressController::class , 'manualProgression'])->name('dashboard.progress.manual');
         Route::post('/dashboard/my-progress/refresh', [ProgressController::class , 'refreshRecentLessons'])->name('dashboard.my-progress.refresh');
@@ -208,30 +277,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard/projects/{projectId}', [ProjectController::class , 'getProject'])->name('dashboard.projects.show');
         Route::get('/dashboard/projects/analytics', [ProjectController::class , 'getAnalytics'])->name('dashboard.projects.analytics');
 
-        // Profile
-        Route::get('/profile', [ProfileController::class , 'show'])->name('profile.show');
-        Route::get('/settings', [ProfileController::class , 'settings'])->name('settings');
-        Route::get('/settings/notifications', [App\Http\Controllers\ProfileController::class , 'notifications'])->name('settings.notifications');
-        Route::get('/settings/billing', [ProfileController::class , 'billing'])->name('settings.billing');
-        Route::get('/settings/billing-history', [ProfileController::class , 'billingHistory'])->name('settings.billing-history');
-        Route::put('/profile', [ProfileController::class , 'update'])->name('profile.update');
-        Route::delete('/profile', [ProfileController::class , 'destroy'])->name('profile.destroy');
-
-        // API endpoints
-        Route::get('/api/user/avatar-info', [ProfileController::class , 'getAvatarInfo'])->name('api.user.avatar-info');
-        Route::post('/profile/phone', [ProfileController::class , 'updatePhone'])->name('profile.phone.update');
-        Route::delete('/profile/phone', [ProfileController::class , 'removePhone'])->name('profile.phone.remove');
-        Route::post('/profile/phone/verify', [ProfileController::class , 'verifyPhone'])->name('profile.phone.verify');
-        Route::post('/profile/phone/resend-verification', [ProfileController::class , 'resendPhoneVerification'])->name('profile.phone.resend-verification');
-        Route::post('/profile/password', [ProfileController::class , 'updatePassword'])->name('profile.password.update');
-
-        // Subscription APIs
-        Route::get('/api/pricing-plans', [ProfileController::class , 'getPricingPlans'])->name('api.pricing-plans');
-        Route::get('/api/current-subscription', [ProfileController::class , 'getCurrentSubscription'])->name('api.current-subscription');
-        Route::post('/api/subscribe', [ProfileController::class , 'subscribeToPlan'])->name('api.subscribe');
-        Route::post('/api/cancel-subscription', [ProfileController::class , 'cancelSubscription'])->name('api.cancel-subscription');
-
-
         // Notes
         Route::middleware(['decode.obfuscated'])->group(function () {
             Route::get('/dashboard/notes', [NotesController::class , 'index'])->name('dashboard.notes');
@@ -239,8 +284,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/dashboard/notes', [NotesController::class , 'store'])->name('dashboard.notes.store');
             Route::put('/dashboard/notes/{id}', [NotesController::class , 'update'])->name('dashboard.notes.update');
             Route::delete('/dashboard/notes/{id}', [NotesController::class , 'destroy'])->name('dashboard.notes.destroy');
-        }
-        );
+        });
 
         // Comments
         Route::get('/dashboard/lesson/{lessonId}/comments', [DashboardController::class , 'getComments'])->name('dashboard.lesson.comments');
@@ -260,14 +304,10 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/{quizId}/heartbeat', [QuizController::class , 'heartbeat'])->name('heartbeat');
             Route::post('/{quizId}/rate', [QuizController::class , 'rate'])->name('rate');
             Route::get('/results', [QuizController::class , 'results'])->name('results');
-        }
-        );
-
-        // Quiz API endpoints (outside the quiz prefix to match JavaScript calls)
+        });
         Route::middleware(['decode.obfuscated'])->group(function () {
             Route::get('/api/quiz/{quizId}/reviews', [QuizController::class , 'getReviews'])->name('api.quiz.reviews');
-        }
-        );
+        });
 
         // Virtual classroom
         Route::get('/dashboard/join-class', [DashboardController::class , 'joinClass'])->name('dashboard.join-class');
@@ -277,115 +317,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard/notifications', [NotificationController::class , 'dashboardIndex'])->name('dashboard.notifications');
         Route::middleware(['decode.obfuscated'])->group(function () {
             Route::get('/dashboard/notifications/{notificationId}', [NotificationController::class , 'show'])->name('dashboard.notification.show');
-        }
-        );
-
-        // Activity ping endpoint - update user's last activity time
-        // This endpoint is called frequently during long-running uploads to keep session alive
-        Route::post('/ping', function (Request $request) {
-            try {
-                // Check if user is authenticated
-                if (!$request->user()) {
-                    return response()->json(['status' => 'unauthenticated'], 401);
-                }
-
-                $user = $request->user();
-
-                // Only update if enough time has passed (throttle updates to prevent database stress)
-                $lastUpdate = $user->last_activity_at;
-                $now = now();
-
-                // Only update if more than 60 seconds have passed (increased throttle)
-                if (!$lastUpdate || $lastUpdate->diffInSeconds($now) > 60) {
-                    try {
-                        // Use raw query update to avoid model overhead during uploads
-                        \Illuminate\Support\Facades\DB::table('users')
-                            ->where('id', $user->id)
-                            ->update(['last_activity_at' => $now]);
-                    }
-                    catch (\Exception $updateError) {
-                        // Log but don't fail the ping - session timeout is handled by Laravel
-                        \Illuminate\Support\Facades\Log::warning('Ping update failed (non-blocking)', [
-                            'user_id' => $user->id,
-                            'error' => $updateError->getMessage()
-                        ]);
-                    }
-                }
-
-                // Return success quickly - don't wait for database response
-                return response()->json(['status' => 'ok'], 200);
-            }
-            catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Ping endpoint error', [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getFile() . ':' . $e->getLine()
-                ]);
-                // Return 200 even on error so uploads don't fail
-                // Session timeout is managed separately
-                return response()->json(['status' => 'ok'], 200);
-            }
-        }
-        )->middleware('auth')->name('ping');
-
-        // Online users API
-        Route::get('/online-users', function () {
-            try {
-                $keys = Redis::keys('user:*:last_seen');
-                $onlineUsers = [];
-
-                foreach ($keys as $key) {
-                    $userId = str_replace(['user:', ':last_seen'], '', $key);
-                    $user = User::find($userId);
-                    if ($user) {
-                        $onlineUsers[] = [
-                            'id' => $user->id,
-                            'name' => $user->name,
-                            'avatar' => $user->avatar,
-                            'last_seen' => Redis::get($key),
-                        ];
-                    }
-                }
-
-                return response()->json([
-                'success' => true,
-                'online_users' => $onlineUsers,
-                'count' => count($onlineUsers)
-                ]);
-            }
-            catch (\Exception $e) {
-                return response()->json([
-                'success' => false,
-                'message' => 'Unable to fetch online users',
-                'count' => 0
-                ]);
-            }
-        }
-        )->name('online-users');
-
-        // Recommendation feeds
-        Route::get('/api/dashboard/feeds', [App\Http\Controllers\RecommendationController::class , 'getDashboardFeeds'])->name('api.dashboard.feeds');
-        Route::get('/api/analytics', [App\Http\Controllers\RecommendationController::class , 'getAnalytics'])->name('api.analytics');
-
-        // Lesson tracker backend mock
-        Route::post('/api/lessons/track-analytics', function (Request $request) {
-            return response()->json(['status' => 'ok']);
-        }
-        )->name('api.lessons.track-analytics');
-
-        // Lesson search API
-        Route::get('/api/dashboard/search-lessons', [DashboardController::class , 'searchLessons'])->name('api.dashboard.search-lessons');
-
-        // Plan change API
-        Route::post('/api/dashboard/change-plan', [DashboardController::class , 'changePlan'])->name('api.dashboard.change-plan');
-
-        // Form Submissions
-        Route::middleware(['throttle:forms'])->group(function () {
-            Route::post('/contact/submit', [ContactController::class , 'submit'])->name('contact.submit');
-            Route::post('/feedback/submit', [ContactController::class , 'submitFeedback'])->name('feedback.submit');
-            Route::post('/newsletter/subscribe', [HomeController::class , 'subscribe'])->name('newsletter.subscribe');
-        }
-        );
-        // Notifications API
+        });
         Route::middleware(['decode.obfuscated'])->prefix('api/notifications')->name('api.notifications.')->group(function () {
             Route::get('/', [NotificationController::class , 'index'])->name('index');
             Route::get('/unread-count', [NotificationController::class , 'getUnreadCount'])->name('unread-count');
@@ -395,9 +327,14 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/preferences', [NotificationController::class , 'getPreferences'])->name('preferences');
             Route::put('/preferences', [NotificationController::class , 'updatePreferences'])->name('preferences.update');
             Route::post('/grade-opt-out', [NotificationController::class , 'toggleGradeOptOut'])->name('grade-opt-out');
-        }
-        );
+        });
 
+        // Recommendations & Search
+        Route::get('/api/dashboard/feeds', [App\Http\Controllers\RecommendationController::class , 'getDashboardFeeds'])->name('api.dashboard.feeds');
+        Route::get('/api/analytics', [App\Http\Controllers\RecommendationController::class , 'getAnalytics'])->name('api.analytics');
+        Route::post('/api/lessons/track-analytics', function (Request $request) { return response()->json(['status' => 'ok']); })->name('api.lessons.track-analytics');
+        Route::get('/api/dashboard/search-lessons', [DashboardController::class , 'searchLessons'])->name('api.dashboard.search-lessons');
+        Route::post('/api/dashboard/change-plan', [DashboardController::class , 'changePlan'])->name('api.dashboard.change-plan');
     });
 });
 
