@@ -374,14 +374,13 @@ $isFromLessonView = $referrer && str_contains($referrer, '/dashboard/lesson/');
     }
 
     .level-group-card.accessible {
-        border: 1px solid var(--white);
         display: flex;
         flex-direction: column;
         justify-content: space-between;
     }
 
     .level-group-card.accessible:hover {
-        border-color: #3b82f6;
+        border-color: var(--secondary-blue);
     }
 
     .card-footer {
@@ -587,15 +586,14 @@ $isFromLessonView = $referrer && str_contains($referrer, '/dashboard/lesson/');
     }
 
     .level-group-card.explore-more {
-        border: 2px solid var(--secondary-blue);
-        background: var(--bg-main);
+        background: var(--bg-surface);
         position: relative;
     }
 
     .level-group-card.explore-more:hover {
         transform: translateY(-4px);
         box-shadow: var(--shadow-lg);
-        border-color: var(--primary-red);
+        border-color: var(--secondary-blue);
     }
 
     .upgrade-icon {
@@ -761,7 +759,7 @@ $isFromLessonView = $referrer && str_contains($referrer, '/dashboard/lesson/');
 
     .price-badge:hover {
         background: var(--bg-surface);
-        border-color: var(--primary-red);
+        border-color: var(--secondary-blue);
         transform: translateY(-2px);
         box-shadow: var(--shadow-sm);
     }
