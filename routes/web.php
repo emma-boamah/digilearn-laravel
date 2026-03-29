@@ -119,11 +119,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/level-group/{groupId}', [DashboardController::class , 'showLevelGroup'])->name('dashboard.level-group');
     Route::post('/dashboard/select-level-group/{groupId}', [DashboardController::class , 'selectLevelGroup'])->name('dashboard.select-level-group');
     Route::get('/dashboard/main', [DashboardController::class , 'main'])->name('dashboard.main');
-    Route::get('/dashboard/digilearn', [DashboardController::class , 'digilearn'])->name('dashboard.digilearn');
-    Route::get('/dashboard/load-more-lessons', [DashboardController::class , 'loadMoreLessons'])->name('dashboard.load-more-lessons');
-    Route::get('/dashboard/personalized', [DashboardController::class , 'personalized'])->name('dashboard.personalized');
-    Route::get('/dashboard/shop', [DashboardController::class , 'shop'])->name('dashboard.shop');
     Route::get('/dashboard/change-level', [DashboardController::class , 'levelSelection'])->name('dashboard.change-level');
+
+    // Routes requiring active subscription
+    Route::middleware(['subscribed'])->group(function () {
+        Route::get('/dashboard/digilearn', [DashboardController::class , 'digilearn'])->name('dashboard.digilearn');
+        Route::get('/dashboard/load-more-lessons', [DashboardController::class , 'loadMoreLessons'])->name('dashboard.load-more-lessons');
+        Route::get('/dashboard/personalized', [DashboardController::class , 'personalized'])->name('dashboard.personalized');
+        Route::get('/dashboard/shop', [DashboardController::class , 'shop'])->name('dashboard.shop');
 
     // Lessons
     Route::middleware(['decode.obfuscated'])->group(function () {
@@ -395,8 +398,8 @@ Route::middleware(['auth'])->group(function () {
         }
         );
 
-
     });
+});
 
 /*
  |--------------------------------------------------------------------------
