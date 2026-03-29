@@ -1,5 +1,5 @@
 @php
-    $hasActiveSubscription = $hasActiveSubscription ?? (auth()->check() && auth()->user()->hasActiveSubscription());
+$hasActiveSubscription = $hasActiveSubscription ?? (auth()->check() && auth()->user()->hasActiveSubscription());
 @endphp
 <div class="modal-backdrop hidden" id="upgradeModal">
     <div class="modal-container">
@@ -7,7 +7,7 @@
             <h2 class="modal-title">Upgrade Your Plan</h2>
             <button type="button" class="modal-close" id="closeUpgradeModalBtn">
                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
@@ -23,7 +23,8 @@
                     <ul class="pricing-features">
                         {{-- Features will be loaded dynamically --}}
                     </ul>
-                    <a href="{{-- Subscription link will be loaded dynamically --}}" class="pricing-btn">{{ $hasActiveSubscription ? 'Upgrade Now' : 'Get Started' }}</a>
+                    <a href="{{-- Subscription link will be loaded dynamically --}}" class="pricing-btn">{{
+                        $hasActiveSubscription ? 'Upgrade Now' : 'Get Started' }}</a>
                 </div>
             </div>
         </div>
@@ -82,18 +83,18 @@
     }
 
     .modal-close:hover {
-        background: #f1f5f9;
+        background: var(--white);
         color: #475569;
     }
 
     .modal-body {
         padding: 0;
-        background-color: transparent;
+        background-color: var(--white);
     }
 
     /* Embedded Pricing Card Styles */
     .pricing-card {
-        background-color: #ffffff;
+        background-color: var(--white);
         border: 1px solid #e5e7eb;
         border-radius: 0.5rem;
         padding: 2rem;
@@ -116,8 +117,8 @@
         left: 50%;
         transform: translateX(-50%);
         padding: 0.75rem 2rem;
-        background-color: var(--secondary-blue, #2677B8);
-        color: var(--white, #ffffff);
+        background-color: var(--secondary-blue);
+        color: var(--white);
         font-weight: 600;
         font-size: 0.875rem;
         border-radius: 50px;
@@ -134,7 +135,7 @@
     }
 
     .pricing-description {
-        color: var(--gray-600, #4b5563);
+        color: var(--gray-900);
         font-size: 0.875rem;
         margin-bottom: 1.5rem;
         line-height: 1.5;
@@ -143,7 +144,7 @@
     .pricing-price {
         font-size: 2rem;
         font-weight: bold;
-        color: var(--gray-900, #111827);
+        color: var(--gray-900);
         margin-bottom: 2rem;
     }
 
@@ -159,7 +160,7 @@
         align-items: center;
         gap: 0.75rem;
         margin-bottom: 0.75rem;
-        color: var(--gray-700, #374151);
+        color: var(--gray-900);
         font-size: 0.875rem;
     }
 
@@ -170,7 +171,7 @@
     }
 
     .pricing-features svg {
-        color: var(--secondary-blue, #2677B8);
+        color: var(--secondary-blue);
         flex-shrink: 0;
         width: 16px;
         height: 16px;
@@ -201,7 +202,7 @@
     .hidden {
         display: none !important;
     }
-    
+
     .loading-plan-container {
         padding: 4rem 2rem;
         display: flex;
@@ -212,7 +213,7 @@
     }
 
     .modal-loading-spinner {
-        border-top-color: var(--secondary-blue, #2677B8);
+        border-top-color: var(--secondary-blue);
         width: 40px;
         height: 40px;
     }
@@ -239,16 +240,16 @@
 </style>
 
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-    (function() {
-        const hasActiveSubscription = {{ $hasActiveSubscription ? 'true' : 'false' }};
+    (function () {
+        const hasActiveSubscription = @json((bool)$hasActiveSubscription);
         const upgradeModal = document.getElementById('upgradeModal');
         const closeBtn = document.getElementById('closeUpgradeModalBtn');
 
-        window.openUpgradeModal = function(planSlug) {
+        window.openUpgradeModal = function (planSlug) {
             console.log('Opening upgrade modal for:', planSlug);
             // Show loading state in modal
             const pricingCard = upgradeModal.querySelector('.pricing-card');
-            if(!pricingCard) return;
+            if (!pricingCard) return;
 
             const originalContent = pricingCard.innerHTML;
             pricingCard.innerHTML = '<div class="loading-plan-container"><div class="loading-spinner modal-loading-spinner"></div><p>Loading plan details...</p></div>';
@@ -271,9 +272,9 @@
                                 <p class="pricing-description">${data.description || 'Comprehensive learning package with access to platform features.'}</p>
                                 <div class="pricing-price">${data.currency || 'GHS'} ${parseFloat(data.price || 0).toFixed(2)}</div>
                                 <ul class="pricing-features">
-                                    ${Array.isArray(data.features) && data.features.length > 0 
-                                        ? data.features.map(feature => `<li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>${feature}</li>`).join('') 
-                                        : `<li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>Access to ${data.name || planSlug} features</li>`}
+                                    ${Array.isArray(data.features) && data.features.length > 0
+                            ? data.features.map(feature => `<li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>${feature}</li>`).join('')
+                            : `<li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>Access to ${data.name || planSlug} features</li>`}
                                 </ul>
                                 <a href="/pricing/pricing-details?planId=${data.obfuscated_id}" class="pricing-btn">${btnText}</a>
                             </div>
@@ -291,7 +292,7 @@
                 });
         };
 
-        window.closeUpgradeModal = function() {
+        window.closeUpgradeModal = function () {
             upgradeModal.classList.add('hidden');
             upgradeModal.classList.remove('flex-display');
             document.body.style.overflow = '';
@@ -302,7 +303,7 @@
         }
 
         // Close on backdrop click
-        upgradeModal.addEventListener('click', function(e) {
+        upgradeModal.addEventListener('click', function (e) {
             if (e.target === upgradeModal) {
                 window.closeUpgradeModal();
             }
