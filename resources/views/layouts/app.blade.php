@@ -881,6 +881,7 @@
             }
         }, 300000); // 5 minutes
     </script>
+    @stack('scripts')
 </body>
 
 </html>
