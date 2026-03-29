@@ -851,7 +851,7 @@
             box-sizing: border-box;
             /* Ensure padding is included in width */
             z-index: 997 !important;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            /* box-shadow: 0 2px 4px var(--white); */
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             flex-direction: column;
@@ -1672,7 +1672,7 @@
                 margin: 0;
                 padding: 0;
                 font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-                background-color: #000000;
+                background-color: var(--white);
                 font-size: 16px;
                 /* Prevents iOS zoom on input focus */
                 line-height: 1.5;
@@ -1706,7 +1706,7 @@
                 padding: 0 0.75rem !important;
                 gap: 0.5rem !important;
                 overflow: hidden !important;
-                background-color: #15181C !important;
+                background-color: var(--white) !important;
                 backdrop-filter: none !important;
                 -webkit-backdrop-filter: none !important;
                 top: calc(60px + var(--safe-area-inset-top)) !important;
@@ -1958,7 +1958,7 @@
                 margin-left: 0 !important;
                 width: 100vw !important;
                 max-width: 100vw !important;
-                background-color: #000000 !important;
+                background-color: var(--white) !important;
             }
 
             .youtube-sidebar.collapsed~.main-content {
