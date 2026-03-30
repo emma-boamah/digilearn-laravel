@@ -1,23 +1,24 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Quiz - {{ config('app.name', 'ShoutOutGh') }}</title>
-    
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <script>
-        (function() {
+        (function () {
             const theme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
-    
+
     <style>
         :root {
             --primary-red: #E11E2D;
@@ -251,8 +252,15 @@
         }
 
         @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
         }
 
         .questions-section {
@@ -457,13 +465,11 @@
             left: -50%;
             width: 200%;
             height: 200%;
-            background: conic-gradient(
-                transparent,
-                var(--secondary-blue),
-                transparent 30%,
-                var(--primary-red),
-                transparent 50%
-            );
+            background: conic-gradient(transparent,
+                    var(--secondary-blue),
+                    transparent 30%,
+                    var(--primary-red),
+                    transparent 50%);
             animation: rotate-border 4s linear infinite;
         }
 
@@ -477,8 +483,13 @@
         }
 
         @keyframes rotate-border {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .option-letter {
@@ -546,13 +557,13 @@
 
         /* Preamble Styling */
         .preamble-box {
-            background-color: #f8fafc;
+            background-color: var(--white);
             border-left: 4px solid var(--secondary-blue);
             padding: 1.5rem;
             margin-bottom: 2rem;
             border-radius: 0.5rem;
             font-size: 0.95rem;
-            color: var(--gray-700);
+            color: var(--gray-900);
             line-height: 1.6;
             box-shadow: var(--shadow-sm);
         }
@@ -856,28 +867,30 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Top Header -->
     <div class="top-header">
         <div class="header-left">
             <button class="back-button" onclick="confirmExit()">
                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                 </svg>
             </button>
-            
+
             <div class="sidebar-logo">
                 <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
             </div>
         </div>
-        
+
         <div class="header-right">
             <button class="notification-btn">
                 <svg class="notification-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v0.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v0.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
             </button>
-            
+
             <x-user-avatar :user="auth()->user()" :size="36" class="border-2 border-white" />
         </div>
     </div>
@@ -888,18 +901,18 @@
         <div class="quiz-left-column">
             <div class="quiz-sidebar">
                 <h2 class="quiz-title">{{ $quiz['title'] ?? 'Introduction to Computer Hardware' }}</h2>
-                
+
                 <div class="timer-container">
                     <div class="timer" id="timer">--:--</div>
                 </div>
-                
+
                 <div class="questions-section">
                     <h3 class="questions-title">Questions</h3>
                     <div class="questions-grid" id="questionsGrid">
                         <!-- Questions will be populated by JavaScript -->
                     </div>
                 </div>
-                
+
                 <div class="quiz-actions">
                     <button class="submit-quiz-btn" id="submitQuizBtn" onclick="submitQuiz()">Submit Quiz</button>
                 </div>
@@ -915,9 +928,9 @@
                 <div class="progress-chart-wrapper">
                     <div class="progress-ring-container">
                         <svg viewBox="0 0 140 140">
-                            <circle class="progress-ring-bg" cx="70" cy="70" r="56"/>
+                            <circle class="progress-ring-bg" cx="70" cy="70" r="56" />
                             <circle class="progress-ring-fill" id="progressRingFill" cx="70" cy="70" r="56"
-                                stroke-dasharray="351.858" stroke-dashoffset="351.858"/>
+                                stroke-dasharray="351.858" stroke-dashoffset="351.858" />
                         </svg>
                         <div class="progress-ring-text">
                             <div class="progress-ring-percent" id="progressPercent">0%</div>
@@ -958,7 +971,7 @@
                 <span class="question-label" id="questionLabel">Question 1 of 5</span>
                 <span class="answer-instruction">Select the correct answer</span>
             </div>
-            
+
             <!-- Preamble Section - Only shown when question has preamble -->
             <div id="preambleContainer" class="preamble-box" style="display: none;">
                 <div class="preamble-header">
@@ -970,22 +983,22 @@
             <div class="question-text" id="questionText">
                 Identify the component highlighted in the image above.
             </div>
-            
+
             <div class="options-container" id="optionsContainer">
                 <!-- Options will be populated by JavaScript -->
             </div>
-            
+
             <div class="navigation-buttons">
                 <button class="nav-btn" id="prevBtn" onclick="previousQuestion()" disabled>
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
                     Previous
                 </button>
                 <button class="nav-btn primary" id="nextBtn" onclick="nextQuestion()">
                     Next
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                     </svg>
                 </button>
             </div>
@@ -997,7 +1010,8 @@
         <div class="modal">
             <div class="modal-header">
                 <h3 class="modal-title">Submit Quiz?</h3>
-                <p class="modal-subtitle">Are you sure you want to submit your quiz? You cannot change your answers after submission.</p>
+                <p class="modal-subtitle">Are you sure you want to submit your quiz? You cannot change your answers
+                    after submission.</p>
             </div>
             <div class="modal-actions">
                 <button class="modal-btn secondary" onclick="closeModal()">Cancel</button>
@@ -1007,82 +1021,82 @@
     </div>
 
     @php
-        $defaultQuestions = [
-            [
-                'id' => 1,
-                'question' => 'Identify the component highlighted in the image above.',
-                'image' => secure_asset('images/computer-hardware-cpu.png'),
-                'options' => [
-                    'Central Processing Unit (CPU)',
-                    'Random Access Memory (RAM)',
-                    'Graphics Processing Unit (GPU)',
-                    'Power Supply Unit (PSU)'
-                ],
-                'correct_answer' => 0
-            ],
-            [
-                'id' => 2,
-                'question' => 'What is the main function of RAM in a computer system?',
-                'image' => null,
-                'options' => [
-                    'Permanent storage of files',
-                    'Temporary data storage for active processes',
-                    'Processing graphics and videos',
-                    'Power distribution to components'
-                ],
-                'correct_answer' => 1
-            ],
-            [
-                'id' => 3,
-                'question' => 'Which component is shown in this image?',
-                'image' => secure_asset('images/computer-hardware-gpu.png'),
-                'options' => [
-                    'Motherboard',
-                    'Hard Disk Drive',
-                    'Graphics Card',
-                    'Network Interface Card'
-                ],
-                'correct_answer' => 2
-            ],
-            [
-                'id' => 4,
-                'question' => 'What does this component do?',
-                'image' => secure_asset('images/computer-hardware-psu.png'),
-                'options' => [
-                    'Processes audio signals',
-                    'Converts AC to DC power',
-                    'Manages network connections',
-                    'Cools the system components'
-                ],
-                'correct_answer' => 1
-            ],
-            [
-                'id' => 5,
-                'question' => 'Which component connects all other components together?',
-                'image' => secure_asset('images/computer-hardware-motherboard.png'),
-                'options' => [
-                    'Power Supply',
-                    'Motherboard',
-                    'CPU',
-                    'Case'
-                ],
-                'correct_answer' => 1
-            ]
-        ];
+    $defaultQuestions = [
+    [
+    'id' => 1,
+    'question' => 'Identify the component highlighted in the image above.',
+    'image' => secure_asset('images/computer-hardware-cpu.png'),
+    'options' => [
+    'Central Processing Unit (CPU)',
+    'Random Access Memory (RAM)',
+    'Graphics Processing Unit (GPU)',
+    'Power Supply Unit (PSU)'
+    ],
+    'correct_answer' => 0
+    ],
+    [
+    'id' => 2,
+    'question' => 'What is the main function of RAM in a computer system?',
+    'image' => null,
+    'options' => [
+    'Permanent storage of files',
+    'Temporary data storage for active processes',
+    'Processing graphics and videos',
+    'Power distribution to components'
+    ],
+    'correct_answer' => 1
+    ],
+    [
+    'id' => 3,
+    'question' => 'Which component is shown in this image?',
+    'image' => secure_asset('images/computer-hardware-gpu.png'),
+    'options' => [
+    'Motherboard',
+    'Hard Disk Drive',
+    'Graphics Card',
+    'Network Interface Card'
+    ],
+    'correct_answer' => 2
+    ],
+    [
+    'id' => 4,
+    'question' => 'What does this component do?',
+    'image' => secure_asset('images/computer-hardware-psu.png'),
+    'options' => [
+    'Processes audio signals',
+    'Converts AC to DC power',
+    'Manages network connections',
+    'Cools the system components'
+    ],
+    'correct_answer' => 1
+    ],
+    [
+    'id' => 5,
+    'question' => 'Which component connects all other components together?',
+    'image' => secure_asset('images/computer-hardware-motherboard.png'),
+    'options' => [
+    'Power Supply',
+    'Motherboard',
+    'CPU',
+    'Case'
+    ],
+    'correct_answer' => 1
+    ]
+    ];
     @endphp
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         // Quiz data and state (Globally Exposed for Anti-Cheat)
         window.currentQuestion = 0;
         window.timeLimitMinutes = {{ $quiz['time_limit_minutes'] ?? 3 }};
-        window.timeRemaining = window.timeLimitMinutes * 60; 
+        window.timeRemaining = window.timeLimitMinutes * 60;
         window.answers = {};
         let timerInterval;
 
         // Updated questions array to include images
         const questions = @json($quiz['questions'] ?? $defaultQuestions);
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             initializeQuiz();
             startTimer();
         });
@@ -1097,19 +1111,19 @@
         function renderQuestionsGrid() {
             const grid = document.getElementById('questionsGrid');
             grid.innerHTML = '';
-            
+
             questions.forEach((question, index) => {
                 const questionBtn = document.createElement('div');
                 questionBtn.className = 'question-number';
                 questionBtn.textContent = index + 1;
                 questionBtn.onclick = () => goToQuestion(index);
-                
+
                 if (index === currentQuestion) {
                     questionBtn.classList.add('current');
                 } else if (answers[index] !== undefined) {
                     questionBtn.classList.add('answered');
                 }
-                
+
                 grid.appendChild(questionBtn);
             });
         }
@@ -1126,7 +1140,7 @@
 
             // Update question label
             document.getElementById('questionLabel').textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
-            
+
             // Handle preamble
             const preambleContainer = document.getElementById('preambleContainer');
             const preambleText = document.getElementById('preambleText');
@@ -1253,27 +1267,27 @@
 
         function startTimer() {
             const timerElement = document.getElementById('timer');
-            
+
             // Set initial display
             const initialMinutes = Math.floor(timeRemaining / 60);
             const initialSeconds = timeRemaining % 60;
             timerElement.textContent = `${initialMinutes}:${initialSeconds.toString().padStart(2, '0')}`;
-            
+
             timerInterval = setInterval(() => {
                 timeRemaining--;
-                
+
                 const minutes = Math.floor(timeRemaining / 60);
                 const seconds = timeRemaining % 60;
-                
+
                 timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                
+
                 // Change timer color based on time remaining
                 if (timeRemaining <= 60) { // 1 minute or less
                     timerElement.className = 'timer danger';
                 } else if (timeRemaining <= 180) { // 3 minutes or less
                     timerElement.className = 'timer warning';
                 }
-                
+
                 if (timeRemaining <= 0) {
                     clearInterval(timerInterval);
                     autoSubmitQuiz();
@@ -1364,7 +1378,7 @@
         }
 
         // Prevent accidental page refresh (only when quiz is active and not submitting)
-        window.addEventListener('beforeunload', function(e) {
+        window.addEventListener('beforeunload', function (e) {
             if (timeRemaining > 0 && Object.keys(answers).length > 0 && !document.querySelector('.modal-overlay.active')) {
                 e.preventDefault();
                 e.returnValue = '';
@@ -1372,7 +1386,7 @@
         });
 
         // Keyboard navigation
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'ArrowLeft') {
                 previousQuestion();
             } else if (e.key === 'ArrowRight') {
@@ -1417,21 +1431,21 @@
 
         // Override goToQuestion to track visited questions
         const _originalGoToQuestion = goToQuestion;
-        goToQuestion = function(questionIndex) {
+        goToQuestion = function (questionIndex) {
             visitedQuestions.add(questionIndex);
             _originalGoToQuestion(questionIndex);
             updateProgressOverview();
         };
 
         const _originalNextQuestion = nextQuestion;
-        nextQuestion = function() {
+        nextQuestion = function () {
             _originalNextQuestion();
             visitedQuestions.add(currentQuestion);
             updateProgressOverview();
         };
 
         const _originalPreviousQuestion = previousQuestion;
-        previousQuestion = function() {
+        previousQuestion = function () {
             _originalPreviousQuestion();
             visitedQuestions.add(currentQuestion);
             updateProgressOverview();
@@ -1439,4 +1453,5 @@
     </script>
     @include('dashboard.quiz.partials.anti-cheat')
 </body>
+
 </html>
