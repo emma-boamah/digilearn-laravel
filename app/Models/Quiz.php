@@ -24,6 +24,7 @@ class Quiz extends Model
         'average_rating',
         'total_ratings',
         'difficulty_level',
+        'shuffle_questions',
     ];
 
     protected $casts = [
@@ -31,6 +32,7 @@ class Quiz extends Model
         'time_limit_minutes' => 'integer',
         'average_rating' => 'decimal:2',
         'total_ratings' => 'integer',
+        'shuffle_questions' => 'boolean',
     ];
 
     /**

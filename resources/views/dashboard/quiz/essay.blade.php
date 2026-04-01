@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Essay Quiz - {{ $quiz['title'] ?? 'Quiz' }} - {{ config('app.name', 'ShoutOutGh') }}</title>
+    <title>Essay Quiz - {{ str_replace('Quiz for: ', '', $quiz['title'] ?? 'Quiz') }} - {{ config('app.name', 'ShoutOutGh') }}</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -51,7 +51,7 @@
     <div class="container">
         <div class="card">
             <div class="header">
-                <div class="title">Essay: {{ $quiz['title'] ?? 'Quiz' }}</div>
+                <div class="title">Essay: {{ str_replace('Quiz for: ', '', $quiz['title'] ?? 'Quiz') }}</div>
                 <div class="timer"><i class="fas fa-clock"></i> <span id="countdown"></span></div>
             </div>
             <div class="content">

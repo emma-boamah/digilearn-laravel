@@ -8,7 +8,17 @@
         </div>
         
         <div class="title-section">
-            <h3 class="card-title" title="{{ $quiz['title'] }}">{{ $quiz['title'] }}</h3>
+            @php
+                $isBeceOrWassce = false;
+                if(isset($quiz['categories']) && count($quiz['categories']) > 0) {
+                    $isBeceOrWassce = collect($quiz['categories'])->contains(function($cat) {
+                        $slug = strtolower($cat['slug'] ?? '');
+                        return $slug === 'bece' || $slug === 'wassce';
+                    });
+                }
+                $displayTitle = $isBeceOrWassce ? str_replace('Quiz for: ', '', $quiz['title']) : $quiz['title'];
+            @endphp
+            <h3 class="card-title" title="{{ $displayTitle }}">{{ $displayTitle }}</h3>
             
             <div class="badges-row">
                 <div class="quiz-level-badge-minimal">

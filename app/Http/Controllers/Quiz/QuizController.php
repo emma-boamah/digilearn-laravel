@@ -310,7 +310,9 @@ class QuizController extends Controller
         // --- END SESSION LOCK ---
 
         // --- ANTI-CHEAT: SEEDED SHUFFLING ---
-        $quiz = $this->applySeededShuffle($quiz, $userId);
+        if ($quiz['shuffle_questions'] ?? true) {
+            $quiz = $this->applySeededShuffle($quiz, $userId);
+        }
         // --- END SHUFFLING ---
 
         // Add encoded ID for URL generation
@@ -766,8 +768,10 @@ class QuizController extends Controller
                 ->first();
 
             // Apply identical seeded shuffle to ensure review matches the user's view
-            $userIdForShuffle = $lastAttempt ? $lastAttempt->user_id : Auth::id();
-            $quiz = $this->applySeededShuffle($quiz, $userIdForShuffle);
+            if ($quiz['shuffle_questions'] ?? true) {
+                $userIdForShuffle = $lastAttempt ? $lastAttempt->user_id : Auth::id();
+                $quiz = $this->applySeededShuffle($quiz, $userIdForShuffle);
+            }
 
             $userAnswers = $lastAttempt ? json_decode($lastAttempt->answers ?? '[]', true) : [];
             $timeTaken = $lastAttempt ? $lastAttempt->time_taken_seconds : 0;
@@ -1023,6 +1027,7 @@ class QuizController extends Controller
                     'questions' => $processedQuestions,
                     'difficulty' => $difficultyLevel,
                     'uploader' => $quiz->uploader,
+                    'shuffle_questions' => $quiz->shuffle_questions,
                 ];
 
                 Log::info('getQuizById returning result', ['result_keys' => array_keys($result)]);
@@ -1089,7 +1094,9 @@ class QuizController extends Controller
         }
 
         // Apply identical seeded shuffle to ensure marking matches the user's view
-        $quiz = $this->applySeededShuffle($quiz, $userId ?: Auth::id());
+        if ($quiz['shuffle_questions'] ?? true) {
+            $quiz = $this->applySeededShuffle($quiz, $userId ?: Auth::id());
+        }
 
         $questions = $quiz['questions'];
         $totalQuestions = count($questions);

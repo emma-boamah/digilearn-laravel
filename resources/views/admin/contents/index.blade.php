@@ -1531,6 +1531,20 @@
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <p class="text-xs text-gray-500 mt-1">Set to 0 for no time limit</p>
                             </div>
+
+                            <!-- Shuffle Questions -->
+                            <div class="col-span-1 md:col-span-2 mt-2">
+                                <label class="flex items-center cursor-pointer group">
+                                    <div class="relative">
+                                        <input type="checkbox" id="quiz_shuffle_questions" name="shuffle_questions" value="1" checked
+                                               class="sr-only peer">
+                                        <div class="w-10 h-5 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition-colors"></div>
+                                        <div class="absolute left-1 top-1 w-3 h-3 bg-white rounded-full peer-checked:translate-x-5 transition-transform"></div>
+                                    </div>
+                                    <span class="ml-3 text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors">Shuffle Questions</span>
+                                </label>
+                                <p class="mt-1 text-xs text-gray-500 ml-13">When enabled, questions will appear in a different order for each student.</p>
+                            </div>
                         </div>
                     </div>
 
@@ -2264,7 +2278,8 @@
                 quiz: {
                     questions: [],
                     difficulty_level: 'medium',
-                    time_limit_minutes: 15
+                    time_limit_minutes: 15,
+                    shuffle_questions: true
                 }
             };
             navigateStep(1);
@@ -2341,6 +2356,8 @@
             if (questionsList) questionsList.innerHTML = '';
             if (quizDifficulty) quizDifficulty.value = 'medium';
             if (quizTimeLimit) quizTimeLimit.value = '15';
+            const quizShuffle = document.getElementById('quiz_shuffle_questions');
+            if (quizShuffle) quizShuffle.checked = true;
 
             // Clear video preview
             const videoPreview = document.getElementById('videoPreview');
@@ -2805,6 +2822,15 @@
                 uploadData.quiz.time_limit_minutes = parseInt(timeLimitInput.value) || 15;
                 timeLimitInput.addEventListener('input', (e) => {
                     uploadData.quiz.time_limit_minutes = parseInt(e.target.value) || 15;
+                });
+            }
+
+            const shuffleCheckbox = document.getElementById('quiz_shuffle_questions');
+            if (shuffleCheckbox) {
+                // Set initial value
+                uploadData.quiz.shuffle_questions = shuffleCheckbox.checked;
+                shuffleCheckbox.addEventListener('change', (e) => {
+                    uploadData.quiz.shuffle_questions = e.target.checked;
                 });
             }
         }
@@ -3907,7 +3933,8 @@
                 const quizData = {
                     questions: [],
                     difficulty_level: finalData.quiz.difficulty_level,
-                    time_limit_minutes: finalData.quiz.time_limit_minutes
+                    time_limit_minutes: finalData.quiz.time_limit_minutes,
+                    shuffle_questions: finalData.quiz.shuffle_questions
                 };
 
                 // Process each question
@@ -3948,6 +3975,7 @@
                 formData.append('quiz_data', JSON.stringify(quizData));
                 formData.append('difficulty_level', difficultyLevel);
                 formData.append('time_limit_minutes', timeLimitMinutes);
+                formData.append('shuffle_questions', finalData.quiz.shuffle_questions ? '1' : '0');
 
                 updateProgress('quiz', 50, 'Sending quiz to server...', false, {
                     speed: 0

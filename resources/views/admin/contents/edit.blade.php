@@ -214,6 +214,19 @@
                                 <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Time Limit (Min)</label>
                                 <input type="number" id="quiz_time_limit" name="quiz_time_limit" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" value="15">
                             </div>
+                            <div class="col-span-1 md:col-span-2 mt-2">
+                                <label class="flex items-center cursor-pointer group">
+                                    <div class="relative">
+                                        <input type="checkbox" id="shuffle_questions" name="shuffle_questions" value="1" 
+                                               {{ ($quizModel->shuffle_questions ?? true) ? 'checked' : '' }}
+                                               class="sr-only peer">
+                                        <div class="w-10 h-5 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition-colors"></div>
+                                        <div class="absolute left-1 top-1 w-3 h-3 bg-white rounded-full peer-checked:translate-x-5 transition-transform"></div>
+                                    </div>
+                                    <span class="ml-3 text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors">Shuffle Questions</span>
+                                </label>
+                                <p class="mt-1 text-xs text-gray-500 ml-13">When enabled, questions will appear in a different order for each student.</p>
+                            </div>
                         </div>
 
                         <!-- Question Navigation -->
