@@ -921,10 +921,56 @@ class QuizController extends Controller
             return $quiz;
         }
 
-        // Deterministic question shuffle
+        // Deterministic question shuffle (Preamble-aware)
         $questions = $quiz['questions'];
+        
+        // Group questions by preamble
+        $groups = [];
+        $currentGroupIndex = -1;
+        
+        foreach ($questions as $q) {
+            $preamble = $q['preamble'] ?? null;
+            // Consider it a new preamble if it's not empty and not just an empty paragraph
+            $isNewPreamble = !empty(trim($preamble ?? '')) && trim($preamble ?? '') !== '<p><br></p>';
+            
+            if ($isNewPreamble || $currentGroupIndex === -1) {
+                $currentGroupIndex++;
+                $groups[$currentGroupIndex] = [
+                    'preamble' => $isNewPreamble ? $preamble : null,
+                    'questions' => []
+                ];
+            }
+            
+            $groups[$currentGroupIndex]['questions'][] = $q;
+        }
+        
+        // Shuffle the groups themselves
         mt_srand($seed);
-        shuffle($questions);
+        shuffle($groups);
+        
+        // Flatten back to $questions
+        $flattenedQuestions = [];
+        foreach ($groups as $groupIndex => $group) {
+            $groupQuestions = $group['questions'];
+            
+            // Shuffle questions WITHIN the group
+            mt_srand($seed + $groupIndex + 100);
+            shuffle($groupQuestions);
+            
+            // Re-assign the preamble to the first question of the shuffled group
+            // and clear it from the rest to avoid duplicates
+            $groupPreamble = $group['preamble'];
+            foreach ($groupQuestions as $idx => $gq) {
+                if ($idx === 0) {
+                    $gq['preamble'] = $groupPreamble;
+                } else {
+                    $gq['preamble'] = null;
+                }
+                $flattenedQuestions[] = $gq;
+            }
+        }
+        
+        $questions = $flattenedQuestions;
         mt_srand(); // Reset RNG
         
         // Shuffle options for each question and update correct_answer index
