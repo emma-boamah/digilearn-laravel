@@ -246,6 +246,14 @@
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">Additional Settings</h3>
                             <div class="space-y-4">
                                 <div class="flex items-center">
+                                    <input type="checkbox" id="shuffle_questions" name="shuffle_questions" value="1"
+                                           {{ old('shuffle_questions', $quiz->shuffle_questions ?? true) ? 'checked' : '' }}
+                                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <label for="shuffle_questions" class="ml-2 block text-sm text-gray-900">
+                                        Shuffle Questions
+                                    </label>
+                                </div>
+                                <div class="flex items-center">
                                     <input type="checkbox" id="is_featured" name="is_featured" value="1"
                                            {{ old('is_featured', $quiz->is_featured ?? false) ? 'checked' : '' }}
                                            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">

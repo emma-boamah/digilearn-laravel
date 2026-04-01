@@ -2616,6 +2616,7 @@ class AdminController extends Controller
             'grade_level' => 'nullable|string|max:255',
             'quiz_data' => 'nullable|string', // Or 'json' if you enforce JSON structure
             'is_featured' => 'boolean',
+            'shuffle_questions' => 'boolean',
         ]);
 
         Quiz::create([
@@ -2626,6 +2627,7 @@ class AdminController extends Controller
             'uploaded_by' => Auth::id(),
             'quiz_data' => $request->quiz_data,
             'is_featured' => $request->has('is_featured'),
+            'shuffle_questions' => $request->has('shuffle_questions'),
         ]);
 
         return redirect()->route('admin.content.quizzes.index')->with('success', 'Quiz uploaded successfully!');
@@ -2647,6 +2649,7 @@ class AdminController extends Controller
             'grade_level' => 'nullable|string|max:255',
             'quiz_data' => 'nullable|string',
             'is_featured' => 'boolean',
+            'shuffle_questions' => 'boolean',
         ]);
 
         $quiz->update([
@@ -2656,6 +2659,7 @@ class AdminController extends Controller
             'grade_level' => $request->grade_level,
             'quiz_data' => $request->quiz_data,
             'is_featured' => $request->has('is_featured'),
+            'shuffle_questions' => $request->has('shuffle_questions'),
         ]);
 
         return redirect()->route('admin.content.quizzes.index')->with('success', 'Quiz updated successfully!');
@@ -3726,12 +3730,13 @@ class AdminController extends Controller
                     $subject = Subject::find($video->subject_id);
 
                     $quizDataToCreate = [
-                        'title' => 'Quiz for: ' . $video->title,
+                        'title' => $video->title,
                         'subject_id' => $subject->id,
                         'uploaded_by' => Auth::id(),
                         'grade_level' => $request->grade_level,
                         'video_id' => $video->id,
                         'quiz_data' => json_encode($quizData),
+                        'shuffle_questions' => $request->boolean('shuffle_questions'),
                         'is_featured' => false
                     ];
 
@@ -4044,7 +4049,8 @@ class AdminController extends Controller
             'category_ids.*' => 'exists:content_categories,id',
             'quiz_data' => 'nullable|string', // JSON string from builder
             'quiz_difficulty' => 'nullable|string',
-            'quiz_time_limit' => 'nullable|integer'
+            'quiz_time_limit' => 'nullable|integer',
+            'shuffle_questions' => 'boolean',
         ]);
 
         // Find the content
@@ -4093,6 +4099,7 @@ class AdminController extends Controller
                             'quiz_data' => json_encode($quizData),
                             'difficulty_level' => $request->quiz_difficulty ?? $quiz->difficulty_level,
                             'time_limit_minutes' => $request->quiz_time_limit ?? $quiz->time_limit_minutes,
+                            'shuffle_questions' => $request->has('shuffle_questions'),
                         ]);
                     }
                 }
@@ -4111,6 +4118,7 @@ class AdminController extends Controller
                     'difficulty_level' => $request->quiz_difficulty,
                     'time_limit_minutes' => $request->quiz_time_limit,
                     'quiz_data' => !empty($quizData) ? json_encode($quizData) : $content->quiz_data,
+                    'shuffle_questions' => $request->has('shuffle_questions'),
                 ]);
 
                 // Update description in the associated video container if it exists
@@ -4728,12 +4736,13 @@ class AdminController extends Controller
             }
 
             $quizDataToCreate = [
-                'title' => 'Quiz for: ' . $video->title,
+                'title' => $video->title,
                 'subject_id' => $subject->id,
                 'uploaded_by' => Auth::id(),
                 'grade_level' => $video->grade_level,
                 'video_id' => $video->id,
                 'quiz_data' => json_encode($quizData),
+                'shuffle_questions' => $request->boolean('shuffle_questions'),
                 'is_featured' => false
             ];
 

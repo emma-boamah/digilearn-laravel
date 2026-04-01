@@ -900,7 +900,7 @@
         <!-- Left Column -->
         <div class="quiz-left-column">
             <div class="quiz-sidebar">
-                <h2 class="quiz-title">{{ $quiz['title'] ?? 'Introduction to Computer Hardware' }}</h2>
+                <h2 class="quiz-title">{{ str_replace('Quiz for: ', '', $quiz['title'] ?? 'Introduction to Computer Hardware') }}</h2>
 
                 <div class="timer-container">
                     <div class="timer" id="timer">--:--</div>
