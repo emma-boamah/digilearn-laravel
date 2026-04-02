@@ -6,6 +6,8 @@ use App\Models\Video;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
+use App\Models\ActivityLog;
+use App\Models\UserEngagement;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -63,7 +65,7 @@ class VideoStreamController extends Controller
         $isAdmin = Auth::user()->is_admin || Auth::user()->is_superuser;
         if (!$isAdmin) {
             // Log video watching activity
-            \App\Models\ActivityLog::log(
+            ActivityLog::log(
                 'video_watch',
                 'User watched video: ' . $video->title,
                 'info',
@@ -71,31 +73,31 @@ class VideoStreamController extends Controller
                 Auth::user()->email,
                 $request->ip(),
                 $request->userAgent(),
-                [
-                    'video_id' => $video->id,
-                    'video_title' => $video->title,
-                    'grade_level' => $video->grade_level,
-                    'duration_seconds' => $video->duration_seconds,
-                    'subject' => $video->subject ?? 'General',
-                    'action_type' => 'stream_start'
-                ],
+            [
+                'video_id' => $video->id,
+                'video_title' => $video->title,
+                'grade_level' => $video->grade_level,
+                'duration_seconds' => $video->duration_seconds,
+                'subject' => $video->subject ?? 'General',
+                'action_type' => 'stream_start'
+            ],
                 $video
             );
 
             // Record detailed engagement for recommendation system
-            \App\Models\UserEngagement::record(
+            UserEngagement::record(
                 Auth::id(),
                 'video',
                 $video->id,
                 'view',
                 0, // duration will be tracked separately
-                [
-                    'title' => $video->title,
-                    'subject' => $video->subject ?? 'General',
-                    'grade_level' => $video->grade_level,
-                    'duration_seconds' => $video->duration_seconds,
-                    'action_type' => 'stream_start'
-                ]
+            [
+                'title' => $video->title,
+                'subject' => $video->subject ?? 'General',
+                'grade_level' => $video->grade_level,
+                'duration_seconds' => $video->duration_seconds,
+                'action_type' => 'stream_start'
+            ]
             );
         }
 
@@ -104,7 +106,8 @@ class VideoStreamController extends Controller
         $filePath = null;
         if ($video->temp_file_path && !$video->isTempExpired()) {
             $filePath = $video->temp_file_path;
-        } elseif ($video->video_path) {
+        }
+        elseif ($video->video_path) {
             $filePath = $video->video_path;
         }
 
@@ -150,20 +153,20 @@ class VideoStreamController extends Controller
 
         $length = $end - $start + 1;
 
-        return new StreamedResponse(function() use ($fullPath, $start, $length) {
+        return new StreamedResponse(function () use ($fullPath, $start, $length) {
             $file = fopen($fullPath, 'rb');
             fseek($file, $start);
-            
+
             $chunkSize = 8192; // 8KB chunks
             $bytesRemaining = $length;
-            
+
             while (!feof($file) && $bytesRemaining > 0) {
                 $bytesToRead = min($chunkSize, $bytesRemaining);
                 echo fread($file, $bytesToRead);
                 $bytesRemaining -= $bytesToRead;
                 flush();
             }
-            
+
             fclose($file);
         }, $request->hasHeader('Range') ? 206 : 200, [
             'Content-Type' => $mimeType,

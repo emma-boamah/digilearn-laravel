@@ -10,7 +10,7 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use App\Models\User;
 
-class PasswordChangedMail extends Mailable
+class PasswordChangedMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 

@@ -82,28 +82,29 @@ class ProgressController extends Controller
         $analytics = $progress->getDetailedAnalytics();
 
         // Get progression standards for the current level group
-        $standards = \App\Models\ProgressionStandard::getStandardsForLevel($currentLevel);
+        $standards = ProgressionStandard::getStandardsForLevel($currentLevel);
 
         // Get per-grade (individual level) stats for the grade cards
         $group = \App\Models\LevelGroup::where('slug', $currentLevel)->with('levels')->first();
         $levels = $group ? $group->levels : collect();
         $canonicalGrades = $levels->pluck('title')->toArray();
-        
+
         // Determine UNLOCKED grades based on user's rank
         $unlockedGrades = [];
         $userGrade = Auth::user()->grade;
         $userLevel = \App\Models\Level::where('slug', $userGrade)
-                      ->orWhere('title', $userGrade)
-                      ->first();
-        
+            ->orWhere('title', $userGrade)
+            ->first();
+
         if ($userLevel && $group) {
             $userRank = $userLevel->rank;
-            $unlockedGrades = $group->levels->filter(function($level) use ($userRank) {
+            $unlockedGrades = $group->levels->filter(function ($level) use ($userRank) {
                 return $level->rank <= $userRank;
             })->pluck('title')->toArray();
-        } else {
+        }
+        else {
             // Fallback for safety
-            $unlockedGrades = $canonicalGrades; 
+            $unlockedGrades = $canonicalGrades;
         }
 
         $gradeStats = [];
@@ -112,9 +113,9 @@ class ProgressController extends Controller
             $slug = $levelItem->slug;
 
             $lessonStat = \App\Models\LessonCompletion::where('user_id', $userId)
-                ->where(function($q) use ($grade, $slug) {
-                    $q->where('lesson_level', $grade)->orWhere('lesson_level', $slug);
-                })
+                ->where(function ($q) use ($grade, $slug) {
+                $q->where('lesson_level', $grade)->orWhere('lesson_level', $slug);
+            })
                 ->selectRaw('
                     COUNT(lesson_id) as attempted_lessons, 
                     SUM(CASE WHEN fully_completed = 1 THEN 1 ELSE 0 END) as completed_lessons,
@@ -126,33 +127,33 @@ class ProgressController extends Controller
                 ->where('quiz_level', $grade)
                 ->selectRaw('COUNT(DISTINCT quiz_id) as attempted_quizzes, COUNT(DISTINCT CASE WHEN passed = 1 THEN quiz_id END) as passed_quizzes')
                 ->first();
-                
+
             $totalLessons = \App\Models\Video::where('grade_level', $grade)->where('status', 'approved')->count();
             $totalQuizzes = \App\Models\Quiz::where('grade_level', $grade)->count();
-            
+
             $attemptedLessons = (int)($lessonStat->attempted_lessons ?? 0);
             $completedLessons = (int)($lessonStat->completed_lessons ?? 0);
-            $partiallyWatched  = (int)($lessonStat->partially_watched ?? 0);
+            $partiallyWatched = (int)($lessonStat->partially_watched ?? 0);
             $attemptedQuizzes = (int)($quizStat->attempted_quizzes ?? 0);
-            $passedQuizzes    = (int)($quizStat->passed_quizzes ?? 0);
-            
+            $passedQuizzes = (int)($quizStat->passed_quizzes ?? 0);
+
             // Determine status
             $isUnlocked = in_array($grade, $unlockedGrades);
-            $isCompleted  = $totalLessons > 0 && $completedLessons >= $totalLessons && $totalQuizzes > 0 && $passedQuizzes >= $totalQuizzes;
+            $isCompleted = $totalLessons > 0 && $completedLessons >= $totalLessons && $totalQuizzes > 0 && $passedQuizzes >= $totalQuizzes;
             $isInProgress = !$isCompleted && ($attemptedLessons > 0 || $attemptedQuizzes > 0);
-            
+
             $gradeStats[$grade] = [
-                'grade'              => $grade,
-                'attempted_lessons'  => $attemptedLessons,
-                'completed_lessons'  => $completedLessons,
-                'partially_watched'  => $partiallyWatched,
-                'total_lessons'      => $totalLessons,
-                'attempted_quizzes'  => $attemptedQuizzes,
-                'passed_quizzes'     => $passedQuizzes,
-                'total_quizzes'      => $totalQuizzes,
-                'is_completed'       => $isCompleted,
-                'is_in_progress'     => $isInProgress,
-                'is_locked'          => !$isUnlocked,
+                'grade' => $grade,
+                'attempted_lessons' => $attemptedLessons,
+                'completed_lessons' => $completedLessons,
+                'partially_watched' => $partiallyWatched,
+                'total_lessons' => $totalLessons,
+                'attempted_quizzes' => $attemptedQuizzes,
+                'passed_quizzes' => $passedQuizzes,
+                'total_quizzes' => $totalQuizzes,
+                'is_completed' => $isCompleted,
+                'is_in_progress' => $isInProgress,
+                'is_locked' => !$isUnlocked,
             ];
         }
 
@@ -183,15 +184,15 @@ class ProgressController extends Controller
     {
         $userId = Auth::id();
         $user = Auth::user();
-        
+
         // 1. Determine which grade we are viewing
         // If no grade provided, use user's current grade
         $viewingGrade = $grade ?? $user->grade;
-        
+
         // Find the Level in the database
         $selectedLevel = \App\Models\Level::where('slug', $viewingGrade)
-                      ->orWhere('title', $viewingGrade)
-                      ->first();
+            ->orWhere('title', $viewingGrade)
+            ->first();
 
         // Fallback if level not found in database manually
         if (!$selectedLevel) {
@@ -202,19 +203,20 @@ class ProgressController extends Controller
         $foundCanonical = $selectedLevel->title;
         $group = $selectedLevel->levelGroup;
         $currentLevel = $group->slug;
-        
+
         // 2. Determine UNLOCKED grades based on user's rank
         $unlockedGrades = [];
         $userLevel = \App\Models\Level::where('slug', $user->grade)
-                      ->orWhere('title', $user->grade)
-                      ->first();
-        
+            ->orWhere('title', $user->grade)
+            ->first();
+
         if ($userLevel && $group) {
             $userRank = $userLevel->rank;
-            $unlockedGrades = $group->levels->filter(function($level) use ($userRank) {
+            $unlockedGrades = $group->levels->filter(function ($level) use ($userRank) {
                 return $level->rank <= $userRank;
             })->pluck('title')->toArray();
-        } else {
+        }
+        else {
             // Fallback for safety (e.g. user hasn't picked a grade yet)
             $unlockedGrades = $group ? $group->levels->pluck('title')->toArray() : [];
         }
@@ -230,7 +232,7 @@ class ProgressController extends Controller
         $progress = UserProgress::where('user_id', $userId)
             ->where('current_level', $foundCanonical)
             ->first();
-        
+
         $avgScore = $progress ? $progress->average_quiz_score : 0;
         $timeSpent = $progress ? $progress->getFormattedTimeSpent() : '0m';
 
@@ -239,7 +241,7 @@ class ProgressController extends Controller
             $avgScore = QuizAttempt::where('user_id', $userId)
                 ->where('quiz_level', $foundCanonical)
                 ->avg('score_percentage') ?? 0;
-            
+
             $watchSeconds = LessonCompletion::where('user_id', $userId)
                 ->where('lesson_level', $foundCanonical)
                 ->sum('watch_time_seconds') ?? 0;
@@ -247,13 +249,14 @@ class ProgressController extends Controller
             $quizSeconds = QuizAttempt::where('user_id', $userId)
                 ->where('quiz_level', $foundCanonical)
                 ->sum('time_taken_seconds') ?? 0;
-            
+
             $totalSeconds = $watchSeconds + $quizSeconds;
-            
+
             $hours = floor($totalSeconds / 3600);
             $mins = floor(($totalSeconds % 3600) / 60);
             $timeSpent = $hours > 0 ? "{$hours}h {$mins}m" : "{$mins}m";
-        } else {
+        }
+        else {
             // Aggregated from LessonCompletion and QuizAttempt for accuracy even if UserProgress exists
             $watchSeconds = LessonCompletion::where('user_id', $userId)
                 ->where('lesson_level', $foundCanonical)
@@ -262,7 +265,7 @@ class ProgressController extends Controller
             $quizSeconds = QuizAttempt::where('user_id', $userId)
                 ->where('quiz_level', $foundCanonical)
                 ->sum('time_taken_seconds') ?? 0;
-            
+
             $totalSeconds = $watchSeconds + $quizSeconds;
 
             // Sync back to progress record if it's different (optional but recommended)
@@ -279,39 +282,41 @@ class ProgressController extends Controller
             ->count();
         $totalUsersInGrade = UserProgress::where('current_level', $foundCanonical)->count();
         $rankingPercentile = $totalUsersInGrade > 0 ? ($higherScoresCount / $totalUsersInGrade) * 100 : 0;
-        
+
         // --- TREND CALCULATIONS ---
-        
+
         // Time Trend (last 7 days)
         $timeThisWeekSeconds = \App\Models\UserEngagement::where('user_id', $userId)
             ->where('created_at', '>=', now()->subDays(7))
             ->where('metadata->level', $foundCanonical)
             ->sum('duration_seconds') ?? 0;
-            
+
         $h = floor($timeThisWeekSeconds / 3600);
         $m = floor(($timeThisWeekSeconds % 3600) / 60);
         $timeTrendFormatted = $h > 0 ? "{$h}h {$m}m" : "{$m}m";
-        if ($timeThisWeekSeconds == 0) $timeTrendFormatted = "0m";
-        
+        if ($timeThisWeekSeconds == 0)
+            $timeTrendFormatted = "0m";
+
         // Average Score Trend (current 7 days vs previous 7 days)
         $currentWeekAvg = QuizAttempt::where('user_id', $userId)
             ->where('quiz_level', $foundCanonical)
             ->where('completed_at', '>=', now()->subDays(7))
             ->avg('score_percentage') ?? 0;
-            
+
         $prevWeekAvg = QuizAttempt::where('user_id', $userId)
             ->where('quiz_level', $foundCanonical)
             ->where('completed_at', '>=', now()->subDays(14))
             ->where('completed_at', '<', now()->subDays(7))
             ->avg('score_percentage') ?? 0;
-            
+
         $scoreDiff = $currentWeekAvg - $prevWeekAvg;
         $scoreTrendSign = $scoreDiff >= 0 ? '+' : '';
         $scoreTrendFormatted = $scoreTrendSign . round($scoreDiff, 1) . '% from last week';
-        
+
         if ($prevWeekAvg == 0 && $currentWeekAvg > 0) {
             $scoreTrendFormatted = '+' . round($currentWeekAvg, 1) . '% this week';
-        } elseif ($prevWeekAvg == 0 && $currentWeekAvg == 0) {
+        }
+        elseif ($prevWeekAvg == 0 && $currentWeekAvg == 0) {
             $scoreTrendFormatted = 'No recent activity';
         }
 
@@ -347,15 +352,15 @@ class ProgressController extends Controller
             ->get();
 
         // 7. Lesson Library Data
-        $librarySubjects = \App\Models\Subject::whereHas('primaryVideos', function($query) use ($foundCanonical) {
+        $librarySubjects = \App\Models\Subject::whereHas('primaryVideos', function ($query) use ($foundCanonical) {
             $query->where('grade_level', $foundCanonical)->where('status', 'approved');
         })->get();
 
         $libraryLessons = \App\Models\Video::where('grade_level', $foundCanonical)
             ->where('status', 'approved')
-            ->with(['subject', 'completions' => function($query) use ($userId) {
-                $query->where('user_id', $userId);
-            }])
+            ->with(['subject', 'completions' => function ($query) use ($userId) {
+            $query->where('user_id', $userId);
+        }])
             ->orderBy('unit_number')
             ->orderBy('title')
             ->get();
@@ -426,7 +431,8 @@ class ProgressController extends Controller
                         'duration' => $totalDuration,
                         'source' => $video->video_source
                     ]);
-                } else {
+                }
+                else {
                     // Fallback to requested duration or default
                     $totalDuration = $request->total_duration ?: 300;
                     Log::warning('Could not get video duration, using fallback', [
@@ -435,7 +441,8 @@ class ProgressController extends Controller
                         'video_source' => $video->video_source
                     ]);
                 }
-            } else {
+            }
+            else {
                 // Video not found
                 $totalDuration = $request->total_duration ?: 300;
                 Log::warning('Video not found for lesson', [
@@ -443,7 +450,8 @@ class ProgressController extends Controller
                     'video_id' => $lessonData['id']
                 ]);
             }
-        } else {
+        }
+        else {
             // No video ID provided
             $totalDuration = $request->total_duration ?: 300;
         }
@@ -487,14 +495,14 @@ class ProgressController extends Controller
             $lessonData['id'],
             $action,
             $request->watch_time,
-            [
-                'title' => $lessonData['title'],
-                'subject' => $lessonData['subject'],
-                'level' => $lessonData['level'],
-                'completion_percentage' => $completion->completion_percentage,
-                'fully_completed' => $completion->fully_completed,
-                'total_duration' => $request->total_duration,
-            ]
+        [
+            'title' => $lessonData['title'],
+            'subject' => $lessonData['subject'],
+            'level' => $lessonData['level'],
+            'completion_percentage' => $completion->completion_percentage,
+            'fully_completed' => $completion->fully_completed,
+            'total_duration' => $request->total_duration,
+        ]
         );
 
         Log::info('lesson_progress_recorded', [
@@ -558,16 +566,16 @@ class ProgressController extends Controller
             $quizData['id'],
             $action,
             $request->time_taken,
-            [
-                'title' => $quizData['title'],
-                'subject' => $quizData['subject'],
-                'level' => $quizData['level'],
-                'score_percentage' => $attempt->score_percentage,
-                'passed' => $attempt->passed,
-                'attempt_number' => $attempt->attempt_number,
-                'total_questions' => $attempt->total_questions,
-                'correct_answers' => $attempt->correct_answers,
-            ]
+        [
+            'title' => $quizData['title'],
+            'subject' => $quizData['subject'],
+            'level' => $quizData['level'],
+            'score_percentage' => $attempt->score_percentage,
+            'passed' => $attempt->passed,
+            'attempt_number' => $attempt->attempt_number,
+            'total_questions' => $attempt->total_questions,
+            'correct_answers' => $attempt->correct_answers,
+        ]
         );
 
         Log::info('quiz_attempt_recorded', [
@@ -617,7 +625,8 @@ class ProgressController extends Controller
                         'level_group' => $progress->level_group,
                     ]);
                 }
-            } else {
+            }
+            else {
                 // Progress to next level group (e.g., primary-lower → primary-upper)
                 $nextLevel = $this->getNextLevel($level);
                 if ($nextLevel) {
@@ -645,7 +654,7 @@ class ProgressController extends Controller
         ]);
 
         $fromLevel = $request->from_level;
-        
+
         // Create manual progression record
         $progressData = [
             'from_level_group' => $this->getLevelGroup($fromLevel),
@@ -682,12 +691,12 @@ class ProgressController extends Controller
     private function getOrCreateProgress($userId, $level)
     {
         $progress = UserProgress::getCurrentProgress($userId, $level);
-        
+
         if (!$progress) {
             // Get total lessons and quizzes for this level
             $totalLessons = $this->getTotalLessonsForLevel($level);
             $totalQuizzes = $this->getTotalQuizzesForLevel($level);
-            
+
             $progress = UserProgress::create([
                 'user_id' => $userId,
                 'current_level' => $level,
@@ -697,7 +706,7 @@ class ProgressController extends Controller
                 'level_started_at' => now(),
             ]);
         }
-        
+
         return $progress;
     }
 
@@ -769,8 +778,8 @@ class ProgressController extends Controller
             'individual_progression_available' => $progress->shouldProgressWithinLevelGroup() !== null,
             'next_individual_level' => $progress->shouldProgressWithinLevelGroup(),
             'message' => $isEligible
-                ? "Congratulations! You're ready to progress to {$nextLevel}!"
-                : 'Keep learning to unlock the next level!',
+            ? "Congratulations! You're ready to progress to {$nextLevel}!"
+            : 'Keep learning to unlock the next level!',
         ];
     }
 
@@ -863,7 +872,8 @@ class ProgressController extends Controller
                 'note' => 'Skipped auto-completing video lessons to preserve watch history',
             ]);
 
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             Log::error('Failed to update lesson_completions for progression', [
                 'user_id' => $userId,
                 'level_group' => $levelGroup,
@@ -900,7 +910,8 @@ class ProgressController extends Controller
                     'level_group' => $newLevelGroup,
                 ]);
             }
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             Log::error('Failed to update user grade level', [
                 'user_id' => $userId,
                 'new_level_group' => $newLevelGroup,
@@ -919,10 +930,10 @@ class ProgressController extends Controller
 
         // Get actual count from videos table
         return \App\Models\Video::whereIn('grade_level', $levels)
-                               ->where('status', 'approved')
-                               ->count();
+            ->where('status', 'approved')
+            ->count();
     }
-    
+
     private function getTotalQuizzesForLevel($level)
     {
         // Use centralized level mapping from ProgressionStandard
@@ -930,9 +941,9 @@ class ProgressController extends Controller
 
         // Get actual count from quizzes table
         return \App\Models\Quiz::whereIn('grade_level', $levels)
-                              ->count();
+            ->count();
     }
-    
+
     private function getLevelGroup($level)
     {
         $groups = [
@@ -949,10 +960,10 @@ class ProgressController extends Controller
             'shs-2' => 'shs',
             'shs-3' => 'shs',
         ];
-        
+
         return $groups[$level] ?? $level;
     }
-    
+
     private function getNextLevel($currentLevel)
     {
         $progression = [
@@ -961,7 +972,7 @@ class ProgressController extends Controller
             'jhs' => 'shs',
             'shs' => null, // No next level
         ];
-        
+
         return $progression[$currentLevel] ?? null;
     }
 
@@ -977,55 +988,55 @@ class ProgressController extends Controller
         $recentLessons = LessonCompletion::where('user_id', $user->id)
             ->where('lesson_level_group', $currentLevel)
             ->select(
-                'id',
-                'lesson_id',
-                'lesson_title',
-                'lesson_subject',
-                'completion_percentage',
-                'fully_completed',
-                'last_watched_at'
-            )
+            'id',
+            'lesson_id',
+            'lesson_title',
+            'lesson_subject',
+            'completion_percentage',
+            'fully_completed',
+            'last_watched_at'
+        )
             ->orderBy('last_watched_at', 'desc')
             ->limit(5)
             ->get()
-            ->map(function($lesson) {
-                return [
-                    'id' => $lesson->id,
-                    'lesson_id' => $lesson->lesson_id,
-                    'lesson_title' => $lesson->lesson_title,
-                    'lesson_subject' => $lesson->lesson_subject,
-                    'completion_percentage' => round($lesson->completion_percentage, 1),
-                    'fully_completed' => $lesson->fully_completed,
-                    'last_watched_at' => $lesson->last_watched_at,
-                ];
-            });
+            ->map(function ($lesson) {
+            return [
+            'id' => $lesson->id,
+            'lesson_id' => $lesson->lesson_id,
+            'lesson_title' => $lesson->lesson_title,
+            'lesson_subject' => $lesson->lesson_subject,
+            'completion_percentage' => round($lesson->completion_percentage, 1),
+            'fully_completed' => $lesson->fully_completed,
+            'last_watched_at' => $lesson->last_watched_at,
+            ];
+        });
 
         // Get FRESH recent quizzes with current progress
         $recentQuizzes = QuizAttempt::where('user_id', $user->id)
             ->where('quiz_level', $currentLevel)
             ->select(
-                'id',
-                'quiz_id',
-                'quiz_title',
-                'quiz_subject',
-                'score_percentage',
-                'passed',
-                'completed_at'
-            )
+            'id',
+            'quiz_id',
+            'quiz_title',
+            'quiz_subject',
+            'score_percentage',
+            'passed',
+            'completed_at'
+        )
             ->orderBy('completed_at', 'desc')
             ->limit(5)
             ->get()
-            ->map(function($quiz) {
-                return [
-                    'id' => $quiz->id,
-                    'quiz_id' => $quiz->quiz_id,
-                    'quiz_title' => $quiz->quiz_title,
-                    'quiz_subject' => $quiz->quiz_subject,
-                    'score_percentage' => round($quiz->score_percentage, 1),
-                    'passed' => $quiz->passed,
-                    'completed_at' => $quiz->completed_at,
-                ];
-            });
+            ->map(function ($quiz) {
+            return [
+            'id' => $quiz->id,
+            'quiz_id' => $quiz->quiz_id,
+            'quiz_title' => $quiz->quiz_title,
+            'quiz_subject' => $quiz->quiz_subject,
+            'score_percentage' => round($quiz->score_percentage, 1),
+            'passed' => $quiz->passed,
+            'completed_at' => $quiz->completed_at,
+            ];
+        });
 
         Log::info('Recent lessons/quizzes refreshed', [
             'user_id' => $user->id,

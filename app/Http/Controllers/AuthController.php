@@ -819,8 +819,15 @@ class AuthController extends Controller
         // Adjust logic if you allow both. For this requirement: "If Social Login... send email informing them"
         if ($user->google_id) { 
             // Send Google Account Info Mail
-            Mail::to($user->email)->send(new GoogleAccountInfoMail($user));
-            Log::info('Sent Google account info mail for password reset', ['email' => $email]);
+            try {
+                Mail::to($user->email)->send(new GoogleAccountInfoMail($user));
+                Log::info('Sent Google account info mail for password reset', ['email' => $email]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send Google account info mail', [
+                    'email' => $email,
+                    'error' => $e->getMessage()
+                ]);
+            }
             return back()->with('status', $statusMessage);
         }
 
@@ -915,7 +922,14 @@ class AuthController extends Controller
         DB::table('password_reset_tokens')->where('email', $email)->delete();
 
         // Send confirmation email
-        Mail::to($user->email)->send(new PasswordChangedMail($user));
+        try {
+            Mail::to($user->email)->send(new PasswordChangedMail($user));
+        } catch (\Exception $e) {
+            Log::error('Failed to send password changed confirmation email', [
+                'email' => $user->email,
+                'error' => $e->getMessage()
+            ]);
+        }
 
         // Log
         Log::info('Password reset successful', ['user_id' => $user->id, 'ip' => $request->ip()]);

@@ -5,6 +5,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AboutController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PricingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
@@ -15,12 +16,20 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ProgressController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ComingSoonController;
+use App\Http\Controllers\RecommendationController;
+use App\Http\Controllers\PricingPlanController;
+use App\Http\Controllers\Admin\TaskController;
+use App\Http\Controllers\Admin\SubjectController;
+use App\Http\Controllers\Admin\QuizReviewController;
+use App\Http\Controllers\VideoStreamController;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\CookieController;
 use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use App\Models\User;
@@ -58,23 +67,23 @@ Route::get('/pricing/pricing-details', [PricingController::class , 'show'])->nam
 
 // Coming soon route (authenticated)
 Route::middleware(['auth'])->group(function () {
-    Route::get('/coming-soon', [App\Http\Controllers\ComingSoonController::class , 'index'])->name('coming-soon');
+    Route::get('/coming-soon', [ComingSoonController::class , 'index'])->name('coming-soon');
 });
 
 // Payment routes (authenticated)
 Route::middleware(['auth'])->group(function () {
-    Route::post('/payment/initiate', [App\Http\Controllers\PaymentController::class , 'initiatePayment'])->name('payment.initiate');
-    Route::get('/payment/success', [App\Http\Controllers\PaymentController::class , 'success'])->name('payment.success');
-    Route::get('/payment/cancel', [App\Http\Controllers\PaymentController::class , 'cancel'])->name('payment.cancel');
+    Route::post('/payment/initiate', [PaymentController::class , 'initiatePayment'])->name('payment.initiate');
+    Route::get('/payment/success', [PaymentController::class , 'success'])->name('payment.success');
+    Route::get('/payment/cancel', [PaymentController::class , 'cancel'])->name('payment.cancel');
 });
 
 // Paystack callback (NO auth - must be public for redirects)
-Route::get('/payment/callback', [App\Http\Controllers\PaymentController::class , 'callback'])
+Route::get('/payment/callback', [PaymentController::class , 'callback'])
     ->name('payment.callback');
 
 // Paystack webhook (no CSRF, no auth)
-Route::post('/webhooks/paystack', [App\Http\Controllers\PaymentController::class , 'webhook'])
-    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
+Route::post('/webhooks/paystack', [PaymentController::class , 'webhook'])
+    ->withoutMiddleware([VerifyCsrfToken::class])
     ->name('webhooks.paystack');
 
 /*
@@ -124,7 +133,7 @@ Route::middleware(['auth'])->group(function () {
     // Profile & Settings (Unrestricted - Auth only)
     Route::get('/profile', [ProfileController::class , 'show'])->name('profile.show');
     Route::get('/settings', [ProfileController::class , 'settings'])->name('settings');
-    Route::get('/settings/notifications', [App\Http\Controllers\ProfileController::class , 'notifications'])->name('settings.notifications');
+    Route::get('/settings/notifications', [ProfileController::class , 'notifications'])->name('settings.notifications');
     Route::get('/settings/billing', [ProfileController::class , 'billing'])->name('settings.billing');
     Route::get('/settings/billing-history', [ProfileController::class , 'billingHistory'])->name('settings.billing-history');
     Route::put('/profile', [ProfileController::class , 'update'])->name('profile.update');
@@ -171,13 +180,13 @@ Route::middleware(['auth'])->group(function () {
                 if (!$lastUpdate || $lastUpdate->diffInSeconds($now) > 60) {
                     try {
                         // Use raw query update to avoid model overhead during uploads
-                        \Illuminate\Support\Facades\DB::table('users')
+                        DB::table('users')
                             ->where('id', $user->id)
                             ->update(['last_activity_at' => $now]);
                     }
                     catch (\Exception $updateError) {
                         // Log but don't fail the ping - session timeout is handled by Laravel
-                        \Illuminate\Support\Facades\Log::warning('Ping update failed (non-blocking)', [
+                        Log::warning('Ping update failed (non-blocking)', [
                             'user_id' => $user->id,
                             'error' => $updateError->getMessage()
                         ]);
@@ -188,7 +197,7 @@ Route::middleware(['auth'])->group(function () {
                 return response()->json(['status' => 'ok'], 200);
             }
             catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Ping endpoint error', [
+                Log::error('Ping endpoint error', [
                     'error' => $e->getMessage(),
                     'trace' => $e->getFile() . ':' . $e->getLine()
                 ]);
@@ -341,10 +350,11 @@ Route::middleware(['auth'])->group(function () {
                 );
 
                 // Recommendations & Search
-                Route::get('/api/dashboard/feeds', [App\Http\Controllers\RecommendationController::class , 'getDashboardFeeds'])->name('api.dashboard.feeds');
-                Route::get('/api/analytics', [App\Http\Controllers\RecommendationController::class , 'getAnalytics'])->name('api.analytics');
+                Route::get('/api/dashboard/feeds', [RecommendationController::class , 'getDashboardFeeds'])->name('api.dashboard.feeds');
+                Route::get('/api/analytics', [RecommendationController::class , 'getAnalytics'])->name('api.analytics');
                 Route::post('/api/lessons/track-analytics', function (Request $request) {
-                    return response()->json(['status' => 'ok']); }
+                    return response()->json(['status' => 'ok']);
+                }
                 )->name('api.lessons.track-analytics');
                 Route::get('/api/dashboard/search-lessons', [DashboardController::class , 'searchLessons'])->name('api.dashboard.search-lessons');
                 Route::post('/api/dashboard/change-plan', [DashboardController::class , 'changePlan'])->name('api.dashboard.change-plan');
@@ -427,7 +437,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             Route::post('/{id}/approve', [AdminController::class , 'approveVideo'])->name('approve')->where('id', '[0-9]+');
             Route::post('/{id}/reject', [AdminController::class , 'rejectVideo'])->name('reject')->where('id', '[0-9]+');
             Route::get('/{id}/preview', [AdminController::class , 'previewVideo'])->name('preview')->where('id', '[0-9]+');
-            Route::get('/{id}/stream', [App\Http\Controllers\VideoStreamController::class , 'stream'])->name('stream')->where('id', '[0-9]+');
+            Route::get('/{id}/stream', [VideoStreamController::class , 'stream'])->name('stream')->where('id', '[0-9]+');
 
             // Video verification route
             Route::post('/{video}/verify', [AdminController::class , 'verifyVideoUpload'])
@@ -448,7 +458,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         );
 
         // Content Management - Subjects
-        Route::resource('subjects', App\Http\Controllers\Admin\SubjectController::class);
+        Route::resource('subjects', SubjectController::class);
 
         // Progress Management
         Route::middleware(['role:super-admin'])->prefix('progress')->name('progress.')->group(function () {
@@ -464,16 +474,16 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
         // Pricing Management
         Route::middleware(['role:super-admin'])->prefix('pricing')->name('pricing.')->group(function () {
-            Route::get('/', [App\Http\Controllers\PricingPlanController::class , 'index'])->name('index');
-            Route::get('/create', [App\Http\Controllers\PricingPlanController::class , 'create'])->name('create');
-            Route::post('/', [App\Http\Controllers\PricingPlanController::class , 'store'])->name('store');
-            Route::get('/{pricingPlan}', [App\Http\Controllers\PricingPlanController::class , 'show'])->name('show');
-            Route::get('/{pricingPlan}/edit', [App\Http\Controllers\PricingPlanController::class , 'edit'])->name('edit');
-            Route::put('/{pricingPlan}', [App\Http\Controllers\PricingPlanController::class , 'update'])->name('update');
-            Route::delete('/{pricingPlan}', [App\Http\Controllers\PricingPlanController::class , 'destroy'])->name('destroy');
-            Route::post('/{pricingPlan}/toggle-active', [App\Http\Controllers\PricingPlanController::class , 'toggleActive'])->name('toggle-active');
-            Route::post('/{pricingPlan}/toggle-featured', [App\Http\Controllers\PricingPlanController::class , 'toggleFeatured'])->name('toggle-featured');
-            Route::post('/update-sort-order', [App\Http\Controllers\PricingPlanController::class , 'updateSortOrder'])->name('update-sort-order');
+            Route::get('/', [PricingPlanController::class , 'index'])->name('index');
+            Route::get('/create', [PricingPlanController::class , 'create'])->name('create');
+            Route::post('/', [PricingPlanController::class , 'store'])->name('store');
+            Route::get('/{pricingPlan}', [PricingPlanController::class , 'show'])->name('show');
+            Route::get('/{pricingPlan}/edit', [PricingPlanController::class , 'edit'])->name('edit');
+            Route::put('/{pricingPlan}', [PricingPlanController::class , 'update'])->name('update');
+            Route::delete('/{pricingPlan}', [PricingPlanController::class , 'destroy'])->name('destroy');
+            Route::post('/{pricingPlan}/toggle-active', [PricingPlanController::class , 'toggleActive'])->name('toggle-active');
+            Route::post('/{pricingPlan}/toggle-featured', [PricingPlanController::class , 'toggleFeatured'])->name('toggle-featured');
+            Route::post('/update-sort-order', [PricingPlanController::class , 'updateSortOrder'])->name('update-sort-order');
         }
         );
 
@@ -510,13 +520,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         );
 
         // Task Management
-        Route::resource('tasks', App\Http\Controllers\Admin\TaskController::class);
+        Route::resource('tasks', TaskController::class);
 
         // Quiz Review System
         Route::prefix('quizzes')->name('quizzes.')->group(function () {
-            Route::get('/review', [App\Http\Controllers\Admin\QuizReviewController::class , 'index'])->name('review.index');
-            Route::get('/review/{id}', [App\Http\Controllers\Admin\QuizReviewController::class , 'show'])->name('review.show');
-            Route::post('/review/{id}/invalidate', [App\Http\Controllers\Admin\QuizReviewController::class , 'invalidate'])->name('review.invalidate');
+            Route::get('/review', [QuizReviewController::class , 'index'])->name('review.index');
+            Route::get('/review/{id}', [QuizReviewController::class , 'show'])->name('review.show');
+            Route::post('/review/{id}/invalidate', [QuizReviewController::class , 'invalidate'])->name('review.invalidate');
         }
         );
     });
