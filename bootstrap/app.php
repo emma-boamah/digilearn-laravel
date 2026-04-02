@@ -68,7 +68,18 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->throttleWithRedis();
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->render(function (\Illuminate\Http\Exceptions\ThrottleRequestsException $e, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'error' => 'rate_limit_exceeded',
+                    'message' => 'Too many attempts. Please try again later.',
+                ], 429);
+            }
+            
+            return back()
+                ->withInput($request->except('password'))
+                ->withErrors(['email' => 'Too many attempts. Please try again later.']);
+        });
     })
     ->withCommands([
         // Register your custom Artisan commands here
