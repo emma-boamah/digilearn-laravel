@@ -7,6 +7,12 @@ use Illuminate\Support\Facades\Auth;
 use App\Services\RecommendationService;
 use App\Models\UserEngagement;
 use App\Models\UserPreference;
+use App\Models\LessonCompletion;
+use App\Models\QuizAttempt;
+use App\Models\Video;
+use App\Models\Quiz;
+use App\Models\UserProgress;
+use App\Models\Document;
 
 class RecommendationController extends Controller
 {
@@ -123,7 +129,7 @@ class RecommendationController extends Controller
     private function getContinueLearning(int $userId): array
     {
         // Get lessons with low completion but recent activity
-        $continueItems = \App\Models\LessonCompletion::where('user_id', $userId)
+        $continueItems = LessonCompletion::where('user_id', $userId)
             ->where('completion_percentage', '<', 100)
             ->where('completion_percentage', '>', 10) // At least 10% complete
             ->where('last_watched_at', '>=', now()->subDays(30))
@@ -146,7 +152,7 @@ class RecommendationController extends Controller
         })->toArray();
 
         // Also include incomplete quizzes
-        $incompleteQuizzes = \App\Models\QuizAttempt::where('user_id', $userId)
+        $incompleteQuizzes = QuizAttempt::where('user_id', $userId)
             ->where('passed', false)
             ->where('created_at', '>=', now()->subDays(30))
             ->orderBy('created_at', 'desc')
@@ -251,7 +257,7 @@ class RecommendationController extends Controller
         $interestBasedContent = [];
 
         // Get videos in preferred subjects
-        $videos = \App\Models\Video::whereNotIn('id', $engagedContentIds)
+        $videos = Video::whereNotIn('id', $engagedContentIds)
             ->whereIn('subject', $preferredSubjects)
             ->where('is_featured', true)
             ->orderBy('views', 'desc')
@@ -271,7 +277,7 @@ class RecommendationController extends Controller
         }
 
         // Get quizzes in preferred subjects
-        $quizzes = \App\Models\Quiz::whereNotIn('id', $engagedContentIds)
+        $quizzes = Quiz::whereNotIn('id', $engagedContentIds)
             ->whereIn('subject', $preferredSubjects)
             ->orderBy('attempts_count', 'desc')
             ->limit(3)
@@ -302,7 +308,7 @@ class RecommendationController extends Controller
      */
     private function getLearningStreakInfo(int $userId): array
     {
-        $progress = \App\Models\UserProgress::where('user_id', $userId)
+        $progress = UserProgress::where('user_id', $userId)
             ->where('current_level', session('selected_level_group', 'primary-lower'))
             ->first();
 
@@ -394,19 +400,19 @@ class RecommendationController extends Controller
         try {
             switch ($contentType) {
                 case 'video':
-                    $content = \App\Models\Video::find($contentId);
+                    $content = Video::find($contentId);
                     return $content ? ['title' => $content->title, 'subject' => $content->subject] : null;
 
                 case 'quiz':
-                    $content = \App\Models\Quiz::find($contentId);
+                    $content = Quiz::find($contentId);
                     return $content ? ['title' => $content->title, 'subject' => $content->subject] : null;
 
                 case 'document':
-                    $content = \App\Models\Document::find($contentId);
+                    $content = Document::find($contentId);
                     return $content ? ['title' => $content->title, 'subject' => $content->subject] : null;
 
                 case 'lesson':
-                    $completion = \App\Models\LessonCompletion::where('lesson_id', $contentId)->first();
+                    $completion = LessonCompletion::where('lesson_id', $contentId)->first();
                     return $completion ? ['title' => $completion->lesson_title, 'subject' => $completion->lesson_subject] : null;
 
                 default:
