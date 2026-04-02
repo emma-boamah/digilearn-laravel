@@ -660,8 +660,17 @@ class AuthController extends Controller
         try {
             Mail::to($validated['email'])->send(new OtpVerificationMail($otp, $validated['name']));
         } catch (\Exception $e) {
-            Log::error('Failed to send OTP email', ['error' => $e->getMessage()]);
-            return back()->withErrors(['email' => 'Unable to send verification code. Please try again later.']);
+            $errorMsg = $e->getMessage();
+            Log::error('Failed to send OTP email', ['error' => $errorMsg]);
+            
+            if (str_contains($errorMsg, '429') || str_contains(strtolower($errorMsg), 'credit') || str_contains(strtolower($errorMsg), 'exhausted') || str_contains($errorMsg, '402')) {
+                $superAdmins = \App\Models\User::where('is_superuser', true)->get();
+                if ($superAdmins->isNotEmpty()) {
+                    \Illuminate\Support\Facades\Notification::send($superAdmins, new \App\Notifications\ZeptoMailErrorNotification($errorMsg));
+                }
+            }
+            
+            return back()->withErrors(['email' => 'Failed to send otp or reset link, try again later']);
         }
         
         return redirect()->route('verify-otp')->with('otp_email', $validated['email']);
@@ -856,12 +865,20 @@ class AuthController extends Controller
             Log::info('Sent password reset link', ['email' => $email]);
             return back()->with('status', $statusMessage);
         } catch (\Exception $e) {
+            $errorMsg = $e->getMessage();
             Log::error('Failed to send password reset email', [
                 'email' => $email,
-                'error' => $e->getMessage()
+                'error' => $errorMsg
             ]);
             
-            return back()->with('error', 'Unable to send password reset link due to a temporary system error. Please try again later.');
+            if (str_contains($errorMsg, '429') || str_contains(strtolower($errorMsg), 'credit') || str_contains(strtolower($errorMsg), 'exhausted') || str_contains($errorMsg, '402')) {
+                $superAdmins = \App\Models\User::where('is_superuser', true)->get();
+                if ($superAdmins->isNotEmpty()) {
+                    \Illuminate\Support\Facades\Notification::send($superAdmins, new \App\Notifications\ZeptoMailErrorNotification($errorMsg));
+                }
+            }
+            
+            return back()->with('error', 'Failed to send otp or reset link, try again later');
         }
     }
 
