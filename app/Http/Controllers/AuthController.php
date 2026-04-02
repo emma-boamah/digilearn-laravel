@@ -663,14 +663,14 @@ class AuthController extends Controller
             $errorMsg = $e->getMessage();
             Log::error('Failed to send OTP email', ['error' => $errorMsg]);
             
-            if (str_contains($errorMsg, '429') || str_contains(strtolower($errorMsg), 'credit') || str_contains(strtolower($errorMsg), 'exhausted') || str_contains($errorMsg, '402')) {
+            if (str_contains($errorMsg, '429') || str_contains(strtolower($errorMsg), 'credit') || str_contains(strtolower($errorMsg), 'exhausted') || str_contains($errorMsg, '402') || str_contains($errorMsg, 'TM_5001') || str_contains($errorMsg, 'LE_102')) {
                 $superAdmins = \App\Models\User::where('is_superuser', true)->get();
                 if ($superAdmins->isNotEmpty()) {
                     \Illuminate\Support\Facades\Notification::send($superAdmins, new \App\Notifications\ZeptoMailErrorNotification($errorMsg));
                 }
             }
             
-            return back()->withErrors(['email' => 'Failed to send otp or reset link, try again later']);
+            return back()->withInput()->withErrors(['email' => 'Failed to send verification code due to a temporary service issue. Please try again later.']);
         }
         
         return redirect()->route('verify-otp')->with('otp_email', $validated['email']);
@@ -824,20 +824,29 @@ class AuthController extends Controller
             return back()->with('status', $statusMessage);
         }
 
-        // Check if user is Google Auth only (assuming google_id exists and password might be null or user is known to use Google)
-        // Adjust logic if you allow both. For this requirement: "If Social Login... send email informing them"
+        // Check if user is Google Auth only
         if ($user->google_id) { 
             // Send Google Account Info Mail
             try {
                 Mail::to($user->email)->send(new GoogleAccountInfoMail($user));
                 Log::info('Sent Google account info mail for password reset', ['email' => $email]);
+                return back()->with('status', $statusMessage);
             } catch (\Exception $e) {
+                $errorMsg = $e->getMessage();
                 Log::error('Failed to send Google account info mail', [
                     'email' => $email,
-                    'error' => $e->getMessage()
+                    'error' => $errorMsg
                 ]);
+                
+                if (str_contains($errorMsg, '429') || str_contains(strtolower($errorMsg), 'credit') || str_contains(strtolower($errorMsg), 'exhausted') || str_contains($errorMsg, '402') || str_contains($errorMsg, 'TM_5001') || str_contains($errorMsg, 'LE_102')) {
+                    $superAdmins = \App\Models\User::where('is_superuser', true)->get();
+                    if ($superAdmins->isNotEmpty()) {
+                        \Illuminate\Support\Facades\Notification::send($superAdmins, new \App\Notifications\ZeptoMailErrorNotification($errorMsg));
+                    }
+                }
+                
+                return back()->withInput()->withErrors(['email' => 'Failed to send reset link due to a temporary service issue. Please try again later.']);
             }
-            return back()->with('status', $statusMessage);
         }
 
         // Local Account Flow
@@ -845,11 +854,6 @@ class AuthController extends Controller
         $token = Str::random(64);
         
         // 2. Hash token for storage
-        // Laravel's password_reset_tokens table usually has email, token, created_at.
-        // We will store the HASHED token.
-        // Note: verify your table structure. Default Laravel stores unhashed or hashed depending on provider.
-        // We will manually insert to be sure.
-        
         DB::table('password_reset_tokens')->updateOrInsert(
             ['email' => $email],
             [
@@ -871,14 +875,14 @@ class AuthController extends Controller
                 'error' => $errorMsg
             ]);
             
-            if (str_contains($errorMsg, '429') || str_contains(strtolower($errorMsg), 'credit') || str_contains(strtolower($errorMsg), 'exhausted') || str_contains($errorMsg, '402')) {
+            if (str_contains($errorMsg, '429') || str_contains(strtolower($errorMsg), 'credit') || str_contains(strtolower($errorMsg), 'exhausted') || str_contains($errorMsg, '402') || str_contains($errorMsg, 'TM_5001') || str_contains($errorMsg, 'LE_102')) {
                 $superAdmins = \App\Models\User::where('is_superuser', true)->get();
                 if ($superAdmins->isNotEmpty()) {
                     \Illuminate\Support\Facades\Notification::send($superAdmins, new \App\Notifications\ZeptoMailErrorNotification($errorMsg));
                 }
             }
             
-            return back()->with('error', 'Failed to send otp or reset link, try again later');
+            return back()->withInput()->withErrors(['email' => 'Failed to send otp or reset link due to a temporary service issue. Please try again later.']);
         }
     }
 
