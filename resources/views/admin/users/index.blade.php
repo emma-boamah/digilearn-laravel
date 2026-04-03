@@ -47,6 +47,22 @@
             </div>
         </div>
 
+        <!-- User Growth Chart -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900">User Growth</h2>
+                    <p class="text-sm text-gray-600">New user registrations over time</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="monthlyBtn" onclick="updateChart('monthly')" class="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors chart-toggle">Monthly</button>
+                    <button id="quarterlyBtn" onclick="updateChart('quarterly')" class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors chart-toggle">Quarterly</button>
+                    <button id="annualBtn" onclick="updateChart('annual')" class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors chart-toggle">Annual</button>
+                </div>
+            </div>
+            <div id="userGrowthChart" style="min-height: 350px;"></div>
+        </div>
+
         <!-- Subscription Statistics -->
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
             <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
@@ -535,4 +551,86 @@
         }
     }
 </script>
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    let growthData = @json($userGrowthData);
+    let chart;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const options = {
+            series: growthData.monthly.series,
+            chart: {
+                type: 'area',
+                height: 350,
+                toolbar: { show: false },
+                zoom: { enabled: false },
+                fontFamily: 'inherit'
+            },
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 3 },
+            colors: ['#4f46e5'],
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.45,
+                    opacityTo: 0.05,
+                    stops: [20, 100, 100, 100]
+                }
+            },
+            xaxis: {
+                categories: growthData.monthly.labels,
+                axisBorder: { show: false },
+                axisTicks: { show: false },
+                labels: {
+                    style: { colors: '#64748b' }
+                }
+            },
+            yaxis: {
+                labels: {
+                    style: { colors: '#64748b' },
+                    formatter: function(val) { return Math.floor(val); }
+                }
+            },
+            grid: {
+                borderColor: '#f1f1f1',
+                strokeDashArray: 4
+            },
+            tooltip: {
+                theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
+                x: { show: true }
+            },
+            markers: {
+                size: 4,
+                colors: ['#4f46e5'],
+                strokeColors: '#fff',
+                strokeWidth: 2,
+                hover: { size: 6 }
+            }
+        };
+
+        chart = new ApexCharts(document.querySelector("#userGrowthChart"), options);
+        chart.render();
+    });
+
+    function updateChart(period) {
+        // Update button styles
+        document.querySelectorAll('.chart-toggle').forEach(btn => {
+            btn.classList.remove('bg-blue-600', 'text-white');
+            btn.classList.add('bg-gray-100', 'text-gray-700');
+        });
+        
+        const activeBtn = document.getElementById(period + 'Btn');
+        activeBtn.classList.remove('bg-gray-100', 'text-gray-700');
+        activeBtn.classList.add('bg-blue-600', 'text-white');
+
+        // Update chart data
+        chart.updateOptions({
+            xaxis: { categories: growthData[period].labels },
+            series: growthData[period].series
+        });
+    }
+</script>
+@endpush
 @endsection

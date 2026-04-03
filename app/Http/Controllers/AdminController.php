@@ -316,7 +316,81 @@ class AdminController extends Controller
         $plans = PricingPlan::active()->ordered()->pluck('name')->toArray();
         $levels = User::distinct('grade')->pluck('grade')->filter()->toArray();
 
-        return view('admin.users.index', compact('users', 'userStats', 'levels', 'plans'));
+        // Get user growth statistics for charts
+        $userGrowthData = $this->getUserGrowthStats();
+
+        return view('admin.users.index', compact('users', 'userStats', 'levels', 'plans', 'userGrowthData'));
+    }
+
+    /**
+     * Get user growth statistics for charts
+     */
+    private function getUserGrowthStats()
+    {
+        // Monthly Growth (Last 12 months)
+        $months = [];
+        $monthlyCounts = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $monthLabel = $date->format('M Y');
+            $months[] = $monthLabel;
+            
+            $count = User::whereYear('created_at', $date->year)
+                ->whereMonth('created_at', $date->month)
+                ->count();
+            $monthlyCounts[] = $count;
+        }
+
+        // Quarterly Growth (Last 8 quarters)
+        $quarters = [];
+        $quarterlyCounts = [];
+        for ($i = 7; $i >= 0; $i--) {
+            $date = now()->subMonths($i * 3);
+            $quarter = ceil($date->month / 3);
+            $quarterLabel = "Q{$quarter} {$date->year}";
+            $quarters[] = $quarterLabel;
+
+            $startOfQuarter = $date->copy()->startOfQuarter();
+            $endOfQuarter = $date->copy()->endOfQuarter();
+            
+            $count = User::whereBetween('created_at', [$startOfQuarter, $endOfQuarter])->count();
+            $quarterlyCounts[] = $count;
+        }
+
+        // Annual Growth (Last 5 years)
+        $years = [];
+        $annualCounts = [];
+        for ($i = 4; $i >= 0; $i--) {
+            $year = now()->subYears($i)->year;
+            $years[] = (string)$year;
+            
+            $count = User::whereYear('created_at', $year)->count();
+            $annualCounts[] = $count;
+        }
+
+        return [
+            'monthly' => [
+                'labels' => $months,
+                'series' => [[
+                    'name' => 'New Users',
+                    'data' => $monthlyCounts
+                ]]
+            ],
+            'quarterly' => [
+                'labels' => $quarters,
+                'series' => [[
+                    'name' => 'New Users',
+                    'data' => $quarterlyCounts
+                ]]
+            ],
+            'annual' => [
+                'labels' => $years,
+                'series' => [[
+                    'name' => 'New Users',
+                    'data' => $annualCounts
+                ]]
+            ]
+        ];
     }
 
     /**
