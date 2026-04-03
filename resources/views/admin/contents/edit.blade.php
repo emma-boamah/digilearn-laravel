@@ -217,8 +217,9 @@
                             <div class="col-span-1 md:col-span-2 mt-2">
                                 <label class="flex items-center cursor-pointer group">
                                     <div class="relative">
+                                        <input type="hidden" name="shuffle_questions" value="0">
                                         <input type="checkbox" id="shuffle_questions" name="shuffle_questions" value="1" 
-                                               {{ ($quizModel->shuffle_questions ?? true) ? 'checked' : '' }}
+                                               {{ old('shuffle_questions', $quizModel->shuffle_questions ?? true) ? 'checked' : '' }}
                                                class="sr-only peer">
                                         <div class="w-10 h-5 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition-colors"></div>
                                         <div class="absolute left-1 top-1 w-3 h-3 bg-white rounded-full peer-checked:translate-x-5 transition-transform"></div>

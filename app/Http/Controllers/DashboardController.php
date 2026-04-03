@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 use App\Models\SavedLesson;
 use App\Models\VirtualClass;
@@ -13,24 +15,31 @@ use App\Models\Video;
 use App\Models\UserNote;
 use App\Models\Course;
 use App\Models\CommentUserLike;
+use App\Models\LevelGroup;
+use App\Models\ContentCategory;
 use App\Models\Subject;
 use App\Services\PlanChangeService;
 use App\Services\RelatedLessonsService;
+use App\Services\SubscriptionPreviewService;
+use App\Services\SubscriptionAccessService;
+use App\Services\UrlObfuscator;
+use App\Events\CommentCreated;
 use App\Models\PricingPlan;
+use App\Models\UserEngagement;
 
 class DashboardController extends Controller
 {
     private $relatedLessonsService;
     private $subscriptionPreviewService;
-    
+
     public function __construct(
         RelatedLessonsService $relatedLessonsService,
-        \App\Services\SubscriptionPreviewService $subscriptionPreviewService
+        SubscriptionPreviewService $subscriptionPreviewService
     ) {
         $this->relatedLessonsService = $relatedLessonsService;
         $this->subscriptionPreviewService = $subscriptionPreviewService;
     }
-    
+
     public function index()
     {
         $user = Auth::user();
@@ -118,9 +127,18 @@ class DashboardController extends Controller
     public function selectLevel(Request $request, $levelId)
     {
         $validLevels = [
-            'primary-1', 'primary-2', 'primary-3', 'primary-4', 'primary-5', 'primary-6',
-            'jhs-1', 'jhs-2', 'jhs-3',
-            'shs-1', 'shs-2', 'shs-3'
+            'primary-1',
+            'primary-2',
+            'primary-3',
+            'primary-4',
+            'primary-5',
+            'primary-6',
+            'jhs-1',
+            'jhs-2',
+            'jhs-3',
+            'shs-1',
+            'shs-2',
+            'shs-3'
         ];
 
         if (!in_array($levelId, $validLevels)) {
@@ -150,23 +168,23 @@ class DashboardController extends Controller
     public function getRelatedLessonsApi(Request $request, $lessonId)
     {
         $user = Auth::user();
-        
+
         $currentLesson = Video::find($lessonId);
         if (!$currentLesson) {
             return response()->json(['error' => 'Lesson not found'], 404);
         }
-        
+
         $filters = $request->validate([
             'sortBy' => 'sometimes|string|in:related_score,popularity,difficulty,instructor',
             'limit' => 'sometimes|integer|min:1|max:20'
         ]);
-        
+
         $relatedLessons = $this->relatedLessonsService->getRelatedLessons(
             $currentLesson->toArray(),
             $user,
             array_merge($filters, ['limit' => $filters['limit'] ?? 12])
         );
-        
+
         Log::channel('analytics')->info('Related lessons API accessed', [
             'user_id' => $user->id,
             'lesson_id' => $lessonId,
@@ -174,7 +192,7 @@ class DashboardController extends Controller
             'result_count' => count($relatedLessons),
             'execution_time_ms' => (microtime(true) - LARAVEL_START) * 1000
         ]);
-        
+
         return response()->json([
             'success' => true,
             'lessons' => $relatedLessons,
@@ -182,7 +200,7 @@ class DashboardController extends Controller
             'total' => count($relatedLessons)
         ]);
     }
-    
+
     /**
      * Handle level group selection and redirect appropriately
      */
@@ -204,13 +222,13 @@ class DashboardController extends Controller
         // Set the user's grade to the requested level or the lowest in the group
         $requestedGrade = $request->get('grade');
         $lowestGrade = $this->getLowestGradeForLevelGroup($groupId);
-        
+
         // Validate requested grade belongs to the group using slugs
         $groupSlugs = $this->getGradeSlugsForLevelGroup($groupId);
         if ($requestedGrade && !in_array($requestedGrade, $groupSlugs)) {
             $requestedGrade = null; // Fallback to lowest if invalid
         }
-        
+
         $gradeToSet = $requestedGrade ?: $lowestGrade;
         $user->update(['grade' => $gradeToSet]);
 
@@ -278,7 +296,7 @@ class DashboardController extends Controller
         if (!$selectedLevelGroup) {
             // Fallback to session for backward compatibility
             $selectedLevelGroup = session('selected_level_group');
-            
+
             if ($selectedLevelGroup) {
                 // Sync session value to DB for persistence if needed? 
                 // Actually, if it's only in session, we might want to keep it that way until they explicitly select.
@@ -298,7 +316,7 @@ class DashboardController extends Controller
         // Get subscription info for dashboard display
         $currentSubscription = $user->currentSubscription;
         $subscriptionInfo = null;
-        
+
         if ($currentSubscription) {
             $subscriptionInfo = [
                 'plan_name' => $currentSubscription->pricingPlan->name,
@@ -328,10 +346,10 @@ class DashboardController extends Controller
     public function digilearn(Request $request)
     {
         $user = Auth::user();
-        $levelGroups = \App\Models\LevelGroup::with('levels')->orderBy('display_order')->get();
+        $levelGroups = LevelGroup::with('levels')->orderBy('display_order')->get();
         $context = $request->query('context', 'all');
         $selectedLevelGroup = $request->query('level_group', $user->current_level_group);
-        
+
         if (!$selectedLevelGroup) {
             // Fallback to session for backward compatibility
             $selectedLevelGroup = session('selected_level_group');
@@ -346,9 +364,9 @@ class DashboardController extends Controller
         }
 
         // --- Grade Unification & Locked Logic ---
-        $group = \App\Models\LevelGroup::where('slug', $selectedLevelGroup)->with('levels')->first();
+        $group = LevelGroup::where('slug', $selectedLevelGroup)->with('levels')->first();
         $canonicalGrades = $group ? $group->levels->pluck('title')->toArray() : [];
-        
+
         // Make all grades within the group accessible
         $unlockedGrades = $canonicalGrades;
 
@@ -380,7 +398,7 @@ class DashboardController extends Controller
                     }
                 }
             }
-            
+
             if ($internalLevelKey) {
                 $lessons = $this->getLessonsForLevel($internalLevelKey, $context);
             } else {
@@ -399,17 +417,17 @@ class DashboardController extends Controller
             $universityCourses = $this->filterCoursesBySubscription($user, $universityCourses);
             $universityCourses = $this->subscriptionPreviewService->processRelatedLessons($universityCourses, $user);
             $subjects = $this->getSubjectsFromCourses($universityCourses);
-            
+
             // Default initializations to prevent undefined variable errors in view
             $lessons = [];
             $totalLessons = 0;
 
             return view('dashboard.digilearn', compact(
-                'selectedLevelGroup', 
-                'universityCourses', 
-                'subjects', 
-                'canonicalGrades', 
-                'unlockedGrades', 
+                'selectedLevelGroup',
+                'universityCourses',
+                'subjects',
+                'canonicalGrades',
+                'unlockedGrades',
                 'validSelectedGrade',
                 'lessons',
                 'totalLessons'
@@ -418,20 +436,20 @@ class DashboardController extends Controller
 
         $lessons = $this->filterLessonsBySubscription($user, $lessons);
         $lessons = $this->subscriptionPreviewService->processRelatedLessons($lessons, $user);
-        
+
         // Paginate for initial load (show 12 lessons)
         $totalLessons = count($lessons);
         $lessons = array_slice($lessons, 0, 12);
 
         $subjects = $this->getSubjectsFromLessons($lessons);
-        $categories = \App\Models\ContentCategory::orderBy('name')->get();
+        $categories = ContentCategory::orderBy('name')->get();
 
         return view('dashboard.digilearn', compact(
-            'selectedLevelGroup', 
-            'lessons', 
-            'subjects', 
-            'canonicalGrades', 
-            'unlockedGrades', 
+            'selectedLevelGroup',
+            'lessons',
+            'subjects',
+            'canonicalGrades',
+            'unlockedGrades',
             'validSelectedGrade',
             'totalLessons',
             'levelGroups',
@@ -449,7 +467,7 @@ class DashboardController extends Controller
         $page = $request->get('page', 2);
         $perPage = 12;
         $offset = ($page - 1) * $perPage;
-        
+
         $selectedLevelGroup = $user->current_level_group ?? session('selected_level_group');
         $selectedGrade = $request->get('grade');
         $subjectFilter = $request->get('subject');
@@ -477,13 +495,13 @@ class DashboardController extends Controller
 
         // Apply subscription filters
         $lessons = $this->filterLessonsBySubscription($user, $lessons);
-        
+
         // Process for preview logic
         $lessons = $this->subscriptionPreviewService->processRelatedLessons($lessons, $user);
 
         // Apply subject filter if active
         if ($subjectFilter && $subjectFilter !== 'all') {
-            $lessons = array_values(array_filter($lessons, function($l) use ($subjectFilter) {
+            $lessons = array_values(array_filter($lessons, function ($l) use ($subjectFilter) {
                 return ($l['subject_slug'] ?? '') === $subjectFilter;
             }));
         }
@@ -512,9 +530,9 @@ class DashboardController extends Controller
         $validated = $request->validate([
             'grade' => 'required|string|in:primary-1,primary-2,primary-3,primary-4,primary-5,primary-6,jhs-1,jhs-2,jhs-3,shs-1,shs-2,shs-3'
         ]);
-        
+
         Auth::user()->update(['grade' => $validated['grade']]);
-        
+
         return response()->json(['success' => true]);
     }
 
@@ -571,27 +589,27 @@ class DashboardController extends Controller
                     'error' => $e->getMessage(),
                     'ip' => request()->ip(),
                 ]);
-                 return redirect()->back()->with('error', 'Failed to join class. Please try again.');
-             }
+                return redirect()->back()->with('error', 'Failed to join class. Please try again.');
+            }
         }
 
         // Regular users must have access to live classes
-         if (!$user->canJoinLiveClasses()) {
-             Log::info('Class join denied: no live classes access', [
-                 'user_id' => $user->id,
-                 'current_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'none',
-                 'features' => $user->currentSubscription?->pricingPlan?->features ?? [],
-                 'timestamp' => now()->toISOString()
-             ]);
-             return redirect()->route('pricing')
-                 ->with('warning', 'Please upgrade your subscription to access live classes.');
-         }
+        if (!$user->canJoinLiveClasses()) {
+            Log::info('Class join denied: no live classes access', [
+                'user_id' => $user->id,
+                'current_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'none',
+                'features' => $user->currentSubscription?->pricingPlan?->features ?? [],
+                'timestamp' => now()->toISOString()
+            ]);
+            return redirect()->route('pricing')
+                ->with('warning', 'Please upgrade your subscription to access live classes.');
+        }
 
-         Log::info('Class join allowed: has live classes access', [
-             'user_id' => $user->id,
-             'current_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'none',
-             'timestamp' => now()->toISOString()
-         ]);
+        Log::info('Class join allowed: has live classes access', [
+            'user_id' => $user->id,
+            'current_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'none',
+            'timestamp' => now()->toISOString()
+        ]);
 
         $userGrade = $user->grade;
 
@@ -688,154 +706,154 @@ class DashboardController extends Controller
             }, 60000); // Ping every minute
         </script>
         EOT;
-        
+
     }
 
     /**
      * Check if user has access to a level group based on subscription
-      */
-     private function hasAccessToLevelGroup($user, $groupId)
-     {
-         // Superuser has access to all groups
-         if ($user->is_superuser) {
-             Log::info('Level group access granted: superuser', [
-                 'user_id' => $user->id,
-                 'group_id' => $groupId,
-                 'timestamp' => now()->toISOString()
-             ]);
-             return true;
-         }
+     */
+    private function hasAccessToLevelGroup($user, $groupId)
+    {
+        // Superuser has access to all groups
+        if ($user->is_superuser) {
+            Log::info('Level group access granted: superuser', [
+                'user_id' => $user->id,
+                'group_id' => $groupId,
+                'timestamp' => now()->toISOString()
+            ]);
+            return true;
+        }
 
-         // Debug log
-         Log::info('Access Check', [
-             'user_id' => $user->id,
-             'group_id' => $groupId,
-             'subscription_exists' => $user->currentSubscription ? true : false,
-             'subscription_details' => $user->currentSubscription ? [
-                 'status' => $user->currentSubscription->status,
-                 'expires_at' => $user->currentSubscription->expires_at,
-                 'trial_ends_at' => $user->currentSubscription->trial_ends_at,
-                 'is_active' => $user->currentSubscription->isActive(),
-                 'is_in_trial' => $user->currentSubscription->isInTrial(),
-             ] : null,
-         ]);
+        // Debug log
+        Log::info('Access Check', [
+            'user_id' => $user->id,
+            'group_id' => $groupId,
+            'subscription_exists' => $user->currentSubscription ? true : false,
+            'subscription_details' => $user->currentSubscription ? [
+                'status' => $user->currentSubscription->status,
+                'expires_at' => $user->currentSubscription->expires_at,
+                'trial_ends_at' => $user->currentSubscription->trial_ends_at,
+                'is_active' => $user->currentSubscription->isActive(),
+                'is_in_trial' => $user->currentSubscription->isInTrial(),
+            ] : null,
+        ]);
 
-         // Use the subscription access service OR direct check
-         try {
-             $hasAccess = \App\Services\SubscriptionAccessService::canAccessLevelGroup($user, $groupId);
-         } catch (\Exception $e) {
-             Log::warning('SubscriptionAccessService failed, using fallback', [
-                 'user_id' => $user->id,
-                 'group_id' => $groupId,
-                 'error' => $e->getMessage()
-             ]);
-             $hasAccess = false;
-         }
+        // Use the subscription access service OR direct check
+        try {
+            $hasAccess = SubscriptionAccessService::canAccessLevelGroup($user, $groupId);
+        } catch (\Exception $e) {
+            Log::warning('SubscriptionAccessService failed, using fallback', [
+                'user_id' => $user->id,
+                'group_id' => $groupId,
+                'error' => $e->getMessage()
+            ]);
+            $hasAccess = false;
+        }
 
-         // Fallback direct check if service fails
-         if (!$hasAccess) {
-             // Direct subscription check
-             $subscription = $user->currentSubscription;
-             if ($subscription && ($subscription->isActive() || $subscription->isInTrial())) {
-                 // Check if subscription plan has access to this level group
-                 $plan = $subscription->pricingPlan;
-                 if ($plan) {
-                     // Assuming pricing plan has a method to check level group access
-                     $hasAccess = $this->checkPlanAccess($plan, $groupId);
-                 }
-             }
-         }
+        // Fallback direct check if service fails
+        if (!$hasAccess) {
+            // Direct subscription check
+            $subscription = $user->currentSubscription;
+            if ($subscription && ($subscription->isActive() || $subscription->isInTrial())) {
+                // Check if subscription plan has access to this level group
+                $plan = $subscription->pricingPlan;
+                if ($plan) {
+                    // Assuming pricing plan has a method to check level group access
+                    $hasAccess = $this->checkPlanAccess($plan, $groupId);
+                }
+            }
+        }
 
-         Log::info('Level group access check result', [
-             'user_id' => $user->id,
-             'group_id' => $groupId,
-             'has_access' => $hasAccess,
-             'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'none',
-             'timestamp' => now()->toISOString()
-         ]);
+        Log::info('Level group access check result', [
+            'user_id' => $user->id,
+            'group_id' => $groupId,
+            'has_access' => $hasAccess,
+            'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'none',
+            'timestamp' => now()->toISOString()
+        ]);
 
-         return $hasAccess;
-     }
+        return $hasAccess;
+    }
 
-     /**
-      * Check if a pricing plan has access to a level group
-      * Now uses database configuration instead of hardcoded mapping
-      */
-     private function checkPlanAccess($plan, $groupId)
-     {
-         // Try using database relationship first
-         if (method_exists($plan, 'canAccessLevelGroup')) {
-             return $plan->canAccessLevelGroup($groupId);
-         }
+    /**
+     * Check if a pricing plan has access to a level group
+     * Now uses database configuration instead of hardcoded mapping
+     */
+    private function checkPlanAccess($plan, $groupId)
+    {
+        // Try using database relationship first
+        if (method_exists($plan, 'canAccessLevelGroup')) {
+            return $plan->canAccessLevelGroup($groupId);
+        }
 
-         // Fallback to slug-based mapping
-         $planSlug = $plan->slug ?? strtolower(str_replace(' ', '-', $plan->name));
+        // Fallback to slug-based mapping
+        $planSlug = $plan->slug ?? strtolower(str_replace(' ', '-', $plan->name));
 
-         $planAccessMap = [
-             'essential' => ['primary-lower', 'primary-upper', 'jhs'],
-             'home_school' => ['primary-lower', 'primary-upper', 'jhs', 'shs'],
-             'extra_tuition' => ['primary-lower', 'primary-upper', 'jhs', 'shs', 'university'],
-         ];
+        $planAccessMap = [
+            'essential' => ['primary-lower', 'primary-upper', 'jhs'],
+            'home_school' => ['primary-lower', 'primary-upper', 'jhs', 'shs'],
+            'extra_tuition' => ['primary-lower', 'primary-upper', 'jhs', 'shs', 'university'],
+        ];
 
-         return in_array($groupId, $planAccessMap[$planSlug] ?? []);
-     }
+        return in_array($groupId, $planAccessMap[$planSlug] ?? []);
+    }
 
     /**
      * Filter lessons based on user's subscription
-       */
-      private function filterLessonsBySubscription($user, $lessons)
-      {
-          // Superuser has access to all lessons
-          if ($user->is_superuser) {
-              Log::info('Full lesson access granted for superuser', [
-                  'user_id' => $user->id,
-                  'total_lessons' => count($lessons),
-                  'timestamp' => now()->toISOString()
-              ]);
-              return $lessons;
-          }
+     */
+    private function filterLessonsBySubscription($user, $lessons)
+    {
+        // Superuser has access to all lessons
+        if ($user->is_superuser) {
+            Log::info('Full lesson access granted for superuser', [
+                'user_id' => $user->id,
+                'total_lessons' => count($lessons),
+                'timestamp' => now()->toISOString()
+            ]);
+            return $lessons;
+        }
 
-          // If user has unlimited content access, return all lessons
-          if ($user->hasUnlimitedContentAccess()) {
-              Log::info('Full lesson access granted', [
-                  'user_id' => $user->id,
-                  'total_lessons' => count($lessons),
-                  'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'none',
-                  'timestamp' => now()->toISOString()
-              ]);
-              return $lessons;
-          }
+        // If user has unlimited content access, return all lessons
+        if ($user->hasUnlimitedContentAccess()) {
+            Log::info('Full lesson access granted', [
+                'user_id' => $user->id,
+                'total_lessons' => count($lessons),
+                'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'none',
+                'timestamp' => now()->toISOString()
+            ]);
+            return $lessons;
+        }
 
-          // Limit free users to first 2 lessons
-          $filteredLessons = array_slice($lessons, 0, 2);
-          Log::info('Lessons filtered for limited user', [
-              'user_id' => $user->id,
-              'total_lessons' => count($lessons),
-              'filtered_to' => count($filteredLessons),
-              'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'none',
-              'timestamp' => now()->toISOString()
-          ]);
-          return $filteredLessons;
-      }
+        // Limit free users to first 2 lessons
+        $filteredLessons = array_slice($lessons, 0, 2);
+        Log::info('Lessons filtered for limited user', [
+            'user_id' => $user->id,
+            'total_lessons' => count($lessons),
+            'filtered_to' => count($filteredLessons),
+            'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'none',
+            'timestamp' => now()->toISOString()
+        ]);
+        return $filteredLessons;
+    }
 
     /**
      * Filter courses based on user's subscription
-       */
-      private function filterCoursesBySubscription($user, $courses)
-      {
-          // Superuser has access to all courses
-          if ($user->is_superuser) {
-              return $courses;
-          }
+     */
+    private function filterCoursesBySubscription($user, $courses)
+    {
+        // Superuser has access to all courses
+        if ($user->is_superuser) {
+            return $courses;
+        }
 
-          // If user has unlimited content access, return all courses
-          if ($user->hasUnlimitedContentAccess()) {
-              return $courses;
-          }
+        // If user has unlimited content access, return all courses
+        if ($user->hasUnlimitedContentAccess()) {
+            return $courses;
+        }
 
-          // Limit free users to first 2 courses
-          return array_slice($courses, 0, 2);
-      }
+        // Limit free users to first 2 courses
+        return array_slice($courses, 0, 2);
+    }
 
     /**
      * Get lessons for a specific level (grade level)
@@ -851,42 +869,42 @@ class DashboardController extends Controller
             $query = Video::approved()
                 ->distinct()
                 ->where('video_source', '!=', 'none')
-                ->where(function($q) use ($dbLevel, $categorySlug) {
-                    
+                ->where(function ($q) use ($dbLevel, $categorySlug) {
+
                     // Base case: Videos specifically for this grade level
                     $q->where('grade_level', $dbLevel);
-                    
+
                     // Dynamic cross-level category fetching logic
                     if ($categorySlug) {
                         $isShs = str_contains(strtoupper($dbLevel), 'SHS');
                         $isJhs = str_contains(strtoupper($dbLevel), 'JHS');
-                        
+
                         // If WASSCE category is selected, SHS students can see JHS content tagged WASSCE
                         if (($categorySlug === 'wassce' || $categorySlug === 'all') && $isShs) {
-                            $q->orWhere(function($subQ) {
+                            $q->orWhere(function ($subQ) {
                                 $subQ->whereIn('grade_level', ['JHS 1', 'JHS 2', 'JHS 3'])
-                                     ->whereHas('categories', function($catQ) {
-                                         $catQ->where('slug', 'wassce')
-                                              ->orWhere('name', 'LIKE', '%WASSCE%');
-                                     });
+                                    ->whereHas('categories', function ($catQ) {
+                                        $catQ->where('slug', 'wassce')
+                                            ->orWhere('name', 'LIKE', '%WASSCE%');
+                                    });
                             });
                         }
-                        
+
                         // If BECE category is selected, SHS students can see JHS content tagged BECE
                         if (($categorySlug === 'bece' || $categorySlug === 'all') && $isShs) {
-                            $q->orWhere(function($subQ) {
+                            $q->orWhere(function ($subQ) {
                                 $subQ->whereIn('grade_level', ['JHS 1', 'JHS 2', 'JHS 3'])
-                                     ->whereHas('categories', function($catQ) {
-                                         $catQ->where('slug', 'bece')
-                                              ->orWhere('name', 'LIKE', '%BECE%');
-                                     });
+                                    ->whereHas('categories', function ($catQ) {
+                                        $catQ->where('slug', 'bece')
+                                            ->orWhere('name', 'LIKE', '%BECE%');
+                                    });
                             });
                         }
                     }
                 });
 
             if ($categorySlug && $categorySlug !== 'all') {
-                $query->whereHas('categories', function($q) use ($categorySlug) {
+                $query->whereHas('categories', function ($q) use ($categorySlug) {
                     $q->where('slug', $categorySlug);
                 });
             }
@@ -898,9 +916,9 @@ class DashboardController extends Controller
             Log::info('DashboardController::getLessonsForLevel - Videos with documents', [
                 'level' => $level,
                 'videos_count' => $videos->count(),
-                'videos_with_documents' => $videos->filter(function($video) {
+                'videos_with_documents' => $videos->filter(function ($video) {
                     return $video->documents->count() > 0;
-                })->map(function($video) {
+                })->map(function ($video) {
                     return [
                         'id' => $video->id,
                         'title' => $video->title,
@@ -924,7 +942,7 @@ class DashboardController extends Controller
                     'instructor' => $video->uploader ? $video->uploader->name : 'Unknown',
                     'subject' => $subjectName,
                     'subject_id' => $video->subject_id,
-                    'subject_slug' => \Illuminate\Support\Str::slug($subjectName),
+                    'subject_slug' => Str::slug($subjectName),
                     'year' => $video->created_at->format('Y'),
                     'level' => $level,
                     'level_display' => $this->getLevelDisplayName($level),
@@ -933,7 +951,7 @@ class DashboardController extends Controller
                     'vimeo_id' => $video->vimeo_id,
                     'external_video_id' => $video->external_video_id,
                     'mux_playback_id' => $video->mux_playback_id,
-                    'categories' => $video->categories->map(function($cat) {
+                    'categories' => $video->categories->map(function ($cat) {
                         return [
                             'id' => $cat->id,
                             'name' => $cat->name,
@@ -941,7 +959,7 @@ class DashboardController extends Controller
                         ];
                     })->toArray(),
                     'documents_count' => $video->documents->count(),
-                    'documents' => $video->documents->map(function($doc) {
+                    'documents' => $video->documents->map(function ($doc) {
                         return [
                             'id' => $doc->id,
                             'title' => $doc->title,
@@ -953,7 +971,7 @@ class DashboardController extends Controller
                     }),
                     'has_quiz' => $video->quiz ? true : false,
                     'quiz_id' => $video->quiz ? $video->quiz->id : null,
-                    'encoded_quiz_id' => $video->quiz ? \App\Services\UrlObfuscator::encode($video->quiz->id) : null,
+                    'encoded_quiz_id' => $video->quiz ? UrlObfuscator::encode($video->quiz->id) : null,
                     'views' => $video->views ?? 0,
                     'is_featured' => $video->is_featured,
                 ];
@@ -1059,7 +1077,7 @@ class DashboardController extends Controller
                     'lessons_count' => $stats['videos_count'],
                     'documents_count' => $stats['documents_count'],
                     'quizzes_count' => $stats['quizzes_count'],
-                    'quizzes' => $course->quizzes->map(function($quiz) {
+                    'quizzes' => $course->quizzes->map(function ($quiz) {
                         return [
                             'id' => $quiz->id,
                             'title' => $quiz->title,
@@ -1146,11 +1164,11 @@ class DashboardController extends Controller
 
     /**
      * Check if user has access to personalized learning
-      */
-     private function hasPersonalizedAccess($user)
-     {
-         return $user->hasPersonalizedLearningAccess();
-     }
+     */
+    private function hasPersonalizedAccess($user)
+    {
+        return $user->hasPersonalizedLearningAccess();
+    }
 
     /**
      * Show shop page
@@ -1198,13 +1216,13 @@ class DashboardController extends Controller
             // Load course content instead of individual lesson
             $course = Course::with([
                 'creator',
-                'videos' => function($query) {
+                'videos' => function ($query) {
                     $query->orderBy('course_videos.order');
                 },
-                'documents' => function($query) {
+                'documents' => function ($query) {
                     $query->orderBy('course_documents.order');
                 },
-                'quizzes' => function($query) {
+                'quizzes' => function ($query) {
                     $query->orderBy('course_quizzes.order');
                 }
             ])->findOrFail($courseId);
@@ -1241,86 +1259,86 @@ class DashboardController extends Controller
         ]);
 
         // University: search across all course lessons
-            if ($selectedLevelGroup === 'university') {
-                $allLessons = [];
-                // Build a flat list of all university lessons by iterating known programs
-                foreach (['computer-science', 'business-administration'] as $programKey) {
-                    $courses = $this->getCoursesForProgram($programKey);
-                    foreach ($courses as $course) {
-                        $courseLessons = $this->getLessonsForCourse($course['id']);
-                        foreach ($courseLessons as $ul) {
-                            // Attach helpful metadata to lesson (subject, instructor, year, level_display)
-                            $ul['subject'] = $course['name'] ?? ($course['code'] ?? '');
-                            $ul['instructor'] = $course['instructor'] ?? ($ul['instructor'] ?? '');
-                            $video = Video::find($ul['video_id']);
-                            $ul['year'] = $video ? $video->created_at->format('Y') : date('Y');
-                            $ul['level_display'] = $course['code'] ?? ($course['id'] ?? '');
-                            $allLessons[] = $ul;
-                        }
+        if ($selectedLevelGroup === 'university') {
+            $allLessons = [];
+            // Build a flat list of all university lessons by iterating known programs
+            foreach (['computer-science', 'business-administration'] as $programKey) {
+                $courses = $this->getCoursesForProgram($programKey);
+                foreach ($courses as $course) {
+                    $courseLessons = $this->getLessonsForCourse($course['id']);
+                    foreach ($courseLessons as $ul) {
+                        // Attach helpful metadata to lesson (subject, instructor, year, level_display)
+                        $ul['subject'] = $course['name'] ?? ($course['code'] ?? '');
+                        $ul['instructor'] = $course['instructor'] ?? ($ul['instructor'] ?? '');
+                        $video = Video::find($ul['video_id']);
+                        $ul['year'] = $video ? $video->created_at->format('Y') : date('Y');
+                        $ul['level_display'] = $course['code'] ?? ($course['id'] ?? '');
+                        $allLessons[] = $ul;
                     }
                 }
-                
-                $lesson = null;
-                foreach ($allLessons as $l) {
-                    if ($l['id'] == $lessonId) {
-                        $lesson = $l;
-                        break;
-                    }
-                }
-
-                if (!$lesson) {
-                    return redirect()->route('dashboard.digilearn')
-                        ->withErrors(['lesson' => 'Lesson not found.']);
-                }
-
-                // CRITICAL: Get actual video duration from database
-                $videoDuration = null;
-                if (isset($lesson['id'])) {
-                    $video = \App\Models\Video::find($lesson['id']);
-                    if ($video) {
-                        // Try to get actual duration from video source
-                        $videoDuration = $video->getDuration();
-                        
-                        Log::info('Video duration retrieved', [
-                            'video_id' => $lesson['id'],
-                            'duration' => $videoDuration,
-                            'video_source' => $video->video_source
-                        ]);
-                    }
-                }
-                // Add duration to lesson array
-                $lesson['total_duration'] = $videoDuration ?: 300; // Fallback to 300 if not found
-                $lesson['duration_seconds'] = $videoDuration ?: 300;
-                $lesson['level_group'] = $this->getLevelGroup($lesson['level'] ?? 'primary-lower');
-
-                Log::info('University lesson prepared for view', [
-                    'lesson_id' => $lessonId,
-                    'total_duration' => $lesson['total_duration'] ?? 0,
-                    'video_source' => $lesson['video_source'] ?? 'unknown'
-                ]);
-
-                // Related lessons from same course if possible
-                $relatedLessons = array_values(array_filter($allLessons, function ($l) use ($lessonId) {
-                    return $l['id'] !== $lessonId;
-                }));
-                $relatedLessons = array_slice($relatedLessons, 0, 8);
-                $relatedLessons = $this->subscriptionPreviewService->processRelatedLessons($relatedLessons, $user);
-
-                Log::channel('security')->info('lesson_viewed', [
-                    'user_id' => Auth::id(),
-                    'lesson_id' => $lessonId,
-                    'selected_level_group' => $selectedLevelGroup,
-                    'lesson_level' => $lesson['level'] ?? null,
-                    'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
-                    'ip' => request()->ip(),
-                    'timestamp' => Carbon::now()->toISOString()
-                ]);
-
-                // Fetch user notes for the lesson
-                $note = UserNote::forUserAndVideo(Auth::id(), $lesson['id'])->first();
-
-                return view('dashboard.lesson-view', compact('lesson', 'selectedLevelGroup', 'relatedLessons', 'note'));
             }
+
+            $lesson = null;
+            foreach ($allLessons as $l) {
+                if ($l['id'] == $lessonId) {
+                    $lesson = $l;
+                    break;
+                }
+            }
+
+            if (!$lesson) {
+                return redirect()->route('dashboard.digilearn')
+                    ->withErrors(['lesson' => 'Lesson not found.']);
+            }
+
+            // CRITICAL: Get actual video duration from database
+            $videoDuration = null;
+            if (isset($lesson['id'])) {
+                $video = Video::find($lesson['id']);
+                if ($video) {
+                    // Try to get actual duration from video source
+                    $videoDuration = $video->getDuration();
+
+                    Log::info('Video duration retrieved', [
+                        'video_id' => $lesson['id'],
+                        'duration' => $videoDuration,
+                        'video_source' => $video->video_source
+                    ]);
+                }
+            }
+            // Add duration to lesson array
+            $lesson['total_duration'] = $videoDuration ?: 300; // Fallback to 300 if not found
+            $lesson['duration_seconds'] = $videoDuration ?: 300;
+            $lesson['level_group'] = $this->getLevelGroup($lesson['level'] ?? 'primary-lower');
+
+            Log::info('University lesson prepared for view', [
+                'lesson_id' => $lessonId,
+                'total_duration' => $lesson['total_duration'] ?? 0,
+                'video_source' => $lesson['video_source'] ?? 'unknown'
+            ]);
+
+            // Related lessons from same course if possible
+            $relatedLessons = array_values(array_filter($allLessons, function ($l) use ($lessonId) {
+                return $l['id'] !== $lessonId;
+            }));
+            $relatedLessons = array_slice($relatedLessons, 0, 8);
+            $relatedLessons = $this->subscriptionPreviewService->processRelatedLessons($relatedLessons, $user);
+
+            Log::channel('security')->info('lesson_viewed', [
+                'user_id' => Auth::id(),
+                'lesson_id' => $lessonId,
+                'selected_level_group' => $selectedLevelGroup,
+                'lesson_level' => $lesson['level'] ?? null,
+                'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
+                'ip' => request()->ip(),
+                'timestamp' => Carbon::now()->toISOString()
+            ]);
+
+            // Fetch user notes for the lesson
+            $note = UserNote::forUserAndVideo(Auth::id(), $lesson['id'])->first();
+
+            return view('dashboard.lesson-view', compact('lesson', 'selectedLevelGroup', 'relatedLessons', 'note'));
+        }
 
 
         // Get all lessons from the level group (non-university)
@@ -1351,13 +1369,13 @@ class DashboardController extends Controller
         if (!$lesson) {
             // Fallback: Check if lesson exists globally (for cross-level access)
             $video = Video::find($lessonId);
-            
+
             if ($video) {
                 $levelSlug = $this->convertLevelFormatBack($video->grade_level);
-                
+
                 // Switch context to this lesson's group
                 $selectedLevelGroup = $this->getLevelGroup($levelSlug);
-                
+
                 // Fetch lesson details from its specific level
                 $levelLessons = $this->getLessonsForLevel($levelSlug);
                 foreach ($levelLessons as $l) {
@@ -1386,11 +1404,11 @@ class DashboardController extends Controller
         // CRITICAL: Get actual video duration from database
         $videoDuration = null;
         if (isset($lesson['id'])) {
-            $video = \App\Models\Video::find($lesson['id']);
+            $video = Video::find($lesson['id']);
             if ($video) {
                 // Try to get actual duration from video source
                 $videoDuration = $video->getDuration();
-                
+
                 Log::info('Video duration retrieved', [
                     'video_id' => $lesson['id'],
                     'duration' => $videoDuration,
@@ -1460,7 +1478,7 @@ class DashboardController extends Controller
             // Check if it's a known level group slug first (e.g. from the level selection)
             $validLevelGroups = ['primary-lower', 'primary-upper', 'jhs', 'shs', 'university'];
             if (in_array($lesson['level'], $validLevelGroups)) {
-                return \App\Services\SubscriptionAccessService::canAccessLevelGroup($user, $lesson['level']);
+                return SubscriptionAccessService::canAccessLevelGroup($user, $lesson['level']);
             }
         }
 
@@ -1472,15 +1490,15 @@ class DashboardController extends Controller
 
         // If we still don't have a grade level but we have an ID, we need to fetch the lesson to check its true level
         if (!$gradeLevel && isset($lesson['id'])) {
-            $decodedId = \App\Services\UrlObfuscator::decode($lesson['id']) ?? $lesson['id'];
-            $video = \App\Models\Video::find($decodedId);
+            $decodedId = UrlObfuscator::decode($lesson['id']) ?? $lesson['id'];
+            $video = Video::find($decodedId);
             if ($video) {
                 // Determine grade level based on the video's properties (adjust to your model's actual fields if different)
                 // We'll search for the relevant level group/grade level using the findVideoByLessonId equivalent logic if needed,
                 // but videos usually belong to a category or have some attached metadata.
                 // Assuming it has a $video->level or similar if it's a direct Video model.
                 // For safety, let's keep the default fallback if no explicit grade level can be derived.
-                
+
                 // Let's try to find it in the level groups to get its proper level
                 $foundGradeLevel = null;
                 $levelGroups = $this->getLevelGroups();
@@ -1504,7 +1522,7 @@ class DashboardController extends Controller
 
         // Use the centralized subscription access service
         // This handles superuser bypass internally
-        return \App\Services\SubscriptionAccessService::canAccessGradeLevel(
+        return SubscriptionAccessService::canAccessGradeLevel(
             $user,
             $gradeLevel ?? 'Primary 1'
         );
@@ -1566,7 +1584,7 @@ class DashboardController extends Controller
             $comment->load('user');
 
             // Fire the event for real-time broadcasting
-            broadcast(new \App\Events\CommentCreated($comment))->toOthers();
+            broadcast(new CommentCreated($comment))->toOthers();
 
             Log::info('lesson_comment_posted', [
                 'user_id' => Auth::id(),
@@ -1637,11 +1655,11 @@ class DashboardController extends Controller
                         return [
                             'id' => $reply->id,
                             'content' => $reply->content,
-                                'user' => [
-                                    'name' => $reply->user->name,
-                                    'avatar' => $reply->user->avatar_url,
-                                    'initials' => $reply->user->initials,
-                                ],
+                            'user' => [
+                                'name' => $reply->user->name,
+                                'avatar' => $reply->user->avatar_url,
+                                'initials' => $reply->user->initials,
+                            ],
                             'time_ago' => $reply->time_ago,
                             'likes_count' => $reply->likes_count,
                             'dislikes_count' => $reply->dislikes_count,
@@ -1814,24 +1832,24 @@ class DashboardController extends Controller
         $savedLessons = SavedLesson::where('user_id', Auth::id())
             ->orderBy('saved_at', 'desc')
             ->get();
-            
+
         // Because lesson_id in saved_lessons is an encoded string, the standard Eloquent 
         // relationship won't work automatically if it expects an integer ID.
         // We'll manually decode and fetch the videos.
-        $decodedIds = $savedLessons->map(function($sl) {
-            return \App\Services\UrlObfuscator::decode($sl->lesson_id);
+        $decodedIds = $savedLessons->map(function ($sl) {
+            return UrlObfuscator::decode($sl->lesson_id);
         })->filter()->unique()->toArray();
-        
+
         $videos = Video::with('categories')->whereIn('id', $decodedIds)->get()->keyBy('id');
-        
+
         // Populate the relation manually
         foreach ($savedLessons as $savedLesson) {
-            $decodedId = \App\Services\UrlObfuscator::decode($savedLesson->lesson_id);
+            $decodedId = UrlObfuscator::decode($savedLesson->lesson_id);
             if ($decodedId && isset($videos[$decodedId])) {
                 $savedLesson->setRelation('video', $videos[$decodedId]);
             }
         }
-        
+
         return view('dashboard.saved-lessons', compact('savedLessons'));
     }
 
@@ -1910,7 +1928,7 @@ class DashboardController extends Controller
                 'message' => 'Lesson saved successfully!',
                 'saved' => true
             ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             Log::warning('lesson_save_validation_error', [
                 'user_id' => Auth::id(),
                 'lesson_id' => $lessonId,
@@ -1962,8 +1980,8 @@ class DashboardController extends Controller
     {
         try {
             $deleted = SavedLesson::where('user_id', Auth::id())
-                                 ->where('lesson_id', $lessonId)
-                                 ->delete();
+                ->where('lesson_id', $lessonId)
+                ->delete();
 
             if ($deleted) {
                 Log::info('lesson_unsaved', [
@@ -2006,7 +2024,7 @@ class DashboardController extends Controller
     public function checkLessonSaved($lessonId)
     {
         $isSaved = SavedLesson::isSaved(Auth::id(), $lessonId);
-        
+
         return response()->json([
             'saved' => $isSaved
         ]);
@@ -2046,7 +2064,7 @@ class DashboardController extends Controller
         }
 
         $validYears = ['uni-1', 'uni-2', 'uni-3', 'uni-4'];
-        
+
         if (!in_array($yearId, $validYears)) {
             return redirect()->route('dashboard.university.years')
                 ->withErrors(['year' => 'Invalid university year selected.']);
@@ -2093,7 +2111,7 @@ class DashboardController extends Controller
 
         $user = Auth::user();
         $program = $this->getProgramById($programId);
-        
+
         if (!$program) {
             return redirect()->route('dashboard.university.programs', $yearId)
                 ->withErrors(['program' => 'Program not found.']);
@@ -2125,7 +2143,7 @@ class DashboardController extends Controller
 
         $user = Auth::user();
         $course = $this->getCourseById($courseId);
-        
+
         if (!$course) {
             return redirect()->route('dashboard.university.program.courses', [$yearId, $programId])
                 ->withErrors(['course' => 'Course not found.']);
@@ -2187,8 +2205,9 @@ class DashboardController extends Controller
      */
     private function getUniversityYears()
     {
-        $group = \App\Models\LevelGroup::where('slug', 'university')->first();
-        if (!$group) return [];
+        $group = LevelGroup::where('slug', 'university')->first();
+        if (!$group)
+            return [];
 
         return $group->levels->map(function ($level, $index) {
             return [
@@ -2309,7 +2328,7 @@ class DashboardController extends Controller
     {
         $allPrograms = [];
         $years = $this->getUniversityYears();
-        
+
         foreach ($years as $year) {
             $programs = $this->getUniversityPrograms($year['id']);
             $allPrograms = array_merge($allPrograms, $programs);
@@ -2452,7 +2471,7 @@ class DashboardController extends Controller
                     'external_video_id' => $video->external_video_id,
                     'mux_playback_id' => $video->mux_playback_id,
                     'documents_count' => $video->documents->count(),
-                    'documents' => $video->documents->map(function($doc) {
+                    'documents' => $video->documents->map(function ($doc) {
                         return [
                             'id' => $doc->id,
                             'title' => $doc->title,
@@ -2464,7 +2483,7 @@ class DashboardController extends Controller
                     }),
                     'has_quiz' => $video->quiz ? true : false,
                     'quiz_id' => $video->quiz ? $video->quiz->id : null,
-                    'encoded_quiz_id' => $video->quiz ? \App\Services\UrlObfuscator::encode($video->quiz->id) : null,
+                    'encoded_quiz_id' => $video->quiz ? UrlObfuscator::encode($video->quiz->id) : null,
                 ];
 
                 $lessons[] = $lesson;
@@ -2475,7 +2494,9 @@ class DashboardController extends Controller
                 'course_title' => $course->title,
                 'videos_found' => $videos->count(),
                 'lessons_returned' => count($lessons),
-                'documents_loaded' => collect($lessons)->sum(function($lesson) { return count($lesson['documents'] ?? []); }),
+                'documents_loaded' => collect($lessons)->sum(function ($lesson) {
+                    return count($lesson['documents'] ?? []);
+                }),
                 'timestamp' => now()->toISOString()
             ]);
 
@@ -2497,7 +2518,7 @@ class DashboardController extends Controller
      */
     private function getAvailableLevels()
     {
-        return \App\Models\LevelGroup::orderBy('display_order')
+        return LevelGroup::orderBy('display_order')
             ->get()
             ->map(function ($group) {
                 return [
@@ -2545,7 +2566,7 @@ class DashboardController extends Controller
     private function getLessonsForLevelGroup($groupId, $categorySlug = null)
     {
         $levelGroups = $this->getLevelGroups();
-        
+
         if (!isset($levelGroups[$groupId])) {
             return [];
         }
@@ -2561,13 +2582,13 @@ class DashboardController extends Controller
         foreach ($levels as $levelData) {
             $levelId = $levelData['id'];
             $levelLessons = $this->getLessonsForLevel($levelId, $categorySlug);
-            
+
             // Add level information to each lesson
             foreach ($levelLessons as &$lesson) {
                 $lesson['level'] = $levelId;
                 $lesson['level_display'] = $this->getLevelDisplayName($levelId);
             }
-            
+
             $allLessons = array_merge($allLessons, $levelLessons);
         }
 
@@ -2582,7 +2603,7 @@ class DashboardController extends Controller
     {
         $displayNames = [
             'primary-1' => 'Primary 1',
-            'primary-2' => 'Primary 2', 
+            'primary-2' => 'Primary 2',
             'primary-3' => 'Primary 3',
             'primary-4' => 'Primary 4',
             'primary-5' => 'Primary 5',
@@ -2609,7 +2630,7 @@ class DashboardController extends Controller
      */
     public function getLevelGroups()
     {
-        return \App\Models\LevelGroup::with('levels')
+        return LevelGroup::with('levels')
             ->orderBy('display_order')
             ->get()
             ->keyBy('slug')
@@ -2707,8 +2728,8 @@ class DashboardController extends Controller
      */
     private function getGradeLevelsForLevelGroup($levelGroupSlug)
     {
-        $group = \App\Models\LevelGroup::where('slug', $levelGroupSlug)->first();
-        
+        $group = LevelGroup::where('slug', $levelGroupSlug)->first();
+
         if (!$group) {
             return [];
         }
@@ -2721,8 +2742,8 @@ class DashboardController extends Controller
      */
     private function getGradeSlugsForLevelGroup($levelGroupSlug)
     {
-        $group = \App\Models\LevelGroup::where('slug', $levelGroupSlug)->first();
-        
+        $group = LevelGroup::where('slug', $levelGroupSlug)->first();
+
         if (!$group) {
             return [];
         }
@@ -2732,8 +2753,8 @@ class DashboardController extends Controller
 
     private function getLowestGradeForLevelGroup($levelGroupSlug)
     {
-        $group = \App\Models\LevelGroup::where('slug', $levelGroupSlug)->first();
-        
+        $group = LevelGroup::where('slug', $levelGroupSlug)->first();
+
         if (!$group) {
             return null;
         }
@@ -2746,7 +2767,8 @@ class DashboardController extends Controller
      */
     private function formatDuration($seconds)
     {
-        if (!$seconds) return 'Unknown';
+        if (!$seconds)
+            return 'Unknown';
 
         $hours = floor($seconds / 3600);
         $minutes = floor(($seconds % 3600) / 60);
@@ -2792,7 +2814,8 @@ class DashboardController extends Controller
         $user = \App\Models\User::with('activeProgress')->find($userId);
         $currentProgress = $user->activeProgress;
 
-        if (!$currentProgress) return;
+        if (!$currentProgress)
+            return;
 
         // Calculate completion metrics
         $completionRate = $this->getTotalLessonsInLevel($currentProgress->current_level) > 0
@@ -2836,7 +2859,7 @@ class DashboardController extends Controller
      */
     private function getTotalLessonsInLevel($level)
     {
-        return \App\Models\Video::approved()->where('grade_level', $level)->count();
+        return Video::approved()->where('grade_level', $level)->count();
     }
 
     /**
@@ -2875,7 +2898,7 @@ class DashboardController extends Controller
     private function getLessonById($lessonId, $level)
     {
         $lessons = $this->getLessonsForLevel($level);
-        
+
         foreach ($lessons as $lesson) {
             if ($lesson['id'] == $lessonId) {
                 return $lesson;
@@ -2979,7 +3002,7 @@ class DashboardController extends Controller
             // Title validation rules
             if (empty($title)) {
                 // If no title provided, use slug fallback
-                $title = \Illuminate\Support\Str::slug($this->getVideoTitle($videoId));
+                $title = Str::slug($this->getVideoTitle($videoId));
             } else {
                 // Check minimum length
                 if (strlen($title) < 3) {
@@ -3057,7 +3080,7 @@ class DashboardController extends Controller
                     'action' => 'created'
                 ]);
             }
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed.',
@@ -3158,345 +3181,345 @@ class DashboardController extends Controller
     /**
      * Get all user notes (for a dashboard or overview)
      */
-     public function getAllUserNotes()
-     {
-         try {
-             $userId = Auth::id();
+    public function getAllUserNotes()
+    {
+        try {
+            $userId = Auth::id();
 
-             $notes = UserNote::where('user_id', $userId)
-                 ->with('video')
-                 ->orderBy('updated_at', 'desc')
-                 ->get()
-                 ->map(function ($note) {
-                     return [
-                         'id' => $note->id,
-                         'video_id' => $note->video_id,
-                         'title' => $note->title ?: 'Untitled Notes',
-                         'content_preview' => substr(strip_tags($note->content), 0, 100) . '...',
-                         'updated_at' => $note->formatted_updated_at,
-                         'video_title' => $note->video ? $note->video->title : 'Unknown Video',
-                     ];
-                 });
+            $notes = UserNote::where('user_id', $userId)
+                ->with('video')
+                ->orderBy('updated_at', 'desc')
+                ->get()
+                ->map(function ($note) {
+                    return [
+                        'id' => $note->id,
+                        'video_id' => $note->video_id,
+                        'title' => $note->title ?: 'Untitled Notes',
+                        'content_preview' => substr(strip_tags($note->content), 0, 100) . '...',
+                        'updated_at' => $note->formatted_updated_at,
+                        'video_title' => $note->video ? $note->video->title : 'Unknown Video',
+                    ];
+                });
 
-             return response()->json([
-                 'success' => true,
-                 'notes' => $notes
-             ]);
-         } catch (\Exception $e) {
-             Log::error('get_all_user_notes_error', [
-                 'user_id' => Auth::id(),
-                 'error' => $e->getMessage()
-             ]);
+            return response()->json([
+                'success' => true,
+                'notes' => $notes
+            ]);
+        } catch (\Exception $e) {
+            Log::error('get_all_user_notes_error', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
 
-             return response()->json([
-                 'success' => false,
-                 'message' => 'Failed to load notes.'
-             ], 500);
-         }
-     }
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load notes.'
+            ], 500);
+        }
+    }
 
-     /**
-      * Search lessons within user's level group (YouTube-like search)
-      */
-     public function searchLessons(Request $request)
-     {
-         $query = $request->get('q', '');
-         $levelGroup = $request->get('level_group', session('selected_level_group'));
+    /**
+     * Search lessons within user's level group (YouTube-like search)
+     */
+    public function searchLessons(Request $request)
+    {
+        $query = $request->get('q', '');
+        $levelGroup = $request->get('level_group', session('selected_level_group'));
 
-         if (!$levelGroup) {
-             return response()->json(['success' => false, 'message' => 'No level group selected'], 400);
-         }
+        if (!$levelGroup) {
+            return response()->json(['success' => false, 'message' => 'No level group selected'], 400);
+        }
 
-         $user = Auth::user();
-         $gradeLevels = $this->getGradeLevelsForLevelGroup($levelGroup);
+        $user = Auth::user();
+        $gradeLevels = $this->getGradeLevelsForLevelGroup($levelGroup);
 
-         try {
-             // YouTube-like search: split query into words and search each word
-             $videos = Video::approved()
-                 ->whereIn('grade_level', $gradeLevels)
-                 ->where(function($q) use ($query) {
-                     if (empty($query)) {
-                         return; // Return all if no query
-                     }
+        try {
+            // YouTube-like search: split query into words and search each word
+            $videos = Video::approved()
+                ->whereIn('grade_level', $gradeLevels)
+                ->where(function ($q) use ($query) {
+                    if (empty($query)) {
+                        return; // Return all if no query
+                    }
 
-                     $words = explode(' ', trim($query));
-                     foreach ($words as $word) {
-                         if (!empty(trim($word))) {
-                             $q->where(function($subQ) use ($word) {
-                                 $subQ->where('title', 'LIKE', "%{$word}%")
-                                      ->orWhere('description', 'LIKE', "%{$word}%");
-                             });
-                         }
-                     }
-                 })
-                 ->with(['uploader', 'documents', 'quiz'])
-                 ->orderBy('created_at', 'desc')
-                 ->limit(50) // Limit for performance
-                 ->get();
+                    $words = explode(' ', trim($query));
+                    foreach ($words as $word) {
+                        if (!empty(trim($word))) {
+                            $q->where(function ($subQ) use ($word) {
+                                $subQ->where('title', 'LIKE', "%{$word}%")
+                                    ->orWhere('description', 'LIKE', "%{$word}%");
+                            });
+                        }
+                    }
+                })
+                ->with(['uploader', 'documents', 'quiz'])
+                ->orderBy('created_at', 'desc')
+                ->limit(50) // Limit for performance
+                ->get();
 
-             // Format results like getLessonsForLevel
-             $lessons = [];
-             foreach ($videos as $video) {
-                 $lesson = [
-                     'id' => $video->id,
-                     'encoded_id' => \App\Services\UrlObfuscator::encode($video->id),
-                     'video_id' => $video->id,
-                     'title' => $video->title,
-                     'description' => $video->description,
-                     'duration' => $this->formatDuration($video->getDuration()),
-                     'video_url' => $video->getVideoUrl(),
-                     'thumbnail' => $video->getThumbnailUrl(),
-                     'instructor' => $video->uploader ? $video->uploader->name : 'Unknown',
-                     'subject' => $this->getSubjectFromLevel($this->convertLevelFormatBack($video->grade_level)),
-                     'year' => $video->created_at->format('Y'),
-                     'level' => $this->convertLevelFormatBack($video->grade_level),
-                     'level_display' => $this->getLevelDisplayName($this->convertLevelFormatBack($video->grade_level)),
-                     'video_source' => $video->video_source,
-                     'vimeo_id' => $video->vimeo_id,
-                     'external_video_id' => $video->external_video_id,
-                     'mux_playback_id' => $video->mux_playback_id,
-                     'documents_count' => $video->documents->count(),
-                     'documents' => $video->documents->map(function($doc) {
-                         return [
-                             'id' => $doc->id,
-                             'title' => $doc->title,
-                             'file_path' => $doc->file_path,
-                             'description' => $doc->description,
-                             'uploaded_by' => $doc->uploader ? $doc->uploader->name : 'Unknown',
-                             'views' => $doc->views ?? 0,
-                         ];
-                     }),
-                     'has_quiz' => $video->quiz ? true : false,
-                     'quiz_id' => $video->quiz ? $video->quiz->id : null,
-                     'encoded_quiz_id' => $video->quiz ? \App\Services\UrlObfuscator::encode($video->quiz->id) : null,
-                     'views' => $video->views ?? 0,
-                     'is_featured' => $video->is_featured,
-                 ];
+            // Format results like getLessonsForLevel
+            $lessons = [];
+            foreach ($videos as $video) {
+                $lesson = [
+                    'id' => $video->id,
+                    'encoded_id' => UrlObfuscator::encode($video->id),
+                    'video_id' => $video->id,
+                    'title' => $video->title,
+                    'description' => $video->description,
+                    'duration' => $this->formatDuration($video->getDuration()),
+                    'video_url' => $video->getVideoUrl(),
+                    'thumbnail' => $video->getThumbnailUrl(),
+                    'instructor' => $video->uploader ? $video->uploader->name : 'Unknown',
+                    'subject' => $this->getSubjectFromLevel($this->convertLevelFormatBack($video->grade_level)),
+                    'year' => $video->created_at->format('Y'),
+                    'level' => $this->convertLevelFormatBack($video->grade_level),
+                    'level_display' => $this->getLevelDisplayName($this->convertLevelFormatBack($video->grade_level)),
+                    'video_source' => $video->video_source,
+                    'vimeo_id' => $video->vimeo_id,
+                    'external_video_id' => $video->external_video_id,
+                    'mux_playback_id' => $video->mux_playback_id,
+                    'documents_count' => $video->documents->count(),
+                    'documents' => $video->documents->map(function ($doc) {
+                        return [
+                            'id' => $doc->id,
+                            'title' => $doc->title,
+                            'file_path' => $doc->file_path,
+                            'description' => $doc->description,
+                            'uploaded_by' => $doc->uploader ? $doc->uploader->name : 'Unknown',
+                            'views' => $doc->views ?? 0,
+                        ];
+                    }),
+                    'has_quiz' => $video->quiz ? true : false,
+                    'quiz_id' => $video->quiz ? $video->quiz->id : null,
+                    'encoded_quiz_id' => $video->quiz ? UrlObfuscator::encode($video->quiz->id) : null,
+                    'views' => $video->views ?? 0,
+                    'is_featured' => $video->is_featured,
+                ];
 
-                 $lessons[] = $lesson;
-             }
+                $lessons[] = $lesson;
+            }
 
-             // Apply subscription filtering
-             $filteredLessons = $this->filterLessonsBySubscription($user, $lessons);
-             
-             // Process for preview logic
-             $filteredLessons = $this->subscriptionPreviewService->processRelatedLessons($filteredLessons, $user);
+            // Apply subscription filtering
+            $filteredLessons = $this->filterLessonsBySubscription($user, $lessons);
 
-             Log::info('search_lessons_executed', [
-                 'user_id' => Auth::id(),
-                 'query' => $query,
-                 'level_group' => $levelGroup,
-                 'grade_levels' => $gradeLevels,
-                 'total_videos_found' => $videos->count(),
-                 'filtered_lessons_returned' => count($filteredLessons),
-                 'timestamp' => now()->toISOString()
-             ]);
+            // Process for preview logic
+            $filteredLessons = $this->subscriptionPreviewService->processRelatedLessons($filteredLessons, $user);
 
-             return response()->json([
-                 'success' => true,
-                 'lessons' => $filteredLessons,
-                 'query' => $query,
-                 'level_group' => $levelGroup,
-                 'total_results' => count($filteredLessons)
-             ]);
+            Log::info('search_lessons_executed', [
+                'user_id' => Auth::id(),
+                'query' => $query,
+                'level_group' => $levelGroup,
+                'grade_levels' => $gradeLevels,
+                'total_videos_found' => $videos->count(),
+                'filtered_lessons_returned' => count($filteredLessons),
+                'timestamp' => now()->toISOString()
+            ]);
 
-         } catch (\Exception $e) {
-             Log::error('search_lessons_error', [
-                 'user_id' => Auth::id(),
-                 'query' => $query,
-                 'level_group' => $levelGroup,
-                 'error' => $e->getMessage(),
-                 'trace' => $e->getTraceAsString()
-             ]);
+            return response()->json([
+                'success' => true,
+                'lessons' => $filteredLessons,
+                'query' => $query,
+                'level_group' => $levelGroup,
+                'total_results' => count($filteredLessons)
+            ]);
 
-             return response()->json([
-                 'success' => false,
-                 'message' => 'Search failed. Please try again.',
-                 'error' => $e->getMessage()
-             ], 500);
-         }
-     }
+        } catch (\Exception $e) {
+            Log::error('search_lessons_error', [
+                'user_id' => Auth::id(),
+                'query' => $query,
+                'level_group' => $levelGroup,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
-     /**
-      * Convert grade level back to level format (e.g., "Primary 1" -> "primary-1")
-      */
-     private function convertLevelFormatBack($gradeLevel)
-     {
-         $levelMapping = [
-             'Primary 1' => 'primary-1',
-             'Primary 2' => 'primary-2',
-             'Primary 3' => 'primary-3',
-             'Primary 4' => 'primary-4',
-             'Primary 5' => 'primary-5',
-             'Primary 6' => 'primary-6',
-             'JHS 1' => 'jhs-1',
-             'JHS 2' => 'jhs-2',
-             'JHS 3' => 'jhs-3',
-             'SHS 1' => 'shs-1',
-             'SHS 2' => 'shs-2',
-             'SHS 3' => 'shs-3',
-         ];
+            return response()->json([
+                'success' => false,
+                'message' => 'Search failed. Please try again.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
-         return $levelMapping[$gradeLevel] ?? strtolower(str_replace(' ', '-', $gradeLevel));
-     }
+    /**
+     * Convert grade level back to level format (e.g., "Primary 1" -> "primary-1")
+     */
+    private function convertLevelFormatBack($gradeLevel)
+    {
+        $levelMapping = [
+            'Primary 1' => 'primary-1',
+            'Primary 2' => 'primary-2',
+            'Primary 3' => 'primary-3',
+            'Primary 4' => 'primary-4',
+            'Primary 5' => 'primary-5',
+            'Primary 6' => 'primary-6',
+            'JHS 1' => 'jhs-1',
+            'JHS 2' => 'jhs-2',
+            'JHS 3' => 'jhs-3',
+            'SHS 1' => 'shs-1',
+            'SHS 2' => 'shs-2',
+            'SHS 3' => 'shs-3',
+        ];
 
-   /**
-    * Get level group for a given level
-    */
-   private function getLevelGroup($level)
-   {
-       $mappings = [
-           'primary-1' => 'primary-lower',
-           'primary-2' => 'primary-lower',
-           'primary-3' => 'primary-lower',
-           'primary-4' => 'primary-upper',
-           'primary-5' => 'primary-upper',
-           'primary-6' => 'primary-upper',
-           'jhs-1' => 'jhs',
-           'jhs-2' => 'jhs',
-           'jhs-3' => 'jhs',
-           'shs-1' => 'shs',
-           'shs-2' => 'shs',
-           'shs-3' => 'shs',
-           'university' => 'university',
-       ];
-       return $mappings[$level] ?? 'primary-lower';
-   }
+        return $levelMapping[$gradeLevel] ?? strtolower(str_replace(' ', '-', $gradeLevel));
+    }
 
-   /**
-    * Get subjects from lessons array (now from subjects table)
-    */
-   private function getSubjectsFromLessons($lessons)
-   {
-       $subjects = [];
-       $allSubjects = \App\Models\Subject::all();
+    /**
+     * Get level group for a given level
+     */
+    private function getLevelGroup($level)
+    {
+        $mappings = [
+            'primary-1' => 'primary-lower',
+            'primary-2' => 'primary-lower',
+            'primary-3' => 'primary-lower',
+            'primary-4' => 'primary-upper',
+            'primary-5' => 'primary-upper',
+            'primary-6' => 'primary-upper',
+            'jhs-1' => 'jhs',
+            'jhs-2' => 'jhs',
+            'jhs-3' => 'jhs',
+            'shs-1' => 'shs',
+            'shs-2' => 'shs',
+            'shs-3' => 'shs',
+            'university' => 'university',
+        ];
+        return $mappings[$level] ?? 'primary-lower';
+    }
 
-       $subjectIcons = [
-           'Mathematics' => 'fas fa-calculator',
-           'English' => 'fas fa-book',
-           'Science' => 'fas fa-flask',
-           'Social Studies' => 'fas fa-globe',
-           'General Education' => 'fas fa-graduation-cap',
-           'Primary Education' => 'fas fa-school',
-           'Junior High School' => 'fas fa-chalkboard-teacher',
-           'Senior High School' => 'fas fa-university',
-           'Computer Science' => 'fas fa-laptop-code',
-           'Business Administration' => 'fas fa-briefcase',
-           'Medicine' => 'fas fa-stethoscope',
-       ];
+    /**
+     * Get subjects from lessons array (now from subjects table)
+     */
+    private function getSubjectsFromLessons($lessons)
+    {
+        $subjects = [];
+        $allSubjects = Subject::all();
 
-       foreach ($allSubjects as $subject) {
-           $count = collect($lessons)->where('subject_id', $subject->id)->count();
-           $subjects[] = [
-               'name' => $subject->name,
-               'slug' => \Illuminate\Support\Str::slug($subject->name),
-               'icon' => $subjectIcons[$subject->name] ?? 'fas fa-book-open',
-               'count' => $count
-           ];
-       }
+        $subjectIcons = [
+            'Mathematics' => 'fas fa-calculator',
+            'English' => 'fas fa-book',
+            'Science' => 'fas fa-flask',
+            'Social Studies' => 'fas fa-globe',
+            'General Education' => 'fas fa-graduation-cap',
+            'Primary Education' => 'fas fa-school',
+            'Junior High School' => 'fas fa-chalkboard-teacher',
+            'Senior High School' => 'fas fa-university',
+            'Computer Science' => 'fas fa-laptop-code',
+            'Business Administration' => 'fas fa-briefcase',
+            'Medicine' => 'fas fa-stethoscope',
+        ];
 
-       // Add 'All' subject at the beginning
-       array_unshift($subjects, [
-           'name' => 'All',
-           'slug' => 'all',
-           'icon' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>',
-           'count' => count($lessons)
-       ]);
+        foreach ($allSubjects as $subject) {
+            $count = collect($lessons)->where('subject_id', $subject->id)->count();
+            $subjects[] = [
+                'name' => $subject->name,
+                'slug' => Str::slug($subject->name),
+                'icon' => $subjectIcons[$subject->name] ?? 'fas fa-book-open',
+                'count' => $count
+            ];
+        }
 
-       return $subjects;
-   }
+        // Add 'All' subject at the beginning
+        array_unshift($subjects, [
+            'name' => 'All',
+            'slug' => 'all',
+            'icon' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>',
+            'count' => count($lessons)
+        ]);
 
-   /**
-    * Get subjects from courses array
-    */
-   private function getSubjectsFromCourses($courses)
-   {
-       $subjects = [];
-       $allSubjects = \App\Models\Subject::all();
+        return $subjects;
+    }
 
-       $subjectIcons = [
-           'Computer Science' => 'fas fa-laptop-code',
-           'Business Administration' => 'fas fa-briefcase',
-           'Medicine' => 'fas fa-stethoscope',
-           'Mathematics' => 'fas fa-calculator',
-           'English' => 'fas fa-book',
-           // Add more as needed
-       ];
+    /**
+     * Get subjects from courses array
+     */
+    private function getSubjectsFromCourses($courses)
+    {
+        $subjects = [];
+        $allSubjects = Subject::all();
 
-       foreach ($allSubjects as $subject) {
-           $count = collect($courses)->where('subject', $subject->name)->count();
-           $subjects[] = [
-               'name' => $subject->name,
-               'slug' => \Illuminate\Support\Str::slug($subject->name),
-               'icon' => $subjectIcons[$subject->name] ?? 'fas fa-book-open',
-               'count' => $count
-           ];
-       }
+        $subjectIcons = [
+            'Computer Science' => 'fas fa-laptop-code',
+            'Business Administration' => 'fas fa-briefcase',
+            'Medicine' => 'fas fa-stethoscope',
+            'Mathematics' => 'fas fa-calculator',
+            'English' => 'fas fa-book',
+            // Add more as needed
+        ];
 
-       // Add 'All' subject at the beginning
-       array_unshift($subjects, [
-           'name' => 'All',
-           'slug' => 'all',
-           'icon' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>',
-           'count' => count($courses)
-       ]);
+        foreach ($allSubjects as $subject) {
+            $count = collect($courses)->where('subject', $subject->name)->count();
+            $subjects[] = [
+                'name' => $subject->name,
+                'slug' => Str::slug($subject->name),
+                'icon' => $subjectIcons[$subject->name] ?? 'fas fa-book-open',
+                'count' => $count
+            ];
+        }
 
-       return $subjects;
-   }
+        // Add 'All' subject at the beginning
+        array_unshift($subjects, [
+            'name' => 'All',
+            'slug' => 'all',
+            'icon' => '<svg class="subject-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>',
+            'count' => count($courses)
+        ]);
 
-   /**
-    * Handle plan change for a user (upgrade/downgrade)
-    */
-   public function changePlan(Request $request)
-   {
-       $request->validate([
-           'new_plan_id' => 'required|exists:pricing_plans,id'
-       ]);
+        return $subjects;
+    }
 
-       $user = Auth::user();
-       $newPlanId = $request->new_plan_id;
+    /**
+     * Handle plan change for a user (upgrade/downgrade)
+     */
+    public function changePlan(Request $request)
+    {
+        $request->validate([
+            'new_plan_id' => 'required|exists:pricing_plans,id'
+        ]);
 
-       try {
-           $planChangeService = new PlanChangeService();
-           $result = $planChangeService->changeUserPlan($user, $newPlanId);
+        $user = Auth::user();
+        $newPlanId = $request->new_plan_id;
 
-           if ($result['success']) {
-               // Log the plan change
-               Log::channel('security')->info('plan_changed', [
-                   'user_id' => $user->id,
-                   'old_plan' => $result['old_plan'],
-                   'new_plan' => $result['new_plan'],
-                   'type' => $result['type'],
-                   'ip' => request()->ip(),
-                   'timestamp' => Carbon::now()->toISOString()
-               ]);
+        try {
+            $planChangeService = new PlanChangeService();
+            $result = $planChangeService->changeUserPlan($user, $newPlanId);
 
-               return response()->json([
-                   'success' => true,
-                   'message' => 'Plan changed successfully!',
-                   'data' => $result
-               ]);
-           } else {
-               return response()->json([
-                   'success' => false,
-                   'message' => 'Failed to change plan.'
-               ], 400);
-           }
+            if ($result['success']) {
+                // Log the plan change
+                Log::channel('security')->info('plan_changed', [
+                    'user_id' => $user->id,
+                    'old_plan' => $result['old_plan'],
+                    'new_plan' => $result['new_plan'],
+                    'type' => $result['type'],
+                    'ip' => request()->ip(),
+                    'timestamp' => Carbon::now()->toISOString()
+                ]);
 
-       } catch (\Exception $e) {
-           Log::error('plan_change_error', [
-               'user_id' => $user->id,
-               'new_plan_id' => $newPlanId,
-               'error' => $e->getMessage(),
-               'trace' => $e->getTraceAsString()
-           ]);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Plan changed successfully!',
+                    'data' => $result
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to change plan.'
+                ], 400);
+            }
 
-           return response()->json([
-               'success' => false,
-               'message' => 'An error occurred while changing the plan. Please try again.'
-           ], 500);
-       }
-   }
+        } catch (\Exception $e) {
+            Log::error('plan_change_error', [
+                'user_id' => $user->id,
+                'new_plan_id' => $newPlanId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while changing the plan. Please try again.'
+            ], 500);
+        }
+    }
     /**
      * Track user engagement analytics for lessons
      */
@@ -3510,9 +3533,9 @@ class DashboardController extends Controller
         ]);
 
         $user = Auth::user();
-        
+
         try {
-            \App\Models\UserEngagement::record(
+            UserEngagement::record(
                 $user->id,
                 'video',
                 $request->lesson_id,

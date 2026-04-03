@@ -26,7 +26,6 @@ class PricingPlansSeeder extends Seeder
                     'Basic learning resources',
                     'Community support'
                 ],
-                'duration_days' => 30,
                 'is_active' => true,
                 'is_featured' => false,
                 'sort_order' => 1,
@@ -45,7 +44,6 @@ class PricingPlansSeeder extends Seeder
                     'Personalized class sessions',
                     '24/7 service support'
                 ],
-                'duration_days' => 30,
                 'is_active' => true,
                 'is_featured' => false,
                 'sort_order' => 2,
@@ -65,7 +63,6 @@ class PricingPlansSeeder extends Seeder
                     'University courses access',
                     '24/7 premium support'
                 ],
-                'duration_days' => 30,
                 'is_active' => true,
                 'is_featured' => true,
                 'sort_order' => 3,
