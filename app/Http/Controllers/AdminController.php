@@ -7,11 +7,23 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Pagination\LengthAwarePaginator;
+use App\Http\Requests\ChunkedVideoUploadRequest;
+use App\Models\Level;
+use App\Notifications\StorageAlertNotification;
 use App\Models\StorageMonitoringSetting;
 use App\Models\StorageAlert;
 use App\Models\SuperuserRecoveryCode;
+use App\Models\RevenueSummary;
 use App\Models\User;
 use App\Models\WebsiteLockSetting;
+use App\Models\CookieConsent;
+use App\Models\LevelGroup;
+use App\Models\ContentCategory;
+use App\Models\LevelProgression;
 use App\Models\VirtualClass; // Import VirtualClass model
 use App\Notifications\ClassStartedNotification; // Import notification
 use Illuminate\Support\Facades\Notification; // Import Notification facade
@@ -23,6 +35,7 @@ use App\Models\Video; // Import the Video model
 use App\Models\Quiz; // Import the Quiz model
 use App\Models\Document; // Import the Document model
 use App\Models\ActivityLog;
+use App\Models\Payment;
 use Illuminate\Support\Facades\Password;
 use App\Models\UserSubscription; // Import the UserSubscription model
 use App\Models\PricingPlan; // Import the PricingPlan model
@@ -35,6 +48,9 @@ use App\Models\Comment;
 use Illuminate\Support\Facades\Storage; // For file uploads
 use App\Services\NotificationService;
 use App\Services\UserActivityService;
+use App\Services\VimeoService;
+use App\Services\VideoSourceService;
+use App\Services\YouTubeService;
 use App\Http\Requests\Admin\AdminInviteRequest;
 use App\Notifications\AdminNotification;
 
@@ -152,14 +168,14 @@ class AdminController extends Controller
         ]);
 
         return view('admin.dashboard', compact(
-            'stats', 
-            'recentActivities', 
-            'systemHealth', 
-            'popularLessons', 
-            'revenueData', 
-            'revenueTrends', 
-            'topPlans', 
-            'subscriptionAnalytics', 
+            'stats',
+            'recentActivities',
+            'systemHealth',
+            'popularLessons',
+            'revenueData',
+            'revenueTrends',
+            'topPlans',
+            'subscriptionAnalytics',
             'websiteLocked'
         ));
     }
@@ -202,10 +218,10 @@ class AdminController extends Controller
         // Search functionality with improved sanitization
         if ($request->filled('search')) {
             $search = trim($request->search);
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
             });
         }
 
@@ -213,32 +229,32 @@ class AdminController extends Controller
         if ($request->filled('subscription_status')) {
             switch ($request->subscription_status) {
                 case 'subscribed':
-                    $query->whereHas('currentSubscription', function($q) {
+                    $query->whereHas('currentSubscription', function ($q) {
                         $q->whereIn('status', ['active', 'trial']);
                     });
                     break;
                 case 'not_subscribed':
-                    $query->whereDoesntHave('currentSubscription', function($q) {
+                    $query->whereDoesntHave('currentSubscription', function ($q) {
                         $q->whereIn('status', ['active', 'trial']);
                     });
                     break;
                 case 'trial':
-                    $query->whereHas('currentSubscription', function($q) {
+                    $query->whereHas('currentSubscription', function ($q) {
                         $q->where('status', 'trial');
                     });
                     break;
                 case 'active':
-                    $query->whereHas('currentSubscription', function($q) {
+                    $query->whereHas('currentSubscription', function ($q) {
                         $q->where('status', 'active');
                     });
                     break;
                 case 'expired':
-                    $query->whereHas('currentSubscription', function($q) {
+                    $query->whereHas('currentSubscription', function ($q) {
                         $q->where('status', 'expired');
                     });
                     break;
                 case 'cancelled':
-                    $query->whereHas('currentSubscription', function($q) {
+                    $query->whereHas('currentSubscription', function ($q) {
                         $q->where('status', 'cancelled');
                     });
                     break;
@@ -247,8 +263,8 @@ class AdminController extends Controller
 
         // Filter by plan type with partial matching
         if ($request->filled('plan_type') && $request->plan_type !== 'all') {
-            $query->whereHas('currentSubscription', function($q) use ($request) {
-                $q->whereHas('pricingPlan', function($p) use ($request) {
+            $query->whereHas('currentSubscription', function ($q) use ($request) {
+                $q->whereHas('pricingPlan', function ($p) use ($request) {
                     $p->where('name', 'like', "%{$request->plan_type}%");
                 });
             });
@@ -284,13 +300,13 @@ class AdminController extends Controller
                 'verified' => User::whereNotNull('email_verified_at')->count(),
                 'new_today' => User::whereDate('created_at', today())->count(),
                 'new_this_week' => User::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
-                'subscribed' => User::whereHas('currentSubscription', function($q) {
+                'subscribed' => User::whereHas('currentSubscription', function ($q) {
                     $q->whereIn('status', ['active', 'trial']);
                 })->count(),
-                'on_trial' => User::whereHas('currentSubscription', function($q) {
+                'on_trial' => User::whereHas('currentSubscription', function ($q) {
                     $q->where('status', 'trial');
                 })->count(),
-                'expired' => User::whereHas('currentSubscription', function($q) {
+                'expired' => User::whereHas('currentSubscription', function ($q) {
                     $q->where('status', 'expired');
                 })->count(),
             ];
@@ -469,7 +485,7 @@ class AdminController extends Controller
             $targetUser = User::findOrFail($id);
 
             // 3. Prevent a Super-Admin from demoting themselves
-            if (Auth::id() === (int)$id) {
+            if (Auth::id() === (int) $id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'You cannot demote yourself!'
@@ -601,7 +617,7 @@ class AdminController extends Controller
             // Assign the restricted role if they don't have it
             if (!$user->hasRole('restricted-admin') && !$user->hasRole('super-admin')) {
                 $user->assignRole('restricted-admin');
-                
+
                 // Send in-app notification
                 $this->notificationService->sendToUser($user, new AdminNotification(
                     'Admin Access Granted',
@@ -674,7 +690,7 @@ class AdminController extends Controller
     public function subscriberAnalytics()
     {
         // Total Subscribers
-        $totalSubscribers = User::whereHas('subscriptions', function($q) {
+        $totalSubscribers = User::whereHas('subscriptions', function ($q) {
             $q->whereIn('status', ['active', 'trial']);
         })->count();
 
@@ -710,7 +726,7 @@ class AdminController extends Controller
             ->with('pricingPlan')
             ->get()
             ->groupBy('pricing_plan_id')
-            ->map(function($subs, $planId) use ($totalSubscribers) {
+            ->map(function ($subs, $planId) use ($totalSubscribers) {
                 $plan = $subs->first()->pricingPlan;
                 return [
                     'name' => $plan ? $plan->name : 'N/A',
@@ -860,7 +876,7 @@ class AdminController extends Controller
         $format = $request->input('format', 'csv');
 
         $users = User::select('id', 'name', 'email', 'phone', 'created_at', 'email_verified_at', 'suspended_at')
-                    ->get();
+            ->get();
 
         Log::channel('security')->info('users_data_exported', [
             'admin_id' => Auth::id(),
@@ -972,7 +988,7 @@ class AdminController extends Controller
         try {
             // Check if Redis is available
             if (class_exists('\Illuminate\Support\Facades\Redis')) {
-                $keys = \Illuminate\Support\Facades\Redis::keys('user:*:last_seen');
+                $keys = Redis::keys('user:*:last_seen');
                 $onlineUsers = count($keys);
             } else {
                 throw new \Exception('Redis facade not available');
@@ -1051,7 +1067,7 @@ class AdminController extends Controller
     private function getCookieConsentStats()
     {
         try {
-            $cookieStats = \App\Models\CookieConsent::getConsentStats();
+            $cookieStats = CookieConsent::getConsentStats();
 
             return [
                 'total_consents' => $cookieStats['total_consents'] ?? 0,
@@ -1098,7 +1114,12 @@ class AdminController extends Controller
         ]);
 
         $filters = $request->only([
-            'user_id', 'type', 'ip_address', 'date_from', 'date_to', 'search'
+            'user_id',
+            'type',
+            'ip_address',
+            'date_from',
+            'date_to',
+            'search'
         ]);
 
         $perPage = $request->input('per_page', 20);
@@ -1212,7 +1233,7 @@ class AdminController extends Controller
      */
     private function getUserActivities($userId)
     {
-        return \App\Services\UserActivityService::getActivitiesByUser($userId, 10);
+        return UserActivityService::getActivitiesByUser($userId, 10);
     }
 
     /**
@@ -1220,8 +1241,8 @@ class AdminController extends Controller
      */
     private function getUserLessonProgress($userId)
     {
-        $allProgress = \App\Models\UserProgress::where('user_id', $userId)->get();
-        
+        $allProgress = UserProgress::where('user_id', $userId)->get();
+
         if ($allProgress->isEmpty()) {
             return [
                 'completed_lessons' => 0,
@@ -1235,16 +1256,16 @@ class AdminController extends Controller
         $totalCompleted = $allProgress->sum('completed_lessons');
         $totalLessonsInLevels = $allProgress->sum('total_lessons_in_level');
         $totalSeconds = $allProgress->sum('total_time_spent_seconds');
-        
+
         // Use weighted average for completion rate or just the overall average
-        $avgCompletionRate = $totalLessonsInLevels > 0 
+        $avgCompletionRate = $totalLessonsInLevels > 0
             ? round(($totalCompleted / $totalLessonsInLevels) * 100, 1)
             : $allProgress->avg('completion_percentage');
 
         // Find favorite subject from the most active progress record
         $mostActive = $allProgress->sortByDesc('completed_lessons')->first();
         $favoriteSubject = $mostActive->metadata['favorite_subject'] ?? 'N/A';
-        
+
         // If still N/A, try to guess from metadata of other records
         if ($favoriteSubject === 'N/A') {
             foreach ($allProgress as $p) {
@@ -1611,16 +1632,19 @@ class AdminController extends Controller
      */
     private function getStorageStatus(float $percentage): string
     {
-        if ($percentage >= 98) return 'critical';
-        if ($percentage >= 95) return 'warning';
-        if ($percentage >= 90) return 'caution';
+        if ($percentage >= 98)
+            return 'critical';
+        if ($percentage >= 95)
+            return 'warning';
+        if ($percentage >= 90)
+            return 'caution';
         return 'healthy';
     }
 
     /**
      * Send storage alert using new system
      */
-    private function sendStorageAlert(\App\Models\StorageMonitoringSetting $settings, string $alertType, string $path, array $storageInfo)
+    private function sendStorageAlert(StorageMonitoringSetting $settings, string $alertType, string $path, array $storageInfo)
     {
         try {
             $adminUsers = User::where('is_admin', true)->get();
@@ -1630,7 +1654,7 @@ class AdminController extends Controller
                 return;
             }
 
-            $notification = new \App\Notifications\StorageAlertNotification(
+            $notification = new StorageAlertNotification(
                 $storageInfo['usage_percentage'],
                 $this->formatBytes($storageInfo['used_space_bytes']),
                 $this->formatBytes($storageInfo['total_space_bytes']),
@@ -1689,7 +1713,7 @@ class AdminController extends Controller
             }
 
             // Create and send notification
-            $notification = new \App\Notifications\StorageAlertNotification(
+            $notification = new StorageAlertNotification(
                 $usagePercentage,
                 $usedSpace,
                 $totalSpace
@@ -1736,17 +1760,17 @@ class AdminController extends Controller
             'Content-Disposition' => "attachment; filename=\"{$filename}_" . date('Y-m-d') . ".csv\"",
         ];
 
-        $callback = function() use ($data) {
+        $callback = function () use ($data) {
             $file = fopen('php://output', 'w');
 
             if ($data->isNotEmpty()) {
                 $first = $data->first();
                 // If it's an object with toArray, call it; otherwise it might already be an array
-                $firstRow = is_object($first) && method_exists($first, 'toArray') ? $first->toArray() : (array)$first;
+                $firstRow = is_object($first) && method_exists($first, 'toArray') ? $first->toArray() : (array) $first;
                 fputcsv($file, array_keys($firstRow));
 
                 foreach ($data as $row) {
-                    $rowArr = is_object($row) && method_exists($row, 'toArray') ? $row->toArray() : (array)$row;
+                    $rowArr = is_object($row) && method_exists($row, 'toArray') ? $row->toArray() : (array) $row;
                     fputcsv($file, $rowArr);
                 }
             }
@@ -1802,7 +1826,9 @@ class AdminController extends Controller
         $cpu1 = explode(" ", preg_replace("!cpu +!", "", explode("\n", $stat1)[0]));
         $cpu2 = explode(" ", preg_replace("!cpu +!", "", explode("\n", $stat2)[0]));
 
-        $dif = array_map(function($a, $b) { return $b - $a; }, $cpu1, $cpu2);
+        $dif = array_map(function ($a, $b) {
+            return $b - $a;
+        }, $cpu1, $cpu2);
         $total = array_sum($dif);
         $cpu = $total > 0 ? (1 - ($dif[3] / $total)) * 100 : 0;
 
@@ -1815,7 +1841,7 @@ class AdminController extends Controller
     private function getUptime()
     {
         if (file_exists('/proc/uptime')) {
-            $uptime = (int)explode(' ', file_get_contents('/proc/uptime'))[0];
+            $uptime = (int) explode(' ', file_get_contents('/proc/uptime'))[0];
             $days = floor($uptime / 86400);
             $hours = floor(($uptime % 86400) / 3600);
             $minutes = floor(($uptime % 3600) / 60);
@@ -1855,14 +1881,16 @@ class AdminController extends Controller
     {
         $user = User::find(Auth::id());
         $data = $request->validate([
-            'email' => 'nullable|email|unique:users,email,'.$user->id,
+            'email' => 'nullable|email|unique:users,email,' . $user->id,
             'current_password' => 'required_with:new_password',
             'new_password' => 'nullable|min:8|confirmed'
         ]);
 
         // Validate current password
-        if ($request->has('current_password') &&
-            !Hash::check($request->current_password, $user->password)) {
+        if (
+            $request->has('current_password') &&
+            !Hash::check($request->current_password, $user->password)
+        ) {
             return response()->json([
                 'success' => false,
                 'message' => 'Current password is incorrect'
@@ -1897,7 +1925,7 @@ class AdminController extends Controller
         // Generate new codes
         $codes = [];
         for ($i = 0; $i < 8; $i++) {
-            $code = Str::random(8).'-'.Str::random(8);
+            $code = Str::random(8) . '-' . Str::random(8);
             SuperuserRecoveryCode::create([
                 'user_id' => $user->id,
                 'code' => $code
@@ -1915,7 +1943,7 @@ class AdminController extends Controller
 
         if ($request->has('search')) {
             $query->where('title', 'like', '%' . $request->search . '%')
-                  ->orWhere('description', 'like', '%' . $request->search . '%');
+                ->orWhere('description', 'like', '%' . $request->search . '%');
         }
 
         if ($request->has('grade_level') && $request->grade_level != '') {
@@ -1936,7 +1964,7 @@ class AdminController extends Controller
 
         $videos = $query->orderBy('created_at', 'desc')->paginate(10);
 
-        $gradeLevels = \App\Models\Level::orderBy('id')->pluck('title')->toArray(); // Example grades
+        $gradeLevels = Level::orderBy('id')->pluck('title')->toArray(); // Example grades
         $quizzes = Quiz::all(); // For associating quizzes
 
         // Get pending videos for review section
@@ -1960,16 +1988,16 @@ class AdminController extends Controller
             ->count();
 
         return view('admin.content.videos.index', compact(
-            'videos', 
-            'pendingVideos', 
-            'gradeLevels', 
-            'totalVideos', 
+            'videos',
+            'pendingVideos',
+            'gradeLevels',
+            'totalVideos',
             'pendingCount',
-            'approvedCount', 
+            'approvedCount',
             'rejectedCount',
             'expiredVideos',
-            'mostWatchedVideo', 
-            'averageDuration', 
+            'mostWatchedVideo',
+            'averageDuration',
             'quizzes'
         ));
     }
@@ -1979,7 +2007,7 @@ class AdminController extends Controller
         // Check temporary video limit
         $pendingCount = Video::pending()->count();
         $maxTempVideos = (int) config('services.vimeo.max_temp_videos', 10);
-        
+
         if ($pendingCount >= $maxTempVideos) {
             return back()->withErrors([
                 'video_file' => "Maximum number of pending videos ({$maxTempVideos}) reached. Please review existing videos first."
@@ -2058,7 +2086,7 @@ class AdminController extends Controller
 
     public function editVideo(Video $video)
     {
-        $gradeLevels = \App\Models\Level::orderBy('id')->pluck('title')->toArray();
+        $gradeLevels = Level::orderBy('id')->pluck('title')->toArray();
         return response()->json($video); // Return JSON for modal
     }
 
@@ -2197,7 +2225,7 @@ class AdminController extends Controller
                     'temp_file_path' => $video->temp_file_path,
                     'is_expired' => $video->isTempExpired()
                 ]);
-                
+
                 $video->update([
                     'status' => 'rejected',
                     'review_notes' => 'Temporary file expired or not found'
@@ -2209,9 +2237,9 @@ class AdminController extends Controller
             }
 
             $tempFilePath = storage_path('app/public/' . $video->temp_file_path);
-            
+
             Log::info('Checking file existence', ['temp_path' => $tempFilePath]);
-            
+
             if (!file_exists($tempFilePath)) {
                 Log::error('File not found on server', ['temp_path' => $tempFilePath]);
                 $video->update([
@@ -2242,7 +2270,7 @@ class AdminController extends Controller
 
             if ($uploadDestination === 'vimeo') {
                 // Upload to Vimeo
-                $vimeoService = new \App\Services\VimeoService();
+                $vimeoService = new VimeoService();
 
                 Log::info('Calling VimeoService uploadVideo', [
                     'video_id' => $video->id,
@@ -2479,7 +2507,7 @@ class AdminController extends Controller
         try {
             if ($video->video_source === 'vimeo') {
                 // Verify Vimeo upload
-                $vimeoService = new \App\Services\VimeoService();
+                $vimeoService = new VimeoService();
 
                 if (!$video->vimeo_id) {
                     return response()->json([
@@ -2568,9 +2596,9 @@ class AdminController extends Controller
 
         if ($request->has('search')) {
             $query->where('title', 'like', '%' . $request->search . '%')
-                  ->orWhereHas('subject', function($q) use ($request) {
-                      $q->where('name', 'like', '%' . $request->search . '%');
-                  });
+                ->orWhereHas('subject', function ($q) use ($request) {
+                    $q->where('name', 'like', '%' . $request->search . '%');
+                });
         }
 
         if ($request->has('grade_level') && $request->grade_level != '') {
@@ -2595,7 +2623,7 @@ class AdminController extends Controller
 
         $quizzes = $query->orderBy('created_at', 'desc')->paginate(10);
 
-        $gradeLevels = \App\Models\Level::orderBy('id')->pluck('title')->toArray();
+        $gradeLevels = Level::orderBy('id')->pluck('title')->toArray();
         $videos = Video::select('id', 'title')->get(); // For video course filter
         $uploaders = User::whereHas('quizzes')->select('id', 'name')->get(); // Users who have uploaded quizzes
         $subjects = Subject::select('id', 'name', DB::raw('COUNT(quizzes.id) as count'))
@@ -2635,7 +2663,7 @@ class AdminController extends Controller
 
     public function editQuiz(Quiz $quiz)
     {
-        $gradeLevels = \App\Models\Level::orderBy('id')->pluck('title')->toArray();
+        $gradeLevels = Level::orderBy('id')->pluck('title')->toArray();
         $videos = Video::select('id', 'title')->get();
         return view('admin.content.quizzes.edit', compact('quiz', 'gradeLevels', 'videos'));
     }
@@ -2686,7 +2714,7 @@ class AdminController extends Controller
 
         if ($request->has('search')) {
             $query->where('title', 'like', '%' . $request->search . '%')
-                  ->orWhere('description', 'like', '%' . $request->search . '%');
+                ->orWhere('description', 'like', '%' . $request->search . '%');
         }
 
         if ($request->has('grade_level') && $request->grade_level != '') {
@@ -2707,7 +2735,7 @@ class AdminController extends Controller
 
         $documents = $query->orderBy('created_at', 'desc')->paginate(10);
 
-        $gradeLevels = \App\Models\Level::orderBy('id')->pluck('title')->toArray();
+        $gradeLevels = Level::orderBy('id')->pluck('title')->toArray();
         $uploaders = User::whereHas('documents')->select('id', 'name')->get(); // Users who have uploaded documents
 
         return view('admin.content.documents.index', compact('documents', 'gradeLevels', 'uploaders'));
@@ -2741,7 +2769,7 @@ class AdminController extends Controller
 
     public function editDocument(Document $document)
     {
-        $gradeLevels = \App\Models\Level::orderBy('id')->pluck('title')->toArray();
+        $gradeLevels = Level::orderBy('id')->pluck('title')->toArray();
         return response()->json($document); // Return JSON for modal
     }
 
@@ -2920,12 +2948,12 @@ class AdminController extends Controller
         if ($activeTab === 'summary') {
             $summaryReports = $this->getSummaryReports($request);
             $summaryCharts = [
-                'annual' => \App\Models\RevenueSummary::annual()->orderBy('period_date', 'asc')->get()->map(fn($s) => ['label' => $s->period_date->format('Y'), 'revenue' => (float)$s->revenue]),
-                'monthly' => \App\Models\RevenueSummary::monthly()->orderBy('period_date', 'asc')->limit(24)->get()->map(fn($s) => ['label' => $s->period_date->format('M Y'), 'revenue' => (float)$s->revenue]),
-                'weekly' => \App\Models\RevenueSummary::weekly()->orderBy('period_date', 'asc')->limit(20)->get()->map(fn($s) => ['label' => $s->period_date->format('M d'), 'revenue' => (float)$s->revenue]),
+                'annual' => RevenueSummary::annual()->orderBy('period_date', 'asc')->get()->map(fn($s) => ['label' => $s->period_date->format('Y'), 'revenue' => (float) $s->revenue]),
+                'monthly' => RevenueSummary::monthly()->orderBy('period_date', 'asc')->limit(24)->get()->map(fn($s) => ['label' => $s->period_date->format('M Y'), 'revenue' => (float) $s->revenue]),
+                'weekly' => RevenueSummary::weekly()->orderBy('period_date', 'asc')->limit(20)->get()->map(fn($s) => ['label' => $s->period_date->format('M d'), 'revenue' => (float) $s->revenue]),
             ];
         }
-        
+
         Log::channel('security')->info('revenue_analytics_accessed', [
             'admin_id' => Auth::id(),
             'ip' => get_client_ip(),
@@ -2952,26 +2980,26 @@ class AdminController extends Controller
     private function getRevenueData()
     {
         // Get total revenue from successful payments
-        $totalRevenue = \App\Models\Payment::where('status', 'success')->sum('amount');
+        $totalRevenue = Payment::where('status', 'success')->sum('amount');
 
         // Get current month revenue
-        $monthlyRevenue = \App\Models\Payment::where('status', 'success')
+        $monthlyRevenue = Payment::where('status', 'success')
             ->whereYear('paid_at', now()->year)
             ->whereMonth('paid_at', now()->month)
             ->sum('amount');
 
         // Get current week revenue
-        $weeklyRevenue = \App\Models\Payment::where('status', 'success')
+        $weeklyRevenue = Payment::where('status', 'success')
             ->whereBetween('paid_at', [now()->startOfWeek(), now()->endOfWeek()])
             ->sum('amount');
 
         // Get today's revenue
-        $dailyRevenue = \App\Models\Payment::where('status', 'success')
+        $dailyRevenue = Payment::where('status', 'success')
             ->whereDate('paid_at', today())
             ->sum('amount');
 
         // Calculate revenue growth (current month vs previous month)
-        $previousMonthRevenue = \App\Models\Payment::where('status', 'success')
+        $previousMonthRevenue = Payment::where('status', 'success')
             ->whereYear('paid_at', now()->subMonth()->year)
             ->whereMonth('paid_at', now()->subMonth()->month)
             ->sum('amount');
@@ -2981,13 +3009,13 @@ class AdminController extends Controller
             : 0;
 
         // Get active subscriptions count
-        $activeSubscriptions = \App\Models\UserSubscription::active()->count();
+        $activeSubscriptions = UserSubscription::active()->count();
 
         // Get new subscriptions today
-        $newSubscriptionsToday = \App\Models\UserSubscription::whereDate('created_at', today())->count();
+        $newSubscriptionsToday = UserSubscription::whereDate('created_at', today())->count();
 
         // Calculate churn rate (simplified: expired subscriptions in last 30 days / total active subscriptions)
-        $expiredSubscriptionsLastMonth = \App\Models\UserSubscription::where('status', 'expired')
+        $expiredSubscriptionsLastMonth = UserSubscription::where('status', 'expired')
             ->where('expires_at', '>=', now()->subMonth())
             ->where('expires_at', '<=', now())
             ->count();
@@ -2997,7 +3025,7 @@ class AdminController extends Controller
             : 0;
 
         // Calculate average revenue per user (total revenue / users who made payments)
-        $usersWithPayments = \App\Models\Payment::where('status', 'success')->distinct('user_id')->count('user_id');
+        $usersWithPayments = Payment::where('status', 'success')->distinct('user_id')->count('user_id');
         $averageRevenuePerUser = $usersWithPayments > 0 ? $totalRevenue / $usersWithPayments : 0;
 
         return [
@@ -3018,8 +3046,8 @@ class AdminController extends Controller
      */
     private function getSubscriptionAnalytics()
     {
-        $plans = \App\Models\PricingPlan::active()->ordered()->get();
-        $totalRevenue = \App\Models\Payment::where('status', 'success')->sum('amount');
+        $plans = PricingPlan::active()->ordered()->get();
+        $totalRevenue = Payment::where('status', 'success')->sum('amount');
 
         $analytics = [];
         foreach ($plans as $plan) {
@@ -3044,12 +3072,12 @@ class AdminController extends Controller
     /**
      * Get paginated summary reports
      */
-    private function getSummaryReports(\Illuminate\Http\Request $request): array
+    private function getSummaryReports(Request $request): array
     {
         return [
-            'annual' => \App\Models\RevenueSummary::annual()->orderBy('period_date', 'desc')->paginate(5, ['*'], 'annual_page')->appends($request->all()),
-            'monthly' => \App\Models\RevenueSummary::monthly()->orderBy('period_date', 'desc')->paginate(12, ['*'], 'monthly_page')->appends($request->all()),
-            'weekly' => \App\Models\RevenueSummary::weekly()->orderBy('period_date', 'desc')->paginate(10, ['*'], 'weekly_page')->appends($request->all()),
+            'annual' => RevenueSummary::annual()->orderBy('period_date', 'desc')->paginate(5, ['*'], 'annual_page')->appends($request->all()),
+            'monthly' => RevenueSummary::monthly()->orderBy('period_date', 'desc')->paginate(12, ['*'], 'monthly_page')->appends($request->all()),
+            'weekly' => RevenueSummary::weekly()->orderBy('period_date', 'desc')->paginate(10, ['*'], 'weekly_page')->appends($request->all()),
         ];
     }
 
@@ -3058,7 +3086,7 @@ class AdminController extends Controller
      */
     private function getRevenueTrends()
     {
-        $trends = \App\Models\RevenueSummary::monthly()
+        $trends = RevenueSummary::monthly()
             ->orderBy('period_date', 'desc')
             ->limit(12)
             ->get();
@@ -3068,7 +3096,7 @@ class AdminController extends Controller
             return [];
         }
 
-        return $trends->reverse()->map(function($item) {
+        return $trends->reverse()->map(function ($item) {
             return [
                 'month' => $item->period_date->format('M Y'),
                 'revenue' => (float) $item->revenue,
@@ -3082,9 +3110,11 @@ class AdminController extends Controller
      */
     private function getTopPerformingPlans()
     {
-        $plans = \App\Models\PricingPlan::active()->with(['subscriptions' => function($query) {
-            $query->where('status', 'active');
-        }])->get();
+        $plans = PricingPlan::active()->with([
+            'subscriptions' => function ($query) {
+                $query->where('status', 'active');
+            }
+        ])->get();
 
         $planData = [];
         foreach ($plans as $plan) {
@@ -3116,7 +3146,7 @@ class AdminController extends Controller
         }
 
         // Sort by revenue descending and return top 3
-        usort($planData, function($a, $b) {
+        usort($planData, function ($a, $b) {
             return $b['revenue'] <=> $a['revenue'];
         });
 
@@ -3129,7 +3159,7 @@ class AdminController extends Controller
     private function getPaymentAnalytics(Request $request)
     {
         // Payment status distribution
-        $statusDistribution = \App\Models\Payment::selectRaw('status, COUNT(*) as count')
+        $statusDistribution = Payment::selectRaw('status, COUNT(*) as count')
             ->groupBy('status')
             ->pluck('count', 'status')
             ->toArray();
@@ -3139,13 +3169,13 @@ class AdminController extends Controller
         $successRate = $totalPayments > 0 ? round(($successfulPayments / $totalPayments) * 100, 1) : 0;
 
         // Average payment amount
-        $averageAmount = \App\Models\Payment::where('status', 'success')->avg('amount') ?? 0;
+        $averageAmount = Payment::where('status', 'success')->avg('amount') ?? 0;
 
         // Payment trends (last 12 months)
         $paymentTrends = [];
         for ($i = 11; $i >= 0; $i--) {
             $date = now()->subMonths($i);
-            $amount = \App\Models\Payment::where('status', 'success')
+            $amount = Payment::where('status', 'success')
                 ->whereYear('paid_at', $date->year)
                 ->whereMonth('paid_at', $date->month)
                 ->sum('amount');
@@ -3153,7 +3183,7 @@ class AdminController extends Controller
             $paymentTrends[] = [
                 'month' => $date->format('M Y'),
                 'amount' => (float) $amount,
-                'count' => \App\Models\Payment::where('status', 'success')
+                'count' => Payment::where('status', 'success')
                     ->whereYear('paid_at', $date->year)
                     ->whereMonth('paid_at', $date->month)
                     ->count()
@@ -3164,7 +3194,7 @@ class AdminController extends Controller
         $metadataAnalytics = $this->getPaymentMetadataAnalytics();
 
         // Recent payments with pagination
-        $recentPayments = \App\Models\Payment::with(['user:id,name,email,avatar,google_avatar', 'pricingPlan:id,name'])
+        $recentPayments = Payment::with(['user:id,name,email,avatar,google_avatar', 'pricingPlan:id,name'])
             ->orderBy('created_at', 'desc')
             ->paginate(20)
             ->through(function ($payment) {
@@ -3184,12 +3214,12 @@ class AdminController extends Controller
                     'paid_at' => $payment->paid_at ? $payment->paid_at->format('M d, Y H:i') : null,
                 ];
             });
-        
+
         // Ensure pagination links use the correct tab and other query params
         $recentPayments->appends($request->all());
 
         // Top paying users
-        $topPayingUsers = \App\Models\Payment::where('status', 'success')
+        $topPayingUsers = Payment::where('status', 'success')
             ->with('user:id,name,email,avatar,google_avatar')
             ->selectRaw('user_id, COUNT(*) as payment_count, SUM(amount) as total_amount')
             ->groupBy('user_id')
@@ -3213,7 +3243,7 @@ class AdminController extends Controller
             'successful_payments' => $successfulPayments,
             'success_rate' => $successRate,
             'average_amount' => round($averageAmount, 2),
-            'total_value' => \App\Models\Payment::where('status', 'success')->sum('amount'),
+            'total_value' => Payment::where('status', 'success')->sum('amount'),
             'trends' => $paymentTrends,
             'metadata' => $metadataAnalytics,
             'recent_payments' => $recentPayments,
@@ -3226,7 +3256,7 @@ class AdminController extends Controller
      */
     private function getPaymentMetadataAnalytics()
     {
-        $payments = \App\Models\Payment::whereNotNull('metadata')->get();
+        $payments = Payment::whereNotNull('metadata')->get();
 
         $durations = [];
         $planNames = [];
@@ -3261,15 +3291,15 @@ class AdminController extends Controller
     {
         try {
             // Run the aggregation for the last year to be safe
-            \Illuminate\Support\Facades\Artisan::call('app:aggregate-revenue', ['--back' => 365]);
-            
+            Artisan::call('app:aggregate-revenue', ['--back' => 365]);
+
             return back()->with('success', 'Revenue summaries recalculated successfully.');
         } catch (\Exception $e) {
             Log::error('failed_to_aggregate_revenue', [
                 'admin_id' => Auth::id(),
                 'error' => $e->getMessage()
             ]);
-            
+
             return back()->with('error', 'Failed to recalculate summaries: ' . $e->getMessage());
         }
     }
@@ -3296,7 +3326,7 @@ class AdminController extends Controller
     {
         $format = $request->get('format', 'csv');
 
-        $payments = \App\Models\Payment::with(['user:id,name,email', 'pricingPlan:id,name'])
+        $payments = Payment::with(['user:id,name,email', 'pricingPlan:id,name'])
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($payment) {
@@ -3348,14 +3378,14 @@ class AdminController extends Controller
         $allContents = $this->getUnifiedContents($query, $type, $sort, $levelGroup, $context);
 
         // Paginate the collection manually
-        $page = \Illuminate\Pagination\Paginator::resolveCurrentPage() ?: 1;
+        $page = Paginator::resolveCurrentPage() ?: 1;
         $perPage = 15;
-        $contents = new \Illuminate\Pagination\LengthAwarePaginator(
+        $contents = new LengthAwarePaginator(
             $allContents->forPage($page, $perPage),
             $allContents->count(),
             $perPage,
             $page,
-            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+            ['path' => Paginator::resolveCurrentPath()]
         );
         $contents->appends($request->all());
 
@@ -3369,11 +3399,11 @@ class AdminController extends Controller
         ];
 
         // Get level groups for filters
-        $levelGroups = \App\Models\LevelGroup::with('levels')->orderBy('display_order')->get();
+        $levelGroups = LevelGroup::with('levels')->orderBy('display_order')->get();
         // Get subjects for the upload modal
         $subjects = Subject::orderBy('name')->get();
         // Get categories for filters
-        $categories = \App\Models\ContentCategory::orderBy('name')->get();
+        $categories = ContentCategory::orderBy('name')->get();
 
         return view('admin.contents.index', compact('contents', 'stats', 'query', 'type', 'sort', 'subjects', 'levelGroups', 'context', 'categories'));
     }
@@ -3388,9 +3418,9 @@ class AdminController extends Controller
         // Get videos
         if ($type === 'all' || $type === 'videos' || $type === 'pending') {
             $videoQuery = Video::with(['uploader:id,name,email', 'subject:id,name', 'documents', 'quizzes', 'categories'])
-                ->when($query, function($q) use ($query) {
+                ->when($query, function ($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
-                      ->orWhere('description', 'like', "%{$query}%");
+                        ->orWhere('description', 'like', "%{$query}%");
                 });
 
             // Filter for pending videos if type is 'pending'
@@ -3400,7 +3430,7 @@ class AdminController extends Controller
 
             // Filter by level group
             if ($levelGroupSlug) {
-                $levelGroup = \App\Models\LevelGroup::where('slug', $levelGroupSlug)->with('levels')->first();
+                $levelGroup = LevelGroup::where('slug', $levelGroupSlug)->with('levels')->first();
                 if ($levelGroup) {
                     $levelTitles = $levelGroup->levels->pluck('title')->toArray();
                     $videoQuery->whereIn('grade_level', $levelTitles);
@@ -3409,20 +3439,32 @@ class AdminController extends Controller
 
             // Filter by category (context)
             if ($contextSlug) {
-                $videoQuery->whereHas('categories', function($catQ) use ($contextSlug) {
+                $videoQuery->whereHas('categories', function ($catQ) use ($contextSlug) {
                     $catQ->where('slug', $contextSlug);
                 });
             }
 
             $videos = $videoQuery->select([
-                'id', 'title', 'description', 'thumbnail_path', 'views', 'comments_count', 'created_at',
-                'uploaded_by', 'status', 'grade_level', 'duration_seconds', 'document_path', 'quiz_id', 'subject_id',
+                'id',
+                'title',
+                'description',
+                'thumbnail_path',
+                'views',
+                'comments_count',
+                'created_at',
+                'uploaded_by',
+                'status',
+                'grade_level',
+                'duration_seconds',
+                'document_path',
+                'quiz_id',
+                'subject_id',
                 DB::raw("'video' as content_type"),
                 DB::raw('0 as likes'),
                 DB::raw('0 as dislikes')
             ]);
 
-            $contents = $contents->merge($videos->get()->map(function($item) {
+            $contents = $contents->merge($videos->get()->map(function ($item) {
                 $item->published_date = $item->created_at->format('M d, Y');
                 $item->uploader_name = $item->uploader->name ?? 'Unknown';
                 $item->uploader_email = $item->uploader->email ?? '';
@@ -3438,37 +3480,43 @@ class AdminController extends Controller
         // Get standalone documents (when specifically filtering for documents OR when 'all' is selected)
         if ($type === 'all' || $type === 'documents') {
             $documentsQuery = Document::with(['uploader:id,name,email'])
-                ->when($type === 'all', function($q) {
+                ->when($type === 'all', function ($q) {
                     $q->whereNull('video_id'); // Only standalone in 'all' view
                 })
-                ->when($query, function($q) use ($query) {
+                ->when($query, function ($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
-                      ->orWhere('description', 'like', "%{$query}%");
+                        ->orWhere('description', 'like', "%{$query}%");
                 })
-                ->when($levelGroupSlug, function($q) use ($levelGroupSlug) {
-                    $levelGroup = \App\Models\LevelGroup::where('slug', $levelGroupSlug)->with('levels')->first();
+                ->when($levelGroupSlug, function ($q) use ($levelGroupSlug) {
+                    $levelGroup = LevelGroup::where('slug', $levelGroupSlug)->with('levels')->first();
                     if ($levelGroup) {
                         $levelTitles = $levelGroup->levels->pluck('title')->toArray();
                         $q->whereIn('grade_level', $levelTitles);
                     }
                 })
-                ->when($contextSlug, function($q) use ($contextSlug) {
-                    $q->whereHas('categories', function($catQ) use ($contextSlug) {
+                ->when($contextSlug, function ($q) use ($contextSlug) {
+                    $q->whereHas('categories', function ($catQ) use ($contextSlug) {
                         $catQ->where('slug', $contextSlug);
                     });
                 });
 
             $documents = $documentsQuery->select([
-                    'id', 'title', 'description', 'file_path', 'views', 'created_at',
-                    'uploaded_by', 'grade_level',
-                    DB::raw("'document' as content_type"),
-                    DB::raw('0 as likes'),
-                    DB::raw('0 as dislikes'),
-                    DB::raw('0 as comments_count'),
-                    DB::raw('NULL as duration_seconds')
-                ]);
+                'id',
+                'title',
+                'description',
+                'file_path',
+                'views',
+                'created_at',
+                'uploaded_by',
+                'grade_level',
+                DB::raw("'document' as content_type"),
+                DB::raw('0 as likes'),
+                DB::raw('0 as dislikes'),
+                DB::raw('0 as comments_count'),
+                DB::raw('NULL as duration_seconds')
+            ]);
 
-            $contents = $contents->merge($documents->get()->map(function($item) {
+            $contents = $contents->merge($documents->get()->map(function ($item) {
                 $item->published_date = $item->created_at->format('M d, Y');
                 $item->uploader_name = $item->uploader->name ?? 'Unknown';
                 $item->uploader_email = $item->uploader->email ?? '';
@@ -3482,40 +3530,46 @@ class AdminController extends Controller
         // Get quizzes (when specifically filtering for quizzes OR when 'all' is selected)
         if ($type === 'all' || $type === 'quizzes') {
             $quizzesQuery = Quiz::with(['uploader:id,name,email', 'ratings', 'subject:id,name'])
-                ->when($type === 'all', function($q) {
+                ->when($type === 'all', function ($q) {
                     $q->whereNull('video_id'); // Only standalone in 'all' view to avoid lesson duplicates
                 })
-                ->when($query, function($q) use ($query) {
+                ->when($query, function ($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
-                      ->orWhereHas('subject', function($subQ) use ($query) {
-                          $subQ->where('name', 'like', "%{$query}%");
-                      });
+                        ->orWhereHas('subject', function ($subQ) use ($query) {
+                            $subQ->where('name', 'like', "%{$query}%");
+                        });
                 })
-                ->when($levelGroupSlug, function($q) use ($levelGroupSlug) {
-                    $levelGroup = \App\Models\LevelGroup::where('slug', $levelGroupSlug)->with('levels')->first();
+                ->when($levelGroupSlug, function ($q) use ($levelGroupSlug) {
+                    $levelGroup = LevelGroup::where('slug', $levelGroupSlug)->with('levels')->first();
                     if ($levelGroup) {
                         $levelTitles = $levelGroup->levels->pluck('title')->toArray();
                         $q->whereIn('grade_level', $levelTitles);
                     }
                 })
-                ->when($contextSlug, function($q) use ($contextSlug) {
-                    $q->whereHas('categories', function($catQ) use ($contextSlug) {
+                ->when($contextSlug, function ($q) use ($contextSlug) {
+                    $q->whereHas('categories', function ($catQ) use ($contextSlug) {
                         $catQ->where('slug', $contextSlug);
                     });
                 });
 
             $quizzes = $quizzesQuery->select([
-                    'id', 'title', 'created_at', 'uploaded_by',
-                    'grade_level', 'is_featured', 'subject_id', 'video_id',
-                    DB::raw("'quiz' as content_type"),
-                    DB::raw('attempts_count as views'), // Use attempts_count for sorting by views
-                    DB::raw('0 as likes'),
-                    DB::raw('0 as dislikes'),
-                    DB::raw('0 as comments_count'),
-                    DB::raw('NULL as duration_seconds')
-                ]);
+                'id',
+                'title',
+                'created_at',
+                'uploaded_by',
+                'grade_level',
+                'is_featured',
+                'subject_id',
+                'video_id',
+                DB::raw("'quiz' as content_type"),
+                DB::raw('attempts_count as views'), // Use attempts_count for sorting by views
+                DB::raw('0 as likes'),
+                DB::raw('0 as dislikes'),
+                DB::raw('0 as comments_count'),
+                DB::raw('NULL as duration_seconds')
+            ]);
 
-            $contents = $contents->merge($quizzes->get()->map(function($item) {
+            $contents = $contents->merge($quizzes->get()->map(function ($item) {
                 $item->published_date = $item->created_at->format('M d, Y');
                 $item->uploader_name = $item->uploader->name ?? 'Unknown';
                 $item->uploader_email = $item->uploader->email ?? '';
@@ -3590,7 +3644,7 @@ class AdminController extends Controller
 
                 // Handle Vimeo URL input (when Vimeo upload is selected)
                 if ($request->filled('vimeo_url') && $request->video_source === 'vimeo') {
-                    $parsed = \App\Services\VideoSourceService::parseVideoUrl($request->vimeo_url);
+                    $parsed = VideoSourceService::parseVideoUrl($request->vimeo_url);
                     if ($parsed && $parsed['source'] === 'vimeo') {
                         $videoData['external_video_id'] = $parsed['video_id'];
                         $videoData['external_video_url'] = $parsed['embed_url'];
@@ -3602,15 +3656,15 @@ class AdminController extends Controller
                 }
                 // Handle external video URL (for other sources like YouTube)
                 elseif ($request->filled('external_video_url')) {
-                    $parsed = \App\Services\VideoSourceService::parseVideoUrl($request->external_video_url);
+                    $parsed = VideoSourceService::parseVideoUrl($request->external_video_url);
                     if ($parsed) {
                         $videoData['external_video_id'] = $parsed['video_id'];
                         $videoData['external_video_url'] = $parsed['embed_url'];
                         $videoData['status'] = 'approved'; // External videos are auto-approved
-                
+
                         // Try to get duration from YouTube API if it's YouTube
                         if ($parsed['source'] === 'youtube') {
-                            $youtubeService = new \App\Services\YouTubeService();
+                            $youtubeService = new YouTubeService();
                             $durationSeconds = $youtubeService->getVideoDuration($parsed['video_id']);
                         }
                     } else {
@@ -3642,7 +3696,7 @@ class AdminController extends Controller
                             try {
                                 Log::info('Starting immediate Vimeo upload', ['video_id' => $video->id]);
 
-                                $vimeoService = new \App\Services\VimeoService();
+                                $vimeoService = new VimeoService();
                                 $uploadId = 'video_' . $video->id . '_' . time();
                                 $result = $vimeoService->uploadVideo($tempPath, $video->title, $video->description, Auth::id(), $uploadId);
 
@@ -3708,7 +3762,7 @@ class AdminController extends Controller
                     ];
 
                     $document = Document::create($docData);
-                    
+
                     // Inherit categories from parent video
                     if ($video && $video->categories()->count() > 0) {
                         $document->categories()->sync($video->categories()->pluck('content_categories.id')->toArray());
@@ -3799,9 +3853,9 @@ class AdminController extends Controller
         // Search by user name or email
         if ($request->has('search') && $request->search != '') {
             $search = $request->search;
-            $query->whereHas('user', function($q) use ($search) {
+            $query->whereHas('user', function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
@@ -3836,7 +3890,7 @@ class AdminController extends Controller
         $analytics = $currentProgress ? $currentProgress->getDetailedAnalytics() : null;
 
         // Get progression history
-        $progressionHistory = \App\Models\LevelProgression::where('user_id', $userId)
+        $progressionHistory = LevelProgression::where('user_id', $userId)
             ->orderBy('progressed_at', 'desc')
             ->get();
 
@@ -4008,8 +4062,8 @@ class AdminController extends Controller
         // For videos and quizzes, show the unified edit form
         if ($contentType === 'video' || $contentType === 'quiz') {
             $subjects = Subject::orderBy('name')->get();
-            $levelGroups = \App\Models\LevelGroup::with('levels')->orderBy('display_order')->get();
-            $categories = \App\Models\ContentCategory::orderBy('name')->get();
+            $levelGroups = LevelGroup::with('levels')->orderBy('display_order')->get();
+            $categories = ContentCategory::orderBy('name')->get();
 
             if ($contentType === 'video') {
                 $availableQuizzes = Quiz::whereNull('video_id')->orWhere('video_id', $contentId)->get();
@@ -4056,7 +4110,7 @@ class AdminController extends Controller
         // Find the content
         $content = Video::find($contentId);
         $contentType = 'video';
-        
+
         if (!$content) {
             $content = Quiz::find($contentId);
             $contentType = 'quiz';
@@ -4094,13 +4148,16 @@ class AdminController extends Controller
                     if ($quiz) {
                         $quizData = json_decode($request->quiz_data, true);
                         $quizData = $this->processQuizImages($quizData, $request);
-                        
+
                         $quiz->update([
                             'quiz_data' => json_encode($quizData),
                             'difficulty_level' => $request->quiz_difficulty ?? $quiz->difficulty_level,
                             'time_limit_minutes' => $request->quiz_time_limit ?? $quiz->time_limit_minutes,
-                            'shuffle_questions' => $request->has('shuffle_questions'),
+                            'shuffle_questions' => $request->boolean('shuffle_questions'),
                         ]);
+
+                        // Clear cache to reflect updates immediately
+                        Cache::forget("quiz.{$quiz->id}");
                     }
                 }
             } else {
@@ -4118,8 +4175,11 @@ class AdminController extends Controller
                     'difficulty_level' => $request->quiz_difficulty,
                     'time_limit_minutes' => $request->quiz_time_limit,
                     'quiz_data' => !empty($quizData) ? json_encode($quizData) : $content->quiz_data,
-                    'shuffle_questions' => $request->has('shuffle_questions'),
+                    'shuffle_questions' => $request->boolean('shuffle_questions'),
                 ]);
+
+                // Clear cache for standalone quiz
+                Cache::forget("quiz.{$contentId}");
 
                 // Update description in the associated video container if it exists
                 if ($content->video_id) {
@@ -4199,7 +4259,7 @@ class AdminController extends Controller
 
                     // Attempt to delete from Vimeo first
                     try {
-                        $vimeoService = new \App\Services\VimeoService();
+                        $vimeoService = new VimeoService();
                         $vimeoDeletionSuccess = $vimeoService->deleteVideo($content->vimeo_id);
 
                         if ($vimeoDeletionSuccess) {
@@ -4295,7 +4355,7 @@ class AdminController extends Controller
     public function fixVimeoPrivacy(Request $request)
     {
         try {
-            $vimeoService = new \App\Services\VimeoService();
+            $vimeoService = new VimeoService();
             $result = $vimeoService->fixAllVimeoVideoPrivacy();
 
             if ($result['success']) {
@@ -4361,30 +4421,30 @@ class AdminController extends Controller
                 // Force reload from file
                 $uploadConfig = include config_path('uploads.php');
             }
-            
+
             if (!$uploadConfig || !is_array($uploadConfig)) {
                 Log::error('Upload config invalid', ['config_value' => $uploadConfig, 'config_type' => gettype($uploadConfig)]);
                 throw new \Exception('Upload configuration not found or invalid');
             }
-            
+
             // Ensure required config keys exist
             if (empty($uploadConfig['video']) || empty($uploadConfig['thumbnail'])) {
                 throw new \Exception('Upload configuration missing required keys (video, thumbnail)');
             }
-            
+
             $videoMaxSize = ($uploadConfig['video']['max_size'] ?? 32212254720) / 1024;
             $thumbnailMaxSize = ($uploadConfig['thumbnail']['max_size'] ?? 5242880) / 1024;
-            
+
             // Log config loaded successfully
             Log::info('Upload config loaded successfully', [
                 'has_video_config' => !empty($uploadConfig['video']),
                 'has_thumbnail_config' => !empty($uploadConfig['thumbnail']),
                 'video_max_size' => $videoMaxSize
             ]);
-            
+
             // Determine if this is a chunked upload or direct upload
             $isChunkedUpload = $request->filled('upload_id');
-            
+
             $validationRules = [
                 'title' => 'required|string',
                 'subject_id' => 'required|exists:subjects,id',
@@ -4396,7 +4456,7 @@ class AdminController extends Controller
                 'vimeo_url' => 'nullable|url',
                 'upload_destination' => 'nullable|string'
             ];
-            
+
             if (!$isChunkedUpload) {
                 // Only require video_file for direct uploads if source is local or vimeo-file
                 $isLocalOrVimeoFile = in_array($request->video_source, ['local', 'vimeo']) && !$request->filled('vimeo_url') && !$request->filled('external_video_url');
@@ -4405,7 +4465,7 @@ class AdminController extends Controller
                 // For chunked uploads, require upload_id
                 $validationRules['upload_id'] = 'required|string';
             }
-            
+
             $request->validate($validationRules, [
                 'video_file.max' => 'Video file size cannot exceed ' . $uploadConfig['video']['max_size_display'] . '.',
                 'video_file.mimes' => 'Invalid video format. Accepted formats: ' . implode(', ', array_map('strtoupper', $uploadConfig['video']['mimes'])) . '. Please ensure the file is a video file, not a document, image, or GIF.',
@@ -4439,7 +4499,7 @@ class AdminController extends Controller
 
             // Handle different video sources
             if ($request->filled('vimeo_url') && $request->video_source === 'vimeo') {
-                $parsed = \App\Services\VideoSourceService::parseVideoUrl($request->vimeo_url);
+                $parsed = VideoSourceService::parseVideoUrl($request->vimeo_url);
                 if ($parsed && $parsed['source'] === 'vimeo') {
                     $videoData['external_video_id'] = $parsed['video_id'];
                     $videoData['external_video_url'] = $parsed['embed_url'];
@@ -4449,7 +4509,7 @@ class AdminController extends Controller
                     throw new \Exception('Invalid Vimeo URL provided');
                 }
             } elseif ($request->filled('external_video_url')) {
-                $parsed = \App\Services\VideoSourceService::parseVideoUrl($request->external_video_url);
+                $parsed = VideoSourceService::parseVideoUrl($request->external_video_url);
                 if ($parsed) {
                     $videoData['external_video_id'] = $parsed['video_id'];
                     $videoData['external_video_url'] = $parsed['embed_url'];
@@ -4482,12 +4542,12 @@ class AdminController extends Controller
                 $chunkFilename = $request->input('filename', 'video');
                 $tempFilename = $uploadId . '_' . $chunkFilename;
                 $tempPath = 'temp_videos/' . $tempFilename;
-                
+
                 // Verify the file exists
                 if (!Storage::disk('public')->exists($tempPath)) {
                     throw new \Exception('Reassembled file not found. Upload may have failed.');
                 }
-                
+
                 $video->update(['temp_file_path' => $tempPath]);
 
                 if ($request->filled('upload_destination')) {
@@ -4495,7 +4555,7 @@ class AdminController extends Controller
 
                     if ($request->upload_destination === 'vimeo') {
                         try {
-                            $vimeoService = new \App\Services\VimeoService();
+                            $vimeoService = new VimeoService();
                             $result = $vimeoService->uploadVideo('storage/public/' . $tempPath, $video->title, $video->description, Auth::id(), 'video_' . $video->id);
 
                             if ($result && is_array($result) && ($result['success'] ?? false)) {
@@ -4531,7 +4591,7 @@ class AdminController extends Controller
 
                     if ($request->upload_destination === 'vimeo') {
                         try {
-                            $vimeoService = new \App\Services\VimeoService();
+                            $vimeoService = new VimeoService();
                             $uploadId = 'video_' . $video->id . '_' . time();
                             $result = $vimeoService->uploadVideo($tempPath, $video->title, $video->description, Auth::id(), $uploadId);
 
@@ -4576,7 +4636,7 @@ class AdminController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             Log::error('Video upload failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getFile() . ':' . $e->getLine(),
@@ -4610,23 +4670,23 @@ class AdminController extends Controller
                 Log::warning('Config cache missing, reloading from file');
                 $uploadConfig = include config_path('uploads.php');
             }
-            
+
             if (!$uploadConfig || !is_array($uploadConfig)) {
                 throw new \Exception('Upload configuration not found or invalid');
             }
-            
+
             // Ensure required config keys exist
             if (empty($uploadConfig['document'])) {
                 throw new \Exception('Upload configuration missing document config');
             }
-            
+
             $documentMaxSize = ($uploadConfig['document']['max_size'] ?? 10485760) / 1024; // Convert bytes to KB
-            
+
             Log::info('Documents config loaded', [
                 'has_document_config' => !empty($uploadConfig['document']),
                 'document_max_size' => $documentMaxSize
             ]);
-            
+
             $request->validate([
                 'video_id' => 'required|exists:videos,id',
                 'documents' => 'required|array',
@@ -4658,7 +4718,7 @@ class AdminController extends Controller
                 ];
 
                 $document = Document::create($docData);
-                
+
                 // Inherit categories from parent video
                 $categoryIds = $video->categories()->pluck('content_categories.id')->toArray();
                 if (!empty($categoryIds)) {
@@ -4727,7 +4787,7 @@ class AdminController extends Controller
             // Handle quiz image uploads before creating the quiz record
             if ($request->hasFile('question_images')) {
                 $quizData = $this->processQuizImageFiles($quizData, $request);
-                
+
                 // Also process any base64 images that might be present
                 $quizData = $this->processQuizImages($quizData, $request);
             } else {
@@ -4945,7 +5005,7 @@ class AdminController extends Controller
                 'admin_id' => Auth::id()
             ]);
 
-            $vimeoService = new \App\Services\VimeoService();
+            $vimeoService = new VimeoService();
             $deletionSuccess = $vimeoService->deleteVideo($vimeoId);
 
             if ($deletionSuccess) {
@@ -5094,7 +5154,7 @@ class AdminController extends Controller
      * Handle chunked video upload (for large files)
      * Uploads video in chunks to overcome server size limits
      */
-    public function uploadVideoChunk(\App\Http\Requests\ChunkedVideoUploadRequest $request)
+    public function uploadVideoChunk(ChunkedVideoUploadRequest $request)
     {
         try {
             $uploadConfig = config('uploads');
@@ -5102,30 +5162,30 @@ class AdminController extends Controller
             $chunkIndex = (int) $request->input('chunk_index', 0);
             $totalChunks = (int) $request->input('total_chunks', 0);
             $filename = $request->input('filename');
-            
+
             // Validate inputs
             if (empty($uploadId) || empty($filename) || $totalChunks <= 0) {
                 throw new \Exception('Missing required fields: upload_id, filename, or total_chunks');
             }
-            
+
             // Create temporary storage directory for chunks using public disk
             $tempChunksDir = storage_path('app/public/temp_chunks/' . $uploadId);
             if (!file_exists($tempChunksDir)) {
                 mkdir($tempChunksDir, 0755, true);
             }
-            
+
             // Store the chunk
             $chunkFile = $request->file('chunk');
             if (!$chunkFile) {
                 throw new \Exception('No chunk file provided');
             }
-            
+
             $chunkPath = $tempChunksDir . '/chunk_' . $chunkIndex;
             $chunkFile->move($tempChunksDir, 'chunk_' . $chunkIndex);
-            
+
             // Check if all chunks are uploaded
             $uploadedChunks = count(glob($tempChunksDir . '/chunk_*'));
-            
+
             if ($uploadedChunks === $totalChunks) {
                 // All chunks uploaded, reassemble the file
                 $tempVideosDir = storage_path('app/public/temp_videos');
@@ -5134,36 +5194,36 @@ class AdminController extends Controller
                 }
                 $finalPath = $tempVideosDir . '/' . $uploadId . '_' . $filename;
                 $finalDir = dirname($finalPath);
-                
+
                 if (!file_exists($finalDir)) {
                     mkdir($finalDir, 0755, true);
                 }
-                
+
                 $finalFile = fopen($finalPath, 'wb');
-                
+
                 if (!$finalFile) {
                     throw new \Exception('Could not create final video file');
                 }
-                
+
                 // Reassemble chunks in order
                 for ($i = 0; $i < $totalChunks; $i++) {
                     $chunkPath = $tempChunksDir . '/chunk_' . $i;
                     if (!file_exists($chunkPath)) {
                         throw new \Exception('Missing chunk ' . $i);
                     }
-                    
+
                     $chunkContent = file_get_contents($chunkPath);
                     fwrite($finalFile, $chunkContent);
                     unlink($chunkPath); // Delete chunk after writing
                 }
-                
+
                 fclose($finalFile);
-                
+
                 // Clean up temp directory
                 if (file_exists($tempChunksDir)) {
                     rmdir($tempChunksDir);
                 }
-                
+
                 return response()->json([
                     'success' => true,
                     'message' => 'All chunks uploaded successfully',
@@ -5174,7 +5234,7 @@ class AdminController extends Controller
                     ]
                 ]);
             }
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Chunk ' . $chunkIndex . ' uploaded successfully',
@@ -5186,13 +5246,13 @@ class AdminController extends Controller
                     'completed' => false
                 ]
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('Chunked video upload failed', [
                 'error' => $e->getMessage(),
                 'upload_id' => $request->input('upload_id') ?? 'unknown'
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage()
@@ -5205,13 +5265,13 @@ class AdminController extends Controller
      */
     public function exportRevenueTrends()
     {
-        $trends = \App\Models\RevenueSummary::monthly()
+        $trends = RevenueSummary::monthly()
             ->orderBy('period_date', 'asc')
             ->limit(12)
             ->get()
             ->map(fn($t) => [
                 'Month' => $t->period_date->format('M Y'),
-                'Revenue' => (float)$t->revenue,
+                'Revenue' => (float) $t->revenue,
                 'Payments' => $t->payments_count,
                 'Subscriptions' => $t->subscriptions_count
             ]);
@@ -5229,23 +5289,23 @@ class AdminController extends Controller
             return redirect()->back()->with('error', 'Invalid export type.');
         }
 
-        $summaries = \App\Models\RevenueSummary::where('period_type', $type)
+        $summaries = RevenueSummary::where('period_type', $type)
             ->orderBy('period_date', 'desc')
             ->get();
 
         $filename = "revenue_summary_{$type}_" . now()->format('Y-m-d') . ".csv";
 
         $headers = [
-            "Content-type"        => "text/csv",
+            "Content-type" => "text/csv",
             "Content-Disposition" => "attachment; filename=$filename",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
+            "Pragma" => "no-cache",
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Expires" => "0"
         ];
 
         $columns = ['Period', 'Revenue (GH₵)', 'Payments Count', 'Subscriptions Count'];
 
-        $callback = function() use($summaries, $columns, $type) {
+        $callback = function () use ($summaries, $columns, $type) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
 
@@ -5253,7 +5313,7 @@ class AdminController extends Controller
                 $period = $report->period_date ? $report->period_date->format($type === 'annual' ? 'Y' : ($type === 'monthly' ? 'M Y' : 'M d, Y')) : 'N/A';
                 fputcsv($file, [
                     $period,
-                    (float)$report->revenue,
+                    (float) $report->revenue,
                     $report->payments_count,
                     $report->subscriptions_count
                 ]);
