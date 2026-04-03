@@ -418,7 +418,53 @@ class AuthController extends Controller
             // For regular users - always redirect to main dashboard
             return redirect()->route('dashboard.main');
         }
-        return view('auth.signup');
+
+        $detectedCountry = [
+            'name' => 'Ghana',
+            'code' => '+233',
+            'flag' => 'gh'
+        ];
+
+        try {
+            // Get client IP, taking into account proxies if configured
+            $userIp = $request->ip();
+            
+            // Skip detection for local IPs to avoid unnecessary API calls
+            if (!in_array($userIp, ['127.0.0.1', '::1']) && !str_starts_with($userIp, '192.168.') && !str_starts_with($userIp, '10.')) {
+                $response = Http::timeout(3)->get("http://ip-api.com/json/{$userIp}");
+                
+                if ($response->successful()) {
+                    $lookup = $response->json();
+                    if (isset($lookup['status']) && $lookup['status'] === 'success') {
+                        $detectedCountry = [
+                            'name' => $lookup['country'],
+                            'code' => $this->getPhoneCodeByCountry($lookup['countryCode']),
+                            'flag' => strtolower($lookup['countryCode'])
+                        ];
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning('Country auto-detection failed: ' . $e->getMessage(), ['ip' => $request->ip()]);
+        }
+
+        return view('auth.signup', compact('detectedCountry'));
+    }
+
+    /**
+     * Map country ISO codes to phone codes
+     * Initial mapping for common countries in the signup list
+     */
+    private function getPhoneCodeByCountry($isoCode)
+    {
+        $codes = [
+            'GH' => '+233', 'NG' => '+234', 'KE' => '+254', 'ZA' => '+27',
+            'US' => '+1', 'GB' => '+44', 'CA' => '+1', 'AU' => '+61',
+            'DE' => '+49', 'FR' => '+33', 'IN' => '+91', 'CN' => '+86',
+            'JP' => '+81', 'BR' => '+55', 'MX' => '+52'
+        ];
+        
+        return $codes[strtoupper($isoCode)] ?? '+233';
     }
 
     
