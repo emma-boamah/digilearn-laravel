@@ -43,7 +43,7 @@ secure_asset('images/shoutoutgh-logo.png')
 'hasMerchantReturnPolicy' => [
 '@type' => 'MerchantReturnPolicy',
 'applicableCountry' => 'GH',
-'returnPolicyCategory' => 'https://schema.org/NoReturns'
+'returnPolicyCategory' => 'https://schema.org/MerchantReturnNotPermitted'
 ]
 ]
 ];
