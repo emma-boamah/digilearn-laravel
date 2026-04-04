@@ -905,8 +905,8 @@
                     <div class="phone-input-container">
                         <div class="country-code-selector">
                             <button type="button" class="country-code-btn" id="countryCodeBtn">
-                                <img src="https://flagcdn.com/w20/gh.png" alt="Ghana" class="country-flag" id="selectedFlag">
-                                <span class="country-code" id="selectedCode">+233</span>
+                                <img src="https://flagcdn.com/w20/{{ $detectedCountry['flag'] }}.png" alt="{{ $detectedCountry['name'] }}" class="country-flag" id="selectedFlag">
+                                <span class="country-code" id="selectedCode">{{ $detectedCountry['code'] }}</span>
                                 <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                                 </svg>
@@ -929,7 +929,8 @@
                             placeholder="24 123 4567"
                             autocomplete="tel"
                         >
-                        <input type="hidden" id="country_code" name="country_code" value="+233">
+                        <input type="hidden" id="country_code" name="country_code" value="{{ $detectedCountry['code'] }}">
+                        <input type="hidden" id="country_name" name="country" value="{{ $detectedCountry['name'] }}">
                     </div>
                     
                     <div class="skip-phone">
@@ -1228,6 +1229,13 @@
                 selectedFlag.alt = country.name;
                 selectedCode.textContent = country.code;
                 countryCodeInput.value = country.code;
+                
+                // Also update the hidden country name field for the user profile
+                const countryNameInput = document.getElementById('country_name');
+                if (countryNameInput) {
+                    countryNameInput.value = country.name;
+                }
+                
                 countryCodeDropdown.classList.remove('active');
             }
 
@@ -1259,16 +1267,24 @@
                 }
             });
 
-            // Auto-detect country based on user's location (optional)
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    // This would typically involve a geolocation API call
-                    // For now, we'll default to Ghana
-                    const defaultCountry = countries.find(c => c.flag === 'gh');
-                    if (defaultCountry) {
-                        selectCountry(defaultCountry);
-                    }
-                });
+            // Auto-detect country based on backend data or fallback
+            const detectedCountryData = @json($detectedCountry);
+            if (detectedCountryData) {
+                const match = countries.find(c => 
+                    c.flag.toLowerCase() === detectedCountryData.flag.toLowerCase() || 
+                    c.name.toLowerCase() === detectedCountryData.name.toLowerCase()
+                );
+                
+                if (match) {
+                    selectCountry(match);
+                } else {
+                    // If detected country not in our list, at least update the hidden fields
+                    selectCountry({
+                        name: detectedCountryData.name, 
+                        code: detectedCountryData.code, 
+                        flag: detectedCountryData.flag
+                    });
+                }
             }
 
             // Initialize with default countries
