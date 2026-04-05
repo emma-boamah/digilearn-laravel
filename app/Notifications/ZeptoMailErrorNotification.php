@@ -38,10 +38,19 @@ class ZeptoMailErrorNotification extends Notification
      */
     public function toArray(object $notifiable): array
     {
+        $message = $this->errorMessage;
+
+        // Simplify ZeptoMail "Credit exhausted" message
+        if (str_contains($message, 'LE_102') || str_contains($message, 'Credit exhausted')) {
+            $message = 'ZeptoMail credits have been exhausted. No transactional emails can be sent until the account is topped up.';
+        }
+
         return [
             'type' => 'system',
             'title' => 'Email Delivery Failure',
-            'message' => 'ZeptoMail failed to send critical email. Error: ' . $this->errorMessage,
+            'message' => $message,
+            'icon' => 'fas fa-exclamation-triangle',
+            'color' => '#ef4444',
             'action_url' => null
         ];
     }

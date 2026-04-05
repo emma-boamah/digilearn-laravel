@@ -541,6 +541,9 @@ class NotificationController extends Controller
             return view('dashboard.notifications.show', compact('notification'));
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             abort(404, 'Notification not found.');
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            // Re-throw HttpExceptions (like 404s) so they aren't caught by the general catch-all below
+            throw $e;
         } catch (\Throwable $e) {
             report($e);
             abort(500, 'An error occurred while loading the notification.');
@@ -563,6 +566,10 @@ class NotificationController extends Controller
             'App\\Notifications\\PaymentSuccessfulNotification',
             'App\\Notifications\\StorageAlertNotification',
             'App\\Notifications\\ClassStartedNotification',
+            'App\\Notifications\\ZeptoMailErrorNotification',
+            'App\\Notifications\\SubscriptionExpiringNotification',
+            'App\\Notifications\\SubscriptionExpiredNotification',
+            'App\\Notifications\\PlanChangeNotification',
         ];
 
         return in_array($type, $textBasedTypes);
