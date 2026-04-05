@@ -8,6 +8,9 @@
     <title>{{ $title ?? config('app.name', 'ShoutOutGh') }} - Dashboard</title>
 
     <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -111,7 +114,7 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'Roboto', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background-color: var(--bg-main);
             color: var(--text-main);
             line-height: 1.6;
@@ -264,13 +267,13 @@
         }
 
         .sidebar-section-title {
-            font-size: 0.75rem;
-            font-weight: 600;
+            font-size: 0.7rem;      /* Even more subtle */
+            font-weight: 500;
             color: var(--gray-500);
-            padding: 0.5rem 1.5rem;
-            margin-bottom: 0.75rem;
+            padding: 1rem 1.5rem 0.5rem; /* Better spacing for headers */
+            margin-bottom: 0.25rem;
             text-transform: uppercase;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.05em;
             transition: opacity 0.3s ease;
         }
 
@@ -302,21 +305,21 @@
         }
 
         .sidebar-menu-item.active {
-            background-color: rgba(225, 30, 45, 0.1);
+            background-color: rgba(225, 30, 45, 0.05); /* Lighter red tint */
             color: var(--primary-red);
             border-left-color: var(--primary-red);
-            font-weight: 600;
+            font-weight: 500; /* YouTube uses medium weight for active */
         }
 
         .sidebar-menu-icon {
-            width: 20px;
-            height: 20px;
+            width: 24px;   /* YouTube standard */
+            height: 24px;
             flex-shrink: 0;
         }
 
         .sidebar-menu-text {
-            font-size: 0.875rem;
-            font-weight: 500;
+            font-size: 0.875rem; /* 14px */
+            font-weight: 400;    /* YouTube uses regular for default */
             white-space: nowrap;
             transition: opacity 0.3s ease;
         }
