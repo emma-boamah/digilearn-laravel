@@ -188,7 +188,7 @@ use Illuminate\Support\Str;
         aspect-ratio: 16/9;
         overflow: hidden;
         flex: 1;
-        min-height: 180px;
+        min-height: 220px; /* Increased from 180px for prioritisation */
     }
 
     .lesson-duration {

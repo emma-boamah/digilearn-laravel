@@ -2183,10 +2183,10 @@
         }
 
         @media (min-width: 1280px) {
-
-            /* Four column layout for large screens */
+            /* Three column layout for large screens to prioritize thumbnail visibility */
             .content-grid {
-                grid-template-columns: repeat(4, 1fr);
+                grid-template-columns: repeat(3, 1fr);
+                gap: 2rem;
             }
         }
 

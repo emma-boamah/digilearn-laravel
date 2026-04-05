@@ -416,8 +416,15 @@
 
         .content-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 1.5rem;
+        }
+
+        @media (min-width: 1280px) {
+            .content-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 2rem;
+            }
         }
 
         .lesson-card {
@@ -438,6 +445,7 @@
             position: relative;
             aspect-ratio: 16/9;
             overflow: hidden;
+            min-height: 220px; /* Increased to prioritize visibility */
         }
 
         .lesson-thumbnail img {

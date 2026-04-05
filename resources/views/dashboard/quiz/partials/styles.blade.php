@@ -640,12 +640,18 @@
 
     .content-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
         gap: 2rem;
         max-width: 100%;
         margin: 0 auto;
         width: 100%;
         box-sizing: border-box;
+    }
+
+    @media (min-width: 1280px) {
+        .content-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
     }
 
     /* =============================================
