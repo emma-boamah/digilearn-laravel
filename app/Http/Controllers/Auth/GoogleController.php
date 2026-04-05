@@ -27,37 +27,18 @@ class GoogleController extends Controller
 
     public function redirectToGoogle(Request $request)
     {
-        $state = Str::random(40);
-        $request->session()->put('oauth_state', $state);
-        $request->session()->save();
-
+        // Socialite handles state automatically via session. 
+        // We only use the 'signup' query param if needed.
         return Socialite::driver('google')
             ->redirectUrl(route('auth.google.callback'))
-            ->with(['state' => $state])
             ->redirect();
     }
 
     public function handleGoogleCallback(Request $request)
     {
         try {
-            $sessionState = $request->session()->get('oauth_state');
-
-            if (!$sessionState || $request->state !== $sessionState) {
-                $this->logGoogleAuthEvent('invalid_state', self::ERROR_CATEGORIES['INVALID_STATE'], $request, [
-                    'session_state' => $sessionState,
-                    'request_state' => $request->state,
-                    'ip' => $request->ip()
-                ]);
-
-                return redirect()->route('login')
-                    ->withErrors(['error' => 'Security validation failed. Please try logging in again.']);
-            }
-
-            $request->session()->forget('oauth_state');
-
             $googleUser = Socialite::driver('google')
                 ->redirectUrl(route('auth.google.callback'))
-                ->stateless()
                 ->user();
 
             if (!$googleUser->getEmail()) {
@@ -167,9 +148,7 @@ class GoogleController extends Controller
                 'ip' => $request->ip()
             ]);
 
-            return redirect()->route('login')->withErrors([
-                'error' => 'Google authentication service is temporarily unavailable. Please try again later or sign in with email.'
-            ]);
+            return redirect()->route('login')->with('error', 'Google authentication service is temporarily unavailable. Please try again later or sign in with email.');
 
         } catch (\Laravel\Socialite\Two\InvalidStateException $e) {
             $this->logGoogleAuthEvent('invalid_state_exception', self::ERROR_CATEGORIES['INVALID_STATE'], $request, [
@@ -177,9 +156,7 @@ class GoogleController extends Controller
                 'ip' => $request->ip()
             ]);
 
-            return redirect()->route('login')->withErrors([
-                'error' => 'Your session has expired. Please try logging in again.'
-            ]);
+            return redirect()->route('login')->with('error', 'Your session has expired. Please try logging in again.');
 
         } catch (\Exception $e) {
             $this->logGoogleAuthEvent('unexpected_error', self::ERROR_CATEGORIES['SYSTEM'], $request, [
@@ -190,9 +167,7 @@ class GoogleController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
 
-            return redirect()->route('login')->withErrors([
-                'error' => 'Google authentication failed. Please try again or sign in with email.'
-            ]);
+            return redirect()->route('login')->with('error', 'Google authentication failed. Please try again or sign in with email.');
         }
     }
 

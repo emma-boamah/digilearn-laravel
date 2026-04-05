@@ -480,6 +480,80 @@
             margin: 0.5rem 0 0 0;
         }
         
+        .alert-notification {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            z-index: 9999;
+            min-width: 320px;
+            max-width: 90%;
+            padding: 16px 20px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .alert-notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .alert-notification.error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .alert-notification.success {
+            border-left: 4px solid #10b981;
+        }
+
+        .alert-notification.info {
+            border-left: 4px solid #3b82f6;
+        }
+
+        .alert-icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .error .alert-icon { color: #ef4444; }
+        .success .alert-icon { color: #10b981; }
+        .info .alert-icon { color: #3b82f6; }
+
+        .alert-message {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #1e293b;
+            flex: 1;
+        }
+
+        .alert-close {
+            background: none;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .alert-close:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
         @media (max-width: 900px) {
             .form-section {
                 padding: 40px 30px;
@@ -505,6 +579,15 @@
     </style>
 </head>
 <body>
+    {{-- Global Premium Notifications --}}
+    <div id="global-alert" class="alert-notification">
+        <div class="alert-icon" id="alert-icon"></div>
+        <div class="alert-message" id="alert-message"></div>
+        <button class="alert-close" onclick="hideAlert()" aria-label="Close alert">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
     <div class="container">
         <!-- Form Section -->
         <div class="form-section">
@@ -676,6 +759,43 @@
                     }, 10000);
                 });
             }
+
+            // Session Notification Logic
+            const alertElement = document.getElementById('global-alert');
+            const alertIcon = document.getElementById('alert-icon');
+            const alertMessage = document.getElementById('alert-message');
+
+            window.showAlert = function(message, type = 'error') {
+                alertMessage.textContent = message;
+                alertElement.className = `alert-notification ${type} show`;
+                
+                // Set Icon
+                if (type === 'error') {
+                    alertIcon.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
+                } else if (type === 'success') {
+                    alertIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+                } else {
+                    alertIcon.innerHTML = '<i class="fas fa-info-circle"></i>';
+                }
+
+                // Auto-dismiss after 5 seconds
+                setTimeout(() => {
+                    hideAlert();
+                }, 5000);
+            };
+
+            window.hideAlert = function() {
+                alertElement.classList.remove('show');
+            };
+
+            // Check for session flash messages
+            @if(session('error'))
+                showAlert("{{ session('error') }}", 'error');
+            @elseif(session('success'))
+                showAlert("{{ session('success') }}", 'success');
+            @elseif(session('info'))
+                showAlert("{{ session('info') }}", 'info');
+            @endif
 
             setInterval(() => {
                 if (document.visibilityState === 'visible') {
