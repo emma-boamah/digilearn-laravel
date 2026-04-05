@@ -34,17 +34,9 @@ class SubscriptionExpiringNotification extends Notification implements ShouldQue
     /**
      * Get the mail representation of the notification.
      */
-    public function toMail(object $notifiable): MailMessage
+    public function toMail(object $notifiable): \App\Mail\SubscriptionReminderMail
     {
-        $subject = "Your Subscription Expires in {$this->daysRemaining} Days";
-        
-        return (new MailMessage)
-            ->subject($subject)
-            ->greeting('Hello ' . $notifiable->name . '!')
-            ->line("Your **{$this->planName}** subscription will expire in **{$this->daysRemaining} days**.")
-            ->line("To avoid any interruption to your access, please renew your subscription soon.")
-            ->action('Renew Subscription', route('pricing'))
-            ->line('Thank you for using ShoutOutGh!');
+        return (new \App\Mail\SubscriptionReminderMail($this->daysRemaining, $this->planName, $notifiable->name));
     }
 
     /**

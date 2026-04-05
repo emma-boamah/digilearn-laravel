@@ -34,33 +34,20 @@ class SubscriptionExpiredNotification extends Notification implements ShouldQueu
         return ['mail', 'database'];
     }
 
-    public function toMail(object $notifiable): MailMessage
+    /**
+     * Get the mail representation of the notification.
+     */
+    public function toMail(object $notifiable): \Illuminate\Mail\Mailable
     {
         if ($this->type === 'grace_ending') {
-            return $this->graceEndingMail($notifiable);
+            return (new \App\Mail\SubscriptionReminderMail(
+                $this->graceDaysRemaining ?? 0,
+                $this->planName,
+                $notifiable->name
+            ));
         }
 
-        return (new MailMessage)
-            ->subject('Your ShoutOutGH Subscription Has Expired')
-            ->greeting('Hello ' . $notifiable->name . '!')
-            ->line("Your **{$this->planName}** subscription has expired.")
-            ->line("You have a **3-day grace period** to renew and keep your access. After that, your content access will be paused.")
-            ->line("Your learning progress is saved — renew anytime within 90 days to pick up where you left off.")
-            ->action('Renew Now', route('pricing'))
-            ->line('Thank you for learning with ShoutOutGH!');
-    }
-
-    private function graceEndingMail(object $notifiable): MailMessage
-    {
-        $dayText = $this->graceDaysRemaining === 1 ? 'day' : 'days';
-
-        return (new MailMessage)
-            ->subject("Your Access Ends in {$this->graceDaysRemaining} {$dayText} — Renew Now")
-            ->greeting('Hello ' . $notifiable->name . '!')
-            ->line("Your grace period for the **{$this->planName}** plan ends in **{$this->graceDaysRemaining} {$dayText}**.")
-            ->line("After that, you will lose access to your lessons and quizzes. Your progress is preserved for 90 days.")
-            ->action('Renew Now', route('pricing'))
-            ->line('Don\'t lose your progress — renew today!');
+        return (new \App\Mail\SubscriptionExpiredMail($this->planName, $notifiable->name));
     }
 
     public function toArray(object $notifiable): array

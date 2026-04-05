@@ -32,16 +32,9 @@ class PaymentSuccessfulNotification extends Notification implements ShouldQueue
     /**
      * Get the mail representation of the notification.
      */
-    public function toMail(object $notifiable): MailMessage
+    public function toMail(object $notifiable): \App\Mail\SubscriptionReceiptMail
     {
-        return (new MailMessage)
-            ->subject('Payment Successful - Thank You!')
-            ->greeting('Hello ' . $notifiable->name . '!')
-            ->line('Your payment has been processed successfully.')
-            ->line('Amount: ' . ($this->paymentData['currency'] ?? 'GHS') . ' ' . ($this->paymentData['amount'] ?? 'N/A'))
-            ->line('Transaction ID: ' . ($this->paymentData['transaction_id'] ?? 'N/A'))
-            ->action('View Receipt', route('profile.show'))
-            ->line('Thank you for choosing DigiLearn!');
+        return (new \App\Mail\SubscriptionReceiptMail($this->paymentData, $notifiable->name));
     }
 
     /**
