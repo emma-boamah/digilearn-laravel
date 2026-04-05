@@ -846,7 +846,7 @@
 
         const reason = action === 'suspend' ? prompt('Reason for suspension (optional):') : null;
 
-        fetch(`/admin/users/${userId}/${action}`, {
+        fetch(`/admin/users/${userId}/toggle-status`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
