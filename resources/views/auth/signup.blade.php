@@ -1026,11 +1026,15 @@
                 @enderror
 
                 <button type="submit" class="submit-btn" id="signupBtn">
-                    <span class="btn-text">SIGN UP</span>
+                    <span class="btn-text">Sign Up & Verify Email</span>
                     <span class="btn-loading" style="display: none;">
-                        <i class="fas fa-spinner fa-spin"></i> Creating Account...
+                        <i class="fas fa-spinner fa-spin"></i> Sending code...
                     </span>
                 </button>
+                <div style="text-align: center; font-size: 0.85rem; color: var(--gray-500); margin-top: -0.5rem; margin-bottom: 1.5rem;">
+                    <i class="fas fa-envelope-open-text" style="margin-right: 0.25rem;"></i>
+                    A 6-digit verification code will be sent to your email.
+                </div>
             </form>
 
             <div class="divider">or sign up with</div>

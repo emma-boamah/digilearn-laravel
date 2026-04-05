@@ -11,8 +11,11 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 
+use App\Traits\HasOtpVerification;
+
 class GoogleController extends Controller
 {
+    use HasOtpVerification;
     // Reuse error categories from AuthController
     const ERROR_CATEGORIES = [
         'INVALID_STATE' => 'invalid_state',
@@ -73,38 +76,19 @@ class GoogleController extends Controller
             $user = User::where('email', $googleUser->getEmail())->first();
 
             if (!$user) {
-                try {
-                    // Auto create new user
-                    $user = User::create([
-                        'name' => $googleUser->getName() ?: 'Google User',
-                        'email' => $googleUser->getEmail(),
-                        'avatar' => $googleUser->getAvatar(),
-                        'password' => bcrypt(Str::random(64)),
-                        'google_id' => $googleUser->getId(),
-                        'email_verified_at' => now(),
-                        'registration_ip' => $request->ip(),
-                        'last_login_ip' => $request->ip(),
-                        'last_login_at' => now(),
-                    ]);
+                // For new users, we initiate the OTP flow to verify they own the email
+                // even though Google has technically verified it, per business requirements.
+                $this->logGoogleAuthEvent('initiating_otp_for_new_user', 'info', $request, [
+                    'email' => $googleUser->getEmail(),
+                    'google_id' => $googleUser->getId()
+                ]);
 
-                    $this->logGoogleAuthEvent('new_user_created', 'success', $request, [
-                        'user_id' => $user->id,
-                        'email' => $user->email,
-                        'via_google' => true
-                    ]);
-
-                } catch (\Exception $e) {
-                    $this->logGoogleAuthEvent('user_creation_failed', self::ERROR_CATEGORIES['USER_CREATION_FAILED'], $request, [
-                        'email' => $googleUser->getEmail(),
-                        'error' => $e->getMessage(),
-                        'error_code' => $e->getCode(),
-                        'ip' => $request->ip()
-                    ]);
-
-                    return redirect()->route('login')->withErrors([
-                        'error' => 'Failed to create account. This email might already be registered. Please try logging in with email instead.'
-                    ]);
-                }
+                return $this->initiateOtpFlow($request, [
+                    'name' => $googleUser->getName() ?: 'Google User',
+                    'email' => $googleUser->getEmail(),
+                    'google_id' => $googleUser->getId(),
+                    'avatar' => $googleUser->getAvatar(),
+                ], 'google');
             } else {
                 // Update existing user info if missing
                 $updateData = [
