@@ -47,14 +47,21 @@ trait HasOtpVerification
             $errorMsg = $e->getMessage();
             Log::error('Failed to send OTP email', ['error' => $errorMsg]);
             
+            // Default generic message
+            $displayError = 'Failed to send verification code. Please try again later.';
+            
+            // Enhance error message for exhaustion/limits
             if (str_contains($errorMsg, '429') || str_contains(strtolower($errorMsg), 'credit') || str_contains(strtolower($errorMsg), 'exhausted') || str_contains($errorMsg, '402') || str_contains($errorMsg, 'TM_5001') || str_contains($errorMsg, 'LE_102')) {
+                $displayError = 'Our email verification service is temporarily unavailable (Limit Exhausted). Please notify support if this persists.';
+                
                 $superAdmins = \App\Models\User::where('is_superuser', true)->get();
                 if ($superAdmins->isNotEmpty()) {
                     \Illuminate\Support\Facades\Notification::send($superAdmins, new \App\Notifications\ZeptoMailErrorNotification($errorMsg));
                 }
             }
             
-            return back()->withInput()->withErrors(['email' => 'Failed to send verification code due to a temporary service issue. Please try again later.']);
+            // 🔹 CRITICAL: Use direct redirect instead of back() to avoid OAuth history issues (looping back to Google)
+            return redirect()->route('login')->with('error', $displayError);
         }
         
         return redirect()->route('verify-otp')->with('otp_email', $userEmail);
