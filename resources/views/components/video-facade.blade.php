@@ -206,18 +206,19 @@ use Illuminate\Support\Str;
 
     .lesson-info {
         flex: 1;
-        padding: 1.25rem;
+        padding: 1rem; /* More compact padding */
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
+        gap: 0.5rem; /* Reduced gap */
         background-color: var(--white);
+        justify-content: flex-start; /* Ensure items start at top */
     }
 
     .lesson-title {
-        font-size: 1.125rem;
+        font-size: 1.05rem; /* Slightly smaller for compactness */
         font-weight: 600;
         color: var(--gray-900);
-        line-height: 1.4;
+        line-height: 1.3;
         margin: 0;
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -229,9 +230,9 @@ use Illuminate\Support\Str;
     .lesson-meta {
         display: flex;
         flex-direction: column;
-        gap: 0.25rem;
+        gap: 0.15rem; /* Very tight gap */
         color: var(--gray-500);
-        font-size: 0.85rem;
+        font-size: 0.8rem;
     }
 
     .lesson-subject {
@@ -401,20 +402,22 @@ use Illuminate\Support\Str;
         width: 100%;
         height: 100%;
         z-index: 2;
-        /* Between thumbnail and badges */
+        background-color: #000; /* Prevent flashy light backgrounds during load */
         pointer-events: none !important;
-        /* CRITICAL: Allow clicks to pass through to the card */
+        overflow: hidden; /* Ensure scaling doesn't bleed */
     }
 
     .csp-facade-player {
         width: 100% !important;
         height: 100% !important;
+        min-width: 100% !important;
+        min-height: 100% !important;
         border: none !important;
         position: absolute;
-        top: 0;
-        left: 0;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) scale(1.02); /* Slight overscale to kill side margins */
         pointer-events: none !important;
-        /* CRITICAL: Prevent iframe from stealing clicks */
     }
 
     .video-facade-card.playing .video-facade-thumbnail {
