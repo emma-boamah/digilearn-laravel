@@ -414,15 +414,14 @@ use Illuminate\Support\Str;
     }
 
     .csp-facade-player {
-        width: 100% !important;
-        height: 100% !important;
-        min-width: 100% !important;
-        min-height: 100% !important;
+        width: 140% !important;
+        height: 140% !important;
+        object-fit: cover;
         border: none !important;
         position: absolute;
         top: 50% !important;
         left: 50% !important;
-        transform: translate(-50%, -50%) scale(1.02); /* Slight overscale to kill side margins */
+        transform: translate(-50%, -50%);
         pointer-events: none !important;
     }
 
