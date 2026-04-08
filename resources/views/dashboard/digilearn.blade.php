@@ -1094,7 +1094,6 @@
         }
 
         /* Right on desktop */
-        }
 
         .level-indicator {
             display: inline-flex;
@@ -1991,7 +1990,7 @@
             /* Search box initially hidden on mobile */
 
             .content-section {
-                min-height: calc(100vh - 60px -120px - 200px);
+                min-height: calc(100vh - 60px - 120px - 200px);
                 padding: 1rem 0.75rem 2rem;
             }
 
