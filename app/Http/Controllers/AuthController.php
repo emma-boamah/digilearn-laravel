@@ -451,6 +451,11 @@ class AuthController extends Controller
             Log::warning('Country auto-detection failed: ' . $e->getMessage(), ['ip' => $request->ip()]);
         }
 
+        // Handle redirect_to for pricing and other specific flows
+        if ($request->has('redirect_to')) {
+            session(['url.intended' => $request->get('redirect_to')]);
+        }
+
         return view('auth.signup', compact('detectedCountry'));
     }
 
