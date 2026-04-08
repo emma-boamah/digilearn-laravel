@@ -30,9 +30,11 @@
         src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <!-- Conditional Analytics -->
-    @if(auth()->check() ? $cookieManager->isAllowed('analytics') : (request()->cookie('digilearn_consent') ?
-    json_decode(request()->cookie('digilearn_consent'), true)['analytics'] ?? false : false))
-    @include('partials.analytics')
+    @if(
+            auth()->check() ? $cookieManager->isAllowed('analytics') : (request()->cookie('digilearn_consent') ?
+                json_decode(request()->cookie('digilearn_consent'), true)['analytics'] ?? false : false)
+        )
+        @include('partials.analytics')
     @endif
 
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
@@ -320,7 +322,7 @@
 
             .nav-content {
                 padding: 0.75rem 1rem;
-                flex-wrap: wrap;
+                flex-wrap: nowrap;
             }
 
             .nav-links {
@@ -636,67 +638,68 @@
                         </button>
 
                         @auth
-                        <a href="{{ route('dashboard.main') }}" class="btn btn-primary" style="margin-right: 1rem;">
-                            Learning Hub
-                        </a>
+                            <a href="{{ route('dashboard.main') }}" class="btn btn-primary" style="margin-right: 1rem;">
+                                Learning Hub
+                            </a>
 
-                        <div class="user-dropdown" style="position: relative; display: inline-block;">
-                            <button class="user-avatar-header" id="userDropdownToggle"
-                                style="border: none; background: none; cursor: pointer; padding: 0;">
-                                @if(auth()->user()->avatar_url)
-                                <img src="{{ auth()->user()->avatar_url }}" alt="Profile"
-                                    style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                                @else
-                                <div
-                                    style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #E11E2D, #2677B8); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1.2rem;">
-                                    {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
-                                </div>
-                                @endif
-                            </button>
+                            <div class="user-dropdown" style="position: relative; display: inline-block;">
+                                <button class="user-avatar-header" id="userDropdownToggle"
+                                    style="border: none; background: none; cursor: pointer; padding: 0;">
+                                    @if(auth()->user()->avatar_url)
+                                        <img src="{{ auth()->user()->avatar_url }}" alt="Profile"
+                                            style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                    @else
+                                        <div
+                                            style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #E11E2D, #2677B8); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1.2rem;">
+                                            {{ substr(auth()->user()->name ?? 'U', 0, 1) }}
+                                        </div>
+                                    @endif
+                                </button>
 
-                            <div class="user-dropdown-menu" id="publicUserDropdown"
-                                style="position: absolute; right: 0; top: 100%; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); min-width: 200px; display: none; z-index: 50; margin-top: 0.5rem;">
-                                <div style="padding: 1rem; border-bottom: 1px solid var(--border-color);">
-                                    <div style="font-weight: 600; color: var(--text-main);">{{ auth()->user()->name }}
+                                <div class="user-dropdown-menu" id="publicUserDropdown"
+                                    style="position: absolute; right: 0; top: 100%; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); min-width: 200px; display: none; z-index: 50; margin-top: 0.5rem;">
+                                    <div style="padding: 1rem; border-bottom: 1px solid var(--border-color);">
+                                        <div style="font-weight: 600; color: var(--text-main);">{{ auth()->user()->name }}
+                                        </div>
+                                        <div
+                                            style="font-size: 0.875rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                            {{ auth()->user()->email }}
+                                        </div>
                                     </div>
-                                    <div
-                                        style="font-size: 0.875rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                        {{ auth()->user()->email }}</div>
-                                </div>
 
-                                <a href="{{ route('profile.show') }}" class="dropdown-item">
-                                    <svg class="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
-                                    Profile
-                                </a>
-                                <a href="{{ route('settings') }}" class="dropdown-item">
-                                    <svg class="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    </svg>
-                                    Settings
-                                </a>
-
-                                <form action="{{ route('logout') }}" method="POST" class="dropdown-item-form">
-                                    @csrf
-                                    <button type="submit" class="dropdown-item logout-btn">
-                                        <svg class="dropdown-icon" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
+                                    <a href="{{ route('profile.show') }}" class="dropdown-item">
+                                        <svg class="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                         </svg>
-                                        Logout
-                                    </button>
-                                </form>
+                                        Profile
+                                    </a>
+                                    <a href="{{ route('settings') }}" class="dropdown-item">
+                                        <svg class="dropdown-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                        Settings
+                                    </a>
+
+                                    <form action="{{ route('logout') }}" method="POST" class="dropdown-item-form">
+                                        @csrf
+                                        <button type="submit" class="dropdown-item logout-btn">
+                                            <svg class="dropdown-icon" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                            </svg>
+                                            Logout
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
-                        </div>
                         @else
-                        <a href="{{ route('login') }}" class="btn btn-outline">Login</a>
-                        <a href="{{ route('signup') }}" class="btn btn-primary">Sign Up Free</a>
+                            <a href="{{ route('login') }}" class="btn btn-outline">Login</a>
+                            <a href="{{ route('signup') }}" class="btn btn-primary">Sign Up Free</a>
                         @endauth
                     </div>
                 </div>
@@ -720,19 +723,19 @@
                     <a href="{{ route('pricing') }}" class="mobile-menu-item">Pricing</a>
                     <a href="{{ route('contact') }}" class="mobile-menu-item">Contact</a>
                     @auth
-                    <a href="{{ route('dashboard.main') }}" class="mobile-menu-item"
-                        style="color: var(--secondary-blue);">Learning Hub</a>
-                    <a href="{{ route('profile.show') }}" class="mobile-menu-item">Profile</a>
-                    <a href="{{ route ('settings') }}" class="mobile-menu-item">Settings</a>
-                    <form action="{{ route('logout') }}" method="POST" style="width: 100%;">
-                        @csrf
-                        <button type="submit" class="mobile-menu-item"
-                            style="width: 100%; color: var(--primary-red); border: none; background: none; cursor: pointer;">Log
-                            Out</button>
-                    </form>
+                        <a href="{{ route('dashboard.main') }}" class="mobile-menu-item"
+                            style="color: var(--secondary-blue);">Learning Hub</a>
+                        <a href="{{ route('profile.show') }}" class="mobile-menu-item">Profile</a>
+                        <a href="{{ route('settings') }}" class="mobile-menu-item">Settings</a>
+                        <form action="{{ route('logout') }}" method="POST" style="width: 100%;">
+                            @csrf
+                            <button type="submit" class="mobile-menu-item"
+                                style="width: 100%; color: var(--primary-red); border: none; background: none; cursor: pointer;">Log
+                                Out</button>
+                        </form>
                     @else
-                    <a href="{{ route('login') }}" class="mobile-menu-item login">Login</a>
-                    <a href="{{ route('signup') }}" class="mobile-menu-item signup">Sign Up Free</a>
+                        <a href="{{ route('login') }}" class="mobile-menu-item login">Login</a>
+                        <a href="{{ route('signup') }}" class="mobile-menu-item signup">Sign Up Free</a>
                     @endauth
                 </div>
             </div>

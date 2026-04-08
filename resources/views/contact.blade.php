@@ -91,11 +91,18 @@ number, ShoutOutGH email')
             margin: 0 auto;
         }
 
+        .contact-column {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            flex: 1;
+        }
+
         @media (min-width: 48rem) {
             .contact-methods {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
+                flex-direction: row;
                 gap: 2rem;
+                align-items: start;
             }
         }
 
@@ -230,6 +237,99 @@ number, ShoutOutGH email')
             border-color: transparent !important;
             color: #ffffff !important;
         }
+
+        /* Auth Prompt Styles */
+        .auth-prompt {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px dashed #d1d5db;
+            padding: 1rem;
+            text-align: center;
+            border-radius: 0;
+            margin-top: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .auth-prompt-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .auth-prompt-icon {
+            display: none; /* Hide icon in compact version */
+        }
+
+        .auth-prompt p {
+            font-size: 0.85rem;
+            color: var(--gray-600);
+            max-width: 100%;
+            margin: 0 0 0.75rem;
+            line-height: 1.4;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .btn-auth {
+            flex: 1;
+            padding: 0.6rem 0;
+            border-radius: 0;
+            font-weight: 500;
+            text-align: center;
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-login {
+            background-color: var(--secondary-blue);
+            color: white;
+        }
+
+        .btn-login:hover {
+            background-color: #1a4da1;
+            transform: translateY(-1px);
+        }
+
+        .btn-signup {
+            background-color: transparent;
+            color: var(--secondary-blue);
+            border: 1px solid var(--secondary-blue);
+        }
+
+        .btn-signup:hover {
+            background-color: rgba(30, 64, 175, 0.05);
+            transform: translateY(-1px);
+        }
+
+        [data-theme="dark"] .auth-prompt {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--border-color);
+        }
+
+        [data-theme="dark"] .auth-prompt-icon {
+            background-color: var(--bg-main);
+            color: var(--text-muted);
+        }
+
+        [data-theme="dark"] .auth-prompt p {
+            color: var(--text-muted);
+        }
+
+        [data-theme="dark"] .btn-signup {
+            color: var(--white);
+            border-color: var(--white);
+        }
+
+        [data-theme="dark"] .btn-signup:hover {
+            background-color: var(--white);
+            color: var(--bg-main);
+        }
     </style>
 
     <!-- Hero Section -->
@@ -273,93 +373,111 @@ number, ShoutOutGH email')
             @endif
 
             <div class="card-content">
-                <!-- Left Column - Contact Methods -->
+                <!-- Contact Methods - Masonry Columns -->
                 <div class="contact-methods">
-                    <div class="contact-item">
-                        <div class="contact-content">
-                            <div class="icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
-                                    </path>
-                                    <polyline points="22,6 12,13 2,6"></polyline>
-                                </svg>
+                    <!-- Left Column -->
+                    <div class="contact-column">
+                        <div class="contact-item">
+                            <div class="contact-content">
+                                <div class="icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                        </path>
+                                        <polyline points="22,6 12,13 2,6"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="text">
+                                    <h3>Get feedback</h3>
+                                    <p>
+                                        We have millions of teachers around the world as it helps us improve what you love to
+                                        learn.
+                                    </p>
+                                    @auth
+                                        <form action="{{ route('feedback.submit') }}" method="POST">
+                                            @csrf
+                                            <textarea name="feedback" placeholder="Share your thoughts..."></textarea>
+                                            <button type="submit">Submit</button>
+                                        </form>
+                                    @else
+                                        <textarea name="feedback" placeholder="Share your thoughts..."></textarea>
+                                        <div class="auth-prompt">
+                                            <div class="auth-prompt-content">
+                                                <p>Please log in or create an account to send a feedback.</p>
+                                                <div class="auth-buttons">
+                                                    <a href="{{ route('login', ['redirect_to' => url()->current()]) }}" class="btn-auth btn-login">Login</a>
+                                                    <a href="{{ route('signup', ['redirect_to' => url()->current()]) }}" class="btn-auth btn-signup">Sign Up</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endauth
+                                </div>
                             </div>
-                            <div class="text">
-                                <h3>Get feedback</h3>
-                                <p>
-                                    We have millions of teachers around the world as it helps us improve what you love to
-                                    learn.
-                                </p>
-                                <form action="{{ route('feedback.submit') }}" method="POST">
-                                    @csrf
-                                    <textarea name="feedback" placeholder="Share your thoughts..."></textarea>
-                                    <button type="submit">Submit</button>
-                                </form>
+                        </div>
+
+                        <div class="contact-item">
+                            <div class="contact-content">
+                                <div class="icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                                        </path>
+                                        <polyline points="22,6 12,13 2,6"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="text">
+                                    <h3>shoutoutgh.com</h3>
+                                    <p>
+                                        We have a team of teachers around the world as it helps us provide the best for you. Our
+                                        team is available 24/7 to help you with your questions.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="contact-item">
-                        <div class="contact-content">
-                            <div class="icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <path
-                                        d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
-                                    </path>
-                                </svg>
-                            </div>
-                            <div class="text">
-                                <h3>(+233) 546 994383</h3>
-                                <p>
-                                    We have a team of teachers around the world as it helps us provide the best for you. Our
-                                    team is available 24/7 to help you.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="contact-item">
-                        <div class="contact-content">
-                            <div class="icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
-                                    </path>
-                                    <polyline points="22,6 12,13 2,6"></polyline>
-                                </svg>
-                            </div>
-                            <div class="text">
-                                <h3>shoutoutgh.com</h3>
-                                <p>
-                                    We have a team of teachers around the world as it helps us provide the best for you. Our
-                                    team is available 24/7 to help you with your questions.
-                                </p>
+                    <!-- Right Column -->
+                    <div class="contact-column">
+                        <div class="contact-item">
+                            <div class="contact-content">
+                                <div class="icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path
+                                            d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+                                        </path>
+                                    </svg>
+                                </div>
+                                <div class="text">
+                                    <h3>(+233) 546 994383</h3>
+                                    <p>
+                                        We have a team of teachers around the world as it helps us provide the best for you. Our
+                                        team is available 24/7 to help you.
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="contact-item">
-                        <div class="contact-content">
-                            <div class="icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                                    <circle cx="12" cy="10" r="3"></circle>
-                                </svg>
-                            </div>
-                            <div class="text">
-                                <h3>Accra-Ghana</h3>
-
-                                                               <p>
-                                    We have a team of teachers around the world as it helps us provide the best for you. Contact our
-                                    team at contact@shoutoutgh.com
-                                </p>
+                        <div class="contact-item">
+                            <div class="contact-content">
+                                <div class="icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                        <circle cx="12" cy="10" r="3"></circle>
+                                    </svg>
+                                </div>
+                                <div class="text">
+                                    <h3>Accra-Ghana</h3>
+                                    <p>
+                                        We have a team of teachers around the world as it helps us provide the best for you. Contact our
+                                        team at contact@shoutoutgh.com
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
