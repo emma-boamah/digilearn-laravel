@@ -405,6 +405,12 @@ use Illuminate\Support\Str;
         background-color: #000; /* Prevent flashy light backgrounds during load */
         pointer-events: none !important;
         overflow: hidden; /* Ensure scaling doesn't bleed */
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .video-facade-card.playing .video-preview {
+        opacity: 1;
     }
 
     .csp-facade-player {
@@ -497,6 +503,8 @@ use Illuminate\Support\Str;
 
     .video-facade-card.loaded .video-facade-thumbnail {
         animation: none;
+        display: block !important;
+        opacity: 1 !important;
     }
 
     /* Preconnect hints for external video sources */
