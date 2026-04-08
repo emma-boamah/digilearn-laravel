@@ -57,6 +57,7 @@ class ContactController extends Controller
         $user = auth()->user();
         $data = array_merge($validated, [
             'email' => $user->email,
+            'name' => $user->name,
         ]);
 
         try {

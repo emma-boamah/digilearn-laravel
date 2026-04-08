@@ -187,21 +187,56 @@ use Illuminate\Support\Str;
         position: relative;
         aspect-ratio: 16/9;
         overflow: hidden;
-        flex: 1;
-        min-height: 220px; /* Increased from 180px for prioritisation */
+        flex-shrink: 0;
+        min-height: 240px; /* Increased for better presence */
     }
 
     .lesson-duration {
         position: absolute;
-        bottom: 0.5rem;
-        right: 0.5rem;
-        background-color: rgba(0, 0, 0, 0.8);
+        bottom: 0.75rem; /* Increased spacing */
+        right: 0.75rem;
+        background-color: rgba(0, 0, 0, 0.82);
         color: #ffffff;
-        padding: 0.25rem 0.5rem;
-        border-radius: 0.25rem;
+        padding: 0.35rem 0.65rem;
+        border-radius: 0.375rem;
         font-size: 0.75rem;
-        font-weight: 500;
+        font-weight: 600;
         z-index: 10;
+    }
+
+    .lesson-info {
+        flex: 1;
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        background-color: var(--white);
+    }
+
+    .lesson-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--gray-900);
+        line-height: 1.4;
+        margin: 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .lesson-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        color: var(--gray-500);
+        font-size: 0.85rem;
+    }
+
+    .lesson-subject {
+        color: var(--secondary-blue);
+        font-weight: 500;
     }
 
     .lesson-level-badge {
