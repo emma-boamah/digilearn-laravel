@@ -2729,7 +2729,7 @@ class AdminController extends Controller
             'uploaded_by' => Auth::id(),
             'quiz_data' => $request->quiz_data,
             'is_featured' => $request->has('is_featured'),
-            'shuffle_questions' => $request->has('shuffle_questions'),
+            'shuffle_questions' => $request->boolean('shuffle_questions'),
         ]);
 
         return redirect()->route('admin.content.quizzes.index')->with('success', 'Quiz uploaded successfully!');
@@ -2761,7 +2761,7 @@ class AdminController extends Controller
             'grade_level' => $request->grade_level,
             'quiz_data' => $request->quiz_data,
             'is_featured' => $request->has('is_featured'),
-            'shuffle_questions' => $request->has('shuffle_questions'),
+            'shuffle_questions' => $request->boolean('shuffle_questions'),
         ]);
 
         return redirect()->route('admin.content.quizzes.index')->with('success', 'Quiz updated successfully!');
