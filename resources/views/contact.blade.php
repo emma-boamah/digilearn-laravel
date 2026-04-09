@@ -262,7 +262,7 @@ number, ShoutOutGH email')
 
         .auth-prompt p {
             font-size: 0.85rem;
-            color: var(--gray-600);
+            color: var(--gray-900);
             max-width: 100%;
             margin: 0 0 0.75rem;
             line-height: 1.4;
@@ -314,16 +314,16 @@ number, ShoutOutGH email')
 
         [data-theme="dark"] .auth-prompt-icon {
             background-color: var(--bg-main);
-            color: var(--text-muted);
+            color: var(--gray-50);
         }
 
         [data-theme="dark"] .auth-prompt p {
-            color: var(--text-muted);
+            color: var(--text-main);
         }
 
         [data-theme="dark"] .btn-signup {
-            color: var(--white);
-            border-color: var(--white);
+            color: var(--black);
+            border-color: var(--gray-600);
         }
 
         [data-theme="dark"] .btn-signup:hover {
