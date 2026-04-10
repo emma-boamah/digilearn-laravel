@@ -220,7 +220,7 @@
                                         @php
                                             $isShuffle = old('shuffle_questions') !== null 
                                                 ? old('shuffle_questions') == 1 
-                                                : ($quizModel->shuffle_questions ?? true);
+                                                : ($quizModel->shuffle_questions ?? false);
                                         @endphp
                                         <input type="hidden" name="shuffle_questions" value="0">
                                         <input type="checkbox" id="shuffle_questions" name="shuffle_questions" value="1" 
