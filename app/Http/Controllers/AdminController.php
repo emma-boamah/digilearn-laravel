@@ -2754,12 +2754,21 @@ class AdminController extends Controller
             'shuffle_questions' => 'boolean',
         ]);
 
+        $quizData = $request->quiz_data;
+        if ($request->filled('quiz_data')) {
+            $decoded = json_decode($quizData, true);
+            if (isset($decoded['_shuffled_seed'])) {
+                unset($decoded['_shuffled_seed']);
+                $quizData = json_encode($decoded);
+            }
+        }
+
         $quiz->update([
             'title' => $request->title,
             'subject_id' => $request->subject_id,
             'video_id' => $request->video_id,
             'grade_level' => $request->grade_level,
-            'quiz_data' => $request->quiz_data,
+            'quiz_data' => $quizData,
             'is_featured' => $request->has('is_featured'),
             'shuffle_questions' => $request->boolean('shuffle_questions'),
         ]);
@@ -4223,6 +4232,11 @@ class AdminController extends Controller
                         $quizData = json_decode($request->quiz_data, true);
                         $quizData = $this->processQuizImages($quizData, $request);
 
+                        // Strip internal shuffle flags to prevent double-shuffling bugs
+                        if (isset($quizData['_shuffled_seed'])) {
+                            unset($quizData['_shuffled_seed']);
+                        }
+
                         $quiz->update([
                             'quiz_data' => json_encode($quizData),
                             'difficulty_level' => $request->quiz_difficulty ?? $quiz->difficulty_level,
@@ -4240,6 +4254,11 @@ class AdminController extends Controller
                 if ($request->filled('quiz_data')) {
                     $quizData = json_decode($request->quiz_data, true);
                     $quizData = $this->processQuizImages($quizData, $request);
+
+                    // Strip internal shuffle flags to prevent double-shuffling bugs
+                    if (isset($quizData['_shuffled_seed'])) {
+                        unset($quizData['_shuffled_seed']);
+                    }
                 }
 
                 $content->update([
