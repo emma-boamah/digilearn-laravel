@@ -36,6 +36,7 @@ use App\Models\Quiz; // Import the Quiz model
 use App\Models\Document; // Import the Document model
 use App\Models\ActivityLog;
 use App\Models\Payment;
+use App\Models\Feedback;
 use Illuminate\Support\Facades\Password;
 use App\Models\UserSubscription; // Import the UserSubscription model
 use App\Models\PricingPlan; // Import the PricingPlan model
@@ -44,6 +45,8 @@ use App\Models\UserProgress; // Import the UserProgress model
 use App\Models\QuizAttempt; // Import the QuizAttempt model
 use App\Models\QuizRating; // Import the QuizRating model
 use App\Models\Subject;
+use App\Models\UserEngagement;
+use App\Models\LessonCompletion;
 use App\Models\Comment;
 use Illuminate\Support\Facades\Storage; // For file uploads
 use App\Services\NotificationService;
@@ -750,12 +753,24 @@ class AdminController extends Controller
     /**
      * Show analytics page
      */
-    public function analytics()
+    public function analytics(Request $request)
     {
+        $activeTab = $request->get('tab', 'report'); // Default to report tab
+
         // Get analytics data
         $analyticsData = $this->getAnalyticsData();
 
-        return view('admin.analytics.index', compact('analyticsData'));
+        // Get feedback data if feedback tab is active
+        $feedbacks = null;
+        $feedbackStats = null;
+        if ($activeTab === 'feedbacks') {
+            $feedbacks = Feedback::with('user')
+                ->latest()
+                ->paginate(15);
+            $feedbackStats = $this->getFeedbackStats();
+        }
+
+        return view('admin.analytics.index', compact('analyticsData', 'activeTab', 'feedbacks', 'feedbackStats'));
     }
 
     /**
@@ -1399,9 +1414,25 @@ class AdminController extends Controller
     {
         return [
             'user_registrations' => $this->getUserRegistrationData(),
+            'active_users' => $this->getActiveUserTrendData(),
             'lesson_views' => $this->getLessonViewData(),
             'popular_subjects' => $this->getPopularSubjectsData(),
             'user_engagement' => $this->getUserEngagementData(),
+        ];
+    }
+
+    /**
+     * Get statistics for feedback submissions
+     */
+    private function getFeedbackStats()
+    {
+        return [
+            'total' => Feedback::count(),
+            'sent' => Feedback::where('status', 'sent')->count(),
+            'failed' => Feedback::where('status', 'failed')->count(),
+            'pending' => Feedback::where('status', 'pending')->count(),
+            'contact_type' => Feedback::where('type', 'contact')->count(),
+            'feedback_type' => Feedback::where('type', 'feedback')->count(),
         ];
     }
 
@@ -1411,9 +1442,28 @@ class AdminController extends Controller
     private function getUserRegistrationData()
     {
         $data = [];
-        for ($i = 6; $i >= 0; $i--) {
+        for ($i = 29; $i >= 0; $i--) {
             $date = now()->subDays($i);
             $count = User::whereDate('created_at', $date)->count();
+            $data[] = [
+                'date' => $date->format('M d'),
+                'count' => $count
+            ];
+        }
+        return $data;
+    }
+
+    /**
+     * Get active user trend data (DAU)
+     */
+    private function getActiveUserTrendData()
+    {
+        $data = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+            $count = UserEngagement::whereDate('created_at', $date)
+                ->distinct('user_id')
+                ->count();
             $data[] = [
                 'date' => $date->format('M d'),
                 'count' => $count
@@ -1427,13 +1477,18 @@ class AdminController extends Controller
      */
     private function getLessonViewData()
     {
-        // This would come from lesson view tracking
-        return [
-            ['subject' => 'Mathematics', 'views' => 2500],
-            ['subject' => 'English', 'views' => 2100],
-            ['subject' => 'Science', 'views' => 1800],
-            ['subject' => 'Social Studies', 'views' => 1200],
-        ];
+        // Get top 5 subjects by video views
+        return Subject::withSum('primaryVideos as total_views', 'views')
+            ->orderByDesc('total_views')
+            ->limit(5)
+            ->get()
+            ->map(function ($subject) {
+                return [
+                    'subject' => $subject->name,
+                    'views' => $subject->total_views ?? 0
+                ];
+            })
+            ->toArray();
     }
 
     /**
@@ -1441,12 +1496,24 @@ class AdminController extends Controller
      */
     private function getPopularSubjectsData()
     {
-        return [
-            ['name' => 'Mathematics', 'percentage' => 35],
-            ['name' => 'English', 'percentage' => 28],
-            ['name' => 'Science', 'percentage' => 22],
-            ['name' => 'Social Studies', 'percentage' => 15],
-        ];
+        $subjects = Subject::withSum('primaryVideos as total_views', 'views')
+            ->orderByDesc('total_views')
+            ->get();
+
+        $grandTotalViews = $subjects->sum('total_views');
+
+        if ($grandTotalViews <= 0) {
+            return [
+                ['name' => 'General', 'percentage' => 100]
+            ];
+        }
+
+        return $subjects->take(4)->map(function ($subject) use ($grandTotalViews) {
+            return [
+                'name' => $subject->name,
+                'percentage' => round(($subject->total_views / $grandTotalViews) * 100)
+            ];
+        })->toArray();
     }
 
     /**
@@ -1454,11 +1521,36 @@ class AdminController extends Controller
      */
     private function getUserEngagementData()
     {
+        $totalUsers = User::count();
+        if ($totalUsers <= 0) {
+            $totalUsers = 1;
+        }
+
+        // DAU: Active in last 24h
+        $dau = UserEngagement::where('created_at', '>=', now()->subDay())
+            ->distinct('user_id')
+            ->count();
+
+        // WAU: Active in last 7 days
+        $wau = UserEngagement::where('created_at', '>=', now()->subDays(7))
+            ->distinct('user_id')
+            ->count();
+
+        // Lesson Completion Rate
+        $totalLessonsStarted = LessonCompletion::count();
+        $lessonsCompleted = LessonCompletion::where('fully_completed', true)->count();
+        $completionRate = $totalLessonsStarted > 0 ? ($lessonsCompleted / $totalLessonsStarted) * 100 : 0;
+
+        // Quiz Pass Rate
+        $totalQuizAttempts = QuizAttempt::count();
+        $quizzesPassed = QuizAttempt::where('passed', true)->count();
+        $passRate = $totalQuizAttempts > 0 ? ($quizzesPassed / $totalQuizAttempts) * 100 : 0;
+
         return [
-            'daily_active_users' => 450,
-            'weekly_active_users' => 1200,
-            'monthly_active_users' => 3500,
-            'average_session_duration' => '25 minutes',
+            ['label' => 'Daily Active Users', 'value' => round(($dau / $totalUsers) * 100)],
+            ['label' => 'Weekly Active Users', 'value' => round(($wau / $totalUsers) * 100)],
+            ['label' => 'Lesson Completion Rate', 'value' => round($completionRate)],
+            ['label' => 'Quiz Pass Rate', 'value' => round($passRate)],
         ];
     }
 

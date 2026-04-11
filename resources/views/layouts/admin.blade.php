@@ -752,7 +752,8 @@
                 </a>
 
                 @role('super-admin')
-                <a href="#" class="nav-link">
+                <a href="{{ route('admin.analytics') }}"
+                    class="nav-link {{ request()->routeIs('admin.analytics*') ? 'active' : '' }}">
                     <i class="fas fa-chart-line"></i>
                     <span class="sidebar-link-text">Reports & Web Analytics</span>
                 </a>
