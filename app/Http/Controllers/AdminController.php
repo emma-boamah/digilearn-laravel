@@ -1582,10 +1582,27 @@ class AdminController extends Controller
      */
     private function getFailedLoginAttempts()
     {
-        return [
-            ['email' => 'hacker@example.com', 'ip' => '192.168.1.100', 'attempts' => 5, 'last_attempt' => '2 minutes ago'],
-            ['email' => 'test@test.com', 'ip' => '10.0.0.50', 'attempts' => 3, 'last_attempt' => '1 hour ago'],
-        ];
+        return ActivityLog::whereIn('action', [
+                'failed_login', 
+                'user_not_found', 
+                'rate_limit_exceeded', 
+                'login_rate_limit_exceeded'
+            ])
+            ->where('created_at', '>=', now()->subDays(7))
+            ->selectRaw('user_email as email, ip_address as ip, COUNT(*) as attempts, MAX(created_at) as last_attempt')
+            ->groupBy('user_email', 'ip_address')
+            ->orderByDesc('last_attempt')
+            ->limit(10)
+            ->get()
+            ->map(function ($attempt) {
+                return [
+                    'email' => $attempt->email ?? 'Unknown',
+                    'ip' => $attempt->ip,
+                    'attempts' => $attempt->attempts,
+                    'last_attempt' => Carbon::parse($attempt->last_attempt)->diffForHumans()
+                ];
+            })
+            ->toArray();
     }
 
     /**
