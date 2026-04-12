@@ -15,6 +15,7 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Events\Failed;
 use App\Models\User;
+use App\Models\ActivityLog;
 use App\Models\UserProgress;
 use App\Models\Video;
 use App\Models\Quiz;
@@ -927,10 +928,36 @@ class AuthController extends Controller
                                  self::ERROR_CATEGORIES['ACCOUNT_LOCKED'],
                                  self::ERROR_CATEGORIES['INVALID_CREDENTIALS']])) {
             Log::channel('security')->info($event, $logData);
+            
+            // Persist to database for dashboard metrics
+            ActivityLog::log(
+                $event,
+                "Security event: {$event}" . (isset($context['email']) ? " for {$context['email']}" : ""),
+                $category === self::ERROR_CATEGORIES['INVALID_CREDENTIALS'] ? 'warning' : 'error',
+                $context['user_id'] ?? null,
+                $context['email'] ?? ($request->input('email')),
+                get_client_ip(),
+                $request->userAgent(),
+                $logData
+            );
         }
 
         // Log to auth channel for authentication events
         Log::channel('auth')->info($event, $logData);
+
+        // Also log successful logins to ActivityLog for 'getSuspiciousActivities' logic
+        if ($event === 'successful_login') {
+            ActivityLog::log(
+                'login',
+                'User logged in successfully',
+                'info',
+                $context['user_id'] ?? null,
+                $context['email'] ?? null,
+                get_client_ip(),
+                $request->userAgent(),
+                $logData
+            );
+        }
 
         // Also log to daily for general tracking
         Log::info("Auth Event: {$event}", $logData);

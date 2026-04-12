@@ -76,3 +76,11 @@ Schedule::command('app:aggregate-revenue --back=7')
         ->at('01:00')
         ->withoutOverlapping()
         ->runInBackground();
+
+// Clean up old activity logs weekly on Sundays at 11 PM
+Schedule::command('activity-log:cleanup --days=30')
+        ->weekly()
+        ->sundays()
+        ->at('23:00')
+        ->withoutOverlapping()
+        ->runInBackground();
