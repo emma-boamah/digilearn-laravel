@@ -17,9 +17,9 @@
 @endphp
 
 <div class="level-container">
-    <a href="{{ route('dashboard.level-selection') }}" class="{{ $allClasses }}">
-        {{ $displayName }}
-    </a>
+    <div class="{{ $allClasses }}">
+        <span class="level-prefix">Level:</span> {{ $displayName }}
+    </div>
 </div>
 
 <style nonce="{{ request()->attributes->get('csp_nonce') }}">
@@ -48,15 +48,26 @@
     min-width: 140px;
     height: 43px;
     text-decoration: none;
+    pointer-events: none; /* Make container non-clickable */
+}
+
+.level-prefix {
+    color: var(--text-muted);
+    font-weight: 500;
 }
 
 /* Mobile: Compact level indicator */
 @media (max-width: 768px) {
     .level-indicator {
         padding: 0.75rem 0.75rem;
-        font-size: 0.7rem;
-        min-width: 80px;
+        font-size: 0.75rem;
+        min-width: unset;
+        width: auto;
         gap: 0.25rem;
+    }
+
+    .level-prefix {
+        display: none;
     }
 
     .level-indicator svg {
