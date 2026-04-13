@@ -8,9 +8,6 @@
                 <span style="color: var(--text-muted); font-size: 0.875rem;">
                     Selected Level: <strong style="color: var(--primary-red);">{{ $selectedLevelGroup ? ucwords(str_replace('-', ' ', $selectedLevelGroup)) : 'None' }}</strong>
                 </span>
-                <a href="{{ route('dashboard.change-level') }}" style="color: var(--secondary-blue); font-size: 0.875rem; text-decoration: none; font-weight: 500;">
-                    {{ $selectedLevelGroup ? 'Change Level' : 'Select Level' }}
-                </a>
             </div>
         </div>
     </div>
