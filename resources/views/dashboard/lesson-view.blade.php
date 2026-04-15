@@ -1,7 +1,6 @@
 @extends('layouts.dashboard-components')
 
-@section('title', (isset($course) ? $course->title : ($lesson['title'] ?? 'Lesson')) . ' - ' . config('app.name',
-'ShoutOutGh'))
+@section('title', (isset($course) && is_object($course) ? $course->title : (isset($lesson) ? (is_object($lesson) ? ($lesson->title ?? 'Lesson') : ($lesson['title'] ?? 'Lesson')) : 'Lesson')) . ' - ' . config('app.name', 'ShoutOutGh'))
 
 @section('head')
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
@@ -78,223 +77,50 @@
         display: none;
     }
 
-    /* Search/Filter Bar */
-    /* Updated filter bar to span full width with glassmorphism and proper positioning */
-    .filter-bar {
-        position: fixed !important;
-        top: 60px !important;
-        /* Directly below the header */
-        left: 0;
-        /* Start from left edge for full width */
-        width: 100vw;
-        /* Full viewport width */
-        padding-left: calc(var(--sidebar-width-expanded) + 0.75rem);
-        /* Account for sidebar */
-        padding-right: 0.75rem;
-        padding-top: 0.75rem;
-        padding-bottom: 0.75rem;
-        z-index: 998 !important;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        background-color: var(--white);
-        /* Transparent for glassmorphism */
-        backdrop-filter: blur(10px) saturate(160%);
-        /* Glassmorphism effect */
-        -webkit-backdrop-filter: blur(10px) saturate(160%);
-        /* Safari support */
-        border-bottom: 1px solid var(--gray-200);
-        flex-wrap: wrap;
-        overflow-x: hidden;
-        overflow-y: hidden;
-        max-width: 100%;
-        box-sizing: border-box;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        pointer-events: none;
-        /* Allow clicks to pass through glassmorphism layer */
-    }
-
-    .filter-bar * {
-        pointer-events: auto;
-        /* Restore pointer events for interactive elements */
-    }
-
-    .youtube-sidebar.collapsed~.filter-bar {
-        padding-left: calc(var(--sidebar-width-collapsed) + 0.75rem);
-    }
-
-    /* CSP compliance: classes to replace inline styles */
-    .loading-spinner-small {
-        width: 16px;
-        height: 16px;
-        border: 2px solid var(--secondary-blue);
-        border-top-color: transparent;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        display: inline-block;
-        vertical-align: middle;
-    }
-
-    .text-secondary-blue {
-        color: var(--secondary-blue) !important;
-    }
-
-    @keyframes spin {
-        from {
-            transform: rotate(0deg);
-        }
-
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    /* Mobile: Reduce padding and gap on filter bar */
-    @media (max-width: 768px) {
-        .filter-bar {
-            padding-left: 0.5rem;
-            padding-right: 0.5rem;
-            padding-top: 0.5rem;
-            padding-bottom: 0.5rem;
-            gap: 0.5rem;
-            flex-wrap: nowrap;
-        }
-
-        .youtube-sidebar.collapsed~.filter-bar {
-            padding-left: 0.5rem;
-        }
-    }
-
-    .back-button {
-        background: none;
+    /* Focus Mode Toggle Button */
+    .focus-mode-toggle {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        z-index: 50;
+        background: rgba(0, 0, 0, 0.5);
         border: none;
-        color: var(--gray-600);
-        cursor: pointer;
-        padding: 0.75rem;
+        color: white;
+        padding: 0.5rem;
         border-radius: 0.5rem;
+        cursor: pointer;
+        backdrop-filter: blur(4px);
+        transition: all 0.2s ease;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all 0.2s ease;
-        flex-shrink: 0;
+        opacity: 0;
     }
 
-    .back-button:hover {
-        background-color: var(--gray-100);
-        color: var(--gray-900);
+    .video-container:hover .focus-mode-toggle {
+        opacity: 1;
     }
 
-    /* Mobile: Compact back button */
-    @media (max-width: 768px) {
-        .back-button {
-            padding: 0.5rem;
-        }
-
-        .back-button svg {
-            width: 18px;
-            height: 18px;
-        }
+    .focus-mode-toggle:hover {
+        background: rgba(0, 0, 0, 0.8);
+        transform: scale(1.1);
     }
 
-    /* Made search box fully responsive with flexible sizing */
-    .search-box {
-        position: relative;
-        flex: 1;
-        max-width: 500px;
-        min-width: 0;
-        /* changed from 300px to allow fully flexibility */
-        width: 100%;
+    .focus-mode-toggle svg {
+        width: 20px;
+        height: 20px;
     }
 
-    /* Mobile: Search toggle button */
-    .search-toggle-btn {
+    .lesson-page.focus-mode .focus-mode-toggle .exit-icon {
+        display: block;
+    }
+    .lesson-page.focus-mode .focus-mode-toggle .enter-icon {
         display: none;
-        background: none;
-        border: none;
-        color: var(--gray-600);
-        cursor: pointer;
-        padding: 0.5rem;
-        border-radius: 0.5rem;
-        flex-shrink: 0;
-        transition: all 0.2s ease;
+    }
+    .focus-mode-toggle .exit-icon {
+        display: none;
     }
 
-    .search-toggle-btn:hover {
-        background-color: var(--gray-100);
-        color: var(--gray-900);
-    }
-
-    /* Mobile: Compact search box */
-    @media (max-width: 768px) {
-        .filter-bar.search-active {
-            flex-wrap: wrap;
-        }
-
-        /* Show search toggle button on mobile */
-        .search-toggle-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Hide search box by default on mobile */
-        .search-box {
-            display: none;
-            max-width: none;
-            min-width: 0;
-            width: 100%;
-            order: 10;
-            flex: 1 1 100%;
-        }
-
-        /* Show search box when search is active */
-        .filter-bar.search-active .search-box {
-            display: flex;
-        }
-
-        /* Hide level indicator and quiz when search active */
-        .filter-bar.search-active .level-container,
-        .filter-bar.search-active .quiz-container {
-            display: none;
-        }
-
-        .search-input {
-            padding: 0.75rem 0.75rem 0.75rem 2.5rem;
-            font-size: 0.75rem;
-        }
-
-        .search-icon {
-            left: 0.75rem;
-        }
-    }
-
-    .search-icon {
-        position: absolute;
-        left: 1rem;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--gray-400);
-        z-index: 1;
-    }
-
-    .search-input {
-        width: 100%;
-        padding: 0.875rem 1rem 0.875rem 2.75rem;
-        border: 2px solid var(--gray-200);
-        border-radius: 0.75rem;
-        font-size: 0.875rem;
-        background-color: var(--gray-50);
-        transition: all 0.2s ease;
-        font-weight: 500;
-    }
-
-    .search-input:focus {
-        outline: none;
-        border-color: var(--primary-red);
-        background-color: var(--white);
-        box-shadow: 0 0 0 4px rgba(225, 30, 45, 0.1);
-    }
 
     .filter-dropdown {
         position: relative;
@@ -369,10 +195,24 @@
         padding: 1rem 1.5rem;
         max-width: 100%;
         margin: 0;
-        margin-top: 130px;
+        margin-top: 80px;
         overflow-x: hidden;
         box-sizing: border-box;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all var(--transition-speed) var(--transition-timing);
+    }
+
+    .lesson-page.focus-mode {
+        grid-template-columns: 1fr;
+    }
+
+    .lesson-page.focus-mode .lesson-sidebar {
+        display: none;
+    }
+
+    .lesson-page.focus-mode .lesson-main {
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
     }
 
     .lesson-main {
@@ -2712,7 +2552,7 @@
             flex-direction: column;
             padding: 0.75rem;
             margin: 0;
-            margin-top: 130px;
+            margin-top: 80px;
             gap: 1.5rem;
             overflow: hidden;
             width: 100%;
@@ -3382,43 +3222,6 @@
     }
 </style>
 
-@php
-$selectedLevel = $lesson['level_group'] ?? 'primary-lower';
-@endphp
-
-<!-- Enhanced Filter Bar - Matching DigiLearn Layout -->
-<div class="filter-bar" id="filterBar">
-    <button class="back-button" id="backButton">
-        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
-    </button>
-
-    <!-- Level Indicator (Left) -->
-    <x-level-indicator :selectedLevel="$selectedLevel" />
-
-    <!-- Search Box (Middle) -->
-    <div class="search-box" id="searchBox">
-        <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-        <input type="text" class="search-input" id="searchInput" placeholder="Search lessons, subjects, or topics...">
-    </div>
-
-    <!-- Search Toggle Button (Mobile only) -->
-    <button class="search-toggle-btn" id="searchToggleBtn">
-        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-    </button>
-
-    <!-- Quiz Button (Right) -->
-    <div class="quiz-container">
-        <a href="{{ route('quiz.index') }}" class="filter-button quiz">Quiz</a>
-    </div>
-</div>
 
 
 <!-- Enhanced Main Layout -->
@@ -3639,64 +3442,74 @@ $selectedLevel = $lesson['level_group'] ?? 'primary-lower';
                 </button>
                 <!-- Enhanced Video Player using VideoFacadeManager -->
                 <div class="video-container">
+                    <!-- Focus Mode Toggle -->
+                    <button id="focusModeToggle" class="focus-mode-toggle" title="Toggle Focus Mode">
+                        <svg class="enter-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                        </svg>
+                        <svg class="exit-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9L4 4m0 0v4m0-4h4m11 5l5-5m0 0v4m0-4h-4M9 15l-5 5m0 0v-4m0 4h4m11-5l5 5m0 0v-4m0 4h-4" />
+                        </svg>
+                    </button>
                     @php
                     $badgeLevelDisplay = '';
                     if (isset($lesson)) {
-                    if ($lesson instanceof \App\Models\Video && isset($lesson->level_display)) {
-                    $badgeLevelDisplay = $lesson->level_display;
-                    } elseif (is_array($lesson) && !empty($lesson['level_display'])) {
-                    $badgeLevelDisplay = $lesson['level_display'];
-                    } elseif (isset($selectedLevelGroup)) {
-                    $badgeLevelDisplay = ucwords(str_replace('-', ' ', $selectedLevelGroup));
-                    }
+                        if (is_object($lesson) && $lesson instanceof \App\Models\Video && isset($lesson->level_display)) {
+                            $badgeLevelDisplay = $lesson->level_display;
+                        } elseif (is_array($lesson) && !empty($lesson['level_display'])) {
+                            $badgeLevelDisplay = $lesson['level_display'];
+                        } elseif (isset($selectedLevelGroup)) {
+                            $badgeLevelDisplay = ucwords(str_replace('-', ' ', (string)$selectedLevelGroup));
+                        }
                     }
                     @endphp
                     @if(!empty($badgeLevelDisplay))
                     <div class="lesson-level-badge mobile-video-badge">{{ $badgeLevelDisplay }}</div>
                     @endif
 
-                    @if(isset($lesson) && $lesson instanceof \App\Models\Video)
+                    @if(isset($lesson) && is_object($lesson) && $lesson instanceof \App\Models\Video)
                     @php
+                    /** @var \App\Models\Video $lesson */
                     $videoUrl = $lesson->getVideoUrl();
                     $embedHtml = $lesson->getEmbedHtml();
                     Log::info('Video Debug - Model Instance', [
-                    'lesson_id' => $lesson->id,
-                    'video_url' => $videoUrl,
-                    'embed_html_length' => strlen($embedHtml),
-                    'video_source' => $lesson->video_source,
-                    'status' => $lesson->status,
-                    'mux_playback_id' => $lesson->mux_playback_id ?? 'none',
-                    'vimeo_id' => $lesson->vimeo_id ?? 'none',
-                    'video_path' => $lesson->video_path,
-                    'temp_file_path' => $lesson->temp_file_path,
-                    'is_temp_expired' => $lesson->isTempExpired()
+                        'lesson_id' => $lesson->id,
+                        'video_url' => $videoUrl,
+                        'embed_html_length' => strlen((string)$embedHtml),
+                        'video_source' => $lesson->video_source,
+                        'status' => $lesson->status,
+                        'mux_playback_id' => $lesson->mux_playback_id ?? 'none',
+                        'vimeo_id' => $lesson->vimeo_id ?? 'none',
+                        'video_path' => $lesson->video_path,
+                        'temp_file_path' => $lesson->temp_file_path,
+                        'is_temp_expired' => $lesson->isTempExpired()
                     ]);
                     @endphp
                     @if($embedHtml)
                     <!-- Video Player Container for Main Lesson Video -->
                     <div id="lesson-video-player" class="video-facade-card lesson-main-video"
-                        data-video-id="{{ $lesson->id }}" data-video-source="{{ $lesson->video_source }}"
-                        data-vimeo-id="{{ $lesson->vimeo_id }}"
-                        data-external-video-id="{{ $lesson->external_video_id }}"
-                        data-mux-playback-id="{{ $lesson->mux_playback_id }}"
-                        data-video-path="{{ $lesson->video_path }}" data-title="{{ $lesson->title }}" data-lazy="false"
+                        data-video-id="{{ $lesson->id ?? '' }}" data-video-source="{{ $lesson->video_source ?? '' }}"
+                        data-vimeo-id="{{ $lesson->vimeo_id ?? '' }}"
+                        data-external-video-id="{{ $lesson->external_video_id ?? '' }}"
+                        data-mux-playback-id="{{ $lesson->mux_playback_id ?? '' }}"
+                        data-video-path="{{ $lesson->video_path ?? '' }}" data-title="{{ $lesson->title ?? '' }}" data-lazy="false"
                         class="video-facade-card lesson-main-video csp-video-card">
 
                         <!-- Video Thumbnail (Poster) -->
                         <div class="video-facade-thumbnail csp-video-thumb">
-                            @if($lesson->video_source === 'youtube')
-                            <img src="https://img.youtube.com/vi/{{ $lesson->external_video_id }}/maxresdefault.jpg"
-                                alt="{{ $lesson->title }}" class="csp-img-cover"
-                                data-fallback="https://img.youtube.com/vi/{{ $lesson->external_video_id }}/hqdefault.jpg">
-                            @elseif($lesson->video_source === 'vimeo')
-                            <img src="https://vumbnail.com/{{ $lesson->vimeo_id }}.jpg" alt="{{ $lesson->title }}"
+                            @if(is_object($lesson) && $lesson->video_source === 'youtube')
+                            <img src="https://img.youtube.com/vi/{{ $lesson->external_video_id ?? '' }}/maxresdefault.jpg"
+                                alt="{{ $lesson->title ?? 'Video' }}" class="csp-img-cover"
+                                data-fallback="https://img.youtube.com/vi/{{ $lesson->external_video_id ?? '' }}/hqdefault.jpg">
+                            @elseif(is_object($lesson) && $lesson->video_source === 'vimeo')
+                            <img src="https://vumbnail.com/{{ $lesson->vimeo_id ?? '' }}.jpg" alt="{{ $lesson->title ?? 'Video' }}"
                                 class="csp-img-cover" data-fallback="/placeholder.svg?height=315&width=560">
-                            @elseif($lesson->video_source === 'mux')
-                            <img src="https://image.mux.com/{{ $lesson->mux_playback_id }}/thumbnail.jpg"
-                                alt="{{ $lesson->title }}" class="csp-img-cover"
+                            @elseif(is_object($lesson) && $lesson->video_source === 'mux')
+                            <img src="https://image.mux.com/{{ $lesson->mux_playback_id ?? '' }}/thumbnail.jpg"
+                                alt="{{ $lesson->title ?? 'Video' }}" class="csp-img-cover"
                                 data-fallback="/placeholder.svg?height=315&width=560">
-                            @else
-                            <img src="{{ secure_asset($lesson->getThumbnailUrl()) }}" alt="{{ $lesson->title }}"
+                            @elseif(is_object($lesson))
+                            <img src="{{ secure_asset($lesson->getThumbnailUrl()) }}" alt="{{ $lesson->title ?? 'Video' }}"
                                 class="csp-img-cover" data-fallback="/placeholder.svg?height=315&width=560">
                             @endif
                         </div>
@@ -3714,9 +3527,9 @@ $selectedLevel = $lesson['level_group'] ?? 'primary-lower';
                         <!-- Debug Info (optional) -->
                         <div id="video-debug-info" class="csp-debug-info">
                             <strong>Debug:</strong><br>
-                            ID: {{ $lesson->id }}<br>
-                            Source: {{ $lesson->video_source }}<br>
-                            Status: {{ $lesson->status }}
+                            ID: {{ is_object($lesson) ? ($lesson->id ?? 'N/A') : ($lesson['id'] ?? 'N/A') }}<br>
+                            Source: {{ is_object($lesson) ? ($lesson->video_source ?? 'N/A') : ($lesson['video_source'] ?? 'N/A') }}<br>
+                            Status: {{ is_object($lesson) ? ($lesson->status ?? 'N/A') : ($lesson['status'] ?? 'N/A') }}
                         </div>
                     </div>
                     @else
@@ -3748,7 +3561,7 @@ $selectedLevel = $lesson['level_group'] ?? 'primary-lower';
 
                         <!-- Video Thumbnail (Poster) -->
                         <div class="video-facade-thumbnail csp-video-thumb">
-                            <img src="{{ $posterSrc }}" alt="{{ $lesson['title'] ?? 'Lesson Video' }}"
+                            <img src="{{ $posterSrc ?? '' }}" alt="{{ $lesson['title'] ?? 'Lesson Video' }}"
                                 class="csp-img-cover" data-fallback="/placeholder.svg?height=315&width=560">
                         </div>
 
@@ -4397,13 +4210,33 @@ $selectedLevel = $lesson['level_group'] ?? 'primary-lower';
         initializeVideoItems();
         initializeVideoCards(); // Add hover-to-play functionality
         initializeKeyboardShortcuts();
-        initializeNavigation();
         initializeCommentsToggle();
         initializeMobileVideoScroll();
         initializeCourseTabs();
         checkDocumentAvailability();
         initializeVideoProgressTracking();
         initializeSearchToggle(); // Initialize mobile search toggle
+        initializeFocusMode();
+    }
+
+    function initializeFocusMode() {
+        const toggle = document.getElementById('focusModeToggle');
+        const lessonPage = document.querySelector('.lesson-page');
+        
+        if (!toggle || !lessonPage) return;
+
+        // Check for saved preference
+        if (localStorage.getItem('focusMode') === 'true') {
+            lessonPage.classList.add('focus-mode');
+        }
+
+        toggle.addEventListener('click', () => {
+            const isFocus = lessonPage.classList.toggle('focus-mode');
+            localStorage.setItem('focusMode', isFocus);
+            
+            // Re-trigger resize events for players if needed
+            window.dispatchEvent(new Event('resize'));
+        });
     }
 
     // Optimized hover-to-play functionality following YouTube/Netflix pattern
@@ -5192,12 +5025,6 @@ $selectedLevel = $lesson['level_group'] ?? 'primary-lower';
         });
     }
 
-    // Add new function for back button
-    function initializeNavigation() {
-        document.getElementById('backButton').addEventListener('click', () => {
-            history.back();
-        });
-    }
 
     // Enhanced Rich Text Editor with Quill.js
     function initializeNotesEditor() {
@@ -5989,20 +5816,27 @@ $selectedLevel = $lesson['level_group'] ?? 'primary-lower';
 
     // Enhanced search functionality
     function initializeSearch() {
-        const searchInput = document.querySelector('.search-input');
-        if (searchInput) {
-            let searchTimeout;
-            searchInput.addEventListener('input', function () {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    const query = this.value.trim();
-                    if (query.length > 2) {
-                        console.log('Searching for:', query);
-                        // Implement search functionality here
+        // Listen for the global-search event from the header
+        window.addEventListener('global-search', function (e) {
+            const query = e.detail.query.trim();
+            if (query.length > 2) {
+                console.log('Searching for:', query);
+                // Filter video items on the page
+                const videoItems = document.querySelectorAll('.video-item-card');
+                videoItems.forEach(item => {
+                    const title = item.querySelector('.video-item-title')?.textContent.toLowerCase() || '';
+                    if (title.includes(query)) {
+                        item.style.display = 'flex';
+                    } else {
+                        item.style.display = 'none';
                     }
-                }, 300);
-            });
-        }
+                });
+            } else if (query.length === 0) {
+                // Restore all items if search is cleared
+                const videoItems = document.querySelectorAll('.video-item-card');
+                videoItems.forEach(item => item.style.display = 'flex');
+            }
+        });
     }
 
     // Keyboard shortcuts

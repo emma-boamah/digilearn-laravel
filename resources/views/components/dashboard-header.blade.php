@@ -60,12 +60,99 @@
     }
 
     .header-right {
-        flex: 1;
         display: flex;
         align-items: center;
         justify-content: flex-end;
         padding: 0 1.5rem;
         gap: 1rem;
+        flex-shrink: 0;
+    }
+
+    .header-center {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+        padding: 0 2rem;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    /* Search Box in Header */
+    .header-search {
+        position: relative;
+        flex: 1;
+        max-width: 500px;
+    }
+
+    .header-search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--gray-400);
+        width: 16px;
+        height: 16px;
+        z-index: 1;
+    }
+
+    .header-search-input {
+        width: 100%;
+        padding: 0.625rem 1rem 0.625rem 2.5rem;
+        border: 1.5px solid var(--gray-200);
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        background-color: var(--gray-50);
+        transition: all 0.2s ease;
+        font-weight: 500;
+        height: 38px;
+    }
+
+    .header-search-input:focus {
+        outline: none;
+        border-color: var(--secondary-blue);
+        background-color: var(--white);
+        box-shadow: 0 0 0 3px rgba(38, 119, 184, 0.1);
+    }
+
+    /* Mobile Search Toggle */
+    .mobile-search-toggle {
+        display: none;
+    }
+
+    @media (max-width: 1024px) {
+        .header-center {
+            padding: 0 1rem;
+            gap: 1rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .header-center {
+            display: none; /* Hide on mobile by default */
+        }
+
+        .header-center.mobile-active {
+            display: flex;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--white);
+            z-index: 1001;
+            padding: 0 1rem;
+            max-width: none;
+        }
+
+        .mobile-search-toggle {
+            display: flex;
+        }
+        
+        .header-left.hide-mobile, .header-right.hide-mobile {
+            display: none;
+        }
     }
 
     .sidebar-toggle-btn {
@@ -789,6 +876,25 @@
         </div>
     </div>
 
+    @if(request()->routeIs('dashboard.lesson.view'))
+    @php
+        $selectedLevel = $selectedLevel ?? $selectedLevelGroup ?? 'jhs'; // Default if not passed
+    @endphp
+
+    <div class="header-center" id="headerCenter">
+        <!-- Level Indicator -->
+        <x-level-indicator :selectedLevel="$selectedLevel" />
+
+        <!-- Search Box -->
+        <div class="header-search">
+            <svg class="header-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input type="text" class="header-search-input" id="globalSearchInput" placeholder="Search lessons, subjects...">
+        </div>
+    </div>
+    @endif
+
     <!-- Dark Mode Toggle Script -->
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         document.addEventListener('DOMContentLoaded', function () {
@@ -1228,6 +1334,48 @@
                 };
                 return iconMap[type] || 'fas fa-bell';
             }
+
+            // Global Search Logic
+            const globalSearchInput = document.getElementById('globalSearchInput');
+            if (globalSearchInput) {
+                globalSearchInput.addEventListener('input', function(e) {
+                    const query = e.target.value.toLowerCase();
+                    // Dispatch a custom event that pages like lesson-view can listen to
+                    window.dispatchEvent(new CustomEvent('global-search', { detail: { query: query } }));
+                });
+            }
+
+            // Mobile Search Toggle Logic
+            const mobileSearchTrigger = document.getElementById('mobileSearchTrigger');
+            const headerCenter = document.getElementById('headerCenter');
+            const headerLeft = document.querySelector('.header-left');
+            const headerRight = document.getElementById('headerRight');
+
+            if (mobileSearchTrigger && headerCenter) {
+                mobileSearchTrigger.addEventListener('click', function() {
+                    const isActive = headerCenter.classList.contains('mobile-active');
+                    if (isActive) {
+                        headerCenter.classList.remove('mobile-active');
+                        headerLeft.classList.remove('hide-mobile');
+                        headerRight.classList.remove('hide-mobile');
+                        mobileSearchTrigger.innerHTML = `<svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>`;
+                    } else {
+                        headerCenter.classList.add('mobile-active');
+                        headerLeft.classList.add('hide-mobile');
+                        headerRight.classList.add('hide-mobile');
+                        // Add close button to center container if it doesn't exist
+                        if (!headerCenter.querySelector('.close-search-btn')) {
+                            const closeBtn = document.createElement('button');
+                            closeBtn.className = 'notification-btn close-search-btn';
+                            closeBtn.innerHTML = `<svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>`;
+                            closeBtn.style.marginLeft = '1rem';
+                            closeBtn.addEventListener('click', () => mobileSearchTrigger.click());
+                            headerCenter.appendChild(closeBtn);
+                        }
+                        globalSearchInput.focus();
+                    }
+                });
+            }
         });
     </script>
 
@@ -1260,7 +1408,15 @@
     });
     </script> -->
 
-    <div class="header-right">
+    <div class="header-right" id="headerRight">
+        @if(request()->routeIs('dashboard.lesson.view'))
+        <!-- Mobile Search Trigger -->
+        <button class="notification-btn mobile-search-toggle" id="mobileSearchTrigger">
+            <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+        </button>
+        @endif
         <!-- Dark Mode Toggle -->
         <button class="notification-btn" id="toggledarkmodebutton" title="Toggle Dark Mode">
             <svg id="themeIconDark" style="display: none; width: 22px; height: 22px;" fill="currentColor"

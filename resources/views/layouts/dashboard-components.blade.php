@@ -73,8 +73,10 @@
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
             --sidebar-width-expanded: 240px;
-            --sidebar-width-collapsed: 72px;
+            --sidebar-width-collapsed: 0px;
             --safe-area-inset-top: env(safe-area-inset-top, 0px);
+            --transition-speed: 0.4s;
+            --transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         [data-theme="dark"] {
@@ -133,7 +135,7 @@
             z-index: 999 !important;
             backdrop-filter: blur(10px) saturate(160%);
             -webkit-backdrop-filter: blur(10px) saturate(160%);
-            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: padding-left var(--transition-speed) var(--transition-timing);
             height: calc(60px + var(--safe-area-inset-top));
             padding-top: calc(0.75rem + var(--safe-area-inset-top));
         }
@@ -147,7 +149,9 @@
             background-color: var(--bg-surface);
             border-right: 1px solid var(--border-color);
             z-index: 1000;
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease;
+            transition: width var(--transition-speed) var(--transition-timing), 
+                        transform var(--transition-speed) var(--transition-timing),
+                        opacity var(--transition-speed) var(--transition-timing);
             overflow-y: scroll;
             overflow-x: hidden;   /* clip horizontal bleed when collapsed */
             display: flex;
@@ -156,7 +160,11 @@
         }
 
         .youtube-sidebar.collapsed {
-            width: var(--sidebar-width-collapsed) !important;
+            width: 0 !important;
+            transform: translateX(-10%);
+            opacity: 0;
+            pointer-events: none;
+            border-right-color: transparent;
         }
 
         .sidebar-header {
@@ -380,9 +388,9 @@
             min-height: calc(100vh - 60px);
             background-color: var(--bg-main);
             /* Synchronise all three so nothing jumps to the right */
-            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                        width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                        max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: margin-left var(--transition-speed) var(--transition-timing),
+                        width var(--transition-speed) var(--transition-timing),
+                        max-width var(--transition-speed) var(--transition-timing);
             width: calc(100% - var(--sidebar-width-expanded));
             max-width: calc(100% - var(--sidebar-width-expanded));
             overflow-x: hidden;
@@ -491,11 +499,26 @@
                 width: var(--sidebar-width-collapsed);
             }
         }
+
+        /* Initial sidebar state for lesson view (Desktop only) */
+        @media (min-width: 769px) {
+            .sidebar-collapsed-initial .youtube-sidebar.collapsed {
+                width: var(--sidebar-width-collapsed, 0px) !important;
+            }
+            .sidebar-collapsed-initial .youtube-sidebar.collapsed ~ .main-content {
+                margin-left: var(--sidebar-width-collapsed, 0px) !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            .sidebar-collapsed-initial .youtube-sidebar.collapsed ~ .top-header {
+                padding-left: var(--sidebar-width-collapsed, 0px) !important;
+            }
+        }
     </style>
 
     @stack('styles')
 </head>
-<body>
+<body class="{{ request()->routeIs('dashboard.lesson.view') ? 'sidebar-collapsed-initial' : '' }}">
     @include('partials._upgrade_modal')
     <div class="main-container">
         @include('components.dashboard-sidebar')
@@ -522,26 +545,24 @@
             const mainContent = document.querySelector('.main-content');
 
             const EXPANDED = '240px';
-            const COLLAPSED = '72px';
+            const COLLAPSED = '0px';
 
             function applyCollapsed(collapsed) {
                 if (collapsed) {
                     youtubeSidebar.classList.add('collapsed');
-                    // Only force sidebar width inline; main-content width is driven by CSS
                     youtubeSidebar.style.width = COLLAPSED;
                     if (mainContent) {
                         mainContent.style.marginLeft = COLLAPSED;
-                        // Clear any previous inline width overrides so CSS transition takes over
-                        mainContent.style.width = '';
-                        mainContent.style.maxWidth = '';
+                        mainContent.style.width = '100%';
+                        mainContent.style.maxWidth = '100%';
                     }
                 } else {
                     youtubeSidebar.classList.remove('collapsed');
                     youtubeSidebar.style.width = EXPANDED;
                     if (mainContent) {
                         mainContent.style.marginLeft = EXPANDED;
-                        mainContent.style.width = '';
-                        mainContent.style.maxWidth = '';
+                        mainContent.style.width = `calc(100% - ${EXPANDED})`;
+                        mainContent.style.maxWidth = `calc(100% - ${EXPANDED})`;
                     }
                 }
             }

@@ -12,23 +12,23 @@ preparation, WASSCE preparation, free online school ghana')
 <!-- JSON-LD Structured Data for SEO -->
 @php
 $jsonLd = [
-"@context" => "https://schema.org",
-"@type" => "EducationalOrganization",
-"name" => "ShoutOutGH",
-"description" => "Ghana's premier online learning platform offering interactive lessons, quizzes, and educational
-resources for students from primary to tertiary level.",
-"url" => url('/'),
-"logo" => secure_asset('images/shoutoutgh-logo.png'),
-"sameAs" => [
-"https://facebook.com/shoutoutgh",
-"https://twitter.com/shoutoutgh",
-"https://instagram.com/shoutoutgh"
+    "@context" => "https://schema.org",
+    "@type" => "EducationalOrganization",
+    "name" => "ShoutOutGH",
+    "description" => "Ghana's premier online learning platform offering interactive lessons, quizzes, and educational
+    resources for students from primary to tertiary level.",
+    "url" => url('/'),
+    "logo" => secure_asset('images/shoutoutgh-logo.png'),
+    "sameAs" => [
+    "https://facebook.com/shoutoutgh",
+    "https://twitter.com/shoutoutgh",
+    "https://instagram.com/shoutoutgh"
 ],
-"contactPoint" => [
-"@type" => "ContactPoint",
-"telephone" => "+233-207-646-203",
-"contactType" => "customer service",
-"availableLanguage" => "English"
+    "contactPoint" => [
+    "@type" => "ContactPoint",
+    "telephone" => "+233-207-646-203",
+    "contactType" => "customer service",
+    "availableLanguage" => "English"
 ],
 "offers" => [
 [
