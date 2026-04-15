@@ -301,13 +301,21 @@
         text-overflow: ellipsis;
     }
 
+    .lesson-meta-actions-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
     .lesson-meta {
         display: flex;
         align-items: center;
         gap: 1rem;
         color: var(--gray-600);
         font-size: 0.875rem;
-        margin-bottom: 1.5rem;
         flex-wrap: wrap;
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -2562,11 +2570,6 @@
             /* Account for header height + some spacing */
         }
 
-        .filter-bar {
-            padding: 0.75rem;
-            gap: 0.5rem;
-        }
-
         .search-box {
             min-width: 0;
             max-width: 100%;
@@ -2666,18 +2669,26 @@
             padding: 1.25rem;
         }
 
+        .lesson-meta-actions-row {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 1.25rem !important;
+        }
+
         /* Adjust lesson actions */
         .lesson-actions {
-            flex-direction: column !important;
+            flex-direction: row !important;
             gap: 0.75rem;
+            width: 100%;
         }
 
         .action-btn-primary,
         .action-btn-secondary {
-            width: 100%;
+            flex: 1;
             justify-content: center;
-            padding: 0.875rem 1.25rem;
-            ;
+            padding: 0.875rem 0.75rem;
+            white-space: nowrap;
+            font-size: 0.8125rem;
         }
 
         .action-buttons-grid {
@@ -2895,9 +2906,6 @@
             padding: 0.5rem;
         }
 
-        .filter-bar {
-            padding: 0.5rem;
-        }
 
         .lesson-title {
             font-size: 1.125rem;
@@ -3156,7 +3164,6 @@
     [data-theme="dark"] .related-videos-card,
     [data-theme="dark"] .notes-section,
     [data-theme="dark"] .existing-note,
-    [data-theme="dark"] .filter-bar,
     [data-theme="dark"] .course-item,
     [data-theme="dark"] .empty-tab,
     [data-theme="dark"] .course-header-card {
@@ -3588,47 +3595,50 @@
                 <div class="lesson-info-card">
                     <h1 class="lesson-title">{{ $lesson['title'] ?? 'Living and Non Living organism' }}</h1>
 
-                    <div class="lesson-meta">
-                        <div class="lesson-meta-item">
-                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
-                            {{ $lesson['subject'] ?? 'Science' }}
+                    <div class="lesson-meta-actions-row">
+                        <div class="lesson-meta">
+                            <div class="lesson-meta-item">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path
+                                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                </svg>
+                                {{ $lesson['subject'] ?? 'Science' }}
+                            </div>
+                            <div class="lesson-meta-item">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                {{ $lesson['instructor'] ?? 'Prof. Aboagye' }}
+                            </div>
+                            <div class="lesson-meta-item">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path
+                                        d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0h6m-6 0l-2 9a2 2 0 002 2h6a2 2 0 002-2l-2-9" />
+                                </svg>
+                                {{ $lesson['year'] ?? '2022' }}
+                            </div>
                         </div>
-                        <div class="lesson-meta-item">
-                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                            {{ $lesson['instructor'] ?? 'Prof. Aboagye' }}
-                        </div>
-                        <div class="lesson-meta-item">
-                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0h6m-6 0l-2 9a2 2 0 002 2h6a2 2 0 002-2l-2-9" />
-                            </svg>
-                            {{ $lesson['year'] ?? '2022' }}
+
+                        <div class="lesson-actions">
+                            <button class="action-btn-primary">
+                                <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                                </svg>
+                                Save Lesson
+                            </button>
+                            <button class="action-btn-secondary">
+                                <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                                    <circle cx="18" cy="5" r="3" />
+                                    <circle cx="6" cy="12" r="3" />
+                                    <circle cx="18" cy="19" r="3" />
+                                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                                </svg>
+                                Share
+                            </button>
                         </div>
                     </div>
 
-                    <div class="lesson-actions">
-                        <button class="action-btn-primary">
-                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-                            </svg>
-                            Save Lesson
-                        </button>
-                        <button class="action-btn-secondary">
-                            <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-                                <circle cx="18" cy="5" r="3" />
-                                <circle cx="6" cy="12" r="3" />
-                                <circle cx="18" cy="19" r="3" />
-                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                            </svg>
-                            Share
-                        </button>
-                    </div>
                 </div>
             </div>
             @endif
