@@ -26,21 +26,31 @@ class AggregateRevenue extends Command
         $date = Carbon::parse($dateStr);
         $backDays = (int) $this->option('back');
 
-        $this->info("Starting revenue aggregation for period: {$periodType} on {$date->toDateString()}");
+        // Automatic Backfill: If table is empty and we're doing "all", 
+        // increase backDays to 365 to catch historical data.
+        if ($periodType === 'all' && RevenueSummary::count() === 0) {
+            $this->warn('RevenueSummary table is empty. Triggering automatic 365-day backfill...');
+            $backDays = 365;
+        }
+
+        $this->info("Starting revenue aggregation for period: {$periodType} on {$date->toDateString()} (Back: {$backDays} days)");
 
         if ($periodType === 'all') {
+            $bar = $this->output->createProgressBar($backDays + 1);
+            $bar->start();
+
             for ($i = 0; $i <= $backDays; $i++) {
                 $d = $date->copy()->subDays($i);
                 $this->aggregate($d, 'daily');
                 
-                // Also update weekly/monthly/annual if it's the start/end of those periods?
-                // For simplicity, we aggregate the parent periods for every day we process
+                // For "all", we always update the parent periods for every day to ensure completeness
                 $this->aggregate($d, 'weekly');
                 $this->aggregate($d, 'monthly');
                 $this->aggregate($d, 'annual');
                 
-                $this->output->write('.');
+                $bar->advance();
             }
+            $bar->finish();
             $this->newLine();
         } else {
             $this->aggregate($date, $periodType);
