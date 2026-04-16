@@ -69,11 +69,9 @@ Schedule::command('subscription:monitor-expiry')
         ->withoutOverlapping()
         ->runInBackground();
 
-// Aggregate revenue summary weekly on Sundays at 1 AM
-Schedule::command('app:aggregate-revenue --back=7')
-        ->weekly()
-        ->sundays()
-        ->at('01:00')
+// Aggregate revenue summary daily at 1 AM
+Schedule::command('app:aggregate-revenue --back=2')
+        ->dailyAt('01:00')
         ->withoutOverlapping()
         ->runInBackground();
 
