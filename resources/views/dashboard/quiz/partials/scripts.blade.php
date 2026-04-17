@@ -111,7 +111,8 @@
 
         // Add touch event handling for better mobile experience
         if (sidebarToggle) {
-            sidebarToggle.addEventListener('touchstart', function(e) {
+            sidebarToggle.addEventListener('pointerdown', function(e) {
+                if (e.pointerType === 'touch') {
                 e.preventDefault();
                 this.click();
             }, { passive: false });

@@ -73,7 +73,7 @@
 
   // Enhanced Mobile Detection (Hardware-Level)
   const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  const isTouchDevice = window.matchMedia("(pointer: coarse)").matches || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
   // Detection logic for "Fake Mobile" (Desktop pretending to be mobile)
   let isMobile = isMobileUA; // Strictly follow UA for security enforcement

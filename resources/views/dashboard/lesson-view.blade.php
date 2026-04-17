@@ -509,7 +509,7 @@
 
     .comment-input:focus {
         outline: none;
-        border-color: var(--primary-red);
+        border-color: var(--secondary-blue);
         background-color: var(--white);
         color: var(--gray-900);
     }
@@ -613,12 +613,12 @@
     }
 
     .comment-action.active {
-        color: var(--primary-red);
+        color: var(--secondary-blue);
         font-weight: 600;
     }
 
     .comment-action.active i {
-        color: var(--primary-red);
+        color: var(--secondary-blue);
     }
 
     /* Enhanced Right Sidebar */
@@ -4085,8 +4085,10 @@
                 // For iframes (YT, Vimeo), we use a standard timeout from load or interaction
                 setTimeout(triggerFadeOut, 8000);
                 // Also fade if user taps the container to interact
-                container.addEventListener('touchstart', () => {
-                    setTimeout(triggerFadeOut, 3000);
+                container.addEventListener('pointerdown', (e) => {
+                    if (e.pointerType === 'touch') {
+                        setTimeout(triggerFadeOut, 3000);
+                    }
                 }, { once: true });
             }
         }
@@ -4255,8 +4257,8 @@
         let activePlayer = null;
         let hasPreconnected = false;
 
-        // Mobile detection
-        const isMobile = 'ontouchstart' in window;
+        // Mobile detection - Using modern pointer queries with legacy touch fallback
+        const isMobile = window.matchMedia("(pointer: coarse)").matches || 'ontouchstart' in window;
 
         document.querySelectorAll('.hover-video-card').forEach(card => {
             const videoPreview = card.querySelector('.video-preview');
@@ -4589,11 +4591,11 @@
                         <p class="comment-text">${comment.content}</p>
                         <div class="comment-actions">
                             <button class="comment-action like-btn ${comment.user_action === 'like' ? 'active' : ''}" data-action="like" data-comment-id="${comment.id}">
-                                <i class="fas fa-thumbs-up"></i>
+                                <i class="${comment.user_action === 'like' ? 'fa-solid' : 'fa-regular'} fa-thumbs-up"></i>
                                 <span class="comment-like-count">${comment.likes_count}</span>
                             </button>
                             <button class="comment-action dislike-btn ${comment.user_action === 'dislike' ? 'active' : ''}" data-action="dislike" data-comment-id="${comment.id}">
-                                <i class="fas fa-thumbs-down"></i>
+                                <i class="${comment.user_action === 'dislike' ? 'fa-solid' : 'fa-regular'} fa-thumbs-down"></i>
                                 <span class="comment-dislike-count">${comment.dislikes_count}</span>
                             </button>
                             <button class="comment-action reply-btn" data-comment-id="${comment.id}">
@@ -4617,11 +4619,11 @@
                                             <p class="comment-text">${reply.content}</p>
                                             <div class="comment-actions">
                                                 <button class="comment-action like-btn ${reply.user_action === 'like' ? 'active' : ''}" data-action="like" data-comment-id="${reply.id}">
-                                                    <i class="fas fa-thumbs-up"></i>
+                                                    <i class="${reply.user_action === 'like' ? 'fa-solid' : 'fa-regular'} fa-thumbs-up"></i>
                                                     <span class="comment-like-count">${reply.likes_count}</span>
                                                 </button>
                                                 <button class="comment-action dislike-btn ${reply.user_action === 'dislike' ? 'active' : ''}" data-action="dislike" data-comment-id="${reply.id}">
-                                                    <i class="fas fa-thumbs-down"></i>
+                                                    <i class="${reply.user_action === 'dislike' ? 'fa-solid' : 'fa-regular'} fa-thumbs-down"></i>
                                                     <span class="comment-dislike-count">${reply.dislikes_count}</span>
                                                 </button>
                                             </div>
@@ -4722,6 +4724,22 @@
                             likeBtn.classList.toggle('active', data.user_action === 'like');
                             dislikeBtn.classList.toggle('active', data.user_action === 'dislike');
 
+                            // Toggle icon classes (regular vs solid)
+                            const likeIcon = likeBtn.querySelector('i');
+                            const dislikeIcon = dislikeBtn.querySelector('i');
+
+                            if (data.user_action === 'like') {
+                                likeIcon.classList.replace('fa-regular', 'fa-solid');
+                                dislikeIcon.classList.replace('fa-solid', 'fa-regular');
+                            } else if (data.user_action === 'dislike') {
+                                dislikeIcon.classList.replace('fa-regular', 'fa-solid');
+                                likeIcon.classList.replace('fa-solid', 'fa-regular');
+                            } else {
+                                // Action removed (unliked/undisliked)
+                                likeIcon.classList.replace('fa-solid', 'fa-regular');
+                                dislikeIcon.classList.replace('fa-solid', 'fa-regular');
+                            }
+
                             // Visual feedback
                             this.style.transform = 'scale(1.1)';
                             setTimeout(() => {
@@ -4811,11 +4829,11 @@
                     <p class="comment-text">${commentData.content}</p>
                     <div class="comment-actions">
                         <button class="comment-action like-btn" data-action="like" data-comment-id="${commentData.id}">
-                            <i class="fas fa-thumbs-up"></i>
+                            <i class="fa-regular fa-thumbs-up"></i>
                             <span class="comment-like-count">${commentData.likes_count}</span>
                         </button>
                         <button class="comment-action dislike-btn" data-action="dislike" data-comment-id="${commentData.id}">
-                            <i class="fas fa-thumbs-down"></i>
+                            <i class="fa-regular fa-thumbs-down"></i>
                             <span class="comment-dislike-count">${commentData.dislikes_count}</span>
                         </button>
                         <button class="comment-action reply-btn" data-comment-id="${commentData.id}">
