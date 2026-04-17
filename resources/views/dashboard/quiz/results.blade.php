@@ -5,13 +5,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Quiz Results - {{ trim(str_replace('Quiz for:', '', $quiz['title'] ?? 'Quiz')) }} - {{ config('app.name',
-        'ShoutOutGh') }}</title>
+    <title>Quiz Results - {{ trim(str_replace('Quiz for:', '', $quiz['title'] ?? 'Quiz')) }} - {{ config(
+    'app.name',
+    'ShoutOutGh'
+) }}</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,701&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script defer src="https://unpkg.com/mathlive"></script>
 
     <script>
         (function () {
@@ -21,6 +24,22 @@
     </script>
 
     <style>
+        /* Clean Student Math Display */
+        math-field {
+            font-size: 1.1rem;
+            background: transparent;
+            display: inline-block;
+            border: none;
+            outline: none;
+            cursor: default;
+            pointer-events: none;
+        }
+
+        math-field::part(virtual-keyboard-toggle),
+        math-field::part(menu-toggle) {
+            display: none !important;
+        }
+
         :root {
             --primary-blue: #2480f1ff;
             --primary-blue-hover: #1a93d9ff;
@@ -1276,11 +1295,11 @@
                 <h1 class="page-title">Quiz Results: {{ trim(str_replace('Quiz for:', '', $quiz['title'])) }}</h1>
                 <p class="page-subtitle">
                     @if($percentage >= 80)
-                    Excellent work! You've mastered the foundational components of this topic.
+                        Excellent work! You've mastered the foundational components of this topic.
                     @elseif($percentage >= 50)
-                    Good job! You've grasped most concepts, but there's room for improvement.
+                        Good job! You've grasped most concepts, but there's room for improvement.
                     @else
-                    Keep practicing! Review the materials and try again to improve your score.
+                        Keep practicing! Review the materials and try again to improve your score.
                     @endif
                 </p>
             </div>
@@ -1301,10 +1320,10 @@
                 </div>
 
                 @php
-                $displayQuestions = collect($questions);
-                $skippedCount = $displayQuestions->filter(fn($q) => $q['user_answer'] === null)->count();
-                $correctCount = $displayQuestions->filter(fn($q) => $q['user_correct'] === true)->count();
-                $totalCount = $displayQuestions->count();
+                    $displayQuestions = collect($questions);
+                    $skippedCount = $displayQuestions->filter(fn($q) => $q['user_answer'] === null)->count();
+                    $correctCount = $displayQuestions->filter(fn($q) => $q['user_correct'] === true)->count();
+                    $totalCount = $displayQuestions->count();
                 @endphp
                 <div class="stat-card accuracy-card">
                     <div class="stat-header">
@@ -1316,8 +1335,8 @@
                         <span class="accuracy-status">Correct</span>
                     </div>
                     @if($skippedCount > 0)
-                    <p class="skipped-text">You skipped {{ $skippedCount }} {{ Str::plural('question', $skippedCount) }}
-                    </p>
+                        <p class="skipped-text">You skipped {{ $skippedCount }} {{ Str::plural('question', $skippedCount) }}
+                        </p>
                     @endif
                 </div>
 
@@ -1327,9 +1346,9 @@
                     </div>
                     <span class="stat-value">
                         @if($timeTaken > 0)
-                        {{ floor($timeTaken / 60) }}m {{ str_pad($timeTaken % 60, 2, '0', STR_PAD_LEFT) }}s
+                            {{ floor($timeTaken / 60) }}m {{ str_pad($timeTaken % 60, 2, '0', STR_PAD_LEFT) }}s
                         @else
-                        --:--
+                            --:--
                         @endif
                     </span>
                     <span class="stat-label">Duration</span>
@@ -1347,18 +1366,18 @@
 
                     <div class="quick-nav-grid">
                         @foreach($questions as $index => $q)
-                        @php
-                        $statusClass = 'skipped';
-                        if($q['user_correct']) {
-                        $statusClass = 'correct';
-                        } elseif($q['user_answer'] !== null) {
-                        $statusClass = 'incorrect';
-                        }
-                        @endphp
-                        <div class="nav-box {{ $statusClass }} {{ $index == 0 ? 'active' : '' }}"
-                            onclick="goToQuestion({{ $index }})" id="nav-box-{{ $index }}">
-                            {{ $index + 1 }}
-                        </div>
+                            @php
+                                $statusClass = 'skipped';
+                                if ($q['user_correct']) {
+                                    $statusClass = 'correct';
+                                } elseif ($q['user_answer'] !== null) {
+                                    $statusClass = 'incorrect';
+                                }
+                            @endphp
+                            <div class="nav-box {{ $statusClass }} {{ $index == 0 ? 'active' : '' }}"
+                                onclick="goToQuestion({{ $index }})" id="nav-box-{{ $index }}">
+                                {{ $index + 1 }}
+                            </div>
                         @endforeach
                     </div>
 
@@ -1382,71 +1401,79 @@
                         <div style="display: flex; align-items: center; gap: 1rem;">
                             <h2 class="review-title">Question Review</h2>
                             @if($percentage == 100)
-                            <span class="all-correct-badge">
-                                <i class="fas fa-star"></i> ALL CORRECT
-                            </span>
+                                <span class="all-correct-badge">
+                                    <i class="fas fa-star"></i> ALL CORRECT
+                                </span>
                             @endif
                         </div>
                     </div>
 
                     <div class="questions-carousel">
+                        @php
+                            $sanitizeMath = function($html) {
+                                if (!$html) return $html;
+                                $html = str_replace('contenteditable="true"', 'contenteditable="false" read-only', $html);
+                                $html = str_replace('tabindex="0"', 'tabindex="-1"', $html);
+                                return $html;
+                            };
+                        @endphp
                         @foreach($questions as $index => $question)
-                        <div class="question-card {{ $index == 0 ? 'active' : '' }}" id="question-{{ $index }}">
-                            <div class="question-info">
-                                <span class="question-count">QUESTION {{ $index + 1 }} OF {{ $total }}</span>
-                                @php
-                                $isSkipped = $question['user_answer'] === null;
-                                @endphp
-                                <span
-                                    class="status-badge {{ $question['user_correct'] ? 'correct' : ($isSkipped ? 'skipped' : 'incorrect') }}">
-                                    <i
-                                        class="fas fa-{{ $question['user_correct'] ? 'check-circle' : ($isSkipped ? 'minus-circle' : 'times-circle') }}"></i>
-                                    {{ $question['user_correct'] ? 'Correct' : ($isSkipped ? 'Skipped' : 'Incorrect') }}
-                                </span>
-                            </div>
-
-                            @if(!empty($question['preamble']))
-                            <div class="preamble-box">
-                                <div class="preamble-header">
-                                    <i class="fas fa-align-left"></i> Preamble / Context
+                            <div class="question-card {{ $index == 0 ? 'active' : '' }}" id="question-{{ $index }}">
+                                <div class="question-info">
+                                    <span class="question-count">QUESTION {{ $index + 1 }} OF {{ $total }}</span>
+                                    @php
+                                        $isSkipped = $question['user_answer'] === null;
+                                    @endphp
+                                    <span
+                                        class="status-badge {{ $question['user_correct'] ? 'correct' : ($isSkipped ? 'skipped' : 'incorrect') }}">
+                                        <i
+                                            class="fas fa-{{ $question['user_correct'] ? 'check-circle' : ($isSkipped ? 'minus-circle' : 'times-circle') }}"></i>
+                                        {{ $question['user_correct'] ? 'Correct' : ($isSkipped ? 'Skipped' : 'Incorrect') }}
+                                    </span>
                                 </div>
-                                <div class="preamble-text">{!! $question['preamble'] !!}</div>
-                            </div>
-                            @endif
 
-                            <h3 class="question-text">{!! $question['question'] !!}</h3>
-
-                            <div class="question-layout">
-                                @if($question['image'])
-                                <div class="question-media">
-                                    <img src="{{ $question['image'] }}" alt="Question illustration">
-                                </div>
+                                @if(!empty($question['preamble']))
+                                    <div class="preamble-box">
+                                        <div class="preamble-header">
+                                            <i class="fas fa-align-left"></i> Preamble / Context
+                                        </div>
+                                        <div class="preamble-text">{!! $sanitizeMath($question['preamble']) !!}</div>
+                                    </div>
                                 @endif
 
-                                <div class="options-list">
-                                    @php $labels = ['A', 'B', 'C', 'D', 'E']; @endphp
-                                    @foreach($question['options'] as $optIndex => $option)
-                                    <div class="option-item 
-                                                {{ $optIndex === $question['correct_answer'] ? 'correct' : '' }}
-                                                {{ $optIndex === $question['user_answer'] ? 'user-choice' : '' }}
-                                                {{ $optIndex === $question['user_answer'] && !$question['user_correct'] ? 'incorrect' : '' }}
-                                            ">
-                                        <div class="option-label">{{ $labels[$optIndex] }}</div>
-                                        <span class="option-text">{!! $option !!}</span>
+                                <h3 class="question-text">{!! $sanitizeMath($question['question']) !!}</h3>
 
-                                        @if($optIndex == $question['correct_answer'])
-                                        <i class="fas fa-check-circle check-icon"></i>
-                                        @endif
-                                        @if($optIndex === $question['user_answer'] && !$question['user_correct'])
-                                        <i class="fas fa-times-circle"
-                                            style="margin-left: auto; color: var(--error-red);"></i>
-                                        @endif
+                                <div class="question-layout">
+                                    @if($question['image'])
+                                        <div class="question-media">
+                                            <img src="{{ $question['image'] }}" alt="Question illustration">
+                                        </div>
+                                    @endif
+
+                                    <div class="options-list">
+                                        @php $labels = ['A', 'B', 'C', 'D', 'E']; @endphp
+                                        @foreach($question['options'] as $optIndex => $option)
+                                            <div class="option-item 
+                                                                {{ $optIndex === $question['correct_answer'] ? 'correct' : '' }}
+                                                                {{ $optIndex === $question['user_answer'] ? 'user-choice' : '' }}
+                                                                {{ $optIndex === $question['user_answer'] && !$question['user_correct'] ? 'incorrect' : '' }}
+                                                            ">
+                                                <div class="option-label">{{ $labels[$optIndex] }}</div>
+                                                <span class="option-text">{!! $sanitizeMath($option) !!}</span>
+
+                                                @if($optIndex == $question['correct_answer'])
+                                                    <i class="fas fa-check-circle check-icon"></i>
+                                                @endif
+                                                @if($optIndex === $question['user_answer'] && !$question['user_correct'])
+                                                    <i class="fas fa-times-circle"
+                                                        style="margin-left: auto; color: var(--error-red);"></i>
+                                                @endif
+                                            </div>
+                                        @endforeach
+
                                     </div>
-                                    @endforeach
-
                                 </div>
                             </div>
-                        </div>
                         @endforeach
                     </div>
 
@@ -1501,35 +1528,35 @@
 
     <!-- Quiz Rating Modal -->
     @if(!$hasRated)
-    <div class="rating-modal-overlay" id="ratingModal">
-        <div class="rating-modal">
-            <button class="modal-close" onclick="closeRatingModal()">×</button>
-            <div style="text-align: center; margin-bottom: 1rem;">
-                <i class="fas fa-star" style="font-size: 2.5rem; color: #F59E0B; margin-bottom: 1rem;"></i>
-                <h3 style="font-size: 1.5rem; font-weight: 700;">How was this quiz?</h3>
-                <p style="color: var(--gray-600); font-size: 0.875rem;">Your feedback helps us improve!</p>
-            </div>
+        <div class="rating-modal-overlay" id="ratingModal">
+            <div class="rating-modal">
+                <button class="modal-close" onclick="closeRatingModal()">×</button>
+                <div style="text-align: center; margin-bottom: 1rem;">
+                    <i class="fas fa-star" style="font-size: 2.5rem; color: #F59E0B; margin-bottom: 1rem;"></i>
+                    <h3 style="font-size: 1.5rem; font-weight: 700;">How was this quiz?</h3>
+                    <p style="color: var(--gray-600); font-size: 0.875rem;">Your feedback helps us improve!</p>
+                </div>
 
-            <form id="ratingForm" method="POST" action="{{ route('quiz.rate', $quiz['encoded_id']) }}">
-                @csrf
-                <div class="stars-container">
-                    @for($i = 1; $i <= 5; $i++) <input type="radio" id="star{{ $i }}" name="rating" value="{{ $i }}"
-                        required>
-                        <label for="star{{ $i }}" class="star-label"><i class="fas fa-star"></i></label>
+                <form id="ratingForm" method="POST" action="{{ route('quiz.rate', $quiz['encoded_id']) }}">
+                    @csrf
+                    <div class="stars-container">
+                        @for($i = 1; $i <= 5; $i++) <input type="radio" id="star{{ $i }}" name="rating" value="{{ $i }}"
+                                required>
+                            <label for="star{{ $i }}" class="star-label"><i class="fas fa-star"></i></label>
                         @endfor
-                </div>
+                    </div>
 
-                <div class="rating-review">
-                    <textarea name="review" placeholder="Share your thoughts (optional)..." maxlength="500"></textarea>
-                </div>
+                    <div class="rating-review">
+                        <textarea name="review" placeholder="Share your thoughts (optional)..." maxlength="500"></textarea>
+                    </div>
 
-                <div class="rating-actions">
-                    <button type="button" class="skip-rating" onclick="closeRatingModal()">Maybe Later</button>
-                    <button type="submit" class="submit-rating">Submit Rating</button>
-                </div>
-            </form>
+                    <div class="rating-actions">
+                        <button type="button" class="skip-rating" onclick="closeRatingModal()">Maybe Later</button>
+                        <button type="submit" class="submit-rating">Submit Rating</button>
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
     @endif
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
@@ -1564,6 +1591,15 @@
             } else {
                 nextBtn.innerHTML = 'Next<span class="nav-btn-text-extra"> Question</span> <i class="fas fa-arrow-right"></i>';
             }
+
+            // Sync math fields to read-only reliably without race conditions
+            customElements.whenDefined('math-field').then(() => {
+                document.querySelectorAll('math-field').forEach(mf => {
+                    mf.readOnly = true;
+                    mf.removeAttribute('contenteditable');
+                    mf.removeAttribute('tabindex');
+                });
+            });
         }
 
         function openShareModal() { document.getElementById('shareModal').classList.add('active'); }
@@ -1610,12 +1646,12 @@
                     animation.onfinish = () => confetti.remove();
                 }
             }
-        window.onload = () => {
-            createConfetti();
-            @if (!$hasRated)
-                setTimeout(openRatingModal, 2000);
-            @endif
-        };
+            window.onload = () => {
+                createConfetti();
+                @if (!$hasRated)
+                    setTimeout(openRatingModal, 2000);
+                @endif
+                };
         @endif
 
         // Rating form logic

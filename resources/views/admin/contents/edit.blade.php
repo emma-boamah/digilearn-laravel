@@ -200,6 +200,8 @@
                         </div>
                     </div>
                     <div class="p-6">
+
+
                         <!-- Quiz Global Settings -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 p-4 bg-gray-50 rounded-xl border border-gray-100">
                             <div>
