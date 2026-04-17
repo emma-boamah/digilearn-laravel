@@ -42,13 +42,12 @@
     color: var(--gray-700, #374151);
     font-size: 0.875rem;
     font-weight: 600;
-    cursor: pointer;
+    cursor: default;
     transition: all 0.2s ease;
     white-space: nowrap;
     min-width: 140px;
     height: 43px;
     text-decoration: none;
-    pointer-events: none; /* Make container non-clickable */
 }
 
 .level-prefix {
@@ -77,11 +76,5 @@
     }
 }
 
-.level-indicator:hover {
-    border-color: var(--secondary-blue, #2677B8);
-    background-color: rgba(38, 119, 184, 0.05);
-    color: var(--secondary-blue, #2677B8);
-    box-shadow: 0 0 0 3px rgba(38, 119, 184, 0.1);
-    text-decoration: none;
-}
+
 </style>
