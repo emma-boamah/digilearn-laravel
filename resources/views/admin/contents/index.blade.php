@@ -775,38 +775,68 @@
     /* Quiz Editor Enhancements */
     .rich-text-toolbar {
         display: flex;
-        gap: 4px;
+        flex-wrap: wrap;
+        gap: 2px;
         margin-bottom: 8px;
         background: #f8fafc;
         padding: 4px;
-        border-radius: 6px;
+        border-radius: 8px;
         border: 1px solid #e2e8f0;
         width: fit-content;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .toolbar-group {
+        display: flex;
+        gap: 2px;
+        padding: 0 4px;
+        border-right: 1px solid #e2e8f0;
+    }
+
+    .toolbar-group:last-child {
+        border-right: none;
     }
 
     .toolbar-tool {
-        width: 32px;
-        height: 32px;
+        width: 30px;
+        height: 30px;
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 4px;
+        border-radius: 5px;
         color: #475569;
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: all 0.1s ease;
         background: white;
-        border: 1px solid #e2e8f0;
+        border: 1px solid transparent;
+        font-size: 0.875rem;
     }
 
     .toolbar-tool:hover {
         background: #f1f5f9;
         color: #2563eb;
+        border-color: #e2e8f0;
     }
 
     .toolbar-tool.active {
         background: #e0e7ff;
         color: #4338ca;
         border-color: #c7d2fe;
+    }
+
+    .toolbar-tool.math-btn {
+        width: auto;
+        padding: 0 10px;
+        gap: 6px;
+        color: #4f46e5;
+        font-weight: 600;
+        border: 1px solid #c7d2fe;
+        background: #f5f3ff;
+    }
+
+    .toolbar-tool.math-btn:hover {
+        background: #ede9fe;
+        color: #4338ca;
     }
 
     .rich-text-editor {
@@ -892,7 +922,43 @@
         from { opacity: 0; transform: translateY(-4px); }
         to { opacity: 1; transform: translateY(0); }
     }
+
+    /* MathField Styles */
+    math-field {
+        font-size: 1.1rem;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        padding: 2px 4px;
+        background: transparent;
+        display: inline-block;
+        min-width: 20px;
+        outline: none;
+        cursor: text;
+        transition: all 0.2s;
+    }
+
+    /* Hide bulky default MathLive UI buttons */
+    math-field::part(virtual-keyboard-toggle),
+    math-field::part(menu-toggle) {
+        display: none !important;
+    }
+
+    math-field:focus-within {
+        border-color: #cbd5e1;
+        background: #f8fafc;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.05);
+    }
+
+    /* Ensure Virtual Keyboard appears above the modal (modal is z-index: 1000) */
+    math-virtual-keyboard,
+    .ML__keyboard {
+        z-index: 1050 !important;
+    }
+    :root {
+        --keyboard-zindex: 1050;
+    }
 </style>
+<script defer src="https://unpkg.com/mathlive"></script>
 @endpush
 
 @section('content')
@@ -1549,6 +1615,8 @@
                     </div>
 
                     <div class="mt-8 border-t pt-6">
+
+
                         <h4 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
                             <i class="fas fa-edit text-blue-600"></i>
                             Quiz Content
@@ -2992,11 +3060,41 @@
 
                 <!-- Question Text -->
                 <div class="mb-6">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Question Text</label>
+                    <label class="flex justify-between items-center text-sm font-semibold text-gray-700 mb-2">
+                        <span>Question Text</span>
+                        <span class="text-xs font-medium text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200" title="Planning to use complex mathematical equations? Please contact the developer for a quick guide on how to properly use the integrated math toolkit."><i class="fas fa-info-circle mr-1"></i> Contact Dev for Math Tools <span class="hidden sm:inline">Guide</span></span>
+                    </label>
                     <div class="rich-text-toolbar">
-                        <button type="button" class="toolbar-tool" data-command="bold" title="Bold"><i class="fas fa-bold"></i></button>
-                        <button type="button" class="toolbar-tool" data-command="italic" title="Italic"><i class="fas fa-italic"></i></button>
-                        <button type="button" class="toolbar-tool" data-command="underline" title="Underline"><i class="fas fa-underline"></i></button>
+                        <div class="toolbar-group">
+                            <button type="button" class="toolbar-tool" data-command="bold" title="Bold"><i class="fas fa-bold"></i></button>
+                            <button type="button" class="toolbar-tool" data-command="italic" title="Italic"><i class="fas fa-italic"></i></button>
+                            <button type="button" class="toolbar-tool" data-command="underline" title="Underline"><i class="fas fa-underline"></i></button>
+                            <button type="button" class="toolbar-tool" data-command="strikeThrough" title="Strikethrough"><i class="fas fa-strikethrough"></i></button>
+                        </div>
+                        <div class="toolbar-group">
+                            <button type="button" class="toolbar-tool" data-command="insertUnorderedList" title="Bullet List"><i class="fas fa-list-ul"></i></button>
+                            <button type="button" class="toolbar-tool" data-command="insertOrderedList" title="Numbered List"><i class="fas fa-list-ol"></i></button>
+                        </div>
+                        <div class="toolbar-group bg-blue-50 border-blue-200">
+                            <button type="button" class="toolbar-tool math-action" data-math-command="\\frac{#?}{#?}" title="Fraction"><b style="font-family: serif;">x/y</b></button>
+                            <button type="button" class="toolbar-tool math-action" data-math-command="\\sqrt{#?}" title="Square Root"><b style="font-family: serif;">√x</b></button>
+                            <button type="button" class="toolbar-tool math-action" data-math-command="^{#?}" title="Power/Exponent"><b style="font-family: serif;">x<sup>y</sup></b></button>
+                            <button type="button" class="toolbar-tool math-action" data-math-command="_{#?}" title="Subscript"><b style="font-family: serif;">x<sub>y</sub></b></button>
+                            <button type="button" class="toolbar-tool math-action" data-math-command="\\sum_{#?}^{#?}" title="Summation"><b style="font-family: serif;">∑</b></button>
+                            <button type="button" class="toolbar-tool math-action" data-math-command="\\int_{#?}^{#?}" title="Integral"><b style="font-family: serif;">∫</b></button>
+                            <button type="button" class="toolbar-tool math-action" data-math-command="\\neq" title="Not Equal"><b style="font-family: serif;">≠</b></button>
+                            <button type="button" class="toolbar-tool math-action" data-math-command="\\leq" title="Less or Equal"><b style="font-family: serif;">≤</b></button>
+                            <button type="button" class="toolbar-tool math-action" data-math-command="\\geq" title="Greater or Equal"><b style="font-family: serif;">≥</b></button>
+                            <button type="button" class="toolbar-tool math-action" data-math-command="\\pi" title="Pi"><b style="font-family: serif;">π</b></button>
+                            <button type="button" class="toolbar-tool math-action" data-math-command="\\theta" title="Theta"><b style="font-family: serif;">θ</b></button>
+                        </div>
+                        <div class="toolbar-group">
+                            <button type="button" class="toolbar-tool math-btn" data-command="math" title="Insert Empty Math Box">
+                                <i class="fas fa-infinity"></i>
+                                Math Area
+                            </button>
+                            <button type="button" class="toolbar-tool" data-command="removeFormat" title="Clear Formatting"><i class="fas fa-eraser"></i></button>
+                        </div>
                     </div>
                     <div class="rich-text-editor question-text" contenteditable="true" 
                          placeholder="Type your question here..."
@@ -3053,17 +3151,7 @@
 
             editors.forEach(editor => {
                 editor.addEventListener('input', (e) => {
-                    if (editor.classList.contains('question-text')) {
-                        question.question = editor.innerHTML;
-                    } else if (editor.classList.contains('preamble-text')) {
-                        question.preamble = editor.innerHTML;
-                    } else if (editor.classList.contains('option-text')) {
-                        const allOptions = div.querySelectorAll('.option-text');
-                        const index = Array.from(allOptions).indexOf(editor);
-                        if (index !== -1) question.options[index] = editor.innerHTML;
-                    } else if (editor.classList.contains('correct-answer')) {
-                        question.correct_answer = editor.innerHTML;
-                    }
+                    updateQuestionModelFromEditor(editor);
                 });
 
                 // Prevent pasting formatted text
@@ -3074,20 +3162,131 @@
                 });
             });
 
-            // Setup toolbar tools
+            // Prevent toolbar buttons from stealing focus from the active editor/math-field
             div.querySelectorAll('.toolbar-tool').forEach(tool => {
+                tool.addEventListener('mousedown', (e) => e.preventDefault());
+            });
+
+            // Setup standard toolbar tools
+            div.querySelectorAll('.toolbar-tool:not(.math-action)').forEach(tool => {
                 tool.addEventListener('click', (e) => {
                     e.preventDefault();
                     const command = tool.dataset.command;
-                    document.execCommand(command, false, null);
-                    tool.classList.toggle('active', document.queryCommandState(command));
                     
-                    // Focus back to the active editor if needed
-                    const container = tool.closest('.mb-6');
-                    const editor = container.querySelector('.rich-text-editor');
-                    if (editor) editor.focus();
+                    if (command === 'math') {
+                        insertMathField(tool);
+                    } else {
+                        document.execCommand(command, false, null);
+                        tool.classList.toggle('active', document.queryCommandState(command));
+                        
+                        const container = tool.closest('.mb-6');
+                        const editor = container.querySelector('.rich-text-editor');
+                        if (editor) editor.focus();
+                    }
                 });
             });
+
+            // Setup Custom Math Actions
+            div.querySelectorAll('.math-action').forEach(tool => {
+                tool.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const mathCommand = tool.dataset.mathCommand;
+                    const container = tool.closest('.mb-6');
+                    const editor = container.querySelector('.rich-text-editor');
+                    if (!editor) return;
+
+                    // Determine if we are exactly focused inside an existing math field
+                    const activeEl = document.activeElement;
+                    let targetMf = null;
+
+                    if (activeEl && activeEl.tagName.toLowerCase() === 'math-field') {
+                        targetMf = activeEl;
+                    } 
+                    // No need for selection digging; activeElement accurately points to custom element host
+
+                    if (targetMf) {
+                        // We are actively inside a math field, insert directly into it
+                        targetMf.executeCommand(['insert', mathCommand]);
+                        targetMf.focus();
+                    } else {
+                        // Not inside a math field, wrap the command in a new Math Field
+                        // Not inside a math field, wrap the command in a new Math Field
+                        editor.focus();
+                        const mathId = 'math_' + Date.now();
+                        // Protective wrapper to keep browser out of MathLive's business
+                        const mathHtml = `<span contenteditable="false" class="math-wrapper px-1 inline-block"><math-field id="${mathId}" math-virtual-keyboard-policy="none" style="min-width: 30px; padding: 2px 4px;"></math-field></span>&nbsp;`;
+                        document.execCommand('insertHTML', false, mathHtml);
+                        
+                        const mf = document.getElementById(mathId);
+                        if (mf) {
+                            mf.addEventListener('mousedown', e => e.stopPropagation());
+                            mf.addEventListener('click', e => { e.stopPropagation(); mf.focus(); });
+                            mf.addEventListener('focusin', () => { editor.contentEditable = "false"; });
+                            mf.addEventListener('focusout', () => { editor.contentEditable = "true"; });
+                            mf.addEventListener('input', () => updateQuestionModelFromEditor(editor));
+                            
+                            setTimeout(() => {
+                                mf.focus();
+                                mf.executeCommand(['insert', mathCommand]);
+                            }, 50);
+                        }
+                        updateQuestionModelFromEditor(editor);
+                    }
+                });
+            });
+
+            function insertMathField(tool) {
+                const container = tool.closest('.mb-6');
+                const editor = container.querySelector('.rich-text-editor');
+                if (!editor) return;
+
+                editor.focus();
+
+                const mathId = 'math_' + Date.now();
+                const mathHtml = `<span contenteditable="false" class="math-wrapper px-1 inline-block"><math-field id="${mathId}" math-virtual-keyboard-policy="none" style="min-width: 30px; padding: 2px 4px;">\\placeholder{}</math-field></span>&nbsp;`;
+                
+                document.execCommand('insertHTML', false, mathHtml);
+                
+                const mf = document.getElementById(mathId);
+                if (mf) {
+                    mf.addEventListener('mousedown', e => e.stopPropagation());
+                    mf.addEventListener('click', e => { e.stopPropagation(); mf.focus(); });
+                    mf.addEventListener('focusin', () => { editor.contentEditable = "false"; });
+                    mf.addEventListener('focusout', () => { editor.contentEditable = "true"; });
+                    mf.addEventListener('input', () => updateQuestionModelFromEditor(editor));
+                    
+                    setTimeout(() => mf.focus(), 50);
+                }
+                updateQuestionModelFromEditor(editor);
+            }
+
+            function updateQuestionModelFromEditor(editor) {
+                // Clone the editor node so we don't disrupt the live typing environment
+                const clone = editor.cloneNode(true);
+                
+                // Sync all MathLive values into the clone's light DOM so they are saved to the database
+                const liveMathFields = editor.querySelectorAll('math-field');
+                const cloneMathFields = clone.querySelectorAll('math-field');
+                liveMathFields.forEach((mf, i) => {
+                    if (cloneMathFields[i]) {
+                        cloneMathFields[i].textContent = mf.value;
+                    }
+                });
+
+                const finalHtml = clone.innerHTML;
+
+                if (editor.classList.contains('question-text')) {
+                    question.question = finalHtml;
+                } else if (editor.classList.contains('preamble-text')) {
+                    question.preamble = finalHtml;
+                } else if (editor.classList.contains('option-text')) {
+                    const allOptions = div.querySelectorAll('.option-text');
+                    const index = Array.from(allOptions).indexOf(editor);
+                    if (index !== -1) question.options[index] = finalHtml;
+                } else if (editor.classList.contains('correct-answer')) {
+                    question.correct_answer = finalHtml;
+                }
+            }
 
             // Toggle active state based on selection
             div.addEventListener('keyup', () => updateToolbarState(div));

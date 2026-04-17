@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script defer src="https://unpkg.com/mathlive"></script>
 
     <script>
         (function () {
@@ -20,6 +21,20 @@
     </script>
 
     <style>
+        /* Clean Student Math Display */
+        math-field {
+            font-size: 1.1rem;
+            background: transparent;
+            display: inline-block;
+            border: none;
+            outline: none;
+            cursor: default;
+            pointer-events: none;
+        }
+        math-field::part(virtual-keyboard-toggle),
+        math-field::part(menu-toggle) {
+            display: none !important;
+        }
         :root {
             --primary-red: #E11E2D;
             --primary-red-hover: #c41e2a;
@@ -1138,6 +1153,13 @@
             const question = questions[currentQuestion];
             console.log('Rendering question:', question);
 
+            // Bruteforce sanitize MathLive content to prevent editing edge-cases
+            const sanitizeMathLive = (htmlStr) => {
+                if (!htmlStr) return '';
+                return htmlStr.replace(/contenteditable="true"/g, 'contenteditable="false" read-only')
+                              .replace(/tabindex="0"/g, 'tabindex="-1"');
+            };
+
             // Update question label
             document.getElementById('questionLabel').textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
 
@@ -1146,7 +1168,7 @@
             const preambleText = document.getElementById('preambleText');
             if (question && question.preamble) {
                 preambleContainer.style.display = 'block';
-                preambleText.innerHTML = question.preamble;
+                preambleText.innerHTML = sanitizeMathLive(question.preamble);
             } else {
                 preambleContainer.style.display = 'none';
             }
@@ -1168,7 +1190,7 @@
             }
 
             // Set question text (using innerHTML for rich text)
-            document.getElementById('questionText').innerHTML = question ? question.question : 'Question not available';
+            document.getElementById('questionText').innerHTML = question ? sanitizeMathLive(question.question) : 'Question not available';
 
             // Render options
             const optionsContainer = document.getElementById('optionsContainer');
@@ -1186,7 +1208,7 @@
 
                     optionDiv.innerHTML = `
                         <div class="option-letter">${String.fromCharCode(65 + index)}</div>
-                        <div class="option-text">${option}</div>
+                        <div class="option-text">${sanitizeMathLive(option)}</div>
                     `;
 
                     optionsContainer.appendChild(optionDiv);
@@ -1195,6 +1217,16 @@
                 console.log('No options available for this question');
                 optionsContainer.innerHTML = '<p>No answer options available.</p>';
             }
+
+            // Render math formulas if any
+            // Sync math fields to read-only reliably without race conditions
+            customElements.whenDefined('math-field').then(() => {
+                document.querySelectorAll('math-field').forEach(mf => {
+                    mf.readOnly = true;
+                    mf.removeAttribute('contenteditable');
+                    mf.removeAttribute('tabindex');
+                });
+            });
         }
 
         function selectOption(optionIndex) {
