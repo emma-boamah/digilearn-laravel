@@ -736,8 +736,8 @@
                     passwordInput.focus();
                 });
                 
-                // Prevent form submission when clicking toggle
-                togglePassword.addEventListener('mousedown', function(e) {
+                // Prevent form submission and focus theft when clicking toggle
+                togglePassword.addEventListener('pointerdown', function(e) {
                     e.preventDefault();
                 });
             }

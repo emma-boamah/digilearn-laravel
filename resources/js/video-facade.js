@@ -25,7 +25,7 @@ class VideoFacadeManager {
     }
 
     detectMobile() {
-        return 'ontouchstart' in window || window.innerWidth <= 768;
+        return window.matchMedia("(pointer: coarse)").matches || 'ontouchstart' in window || window.innerWidth <= 768;
     }
 
     setupIntersectionObserver() {

@@ -2029,6 +2029,7 @@
                 visibility: hidden;
                 transition: all 0.3s ease;
                 pointer-events: auto;
+                touch-action: none;
             }
 
             /* Ensure sidebar sections are well-spaced on mobile */
@@ -2912,11 +2913,11 @@
 
             // Prevent scrolling when sidebar is open on mobile
             if (youtubeSidebar) {
-                youtubeSidebar.addEventListener('touchmove', function (e) {
-                    if (window.innerWidth <= 768 && this.classList.contains('mobile-open')) {
+                youtubeSidebar.addEventListener('pointermove', function (e) {
+                    if (window.innerWidth <= 768 && this.classList.contains('mobile-open') && e.pointerType === 'touch') {
                         e.preventDefault();
                     }
-                }, { passive: false });
+                });
             }
 
 
@@ -2963,11 +2964,11 @@
 
             // Prevent body scroll when sidebar is open on mobile
             if (sidebarOverlay) {
-                sidebarOverlay.addEventListener('touchmove', function (e) {
-                    if (this.classList.contains('active')) {
+                sidebarOverlay.addEventListener('pointermove', function (e) {
+                    if (this.classList.contains('active') && e.pointerType === 'touch') {
                         e.preventDefault();
                     }
-                }, { passive: false });
+                });
             }
         }
 
