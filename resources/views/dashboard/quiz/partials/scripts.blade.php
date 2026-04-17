@@ -24,7 +24,6 @@
             const card = e.target.closest('.quiz-card');
             if (!card) return;
 
-            const quizId = card.getAttribute('data-quiz-id');
             const encodedQuizId = card.getAttribute('data-encoded-quiz-id');
             const startBtn = e.target.closest('.quiz-start-btn');
             const reviseBtn = e.target.closest('.quiz-preview-btn');
@@ -33,18 +32,32 @@
                 e.preventDefault();
                 e.stopPropagation();
                 openQuiz(encodedQuizId);
-                return;
-            }
-
-            if (reviseBtn) {
+            } else if (reviseBtn) {
                 e.preventDefault();
                 e.stopPropagation();
                 reviseNotes(encodedQuizId);
-                return;
             }
-
-            // Card is no longer clickable - only specific buttons work
         });
+
+        // Add modernized touch handling for quiz action buttons
+        document.body.addEventListener('pointerdown', function(e) {
+            if (e.pointerType !== 'touch') return;
+            
+            const startBtn = e.target.closest('.quiz-start-btn');
+            const reviseBtn = e.target.closest('.quiz-preview-btn');
+            const card = e.target.closest('.quiz-card');
+            
+            if (card && (startBtn || reviseBtn)) {
+                e.preventDefault();
+                e.stopPropagation();
+                const encodedId = card.getAttribute('data-encoded-quiz-id');
+                if (startBtn) {
+                    openQuiz(encodedId);
+                } else if (reviseBtn) {
+                    reviseNotes(encodedId);
+                }
+            }
+        }, { passive: false });
 
         console.log('Sidebar elements:', {
             sidebarToggle,
@@ -113,8 +126,9 @@
         if (sidebarToggle) {
             sidebarToggle.addEventListener('pointerdown', function(e) {
                 if (e.pointerType === 'touch') {
-                e.preventDefault();
-                this.click();
+                    e.preventDefault();
+                    this.click();
+                }
             }, { passive: false });
         }
     }

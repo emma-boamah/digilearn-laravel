@@ -514,14 +514,26 @@
             }, 1500);
 
             const btnBack = document.getElementById('btnGoBack');
-            if (btnBack) btnBack.addEventListener('click', () => {
-                btnBack.style.opacity = '0.5';
-                window.history.back();
-            });
+            if (btnBack) {
+                const handleBack = () => {
+                    btnBack.style.opacity = '0.5';
+                    window.history.back();
+                };
+
+                btnBack.addEventListener('click', handleBack);
+                
+                // Modernized touch handling
+                btnBack.addEventListener('pointerdown', (e) => {
+                    if (e.pointerType === 'touch') {
+                        e.preventDefault();
+                        handleBack();
+                    }
+                }, { passive: false });
+            }
 
             const startBtn = document.getElementById('btnStartQuiz');
             if (startBtn) {
-                startBtn.addEventListener('click', () => {
+                const handleStart = () => {
                     startBtn.disabled = true;
                     startBtn.style.opacity = '0.7';
                     startBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
@@ -529,7 +541,17 @@
                     @if (isset($quiz['encoded_id']))
                         window.location.href = `{{ route('quiz.take', $quiz['encoded_id']) }}`;
                     @endif
-                });
+                };
+
+                startBtn.addEventListener('click', handleStart);
+
+                // Modernized touch handling
+                startBtn.addEventListener('pointerdown', (e) => {
+                    if (e.pointerType === 'touch') {
+                        e.preventDefault();
+                        handleStart();
+                    }
+                }, { passive: false });
             }
         });
     </script>
