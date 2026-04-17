@@ -1104,17 +1104,14 @@
             border-radius: 2rem;
             font-size: 0.875rem;
             font-weight: 500;
-            cursor: pointer;
+            cursor: default;
             transition: all 0.2s ease;
             border: none;
             white-space: nowrap;
             text-decoration: none;
         }
 
-        .level-indicator:hover {
-            background-color: var(--secondary-blue-hover);
-            transform: scale(1.05);
-        }
+
 
         .level-modal {
             position: fixed;
