@@ -3001,6 +3001,41 @@
 
             const questionHeading = question.type === 'mcq' ? 'Multiple Choice Question' : 'Essay Question';
 
+            const toolbarHtml = `
+                <div class="rich-text-toolbar mb-2">
+                    <div class="toolbar-group">
+                        <button type="button" class="toolbar-tool" data-command="bold" title="Bold"><i class="fas fa-bold"></i></button>
+                        <button type="button" class="toolbar-tool" data-command="italic" title="Italic"><i class="fas fa-italic"></i></button>
+                        <button type="button" class="toolbar-tool" data-command="underline" title="Underline"><i class="fas fa-underline"></i></button>
+                        <button type="button" class="toolbar-tool" data-command="strikeThrough" title="Strikethrough"><i class="fas fa-strikethrough"></i></button>
+                    </div>
+                    <div class="toolbar-group">
+                        <button type="button" class="toolbar-tool" data-command="insertUnorderedList" title="Bullet List"><i class="fas fa-list-ul"></i></button>
+                        <button type="button" class="toolbar-tool" data-command="insertOrderedList" title="Numbered List"><i class="fas fa-list-ol"></i></button>
+                    </div>
+                    <div class="toolbar-group bg-blue-50 border-blue-200">
+                        <button type="button" class="toolbar-tool math-action" data-math-command="\\frac{#?}{#?}" title="Fraction"><b style="font-family: serif;">x/y</b></button>
+                        <button type="button" class="toolbar-tool math-action" data-math-command="\\sqrt{#?}" title="Square Root"><b style="font-family: serif;">√x</b></button>
+                        <button type="button" class="toolbar-tool math-action" data-math-command="^{#?}" title="Power/Exponent"><b style="font-family: serif;">x<sup>y</sup></b></button>
+                        <button type="button" class="toolbar-tool math-action" data-math-command="_{#?}" title="Subscript"><b style="font-family: serif;">x<sub>y</sub></b></button>
+                        <button type="button" class="toolbar-tool math-action" data-math-command="\\sum_{#?}^{#?}" title="Summation"><b style="font-family: serif;">∑</b></button>
+                        <button type="button" class="toolbar-tool math-action" data-math-command="\\int_{#?}^{#?}" title="Integral"><b style="font-family: serif;">∫</b></button>
+                        <button type="button" class="toolbar-tool math-action" data-math-command="\\neq" title="Not Equal"><b style="font-family: serif;">≠</b></button>
+                        <button type="button" class="toolbar-tool math-action" data-math-command="\\leq" title="Less or Equal"><b style="font-family: serif;">≤</b></button>
+                        <button type="button" class="toolbar-tool math-action" data-math-command="\\geq" title="Greater or Equal"><b style="font-family: serif;">≥</b></button>
+                        <button type="button" class="toolbar-tool math-action" data-math-command="\\pi" title="Pi"><b style="font-family: serif;">π</b></button>
+                        <button type="button" class="toolbar-tool math-action" data-math-command="\\theta" title="Theta"><b style="font-family: serif;">θ</b></button>
+                    </div>
+                    <div class="toolbar-group">
+                        <button type="button" class="toolbar-tool math-btn" data-command="math" title="Insert Empty Math Box">
+                            <i class="fas fa-infinity"></i>
+                            Math Area
+                        </button>
+                        <button type="button" class="toolbar-tool" data-command="removeFormat" title="Clear Formatting"><i class="fas fa-eraser"></i></button>
+                    </div>
+                </div>
+            `;
+
             div.innerHTML = `
                 <div class="flex justify-between items-center mb-6">
                     <h4 class="font-bold text-gray-900 flex items-center gap-2">
@@ -3016,10 +3051,11 @@
 
                 <!-- Preamble Section (Optional) -->
                 <div class="preamble-container mb-4">
-                    <div id="preambleSection_${question.id}" class="preamble-section ${question.preamble ? '' : 'hidden'}">
+                    <div id="preambleSection_${question.id}" class="preamble-section ${question.preamble ? '' : 'hidden'} editor-wrapper">
                         <div class="preamble-label">
                             <i class="fas fa-align-left"></i> Preamble / Context
                         </div>
+                        ${toolbarHtml}
                         <div class="rich-text-editor preamble-text" contenteditable="true" 
                              placeholder="Enter optional preamble or reading passage here..."
                              aria-label="Preamble text">${question.preamble || ''}</div>
@@ -3059,43 +3095,12 @@
                 </div>
 
                 <!-- Question Text -->
-                <div class="mb-6">
+                <div class="mb-6 editor-wrapper">
                     <label class="flex justify-between items-center text-sm font-semibold text-gray-700 mb-2">
                         <span>Question Text</span>
                         <span class="text-xs font-medium text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200" title="Planning to use complex mathematical equations? Please contact the developer for a quick guide on how to properly use the integrated math toolkit."><i class="fas fa-info-circle mr-1"></i> Contact Dev for Math Tools <span class="hidden sm:inline">Guide</span></span>
                     </label>
-                    <div class="rich-text-toolbar">
-                        <div class="toolbar-group">
-                            <button type="button" class="toolbar-tool" data-command="bold" title="Bold"><i class="fas fa-bold"></i></button>
-                            <button type="button" class="toolbar-tool" data-command="italic" title="Italic"><i class="fas fa-italic"></i></button>
-                            <button type="button" class="toolbar-tool" data-command="underline" title="Underline"><i class="fas fa-underline"></i></button>
-                            <button type="button" class="toolbar-tool" data-command="strikeThrough" title="Strikethrough"><i class="fas fa-strikethrough"></i></button>
-                        </div>
-                        <div class="toolbar-group">
-                            <button type="button" class="toolbar-tool" data-command="insertUnorderedList" title="Bullet List"><i class="fas fa-list-ul"></i></button>
-                            <button type="button" class="toolbar-tool" data-command="insertOrderedList" title="Numbered List"><i class="fas fa-list-ol"></i></button>
-                        </div>
-                        <div class="toolbar-group bg-blue-50 border-blue-200">
-                            <button type="button" class="toolbar-tool math-action" data-math-command="\\frac{#?}{#?}" title="Fraction"><b style="font-family: serif;">x/y</b></button>
-                            <button type="button" class="toolbar-tool math-action" data-math-command="\\sqrt{#?}" title="Square Root"><b style="font-family: serif;">√x</b></button>
-                            <button type="button" class="toolbar-tool math-action" data-math-command="^{#?}" title="Power/Exponent"><b style="font-family: serif;">x<sup>y</sup></b></button>
-                            <button type="button" class="toolbar-tool math-action" data-math-command="_{#?}" title="Subscript"><b style="font-family: serif;">x<sub>y</sub></b></button>
-                            <button type="button" class="toolbar-tool math-action" data-math-command="\\sum_{#?}^{#?}" title="Summation"><b style="font-family: serif;">∑</b></button>
-                            <button type="button" class="toolbar-tool math-action" data-math-command="\\int_{#?}^{#?}" title="Integral"><b style="font-family: serif;">∫</b></button>
-                            <button type="button" class="toolbar-tool math-action" data-math-command="\\neq" title="Not Equal"><b style="font-family: serif;">≠</b></button>
-                            <button type="button" class="toolbar-tool math-action" data-math-command="\\leq" title="Less or Equal"><b style="font-family: serif;">≤</b></button>
-                            <button type="button" class="toolbar-tool math-action" data-math-command="\\geq" title="Greater or Equal"><b style="font-family: serif;">≥</b></button>
-                            <button type="button" class="toolbar-tool math-action" data-math-command="\\pi" title="Pi"><b style="font-family: serif;">π</b></button>
-                            <button type="button" class="toolbar-tool math-action" data-math-command="\\theta" title="Theta"><b style="font-family: serif;">θ</b></button>
-                        </div>
-                        <div class="toolbar-group">
-                            <button type="button" class="toolbar-tool math-btn" data-command="math" title="Insert Empty Math Box">
-                                <i class="fas fa-infinity"></i>
-                                Math Area
-                            </button>
-                            <button type="button" class="toolbar-tool" data-command="removeFormat" title="Clear Formatting"><i class="fas fa-eraser"></i></button>
-                        </div>
-                    </div>
+                    ${toolbarHtml}
                     <div class="rich-text-editor question-text" contenteditable="true" 
                          placeholder="Type your question here..."
                          aria-label="Question text">${question.question}</div>
@@ -3112,7 +3117,8 @@
                                         <input type="radio" name="correct_${question.id}" value="${index}"
                                             class="h-5 w-5 text-blue-600 focus:ring-blue-500 correct-answer" ${question.correct_answer === index ? 'checked' : ''}>
                                     </div>
-                                    <div class="flex-1">
+                                    <div class="flex-1 editor-wrapper">
+                                         ${toolbarHtml}
                                          <div class="rich-text-editor option-text" contenteditable="true" 
                                              placeholder="Option ${String.fromCharCode(65 + index)}"
                                              aria-label="Option ${index + 1}">${option}</div>
@@ -3123,8 +3129,9 @@
                     </div>
                 ` : `
                     <!-- Essay Sample Answer -->
-                    <div class="mb-6">
+                    <div class="mb-6 editor-wrapper">
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Reference Answer (Sample)</label>
+                         ${toolbarHtml}
                          <div class="rich-text-editor correct-answer" contenteditable="true" 
                              placeholder="Describe the expected answer for grading reference..."
                              aria-label="Sample answer">${question.correct_answer}</div>
@@ -3179,7 +3186,7 @@
                         document.execCommand(command, false, null);
                         tool.classList.toggle('active', document.queryCommandState(command));
                         
-                        const container = tool.closest('.mb-6');
+                        const container = tool.closest('.editor-wrapper');
                         const editor = container.querySelector('.rich-text-editor');
                         if (editor) editor.focus();
                     }
@@ -3191,7 +3198,7 @@
                 tool.addEventListener('click', (e) => {
                     e.preventDefault();
                     const mathCommand = tool.dataset.mathCommand;
-                    const container = tool.closest('.mb-6');
+                    const container = tool.closest('.editor-wrapper');
                     const editor = container.querySelector('.rich-text-editor');
                     if (!editor) return;
 
@@ -3236,7 +3243,7 @@
             });
 
             function insertMathField(tool) {
-                const container = tool.closest('.mb-6');
+                const container = tool.closest('.editor-wrapper');
                 const editor = container.querySelector('.rich-text-editor');
                 if (!editor) return;
 
