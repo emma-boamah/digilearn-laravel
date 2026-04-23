@@ -1079,6 +1079,78 @@
             color: var(--gray-600);
         }
 
+        /* Answer Visibility Toggle */
+        .answers-hidden .sample-answer-box {
+            display: none !important;
+        }
+
+        .answers-hidden .option-item.correct:not(.user-choice) {
+            border-color: var(--gray-200) !important;
+            background: var(--white) !important;
+        }
+
+        .answers-hidden .option-item.correct .check-icon {
+            display: none !important;
+        }
+
+        .answers-hidden .option-item.correct.user-choice {
+            border-color: var(--success-green);
+            background: var(--success-green-light);
+        }
+
+        .toggle-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            user-select: none;
+            padding: 0.5rem 1rem;
+            background: var(--gray-100);
+            border-radius: 99px;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-wrapper:hover {
+            background: var(--gray-200);
+        }
+
+        .toggle-switch {
+            width: 36px;
+            height: 20px;
+            background: var(--gray-400);
+            border-radius: 99px;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-active .toggle-switch {
+            background: var(--primary-blue);
+        }
+
+        .toggle-active .toggle-switch::after {
+            left: 18px;
+        }
+
+        .toggle-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--gray-700);
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
         /* Quick Navigation Styles */
         .review-layout {
             display: grid;
@@ -1244,6 +1316,10 @@
 <body>
     @include('components.dashboard-header')
     <div class="app-container">
+        @php
+            $isEssayQuiz = collect($questions)->contains('type', 'essay');
+            $retakeRoute = $isEssayQuiz ? 'quiz.essay' : 'quiz.take';
+        @endphp
         <!-- Sidebar -->
         <aside class="youtube-sidebar" id="youtubeSidebar">
             <nav class="sidebar-nav">
@@ -1254,7 +1330,7 @@
                         <span>Performance Summary</span>
                         <div class="tooltip">Performance Summary</div>
                     </a>
-                    <a href="{{ route('quiz.take', $quiz['encoded_id']) }}" class="nav-item">
+                    <a href="{{ route($retakeRoute, $quiz['encoded_id']) }}" class="nav-item">
                         <i class="fas fa-redo"></i>
                         <span>Retake Quiz</span>
                         <div class="tooltip">Retake Quiz</div>
@@ -1332,7 +1408,13 @@
                     </div>
                     <div class="accuracy-value-wrapper">
                         <span class="accuracy-value">{{ $correctCount }}/{{ $totalCount }}</span>
-                        <span class="accuracy-status">Correct</span>
+                        <span class="accuracy-status">
+                            @if(($attempt->status ?? 'completed') === 'pending')
+                                Pending Review
+                            @else
+                                Correct
+                            @endif
+                        </span>
                     </div>
                     @if($skippedCount > 0)
                         <p class="skipped-text">You skipped {{ $skippedCount }} {{ Str::plural('question', $skippedCount) }}
@@ -1354,6 +1436,52 @@
                     <span class="stat-label">Duration</span>
                 </div>
             </div>
+
+            <!-- Performance Insights (Strengths & Weaknesses) -->
+            @php
+                $grading = is_array($quiz_attempt->grading_details ?? null) ? $quiz_attempt->grading_details : (json_decode($quiz_attempt->grading_details ?? '[]', true) ?? []);
+                $analysis = $grading['analysis'] ?? null;
+            @endphp
+
+            @if($analysis && (!empty($analysis['strengths']) || !empty($analysis['weaknesses'])))
+                <div class="performance-insights" style="margin-top: 2rem; margin-bottom: 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                    @if(!empty($analysis['strengths']))
+                        <div class="insight-card" style="background: #f0fdf4; border: 1px solid #bcf0da; border-radius: 16px; padding: 1.5rem;">
+                            <h3 style="font-size: 0.875rem; font-weight: 800; color: #166534; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-check-circle"></i> Mastered Concepts
+                            </h3>
+                            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;">
+                                @foreach(array_unique($analysis['strengths']) as $strength)
+                                    @if(!empty($strength))
+                                        <li style="font-size: 0.93rem; color: #14532d; display: flex; align-items: flex-start; gap: 0.5rem;">
+                                            <span style="color: #22c55e; margin-top: 3px;">•</span>
+                                            <span>{{ $strength }}</span>
+                                        </li>
+                                    @endif
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    @if(!empty($analysis['weaknesses']))
+                        <div class="insight-card" style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 16px; padding: 1.5rem;">
+                            <h3 style="font-size: 0.875rem; font-weight: 800; color: #92400e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-lightbulb"></i> Areas for Improvement
+                            </h3>
+                            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;">
+                                @foreach(array_unique($analysis['weaknesses']) as $weakness)
+                                    @if(!empty($weakness))
+                                        <li style="font-size: 0.93rem; color: #78350f; display: flex; align-items: flex-start; gap: 0.5rem;">
+                                            <span style="color: #f59e0b; margin-top: 3px;">•</span>
+                                            <span>{{ $weakness }}</span>
+                                        </li>
+                                    @endif
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+                </div>
+            @endif
 
             <!-- Review Layout Grid -->
             <div class="review-layout">
@@ -1398,17 +1526,24 @@
                 <div class="review-section" style="margin-bottom: 0;">
                     <!-- Remove bottom margin since grid handles gap -->
                     <div class="review-header">
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <h2 class="review-title">Question Review</h2>
-                            @if($percentage == 100)
-                                <span class="all-correct-badge">
-                                    <i class="fas fa-star"></i> ALL CORRECT
-                                </span>
-                            @endif
+                        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <h2 class="review-title">Question Review</h2>
+                                @if($percentage == 100)
+                                    <span class="all-correct-badge">
+                                        <i class="fas fa-star"></i> ALL CORRECT
+                                    </span>
+                                @endif
+                            </div>
+
+                            <div id="answersToggle" class="toggle-wrapper" onclick="toggleAnswersVisibility()">
+                                <div class="toggle-switch"></div>
+                                <span class="toggle-label">Show Correct Answers</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="questions-carousel">
+                    <div class="questions-carousel answers-hidden" id="questionsContainer">
                         @php
                             $sanitizeMath = function($html) {
                                 if (!$html) return $html;
@@ -1420,15 +1555,30 @@
                         @foreach($questions as $index => $question)
                             <div class="question-card {{ $index == 0 ? 'active' : '' }}" id="question-{{ $index }}">
                                 <div class="question-info">
-                                    <span class="question-count">QUESTION {{ $index + 1 }} OF {{ $total }}</span>
+                                    <div class="header-main-info" style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                        <span class="question-count">QUESTION {{ $index + 1 }} OF {{ $total }}</span>
+                                        @if(($question['type'] ?? 'mcq') === 'essay')
+                                            @if(($attempt->status ?? 'completed') === 'pending')
+                                                <span style="font-size: 0.7rem; font-weight: 700; color: #d97706; background: #fffbe6; padding: 2px 8px; border-radius: 4px; display: inline-block; width: fit-content;">PENDING GRADING</span>
+                                            @elseif(($attempt->status ?? 'completed') === 'graded')
+                                                <span style="font-size: 0.7rem; font-weight: 700; color: #059669; background: #ecfdf5; padding: 2px 8px; border-radius: 4px; display: inline-block; width: fit-content;">GRADED</span>
+                                            @endif
+                                        @endif
+                                    </div>
                                     @php
                                         $isSkipped = $question['user_answer'] === null;
                                     @endphp
-                                    <span
-                                        class="status-badge {{ $question['user_correct'] ? 'correct' : ($isSkipped ? 'skipped' : 'incorrect') }}">
-                                        <i
-                                            class="fas fa-{{ $question['user_correct'] ? 'check-circle' : ($isSkipped ? 'minus-circle' : 'times-circle') }}"></i>
-                                        {{ $question['user_correct'] ? 'Correct' : ($isSkipped ? 'Skipped' : 'Incorrect') }}
+                                    @php
+                                        $isEssay = ($question['type'] ?? 'mcq') === 'essay';
+                                        $isPending = ($attempt->status ?? 'completed') === 'pending';
+                                        $badgeClass = $question['user_correct'] ? 'correct' : ($isSkipped ? 'skipped' : ($isEssay && $isPending ? 'warning' : 'incorrect'));
+                                        $badgeIcon = $question['user_correct'] ? 'check-circle' : ($isSkipped ? 'minus-circle' : ($isEssay && $isPending ? 'hourglass-half' : 'times-circle'));
+                                        $badgeText = $question['user_correct'] ? 'Correct' : ($isSkipped ? 'Skipped' : ($isEssay && $isPending ? 'Submitted' : 'Incorrect'));
+                                    @endphp
+                                    <span class="status-badge {{ $badgeClass }}" 
+                                          style="{{ $badgeClass === 'warning' ? 'background: rgba(245, 158, 11, 0.1); color: #d97706; border-color: rgba(245, 158, 11, 0.2);' : '' }}">
+                                        <i class="fas fa-{{ $badgeIcon }}"></i>
+                                        {{ $badgeText }}
                                     </span>
                                 </div>
 
@@ -1441,7 +1591,15 @@
                                     </div>
                                 @endif
 
-                                <h3 class="question-text">{!! $sanitizeMath($question['question']) !!}</h3>
+                                @php
+                                    $qType = $question['type'] ?? 'mcq';
+                                    $hasMainContent = !empty(trim(strip_tags($question['question'] ?? '')));
+                                    $hasSubQuestions = !empty($question['sub_questions']) && count($question['sub_questions']) > 0;
+                                @endphp
+
+                                @if($hasMainContent || !$hasSubQuestions)
+                                    <h3 class="question-text">{!! $sanitizeMath($question['question']) !!}</h3>
+                                @endif
 
                                 <div class="question-layout">
                                     @if($question['image'])
@@ -1450,28 +1608,128 @@
                                         </div>
                                     @endif
 
-                                    <div class="options-list">
-                                        @php $labels = ['A', 'B', 'C', 'D', 'E']; @endphp
-                                        @foreach($question['options'] as $optIndex => $option)
-                                            <div class="option-item 
-                                                                {{ $optIndex === $question['correct_answer'] ? 'correct' : '' }}
-                                                                {{ $optIndex === $question['user_answer'] ? 'user-choice' : '' }}
-                                                                {{ $optIndex === $question['user_answer'] && !$question['user_correct'] ? 'incorrect' : '' }}
-                                                            ">
-                                                <div class="option-label">{{ $labels[$optIndex] }}</div>
-                                                <span class="option-text">{!! $sanitizeMath($option) !!}</span>
+                                    @if($qType === 'mcq')
+                                        <div class="options-list">
+                                            @php $labels = ['A', 'B', 'C', 'D', 'E']; @endphp
+                                            @foreach($question['options'] as $optIndex => $option)
+                                                <div class="option-item 
+                                                                    {{ $optIndex === $question['correct_answer'] ? 'correct' : '' }}
+                                                                    {{ $optIndex === $question['user_answer'] ? 'user-choice' : '' }}
+                                                                    {{ $optIndex === $question['user_answer'] && !$question['user_correct'] ? 'incorrect' : '' }}
+                                                                ">
+                                                    <div class="option-label">{{ $labels[$optIndex] }}</div>
+                                                    <span class="option-text">{!! $sanitizeMath($option) !!}</span>
 
-                                                @if($optIndex == $question['correct_answer'])
-                                                    <i class="fas fa-check-circle check-icon"></i>
-                                                @endif
-                                                @if($optIndex === $question['user_answer'] && !$question['user_correct'])
-                                                    <i class="fas fa-times-circle"
-                                                        style="margin-left: auto; color: var(--error-red);"></i>
-                                                @endif
-                                            </div>
-                                        @endforeach
+                                                    @if($optIndex == $question['correct_answer'])
+                                                        <i class="fas fa-check-circle check-icon"></i>
+                                                    @endif
+                                                    @if($optIndex === $question['user_answer'] && !$question['user_correct'])
+                                                        <i class="fas fa-times-circle"
+                                                            style="margin-left: auto; color: var(--error-red);"></i>
+                                                    @endif
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <!-- Essay Results -->
+                                        <div class="essay-results-wrapper" style="width: 100%;">
+                                            @if($hasSubQuestions)
+                                                <div class="sub-questions-review" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                                                    @foreach($question['sub_questions'] as $sIdx => $sub)
+                                                        <div class="sub-review-item" style="border-left: 3px solid var(--primary-blue); padding-left: 1.5rem; margin-bottom: 1rem;">
+                                                            <div class="sub-q-header" style="font-weight: 700; color: var(--gray-900); margin-bottom: 0.5rem;">
+                                                                @if(!$hasMainContent && $sIdx === 0)
+                                                                    {{ $index + 1 }}{{ $sub['label'] }})
+                                                                @else
+                                                                    {{ $sub['label'] }})
+                                                                @endif
+                                                                <span style="font-size: 0.75rem; color: var(--gray-500); margin-left: 0.5rem;">[{{ $sub['points'] }} Marks]</span>
+                                                            </div>
+                                                            <div class="sub-q-text" style="font-size: 1rem; color: var(--gray-700); margin-bottom: 1rem;">{!! $sanitizeMath($sub['text']) !!}</div>
+                                                            
+                                                            <div class="user-response-box" style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
+                                                                <div style="font-size: 0.75rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
+                                                                    <span><i class="fas fa-user-pen"></i> Your Response</span>
+                                                                    @php
+                                                                        $grading = is_array($quiz_attempt->grading_details ?? null) ? $quiz_attempt->grading_details : (json_decode($quiz_attempt->grading_details ?? '[]', true) ?? []);
+                                                                        $awarded = $grading['marks']["{$index}_{$sIdx}"] ?? null;
+                                                                    @endphp
+                                                                    @if($awarded !== null)
+                                                                        <span style="color: var(--primary-blue); font-weight: 800;">{{ $awarded }} / {{ $sub['points'] }} Marks</span>
+                                                                    @endif
+                                                                </div>
+                                                                <div class="response-content" style="font-size: 1rem; line-height: 1.6; color: var(--gray-900);">
+                                                                    @php
+                                                                        $ans = $question['user_answer'] ?? null;
+                                                                        $subAns = is_array($ans) && isset($ans[$sIdx]) ? $ans[$sIdx] : (is_string($ans) ? $ans : null);
+                                                                    @endphp
+                                                                    @if($subAns)
+                                                                        {!! $sanitizeMath($subAns) !!}
+                                                                    @else
+                                                                        <span style="color: var(--gray-400); font-style: italic;">No response provided.</span>
+                                                                    @endif
+                                                                </div>
+                                                                @if(!empty($grading['feedback']["{$index}_{$sIdx}"]))
+                                                                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--gray-200); font-size: 0.875rem; color: var(--primary-blue);">
+                                                                        <i class="fas fa-comment-dots mr-1"></i> <strong>Instructor Feedback:</strong> {{ $grading['feedback']["{$index}_{$sIdx}"] }}
+                                                                    </div>
+                                                                @endif
+                                                            </div>
 
-                                    </div>
+                                                            <!-- Sample Answer -->
+                                                            @if(!empty($sub['sample_answer']))
+                                                                <div class="sample-answer-box" style="background: var(--success-green-light); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1.25rem;">
+                                                                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--success-green); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                                                        <i class="fas fa-check-circle"></i> Sample Answer
+                                                                    </div>
+                                                                    <div class="sample-content" style="font-size: 1rem; line-height: 1.6; color: var(--gray-900);">
+                                                                        {!! $sanitizeMath($sub['sample_answer']) !!}
+                                                                    </div>
+                                                                </div>
+                                                            @endif
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @else
+                                                <div class="user-response-box" style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem;">
+                                                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
+                                                        <span><i class="fas fa-user-pen"></i> Your Response</span>
+                                                        @php
+                                                            $grading = is_array($quiz_attempt->grading_details ?? null) ? $quiz_attempt->grading_details : (json_decode($quiz_attempt->grading_details ?? '[]', true) ?? []);
+                                                            $awarded = $grading['marks'][$index] ?? null;
+                                                        @endphp
+                                                        @if($awarded !== null)
+                                                            <span style="color: var(--primary-blue); font-weight: 800;">{{ $awarded }} / {{ $question['points'] ?? 10 }} Marks</span>
+                                                        @endif
+                                                    </div>
+                                                    <div class="response-content" style="font-size: 1.125rem; line-height: 1.7; color: var(--gray-900);">
+                                                        @if($question['user_answer'])
+                                                            {!! $sanitizeMath($question['user_answer']) !!}
+                                                        @else
+                                                            <span style="color: var(--gray-400); font-style: italic;">No response provided.</span>
+                                                        @endif
+                                                    </div>
+                                                    @if(!empty($grading['feedback'][$index]))
+                                                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--gray-200); font-size: 0.875rem; color: var(--primary-blue);">
+                                                            <i class="fas fa-comment-dots mr-1"></i> <strong>Instructor Feedback:</strong> {{ $grading['feedback'][$index] }}
+                                                        </div>
+                                                    @endif
+                                                </div>
+
+                                                <!-- Sample Answer -->
+                                                @if(!empty($question['correct_answer']))
+                                                    <div class="sample-answer-box" style="background: var(--success-green-light); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1.25rem;">
+                                                        <div style="font-size: 0.75rem; font-weight: 700; color: var(--success-green); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                                            <i class="fas fa-check-circle"></i> Sample Answer
+                                                        </div>
+                                                        <div class="sample-content" style="font-size: 1.125rem; line-height: 1.7; color: var(--gray-900);">
+                                                            {!! $sanitizeMath($question['correct_answer']) !!}
+                                                        </div>
+                                                    </div>
+                                                @endif
+                                            @endif
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         @endforeach
@@ -1492,7 +1750,7 @@
 
             <!-- Bottom Actions -->
             <div class="bottom-actions">
-                <a href="{{ route('quiz.take', $quiz['encoded_id']) }}" class="btn-action outline">
+                <a href="{{ route($retakeRoute, $quiz['encoded_id']) }}" class="btn-action outline">
                     <i class="fas fa-redo"></i> Retake Quiz
                 </a>
                 <button class="btn-action dark" onclick="openShareModal()">
@@ -1718,6 +1976,17 @@
                 }
             }
         });
+    </script>
+    <script>
+        function toggleAnswersVisibility() {
+            const container = document.getElementById('questionsContainer');
+            const toggle = document.getElementById('answersToggle');
+            const isHidden = container.classList.toggle('answers-hidden');
+            toggle.classList.toggle('toggle-active', !isHidden);
+            
+            const label = toggle.querySelector('.toggle-label');
+            label.textContent = isHidden ? 'Show Correct Answers' : 'Hide Correct Answers';
+        }
     </script>
 </body>
 

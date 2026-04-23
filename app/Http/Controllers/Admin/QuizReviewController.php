@@ -69,7 +69,7 @@ class QuizReviewController extends Controller
         ]);
 
         // Record the manual invalidation as a violation
-        QuizViolation::recordViolation(
+        \App\Models\QuizViolation::recordViolation(
             $attempt->user_id,
             $attempt->quiz_id,
             'manual_invalidation',
@@ -79,5 +79,83 @@ class QuizReviewController extends Controller
         );
 
         return back()->with('success', 'Attempt has been invalidated successfully.');
+    }
+
+    /**
+     * Grade an essay quiz attempt manually.
+     */
+    public function grade(Request $request, $id)
+    {
+        $attempt = QuizAttempt::findOrFail($id);
+        
+        $request->validate([
+            'marks' => 'required|array',
+            'feedback' => 'nullable|array',
+            'overall_feedback' => 'nullable|string',
+        ]);
+
+        $marksAwarded = $request->input('marks');
+        $feedback = $request->input('feedback');
+        
+        // Calculate total score
+        $totalEarned = 0;
+        foreach($marksAwarded as $mark) {
+            $totalEarned += (float)$mark;
+        }
+        
+        // Fetch total possible points from quiz data stored in attempt
+        $totalPossible = 0;
+        $questionDetails = is_array($attempt->question_details) ? $attempt->question_details : [];
+        
+        foreach($questionDetails as $q) {
+            // For older structures or MCQ, check points
+            if (empty($q['sub_questions'])) {
+                $totalPossible += ($q['points'] ?? 1);
+            } else {
+                foreach($q['sub_questions'] as $sub) {
+                    $totalPossible += ($sub['points'] ?? 1);
+                }
+            }
+        }
+
+        // Avoid division by zero
+        $percentage = $totalPossible > 0 ? ($totalEarned / $totalPossible) * 100 : 0;
+        
+        // Determine passing threshold
+        $levelGroup = \App\Models\ProgressionStandard::getLevelGroup($attempt->quiz_level);
+        $standards = \App\Models\ProgressionStandard::getStandardsForLevel($levelGroup);
+        $passingThreshold = $standards['minimum_quiz_score'] ?? 50.00;
+
+        $passed = $percentage >= $passingThreshold;
+
+        $attempt->update([
+            'correct_answers' => (int)$totalEarned,
+            'score_percentage' => $percentage,
+            'passed' => $passed,
+            'status' => 'graded',
+            'grading_details' => [
+                'marks' => $marksAwarded,
+                'feedback' => $feedback,
+                'overall_feedback' => $request->input('overall_feedback'),
+                'total_possible' => $totalPossible,
+                'total_earned' => $totalEarned
+            ],
+            'graded_by' => \Illuminate\Support\Facades\Auth::user()->name,
+            'graded_at' => now(),
+        ]);
+
+        return back()->with('success', 'Quiz has been graded successfully.');
+    }
+
+    /**
+     * Run automated grading for an attempt.
+     */
+    public function autoGrade(Request $request, $id)
+    {
+        $attempt = QuizAttempt::findOrFail($id);
+        $service = new \App\Services\Quiz\QuizAutomatedGradingService();
+        $suggestions = $service->suggestMarks($attempt);
+        
+        return response()->json($suggestions);
     }
 }

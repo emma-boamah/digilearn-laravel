@@ -56,6 +56,24 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='rgba(0,0,0,0.03)' font-size='12' font-family='Arial' transform='rotate(-45 100 100)'%3EPROCTORED EXAM ID: {{ Auth::id() }}%3C/text%3E%3C/svg%3E");
     background-repeat: repeat;
   }
+
+  /* Extension Blocking CSS */
+  grammarly-extension, 
+  grammarly-popups,
+  .grammarly-ghost,
+  #grammarly-extension-os-wrapper,
+  [data-grammarly-part],
+  [class*="grammarly"],
+  [id*="grammarly"],
+  [class*="prowritingaid"],
+  [id*="quillbot"],
+  div[style*="z-index: 2147483647"]:not([id^="sb_"]) {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
 </style>
 <script id="security-script" nonce="{{ request()->attributes->get('csp_nonce') }}">
 (function() {
@@ -379,7 +397,7 @@
     right: '0',
     bottom: '0',
     background: 'rgba(243, 244, 246, 0.98)',
-    zIndex: '2147483647',
+    zIndex: '2147483646', // Changed to avoid intersecting with Grammerly block hook
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -730,5 +748,46 @@
     return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   }
 
+  /**
+   * Extension Shielding Logic
+   */
+  function applyExtensionShield() {
+    // 1. Target the body and all interactive elements
+    const targets = ['body', 'input', 'textarea', '[contenteditable="true"]', '.ql-editor'];
+    
+    document.querySelectorAll(targets.join(',')).forEach(el => {
+      // Grammarly specific
+      if (el.getAttribute('data-gramm') !== 'false') el.setAttribute('data-gramm', 'false');
+      if (el.getAttribute('data-enable-grammarly') !== 'false') el.setAttribute('data-enable-grammarly', 'false');
+      
+      // Standard Spellcheck/Autocorrect
+      if (el.getAttribute('spellcheck') !== 'false') el.setAttribute('spellcheck', 'false');
+      if (el.getAttribute('autocomplete') !== 'off') el.setAttribute('autocomplete', 'off');
+      if (el.getAttribute('autocorrect') !== 'off') el.setAttribute('autocorrect', 'off');
+      if (el.getAttribute('autocapitalize') !== 'off') el.setAttribute('autocapitalize', 'off');
+    });
+
+    // 2. Aggressive Cleanup: Find and remove extension-injected UI elements
+    const extensionSelectors = [
+      'grammarly-extension',
+      'grammarly-popups',
+      '#grammarly-extension-os-wrapper',
+      '[data-grammarly-part]',
+      '.grammarly-ghost',
+      '.prowritingaid-icon'
+    ];
+
+    extensionSelectors.forEach(selector => {
+      document.querySelectorAll(selector).forEach(node => {
+        try { node.remove(); } catch(e) {}
+      });
+    });
+  }
+
+  // Run immediately and then on an interval
+  applyExtensionShield();
+  setInterval(applyExtensionShield, 2000);
+
 }) ();
+
 </script>

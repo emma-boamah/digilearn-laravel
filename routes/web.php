@@ -526,6 +526,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::prefix('quizzes')->name('quizzes.')->group(function () {
             Route::get('/review', [QuizReviewController::class , 'index'])->name('review.index');
             Route::get('/review/{id}', [QuizReviewController::class , 'show'])->name('review.show');
+            Route::post('/review/{id}/grade', [QuizReviewController::class , 'grade'])->name('review.grade');
+            Route::post('/review/{id}/auto-grade', [QuizReviewController::class , 'autoGrade'])->name('review.auto-grade');
             Route::post('/review/{id}/invalidate', [QuizReviewController::class , 'invalidate'])->name('review.invalidate');
         }
         );
