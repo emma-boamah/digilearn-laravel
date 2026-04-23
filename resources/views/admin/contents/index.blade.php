@@ -957,7 +957,72 @@
     :root {
         --keyboard-zindex: 1050;
     }
+
+    /* Sub-question Styles */
+
+    .sub-questions-container {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px dashed #e2e8f0;
+    }
+
+    .sub-question-item {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        position: relative;
+    }
+
+    .sub-question-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .sub-question-label {
+        font-weight: 700;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .add-sub-question-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.625rem 1.25rem;
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-top: 0.5rem;
+    }
+
+    .add-sub-question-btn:hover {
+        background: #e2e8f0;
+        color: #1e293b;
+        border-color: #cbd5e1;
+    }
+
+    .sub-question-footer {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #f1f5f9;
+    }
 </style>
+
 <script defer src="https://unpkg.com/mathlive"></script>
 @endpush
 
@@ -2917,11 +2982,13 @@
                 question: '',
                 preamble: null, // New field for optional context
                 options: type === 'mcq' ? ['', '', '', ''] : null,
+                sub_questions: [], // Array for structured BECE-style parts
                 correct_answer: type === 'mcq' ? 0 : '',
                 points: 1,
                 image: null,
                 imageFile: null
             };
+
 
             uploadData.quiz.questions.push(question);
 
@@ -3094,19 +3161,19 @@
                     </div>
                 </div>
 
-                <!-- Question Text -->
-                <div class="mb-6 editor-wrapper">
-                    <label class="flex justify-between items-center text-sm font-semibold text-gray-700 mb-2">
-                        <span>Question Text</span>
-                        <span class="text-xs font-medium text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200" title="Planning to use complex mathematical equations? Please contact the developer for a quick guide on how to properly use the integrated math toolkit."><i class="fas fa-info-circle mr-1"></i> Contact Dev for Math Tools <span class="hidden sm:inline">Guide</span></span>
-                    </label>
-                    ${toolbarHtml}
-                    <div class="rich-text-editor question-text" contenteditable="true" 
-                         placeholder="Type your question here..."
-                         aria-label="Question text">${question.question}</div>
-                </div>
-
                 ${question.type === 'mcq' ? `
+                    <!-- Question Text -->
+                    <div class="mb-6 editor-wrapper">
+                        <label class="flex justify-between items-center text-sm font-semibold text-gray-700 mb-2">
+                            <span>Question Text</span>
+                            <span class="text-xs font-medium text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200" title="Planning to use complex mathematical equations? Please contact the developer for a quick guide on how to properly use the integrated math toolkit."><i class="fas fa-info-circle mr-1"></i> Contact Dev for Math Tools <span class="hidden sm:inline">Guide</span></span>
+                        </label>
+                        ${toolbarHtml}
+                        <div class="rich-text-editor question-text" contenteditable="true" 
+                             placeholder="Type your question here..."
+                             aria-label="Question text">${question.question}</div>
+                    </div>
+
                     <!-- MCQ Options -->
                     <div class="mb-6">
                         <label class="block text-sm font-semibold text-gray-700 mb-4">Answer Options</label>
@@ -3128,6 +3195,26 @@
                         </div>
                     </div>
                 ` : `
+                    <!-- Structured Essay Sections -->
+                    <div class="mb-6 editor-wrapper essay-question-main-text">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 main-question-label">Question Text</label>
+                        <p class="text-xs text-gray-500 mb-2 main-question-hint hidden">Leave this blank to start directly with Question 1a, 1b, etc.</p>
+                         ${toolbarHtml}
+                         <div class="rich-text-editor question-text" contenteditable="true" 
+                             placeholder="Type the question or shared context here..."
+                             aria-label="Question text">${question.question}</div>
+                    </div>
+
+                    <div class="sub-questions-container" id="subQuestionsContainer_${question.id}">
+                        <!-- Sub-questions will be injected here -->
+                    </div>
+
+                    <div class="mb-6">
+                        <button type="button" class="add-sub-question-btn" id="addSubQuestionBtn_${question.id}">
+                            <i class="fas fa-plus-circle"></i> Add Sub-part (a, b, c...)
+                        </button>
+                    </div>
+
                     <!-- Essay Sample Answer -->
                     <div class="mb-6 editor-wrapper">
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Reference Answer (Sample)</label>
@@ -3137,6 +3224,9 @@
                              aria-label="Sample answer">${question.correct_answer}</div>
                     </div>
                 `}
+
+
+
 
                 <div class="flex items-center justify-between border-t pt-6">
                     <div class="flex items-center gap-4">
@@ -3153,93 +3243,75 @@
             `;
 
             // Setup rich text editor behaviors
-            const editors = div.querySelectorAll('.rich-text-editor');
-            const toolbars = div.querySelectorAll('.rich-text-toolbar');
-
-            editors.forEach(editor => {
-                editor.addEventListener('input', (e) => {
-                    updateQuestionModelFromEditor(editor);
-                });
-
-                // Prevent pasting formatted text
-                editor.addEventListener('paste', (e) => {
-                    e.preventDefault();
-                    const text = (e.originalEvent || e).clipboardData.getData('text/plain');
-                    document.execCommand('insertHTML', false, text);
-                });
-            });
-
-            // Prevent toolbar buttons from stealing focus from the active editor/math-field
-            div.querySelectorAll('.toolbar-tool').forEach(tool => {
-                tool.addEventListener('mousedown', (e) => e.preventDefault());
-            });
-
-            // Setup standard toolbar tools
-            div.querySelectorAll('.toolbar-tool:not(.math-action)').forEach(tool => {
-                tool.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const command = tool.dataset.command;
+            function setupEditorToolbar(container, editor) {
+               container.querySelectorAll('.toolbar-tool').forEach(tool => {
+                    tool.addEventListener('mousedown', (e) => e.preventDefault());
                     
-                    if (command === 'math') {
-                        insertMathField(tool);
+                    if (tool.classList.contains('math-action')) {
+                         tool.addEventListener('click', (e) => {
+                             e.preventDefault();
+                             handleMathAction(tool, editor);
+                         });
                     } else {
-                        document.execCommand(command, false, null);
-                        tool.classList.toggle('active', document.queryCommandState(command));
-                        
-                        const container = tool.closest('.editor-wrapper');
-                        const editor = container.querySelector('.rich-text-editor');
-                        if (editor) editor.focus();
+                        tool.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            handleCommand(tool, editor);
+                        });
                     }
                 });
-            });
+            }
 
-            // Setup Custom Math Actions
-            div.querySelectorAll('.math-action').forEach(tool => {
-                tool.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const mathCommand = tool.dataset.mathCommand;
-                    const container = tool.closest('.editor-wrapper');
-                    const editor = container.querySelector('.rich-text-editor');
-                    if (!editor) return;
+            function handleCommand(tool, editor) {
+                const command = tool.dataset.command;
+                if (command === 'math') {
+                    insertMathField(tool);
+                } else {
+                    document.execCommand(command, false, null);
+                    editor.focus();
+                }
+                updateQuestionModelFromEditor(editor);
+            }
 
-                    // Determine if we are exactly focused inside an existing math field
-                    const activeEl = document.activeElement;
-                    let targetMf = null;
+            function handleMathAction(tool, editor) {
+                const mathCommand = tool.dataset.mathCommand;
+                const activeEl = document.activeElement;
+                let targetMf = (activeEl && activeEl.tagName.toLowerCase() === 'math-field') ? activeEl : null;
 
-                    if (activeEl && activeEl.tagName.toLowerCase() === 'math-field') {
-                        targetMf = activeEl;
-                    } 
-                    // No need for selection digging; activeElement accurately points to custom element host
-
-                    if (targetMf) {
-                        // We are actively inside a math field, insert directly into it
-                        targetMf.executeCommand(['insert', mathCommand]);
-                        targetMf.focus();
-                    } else {
-                        // Not inside a math field, wrap the command in a new Math Field
-                        // Not inside a math field, wrap the command in a new Math Field
-                        editor.focus();
-                        const mathId = 'math_' + Date.now();
-                        // Protective wrapper to keep browser out of MathLive's business
-                        const mathHtml = `<span contenteditable="false" class="math-wrapper px-1 inline-block"><math-field id="${mathId}" math-virtual-keyboard-policy="none" style="min-width: 30px; padding: 2px 4px;"></math-field></span>&nbsp;`;
-                        document.execCommand('insertHTML', false, mathHtml);
-                        
-                        const mf = document.getElementById(mathId);
-                        if (mf) {
-                            mf.addEventListener('mousedown', e => e.stopPropagation());
-                            mf.addEventListener('click', e => { e.stopPropagation(); mf.focus(); });
-                            mf.addEventListener('focusin', () => { editor.contentEditable = "false"; });
-                            mf.addEventListener('focusout', () => { editor.contentEditable = "true"; });
-                            mf.addEventListener('input', () => updateQuestionModelFromEditor(editor));
-                            
-                            setTimeout(() => {
-                                mf.focus();
-                                mf.executeCommand(['insert', mathCommand]);
-                            }, 50);
-                        }
-                        updateQuestionModelFromEditor(editor);
+                if (targetMf) {
+                    targetMf.executeCommand(['insert', mathCommand]);
+                    targetMf.focus();
+                } else {
+                    editor.focus();
+                    const mathId = 'math_' + Date.now();
+                    const mathHtml = `<span contenteditable="false" class="math-wrapper px-1 inline-block"><math-field id="${mathId}" math-virtual-keyboard-policy="none" style="min-width: 30px; padding: 2px 4px;"></math-field></span>&nbsp;`;
+                    document.execCommand('insertHTML', false, mathHtml);
+                    
+                    const mf = document.getElementById(mathId);
+                    if (mf) {
+                        mf.addEventListener('focusin', () => { editor.contentEditable = "false"; });
+                        mf.addEventListener('focusout', () => { editor.contentEditable = "true"; });
+                        mf.addEventListener('input', () => updateQuestionModelFromEditor(editor));
+                        setTimeout(() => { mf.focus(); mf.executeCommand(['insert', mathCommand]); }, 50);
                     }
-                });
+                }
+                updateQuestionModelFromEditor(editor);
+            }
+
+            // Initialize all editors in this div
+            div.querySelectorAll('.editor-wrapper').forEach(wrapper => {
+                const editor = wrapper.querySelector('.rich-text-editor');
+                if (editor) {
+                    editor.addEventListener('input', () => updateQuestionModelFromEditor(editor));
+                    
+                    // Prevent pasting formatted text
+                    editor.addEventListener('paste', (e) => {
+                        e.preventDefault();
+                        const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+                        document.execCommand('insertHTML', false, text);
+                    });
+
+                    setupEditorToolbar(wrapper, editor);
+                }
             });
 
             function insertMathField(tool) {
@@ -3286,6 +3358,11 @@
                     question.question = finalHtml;
                 } else if (editor.classList.contains('preamble-text')) {
                     question.preamble = finalHtml;
+                } else if (editor.classList.contains('sub-question-text')) {
+                    const subItem = editor.closest('.sub-question-item');
+                    const subId = subItem.dataset.subId;
+                    const subQuestion = question.sub_questions.find(sq => sq.id == subId);
+                    if (subQuestion) subQuestion.text = finalHtml;
                 } else if (editor.classList.contains('option-text')) {
                     const allOptions = div.querySelectorAll('.option-text');
                     const index = Array.from(allOptions).indexOf(editor);
@@ -3296,6 +3373,7 @@
             }
 
             // Toggle active state based on selection
+
             div.addEventListener('keyup', () => updateToolbarState(div));
             div.addEventListener('mouseup', () => updateToolbarState(div));
 
@@ -3340,7 +3418,130 @@
                 });
             }
 
+            // Sub-question Logic
+            if (question.type === 'essay') {
+                const addSubBtn = div.querySelector(`#addSubQuestionBtn_${question.id}`);
+                const subContainer = div.querySelector(`#subQuestionsContainer_${question.id}`);
+                const mainQuestionWrapper = div.querySelector('.essay-question-main-text');
+
+                // Render existing sub-questions on load
+                if (question.sub_questions && question.sub_questions.length > 0) {
+                    question.sub_questions.forEach(sub => {
+                        const subEl = createSubQuestionElement(sub, question, div);
+                        subContainer.appendChild(subEl);
+                    });
+                    updateTotalPoints();
+                }
+
+                addSubBtn.addEventListener('click', () => {
+                    const subId = Date.now();
+                    const subLabel = String.fromCharCode(97 + question.sub_questions.length); // a, b, c...
+                    const subQuestion = {
+                        id: subId,
+                        label: subLabel,
+                        text: '',
+                        points: 1
+                    };
+                    question.sub_questions.push(subQuestion);
+                    
+                    
+                    const subEl = createSubQuestionElement(subQuestion, question, div);
+                    subContainer.appendChild(subEl);
+                    updateTotalPoints();
+                });
+
+                function updateTotalPoints() {
+                    const mainLabel = div.querySelector('.main-question-label');
+                    const mainHint = div.querySelector('.main-question-hint');
+                    
+                    // Determine parent question number
+                    const qItems = Array.from(document.querySelectorAll('.question-item'));
+                    const qIndex = qItems.indexOf(div) + 1;
+
+                    if (question.sub_questions.length > 0) {
+                        if (mainLabel) mainLabel.textContent = 'Shared Content / Instructions (Optional)';
+                        if (mainHint) mainHint.classList.remove('hidden');
+                        
+                        // Re-label sub-questions
+                        div.querySelectorAll('.sub-question-item').forEach((item, idx) => {
+                            const label = String.fromCharCode(97 + idx); // a, b, c...
+                            const labelSpan = item.querySelector('.sub-question-label');
+                            if (labelSpan) {
+                                // If first item, show "Na)", otherwise just "b)"
+                                labelSpan.textContent = (idx === 0) ? `${qIndex}${label})` : `${label})`;
+                            }
+                            const sq = question.sub_questions.find(s => s.id == item.dataset.subId);
+                            if (sq) sq.label = label;
+                        });
+
+                        const total = question.sub_questions.reduce((sum, sq) => sum + sq.points, 0);
+                        question.points = total;
+                        if (questionPoints) {
+                            questionPoints.value = total;
+                            questionPoints.readOnly = true;
+                            questionPoints.classList.add('bg-gray-50');
+                        }
+                    } else {
+                        if (mainLabel) mainLabel.textContent = 'Question Text';
+                        if (mainHint) mainHint.classList.add('hidden');
+                        if (questionPoints) {
+                            questionPoints.readOnly = false;
+                            questionPoints.classList.remove('bg-gray-50');
+                        }
+                    }
+                }
+
+                function createSubQuestionElement(subQuestion, parentQuestion, parentDiv) {
+                    const subDiv = document.createElement('div');
+                    subDiv.className = 'sub-question-item';
+                    subDiv.dataset.subId = subQuestion.id;
+                    
+                    subDiv.innerHTML = `
+                        <div class="sub-question-header">
+                            <div class="sub-question-label">Part ${subQuestion.label})</div>
+                            <button type="button" class="text-gray-400 hover:text-red-500 remove-sub-question">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="editor-wrapper mb-3">
+                            ${toolbarHtml}
+                            <div class="rich-text-editor sub-question-text" contenteditable="true" 
+                                 placeholder="Type response here..."
+                                 aria-label="Sub-question text"></div>
+                        </div>
+                        <div class="sub-question-footer">
+                            <label class="text-xs font-bold text-gray-500 uppercase">Marks for this part:</label>
+                            <input type="number" class="w-20 px-2 py-1 border border-gray-300 rounded sub-points" 
+                                   value="${subQuestion.points}" min="1">
+                        </div>
+                    `;
+
+                    // Handle input
+                    const editor = subDiv.querySelector('.sub-question-text');
+                    editor.addEventListener('input', () => updateQuestionModelFromEditor(editor));
+                    
+                    // Handle toolbar
+                    setupEditorToolbar(subDiv, editor);
+
+                    // Handle removal
+                    subDiv.querySelector('.remove-sub-question').addEventListener('click', () => {
+                        parentQuestion.sub_questions = parentQuestion.sub_questions.filter(sq => sq.id !== subQuestion.id);
+                        subDiv.remove();
+                        updateTotalPoints();
+                    });
+
+                    // Handle points
+                    subDiv.querySelector('.sub-points').addEventListener('input', (e) => {
+                        subQuestion.points = parseInt(e.target.value) || 0;
+                        updateTotalPoints();
+                    });
+
+                    return subDiv;
+                }
+            } // end if essay
+
             // Image upload handling
+
             setupQuestionImageUpload(div, question);
 
             if (question.type === 'mcq') {
@@ -4151,7 +4352,8 @@
                         type: question.type,
                         question: question.question,
                         preamble: question.preamble, // Include preamble
-                        points: question.points
+                        points: question.points,
+                        sub_questions: question.sub_questions || []
                     };
 
                     if (question.type === 'mcq') {

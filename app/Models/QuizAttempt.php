@@ -26,6 +26,10 @@ class QuizAttempt extends Model
         'attempt_number',
         'answers',
         'question_details',
+        'status',
+        'grading_details',
+        'graded_by',
+        'graded_at',
         'started_at',
         'completed_at',
     ];
@@ -37,7 +41,9 @@ class QuizAttempt extends Model
         'completed_at' => 'datetime',
         'answers' => 'array',
         'question_details' => 'array',
+        'grading_details' => 'array',
         'score_percentage' => 'decimal:2',
+        'graded_at' => 'datetime',
     ];
 
     /**

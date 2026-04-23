@@ -146,7 +146,7 @@
         @media (max-width: 1024px) {
             body {
                 /* Add safe area inset + header height */
-                padding-top: calc(120px + var(--safe-area-inset-top));
+                padding-top: calc(130px + var(--safe-area-inset-top));
             }
         }
 
@@ -454,7 +454,7 @@
         #mobile-menu-button {
             display: none;
             position: fixed;
-            top: 0.50rem;
+            top: calc(0.75rem + var(--safe-area-inset-top));
             right: 1.25rem;
             z-index: 100;
             width: 3.5rem;
@@ -574,7 +574,7 @@
             }
 
             body {
-                padding-top: 70px;
+                padding-top: calc(75px + var(--safe-area-inset-top));
             }
 
             .nav-content {

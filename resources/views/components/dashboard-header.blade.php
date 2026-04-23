@@ -1,5 +1,9 @@
 <!-- Dashboard Header Styles -->
 <style nonce="{{ request()->attributes->get('csp_nonce') }}">
+    :root {
+        --safe-area-inset-top: env(safe-area-inset-top, 0px);
+    }
+
     body::-webkit-scrollbar {
         width: 0;
         background: transparent;
@@ -812,9 +816,11 @@
             top: 0;
             left: 0;
             width: 100%;
-            padding: 0.5rem;
-            min-height: 60px;
+            padding: calc(0.5rem + var(--safe-area-inset-top)) 0.5rem 0.5rem 0.5rem;
+            min-height: calc(60px + var(--safe-area-inset-top));
             height: auto;
+            display: flex;
+            align-items: center;
         }
 
         .header-left {

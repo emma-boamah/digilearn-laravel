@@ -350,20 +350,57 @@ class QuizController extends Controller
      */
     public function submitEssay(Request $request, $quizId)
     {
+        $quizId = \App\Services\UrlObfuscator::decode($quizId) ?? $quizId;
+        $quiz = $this->getQuizById($quizId);
+        
+        if (!$quiz) {
+            return redirect()->route('quiz.index')->with('error', 'Quiz not found.');
+        }
+
         $request->validate([
             'essay' => 'required|string|min:20|max:20000',
+            'answers' => 'nullable|string', // JSON from updated frontend logic
             'time_spent' => 'integer|min:0',
         ]);
 
-        // TODO: Persist essay attempt; for now, redirect to results with placeholder scoring
         $timeSpent = (int) $request->input('time_spent', 0);
-        // Placeholder: essay not auto-scored; show submitted status
+        $answers = json_decode($request->input('answers', '[]'), true);
+        
+        // If answers JSON is missing/empty (legacy fallback), store the whole essay at index 0
+        if (empty($answers)) {
+            $answers = [0 => $request->input('essay')];
+        }
+
+        $questions = $quiz['questions'] ?? [];
+        $totalQuestions = count($questions);
+
+        // Record the attempt for review visibility
+        \App\Models\QuizAttempt::create([
+            'user_id' => Auth::id(),
+            'quiz_id' => $quizId,
+            'quiz_title' => $quiz['title'] ?? 'Essay Quiz',
+            'quiz_subject' => $quiz['subject'] ?? 'General',
+            'quiz_level' => $quiz['level'] ?? 'N/A',
+            'total_questions' => $totalQuestions,
+            'correct_answers' => 0, // Essays are pending grading
+            'incorrect_answers' => 0,
+            'score_percentage' => 0,
+            'time_taken_seconds' => $timeSpent,
+            'passed' => false,
+            'status' => 'pending', // Added: Mark as pending for instructor review
+            'attempt_number' => \App\Models\QuizAttempt::where('user_id', Auth::id())->where('quiz_id', $quizId)->max('attempt_number') + 1,
+            'answers' => $answers,
+            'question_details' => $questions,
+            'started_at' => now()->subSeconds($timeSpent),
+            'completed_at' => now(),
+        ]);
+
         return redirect()->route('quiz.results', [
             'quiz' => \App\Services\UrlObfuscator::encode($quizId),
             'score' => 0,
-            'total' => 0,
+            'total' => $totalQuestions,
             'percentage' => 0,
-        ])->with('success', 'Essay submitted. It will be graded by an instructor.');
+        ])->with('success', 'Essay submitted successfully.');
     }
 
     /**
@@ -773,7 +810,7 @@ class QuizController extends Controller
                 $quiz = $this->applySeededShuffle($quiz, $userIdForShuffle);
             }
 
-            $userAnswers = $lastAttempt ? json_decode($lastAttempt->answers ?? '[]', true) : [];
+            $userAnswers = $lastAttempt ? (is_array($lastAttempt->answers) ? $lastAttempt->answers : json_decode($lastAttempt->answers ?? '[]', true)) : [];
             $timeTaken = $lastAttempt ? $lastAttempt->time_taken_seconds : 0;
 
             foreach ($quiz['questions'] as $index => $question) {
@@ -786,19 +823,50 @@ class QuizController extends Controller
                     continue;
                 }
 
-                $userAnswer = isset($userAnswers[$index]) ? (int)$userAnswers[$index] : null;
-                $correctAnswer = isset($question['correct_answer']) ? (int)$question['correct_answer'] : null;
-                $userCorrect = $userAnswer === $correctAnswer;
+                $qType = $question['type'] ?? 'mcq';
+                $userAnswer = isset($userAnswers[$index]) ? $userAnswers[$index] : null;
+                $correctAnswer = isset($question['correct_answer']) ? $question['correct_answer'] : null;
+                
+                // For MCQ, cast to int for comparison. For essay, use string comparison or placeholder
+                if ($qType === 'mcq') {
+                    $userAnswer = $userAnswer !== null ? (int)$userAnswer : null;
+                    $correctAnswer = $correctAnswer !== null ? (int)$correctAnswer : null;
+                    $userCorrect = $userAnswer === $correctAnswer;
+                } else {
+                    // Essays are pending grading initially
+                    $isGraded = ($lastAttempt->status ?? 'completed') === 'graded';
+                    if (!$isGraded) {
+                        $userCorrect = false;
+                    } else {
+                        // If graded, check if they earned marks for THIS question
+                        $marks = $lastAttempt && is_array($lastAttempt->grading_details) ? ($lastAttempt->grading_details['marks'] ?? []) : [];
+                        // Check if total marks for this qIdx is > 0
+                        $qMarks = 0;
+                        if (!empty($question['sub_questions'])) {
+                            foreach($question['sub_questions'] as $sIdx => $sub) {
+                                $qMarks += (float)($marks["{$index}_{$sIdx}"] ?? 0);
+                            }
+                        } else {
+                            $qMarks = (float)($marks[$index] ?? 0);
+                        }
+                        $userCorrect = $qMarks > 0;
+                    }
+                }
 
                 $questions[] = [
+                    'id' => $question['id'] ?? null,
+                    'type' => $qType,
                     'question' => $question['question'] ?? 'Question not available',
                     'preamble' => $question['preamble'] ?? null,
                     'options' => $question['options'] ?? [],
+                    'sub_questions' => $question['sub_questions'] ?? [],
                     'correct_answer' => $correctAnswer,
                     'user_answer' => $userAnswer,
                     'user_correct' => $userCorrect,
                     'text' => $question['question'] ?? 'Question not available',
-                    'image' => $question['image'] ?? null,
+                    'points' => $question['points'] ?? 1,
+                    'has_image' => !empty($question['image']),
+                    'image' => $question['image'] ?? null
                 ];
             }
         }
