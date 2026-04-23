@@ -816,7 +816,7 @@
             top: 0;
             left: 0;
             width: 100%;
-            padding: calc(0.5rem + var(--safe-area-inset-top)) 0.5rem 0.5rem 0.5rem;
+            padding: calc(0.75rem + var(--safe-area-inset-top)) 0.75rem 0.75rem 0.75rem;
             min-height: calc(60px + var(--safe-area-inset-top));
             height: auto;
             display: flex;
