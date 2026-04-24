@@ -84,6 +84,11 @@
 <!-- Horizontal Filters (Context & Subjects) -->
 <div class="subjects-filter-container">
     <!-- Row 1: Context Filter -->
+    @php
+        $currentLevelGroup = $selectedLevelGroup ?? session('selected_level_group', Auth::user()->current_level_group ?? 'primary-lower');
+        $isPrimaryLevel = str_contains(strtolower($currentLevelGroup), 'primary') || str_contains(strtolower($currentLevelGroup), 'grade');
+    @endphp
+    @if(!$isPrimaryLevel)
     <div class="subjects-filter context-filter">
         <span class="filter-label">Category:</span>
         <div class="subject-chip {{ $context === 'all' ? 'active' : '' }}" data-context="all">
@@ -94,8 +99,7 @@
         $catSlug = strtolower($category->slug ?? '');
         $isBece = str_contains($catSlug, 'bece');
         $isWassce = str_contains($catSlug, 'wassce');
-        $levelGroup = $selectedLevelGroup ?? session('selected_level_group', Auth::user()->current_level_group ??
-        'primary-lower');
+        $levelGroup = $currentLevelGroup;
         @endphp
         @if($catSlug !== 'normal' && (($isBece && (str_contains(strtolower($levelGroup), 'jhs') || str_contains(strtolower($levelGroup), 'shs'))) || ($isWassce && str_contains(strtolower($levelGroup), 'shs')) ||
         (!$isBece && !$isWassce)))
@@ -108,6 +112,7 @@
         @endif
         @endforeach
     </div>
+    @endif
 
     <!-- Row 2: Subjects Filter -->
     <div class="subjects-filter">

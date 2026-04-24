@@ -794,9 +794,9 @@
 
             .app-content {
                 margin-left: 0;
-                padding: 2rem;
-                padding-left: calc(2rem + env(safe-area-inset-left));
-                padding-right: calc(2rem + env(safe-area-inset-right));
+                padding: 1rem;
+                padding-left: calc(1rem + env(safe-area-inset-left));
+                padding-right: calc(1rem + env(safe-area-inset-right));
             }
 
             .youtube-sidebar.collapsed~.app-content {

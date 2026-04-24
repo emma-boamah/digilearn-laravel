@@ -1,4 +1,9 @@
 <!DOCTYPE html>
+@php
+    $currentLevelGroup = $selectedLevelGroup ?? session('selected_level_group', Auth::user()->current_level_group ?? 'primary-lower');
+    $isPrimaryLevel = str_contains(strtolower($currentLevelGroup), 'primary') || str_contains(strtolower($currentLevelGroup), 'grade');
+    $mainContentTopOffset = $isPrimaryLevel ? '205px' : '255px';
+@endphp
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
@@ -386,14 +391,14 @@
             width: calc(100vw - var(--sidebar-width-expanded)) !important;
             max-width: calc(100vw - var(--sidebar-width-expanded)) !important;
             margin-left: var(--sidebar-width-expanded) !important;
-            margin-top: calc(255px + var(--safe-area-inset-top)) !important;
+            margin-top: calc({{ $mainContentTopOffset }} + var(--safe-area-inset-top)) !important;
             /* Adjusted for dual-pill filter bar */
             /* padding-top: 1rem !important; Internal padding */
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-sizing: border-box;
             overflow-x: hidden;
             overflow-y: auto;
-            height: calc(100vh - (255px + var(--safe-area-inset-top))) !important;
+            height: calc(100vh - ({{ $mainContentTopOffset }} + var(--safe-area-inset-top))) !important;
             /* Full height minus headers */
         }
 
@@ -427,8 +432,8 @@
             border-bottom: 1px solid var(--border-color);
             z-index: 999 !important;
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            height: calc(60px + var(--safe-area-inset-top));
-            padding-top: calc(0.75rem + var(--safe-area-inset-top));
+            height: calc(60px + var(--safe-area-inset-top)) !important;
+            padding-top: calc(0.75rem + var(--safe-area-inset-top)) !important;
         }
 
         .youtube-sidebar.collapsed~.top-header {
@@ -1687,6 +1692,12 @@
                 min-width: 44px;
             }
 
+            .top-header {
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
+                width: 100vw !important;
+            }
+
             .main-content {
                 width: 100vw !important;
                 max-width: 100vw !important;
@@ -1971,7 +1982,7 @@
 
             /* Fixed heights for mobile compatibility */
             .content-section {
-                min-height: calc(100vh - 172px);
+                min-height: calc(100vh - {{ $isPrimaryLevel ? '124px' : '172px' }});
                 padding: 1rem 0.75rem 2rem;
             }
 
@@ -1987,7 +1998,7 @@
             /* Search box initially hidden on mobile */
 
             .content-section {
-                min-height: calc(100vh - 60px - 120px - 200px);
+                min-height: calc(100vh - 60px - 120px - {{ $isPrimaryLevel ? '152px' : '200px' }});
                 padding: 1rem 0.75rem 2rem;
             }
 
@@ -2510,6 +2521,7 @@
         <!-- Separate Horizontal Filters (Context & Subjects) -->
         <div class="subjects-filter-container">
             <!-- Row 1: Context Filter -->
+            @if(!$isPrimaryLevel)
             <div class="subjects-filter context-filter">
                 <span class="filter-label">Category:</span>
                 <div class="subject-chip {{ $context === 'all' ? 'active' : '' }}" data-context="all">
@@ -2520,8 +2532,7 @@
                         $catSlug = strtolower($category->slug ?? '');
                         $isBece = str_contains($catSlug, 'bece');
                         $isWassce = str_contains($catSlug, 'wassce');
-                        $levelGroup = $selectedLevelGroup ?? session('selected_level_group', Auth::user()->current_level_group
-                            ?? 'primary-lower');
+                        $levelGroup = $currentLevelGroup;
                     @endphp
                     @if(
                             $catSlug !== 'normal' && (($isBece && (str_contains(strtolower($levelGroup), 'jhs') || str_contains(strtolower($levelGroup), 'shs'))) || ($isWassce && str_contains(strtolower($levelGroup), 'shs')) ||
@@ -2536,6 +2547,7 @@
                     @endif
                 @endforeach
             </div>
+            @endif
 
             <!-- Row 2: Subjects Filter -->
             <div class="subjects-filter">
