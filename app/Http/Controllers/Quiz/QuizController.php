@@ -340,6 +340,16 @@ class QuizController extends Controller
         // Add encoded ID for URL generation
         $quiz['encoded_id'] = \App\Services\UrlObfuscator::encode($quizId);
 
+        // Filter for essay questions ONLY
+        $quiz['questions'] = collect($quiz['questions'] ?? [])->filter(function($q) {
+            return ($q['type'] ?? '') === 'essay';
+        })->values()->all();
+
+        if (empty($quiz['questions'])) {
+            return redirect()->route('quiz.instructions', \App\Services\UrlObfuscator::encode($quizId))
+                ->with('error', 'This quiz does not contain any essay questions.');
+        }
+
         $seconds = $this->convertDurationToSeconds(is_array($quiz) && isset($quiz['duration']) ? $quiz['duration'] : '3 min');
         $hasAttempted = $this->checkUserAttempt($quizId, Auth::id());
         return view('dashboard.quiz.essay', compact('quiz', 'seconds', 'hasAttempted'));
@@ -1138,6 +1148,7 @@ class QuizController extends Controller
                     'duration' => $formattedDuration, // Use actual formatted duration
                     'time_limit_minutes' => $timeLimitMinutes,
                     'questions_count' => count($processedQuestions),
+                    'essay_questions_count' => collect($processedQuestions)->where('type', 'essay')->count(),
                     'questions' => $processedQuestions,
                     'difficulty' => $difficultyLevel,
                     'uploader' => $quiz->uploader,

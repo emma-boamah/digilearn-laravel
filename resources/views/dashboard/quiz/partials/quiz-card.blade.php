@@ -34,7 +34,7 @@
                                 $isWassce = $slug === 'wassce';
                                 $levelGroup = $selectedLevelGroup ?? session('selected_level_group', Auth::user()->current_level_group ?? 'primary-lower');
                             @endphp
-                            @if($isBece || ($isWassce && str_contains(strtolower($levelGroup), 'shs')))
+                            @if(($isBece && (str_contains(strtolower($levelGroup), 'jhs') || str_contains(strtolower($levelGroup), 'shs'))) || ($isWassce && str_contains(strtolower($levelGroup), 'shs')))
                                 <span class="category-badge {{ $slug }}-badge">
                                     {{ strtoupper($category['slug']) }}
                                 </span>

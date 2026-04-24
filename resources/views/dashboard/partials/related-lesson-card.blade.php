@@ -66,8 +66,9 @@
                         $slug = strtolower($category['slug'] ?? '');
                         $isBece = str_contains($slug, 'bece');
                         $isWassce = str_contains($slug, 'wassce');
+                        $levelGroup = $selectedLevelGroup ?? session('selected_level_group', Auth::user()->current_level_group ?? 'primary-lower');
                     @endphp
-                    @if($isBece || $isWassce)
+                    @if(($isBece && (str_contains(strtolower($levelGroup), 'jhs') || str_contains(strtolower($levelGroup), 'shs'))) || ($isWassce && str_contains(strtolower($levelGroup), 'shs')))
                         <div class="category-badge {{ $isBece ? 'bece-badge' : 'wassce-badge' }}">
                             {{ strtoupper($category['name']) }}
                         </div>
