@@ -412,6 +412,8 @@ class DashboardController extends Controller
 
         // --- End Grade Unification ---
 
+        $categories = ContentCategory::orderBy('name')->get();
+
         if ($selectedLevelGroup === 'university') {
             $universityCourses = $this->getUniversityCourses();
             $universityCourses = $this->filterCoursesBySubscription($user, $universityCourses);
@@ -430,7 +432,10 @@ class DashboardController extends Controller
                 'unlockedGrades',
                 'validSelectedGrade',
                 'lessons',
-                'totalLessons'
+                'totalLessons',
+                'levelGroups',
+                'context',
+                'categories'
             ));
         }
 
@@ -442,7 +447,7 @@ class DashboardController extends Controller
         $lessons = array_slice($lessons, 0, 12);
 
         $subjects = $this->getSubjectsFromLessons($lessons);
-        $categories = ContentCategory::orderBy('name')->get();
+
 
         return view('dashboard.digilearn', compact(
             'selectedLevelGroup',
