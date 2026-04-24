@@ -2524,7 +2524,7 @@
                             ?? 'primary-lower');
                     @endphp
                     @if(
-                            $catSlug !== 'normal' && ($isBece || ($isWassce && str_contains(strtolower($levelGroup), 'shs')) ||
+                            $catSlug !== 'normal' && (($isBece && (str_contains(strtolower($levelGroup), 'jhs') || str_contains(strtolower($levelGroup), 'shs'))) || ($isWassce && str_contains(strtolower($levelGroup), 'shs')) ||
                                 (!$isBece && !$isWassce))
                         )
                         <div class="subject-chip {{ $context === $category->slug ? 'active' : '' }}"

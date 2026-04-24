@@ -530,7 +530,7 @@
             <div class="paper-section">
                 <div class="section-header">Question Paper</div>
 
-                @foreach($quiz['questions'] ?? [] as $index => $question)
+                @forelse($quiz['questions'] ?? [] as $index => $question)
                     <div class="question-item" id="q-{{ $index }}">
                         @php
                             $hasMainContent = !empty(trim(strip_tags($question['question'])));
@@ -573,11 +573,9 @@
                                 alt="Visual aid for question {{ $index + 1 }}">
                         @endif
                     </div>
-                @endforeach
-
-                @if(empty($quiz['questions']))
-                    <div class="preamble">No questions available for this essay quiz.</div>
-                @endif
+                @empty
+                    <div class="preamble">No essay questions available for this quiz.</div>
+                @endforelse
             </div>
         </div>
 

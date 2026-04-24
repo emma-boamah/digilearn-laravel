@@ -1079,23 +1079,59 @@
             color: var(--gray-600);
         }
 
-        /* Answer Visibility Toggle */
-        .answers-hidden .sample-answer-box {
+        /* Answer Visibility Toggle - Localized to Question Card */
+        .question-card.answers-hidden .sample-answer-box {
             display: none !important;
         }
 
-        .answers-hidden .option-item.correct:not(.user-choice) {
+        .question-card.answers-hidden .option-item.correct:not(.user-choice) {
             border-color: var(--gray-200) !important;
             background: var(--white) !important;
         }
 
-        .answers-hidden .option-item.correct .check-icon {
+        .question-card.answers-hidden .option-item.correct .check-icon {
             display: none !important;
         }
 
-        .answers-hidden .option-item.correct.user-choice {
+        .question-card.answers-hidden .option-item.correct.user-choice {
             border-color: var(--success-green);
             background: var(--success-green-light);
+        }
+
+        /* Local Reveal Toggle */
+        .reveal-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.8rem;
+            background: var(--gray-100);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--gray-600);
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .reveal-toggle:hover {
+            background: var(--gray-200);
+            color: var(--primary-blue);
+        }
+
+        .reveal-toggle.active {
+            background: var(--primary-blue-light);
+            color: var(--primary-blue);
+            border-color: rgba(36, 128, 241, 0.3);
+        }
+
+        .reveal-toggle i {
+            font-size: 0.875rem;
+        }
+
+        /* Sub-question specific hidden state */
+        .sub-review-item.answer-hidden .sample-answer-box {
+            display: none !important;
         }
 
         .toggle-wrapper {
@@ -1535,15 +1571,10 @@
                                     </span>
                                 @endif
                             </div>
-
-                            <div id="answersToggle" class="toggle-wrapper" onclick="toggleAnswersVisibility()">
-                                <div class="toggle-switch"></div>
-                                <span class="toggle-label">Show Correct Answers</span>
-                            </div>
                         </div>
                     </div>
 
-                    <div class="questions-carousel answers-hidden" id="questionsContainer">
+                    <div class="questions-carousel" id="questionsContainer">
                         @php
                             $sanitizeMath = function($html) {
                                 if (!$html) return $html;
@@ -1553,7 +1584,7 @@
                             };
                         @endphp
                         @foreach($questions as $index => $question)
-                            <div class="question-card {{ $index == 0 ? 'active' : '' }}" id="question-{{ $index }}">
+                            <div class="question-card answers-hidden {{ $index == 0 ? 'active' : '' }}" id="question-{{ $index }}">
                                 <div class="question-info">
                                     <div class="header-main-info" style="display: flex; flex-direction: column; gap: 0.25rem;">
                                         <span class="question-count">QUESTION {{ $index + 1 }} OF {{ $total }}</span>
@@ -1575,11 +1606,19 @@
                                         $badgeIcon = $question['user_correct'] ? 'check-circle' : ($isSkipped ? 'minus-circle' : ($isEssay && $isPending ? 'hourglass-half' : 'times-circle'));
                                         $badgeText = $question['user_correct'] ? 'Correct' : ($isSkipped ? 'Skipped' : ($isEssay && $isPending ? 'Submitted' : 'Incorrect'));
                                     @endphp
-                                    <span class="status-badge {{ $badgeClass }}" 
-                                          style="{{ $badgeClass === 'warning' ? 'background: rgba(245, 158, 11, 0.1); color: #d97706; border-color: rgba(245, 158, 11, 0.2);' : '' }}">
-                                        <i class="fas fa-{{ $badgeIcon }}"></i>
-                                        {{ $badgeText }}
-                                    </span>
+                                    <div class="review-badges-row" style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <span class="status-badge {{ $badgeClass }}" 
+                                              style="{{ $badgeClass === 'warning' ? 'background: rgba(245, 158, 11, 0.1); color: #d97706; border-color: rgba(245, 158, 11, 0.2);' : '' }}">
+                                            <i class="fas fa-{{ $badgeIcon }}"></i>
+                                            {{ $badgeText }}
+                                        </span>
+
+                                        @if(($question['type'] ?? 'mcq') === 'mcq')
+                                            <button class="reveal-toggle" onclick="toggleLocalAnswer({{ $index }}, this)">
+                                                <i class="far fa-eye"></i> <span>Reveal Answer</span>
+                                            </button>
+                                        @endif
+                                    </div>
                                 </div>
 
                                 @if(!empty($question['preamble']))
@@ -1597,8 +1636,38 @@
                                     $hasSubQuestions = !empty($question['sub_questions']) && count($question['sub_questions']) > 0;
                                 @endphp
 
-                                @if($hasMainContent || !$hasSubQuestions)
-                                    <h3 class="question-text">{!! $sanitizeMath($question['question']) !!}</h3>
+                                @if($qType === 'essay')
+                                    <div class="essay-shared-content-box" style="background: rgba(239, 246, 255, 0.5); border: 1px solid #dbeafe; border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem;">
+                                        @if($hasMainContent || !$hasSubQuestions)
+                                            <div style="font-size: 0.75rem; font-weight: 700; color: #3b82f6; text-transform: uppercase; margin-bottom: 0.75rem;">
+                                                {{ $hasSubQuestions ? 'Shared Content / Instructions' : 'Question Text' }}
+                                            </div>
+                                            <h3 class="question-text" style="margin-bottom: 0;">{!! $sanitizeMath($question['question']) !!}</h3>
+                                        @endif
+
+                                        @if(!empty($question['correct_answer']))
+                                            <div style="margin-top: 1.5rem; border-top: 1px dashed #bfdbfe; padding-top: 1.5rem;">
+                                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                                    <span style="font-size: 0.875rem; font-weight: 600; color: #60a5fa;">{{ $hasSubQuestions ? 'SHARED CONTENT REFERENCE ANSWER' : 'REFERENCE ANSWER (SAMPLE)' }}</span>
+                                                    <button class="reveal-toggle" onclick="toggleLocalAnswer({{ $index }}, this)">
+                                                        <i class="far fa-eye"></i> <span>Reveal Answer</span>
+                                                    </button>
+                                                </div>
+                                                <div class="sample-answer-box" style="background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.25rem;">
+                                                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--success-green); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                                        <i class="fas fa-check-circle"></i> Correct Answer / Model Response
+                                                    </div>
+                                                    <div class="sample-content" style="font-size: 1.125rem; line-height: 1.7; color: var(--gray-900);">
+                                                        {!! $sanitizeMath($question['correct_answer']) !!}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endif
+                                    </div>
+                                @else
+                                    @if($hasMainContent || !$hasSubQuestions)
+                                        <h3 class="question-text">{!! $sanitizeMath($question['question']) !!}</h3>
+                                    @endif
                                 @endif
 
                                 <div class="question-layout">
@@ -1636,14 +1705,25 @@
                                             @if($hasSubQuestions)
                                                 <div class="sub-questions-review" style="display: flex; flex-direction: column; gap: 1.5rem;">
                                                     @foreach($question['sub_questions'] as $sIdx => $sub)
-                                                        <div class="sub-review-item" style="border-left: 3px solid var(--primary-blue); padding-left: 1.5rem; margin-bottom: 1rem;">
-                                                            <div class="sub-q-header" style="font-weight: 700; color: var(--gray-900); margin-bottom: 0.5rem;">
-                                                                @if(!$hasMainContent && $sIdx === 0)
-                                                                    {{ $index + 1 }}{{ $sub['label'] }})
-                                                                @else
-                                                                    {{ $sub['label'] }})
+                                                        <div class="sub-review-item answer-hidden" id="sub-{{ $index }}-{{ $sIdx }}" style="border-left: 3px solid var(--primary-blue); padding-left: 1.5rem; margin-bottom: 2rem;">
+                                                            <div class="sub-q-header" style="font-weight: 700; color: var(--gray-900); margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                                                                <div>
+                                                                    @if(!$hasMainContent && $sIdx === 0)
+                                                                        {{ $index + 1 }}{{ $sub['label'] }})
+                                                                    @else
+                                                                        {{ $sub['label'] }})
+                                                                    @endif
+                                                                    <span style="font-size: 0.75rem; color: var(--gray-500); margin-left: 0.5rem;">[{{ $sub['points'] }} Marks]</span>
+                                                                </div>
+                                                                
+                                                                @php
+                                                                    $subSample = $sub['sample_answer'] ?? ($sub['correct_answer'] ?? null);
+                                                                @endphp
+                                                                @if(!empty($subSample))
+                                                                    <button class="reveal-toggle" onclick="toggleSubAnswer({{ $index }}, {{ $sIdx }}, this)">
+                                                                        <i class="far fa-eye"></i> <span>Sample Answer</span>
+                                                                    </button>
                                                                 @endif
-                                                                <span style="font-size: 0.75rem; color: var(--gray-500); margin-left: 0.5rem;">[{{ $sub['points'] }} Marks]</span>
                                                             </div>
                                                             <div class="sub-q-text" style="font-size: 1rem; color: var(--gray-700); margin-bottom: 1rem;">{!! $sanitizeMath($sub['text']) !!}</div>
                                                             
@@ -1676,14 +1756,14 @@
                                                                 @endif
                                                             </div>
 
-                                                            <!-- Sample Answer -->
-                                                            @if(!empty($sub['sample_answer']))
+                                                            <!-- Sub-Question Sample Answer -->
+                                                            @if(!empty($subSample))
                                                                 <div class="sample-answer-box" style="background: var(--success-green-light); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1.25rem;">
                                                                     <div style="font-size: 0.75rem; font-weight: 700; color: var(--success-green); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
                                                                         <i class="fas fa-check-circle"></i> Sample Answer
                                                                     </div>
                                                                     <div class="sample-content" style="font-size: 1rem; line-height: 1.6; color: var(--gray-900);">
-                                                                        {!! $sanitizeMath($sub['sample_answer']) !!}
+                                                                        {!! $sanitizeMath($subSample) !!}
                                                                     </div>
                                                                 </div>
                                                             @endif
@@ -1715,19 +1795,9 @@
                                                         </div>
                                                     @endif
                                                 </div>
-
-                                                <!-- Sample Answer -->
-                                                @if(!empty($question['correct_answer']))
-                                                    <div class="sample-answer-box" style="background: var(--success-green-light); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1.25rem;">
-                                                        <div style="font-size: 0.75rem; font-weight: 700; color: var(--success-green); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                                                            <i class="fas fa-check-circle"></i> Sample Answer
-                                                        </div>
-                                                        <div class="sample-content" style="font-size: 1.125rem; line-height: 1.7; color: var(--gray-900);">
-                                                            {!! $sanitizeMath($question['correct_answer']) !!}
-                                                        </div>
-                                                    </div>
-                                                @endif
                                             @endif
+
+
                                         </div>
                                     @endif
                                 </div>
@@ -1978,14 +2048,28 @@
         });
     </script>
     <script>
-        function toggleAnswersVisibility() {
-            const container = document.getElementById('questionsContainer');
-            const toggle = document.getElementById('answersToggle');
-            const isHidden = container.classList.toggle('answers-hidden');
-            toggle.classList.toggle('toggle-active', !isHidden);
+        function toggleLocalAnswer(index, btn) {
+            const card = document.getElementById(`question-${index}`);
+            const isHidden = card.classList.toggle('answers-hidden');
             
-            const label = toggle.querySelector('.toggle-label');
-            label.textContent = isHidden ? 'Show Correct Answers' : 'Hide Correct Answers';
+            const icon = btn.querySelector('i');
+            const span = btn.querySelector('span');
+            
+            btn.classList.toggle('active', !isHidden);
+            icon.className = isHidden ? 'far fa-eye' : 'far fa-eye-slash';
+            span.textContent = isHidden ? 'Reveal Answer' : 'Hide Answer';
+        }
+
+        function toggleSubAnswer(qIdx, sIdx, btn) {
+            const item = document.getElementById(`sub-${qIdx}-${sIdx}`);
+            const isHidden = item.classList.toggle('answer-hidden');
+            
+            const icon = btn.querySelector('i');
+            const span = btn.querySelector('span');
+            
+            btn.classList.toggle('active', !isHidden);
+            icon.className = isHidden ? 'far fa-eye' : 'far fa-eye-slash';
+            span.textContent = isHidden ? 'Sample Answer' : 'Hide Answer';
         }
     </script>
 </body>

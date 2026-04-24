@@ -483,7 +483,7 @@
                 Start Quiz
             </button>
 
-            @if(isset($quiz['encoded_id']))
+            @if(isset($quiz['encoded_id']) && ($quiz['essay_questions_count'] ?? 0) > 0)
             <a href="{{ route('quiz.essay', $quiz['encoded_id']) }}" class="btn-essay">
                 <i class="fas fa-pen-nib"></i>
                 View Essay Questions Format

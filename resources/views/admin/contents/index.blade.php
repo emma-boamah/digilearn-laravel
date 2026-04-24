@@ -3196,13 +3196,24 @@
                     </div>
                 ` : `
                     <!-- Structured Essay Sections -->
-                    <div class="mb-6 editor-wrapper essay-question-main-text">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2 main-question-label">Question Text</label>
-                        <p class="text-xs text-gray-500 mb-2 main-question-hint hidden">Leave this blank to start directly with Question 1a, 1b, etc.</p>
-                         ${toolbarHtml}
-                         <div class="rich-text-editor question-text" contenteditable="true" 
-                             placeholder="Type the question or shared context here..."
-                             aria-label="Question text">${question.question}</div>
+                    <div class="mb-6 p-5 border border-blue-100 rounded-xl bg-blue-50/30">
+                        <div class="mb-6 editor-wrapper essay-question-main-text">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2 main-question-label">Question Text</label>
+                            <p class="text-xs text-gray-500 mb-2 main-question-hint hidden">Leave this blank to start directly with Question 1a, 1b, etc.</p>
+                             ${toolbarHtml}
+                             <div class="rich-text-editor question-text bg-white" contenteditable="true" 
+                                 placeholder="Type the question or shared context here..."
+                                 aria-label="Question text">${question.question}</div>
+                        </div>
+
+                        <!-- Essay Sample Answer -->
+                        <div class="editor-wrapper">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2 main-answer-label">Reference Answer (Sample)</label>
+                             ${toolbarHtml}
+                             <div class="rich-text-editor correct-answer bg-white" contenteditable="true" 
+                                 placeholder="Describe the expected answer for grading reference..."
+                                 aria-label="Sample answer">${question.correct_answer}</div>
+                        </div>
                     </div>
 
                     <div class="sub-questions-container" id="subQuestionsContainer_${question.id}">
@@ -3213,15 +3224,6 @@
                         <button type="button" class="add-sub-question-btn" id="addSubQuestionBtn_${question.id}">
                             <i class="fas fa-plus-circle"></i> Add Sub-part (a, b, c...)
                         </button>
-                    </div>
-
-                    <!-- Essay Sample Answer -->
-                    <div class="mb-6 editor-wrapper">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Reference Answer (Sample)</label>
-                         ${toolbarHtml}
-                         <div class="rich-text-editor correct-answer" contenteditable="true" 
-                             placeholder="Describe the expected answer for grading reference..."
-                             aria-label="Sample answer">${question.correct_answer}</div>
                     </div>
                 `}
 
@@ -3363,6 +3365,11 @@
                     const subId = subItem.dataset.subId;
                     const subQuestion = question.sub_questions.find(sq => sq.id == subId);
                     if (subQuestion) subQuestion.text = finalHtml;
+                } else if (editor.classList.contains('sub-question-answer')) {
+                    const subItem = editor.closest('.sub-question-item');
+                    const subId = subItem.dataset.subId;
+                    const subQuestion = question.sub_questions.find(sq => sq.id == subId);
+                    if (subQuestion) subQuestion.sample_answer = finalHtml;
                 } else if (editor.classList.contains('option-text')) {
                     const allOptions = div.querySelectorAll('.option-text');
                     const index = Array.from(allOptions).indexOf(editor);
@@ -3440,6 +3447,7 @@
                         id: subId,
                         label: subLabel,
                         text: '',
+                        sample_answer: '',
                         points: 1
                     };
                     question.sub_questions.push(subQuestion);
@@ -3453,6 +3461,7 @@
                 function updateTotalPoints() {
                     const mainLabel = div.querySelector('.main-question-label');
                     const mainHint = div.querySelector('.main-question-hint');
+                    const mainAnswerLabel = div.querySelector('.main-answer-label');
                     
                     // Determine parent question number
                     const qItems = Array.from(document.querySelectorAll('.question-item'));
@@ -3461,6 +3470,7 @@
                     if (question.sub_questions.length > 0) {
                         if (mainLabel) mainLabel.textContent = 'Shared Content / Instructions (Optional)';
                         if (mainHint) mainHint.classList.remove('hidden');
+                        if (mainAnswerLabel) mainAnswerLabel.textContent = 'Shared Content Reference Answer (Optional)';
                         
                         // Re-label sub-questions
                         div.querySelectorAll('.sub-question-item').forEach((item, idx) => {
@@ -3484,6 +3494,7 @@
                     } else {
                         if (mainLabel) mainLabel.textContent = 'Question Text';
                         if (mainHint) mainHint.classList.add('hidden');
+                        if (mainAnswerLabel) mainAnswerLabel.textContent = 'Reference Answer (Sample)';
                         if (questionPoints) {
                             questionPoints.readOnly = false;
                             questionPoints.classList.remove('bg-gray-50');
@@ -3504,10 +3515,18 @@
                             </button>
                         </div>
                         <div class="editor-wrapper mb-3">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Question Text:</label>
                             ${toolbarHtml}
                             <div class="rich-text-editor sub-question-text" contenteditable="true" 
-                                 placeholder="Type response here..."
-                                 aria-label="Sub-question text"></div>
+                                 placeholder="Type sub-question part here..."
+                                 aria-label="Sub-question text">${subQuestion.text || ''}</div>
+                        </div>
+                        <div class="editor-wrapper mb-3">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block text-blue-600">Sample/Model Answer (Required for AI Grading):</label>
+                            ${toolbarHtml}
+                            <div class="rich-text-editor sub-question-answer" contenteditable="true" 
+                                 placeholder="Reference answer for this part..."
+                                 aria-label="Sub-question sample answer">${subQuestion.sample_answer || ''}</div>
                         </div>
                         <div class="sub-question-footer">
                             <label class="text-xs font-bold text-gray-500 uppercase">Marks for this part:</label>
@@ -3516,12 +3535,11 @@
                         </div>
                     `;
 
-                    // Handle input
-                    const editor = subDiv.querySelector('.sub-question-text');
-                    editor.addEventListener('input', () => updateQuestionModelFromEditor(editor));
-                    
-                    // Handle toolbar
-                    setupEditorToolbar(subDiv, editor);
+                    // Handle input and toolbar for all editors in this sub-question
+                    subDiv.querySelectorAll('.rich-text-editor').forEach(editor => {
+                        editor.addEventListener('input', () => updateQuestionModelFromEditor(editor));
+                        setupEditorToolbar(subDiv, editor);
+                    });
 
                     // Handle removal
                     subDiv.querySelector('.remove-sub-question').addEventListener('click', () => {

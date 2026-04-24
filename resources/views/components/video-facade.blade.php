@@ -80,7 +80,7 @@ use Illuminate\Support\Str;
             $currentLevelGroup = $attributes->get('data-selected-level', session('selected_level_group',
             Auth::user()->current_level_group ?? 'primary-lower'));
             @endphp
-            @if($isBece || ($isWassce && str_contains(strtolower($currentLevelGroup), 'shs')))
+            @if(($isBece && (str_contains(strtolower($currentLevelGroup), 'jhs') || str_contains(strtolower($currentLevelGroup), 'shs'))) || ($isWassce && str_contains(strtolower($currentLevelGroup), 'shs')))
             <div class="category-badge {{ $isBece ? 'bece-badge' : 'wassce-badge' }}">
                 {{ strtoupper($category['name']) }}
             </div>

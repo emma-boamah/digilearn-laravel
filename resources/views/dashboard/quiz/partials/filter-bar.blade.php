@@ -97,7 +97,7 @@
         $levelGroup = $selectedLevelGroup ?? session('selected_level_group', Auth::user()->current_level_group ??
         'primary-lower');
         @endphp
-        @if($catSlug !== 'normal' && ($isBece || ($isWassce && str_contains(strtolower($levelGroup), 'shs')) ||
+        @if($catSlug !== 'normal' && (($isBece && (str_contains(strtolower($levelGroup), 'jhs') || str_contains(strtolower($levelGroup), 'shs'))) || ($isWassce && str_contains(strtolower($levelGroup), 'shs')) ||
         (!$isBece && !$isWassce)))
         <div class="subject-chip {{ $context === $category->slug ? 'active' : '' }}"
             data-context="{{ $category->slug }}">
