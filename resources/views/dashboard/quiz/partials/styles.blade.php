@@ -288,12 +288,12 @@
         margin-left: var(--sidebar-width-expanded);
         width: calc(100vw - var(--sidebar-width-expanded));
         max-width: calc(100vw - var(--sidebar-width-expanded));
-        margin-top: calc(250px + var(--safe-area-inset-top, 0px)) !important;
+        margin-top: calc({{ $mainContentTopOffset ?? '250px' }} + var(--safe-area-inset-top, 0px)) !important;
         /* Header (60) + Filter (56) = 116 */
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         overflow-x: hidden;
-        min-height: calc(100vh - 250px);
-        min-height: calc(100dvh - 250px);
+        min-height: calc(100vh - {{ $mainContentTopOffset ?? '250px' }});
+        min-height: calc(100dvh - {{ $mainContentTopOffset ?? '250px' }});
     }
 
 

@@ -1,4 +1,9 @@
 <!DOCTYPE html>
+@php
+    $currentLevelGroup = $selectedLevelGroup ?? session('selected_level_group', Auth::user()->current_level_group ?? 'primary-lower');
+    $isPrimaryLevel = str_contains(strtolower($currentLevelGroup), 'primary') || str_contains(strtolower($currentLevelGroup), 'grade');
+    $mainContentTopOffset = $isPrimaryLevel ? '200px' : '250px';
+@endphp
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
