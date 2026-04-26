@@ -65,11 +65,23 @@
                     <!-- Title (Editable for Quizzes, maybe read-only for Videos if Title is fixed) -->
                     <div class="mb-6">
                         <label for="title" class="block text-sm font-medium text-gray-700 mb-2">
-                            Title <span class="text-red-500">*</span>
+                            {{ $contentType === 'video' ? 'Lesson / Video Title' : 'Quiz Title' }} <span class="text-red-500">*</span>
                         </label>
                         <input type="text" id="title" name="title" value="{{ $content->title }}" required
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
+
+                    @if($contentType === 'video' && $content->quiz)
+                    <div class="mb-6">
+                        <label for="quiz_title" class="block text-sm font-medium text-gray-700 mb-2">
+                            Associated Quiz Title
+                        </label>
+                        <input type="text" id="quiz_title" name="quiz_title" value="{{ $content->quiz->title }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Leave empty to use the video's title">
+                        <p class="text-xs text-gray-500 mt-1">If specified, this title will be shown on the quiz dashboard instead of the Lesson / Video title.</p>
+                    </div>
+                    @endif
 
                     <div class="mb-6">
                         <label for="description" class="block text-sm font-medium text-gray-700 mb-2">

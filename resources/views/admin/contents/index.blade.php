@@ -1512,9 +1512,10 @@
 
                 <!-- Title -->
                 <div class="mb-4">
-                    <label for="title" class="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                    <label for="title" class="block text-sm font-medium text-gray-700 mb-2">Lesson / Main Title</label>
                     <input type="text" id="title" required
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <p class="text-xs text-gray-500 mt-1">This is the primary name for the content package.</p>
                 </div>
 
                 <!-- Description -->
@@ -1609,7 +1610,13 @@
             <!-- Step 2: Documents Upload -->
             <div class="step-pane" id="step2">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Add Related Documents <span class="text-sm text-gray-500">(Optional)</span></h3>
-                <p class="text-gray-600 mb-4">Upload PDF, DOC, or DOCX files related to this video lesson. Max file size: 32GB per document.</p>
+                <p class="text-gray-600 mb-2">Upload PDF, DOC, or DOCX files related to this lesson. Max file size: 32GB per document.</p>
+                <div class="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <p class="text-sm text-gray-600">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Document titles will be automatically set to their original filenames.
+                    </p>
+                </div>
 
                 <div id="documentsList" class="space-y-3 mb-4">
                     <!-- Documents will be added here -->
@@ -1630,6 +1637,14 @@
                     <!-- Quiz Settings -->
                     <div class="bg-gray-50 p-4 rounded-lg">
                         <h4 class="font-medium text-gray-900 mb-3">Quiz Settings</h4>
+                        
+                        <div class="mb-4">
+                            <label for="quiz_title" class="block text-sm font-medium text-gray-700 mb-2">Quiz Title (Optional)</label>
+                            <input type="text" id="quiz_title" name="quiz_title" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   placeholder="Leave empty to use the Lesson / Main Title">
+                        </div>
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <!-- Difficulty Level -->
                             <div>
@@ -2939,8 +2954,16 @@
 
         // Step 3: Quiz Settings
         function initializeQuizSettings() {
+            const quizTitleInput = document.getElementById('quiz_title');
             const difficultySelect = document.getElementById('quiz_difficulty');
             const timeLimitInput = document.getElementById('quiz_time_limit');
+
+            if (quizTitleInput) {
+                uploadData.quiz.quiz_title = quizTitleInput.value;
+                quizTitleInput.addEventListener('input', (e) => {
+                    uploadData.quiz.quiz_title = e.target.value;
+                });
+            }
 
             if (difficultySelect) {
                 // Set initial value
@@ -4399,6 +4422,7 @@
                 const timeLimitMinutes = finalData.quiz.time_limit_minutes || 15;
 
                 formData.append('quiz_data', JSON.stringify(quizData));
+                formData.append('quiz_title', finalData.quiz.quiz_title || '');
                 formData.append('difficulty_level', difficultyLevel);
                 formData.append('time_limit_minutes', timeLimitMinutes);
                 formData.append('shuffle_questions', finalData.quiz.shuffle_questions ? '1' : '0');
