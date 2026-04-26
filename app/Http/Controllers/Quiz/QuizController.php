@@ -8,7 +8,17 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use \App\Models\Quiz;
+use Illuminate\Support\Str;
+use App\Models\Quiz;
+use App\Models\QuizAttempt;
+use App\Models\LevelGroup;
+use App\Models\QuizViolation;
+use App\Models\ContentCategory;
+use App\Models\User;
+use App\Models\UserProgress;
+use App\Models\QuizRating;
+use App\Services\SubscriptionAccessService;
+use App\Services\UrlObfuscator;
 
 class QuizController extends Controller
 {
@@ -33,9 +43,9 @@ class QuizController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        
-        $levelGroups = \App\Models\LevelGroup::with('levels')->orderBy('display_order')->get();
-        
+
+        $levelGroups = LevelGroup::with('levels')->orderBy('display_order')->get();
+
         $context = $request->query('context', 'all');
         $selectedLevelGroup = $request->query('level_group', session('selected_level_group', 'grade-1-3'));
         $userId = Auth::id();
@@ -44,14 +54,14 @@ class QuizController extends Controller
         $requiresSubscription = false;
         $allowedGradeLevels = [];
         if (!$user || !$user->is_superuser) {
-            $allowedGradeLevels = \App\Services\SubscriptionAccessService::getAllowedGradeLevels($user);
+            $allowedGradeLevels = SubscriptionAccessService::getAllowedGradeLevels($user);
             if (empty($allowedGradeLevels)) {
                 $requiresSubscription = true;
             }
         }
 
         // Grade Unification & Locked Logic
-        $group = \App\Models\LevelGroup::where('slug', $selectedLevelGroup)->with('levels')->first();
+        $group = LevelGroup::where('slug', $selectedLevelGroup)->with('levels')->first();
         $canonicalGrades = $group ? $group->levels->pluck('title')->toArray() : [];
         $unlockedGrades = $canonicalGrades;
 
@@ -76,10 +86,10 @@ class QuizController extends Controller
 
         // Get base quiz data with caching
         $baseQuizzes = Cache::remember($cacheKey, $cacheDuration, function () use ($selectedLevelGroup, $validSelectedGrade, $userId, $allowedGradeLevels, $requiresSubscription, $user, $context) {
-            $query = \App\Models\Quiz::with(['uploader', 'ratings', 'attempts', 'subject', 'categories']);
+            $query = Quiz::with(['uploader', 'ratings', 'attempts', 'subject', 'categories']);
 
             if ($context && $context !== 'all') {
-                $query->whereHas('categories', function($q) use ($context) {
+                $query->whereHas('categories', function ($q) use ($context) {
                     $q->where('slug', $context);
                 });
             }
@@ -90,7 +100,7 @@ class QuizController extends Controller
                 $query->where('grade_level', $validSelectedGrade);
             } elseif ($selectedLevelGroup && $selectedLevelGroup !== 'all') {
                 // Try to find levels belonging to this group
-                $group = \App\Models\LevelGroup::where('slug', $selectedLevelGroup)->with('levels')->first();
+                $group = LevelGroup::where('slug', $selectedLevelGroup)->with('levels')->first();
                 if ($group && $group->levels->count() > 0) {
                     $query->whereIn('grade_level', $group->levels->pluck('title')->toArray());
                 } else {
@@ -123,8 +133,8 @@ class QuizController extends Controller
         // Filter by search if provided
         if ($search) {
             $baseQuizzes = $baseQuizzes->filter(function ($quiz) use ($search) {
-                return stripos($quiz->title, $search) !== false || 
-                       ($quiz->subject && stripos($quiz->subject->name, $search) !== false);
+                return stripos($quiz->title, $search) !== false ||
+                    ($quiz->subject && stripos($quiz->subject->name, $search) !== false);
             });
         }
 
@@ -132,7 +142,7 @@ class QuizController extends Controller
         $subjectSlug = $request->query('subject');
         if ($subjectSlug && $subjectSlug !== 'all') {
             $baseQuizzes = $baseQuizzes->filter(function ($quiz) use ($subjectSlug) {
-                return \Illuminate\Support\Str::slug($quiz->subject?->name) === $subjectSlug;
+                return Str::slug($quiz->subject?->name) === $subjectSlug;
             });
         }
 
@@ -163,7 +173,7 @@ class QuizController extends Controller
 
                 return [
                     'id' => $quiz->id,
-                    'encoded_id' => \App\Services\UrlObfuscator::encode($quiz->id),
+                    'encoded_id' => UrlObfuscator::encode($quiz->id),
                     'title' => $quiz->title,
                     'subject' => $quiz->subject?->name,
                     'grade_level' => $quiz->grade_level,
@@ -186,7 +196,7 @@ class QuizController extends Controller
                         'total' => (int) ($userAttempts->first()->total_questions ?? 0),
                         'percentage' => (int) round($userAttempts->first()->score_percentage ?? 0),
                     ] : null,
-                    'categories' => $quiz->categories->map(function($cat) {
+                    'categories' => $quiz->categories->map(function ($cat) {
                         return [
                             'id' => $cat->id,
                             'name' => $cat->name,
@@ -200,7 +210,7 @@ class QuizController extends Controller
 
         // Get available subjects for the subjects filter
         $subjects = $this->getSubjectsFromQuizzes($quizzes);
-        $categories = \App\Models\ContentCategory::orderBy('name')->get();
+        $categories = ContentCategory::orderBy('name')->get();
 
         return view('dashboard.quiz.index', compact('quizzes', 'selectedLevelGroup', 'requiresSubscription', 'subjects', 'canonicalGrades', 'unlockedGrades', 'validSelectedGrade', 'levelGroups', 'context', 'categories'));
     }
@@ -225,7 +235,7 @@ class QuizController extends Controller
         ];
 
         $uniqueSubjects = $quizzes->pluck('subject')->unique()->filter()->values();
-        
+
         $subjects = collect([
             [
                 'name' => 'All',
@@ -239,7 +249,7 @@ class QuizController extends Controller
             $count = $quizzes->where('subject', $subjectName)->count();
             $subjects->push([
                 'name' => $subjectName,
-                'slug' => \Illuminate\Support\Str::slug($subjectName),
+                'slug' => Str::slug($subjectName),
                 'icon' => $subjectIcons[$subjectName] ?? 'fas fa-book-open',
                 'count' => $count
             ]);
@@ -261,16 +271,16 @@ class QuizController extends Controller
         }
 
         // Add encoded ID for URL generation
-        $quiz['encoded_id'] = \App\Services\UrlObfuscator::encode($quizId);
+        $quiz['encoded_id'] = UrlObfuscator::encode($quizId);
 
         return view('dashboard.quiz.instructions', compact('quiz'));
     }
-    
+
     //Convert duration to seconds
     private function convertDurationToSeconds($duration)
     {
         if (preg_match('/(\d+)\s*min/', $duration, $matches)) {
-            return (int)$matches[1] * 60;
+            return (int) $matches[1] * 60;
         }
         return 180; // Default to 3 minutes
     }
@@ -299,12 +309,12 @@ class QuizController extends Controller
             // For now, we allow taking over if the last heartbeat is old (> 1 min)
             $heartbeatKey = "quiz_heartbeat_{$userId}_{$quizId}";
             $lastHeartbeat = Cache::get($heartbeatKey);
-            
+
             if ($lastHeartbeat && (now()->timestamp - $lastHeartbeat) < 60) {
-                 return redirect()->route('quiz.index')->with('error', 'This quiz is already active on another device/browser.');
+                return redirect()->route('quiz.index')->with('error', 'This quiz is already active on another device/browser.');
             }
         }
-        
+
         // Bind this session to the attempt
         Cache::put($sessionLockKey, $currentSessionId, 3600);
         // --- END SESSION LOCK ---
@@ -316,7 +326,7 @@ class QuizController extends Controller
         // --- END SHUFFLING ---
 
         // Add encoded ID for URL generation
-        $quiz['encoded_id'] = \App\Services\UrlObfuscator::encode($quizId);
+        $quiz['encoded_id'] = UrlObfuscator::encode($quizId);
 
         // Convert duration to seconds
         $seconds = (is_array($quiz) && isset($quiz['time_limit_minutes']) ? $quiz['time_limit_minutes'] : 3) * 60;
@@ -338,15 +348,15 @@ class QuizController extends Controller
         }
 
         // Add encoded ID for URL generation
-        $quiz['encoded_id'] = \App\Services\UrlObfuscator::encode($quizId);
+        $quiz['encoded_id'] = UrlObfuscator::encode($quizId);
 
         // Filter for essay questions ONLY
-        $quiz['questions'] = collect($quiz['questions'] ?? [])->filter(function($q) {
+        $quiz['questions'] = collect($quiz['questions'] ?? [])->filter(function ($q) {
             return ($q['type'] ?? '') === 'essay';
         })->values()->all();
 
         if (empty($quiz['questions'])) {
-            return redirect()->route('quiz.instructions', \App\Services\UrlObfuscator::encode($quizId))
+            return redirect()->route('quiz.instructions', UrlObfuscator::encode($quizId))
                 ->with('error', 'This quiz does not contain any essay questions.');
         }
 
@@ -360,9 +370,9 @@ class QuizController extends Controller
      */
     public function submitEssay(Request $request, $quizId)
     {
-        $quizId = \App\Services\UrlObfuscator::decode($quizId) ?? $quizId;
+        $quizId = UrlObfuscator::decode($quizId) ?? $quizId;
         $quiz = $this->getQuizById($quizId);
-        
+
         if (!$quiz) {
             return redirect()->route('quiz.index')->with('error', 'Quiz not found.');
         }
@@ -375,7 +385,7 @@ class QuizController extends Controller
 
         $timeSpent = (int) $request->input('time_spent', 0);
         $answers = json_decode($request->input('answers', '[]'), true);
-        
+
         // If answers JSON is missing/empty (legacy fallback), store the whole essay at index 0
         if (empty($answers)) {
             $answers = [0 => $request->input('essay')];
@@ -385,7 +395,7 @@ class QuizController extends Controller
         $totalQuestions = count($questions);
 
         // Record the attempt for review visibility
-        \App\Models\QuizAttempt::create([
+        QuizAttempt::create([
             'user_id' => Auth::id(),
             'quiz_id' => $quizId,
             'quiz_title' => $quiz['title'] ?? 'Essay Quiz',
@@ -398,7 +408,7 @@ class QuizController extends Controller
             'time_taken_seconds' => $timeSpent,
             'passed' => false,
             'status' => 'pending', // Added: Mark as pending for instructor review
-            'attempt_number' => \App\Models\QuizAttempt::where('user_id', Auth::id())->where('quiz_id', $quizId)->max('attempt_number') + 1,
+            'attempt_number' => QuizAttempt::where('user_id', Auth::id())->where('quiz_id', $quizId)->max('attempt_number') + 1,
             'answers' => $answers,
             'question_details' => $questions,
             'started_at' => now()->subSeconds($timeSpent),
@@ -406,7 +416,7 @@ class QuizController extends Controller
         ]);
 
         return redirect()->route('quiz.results', [
-            'quiz' => \App\Services\UrlObfuscator::encode($quizId),
+            'quiz' => UrlObfuscator::encode($quizId),
             'score' => 0,
             'total' => $totalQuestions,
             'percentage' => 0,
@@ -428,7 +438,7 @@ class QuizController extends Controller
         $userId = Auth::id();
 
         // Store violation record
-        \App\Models\QuizViolation::recordViolation(
+        QuizViolation::recordViolation(
             $userId,
             $quizId,
             $request->input('type'),
@@ -456,9 +466,9 @@ class QuizController extends Controller
     {
         $userId = Auth::id();
         $quiz = $this->getQuizById($quizId);
-        
+
         // 1. Record the appeal request as a violation entry
-        \App\Models\QuizViolation::recordViolation(
+        QuizViolation::recordViolation(
             $userId,
             $quizId,
             'appeal_request',
@@ -466,12 +476,12 @@ class QuizController extends Controller
         );
 
         // 2. Identify all superusers (admins)
-        $admins = \App\Models\User::where('is_superuser', true)->get();
-        
+        $admins = User::where('is_superuser', true)->get();
+
         // 3. Prepare notification details
         $studentName = Auth::user()->name;
         $quizTitle = is_array($quiz) && isset($quiz['title']) ? $quiz['title'] : 'Quiz #' . $quizId;
-        
+
         // 4. Send AdminNotification (In-App & Email)
         foreach ($admins as $admin) {
             $admin->notify(new \App\Notifications\AdminNotification(
@@ -490,7 +500,7 @@ class QuizController extends Controller
     public function heartbeat(Request $request, $quizId)
     {
         $userId = Auth::id();
-        
+
         // Session Lock Check
         $sessionLockKey = "quiz_session_lock_{$userId}_{$quizId}";
         if (Cache::has($sessionLockKey) && Cache::get($sessionLockKey) !== session()->getId()) {
@@ -525,7 +535,7 @@ class QuizController extends Controller
         // Session Lock Check
         $sessionLockKey = "quiz_session_lock_{$userId}_{$quizId}";
         if (Cache::has($sessionLockKey) && Cache::get($sessionLockKey) !== session()->getId()) {
-            \App\Models\QuizViolation::recordViolation(
+            QuizViolation::recordViolation(
                 $userId,
                 $quizId,
                 'session_hijack',
@@ -569,15 +579,15 @@ class QuizController extends Controller
                 'quiz_id' => $quizId,
                 'ip' => $request->ip()
             ]);
-            
-            \App\Models\QuizViolation::recordViolation(
+
+            QuizViolation::recordViolation(
                 Auth::id(),
                 $quizId,
                 'bot_detected',
                 'Automated tool/scraper detected via hidden honeypot trap.',
                 10 // Instant lockout
             );
-            
+
             $request->merge(['failed_due_to_violation' => true]);
         }
 
@@ -618,10 +628,10 @@ class QuizController extends Controller
         $userId = Auth::id();
         $heartbeatKey = "quiz_heartbeat_{$userId}_{$quizId}";
         $pointsKey = "quiz_points_{$userId}_{$quizId}";
-        
+
         $lastHeartbeat = Cache::get($heartbeatKey);
         $currentPoints = Cache::get($pointsKey, 0);
-        
+
         // If no heartbeat found or it's too old (> 2 minutes), it's a violation
         // We give 2 minutes because a user might have a slow connection or brief dip
         if (!$lastHeartbeat || (now()->timestamp - $lastHeartbeat > 120)) {
@@ -631,8 +641,8 @@ class QuizController extends Controller
                 'last_heartbeat' => $lastHeartbeat
             ]);
             $failedDueToViolation = true;
-            
-            \App\Models\QuizViolation::recordViolation(
+
+            QuizViolation::recordViolation(
                 $userId,
                 $quizId,
                 'heartbeat_failure',
@@ -768,7 +778,7 @@ class QuizController extends Controller
         Log::info('About to redirect to results page');
 
         return redirect()->route('quiz.results', [
-            'quiz' => \App\Services\UrlObfuscator::encode($quizId),
+            'quiz' => UrlObfuscator::encode($quizId),
             'score' => is_array($result) && isset($result['score']) ? $result['score'] : 0,
             'total' => is_array($result) && isset($result['total']) ? $result['total'] : 0,
             'percentage' => is_array($result) && isset($result['percentage']) ? $result['percentage'] : 0,
@@ -785,22 +795,22 @@ class QuizController extends Controller
         $total = $request->input('total', session('total', 10));
         $percentage = $request->input('percentage', session('percentage', 0));
         $encodedQuizId = $request->input('quiz', session('quiz_id'));
-        $quizId = \App\Services\UrlObfuscator::decode($encodedQuizId) ?? $encodedQuizId;
+        $quizId = UrlObfuscator::decode($encodedQuizId) ?? $encodedQuizId;
         $failedDueToViolation = $request->input('failed_due_to_violation', session('failed_due_to_violation', false));
 
         $quiz = $this->getQuizById($quizId);
-        $quiz['encoded_id'] = \App\Services\UrlObfuscator::encode($quizId);
+        $quiz['encoded_id'] = UrlObfuscator::encode($quizId);
         $duration = is_array($quiz) && isset($quiz['duration']) ? $quiz['duration'] : '3 min';
 
         // Get user's data for rank and streak
         $userId = Auth::id();
-        $userTotalQuizzesPassed = \App\Models\UserProgress::where('user_id', $userId)
+        $userTotalQuizzesPassed = UserProgress::where('user_id', $userId)
             ->sum('completed_quizzes');
         $rank = $this->calculateUserRank($userId, $userTotalQuizzesPassed);
-        $streak = \App\Models\UserProgress::where('user_id', $userId)->max('current_streak_days') ?? 0;
+        $streak = UserProgress::where('user_id', $userId)->max('current_streak_days') ?? 0;
 
         // Check if user has already rated this quiz
-        $hasRated = \App\Models\QuizRating::where('quiz_id', $quizId)
+        $hasRated = QuizRating::where('quiz_id', $quizId)
             ->where('user_id', $userId)
             ->exists();
 
@@ -809,7 +819,7 @@ class QuizController extends Controller
         $timeTaken = 0;
         if (is_array($quiz) && isset($quiz['questions']) && is_array($quiz['questions'])) {
             // Get the user's last attempt for this quiz
-            $lastAttempt = \App\Models\QuizAttempt::where('user_id', Auth::id())
+            $lastAttempt = QuizAttempt::where('user_id', Auth::id())
                 ->where('quiz_id', $quizId)
                 ->orderBy('completed_at', 'desc')
                 ->first();
@@ -836,11 +846,11 @@ class QuizController extends Controller
                 $qType = $question['type'] ?? 'mcq';
                 $userAnswer = isset($userAnswers[$index]) ? $userAnswers[$index] : null;
                 $correctAnswer = isset($question['correct_answer']) ? $question['correct_answer'] : null;
-                
+
                 // For MCQ, cast to int for comparison. For essay, use string comparison or placeholder
                 if ($qType === 'mcq') {
-                    $userAnswer = $userAnswer !== null ? (int)$userAnswer : null;
-                    $correctAnswer = $correctAnswer !== null ? (int)$correctAnswer : null;
+                    $userAnswer = $userAnswer !== null ? (int) $userAnswer : null;
+                    $correctAnswer = $correctAnswer !== null ? (int) $correctAnswer : null;
                     $userCorrect = $userAnswer === $correctAnswer;
                 } else {
                     // Essays are pending grading initially
@@ -853,11 +863,11 @@ class QuizController extends Controller
                         // Check if total marks for this qIdx is > 0
                         $qMarks = 0;
                         if (!empty($question['sub_questions'])) {
-                            foreach($question['sub_questions'] as $sIdx => $sub) {
-                                $qMarks += (float)($marks["{$index}_{$sIdx}"] ?? 0);
+                            foreach ($question['sub_questions'] as $sIdx => $sub) {
+                                $qMarks += (float) ($marks["{$index}_{$sIdx}"] ?? 0);
                             }
                         } else {
-                            $qMarks = (float)($marks[$index] ?? 0);
+                            $qMarks = (float) ($marks[$index] ?? 0);
                         }
                         $userCorrect = $qMarks > 0;
                     }
@@ -992,8 +1002,8 @@ class QuizController extends Controller
         }
 
         // Seed ensures the order is unique to this user + quiz, but stays consistent if they refresh
-        $seed = (int)$userId + (int)$quizId;
-        
+        $seed = (int) $userId + (int) $quizId;
+
         // Prevent double shuffling if the quiz data is already marked as shuffled for this seed
         if (isset($quiz['_shuffled_seed']) && $quiz['_shuffled_seed'] === $seed) {
             return $quiz;
@@ -1001,16 +1011,16 @@ class QuizController extends Controller
 
         // Deterministic question shuffle (Preamble-aware)
         $questions = $quiz['questions'];
-        
+
         // Group questions by preamble
         $groups = [];
         $currentGroupIndex = -1;
-        
+
         foreach ($questions as $q) {
             $preamble = $q['preamble'] ?? null;
             // Consider it a new preamble if it's not empty and not just an empty paragraph
             $isNewPreamble = !empty(trim($preamble ?? '')) && trim($preamble ?? '') !== '<p><br></p>';
-            
+
             if ($isNewPreamble || $currentGroupIndex === -1) {
                 $currentGroupIndex++;
                 $groups[$currentGroupIndex] = [
@@ -1018,23 +1028,23 @@ class QuizController extends Controller
                     'questions' => []
                 ];
             }
-            
+
             $groups[$currentGroupIndex]['questions'][] = $q;
         }
-        
+
         // Shuffle the groups themselves
         mt_srand($seed);
         shuffle($groups);
-        
+
         // Flatten back to $questions
         $flattenedQuestions = [];
         foreach ($groups as $groupIndex => $group) {
             $groupQuestions = $group['questions'];
-            
+
             // Shuffle questions WITHIN the group
             mt_srand($seed + $groupIndex + 100);
             shuffle($groupQuestions);
-            
+
             // Re-assign the preamble to the first question of the shuffled group
             // and clear it from the rest to avoid duplicates
             $groupPreamble = $group['preamble'];
@@ -1047,27 +1057,27 @@ class QuizController extends Controller
                 $flattenedQuestions[] = $gq;
             }
         }
-        
+
         $questions = $flattenedQuestions;
         mt_srand(); // Reset RNG
-        
+
         // Shuffle options for each question and update correct_answer index
         $quiz['questions'] = array_map(function ($question, $qIndex) use ($seed) {
             if (isset($question['options']) && is_array($question['options'])) {
                 $originalOptions = $question['options'];
-                $originalCorrectIndex = isset($question['correct_answer']) ? (int)$question['correct_answer'] : null;
-                
+                $originalCorrectIndex = isset($question['correct_answer']) ? (int) $question['correct_answer'] : null;
+
                 // Track correct option value to find its new index after shuffle
-                $correctValue = ($originalCorrectIndex !== null && isset($originalOptions[$originalCorrectIndex])) 
-                                ? $originalOptions[$originalCorrectIndex] 
-                                : null;
+                $correctValue = ($originalCorrectIndex !== null && isset($originalOptions[$originalCorrectIndex]))
+                    ? $originalOptions[$originalCorrectIndex]
+                    : null;
 
                 // Deterministic option shuffle
                 $options = $originalOptions;
                 mt_srand($seed + $qIndex + 7);
                 shuffle($options);
                 mt_srand(); // Reset RNG
-                
+
                 // Update correct_answer if we found a match
                 if ($correctValue !== null) {
                     $question['correct_answer'] = null; // Default if not found
@@ -1102,7 +1112,7 @@ class QuizController extends Controller
             $result = Cache::remember($cacheKey, $cacheDuration, function () use ($quizId) {
                 Log::info('getQuizById cache miss, querying database', ['quiz_id' => $quizId]);
 
-                $quiz = \App\Models\Quiz::with('uploader')->find($quizId);
+                $quiz = Quiz::with('uploader')->find($quizId);
                 Log::info('getQuizById database result', ['quiz_found' => $quiz ? true : false]);
 
                 if (!$quiz) {
@@ -1246,8 +1256,8 @@ class QuizController extends Controller
                 continue; // Skip invalid questions instead of crashing
             }
 
-            $userAnswer = isset($answers[$index]) ? (int)$answers[$index] : null;
-            $correctAnswer = isset($question['correct_answer']) ? (int)$question['correct_answer'] : null;
+            $userAnswer = isset($answers[$index]) ? (int) $answers[$index] : null;
+            $correctAnswer = isset($question['correct_answer']) ? (int) $question['correct_answer'] : null;
 
             if ($userAnswer === $correctAnswer) {
                 $correctAnswers++;
@@ -1280,8 +1290,8 @@ class QuizController extends Controller
         Log::info('Quiz attempt save validation', [
             'quiz_id' => $quizId,
             'user_id' => $currentUserId,
-            'quiz_exists' => \App\Models\Quiz::where('id', $quizId)->exists(),
-            'user_exists' => \App\Models\User::where('id', $currentUserId)->exists(),
+            'quiz_exists' => Quiz::where('id', $quizId)->exists(),
+            'user_exists' => User::where('id', $currentUserId)->exists(),
             'data_to_save' => [
                 'user_id' => $currentUserId,
                 'quiz_id' => $quizId,
@@ -1296,10 +1306,10 @@ class QuizController extends Controller
 
         try {
             // Get quiz data for required fields
-            $quiz = \App\Models\Quiz::find($quizId);
-    
+            $quiz = Quiz::find($quizId);
+
             // Save attempt to database
-            $attempt = \App\Models\QuizAttempt::create([
+            $attempt = QuizAttempt::create([
                 'user_id' => $currentUserId,
                 'quiz_id' => $quizId,
                 'quiz_title' => $quiz ? $quiz->title : 'Unknown Quiz',
@@ -1328,7 +1338,7 @@ class QuizController extends Controller
             // Link existing violations to this attempt
             // We search for violations for this user/quiz that don't have an attempt_id yet
             // and occurred within the last hour (to be safe)
-            \App\Models\QuizViolation::where('user_id', $currentUserId)
+            QuizViolation::where('user_id', $currentUserId)
                 ->where('quiz_id', $quizId)
                 ->whereNull('quiz_attempt_id')
                 ->where('created_at', '>=', now()->subHour())
@@ -1410,7 +1420,7 @@ class QuizController extends Controller
      */
     private function checkUserAttempt($quizId, $userId)
     {
-        return \App\Models\QuizAttempt::where('quiz_id', $quizId)
+        return QuizAttempt::where('quiz_id', $quizId)
             ->where('user_id', $userId)
             ->exists();
     }
@@ -1420,7 +1430,7 @@ class QuizController extends Controller
      */
     private function getNextAttemptNumber($quizId, $userId)
     {
-        return \App\Models\QuizAttempt::where('quiz_id', $quizId)
+        return QuizAttempt::where('quiz_id', $quizId)
             ->where('user_id', $userId)
             ->max('attempt_number') + 1;
     }
@@ -1446,8 +1456,10 @@ class QuizController extends Controller
      */
     private function calculateDifficulty($questionCount)
     {
-        if ($questionCount <= 5) return 'easy';
-        if ($questionCount <= 15) return 'medium';
+        if ($questionCount <= 5)
+            return 'easy';
+        if ($questionCount <= 15)
+            return 'medium';
         return 'hard';
     }
 
@@ -1483,7 +1495,7 @@ class QuizController extends Controller
         $userId = Auth::id();
 
         // Find or create rating
-        $rating = \App\Models\QuizRating::updateOrCreate(
+        $rating = QuizRating::updateOrCreate(
             [
                 'quiz_id' => $quizId,
                 'user_id' => $userId,
@@ -1495,7 +1507,7 @@ class QuizController extends Controller
         );
 
         // Update quiz average rating
-        $quiz = \App\Models\Quiz::find($quizId);
+        $quiz = Quiz::find($quizId);
         if ($quiz) {
             $quiz->updateAverageRating();
         }
@@ -1534,7 +1546,7 @@ class QuizController extends Controller
     private function calculateUserRank($userId, $userTotalQuizzesPassed)
     {
         // Count how many users have more quizzes passed than this user
-        $usersWithHigherScore = \App\Models\UserProgress::where('completed_quizzes', '>', $userTotalQuizzesPassed)
+        $usersWithHigherScore = UserProgress::where('completed_quizzes', '>', $userTotalQuizzesPassed)
             ->count();
 
         // Rank is the number of users with higher score + 1

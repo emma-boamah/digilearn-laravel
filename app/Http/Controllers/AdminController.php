@@ -3976,7 +3976,7 @@ class AdminController extends Controller
                     $subject = Subject::find($video->subject_id);
 
                     $quizDataToCreate = [
-                        'title' => $video->title,
+                        'title' => $request->filled('quiz_title') ? $request->quiz_title : $video->title,
                         'subject_id' => $subject->id,
                         'uploaded_by' => Auth::id(),
                         'grade_level' => $request->grade_level,
@@ -4284,6 +4284,7 @@ class AdminController extends Controller
     {
         $request->validate([
             'title' => 'required|string|max:255',
+            'quiz_title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'subject_id' => 'required|exists:subjects,id',
             'grade_level' => 'required|string',
@@ -4347,6 +4348,7 @@ class AdminController extends Controller
                         }
 
                         $quiz->update([
+                            'title' => $request->filled('quiz_title') ? $request->quiz_title : $request->title,
                             'quiz_data' => json_encode($quizData),
                             'difficulty_level' => $request->quiz_difficulty ?? $quiz->difficulty_level,
                             'time_limit_minutes' => $request->quiz_time_limit ?? $quiz->time_limit_minutes,
@@ -4998,7 +5000,7 @@ class AdminController extends Controller
             }
 
             $quizDataToCreate = [
-                'title' => $video->title,
+                'title' => $request->filled('quiz_title') ? $request->quiz_title : $video->title,
                 'subject_id' => $subject->id,
                 'uploaded_by' => Auth::id(),
                 'grade_level' => $video->grade_level,
