@@ -3227,6 +3227,114 @@
     [data-theme="dark"] .video-item:hover .video-info-title {
         color: #ffffff;
     }
+
+    /* YouTube style description box */
+    .lesson-description-container {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        background-color: var(--gray-50);
+        border-radius: 0.75rem;
+        transition: background-color 0.2s ease;
+        position: relative;
+    }
+    
+    .lesson-description-container:hover {
+        background-color: var(--gray-100);
+    }
+    
+    [data-theme="dark"] .lesson-description-container {
+        background-color: #16181c;
+    }
+    [data-theme="dark"] .lesson-description-container:hover {
+        background-color: #1c1e22;
+    }
+
+    .lesson-description-content {
+        font-size: 0.875rem;
+        line-height: 1.5;
+        color: var(--gray-800);
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        transition: max-height 0.3s ease;
+    }
+    
+    .lesson-description-content p {
+        margin-bottom: 0.5rem;
+    }
+    
+    .lesson-description-content ul {
+        list-style-type: disc;
+        margin-left: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .lesson-description-content ol {
+        list-style-type: decimal;
+        margin-left: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .lesson-description-content strong {
+        font-weight: 600;
+    }
+    
+    .lesson-description-content a {
+        color: var(--secondary-blue, #2563eb);
+        text-decoration: none;
+    }
+    
+    .lesson-description-content a:hover {
+        text-decoration: underline;
+    }
+
+    /* W3Schools-like diagram image styling */
+    .lesson-description-content img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 1.5rem auto;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        border: 1px solid var(--gray-200);
+        background-color: var(--white);
+        padding: 0.5rem;
+    }
+
+    [data-theme="dark"] .lesson-description-content img {
+        border-color: #374151;
+        background-color: #1f2937;
+    }
+
+    .lesson-description-content.expanded {
+        display: block;
+        -webkit-line-clamp: unset;
+    }
+
+    [data-theme="dark"] .lesson-description-content {
+        color: #e5e7eb;
+    }
+
+    .lesson-description-toggle {
+        margin-top: 0.5rem;
+        background: none;
+        border: none;
+        color: var(--gray-900);
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        padding: 0;
+        text-transform: none;
+    }
+
+    [data-theme="dark"] .lesson-description-toggle {
+        color: #ffffff;
+    }
+
+    .lesson-description-toggle:hover {
+        text-decoration: underline;
+    }
 </style>
 
 
@@ -3638,6 +3746,15 @@
                             </button>
                         </div>
                     </div>
+
+                    @if(!empty($lesson['description']))
+                    <div class="lesson-description-container">
+                        <div class="lesson-description-content" id="lessonDescriptionContent">
+                            {!! $lesson['description'] !!}
+                        </div>
+                        <button class="lesson-description-toggle" id="lessonDescriptionToggle" style="display: none;">Show more</button>
+                    </div>
+                    @endif
 
                 </div>
             </div>
@@ -6960,6 +7077,26 @@
 
     // Initialize analytics on DOM ready
     document.addEventListener('DOMContentLoaded', function () {
+        // Description Expand/Collapse Logic
+        const descriptionContent = document.getElementById('lessonDescriptionContent');
+        const descriptionToggle = document.getElementById('lessonDescriptionToggle');
+
+        if (descriptionContent && descriptionToggle) {
+            // Check if content overflows 3 lines
+            if (descriptionContent.scrollHeight > descriptionContent.clientHeight) {
+                descriptionToggle.style.display = 'block';
+            }
+
+            descriptionToggle.addEventListener('click', function () {
+                descriptionContent.classList.toggle('expanded');
+                if (descriptionContent.classList.contains('expanded')) {
+                    descriptionToggle.textContent = 'Show less';
+                } else {
+                    descriptionToggle.textContent = 'Show more';
+                }
+            });
+        }
+
         const currentLessonId = "{{ $lesson['id'] ?? '' }}";
         if (currentLessonId) {
             // Silent view tracking

@@ -5,6 +5,7 @@
 @section('page-description', 'Manage all your videos, documents, and quizzes')
 
 @push('styles')
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
 <style nonce="{{ request()->attributes->get('csp_nonce') }}">
     /* Content Table Styles - YouTube-inspired */
     .content-table-container {
@@ -121,10 +122,49 @@
     .video-description {
         font-size: 0.75rem;
         color: #64748b;
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
+        margin-top: 6px;
+        max-height: 80px;
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+    
+    .video-description::-webkit-scrollbar {
+        width: 4px;
+    }
+    .video-description::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+    
+    .video-description p {
+        margin: 0 0 4px 0;
+    }
+    
+    .video-description p:last-child {
+        margin-bottom: 0;
+    }
+    
+    .video-description a {
+        color: #2563eb;
+        text-decoration: none;
+    }
+    
+    .video-description a:hover {
+        text-decoration: underline;
+    }
+    
+    .video-description img {
+        max-width: 100%;
+        max-height: 40px;
+        object-fit: contain;
+        border-radius: 4px;
+        margin: 4px 0;
+        display: block;
+    }
+    
+    .video-description ul, .video-description ol {
+        margin: 0 0 6px 16px;
+        padding: 0;
     }
 
     /* Date Column */
@@ -570,9 +610,10 @@
     }
 
     /* Always enable horizontal scrolling for better UX */
-    .content-table-container {
+    .table-responsive-wrapper {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+        width: 100%;
     }
 
     .content-table {
@@ -1103,6 +1144,7 @@
 
         <!-- Table -->
         @if($contents->count() > 0)
+        <div class="table-responsive-wrapper">
         <table class="content-table">
             <thead>
                 <tr>
@@ -1155,7 +1197,7 @@
                             <div class="video-info">
                                 <div class="video-title">{{ $content->title }}</div>
                                 @if($content->description)
-                                    <div class="video-description">{{ $content->description }}</div>
+                                    <div class="video-description">{!! $content->description !!}</div>
                                 @endif
                             </div>
                         </div>
@@ -1323,6 +1365,7 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
         @else
         <div class="empty-state">
             <i class="fas fa-folder-open"></i>
@@ -1521,8 +1564,10 @@
                 <!-- Description -->
                 <div class="mb-4">
                     <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <div id="quill-description-editor" class="bg-white rounded-b-lg border-gray-300 min-h-[100px]"></div>
                     <textarea id="description" rows="3"
-                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 hidden"></textarea>
+                    <p class="text-xs text-gray-500 mt-1">This description is meant for the video lesson and will be displayed below the video player. It is not for the quiz.</p>
                 </div>
 
                 <!-- Subject -->
@@ -1916,7 +1961,75 @@
     </div>
 </div>
 
+<script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://unpkg.com/quill-magic-url"></script>
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    let quillDescModal = null;
+    document.addEventListener('DOMContentLoaded', function () {
+        if (document.getElementById('quill-description-editor')) {
+            const imageHandler = function() {
+                const input = document.createElement('input');
+                input.setAttribute('type', 'file');
+                input.setAttribute('accept', 'image/*');
+                input.click();
+
+                input.onchange = async () => {
+                    const file = input.files[0];
+                    const formData = new FormData();
+                    formData.append('image', file);
+                    formData.append('_token', '{{ csrf_token() }}');
+
+                    try {
+                        const response = await fetch('{{ route('admin.contents.upload.image') }}', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            const range = quillDescModal.getSelection(true);
+                            quillDescModal.insertEmbed(range.index, 'image', result.url);
+                        } else {
+                            alert('Image upload failed: ' + (result.message || 'Unknown error'));
+                        }
+                    } catch (error) {
+                        console.error('Upload error:', error);
+                        alert('Error uploading image');
+                    }
+                };
+            };
+
+            quillDescModal = new Quill('#quill-description-editor', {
+                theme: 'snow',
+                placeholder: 'Write a description for the video lesson...',
+                modules: {
+                    magicUrl: {
+                        urlRegularExpression: /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?)/i,
+                        globalRegularExpression: /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?)/gi
+                    },
+                    toolbar: {
+                        container: [
+                            ['bold', 'italic', 'underline', 'link', 'image'],
+                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                            ['clean']
+                        ],
+                        handlers: {
+                            image: imageHandler
+                        }
+                    }
+                }
+            });
+            
+            const descTextarea = document.getElementById('description');
+            quillDescModal.on('text-change', function() {
+                if (quillDescModal.getText().trim() === '') {
+                    descTextarea.value = '';
+                } else {
+                    descTextarea.value = quillDescModal.root.innerHTML;
+                }
+            });
+        }
+    });
     // Global state for upload wizard
     let uploadData = {
         video: null,
@@ -2462,6 +2575,9 @@
             if (title) title.value = '';
             if (subjectId) subjectId.value = '';
             if (description) description.value = '';
+            if (typeof quillDescModal !== 'undefined' && quillDescModal) {
+                quillDescModal.setContents([]);
+            }
             if (gradeLevel) gradeLevel.value = '';
             // Clear grade picker visual selection and trigger text
             document.querySelectorAll('.grade-picker-item.selected').forEach(el => el.classList.remove('selected'));

@@ -7,6 +7,7 @@
 @include('admin.contents.partials.quiz-builder-assets')
 
 @push('styles')
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
     <style>
         .card-header-premium {
             background: linear-gradient(to right, #f8fafc, #f1f5f9);
@@ -87,8 +88,9 @@
                         <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
                             Description
                         </label>
-                        <textarea id="description" name="description" rows="3"
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">{{ $contentType === 'video' ? $content->description : ($content->video->description ?? '') }}</textarea>
+                        <div id="quill-description-editor" class="bg-white rounded-b-lg border-gray-300 min-h-[100px]"></div>
+                        <textarea id="description" name="description" class="hidden">{{ $contentType === 'video' ? $content->description : ($content->video->description ?? '') }}</textarea>
+                        <p class="text-xs text-gray-500 mt-1">This description is meant for the video lesson and will be displayed below the video player. It is not for the quiz.</p>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -292,6 +294,8 @@
 @endsection
 
 @push('extra-js')
+<script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://unpkg.com/quill-magic-url"></script>
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
     // Initialize data for the quiz builder
     const uploadData = {
@@ -337,6 +341,78 @@
                         questions: uploadData.quiz.questions
                     });
                 }
+            }
+        });
+    }
+
+    // Initialize Quill for description
+    if (document.getElementById('quill-description-editor')) {
+        const imageHandler = function() {
+            const input = document.createElement('input');
+            input.setAttribute('type', 'file');
+            input.setAttribute('accept', 'image/*');
+            input.click();
+
+            input.onchange = async () => {
+                const file = input.files[0];
+                const formData = new FormData();
+                formData.append('image', file);
+                formData.append('_token', '{{ csrf_token() }}');
+
+                try {
+                    const response = await fetch('{{ route('admin.contents.upload.image') }}', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        const range = quillDesc.getSelection(true);
+                        quillDesc.insertEmbed(range.index, 'image', result.url);
+                    } else {
+                        alert('Image upload failed: ' + (result.message || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    alert('Error uploading image');
+                }
+            };
+        };
+
+        const quillDesc = new Quill('#quill-description-editor', {
+            theme: 'snow',
+            placeholder: 'Write a description for the video lesson...',
+            modules: {
+                magicUrl: {
+                    urlRegularExpression: /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?)/i,
+                    globalRegularExpression: /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?)/gi
+                },
+                toolbar: {
+                    container: [
+                        ['bold', 'italic', 'underline', 'link', 'image'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['clean']
+                    ],
+                    handlers: {
+                        image: imageHandler
+                    }
+                }
+            }
+        });
+        
+        // Load initial content
+        const descTextarea = document.getElementById('description');
+        if (descTextarea.value) {
+            quillDesc.clipboard.dangerouslyPasteHTML(descTextarea.value);
+        }
+        
+        // Sync to textarea
+        quillDesc.on('text-change', function() {
+            // Only update if it's not effectively empty
+            if (quillDesc.getText().trim() === '') {
+                descTextarea.value = '';
+            } else {
+                descTextarea.value = quillDesc.root.innerHTML;
             }
         });
     }

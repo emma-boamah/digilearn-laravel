@@ -5528,4 +5528,28 @@ class AdminController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+
+    /**
+     * Upload image from Quill editor
+     */
+    public function uploadImage(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg,webp|max:5120', // 5MB max
+        ]);
+
+        try {
+            $path = $request->file('image')->store('content-images', 'public');
+            return response()->json([
+                'success' => true,
+                'url' => asset('storage/' . $path)
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Image upload failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Image upload failed'
+            ], 500);
+        }
+    }
 }
