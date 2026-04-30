@@ -51,39 +51,58 @@
                                 <thead class="bg-gray-50">
                                     <tr>
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Video</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Watch Time</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Watched</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
-                                    @foreach($videosWatched as $engagement)
+                                    @foreach($videosWatched as $completion)
                                         <tr>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <div class="flex items-center">
-                                                    @if($engagement->video)
+                                                    @if($completion->video)
                                                         <div class="flex-shrink-0 h-10 w-16 bg-gray-200 rounded overflow-hidden">
-                                                            <img class="h-10 w-16 object-cover" src="{{ Storage::url($engagement->video->thumbnail) }}" alt="">
+                                                            <img class="h-10 w-16 object-cover" src="{{ Storage::url($completion->video->thumbnail) }}" alt="">
                                                         </div>
                                                         <div class="ml-4">
-                                                            <div class="text-sm font-medium text-gray-900">{{ Str::limit($engagement->video->title, 40) }}</div>
-                                                            <div class="text-xs text-gray-500">{{ $engagement->video->subject }}</div>
+                                                            <div class="text-sm font-medium text-gray-900">{{ Str::limit($completion->video->title, 40) }}</div>
+                                                            <div class="text-xs text-gray-500">{{ $completion->lesson_subject }} • {{ $completion->lesson_level }}</div>
                                                         </div>
                                                     @else
-                                                        <span class="text-sm text-gray-500 italic">Video Deleted (ID: {{ $engagement->content_id }})</span>
+                                                        <div class="ml-0">
+                                                            <div class="text-sm font-medium text-gray-900">{{ Str::limit($completion->lesson_title, 40) }}</div>
+                                                            <div class="text-xs text-gray-400 italic">{{ $completion->lesson_subject }} • Video removed</div>
+                                                        </div>
                                                     @endif
                                                 </div>
                                             </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $engagement->action == 'complete' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800' }}">
-                                                    {{ ucfirst($engagement->action) }}
-                                                </span>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="flex items-center">
+                                                    <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                                        <div class="h-2 rounded-full {{ $completion->fully_completed ? 'bg-green-500' : 'bg-blue-500' }}"
+                                                             style="width: {{ min(100, $completion->completion_percentage) }}%"></div>
+                                                    </div>
+                                                    <span class="text-xs text-gray-600">{{ number_format($completion->completion_percentage, 0) }}%</span>
+                                                </div>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {{ gmdate("H:i:s", $engagement->duration_seconds ?? 0) }}
+                                                {{ $completion->getFormattedWatchTime() }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                                @if($completion->fully_completed)
+                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                        Completed
+                                                    </span>
+                                                @else
+                                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                                        In Progress
+                                                    </span>
+                                                @endif
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {{ $engagement->created_at->format('M d, Y H:i') }}
+                                                {{ $completion->last_watched_at ? $completion->last_watched_at->format('M d, Y H:i') : $completion->created_at->format('M d, Y H:i') }}
                                             </td>
                                         </tr>
                                     @endforeach

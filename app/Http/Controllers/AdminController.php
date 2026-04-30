@@ -419,20 +419,18 @@ class AdminController extends Controller
     {
         $user = User::findOrFail($id);
 
-        // 1. Videos Watched
-        $videosWatched = UserEngagement::where('user_id', $user->id)
-            ->where('content_type', 'video')
-            ->whereIn('action', ['view', 'complete'])
-            ->orderBy('created_at', 'desc')
+        // 1. Videos Watched — use LessonCompletion as the authoritative source
+        $videosWatched = LessonCompletion::where('user_id', $user->id)
+            ->orderBy('last_watched_at', 'desc')
             ->paginate(15, ['*'], 'videos_page');
 
-        // We need to attach the actual Video models since UserEngagement only has content_id
-        $videoIds = $videosWatched->pluck('content_id')->unique();
+        // Attach the actual Video models via lesson_id
+        $videoIds = $videosWatched->pluck('lesson_id')->unique();
         $videos = Video::whereIn('id', $videoIds)->get()->keyBy('id');
-        
-        $videosWatched->getCollection()->transform(function ($engagement) use ($videos) {
-            $engagement->video = $videos->get($engagement->content_id);
-            return $engagement;
+
+        $videosWatched->getCollection()->transform(function ($completion) use ($videos) {
+            $completion->video = $videos->get($completion->lesson_id);
+            return $completion;
         });
 
         // 2. Comments (with edit history)
