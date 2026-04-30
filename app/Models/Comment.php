@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\CommentUserLike;
+use App\Models\CommentEdit;
 
 class Comment extends Model
 {
@@ -20,12 +21,16 @@ class Comment extends Model
         'likes_count',
         'dislikes_count',
         'is_approved',
+        'is_edited',
+        'edited_at',
     ];
 
     protected $casts = [
         'likes_count' => 'integer',
         'dislikes_count' => 'integer',
         'is_approved' => 'boolean',
+        'is_edited' => 'boolean',
+        'edited_at' => 'datetime',
     ];
 
     /**
@@ -88,6 +93,14 @@ class Comment extends Model
     public function userLikes(): HasMany
     {
         return $this->hasMany(CommentUserLike::class);
+    }
+
+    /**
+     * Get the edit history for this comment.
+     */
+    public function edits(): HasMany
+    {
+        return $this->hasMany(CommentEdit::class)->orderBy('created_at', 'desc');
     }
 
     /**

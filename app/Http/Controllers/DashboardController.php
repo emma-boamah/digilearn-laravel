@@ -15,6 +15,7 @@ use App\Models\Video;
 use App\Models\UserNote;
 use App\Models\Course;
 use App\Models\CommentUserLike;
+use App\Models\CommentEdit;
 use App\Models\LevelGroup;
 use App\Models\ContentCategory;
 use App\Models\Subject;
@@ -1647,7 +1648,9 @@ class DashboardController extends Controller
                 return [
                     'id' => $comment->id,
                     'content' => $comment->content,
+                    'is_edited' => (bool) $comment->is_edited,
                     'user' => [
+                        'id' => $comment->user->id,
                         'name' => $comment->user->name,
                         'avatar' => $comment->user->avatar_url,
                         'initials' => $comment->user->initials,
@@ -1660,7 +1663,9 @@ class DashboardController extends Controller
                         return [
                             'id' => $reply->id,
                             'content' => $reply->content,
+                            'is_edited' => (bool) $reply->is_edited,
                             'user' => [
+                                'id' => $reply->user->id,
                                 'name' => $reply->user->name,
                                 'avatar' => $reply->user->avatar_url,
                                 'initials' => $reply->user->initials,
@@ -1688,6 +1693,74 @@ class DashboardController extends Controller
             ]);
 
             return response()->json(['success' => false, 'message' => 'Failed to load comments'], 500);
+        }
+    }
+
+    /**
+     * Update (edit) a comment
+     */
+    public function updateComment(Request $request, $commentId)
+    {
+        $request->validate([
+            'content' => 'required|string|max:1000',
+        ]);
+
+        try {
+            $comment = Comment::findOrFail($commentId);
+
+            // Only the comment author can edit
+            if ($comment->user_id !== Auth::id()) {
+                return response()->json(['success' => false, 'message' => 'You can only edit your own comments'], 403);
+            }
+
+            $oldContent = $comment->content;
+            $newContent = $request->content;
+
+            // Don't save if nothing changed
+            if ($oldContent === $newContent) {
+                return response()->json(['success' => true, 'message' => 'No changes made']);
+            }
+
+            // Record edit history
+            CommentEdit::create([
+                'comment_id' => $comment->id,
+                'user_id' => Auth::id(),
+                'old_content' => $oldContent,
+                'new_content' => $newContent,
+            ]);
+
+            // Update the comment
+            $comment->update([
+                'content' => $newContent,
+                'is_edited' => true,
+                'edited_at' => now(),
+            ]);
+
+            Log::info('comment_edited', [
+                'user_id' => Auth::id(),
+                'comment_id' => $comment->id,
+                'old_length' => strlen($oldContent),
+                'new_length' => strlen($newContent),
+                'timestamp' => Carbon::now()->toISOString()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Comment updated successfully',
+                'comment' => [
+                    'id' => $comment->id,
+                    'content' => $comment->content,
+                    'is_edited' => true,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('comment_edit_error', [
+                'user_id' => Auth::id(),
+                'comment_id' => $commentId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json(['success' => false, 'message' => 'Failed to update comment'], 500);
         }
     }
 
