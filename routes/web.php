@@ -382,6 +382,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/contents/upload/video-chunk', [AdminController::class , 'uploadVideoChunk'])->name('contents.upload.video-chunk');
     Route::post('/contents/upload/documents', [AdminController::class , 'uploadDocumentsComponent'])->name('contents.upload.documents');
     Route::post('/contents/upload/quiz', [AdminController::class , 'uploadQuizComponent'])->name('contents.upload.quiz');
+    Route::post('/contents/upload/image', [AdminController::class, 'uploadImage'])->name('contents.upload.image');
 
     // Super Admin Protected Routes
     Route::middleware(['role:super-admin'])->group(function () {
