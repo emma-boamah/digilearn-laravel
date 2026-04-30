@@ -621,6 +621,176 @@
         color: var(--secondary-blue);
     }
 
+    /* Hide dislike counts from users */
+    .comment-dislike-count {
+        display: none;
+    }
+
+    /* Comment replies thread */
+    .comment-replies {
+        margin-top: 1rem;
+        margin-left: 0.5rem;
+        padding-left: 1rem;
+        border-left: 2px solid var(--gray-200);
+    }
+
+    [data-theme="dark"] .comment-replies {
+        border-left-color: #374151;
+    }
+
+    .comment-replies .comment {
+        margin-bottom: 1rem;
+    }
+
+    .comment-replies .comment:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Replies toggle button (YouTube-style) */
+    .replies-toggle-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: none;
+        border: none;
+        color: var(--secondary-blue);
+        font-size: 0.8125rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 6px 0;
+        margin-top: 0.5rem;
+        transition: opacity 0.15s ease;
+    }
+
+    .replies-toggle-btn:hover {
+        opacity: 0.8;
+    }
+
+    .replies-toggle-btn svg {
+        transition: transform 0.2s ease;
+    }
+
+    .replies-toggle-btn.expanded svg {
+        transform: rotate(180deg);
+    }
+
+    .comment-replies.collapsed {
+        display: none;
+    }
+
+    /* Inline reply input (YouTube-style) */
+    .inline-reply-container {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--gray-200);
+        animation: fadeSlideIn 0.2s ease;
+    }
+
+    [data-theme="dark"] .inline-reply-container {
+        border-top-color: #374151;
+    }
+
+    @keyframes fadeSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-4px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .inline-reply-container .comment-avatar {
+        width: 28px;
+        height: 28px;
+        min-width: 28px;
+        font-size: 0.65rem;
+    }
+
+    .inline-reply-input {
+        flex: 1;
+        border: none;
+        border-bottom: 1px solid var(--gray-300);
+        background: transparent;
+        color: var(--gray-900);
+        font-size: 0.8125rem;
+        padding: 6px 0;
+        outline: none;
+        transition: border-color 0.2s ease;
+    }
+
+    .inline-reply-input:focus {
+        border-bottom-color: var(--secondary-blue);
+    }
+
+    .inline-reply-input::placeholder {
+        color: var(--gray-400);
+    }
+
+    [data-theme="dark"] .inline-reply-input {
+        color: #e5e7eb;
+        border-bottom-color: #4b5563;
+    }
+
+    [data-theme="dark"] .inline-reply-input:focus {
+        border-bottom-color: var(--secondary-blue);
+    }
+
+    .inline-reply-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .inline-reply-cancel {
+        background: none;
+        border: none;
+        color: var(--gray-500);
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 4px 10px;
+        border-radius: 16px;
+        transition: all 0.15s ease;
+    }
+
+    .inline-reply-cancel:hover {
+        background: var(--gray-100);
+        color: var(--gray-700);
+    }
+
+    [data-theme="dark"] .inline-reply-cancel:hover {
+        background: #374151;
+        color: #e5e7eb;
+    }
+
+    .inline-reply-submit {
+        background: var(--secondary-blue);
+        color: white;
+        border: none;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 4px 14px;
+        border-radius: 16px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
+    .inline-reply-submit.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .inline-reply-submit:hover {
+        background: var(--secondary-blue-hover);
+    }
+
     /* Enhanced Right Sidebar */
     .right-sidebar {
         display: flex;
@@ -3765,7 +3935,7 @@
                 <div class="comments-header">
                     <div class="comments-header-left">
                         <span class="comments-count">
-                            <span id="commentsCount">0</span> Comments
+                            <span id="commentsCount">0</span> <span id="commentsLabel">Comments</span>
                             <button class="comments-dropdown" id="commentsToggleBtn">
                                 <svg class="dropdown-icon" width="16" height="16" fill="currentColor"
                                     viewBox="0 0 24 24">
@@ -4591,8 +4761,19 @@
         const commentInput = document.getElementById('commentInput');
         const commentSubmitBtn = document.getElementById('commentSubmitBtn');
 
-        // Load comments on page load
-        loadComments();
+        // Lazy-load comments when user scrolls to the comments section
+        const commentsCard = document.querySelector('.comments-card');
+        if (commentsCard) {
+            const observer = new IntersectionObserver((entries, obs) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        loadComments();
+                        obs.unobserve(entry.target);
+                    }
+                });
+            }, { rootMargin: '200px' });
+            observer.observe(commentsCard);
+        }
 
         // Initialize real-time comment broadcasting
         initializeCommentBroadcasting();
@@ -4666,6 +4847,7 @@
                 if (data.success) {
                     renderComments(data.comments);
                     document.getElementById('commentsCount').textContent = data.total_count;
+                    document.getElementById('commentsLabel').textContent = data.total_count == 1 ? 'Comment' : 'Comments';
                     console.log('Comments loaded successfully, count:', data.total_count);
                 } else {
                     console.error('Comments API returned error:', data);
@@ -4720,7 +4902,11 @@
                             </button>
                         </div>
                         ${comment.replies && comment.replies.length > 0 ? `
-                            <div class="comment-replies">
+                            <button class="replies-toggle-btn" data-comment-id="${comment.id}">
+                                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                                ${comment.replies.length === 1 ? 'View 1 reply' : `View ${comment.replies.length} replies`}
+                            </button>
+                            <div class="comment-replies collapsed" data-replies-for="${comment.id}">
                                 ${comment.replies.map(reply => `
                                     <div class="comment reply" data-comment-id="${reply.id}">
                                         <div class="comment-avatar">
@@ -4868,19 +5054,141 @@
             });
         });
 
+        // Replies toggle buttons
+        document.querySelectorAll('.replies-toggle-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const commentId = this.dataset.commentId;
+                const repliesContainer = document.querySelector(`.comment-replies[data-replies-for="${commentId}"]`);
+                if (!repliesContainer) return;
+
+                const isCollapsed = repliesContainer.classList.contains('collapsed');
+                repliesContainer.classList.toggle('collapsed');
+                this.classList.toggle('expanded', isCollapsed);
+
+                const replyCount = repliesContainer.querySelectorAll('.comment.reply').length;
+                const label = replyCount === 1 ? '1 reply' : `${replyCount} replies`;
+                // Update button text (keep the SVG)
+                this.innerHTML = `
+                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+                    ${isCollapsed ? `Hide ${label}` : `View ${label}`}
+                `;
+                if (isCollapsed) {
+                    this.classList.add('expanded');
+                } else {
+                    this.classList.remove('expanded');
+                }
+            });
+        });
+
         // Reply buttons
         document.querySelectorAll('.reply-btn').forEach(btn => {
             btn.addEventListener('click', function () {
                 const commentId = this.dataset.commentId;
-                const commentInput = document.getElementById('commentInput');
+                const commentEl = this.closest('.comment');
+                const commentContent = commentEl.querySelector('.comment-content');
 
-                // Focus on input and set placeholder
-                commentInput.placeholder = 'Reply to this comment...';
-                commentInput.focus();
-                // Store parent comment ID for reply
-                commentInput.dataset.parentId = commentId;
+                // Remove any existing inline reply inputs
+                document.querySelectorAll('.inline-reply-container').forEach(el => el.remove());
+
+                // Get current user avatar info
+                const mainAvatar = document.querySelector('.comment-input-container .comment-avatar');
+                const avatarHtml = mainAvatar ? mainAvatar.innerHTML : '';
+
+                // Create inline reply container
+                const replyContainer = document.createElement('div');
+                replyContainer.className = 'inline-reply-container';
+                replyContainer.innerHTML = `
+                    <div class="comment-avatar">${avatarHtml}</div>
+                    <input type="text" class="inline-reply-input" placeholder="Add a reply..." autofocus />
+                    <div class="inline-reply-actions">
+                        <button class="inline-reply-cancel" type="button">Cancel</button>
+                        <button class="inline-reply-submit" type="button">Reply</button>
+                    </div>
+                `;
+
+                commentContent.appendChild(replyContainer);
+
+                const replyInput = replyContainer.querySelector('.inline-reply-input');
+                const replySubmitBtn = replyContainer.querySelector('.inline-reply-submit');
+                const replyCancelBtn = replyContainer.querySelector('.inline-reply-cancel');
+
+                replyInput.focus();
+
+                // Enable/disable submit based on input
+                replyInput.addEventListener('input', function () {
+                    if (this.value.trim().length > 0) {
+                        replySubmitBtn.classList.add('active');
+                    } else {
+                        replySubmitBtn.classList.remove('active');
+                    }
+                });
+
+                // Cancel reply
+                replyCancelBtn.addEventListener('click', function () {
+                    replyContainer.remove();
+                });
+
+                // Submit reply
+                replySubmitBtn.addEventListener('click', function () {
+                    submitInlineReply(commentId, replyInput, replyContainer);
+                });
+
+                // Submit on Enter
+                replyInput.addEventListener('keypress', function (e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        if (this.value.trim().length > 0) {
+                            submitInlineReply(commentId, replyInput, replyContainer);
+                        }
+                    }
+                });
             });
         });
+    }
+
+    // Submit an inline reply
+    function submitInlineReply(parentId, inputEl, containerEl) {
+        const commentText = inputEl.value.trim();
+        const lessonId = @json($lesson["id"] ?? "");
+
+        if (!commentText || !lessonId) return;
+
+        const submitBtn = containerEl.querySelector('.inline-reply-submit');
+        submitBtn.textContent = '...';
+        submitBtn.disabled = true;
+        inputEl.disabled = true;
+
+        fetch(`/dashboard/lesson/${lessonId}/comment`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                comment: commentText,
+                parent_id: parentId
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    containerEl.remove();
+                    loadComments();
+                    showSuccessMessage('Reply posted successfully!');
+                } else {
+                    alert(data.message || 'Failed to post reply');
+                    submitBtn.textContent = 'Reply';
+                    submitBtn.disabled = false;
+                    inputEl.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error posting reply:', error);
+                alert('Failed to post reply. Please try again.');
+                submitBtn.textContent = 'Reply';
+                submitBtn.disabled = false;
+                inputEl.disabled = false;
+            });
     }
 
     // Initialize real-time comment broadcasting
@@ -4908,7 +5216,10 @@
                     const commentsCount = document.getElementById('commentsCount');
                     if (commentsCount) {
                         const currentCount = parseInt(commentsCount.textContent) || 0;
-                        commentsCount.textContent = currentCount + 1;
+                        const newCount = currentCount + 1;
+                        commentsCount.textContent = newCount;
+                        const label = document.getElementById('commentsLabel');
+                        if (label) label.textContent = newCount == 1 ? 'Comment' : 'Comments';
                     }
 
                     // Show success notification
