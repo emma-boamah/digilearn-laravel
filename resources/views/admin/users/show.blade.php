@@ -658,6 +658,10 @@
                                 class="w-full flex items-center px-4 py-3 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors text-sm font-semibold text-purple-700 border border-purple-100">
                                 <i class="fas fa-user-secret text-purple-500 mr-3 text-base"></i>Impersonate User
                             </button>
+                            <a href="{{ route('admin.users.activity', $user->id) }}"
+                                class="w-full flex items-center px-4 py-3 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-colors text-sm font-semibold text-indigo-700 border border-indigo-100">
+                                <i class="fas fa-chart-pie text-indigo-500 mr-3 text-base"></i>Detailed Activity
+                            </a>
                             @role('super-admin')
                             @if($user->hasRole('restricted-admin'))
                             <button onclick="demoteAdmin({{ $user->id }})"

@@ -413,6 +413,44 @@ class AdminController extends Controller
     }
 
     /**
+     * Show detailed user activity (videos, comments, quizzes)
+     */
+    public function showUserActivity($id)
+    {
+        $user = User::findOrFail($id);
+
+        // 1. Videos Watched
+        $videosWatched = UserEngagement::where('user_id', $user->id)
+            ->where('content_type', 'video')
+            ->whereIn('action', ['view', 'complete'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(15, ['*'], 'videos_page');
+
+        // We need to attach the actual Video models since UserEngagement only has content_id
+        $videoIds = $videosWatched->pluck('content_id')->unique();
+        $videos = Video::whereIn('id', $videoIds)->get()->keyBy('id');
+        
+        $videosWatched->getCollection()->transform(function ($engagement) use ($videos) {
+            $engagement->video = $videos->get($engagement->content_id);
+            return $engagement;
+        });
+
+        // 2. Comments (with edit history)
+        $comments = Comment::where('user_id', $user->id)
+            ->with(['edits', 'video'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(15, ['*'], 'comments_page');
+
+        // 3. Quiz Attempts
+        $quizAttempts = QuizAttempt::where('user_id', $user->id)
+            ->with('quiz')
+            ->orderBy('created_at', 'desc')
+            ->paginate(15, ['*'], 'quizzes_page');
+
+        return view('admin.users.activity', compact('user', 'videosWatched', 'comments', 'quizAttempts'));
+    }
+
+    /**
      * Suspend a user
      */
     public function suspendUser(Request $request, $id)
