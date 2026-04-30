@@ -306,6 +306,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/dashboard/lesson/{lessonId}/comments', [DashboardController::class , 'getComments'])->name('dashboard.lesson.comments');
                 Route::post('/dashboard/lesson/{lessonId}/comment', [DashboardController::class , 'postComment'])->name('dashboard.lesson.comment');
                 Route::post('/dashboard/comment/{commentId}/like', [DashboardController::class , 'likeComment'])->name('dashboard.comment.like');
+                Route::put('/dashboard/comment/{commentId}', [DashboardController::class , 'updateComment'])->name('dashboard.comment.update');
 
                 // Quiz
                 Route::prefix('quiz')->name('quiz.')->middleware(['decode.obfuscated'])->group(function () {

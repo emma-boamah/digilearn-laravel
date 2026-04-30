@@ -791,6 +791,120 @@
         background: var(--secondary-blue-hover);
     }
 
+    /* Comment edit button */
+    .comment-edit-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        color: var(--gray-400);
+        font-size: 0.7rem;
+        font-weight: 500;
+        cursor: pointer;
+        background: none;
+        border: none;
+        padding: 0.25rem 0;
+        transition: color 0.15s ease;
+    }
+
+    .comment-edit-btn:hover {
+        color: var(--gray-600);
+    }
+
+    .comment-edit-btn i {
+        font-size: 0.65rem;
+    }
+
+    /* (edited) badge */
+    .comment-edited-badge {
+        font-size: 0.7rem;
+        color: var(--gray-400);
+        font-weight: 400;
+        font-style: italic;
+    }
+
+    /* Inline edit container */
+    .inline-edit-container {
+        margin-top: 0.25rem;
+        animation: fadeSlideIn 0.2s ease;
+    }
+
+    .inline-edit-input {
+        width: 100%;
+        border: none;
+        border-bottom: 1px solid var(--gray-300);
+        background: transparent;
+        color: var(--gray-900);
+        font-size: 0.875rem;
+        padding: 6px 0;
+        outline: none;
+        line-height: 1.5;
+        transition: border-color 0.2s ease;
+    }
+
+    .inline-edit-input:focus {
+        border-bottom-color: var(--secondary-blue);
+    }
+
+    [data-theme="dark"] .inline-edit-input {
+        color: #e5e7eb;
+        border-bottom-color: #4b5563;
+    }
+
+    [data-theme="dark"] .inline-edit-input:focus {
+        border-bottom-color: var(--secondary-blue);
+    }
+
+    .inline-edit-actions {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+
+    .inline-edit-cancel {
+        background: none;
+        border: none;
+        color: var(--gray-500);
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 4px 10px;
+        border-radius: 16px;
+        transition: all 0.15s ease;
+    }
+
+    .inline-edit-cancel:hover {
+        background: var(--gray-100);
+        color: var(--gray-700);
+    }
+
+    [data-theme="dark"] .inline-edit-cancel:hover {
+        background: #374151;
+        color: #e5e7eb;
+    }
+
+    .inline-edit-save {
+        background: var(--secondary-blue);
+        color: white;
+        border: none;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 4px 14px;
+        border-radius: 16px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .inline-edit-save:hover {
+        background: var(--secondary-blue-hover);
+    }
+
+    .inline-edit-save:disabled {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
     /* Enhanced Right Sidebar */
     .right-sidebar {
         display: flex;
@@ -4875,6 +4989,7 @@
             return;
         }
 
+        const currentUserId = {{ auth()->id() }};
         const commentsHtml = comments.map(comment => `
                 <div class="comment" data-comment-id="${comment.id}">
                     <div class="comment-avatar">
@@ -4886,6 +5001,7 @@
                         <div class="comment-header">
                             <span class="comment-author">${comment.user.name}</span>
                             <span class="comment-time">${comment.time_ago}</span>
+                            ${comment.is_edited ? '<span class="comment-edited-badge">(edited)</span>' : ''}
                         </div>
                         <p class="comment-text">${comment.content}</p>
                         <div class="comment-actions">
@@ -4900,6 +5016,11 @@
                             <button class="comment-action reply-btn" data-comment-id="${comment.id}">
                                 Reply
                             </button>
+                            ${comment.user.id === currentUserId ? `
+                                <button class="comment-action comment-edit-btn" data-comment-id="${comment.id}">
+                                    <i class="fa-regular fa-pen-to-square"></i> Edit
+                                </button>
+                            ` : ''}
                         </div>
                         ${comment.replies && comment.replies.length > 0 ? `
                             <button class="replies-toggle-btn" data-comment-id="${comment.id}">
@@ -4918,6 +5039,7 @@
                                             <div class="comment-header">
                                                 <span class="comment-author">${reply.user.name}</span>
                                                 <span class="comment-time">${reply.time_ago}</span>
+                                                ${reply.is_edited ? '<span class="comment-edited-badge">(edited)</span>' : ''}
                                             </div>
                                             <p class="comment-text">${reply.content}</p>
                                             <div class="comment-actions">
@@ -4929,6 +5051,11 @@
                                                     <i class="${reply.user_action === 'dislike' ? 'fa-solid' : 'fa-regular'} fa-thumbs-down"></i>
                                                     <span class="comment-dislike-count">${reply.dislikes_count}</span>
                                                 </button>
+                                                ${reply.user.id === currentUserId ? `
+                                                    <button class="comment-action comment-edit-btn" data-comment-id="${reply.id}">
+                                                        <i class="fa-regular fa-pen-to-square"></i> Edit
+                                                    </button>
+                                                ` : ''}
                                             </div>
                                         </div>
                                     </div>
@@ -5054,6 +5181,84 @@
             });
         });
 
+        // Edit buttons
+        document.querySelectorAll('.comment-edit-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const commentId = this.dataset.commentId;
+                const commentEl = this.closest('.comment');
+                const commentContent = commentEl.querySelector('.comment-content');
+                const commentTextEl = commentContent.querySelector('.comment-text');
+                const commentActionsEl = commentContent.querySelector('.comment-actions');
+                const currentText = commentTextEl.textContent;
+
+                // Remove any existing inline edit/reply inputs
+                document.querySelectorAll('.inline-edit-container, .inline-reply-container').forEach(el => el.remove());
+
+                // Hide the original text and actions
+                commentTextEl.style.display = 'none';
+                commentActionsEl.style.display = 'none';
+
+                // Create inline edit container
+                const editContainer = document.createElement('div');
+                editContainer.className = 'inline-edit-container';
+                editContainer.innerHTML = `
+                    <input type="text" class="inline-edit-input" value="${currentText.replace(/"/g, '&quot;')}" />
+                    <div class="inline-edit-actions">
+                        <button class="inline-edit-cancel" type="button">Cancel</button>
+                        <button class="inline-edit-save" type="button">Save</button>
+                    </div>
+                `;
+
+                // Insert after the header
+                commentTextEl.insertAdjacentElement('afterend', editContainer);
+
+                const editInput = editContainer.querySelector('.inline-edit-input');
+                const saveBtn = editContainer.querySelector('.inline-edit-save');
+                const cancelBtn = editContainer.querySelector('.inline-edit-cancel');
+
+                editInput.focus();
+                // Move cursor to end
+                editInput.setSelectionRange(editInput.value.length, editInput.value.length);
+
+                // Enable/disable save based on changes
+                editInput.addEventListener('input', function () {
+                    const hasChanged = this.value.trim() !== currentText.trim() && this.value.trim().length > 0;
+                    saveBtn.disabled = !hasChanged;
+                });
+
+                // Cancel edit
+                cancelBtn.addEventListener('click', function () {
+                    editContainer.remove();
+                    commentTextEl.style.display = '';
+                    commentActionsEl.style.display = '';
+                });
+
+                // Save edit
+                saveBtn.addEventListener('click', function () {
+                    submitCommentEdit(commentId, editInput, editContainer, commentTextEl, commentActionsEl);
+                });
+
+                // Save on Enter
+                editInput.addEventListener('keypress', function (e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        if (this.value.trim() !== currentText.trim() && this.value.trim().length > 0) {
+                            submitCommentEdit(commentId, editInput, editContainer, commentTextEl, commentActionsEl);
+                        }
+                    }
+                });
+
+                // Cancel on Escape
+                editInput.addEventListener('keydown', function (e) {
+                    if (e.key === 'Escape') {
+                        editContainer.remove();
+                        commentTextEl.style.display = '';
+                        commentActionsEl.style.display = '';
+                    }
+                });
+            });
+        });
+
         // Replies toggle buttons
         document.querySelectorAll('.replies-toggle-btn').forEach(btn => {
             btn.addEventListener('click', function () {
@@ -5144,6 +5349,58 @@
                 });
             });
         });
+    }
+
+    // Submit a comment edit
+    function submitCommentEdit(commentId, inputEl, containerEl, textEl, actionsEl) {
+        const newContent = inputEl.value.trim();
+        if (!newContent) return;
+
+        const saveBtn = containerEl.querySelector('.inline-edit-save');
+        saveBtn.textContent = '...';
+        saveBtn.disabled = true;
+        inputEl.disabled = true;
+
+        fetch(`/dashboard/comment/${commentId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ content: newContent })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    containerEl.remove();
+                    textEl.textContent = newContent;
+                    textEl.style.display = '';
+                    actionsEl.style.display = '';
+
+                    // Add (edited) badge if not already present
+                    const header = textEl.closest('.comment-content').querySelector('.comment-header');
+                    if (!header.querySelector('.comment-edited-badge')) {
+                        const badge = document.createElement('span');
+                        badge.className = 'comment-edited-badge';
+                        badge.textContent = '(edited)';
+                        header.appendChild(badge);
+                    }
+
+                    showSuccessMessage('Comment updated successfully!');
+                } else {
+                    alert(data.message || 'Failed to update comment');
+                    saveBtn.textContent = 'Save';
+                    saveBtn.disabled = false;
+                    inputEl.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error updating comment:', error);
+                alert('Failed to update comment. Please try again.');
+                saveBtn.textContent = 'Save';
+                saveBtn.disabled = false;
+                inputEl.disabled = false;
+            });
     }
 
     // Submit an inline reply
