@@ -391,6 +391,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             Route::get('/users/invite', [AdminController::class , 'inviteAdmin'])->name('users.invite');
             Route::post('/users/invite', [AdminController::class , 'storeAdminInvite'])->name('users.invite.store');
             Route::get('/users/{id}', [AdminController::class , 'showUser'])->name('users.show');
+            Route::get('/users/{id}/activity', [AdminController::class , 'showUserActivity'])->name('users.activity');
             Route::post('/users/{id}/toggle-status', [AdminController::class , 'toggleUserStatus'])->name('users.toggle-status');
             Route::post('/users/{id}/demote', [AdminController::class , 'demoteAdmin'])->name('users.demote');
             Route::post('/users/{id}/update-avatar', [AdminController::class , 'updateUserAvatar'])->name('users.update-avatar');
