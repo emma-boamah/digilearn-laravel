@@ -64,7 +64,7 @@
                                                 <div class="flex items-center">
                                                     @if($completion->video)
                                                         <div class="flex-shrink-0 h-10 w-16 bg-gray-200 rounded overflow-hidden">
-                                                            <img class="h-10 w-16 object-cover" src="{{ Storage::url($completion->video->thumbnail) }}" alt="">
+                                                            <img class="h-10 w-16 object-cover" src="{{ $completion->video->getThumbnailUrl() }}" alt="{{ $completion->video->title }}" onerror="this.src='{{ asset('images/video-placeholder.jpg') }}'">
                                                         </div>
                                                         <div class="ml-4">
                                                             <div class="text-sm font-medium text-gray-900">{{ Str::limit($completion->video->title, 40) }}</div>
