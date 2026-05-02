@@ -1047,6 +1047,9 @@
                     loadingItem.remove();
                 }
 
+                const footer = document.querySelector('.notification-dropdown-menu .dropdown-footer');
+                const markAllReadBtn = document.querySelector('.notification-dropdown-menu .mark-all-read');
+
                 if (notifications.length === 0) {
                     notificationList.innerHTML = `
                     <div class="notification-item">
@@ -1055,7 +1058,12 @@
                         </div>
                     </div>
                 `;
+                    if (footer) footer.style.display = 'none';
+                    if (markAllReadBtn) markAllReadBtn.style.display = 'none';
                     return;
+                } else {
+                    if (footer) footer.style.display = 'block';
+                    if (markAllReadBtn) markAllReadBtn.style.display = 'block';
                 }
 
                 const notificationHtml = notifications.map(notification => {

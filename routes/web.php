@@ -227,6 +227,22 @@ Route::middleware(['auth'])->group(function () {
         }
         )->name('online-users');
 
+        // Notifications (Available to all authenticated users)
+        Route::get('/dashboard/notifications', [NotificationController::class , 'dashboardIndex'])->name('dashboard.notifications');
+        Route::middleware(['decode.obfuscated'])->group(function () {
+            Route::get('/dashboard/notifications/{notificationId}', [NotificationController::class , 'show'])->name('dashboard.notification.show');
+        });
+        Route::middleware(['decode.obfuscated'])->prefix('api/notifications')->name('api.notifications.')->group(function () {
+            Route::get('/', [NotificationController::class , 'index'])->name('index');
+            Route::get('/unread-count', [NotificationController::class , 'getUnreadCount'])->name('unread-count');
+            Route::put('/{notificationId}/read', [NotificationController::class , 'markAsRead'])->name('mark-read');
+            Route::put('/mark-all-read', [NotificationController::class , 'markAllAsRead'])->name('mark-all-read');
+            Route::delete('/{notificationId}', [NotificationController::class , 'destroy'])->name('destroy');
+            Route::get('/preferences', [NotificationController::class , 'getPreferences'])->name('preferences');
+            Route::put('/preferences', [NotificationController::class , 'updatePreferences'])->name('preferences.update');
+            Route::post('/grade-opt-out', [NotificationController::class , 'toggleGradeOptOut'])->name('grade-opt-out');
+        });
+
         // Restricted Premium Routes (Subscribed only)
         Route::middleware(['subscribed'])->group(function () {
             Route::get('/dashboard/digilearn', [DashboardController::class , 'digilearn'])->name('dashboard.digilearn');
@@ -331,24 +347,6 @@ Route::middleware(['auth'])->group(function () {
                 // Virtual classroom
                 Route::get('/dashboard/join-class', [DashboardController::class , 'joinClass'])->name('dashboard.join-class');
                 Route::get('/dashboard/classroom/{roomId}', [DashboardController::class , 'showClassroom'])->name('dashboard.classroom.show');
-
-                // Notifications
-                Route::get('/dashboard/notifications', [NotificationController::class , 'dashboardIndex'])->name('dashboard.notifications');
-                Route::middleware(['decode.obfuscated'])->group(function () {
-                    Route::get('/dashboard/notifications/{notificationId}', [NotificationController::class , 'show'])->name('dashboard.notification.show');
-                }
-                );
-                Route::middleware(['decode.obfuscated'])->prefix('api/notifications')->name('api.notifications.')->group(function () {
-                    Route::get('/', [NotificationController::class , 'index'])->name('index');
-                    Route::get('/unread-count', [NotificationController::class , 'getUnreadCount'])->name('unread-count');
-                    Route::put('/{notificationId}/read', [NotificationController::class , 'markAsRead'])->name('mark-read');
-                    Route::put('/mark-all-read', [NotificationController::class , 'markAllAsRead'])->name('mark-all-read');
-                    Route::delete('/{notificationId}', [NotificationController::class , 'destroy'])->name('destroy');
-                    Route::get('/preferences', [NotificationController::class , 'getPreferences'])->name('preferences');
-                    Route::put('/preferences', [NotificationController::class , 'updatePreferences'])->name('preferences.update');
-                    Route::post('/grade-opt-out', [NotificationController::class , 'toggleGradeOptOut'])->name('grade-opt-out');
-                }
-                );
 
                 // Recommendations & Search
                 Route::get('/api/dashboard/feeds', [RecommendationController::class , 'getDashboardFeeds'])->name('api.dashboard.feeds');

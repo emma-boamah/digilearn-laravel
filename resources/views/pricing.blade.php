@@ -431,4 +431,29 @@ secure_asset('images/shoutoutgh-logo.png')
         </div>
     </div>
 </section>
+
+@if(session('error'))
+<div id="subscriptionAlert" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background-color: var(--primary-red); color: white; padding: 1rem 2rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; display: flex; align-items: center; gap: 12px; font-weight: 500;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+    {{ session('error') }}
+    <button onclick="document.getElementById('subscriptionAlert').style.display='none'" style="background: none; border: none; color: white; cursor: pointer; padding: 4px; margin-left: 8px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+</div>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    setTimeout(() => {
+        const alert = document.getElementById('subscriptionAlert');
+        if (alert) {
+            alert.style.transition = 'opacity 0.5s ease';
+            alert.style.opacity = '0';
+            setTimeout(() => alert.style.display = 'none', 500);
+        }
+    }, 5000);
+</script>
+@endif
+
 @endsection
