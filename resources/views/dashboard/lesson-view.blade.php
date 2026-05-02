@@ -25,6 +25,9 @@
     }
 </script>
 
+<!-- Emoji Picker Element -->
+<script nonce="{{ request()->attributes->get('csp_nonce') }}" type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.21.3/index.js"></script>
+
 <!-- Additional Libraries for Enhanced Functionality -->
 <script nonce="{{ request()->attributes->get('csp_nonce') }}"
     src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -464,11 +467,43 @@
         background-color: var(--primary-red-hover);
     }
 
+    .emoji-trigger-btn {
+        background: none;
+        border: none;
+        font-size: 1.25rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        transition: transform 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--gray-500);
+        margin-top: 2px;
+    }
+
+    .emoji-trigger-btn:hover {
+        transform: scale(1.1);
+        color: var(--gray-700);
+    }
+
+    .emoji-picker-wrapper {
+        position: absolute;
+        z-index: 1000;
+        display: none;
+        box-shadow: var(--shadow-lg);
+        border-radius: 8px;
+    }
+
+    .emoji-picker-wrapper.active {
+        display: block;
+    }
+
     .comment-input-container {
         display: flex;
         gap: 1rem;
         margin-bottom: 2rem;
         align-items: flex-start;
+        position: relative;
     }
 
     .comment-avatar {
@@ -687,6 +722,7 @@
         padding-top: 0.75rem;
         border-top: 1px solid var(--gray-200);
         animation: fadeSlideIn 0.2s ease;
+        position: relative;
     }
 
     [data-theme="dark"] .inline-reply-container {
@@ -826,6 +862,7 @@
     .inline-edit-container {
         margin-top: 0.25rem;
         animation: fadeSlideIn 0.2s ease;
+        position: relative;
     }
 
     .inline-edit-input {
@@ -4069,6 +4106,18 @@
                         @endif
                     </div>
                     <input type="text" class="comment-input" id="commentInput" placeholder="Add a comment..." />
+                    <button class="emoji-trigger-btn" id="mainEmojiBtn" type="button" title="Insert Emoji">
+                        <svg width="24" height="24" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                            <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                <g fill="currentColor" fill-rule="nonzero">
+                                    <path d="M17.5,12 C20.5375661,12 23,14.4624339 23,17.5 C23,20.5375661 20.5375661,23 17.5,23 C14.4624339,23 12,20.5375661 12,17.5 C12,14.4624339 14.4624339,12 17.5,12 Z M12.0000002,1.99896738 C17.523704,1.99896738 22.0015507,6.47681407 22.0015507,12.0005179 C22.0015507,12.2637452 21.9913819,12.5245975 21.9714157,12.7827034 C21.5335438,12.3671164 21.0376367,12.012094 20.4972374,11.7307716 C20.3551544,7.16057357 16.6051843,3.49896738 12.0000002,3.49896738 C7.30472352,3.49896738 3.49844971,7.30524119 3.49844971,12.0005179 C3.49844971,16.6060394 7.16059249,20.3562216 11.7317296,20.4979161 C12.0124658,21.0381559 12.3673338,21.5337732 12.7825138,21.9716342 C12.5247521,21.9918733 12.2635668,22.0020684 12.0000002,22.0020684 C6.47629639,22.0020684 1.99844971,17.5242217 1.99844971,12.0005179 C1.99844971,6.47681407 6.47629639,1.99896738 12.0000002,1.99896738 Z M17.5,13.9992349 L17.4101244,14.0072906 C17.2060313,14.0443345 17.0450996,14.2052662 17.0080557,14.4093593 L17,14.4992349 L16.9996498,16.9992349 L14.4976498,17 L14.4077742,17.0080557 C14.2036811,17.0450996 14.0427494,17.2060313 14.0057055,17.4101244 L13.9976498,17.5 L14.0057055,17.5898756 C14.0427494,17.7939687 14.2036811,17.9549004 14.4077742,17.9919443 L14.4976498,18 L17.0006498,17.9992349 L17.0011076,20.5034847 L17.0091633,20.5933603 C17.0462073,20.7974534 17.207139,20.9583851 17.411232,20.995429 L17.5011076,21.0034847 L17.5909833,20.995429 C17.7950763,20.9583851 17.956008,20.7974534 17.993052,20.5933603 L18.0011076,20.5034847 L18.0006498,17.9992349 L20.5045655,18 L20.5944411,17.9919443 C20.7985342,17.9549004 20.9594659,17.7939687 20.9965098,17.5898756 L21.0045655,17.5 L20.9965098,17.4101244 C20.9594659,17.2060313 20.7985342,17.0450996 20.5944411,17.0080557 L20.5045655,17 L17.9996498,16.9992349 L18,14.4992349 L17.9919443,14.4093593 C17.9549004,14.2052662 17.7939687,14.0443345 17.5898756,14.0072906 L17.5,13.9992349 Z M8.46174078,14.7838355 C9.12309331,15.6232213 10.0524954,16.1974014 11.0917655,16.4103066 C11.0312056,16.7638158 11,17.1282637 11,17.5 C11,17.6408778 11.0044818,17.7807089 11.0133105,17.9193584 C9.53812034,17.6766509 8.21128537,16.8896809 7.28351576,15.7121597 C7.02716611,15.3868018 7.08310832,14.9152347 7.40846617,14.6588851 C7.73382403,14.4025354 8.20539113,14.4584777 8.46174078,14.7838355 Z M9.00044779,8.75115873 C9.69041108,8.75115873 10.2497368,9.3104845 10.2497368,10.0004478 C10.2497368,10.6904111 9.69041108,11.2497368 9.00044779,11.2497368 C8.3104845,11.2497368 7.75115873,10.6904111 7.75115873,10.0004478 C7.75115873,9.3104845 8.3104845,8.75115873 9.00044779,8.75115873 Z M15.0004478,8.75115873 C15.6904111,8.75115873 16.2497368,9.3104845 16.2497368,10.0004478 C16.2497368,10.6904111 15.6904111,11.2497368 15.0004478,11.2497368 C14.3104845,11.2497368 13.7511587,10.6904111 13.7511587,10.0004478 C13.7511587,9.3104845 14.3104845,8.75115873 15.0004478,8.75115873 Z"></path>
+                                </g>
+                            </g>
+                        </svg>
+                    </button>
+                    <div class="emoji-picker-wrapper" id="mainEmojiPickerWrapper" style="top: 100%; right: 0;">
+                        <emoji-picker></emoji-picker>
+                    </div>
                     <button class="comment-submit-btn" id="commentSubmitBtn">
                         <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
@@ -4892,6 +4941,48 @@
         // Initialize real-time comment broadcasting
         initializeCommentBroadcasting();
 
+        // Emoji Picker Logic for Main Input
+        const mainEmojiBtn = document.getElementById('mainEmojiBtn');
+        const mainEmojiWrapper = document.getElementById('mainEmojiPickerWrapper');
+        const mainEmojiPicker = mainEmojiWrapper ? mainEmojiWrapper.querySelector('emoji-picker') : null;
+
+        if (mainEmojiBtn && mainEmojiWrapper && mainEmojiPicker) {
+            mainEmojiBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                mainEmojiWrapper.classList.toggle('active');
+                
+                // Hide other pickers
+                document.querySelectorAll('.emoji-picker-wrapper.active').forEach(picker => {
+                    if (picker !== mainEmojiWrapper) picker.classList.remove('active');
+                });
+            });
+
+            mainEmojiPicker.addEventListener('emoji-click', event => {
+                const cursorPosition = commentInput.selectionStart;
+                const textBeforeCursor = commentInput.value.substring(0, cursorPosition);
+                const textAfterCursor = commentInput.value.substring(cursorPosition, commentInput.value.length);
+                
+                commentInput.value = textBeforeCursor + event.detail.unicode + textAfterCursor;
+                commentInput.focus();
+                
+                // Trigger input event to show submit button
+                commentInput.dispatchEvent(new Event('input'));
+                
+                // Move cursor after inserted emoji
+                const newCursorPos = cursorPosition + event.detail.unicode.length;
+                commentInput.setSelectionRange(newCursorPos, newCursorPos);
+            });
+        }
+
+        // Close pickers on outside click
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.emoji-picker-wrapper') && !e.target.closest('.emoji-trigger-btn')) {
+                document.querySelectorAll('.emoji-picker-wrapper.active').forEach(picker => {
+                    picker.classList.remove('active');
+                });
+            }
+        });
+
         // Show submit button when typing
         if (commentInput) {
             commentInput.addEventListener('input', function () {
@@ -5203,6 +5294,18 @@
                 editContainer.className = 'inline-edit-container';
                 editContainer.innerHTML = `
                     <input type="text" class="inline-edit-input" value="${currentText.replace(/"/g, '&quot;')}" />
+                    <button class="emoji-trigger-btn inline-emoji-btn" type="button" title="Insert Emoji">
+                        <svg width="24" height="24" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                            <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                <g fill="currentColor" fill-rule="nonzero">
+                                    <path d="M17.5,12 C20.5375661,12 23,14.4624339 23,17.5 C23,20.5375661 20.5375661,23 17.5,23 C14.4624339,23 12,20.5375661 12,17.5 C12,14.4624339 14.4624339,12 17.5,12 Z M12.0000002,1.99896738 C17.523704,1.99896738 22.0015507,6.47681407 22.0015507,12.0005179 C22.0015507,12.2637452 21.9913819,12.5245975 21.9714157,12.7827034 C21.5335438,12.3671164 21.0376367,12.012094 20.4972374,11.7307716 C20.3551544,7.16057357 16.6051843,3.49896738 12.0000002,3.49896738 C7.30472352,3.49896738 3.49844971,7.30524119 3.49844971,12.0005179 C3.49844971,16.6060394 7.16059249,20.3562216 11.7317296,20.4979161 C12.0124658,21.0381559 12.3673338,21.5337732 12.7825138,21.9716342 C12.5247521,21.9918733 12.2635668,22.0020684 12.0000002,22.0020684 C6.47629639,22.0020684 1.99844971,17.5242217 1.99844971,12.0005179 C1.99844971,6.47681407 6.47629639,1.99896738 12.0000002,1.99896738 Z M17.5,13.9992349 L17.4101244,14.0072906 C17.2060313,14.0443345 17.0450996,14.2052662 17.0080557,14.4093593 L17,14.4992349 L16.9996498,16.9992349 L14.4976498,17 L14.4077742,17.0080557 C14.2036811,17.0450996 14.0427494,17.2060313 14.0057055,17.4101244 L13.9976498,17.5 L14.0057055,17.5898756 C14.0427494,17.7939687 14.2036811,17.9549004 14.4077742,17.9919443 L14.4976498,18 L17.0006498,17.9992349 L17.0011076,20.5034847 L17.0091633,20.5933603 C17.0462073,20.7974534 17.207139,20.9583851 17.411232,20.995429 L17.5011076,21.0034847 L17.5909833,20.995429 C17.7950763,20.9583851 17.956008,20.7974534 17.993052,20.5933603 L18.0011076,20.5034847 L18.0006498,17.9992349 L20.5045655,18 L20.5944411,17.9919443 C20.7985342,17.9549004 20.9594659,17.7939687 20.9965098,17.5898756 L21.0045655,17.5 L20.9965098,17.4101244 C20.9594659,17.2060313 20.7985342,17.0450996 20.5944411,17.0080557 L20.5045655,17 L17.9996498,16.9992349 L18,14.4992349 L17.9919443,14.4093593 C17.9549004,14.2052662 17.7939687,14.0443345 17.5898756,14.0072906 L17.5,13.9992349 Z M8.46174078,14.7838355 C9.12309331,15.6232213 10.0524954,16.1974014 11.0917655,16.4103066 C11.0312056,16.7638158 11,17.1282637 11,17.5 C11,17.6408778 11.0044818,17.7807089 11.0133105,17.9193584 C9.53812034,17.6766509 8.21128537,16.8896809 7.28351576,15.7121597 C7.02716611,15.3868018 7.08310832,14.9152347 7.40846617,14.6588851 C7.73382403,14.4025354 8.20539113,14.4584777 8.46174078,14.7838355 Z M9.00044779,8.75115873 C9.69041108,8.75115873 10.2497368,9.3104845 10.2497368,10.0004478 C10.2497368,10.6904111 9.69041108,11.2497368 9.00044779,11.2497368 C8.3104845,11.2497368 7.75115873,10.6904111 7.75115873,10.0004478 C7.75115873,9.3104845 8.3104845,8.75115873 9.00044779,8.75115873 Z M15.0004478,8.75115873 C15.6904111,8.75115873 16.2497368,9.3104845 16.2497368,10.0004478 C16.2497368,10.6904111 15.6904111,11.2497368 15.0004478,11.2497368 C14.3104845,11.2497368 13.7511587,10.6904111 13.7511587,10.0004478 C13.7511587,9.3104845 14.3104845,8.75115873 15.0004478,8.75115873 Z"></path>
+                                </g>
+                            </g>
+                        </svg>
+                    </button>
+                    <div class="emoji-picker-wrapper" style="top: 100%; right: 0;">
+                        <emoji-picker></emoji-picker>
+                    </div>
                     <div class="inline-edit-actions">
                         <button class="inline-edit-cancel" type="button">Cancel</button>
                         <button class="inline-edit-save" type="button">Save</button>
@@ -5215,6 +5318,32 @@
                 const editInput = editContainer.querySelector('.inline-edit-input');
                 const saveBtn = editContainer.querySelector('.inline-edit-save');
                 const cancelBtn = editContainer.querySelector('.inline-edit-cancel');
+
+                // Emoji Picker Logic
+                const editEmojiBtn = editContainer.querySelector('.inline-emoji-btn');
+                const editEmojiWrapper = editContainer.querySelector('.emoji-picker-wrapper');
+                const editEmojiPicker = editEmojiWrapper.querySelector('emoji-picker');
+
+                editEmojiBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    editEmojiWrapper.classList.toggle('active');
+                    document.querySelectorAll('.emoji-picker-wrapper.active').forEach(picker => {
+                        if (picker !== editEmojiWrapper) picker.classList.remove('active');
+                    });
+                });
+
+                editEmojiPicker.addEventListener('emoji-click', event => {
+                    const cursorPosition = editInput.selectionStart;
+                    const textBeforeCursor = editInput.value.substring(0, cursorPosition);
+                    const textAfterCursor = editInput.value.substring(cursorPosition, editInput.value.length);
+                    
+                    editInput.value = textBeforeCursor + event.detail.unicode + textAfterCursor;
+                    editInput.focus();
+                    editInput.dispatchEvent(new Event('input'));
+                    
+                    const newCursorPos = cursorPosition + event.detail.unicode.length;
+                    editInput.setSelectionRange(newCursorPos, newCursorPos);
+                });
 
                 editInput.focus();
                 // Move cursor to end
@@ -5305,6 +5434,18 @@
                 replyContainer.innerHTML = `
                     <div class="comment-avatar">${avatarHtml}</div>
                     <input type="text" class="inline-reply-input" placeholder="Add a reply..." autofocus />
+                    <button class="emoji-trigger-btn inline-emoji-btn" type="button" title="Insert Emoji">
+                        <svg width="24" height="24" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                            <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                <g fill="currentColor" fill-rule="nonzero">
+                                    <path d="M17.5,12 C20.5375661,12 23,14.4624339 23,17.5 C23,20.5375661 20.5375661,23 17.5,23 C14.4624339,23 12,20.5375661 12,17.5 C12,14.4624339 14.4624339,12 17.5,12 Z M12.0000002,1.99896738 C17.523704,1.99896738 22.0015507,6.47681407 22.0015507,12.0005179 C22.0015507,12.2637452 21.9913819,12.5245975 21.9714157,12.7827034 C21.5335438,12.3671164 21.0376367,12.012094 20.4972374,11.7307716 C20.3551544,7.16057357 16.6051843,3.49896738 12.0000002,3.49896738 C7.30472352,3.49896738 3.49844971,7.30524119 3.49844971,12.0005179 C3.49844971,16.6060394 7.16059249,20.3562216 11.7317296,20.4979161 C12.0124658,21.0381559 12.3673338,21.5337732 12.7825138,21.9716342 C12.5247521,21.9918733 12.2635668,22.0020684 12.0000002,22.0020684 C6.47629639,22.0020684 1.99844971,17.5242217 1.99844971,12.0005179 C1.99844971,6.47681407 6.47629639,1.99896738 12.0000002,1.99896738 Z M17.5,13.9992349 L17.4101244,14.0072906 C17.2060313,14.0443345 17.0450996,14.2052662 17.0080557,14.4093593 L17,14.4992349 L16.9996498,16.9992349 L14.4976498,17 L14.4077742,17.0080557 C14.2036811,17.0450996 14.0427494,17.2060313 14.0057055,17.4101244 L13.9976498,17.5 L14.0057055,17.5898756 C14.0427494,17.7939687 14.2036811,17.9549004 14.4077742,17.9919443 L14.4976498,18 L17.0006498,17.9992349 L17.0011076,20.5034847 L17.0091633,20.5933603 C17.0462073,20.7974534 17.207139,20.9583851 17.411232,20.995429 L17.5011076,21.0034847 L17.5909833,20.995429 C17.7950763,20.9583851 17.956008,20.7974534 17.993052,20.5933603 L18.0011076,20.5034847 L18.0006498,17.9992349 L20.5045655,18 L20.5944411,17.9919443 C20.7985342,17.9549004 20.9594659,17.7939687 20.9965098,17.5898756 L21.0045655,17.5 L20.9965098,17.4101244 C20.9594659,17.2060313 20.7985342,17.0450996 20.5944411,17.0080557 L20.5045655,17 L17.9996498,16.9992349 L18,14.4992349 L17.9919443,14.4093593 C17.9549004,14.2052662 17.7939687,14.0443345 17.5898756,14.0072906 L17.5,13.9992349 Z M8.46174078,14.7838355 C9.12309331,15.6232213 10.0524954,16.1974014 11.0917655,16.4103066 C11.0312056,16.7638158 11,17.1282637 11,17.5 C11,17.6408778 11.0044818,17.7807089 11.0133105,17.9193584 C9.53812034,17.6766509 8.21128537,16.8896809 7.28351576,15.7121597 C7.02716611,15.3868018 7.08310832,14.9152347 7.40846617,14.6588851 C7.73382403,14.4025354 8.20539113,14.4584777 8.46174078,14.7838355 Z M9.00044779,8.75115873 C9.69041108,8.75115873 10.2497368,9.3104845 10.2497368,10.0004478 C10.2497368,10.6904111 9.69041108,11.2497368 9.00044779,11.2497368 C8.3104845,11.2497368 7.75115873,10.6904111 7.75115873,10.0004478 C7.75115873,9.3104845 8.3104845,8.75115873 9.00044779,8.75115873 Z M15.0004478,8.75115873 C15.6904111,8.75115873 16.2497368,9.3104845 16.2497368,10.0004478 C16.2497368,10.6904111 15.6904111,11.2497368 15.0004478,11.2497368 C14.3104845,11.2497368 13.7511587,10.6904111 13.7511587,10.0004478 C13.7511587,9.3104845 14.3104845,8.75115873 15.0004478,8.75115873 Z"></path>
+                                </g>
+                            </g>
+                        </svg>
+                    </button>
+                    <div class="emoji-picker-wrapper" style="bottom: 100%; right: 0;">
+                        <emoji-picker></emoji-picker>
+                    </div>
                     <div class="inline-reply-actions">
                         <button class="inline-reply-cancel" type="button">Cancel</button>
                         <button class="inline-reply-submit" type="button">Reply</button>
@@ -5316,6 +5457,32 @@
                 const replyInput = replyContainer.querySelector('.inline-reply-input');
                 const replySubmitBtn = replyContainer.querySelector('.inline-reply-submit');
                 const replyCancelBtn = replyContainer.querySelector('.inline-reply-cancel');
+
+                // Emoji Picker Logic
+                const replyEmojiBtn = replyContainer.querySelector('.inline-emoji-btn');
+                const replyEmojiWrapper = replyContainer.querySelector('.emoji-picker-wrapper');
+                const replyEmojiPicker = replyEmojiWrapper.querySelector('emoji-picker');
+
+                replyEmojiBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    replyEmojiWrapper.classList.toggle('active');
+                    document.querySelectorAll('.emoji-picker-wrapper.active').forEach(picker => {
+                        if (picker !== replyEmojiWrapper) picker.classList.remove('active');
+                    });
+                });
+
+                replyEmojiPicker.addEventListener('emoji-click', event => {
+                    const cursorPosition = replyInput.selectionStart;
+                    const textBeforeCursor = replyInput.value.substring(0, cursorPosition);
+                    const textAfterCursor = replyInput.value.substring(cursorPosition, replyInput.value.length);
+                    
+                    replyInput.value = textBeforeCursor + event.detail.unicode + textAfterCursor;
+                    replyInput.focus();
+                    replyInput.dispatchEvent(new Event('input'));
+                    
+                    const newCursorPos = cursorPosition + event.detail.unicode.length;
+                    replyInput.setSelectionRange(newCursorPos, newCursorPos);
+                });
 
                 replyInput.focus();
 
