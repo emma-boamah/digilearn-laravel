@@ -490,8 +490,50 @@
         position: absolute;
         z-index: 1000;
         display: none;
-        box-shadow: var(--shadow-lg);
-        border-radius: 8px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0,0,0,0.05);
+        border-radius: 12px;
+        overflow: hidden;
+        animation: scaleIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        transform-origin: top right;
+    }
+
+    @keyframes scaleIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Premium Emoji Picker Styles via CSS Variables */
+    emoji-picker {
+        --background: #ffffff;
+        --border-color: transparent;
+        --border-size: 0;
+        --indicator-color: var(--primary-red);
+        --indicator-height: 3px;
+        --button-hover-background: var(--gray-50);
+        --button-active-background: var(--gray-100);
+        --input-border-radius: 20px;
+        --input-border-color: var(--gray-200);
+        --input-font-color: var(--gray-800);
+        --input-placeholder-color: var(--gray-500);
+        --category-font-color: var(--gray-600);
+        --search-icon-color: var(--gray-400);
+        --outline-color: var(--primary-red);
+        --emoji-size: 1.5rem;
+        --emoji-padding: 0.4rem;
+        font-family: 'Inter', system-ui, sans-serif;
+        height: 400px;
+        width: 320px;
+    }
+    
+    [data-theme="dark"] emoji-picker {
+        --background: #1e1e24;
+        --button-hover-background: #2a2a32;
+        --button-active-background: #353540;
+        --input-border-color: #353540;
+        --input-font-color: #e5e5e5;
+        --input-placeholder-color: #9ca3af;
+        --category-font-color: #9ca3af;
+        --search-icon-color: #9ca3af;
     }
 
     .emoji-picker-wrapper.active {
