@@ -982,6 +982,9 @@
             const notificationBadge = document.querySelector('.notification-badge');
 
             let notificationsLoaded = false;
+            let currentNotificationPage = 1;
+            let isLoadingMoreNotifications = false;
+            let hasMoreNotifications = true;
 
             if (notificationButton && notificationDropdown) {
                 notificationButton.addEventListener('click', function (event) {
@@ -990,7 +993,7 @@
                     notificationDropdown.classList.toggle('active');
 
                     if (!isActive && !notificationsLoaded) {
-                        loadNotifications();
+                        loadNotifications(1);
                     }
                 });
 
@@ -1017,8 +1020,21 @@
                 });
             }
 
-            function loadNotifications() {
-                fetch('/api/notifications?per_page=5', {
+            function loadNotifications(page = 1) {
+                if (isLoadingMoreNotifications || (!hasMoreNotifications && page !== 1)) return;
+                
+                isLoadingMoreNotifications = true;
+                
+                // Add loading indicator at the bottom if loading more
+                if (page > 1) {
+                    notificationList.insertAdjacentHTML('beforeend', `
+                        <div class="notification-item loading-more" style="justify-content: center; padding: 10px;">
+                            <i class="fas fa-spinner fa-spin" style="color: var(--primary-red);"></i>
+                        </div>
+                    `);
+                }
+
+                fetch(`/api/notifications?per_page=5&page=${page}`, {
                     method: 'GET',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
@@ -1027,21 +1043,43 @@
                 })
                     .then(response => response.json())
                     .then(data => {
+                        // Remove loading indicator
+                        const loadingMore = document.querySelector('.loading-more');
+                        if (loadingMore) loadingMore.remove();
+
                         if (data.success) {
-                            renderNotifications(data.notifications.data);
+                            hasMoreNotifications = data.notifications.next_page_url !== null;
+                            renderNotifications(data.notifications.data, page > 1);
                             updateBadge(data.unread_count);
                             notificationsLoaded = true;
+                            currentNotificationPage = page;
                         } else {
-                            showNotificationError('Failed to load notifications');
+                            if (page === 1) showNotificationError('Failed to load notifications');
                         }
+                        isLoadingMoreNotifications = false;
                     })
                     .catch(error => {
                         console.error('Error loading notifications:', error);
-                        showNotificationError('Failed to load notifications');
+                        const loadingMore = document.querySelector('.loading-more');
+                        if (loadingMore) loadingMore.remove();
+                        if (page === 1) showNotificationError('Failed to load notifications');
+                        isLoadingMoreNotifications = false;
                     });
             }
 
-            function renderNotifications(notifications) {
+            // Scroll event for infinite scrolling in the dropdown
+            if (notificationList) {
+                notificationList.addEventListener('scroll', function() {
+                    // Check if scrolled near bottom (within 20px)
+                    if (this.scrollTop + this.clientHeight >= this.scrollHeight - 20) {
+                        if (hasMoreNotifications && !isLoadingMoreNotifications) {
+                            loadNotifications(currentNotificationPage + 1);
+                        }
+                    }
+                });
+            }
+
+            function renderNotifications(notifications, append = false) {
                 const loadingItem = document.getElementById('loadingNotifications');
                 if (loadingItem) {
                     loadingItem.remove();
@@ -1050,7 +1088,7 @@
                 const footer = document.querySelector('.notification-dropdown-menu .dropdown-footer');
                 const markAllReadBtn = document.querySelector('.notification-dropdown-menu .mark-all-read');
 
-                if (notifications.length === 0) {
+                if (notifications.length === 0 && !append) {
                     notificationList.innerHTML = `
                     <div class="notification-item">
                         <div class="notification-content">
@@ -1061,7 +1099,7 @@
                     if (footer) footer.style.display = 'none';
                     if (markAllReadBtn) markAllReadBtn.style.display = 'none';
                     return;
-                } else {
+                } else if (!append) {
                     if (footer) footer.style.display = 'block';
                     if (markAllReadBtn) markAllReadBtn.style.display = 'block';
                 }
@@ -1099,24 +1137,38 @@
                 `;
                 }).join('');
 
-                notificationList.innerHTML = notificationHtml;
+                if (append) {
+                    notificationList.insertAdjacentHTML('beforeend', notificationHtml);
+                } else {
+                    notificationList.innerHTML = notificationHtml;
+                }
 
                 // Add click handlers for individual notifications
-                document.querySelectorAll('.notification-item').forEach(item => {
-                    item.addEventListener('click', function () {
-                        const notificationId = this.getAttribute('data-id');
-                        const contentType = this.getAttribute('data-content-type');
-                        const url = this.getAttribute('data-url');
+                // Since we might be appending, let's remove old handlers by cloning or just use event delegation
+                // To keep it simple and preserve existing logic, we'll re-bind to the specific newly added items
+                // Actually, doing it for all .notification-item is fine if we remove the old ones first, or we can just bind to those that don't have it yet.
+                // An easier way: Event delegation on notificationList
+            }
 
-                        if (notificationId && this.classList.contains('unread')) {
+            // Replace individual event listeners with event delegation on the container
+            if (notificationList && !notificationList.dataset.delegated) {
+                notificationList.dataset.delegated = "true";
+                notificationList.addEventListener('click', function(event) {
+                    const item = event.target.closest('.notification-item');
+                    if (item) {
+                        const notificationId = item.getAttribute('data-id');
+                        const contentType = item.getAttribute('data-content-type');
+                        const url = item.getAttribute('data-url');
+
+                        if (notificationId && item.classList.contains('unread')) {
                             markAsRead(notificationId);
+                            item.classList.remove('unread'); // Optimistic UI update
                         }
 
-                        // Handle access control and redirection
                         if (url) {
                             handleNotificationClick(url, contentType);
                         }
-                    });
+                    }
                 });
             }
 

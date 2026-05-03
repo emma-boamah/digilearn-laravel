@@ -466,37 +466,115 @@
             }
         }
 
-        // Event listeners
+        // Event listeners via Event Delegation
         document.addEventListener('DOMContentLoaded', function() {
-            // Mark as read on link click
-            document.querySelectorAll('.notification-link[data-mark-as-read]').forEach(link => {
-                link.addEventListener('click', function() {
-                    const id = this.closest('.notification-row').dataset.notificationId;
-                    markAsRead(id);
-                });
-            });
+            const listGroup = document.querySelector('.notification-list-group');
 
-            // Toggle dropdown
-            document.querySelectorAll('.more-options-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    toggleDropdown(this);
-                });
-            });
+            if (listGroup) {
+                listGroup.addEventListener('click', function(event) {
+                    // Handle mark as read
+                    const markReadLink = event.target.closest('.notification-link[data-mark-as-read="true"]');
+                    if (markReadLink) {
+                        const row = markReadLink.closest('.notification-row');
+                        if (row) {
+                            const id = row.dataset.notificationId;
+                            markAsRead(id);
+                            row.classList.remove('unread'); // Optimistic update
+                            markReadLink.removeAttribute('data-mark-as-read');
+                        }
+                    }
 
-            // Dropdown actions
-            document.querySelectorAll('.dropdown-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    const action = this.dataset.action;
-                    const row = this.closest('.notification-row');
-                    const id = row.dataset.notificationId;
-                    if (action === 'delete') {
-                        deleteNotification(id);
-                    } else if (action === 'mute') {
-                        const typeSlug = this.closest('.notification-actions').querySelector('.more-options-btn').dataset.notificationTypeSlug;
-                        muteNotificationType(typeSlug);
+                    // Handle toggle dropdown
+                    const moreBtn = event.target.closest('.more-options-btn');
+                    if (moreBtn) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        toggleDropdown(moreBtn);
+                    }
+
+                    // Handle dropdown actions
+                    const dropItem = event.target.closest('.dropdown-item');
+                    if (dropItem) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        const action = dropItem.dataset.action;
+                        const row = dropItem.closest('.notification-row');
+                        const id = row ? row.dataset.notificationId : null;
+                        
+                        if (action === 'delete' && id) {
+                            deleteNotification(id);
+                        } else if (action === 'mute') {
+                            const typeSlug = dropItem.closest('.notification-actions').querySelector('.more-options-btn').dataset.notificationTypeSlug;
+                            muteNotificationType(typeSlug);
+                        }
                     }
                 });
-            });
+            }
+
+            // Infinite Scrolling logic for the main notifications page
+            let isLoadingPage = false;
+            let nextPageUrl = document.querySelector('.pagination-container a[rel="next"]')?.href || null;
+            
+            // Hide the default pagination container if JS is enabled
+            const paginationContainer = document.querySelector('.pagination-container');
+            if (paginationContainer) {
+                paginationContainer.style.display = 'none';
+            }
+            
+            if (listGroup && nextPageUrl) {
+                // Add a loading spinner at the bottom
+                const spinnerDiv = document.createElement('div');
+                spinnerDiv.className = 'page-load-spinner';
+                spinnerDiv.innerHTML = '<i class="fas fa-spinner fa-spin fa-2x" style="color: var(--primary-red); margin: 20px auto; display: block; text-align: center;"></i>';
+                spinnerDiv.style.display = 'none';
+                listGroup.parentNode.insertBefore(spinnerDiv, listGroup.nextSibling);
+
+                window.addEventListener('scroll', function() {
+                    if (isLoadingPage || !nextPageUrl) return;
+
+                    // If user is near the bottom of the page (within 300px)
+                    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 300) {
+                        isLoadingPage = true;
+                        spinnerDiv.style.display = 'block';
+
+                        fetch(nextPageUrl, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                        .then(response => response.text())
+                        .then(html => {
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(html, 'text/html');
+                            
+                            // Get new notification rows
+                            const newRows = doc.querySelectorAll('.notification-row');
+                            newRows.forEach(row => {
+                                // Skip the "No notifications found" row
+                                if(row.querySelector('.notification-excerpt') && row.querySelector('.notification-excerpt').textContent.trim() === 'No notifications found.') {
+                                    return;
+                                }
+                                listGroup.appendChild(row);
+                            });
+
+                            // Update next page url
+                            const nextLink = doc.querySelector('.pagination-container a[rel="next"]');
+                            nextPageUrl = nextLink ? nextLink.href : null;
+                            
+                            // Also update the hidden pagination container with the new links just in case
+                            const newPagination = doc.querySelector('.pagination-container');
+                            if (newPagination && paginationContainer) {
+                                paginationContainer.innerHTML = newPagination.innerHTML;
+                            }
+                        })
+                        .catch(error => console.error('Error loading more notifications:', error))
+                        .finally(() => {
+                            isLoadingPage = false;
+                            spinnerDiv.style.display = 'none';
+                        });
+                    }
+                });
+            }
         });
     </script>
     @endsection
