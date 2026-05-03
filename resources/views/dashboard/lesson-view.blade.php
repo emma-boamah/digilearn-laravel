@@ -497,6 +497,11 @@
         transform-origin: top right;
     }
 
+    /* Upward-opening pickers (reply forms) need bottom-right origin */
+    .emoji-picker-wrapper[style*="bottom"] {
+        transform-origin: bottom right;
+    }
+
     @keyframes scaleIn {
         from { opacity: 0; transform: scale(0.95); }
         to { opacity: 1; transform: scale(1); }
@@ -629,7 +634,8 @@
     .comment-content {
         flex: 1;
         min-width: 0;
-        /* Prevents Overflow */
+        overflow: visible;
+        /* Prevents Overflow on text, but allows popups */
     }
 
     .comment-header {
@@ -765,6 +771,8 @@
         border-top: 1px solid var(--gray-200);
         animation: fadeSlideIn 0.2s ease;
         position: relative;
+        overflow: visible;
+        flex-wrap: wrap;
     }
 
     [data-theme="dark"] .inline-reply-container {
@@ -4988,6 +4996,7 @@
             if (!picker) return;
             
             picker.addEventListener('mousemove', e => {
+                // The shadowRoot might not be available immediately if the component is still loading
                 const searchInput = picker.shadowRoot ? picker.shadowRoot.querySelector('input') : null;
                 if (!searchInput) return;
 
@@ -5047,16 +5056,6 @@
         if (mainEmojiBtn && mainEmojiWrapper && mainEmojiPicker) {
             applyEmojiPickerHoverEffect(mainEmojiPicker);
 
-            mainEmojiBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                mainEmojiWrapper.classList.toggle('active');
-                
-                // Hide other pickers
-                document.querySelectorAll('.emoji-picker-wrapper.active').forEach(picker => {
-                    if (picker !== mainEmojiWrapper) picker.classList.remove('active');
-                });
-            });
-
             mainEmojiPicker.addEventListener('emoji-click', event => {
                 const cursorPosition = commentInput.selectionStart;
                 const textBeforeCursor = commentInput.value.substring(0, cursorPosition);
@@ -5074,9 +5073,35 @@
             });
         }
 
-        // Close pickers on outside click
+        // Unified emoji picker handler via event delegation
+        // Handles BOTH toggling pickers open/closed AND closing on outside click
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('.emoji-picker-wrapper') && !e.target.closest('.emoji-trigger-btn')) {
+            const clickedEmojiBtn = e.target.closest('.emoji-trigger-btn');
+            
+            if (clickedEmojiBtn) {
+                // User clicked an emoji trigger button — toggle its sibling picker
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const wrapper = clickedEmojiBtn.closest('.comment-input-container, .inline-edit-container, .inline-reply-container');
+                if (!wrapper) return;
+                
+                const targetPicker = wrapper.querySelector('.emoji-picker-wrapper');
+                if (!targetPicker) return;
+                
+                const isOpening = !targetPicker.classList.contains('active');
+                
+                // Close ALL open pickers first
+                document.querySelectorAll('.emoji-picker-wrapper.active').forEach(picker => {
+                    picker.classList.remove('active');
+                });
+                
+                // Then open the target one (if it wasn't already open)
+                if (isOpening) {
+                    targetPicker.classList.add('active');
+                }
+            } else if (!e.target.closest('.emoji-picker-wrapper')) {
+                // User clicked outside any picker and any trigger — close all
                 document.querySelectorAll('.emoji-picker-wrapper.active').forEach(picker => {
                     picker.classList.remove('active');
                 });
@@ -5314,8 +5339,9 @@
 
     // Attach event listeners to comment actions
     function attachCommentEventListeners() {
-        // Like/dislike buttons
-        document.querySelectorAll('.like-btn, .dislike-btn').forEach(btn => {
+        // Like/dislike buttons (skip already-bound)
+        document.querySelectorAll('.like-btn:not([data-bound]), .dislike-btn:not([data-bound])').forEach(btn => {
+            btn.setAttribute('data-bound', 'true');
             btn.addEventListener('click', function () {
                 const commentId = this.dataset.commentId;
                 const action = this.dataset.action;
@@ -5372,8 +5398,9 @@
             });
         });
 
-        // Edit buttons
-        document.querySelectorAll('.comment-edit-btn').forEach(btn => {
+        // Edit buttons (skip already-bound)
+        document.querySelectorAll('.comment-edit-btn:not([data-bound])').forEach(btn => {
+            btn.setAttribute('data-bound', 'true');
             btn.addEventListener('click', function () {
                 const commentId = this.dataset.commentId;
                 const commentEl = this.closest('.comment');
@@ -5419,22 +5446,14 @@
                 const saveBtn = editContainer.querySelector('.inline-edit-save');
                 const cancelBtn = editContainer.querySelector('.inline-edit-cancel');
 
-                // Emoji Picker Logic
-                const editEmojiBtn = editContainer.querySelector('.inline-emoji-btn');
-                const editEmojiWrapper = editContainer.querySelector('.emoji-picker-wrapper');
-                const editEmojiPicker = editEmojiWrapper.querySelector('emoji-picker');
+                // Emoji Picker - hover effect and emoji insertion
+                const editEmojiPicker = editContainer.querySelector('.emoji-picker-wrapper emoji-picker');
 
-                applyEmojiPickerHoverEffect(editEmojiPicker);
+                if (editEmojiPicker) {
+                    applyEmojiPickerHoverEffect(editEmojiPicker);
+                }
 
-                editEmojiBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    editEmojiWrapper.classList.toggle('active');
-                    document.querySelectorAll('.emoji-picker-wrapper.active').forEach(picker => {
-                        if (picker !== editEmojiWrapper) picker.classList.remove('active');
-                    });
-                });
-
-                editEmojiPicker.addEventListener('emoji-click', event => {
+                editEmojiPicker?.addEventListener('emoji-click', event => {
                     const cursorPosition = editInput.selectionStart;
                     const textBeforeCursor = editInput.value.substring(0, cursorPosition);
                     const textAfterCursor = editInput.value.substring(cursorPosition, editInput.value.length);
@@ -5490,8 +5509,9 @@
             });
         });
 
-        // Replies toggle buttons
-        document.querySelectorAll('.replies-toggle-btn').forEach(btn => {
+        // Replies toggle buttons (skip already-bound)
+        document.querySelectorAll('.replies-toggle-btn:not([data-bound])').forEach(btn => {
+            btn.setAttribute('data-bound', 'true');
             btn.addEventListener('click', function () {
                 const commentId = this.dataset.commentId;
                 const repliesContainer = document.querySelector(`.comment-replies[data-replies-for="${commentId}"]`);
@@ -5516,8 +5536,9 @@
             });
         });
 
-        // Reply buttons
-        document.querySelectorAll('.reply-btn').forEach(btn => {
+        // Reply buttons (skip already-bound)
+        document.querySelectorAll('.reply-btn:not([data-bound])').forEach(btn => {
+            btn.setAttribute('data-bound', 'true');
             btn.addEventListener('click', function () {
                 const commentId = this.dataset.commentId;
                 const commentEl = this.closest('.comment');
@@ -5556,39 +5577,18 @@
 
                 commentContent.appendChild(replyContainer);
 
+                // Get elements early for safety
                 const replyInput = replyContainer.querySelector('.inline-reply-input');
                 const replySubmitBtn = replyContainer.querySelector('.inline-reply-submit');
                 const replyCancelBtn = replyContainer.querySelector('.inline-reply-cancel');
 
-                // Emoji Picker Logic
-                const replyEmojiBtn = replyContainer.querySelector('.inline-emoji-btn');
-                const replyEmojiWrapper = replyContainer.querySelector('.emoji-picker-wrapper');
-                const replyEmojiPicker = replyEmojiWrapper.querySelector('emoji-picker');
+                if (!replyInput || !replySubmitBtn || !replyCancelBtn) {
+                    console.error('Failed to find reply form elements', { replyInput, replySubmitBtn, replyCancelBtn });
+                    return;
+                }
 
-                applyEmojiPickerHoverEffect(replyEmojiPicker);
-
-                replyEmojiBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    replyEmojiWrapper.classList.toggle('active');
-                    document.querySelectorAll('.emoji-picker-wrapper.active').forEach(picker => {
-                        if (picker !== replyEmojiWrapper) picker.classList.remove('active');
-                    });
-                });
-
-                replyEmojiPicker.addEventListener('emoji-click', event => {
-                    const cursorPosition = replyInput.selectionStart;
-                    const textBeforeCursor = replyInput.value.substring(0, cursorPosition);
-                    const textAfterCursor = replyInput.value.substring(cursorPosition, replyInput.value.length);
-                    
-                    replyInput.value = textBeforeCursor + event.detail.unicode + textAfterCursor;
-                    replyInput.focus();
-                    replyInput.dispatchEvent(new Event('input'));
-                    
-                    const newCursorPos = cursorPosition + event.detail.unicode.length;
-                    replyInput.setSelectionRange(newCursorPos, newCursorPos);
-                });
-
-                replyInput.focus();
+                // Focus input
+                setTimeout(() => replyInput.focus(), 50);
 
                 // Enable/disable submit based on input
                 replyInput.addEventListener('input', function () {
@@ -5606,7 +5606,9 @@
 
                 // Submit reply
                 replySubmitBtn.addEventListener('click', function () {
-                    submitInlineReply(commentId, replyInput, replyContainer);
+                    if (replyInput.value.trim().length > 0) {
+                        submitInlineReply(commentId, replyInput, replyContainer);
+                    }
                 });
 
                 // Submit on Enter
@@ -5618,6 +5620,27 @@
                         }
                     }
                 });
+
+                // Emoji Picker - hover effect and emoji insertion
+                const replyEmojiPicker = replyContainer.querySelector('.emoji-picker-wrapper emoji-picker');
+                if (replyEmojiPicker) {
+                    applyEmojiPickerHoverEffect(replyEmojiPicker);
+                    
+                    replyEmojiPicker.addEventListener('emoji-click', event => {
+                        const cursorPosition = replyInput.selectionStart;
+                        const textBeforeCursor = replyInput.value.substring(0, cursorPosition);
+                        const textAfterCursor = replyInput.value.substring(cursorPosition, replyInput.value.length);
+                        
+                        replyInput.value = textBeforeCursor + event.detail.unicode + textAfterCursor;
+                        replyInput.focus();
+                        
+                        // Trigger input event to update button state
+                        replyInput.dispatchEvent(new Event('input'));
+                        
+                        const newCursorPos = cursorPosition + event.detail.unicode.length;
+                        replyInput.setSelectionRange(newCursorPos, newCursorPos);
+                    });
+                }
             });
         });
     }
