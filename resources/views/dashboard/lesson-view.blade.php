@@ -4941,12 +4941,70 @@
         // Initialize real-time comment broadcasting
         initializeCommentBroadcasting();
 
+        // Function to enhance emoji picker with YouTube-style hover effect
+        function applyEmojiPickerHoverEffect(picker) {
+            if (!picker) return;
+            
+            picker.addEventListener('mousemove', e => {
+                const searchInput = picker.shadowRoot ? picker.shadowRoot.querySelector('input') : null;
+                if (!searchInput) return;
+
+                // Save the original placeholder on first hover
+                if (!searchInput.dataset.originalPlaceholder) {
+                    searchInput.dataset.originalPlaceholder = searchInput.getAttribute('placeholder') || 'Search';
+                }
+
+                const path = e.composedPath();
+                
+                // Find the first element in the path that represents an emoji button
+                const targetEl = path.find(el => {
+                    if (!el || !el.getAttribute) return false;
+                    
+                    const role = el.getAttribute('role');
+                    if (role === 'tab') return false; // Ignore navigation tabs
+                    
+                    const hasLabel = el.getAttribute('title') || el.getAttribute('aria-label');
+                    const isEmojiButton = el.tagName === 'BUTTON' || (el.part && el.part.contains('emoji')) || role === 'menuitem';
+                    
+                    return hasLabel && isEmojiButton;
+                });
+                
+                if (targetEl) {
+                    const emojiName = targetEl.getAttribute('title') || targetEl.getAttribute('aria-label');
+                    if (emojiName) {
+                        // Clean and format the name (e.g., "grinning face emoji" -> "Grinning face")
+                        const cleanName = emojiName.replace(/emoji$/i, '').trim();
+                        const formattedName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+                        
+                        if (searchInput.getAttribute('placeholder') !== formattedName) {
+                            searchInput.setAttribute('placeholder', formattedName);
+                        }
+                        return;
+                    }
+                }
+                
+                // If not hovering over an emoji, restore original placeholder
+                if (searchInput.getAttribute('placeholder') !== searchInput.dataset.originalPlaceholder) {
+                    searchInput.setAttribute('placeholder', searchInput.dataset.originalPlaceholder);
+                }
+            });
+            
+            picker.addEventListener('mouseleave', () => {
+                const searchInput = picker.shadowRoot ? picker.shadowRoot.querySelector('input') : null;
+                if (searchInput && searchInput.dataset.originalPlaceholder) {
+                    searchInput.setAttribute('placeholder', searchInput.dataset.originalPlaceholder);
+                }
+            });
+        }
+
         // Emoji Picker Logic for Main Input
         const mainEmojiBtn = document.getElementById('mainEmojiBtn');
         const mainEmojiWrapper = document.getElementById('mainEmojiPickerWrapper');
         const mainEmojiPicker = mainEmojiWrapper ? mainEmojiWrapper.querySelector('emoji-picker') : null;
 
         if (mainEmojiBtn && mainEmojiWrapper && mainEmojiPicker) {
+            applyEmojiPickerHoverEffect(mainEmojiPicker);
+
             mainEmojiBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 mainEmojiWrapper.classList.toggle('active');
@@ -5324,6 +5382,8 @@
                 const editEmojiWrapper = editContainer.querySelector('.emoji-picker-wrapper');
                 const editEmojiPicker = editEmojiWrapper.querySelector('emoji-picker');
 
+                applyEmojiPickerHoverEffect(editEmojiPicker);
+
                 editEmojiBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     editEmojiWrapper.classList.toggle('active');
@@ -5462,6 +5522,8 @@
                 const replyEmojiBtn = replyContainer.querySelector('.inline-emoji-btn');
                 const replyEmojiWrapper = replyContainer.querySelector('.emoji-picker-wrapper');
                 const replyEmojiPicker = replyEmojiWrapper.querySelector('emoji-picker');
+
+                applyEmojiPickerHoverEffect(replyEmojiPicker);
 
                 replyEmojiBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
