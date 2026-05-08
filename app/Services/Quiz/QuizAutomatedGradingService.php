@@ -4,11 +4,68 @@ namespace App\Services\Quiz;
 
 use App\Models\QuizAttempt;
 use App\Models\Quiz;
+use App\Models\User;
+use App\Notifications\AdminNotification;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class QuizAutomatedGradingService
 {
+    /**
+     * Cache key for the Gemini circuit breaker cooldown.
+     */
+    protected const GEMINI_COOLDOWN_KEY = 'gemini_api_rate_limited';
+
+    /**
+     * Cache key for the OpenAI circuit breaker cooldown.
+     */
+    protected const OPENAI_COOLDOWN_KEY = 'openai_api_rate_limited';
+
+    /**
+     * How long (in seconds) to wait before retrying after a rate limit.
+     */
+    protected const COOLDOWN_SECONDS = 60;
+
+    /**
+     * Cache key to prevent duplicate admin notifications.
+     */
+    protected const GEMINI_NOTIFIED_KEY = 'gemini_rate_limit_notified';
+    protected const OPENAI_NOTIFIED_KEY = 'openai_rate_limit_notified';
+
+    /**
+     * Track whether AI was used or fell back during this request.
+     */
+    protected string $gradingDriver = 'unknown';
+
+    /**
+     * Get the driver that was used for grading.
+     */
+    public function getGradingDriver(): string
+    {
+        return $this->gradingDriver;
+    }
+
+    /**
+     * Check if the Gemini API is currently rate-limited.
+     */
+    public function isGeminiRateLimited(): bool
+    {
+        return Cache::has(self::GEMINI_COOLDOWN_KEY);
+    }
+
+    /**
+     * Get the remaining cooldown time in seconds for Gemini.
+     */
+    public function geminiCooldownRemaining(): int
+    {
+        if (!$this->isGeminiRateLimited()) {
+            return 0;
+        }
+        $expiresAt = Cache::get(self::GEMINI_COOLDOWN_KEY);
+        return max(0, $expiresAt - now()->timestamp);
+    }
+
     /**
      * Generate suggested marks and analysis for an essay attempt.
      *
@@ -32,7 +89,9 @@ class QuizAutomatedGradingService
             'analysis' => [
                 'strengths' => [],
                 'weaknesses' => []
-            ]
+            ],
+            'grading_driver' => 'local', // Default, updated below
+            'rate_limited' => false,
         ];
 
         foreach ($questions as $qIdx => $question) {
@@ -65,6 +124,9 @@ class QuizAutomatedGradingService
             }
         }
 
+        $results['grading_driver'] = $this->gradingDriver;
+        $results['rate_limited'] = $this->isGeminiRateLimited();
+
         return $results;
     }
 
@@ -73,17 +135,25 @@ class QuizAutomatedGradingService
      */
     protected function analyzePart($studentAnswer, $modelAnswer, $maxPoints)
     {
+        // --- Circuit Breaker: Skip API calls if rate-limited ---
         $geminiKey = config('services.gemini.key');
-        if ($geminiKey) {
+        if ($geminiKey && !$this->isGeminiRateLimited()) {
             return $this->analyzeWithGemini($studentAnswer, $modelAnswer, $maxPoints, $geminiKey);
+        }
+
+        if ($geminiKey && $this->isGeminiRateLimited()) {
+            Log::info('Gemini API is rate-limited, falling back to local grading. Cooldown: ' . $this->geminiCooldownRemaining() . 's remaining.');
+            $this->gradingDriver = 'local (gemini rate-limited)';
+            return $this->analyzeWithLocalLogic($studentAnswer, $modelAnswer, $maxPoints);
         }
 
         $apiKey = config('services.openai.key') ?: env('OPENAI_API_KEY');
 
-        if ($apiKey) {
+        if ($apiKey && !Cache::has(self::OPENAI_COOLDOWN_KEY)) {
             return $this->analyzeWithAi($studentAnswer, $modelAnswer, $maxPoints, $apiKey);
         }
 
+        $this->gradingDriver = 'local';
         return $this->analyzeWithLocalLogic($studentAnswer, $modelAnswer, $maxPoints);
     }
 
@@ -147,7 +217,7 @@ class QuizAutomatedGradingService
     protected function analyzeWithAi($studentAnswer, $modelAnswer, $maxPoints, $apiKey)
     {
         try {
-            $response = Http::withToken($apiKey)->post('https://api.openai.com/v1/chat/completions', [
+            $response = Http::timeout(30)->withToken($apiKey)->post('https://api.openai.com/v1/chat/completions', [
                 'model' => 'gpt-4o',
                 'messages' => [
                     ['role' => 'system', 'content' => 'You are a professional educational assessor. Grade the student response against the marking scheme. Address the student directly using 2nd-person pronouns (e.g., "You stated...", "Your answer..."). Do NOT use 3rd-person pronouns like "The student". Return ONLY JSON.'],
@@ -159,6 +229,7 @@ class QuizAutomatedGradingService
             if ($response->successful()) {
                 $data = $response->json();
                 $content = json_decode($data['choices'][0]['message']['content'], true);
+                $this->gradingDriver = 'openai';
                 return [
                     'score' => $content['score'] ?? 0,
                     'feedback' => $content['feedback'] ?? 'AI Review completed.',
@@ -166,15 +237,33 @@ class QuizAutomatedGradingService
                     'weaknesses' => $content['weaknesses'] ?? ''
                 ];
             }
+
+            // Rate limit or quota exceeded
+            if ($response->status() === 429) {
+                $retryAfter = (int) ($response->header('Retry-After') ?: self::COOLDOWN_SECONDS);
+                Cache::put(self::OPENAI_COOLDOWN_KEY, now()->timestamp + $retryAfter, $retryAfter);
+                Log::warning("OpenAI API rate-limited. Cooldown set for {$retryAfter}s.", [
+                    'status' => $response->status(),
+                    'body' => substr($response->body(), 0, 300),
+                ]);
+
+                // Notify super admins (once per cooldown period)
+                $this->notifyAdminsOfRateLimit('OpenAI', $retryAfter, self::OPENAI_NOTIFIED_KEY);
+            } else {
+                Log::error('OpenAI API Error: ' . $response->status() . ' - ' . substr($response->body(), 0, 300));
+            }
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('OpenAI API Connection Timeout: ' . $e->getMessage());
         } catch (\Exception $e) {
             Log::error('AI Grading Failed: ' . $e->getMessage());
         }
 
+        $this->gradingDriver = 'local (openai fallback)';
         return $this->analyzeWithLocalLogic($studentAnswer, $modelAnswer, $maxPoints);
     }
 
     /**
-     * Google Gemini Agent driver.
+     * Google Gemini Agent driver with circuit breaker protection.
      */
     protected function analyzeWithGemini($studentAnswer, $modelAnswer, $maxPoints, $apiKey)
     {
@@ -193,7 +282,7 @@ class QuizAutomatedGradingService
                       "- strengths: (string) What they did well, addressed directly to the student\n" .
                       "- weaknesses: (string) Areas for improvement, addressed directly to the student";
 
-            $response = Http::post($url, [
+            $response = Http::timeout(30)->post($url, [
                 'contents' => [
                     [
                         'parts' => [
@@ -211,19 +300,70 @@ class QuizAutomatedGradingService
                 $jsonString = $data['candidates'][0]['content']['parts'][0]['text'] ?? '{}';
                 $content = json_decode($jsonString, true);
 
+                $this->gradingDriver = 'gemini';
                 return [
                     'score' => $content['score'] ?? 0,
                     'feedback' => $content['feedback'] ?? 'Gemini Review completed.',
                     'strengths' => $content['strengths'] ?? '',
                     'weaknesses' => $content['weaknesses'] ?? ''
                 ];
-            } else {
-                Log::error('Gemini API Error: ' . $response->body());
             }
+
+            // --- Circuit Breaker: Detect rate limit / quota exhaustion ---
+            $status = $response->status();
+            $body = $response->body();
+
+            if ($status === 429 || str_contains($body, 'RESOURCE_EXHAUSTED') || str_contains($body, 'quota')) {
+                $retryAfter = (int) ($response->header('Retry-After') ?: self::COOLDOWN_SECONDS);
+                Cache::put(self::GEMINI_COOLDOWN_KEY, now()->timestamp + $retryAfter, $retryAfter);
+
+                Log::warning("Gemini API rate-limited (HTTP {$status}). Circuit breaker activated for {$retryAfter}s.", [
+                    'status' => $status,
+                    'body' => substr($body, 0, 300),
+                ]);
+
+                // Notify super admins (once per cooldown period)
+                $this->notifyAdminsOfRateLimit('Gemini', $retryAfter, self::GEMINI_NOTIFIED_KEY);
+            } else {
+                Log::error('Gemini API Error: HTTP ' . $status . ' - ' . substr($body, 0, 300));
+            }
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('Gemini API Connection Timeout: ' . $e->getMessage());
         } catch (\Exception $e) {
             Log::error('Gemini Grading Failed: ' . $e->getMessage());
         }
 
+        $this->gradingDriver = 'local (gemini fallback)';
         return $this->analyzeWithLocalLogic($studentAnswer, $modelAnswer, $maxPoints);
+    }
+
+    /**
+     * Send a one-time in-app notification to all super admins about a rate limit event.
+     */
+    protected function notifyAdminsOfRateLimit(string $provider, int $cooldownSeconds, string $notifiedCacheKey): void
+    {
+        // Only send one notification per cooldown window
+        if (Cache::has($notifiedCacheKey)) {
+            return;
+        }
+
+        Cache::put($notifiedCacheKey, true, $cooldownSeconds);
+
+        try {
+            $minutes = ceil($cooldownSeconds / 60);
+            $admins = User::where('is_superuser', true)->get();
+
+            foreach ($admins as $admin) {
+                $admin->notify(new AdminNotification(
+                    "⚠️ {$provider} AI Rate Limit Reached",
+                    "{$provider} API token quota has been exhausted. AI-powered essay grading is temporarily using keyword-based fallback. Service will automatically resume in approximately {$minutes} minute(s). No action is required — pending essays can be reviewed manually if needed.",
+                    url('/admin/quizzes/review')
+                ));
+            }
+
+            Log::info("Admin notification sent for {$provider} rate limit. Cooldown: {$cooldownSeconds}s.");
+        } catch (\Exception $e) {
+            Log::error("Failed to notify admins about {$provider} rate limit: " . $e->getMessage());
+        }
     }
 }

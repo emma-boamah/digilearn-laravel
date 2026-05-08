@@ -8,7 +8,7 @@ $service = app(NotificationService::class);
 
 $title = 'New Feature: AI Essay Grading';
 $message = 'You can now set essay-based questions in the quiz builder. The new automated AI system will grade, review, and provide feedback on the user responses automatically!';
-$url = '/dashboard'; // Use relative URLs for system announcements as per system norm
+$url = url('/dashboard'); // Ensure absolute URL for email support
 
 try {
     // 1. Get the IDs of all super-admins via Spatie

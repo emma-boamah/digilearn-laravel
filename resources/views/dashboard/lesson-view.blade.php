@@ -8005,4 +8005,5 @@
         });
     });
 </script>
+@include('components.search-autocomplete')
 @endsection

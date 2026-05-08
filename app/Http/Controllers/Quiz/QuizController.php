@@ -474,23 +474,29 @@ class QuizController extends Controller
                     $score = (int) $totalEarned;
                     $percentage = $totalPossible > 0 ? round(($totalEarned / $totalPossible) * 100) : 0;
 
-                    // Update attempt with AI results
+                    // Determine grading driver label
+                    $driver = $suggestions['grading_driver'] ?? $service->getGradingDriver();
+                    $isAiGraded = in_array($driver, ['gemini', 'openai']);
+                    $gradedByLabel = $isAiGraded ? 'Gemini AI' : 'Automated (Keyword Match)';
+
+                    // Update attempt with results
                     $attempt->update([
                         'correct_answers' => $score,
                         'score_percentage' => $percentage,
                         'passed' => $percentage >= 50, // Default threshold
-                        'status' => 'graded',
+                        'status' => $isAiGraded ? 'graded' : 'pending', // Fallback results stay pending for manual review
                         'grading_details' => [
                             'marks' => $suggestions['marks'],
                             'feedback' => $suggestions['feedback'],
                             'strengths' => $suggestions['strengths'] ?? [],
                             'weaknesses' => $suggestions['weaknesses'] ?? [],
-                            'overall_feedback' => 'Automated AI Evaluation',
+                            'overall_feedback' => $isAiGraded ? 'Automated AI Evaluation' : 'Preliminary keyword-based evaluation. Manual review recommended.',
                             'total_possible' => $totalPossible,
                             'total_earned' => $totalEarned,
-                            'ai_analysis' => $suggestions['analysis'] ?? []
+                            'ai_analysis' => $suggestions['analysis'] ?? [],
+                            'grading_driver' => $driver,
                         ],
-                        'graded_by' => 'Gemini AI',
+                        'graded_by' => $gradedByLabel,
                         'graded_at' => now(),
                     ]);
                 }

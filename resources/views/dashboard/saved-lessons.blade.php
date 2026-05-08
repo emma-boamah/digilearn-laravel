@@ -664,7 +664,7 @@
             
             <!-- Search/Filter Bar -->
             <div class="filter-bar">
-                <div class="search-box">
+                <div class="search-box" data-search-domain="saved_lesson">
                     <input type="text" class="search-input" placeholder="Search saved lessons..." id="searchInput">
                     <button class="search-button">
                         <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -1022,5 +1022,6 @@
         `;
         document.head.appendChild(style);
     </script>
+    @include('components.search-autocomplete')
 </body>
 </html>

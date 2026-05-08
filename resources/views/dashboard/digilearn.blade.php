@@ -2494,7 +2494,7 @@
                 </svg>
             </button>
 
-            <div class="search-container">
+            <div class="search-container" data-search-domain="lesson">
                 <div class="search-box" id="mobileSearchBox">
                     <input type="text" class="search-input" placeholder="Search">
                     <button type="button" class="search-button">
@@ -3601,6 +3601,7 @@
         }
     </script>
     @include('partials._upgrade_modal')
+    @include('components.search-autocomplete')
 </body>
 
 </html>

@@ -58,7 +58,7 @@
             </svg>
         </button>
 
-        <div class="search-container">
+        <div class="search-container" data-search-domain="quiz">
             <form action="{{ route('quiz.index') }}" method="GET" class="search-box" id="mobileSearchBox">
                 <input type="text" name="search" class="search-input" placeholder="Search quizzes..."
                     id="quizSearchInput" value="{{ request('search') }}">
