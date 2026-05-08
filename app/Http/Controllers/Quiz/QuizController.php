@@ -19,6 +19,7 @@ use App\Models\UserProgress;
 use App\Models\QuizRating;
 use App\Services\SubscriptionAccessService;
 use App\Services\UrlObfuscator;
+use App\Services\Quiz\QuizAutomatedGradingService;
 
 class QuizController extends Controller
 {
@@ -377,11 +378,34 @@ class QuizController extends Controller
             return redirect()->route('quiz.index')->with('error', 'Quiz not found.');
         }
 
+        $isViolation = $request->has('integrity_violation') && $request->input('integrity_violation') == 'true';
+
         $request->validate([
-            'essay' => 'required|string|min:20|max:20000',
+            'essay' => $isViolation ? 'nullable|string' : 'required|string|min:20|max:20000',
             'answers' => 'nullable|string', // JSON from updated frontend logic
             'time_spent' => 'integer|min:0',
         ]);
+
+        $failedDueToViolation = $isViolation;
+
+        // Anti-cheat heartbeat & points verification
+        $userId = Auth::id();
+        $heartbeatKey = "quiz_heartbeat_{$userId}_{$quizId}";
+        $pointsKey = "quiz_points_{$userId}_{$quizId}";
+
+        $lastHeartbeat = Cache::get($heartbeatKey);
+        $currentPoints = Cache::get($pointsKey, 0);
+
+        if (!$lastHeartbeat || (now()->timestamp - $lastHeartbeat > 120)) {
+            $failedDueToViolation = true;
+        }
+
+        if ($currentPoints >= 10) {
+            $failedDueToViolation = true;
+        }
+
+        Cache::forget($heartbeatKey);
+        Cache::forget($pointsKey);
 
         $timeSpent = (int) $request->input('time_spent', 0);
         $answers = json_decode($request->input('answers', '[]'), true);
@@ -395,19 +419,19 @@ class QuizController extends Controller
         $totalQuestions = count($questions);
 
         // Record the attempt for review visibility
-        QuizAttempt::create([
+        $attempt = QuizAttempt::create([
             'user_id' => Auth::id(),
             'quiz_id' => $quizId,
             'quiz_title' => $quiz['title'] ?? 'Essay Quiz',
             'quiz_subject' => $quiz['subject'] ?? 'General',
-            'quiz_level' => $quiz['level'] ?? 'N/A',
+            'quiz_level' => $quiz['grade_level'] ?? 'N/A', // Fixed to use grade_level from quiz
             'total_questions' => $totalQuestions,
-            'correct_answers' => 0, // Essays are pending grading
+            'correct_answers' => 0, // Default to 0, will be updated if AI grading works
             'incorrect_answers' => 0,
             'score_percentage' => 0,
             'time_taken_seconds' => $timeSpent,
             'passed' => false,
-            'status' => 'pending', // Added: Mark as pending for instructor review
+            'status' => 'pending', // Mark as pending for review
             'attempt_number' => QuizAttempt::where('user_id', Auth::id())->where('quiz_id', $quizId)->max('attempt_number') + 1,
             'answers' => $answers,
             'question_details' => $questions,
@@ -415,12 +439,74 @@ class QuizController extends Controller
             'completed_at' => now(),
         ]);
 
+        // Attempt Instant AI Grading if Gemini is configured
+        $score = 0;
+        $percentage = 0;
+        
+        if ($failedDueToViolation) {
+            $attempt->update([
+                'status' => 'failed',
+                'passed' => false,
+                'score_percentage' => 0,
+            ]);
+        } elseif (config('services.gemini.key')) {
+            try {
+                $service = new QuizAutomatedGradingService();
+                $suggestions = $service->suggestMarks($attempt);
+
+                if (!empty($suggestions['marks'])) {
+                    $totalEarned = 0;
+                    foreach ($suggestions['marks'] as $mark) {
+                        $totalEarned += (float) $mark;
+                    }
+
+                    $totalPossible = 0;
+                    foreach ($questions as $q) {
+                        if (empty($q['sub_questions'])) {
+                            $totalPossible += ($q['points'] ?? 1);
+                        } else {
+                            foreach ($q['sub_questions'] as $sub) {
+                                $totalPossible += ($sub['points'] ?? 1);
+                            }
+                        }
+                    }
+
+                    $score = (int) $totalEarned;
+                    $percentage = $totalPossible > 0 ? round(($totalEarned / $totalPossible) * 100) : 0;
+
+                    // Update attempt with AI results
+                    $attempt->update([
+                        'correct_answers' => $score,
+                        'score_percentage' => $percentage,
+                        'passed' => $percentage >= 50, // Default threshold
+                        'status' => 'graded',
+                        'grading_details' => [
+                            'marks' => $suggestions['marks'],
+                            'feedback' => $suggestions['feedback'],
+                            'strengths' => $suggestions['strengths'] ?? [],
+                            'weaknesses' => $suggestions['weaknesses'] ?? [],
+                            'overall_feedback' => 'Automated AI Evaluation',
+                            'total_possible' => $totalPossible,
+                            'total_earned' => $totalEarned,
+                            'ai_analysis' => $suggestions['analysis'] ?? []
+                        ],
+                        'graded_by' => 'Gemini AI',
+                        'graded_at' => now(),
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Instant AI Grading Failed: ' . $e->getMessage());
+                // Fallback to pending (which is already set)
+            }
+        }
+
+
         return redirect()->route('quiz.results', [
             'quiz' => UrlObfuscator::encode($quizId),
-            'score' => 0,
+            'score' => $score,
             'total' => $totalQuestions,
-            'percentage' => 0,
-        ])->with('success', 'Essay submitted successfully.');
+            'percentage' => $percentage,
+        ])->with('success', 'Essay submitted and graded by AI.');
     }
 
     /**
@@ -817,12 +903,19 @@ class QuizController extends Controller
         // Build questions array with user answers for review - safe array access
         $questions = [];
         $timeTaken = 0;
+        $grading = [];
+        $analysis = [];
         if (is_array($quiz) && isset($quiz['questions']) && is_array($quiz['questions'])) {
             // Get the user's last attempt for this quiz
             $lastAttempt = QuizAttempt::where('user_id', Auth::id())
                 ->where('quiz_id', $quizId)
                 ->orderBy('completed_at', 'desc')
                 ->first();
+
+            if ($lastAttempt && $lastAttempt->grading_details) {
+                $grading = is_string($lastAttempt->grading_details) ? json_decode($lastAttempt->grading_details, true) : (array) $lastAttempt->grading_details;
+                $analysis = $grading['ai_analysis'] ?? [];
+            }
 
             // Apply identical seeded shuffle to ensure review matches the user's view
             if ($quiz['shuffle_questions'] ?? true) {
@@ -891,7 +984,7 @@ class QuizController extends Controller
             }
         }
 
-        return view('dashboard.quiz.results', compact('score', 'total', 'percentage', 'quiz', 'duration', 'failedDueToViolation', 'questions', 'rank', 'streak', 'timeTaken', 'hasRated'));
+        return view('dashboard.quiz.results', compact('score', 'total', 'percentage', 'quiz', 'duration', 'failedDueToViolation', 'questions', 'rank', 'streak', 'timeTaken', 'hasRated', 'grading', 'analysis'));
     }
 
     /**

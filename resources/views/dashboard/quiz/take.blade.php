@@ -11,9 +11,9 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script defer src="https://unpkg.com/mathlive"></script>
+    <script defer src="https://unpkg.com/mathlive" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
 
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         (function () {
             const theme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', theme);
@@ -1192,11 +1192,61 @@
             // Set question text (using innerHTML for rich text)
             document.getElementById('questionText').innerHTML = question ? sanitizeMathLive(question.question) : 'Question not available';
 
-            // Render options
+            // Render answer area (MCQ options or Essay textarea)
             const optionsContainer = document.getElementById('optionsContainer');
             optionsContainer.innerHTML = '';
 
-            if (question && question.options && Array.isArray(question.options)) {
+            if (question && question.type === 'essay') {
+                // Essay Question Rendering
+                const essayWrapper = document.createElement('div');
+                essayWrapper.className = 'essay-answer-wrapper';
+                essayWrapper.style.width = '100%';
+                
+                const textarea = document.createElement('textarea');
+                textarea.className = 'essay-input';
+                textarea.placeholder = 'Type your essay response here...';
+                textarea.style.cssText = 'width: 100%; min-height: 200px; padding: 1.5rem; border: 2px solid var(--gray-200); border-radius: 1rem; font-size: 1.125rem; font-family: inherit; resize: vertical; transition: all 0.2s ease; outline: none; background: var(--gray-25);';
+                
+                textarea.value = answers[currentQuestion] || '';
+                
+                textarea.addEventListener('focus', () => {
+                    textarea.style.borderColor = 'var(--secondary-blue)';
+                    textarea.style.background = 'var(--white)';
+                    textarea.style.boxShadow = '0 0 0 4px rgba(38, 119, 184, 0.1)';
+                });
+                
+                textarea.addEventListener('blur', () => {
+                    textarea.style.borderColor = 'var(--gray-200)';
+                    textarea.style.background = 'var(--gray-25)';
+                    textarea.style.boxShadow = 'none';
+                });
+                
+                textarea.addEventListener('input', (e) => {
+                    answers[currentQuestion] = e.target.value;
+                    updateProgressOverview();
+                    renderQuestionsGrid();
+                });
+
+                // Add character/word counter
+                const counter = document.createElement('div');
+                counter.style.cssText = 'display: flex; justify-content: flex-end; gap: 1rem; margin-top: 0.75rem; font-size: 0.875rem; color: var(--gray-500); font-weight: 500;';
+                
+                const updateCounter = () => {
+                    const text = textarea.value.trim();
+                    const words = text ? text.split(/\s+/).length : 0;
+                    const chars = text.length;
+                    counter.innerHTML = `<span>${words} words</span> <span>${chars} characters</span>`;
+                };
+                
+                textarea.addEventListener('input', updateCounter);
+                updateCounter();
+
+                essayWrapper.appendChild(textarea);
+                essayWrapper.appendChild(counter);
+                optionsContainer.appendChild(essayWrapper);
+                
+            } else if (question && question.options && Array.isArray(question.options)) {
+                // MCQ Rendering
                 question.options.forEach((option, index) => {
                     const optionDiv = document.createElement('div');
                     optionDiv.className = 'option';
@@ -1214,8 +1264,8 @@
                     optionsContainer.appendChild(optionDiv);
                 });
             } else {
-                console.log('No options available for this question');
-                optionsContainer.innerHTML = '<p>No answer options available.</p>';
+                console.log('No answer area available for this question type');
+                optionsContainer.innerHTML = '<p style="color: var(--gray-400); font-style: italic;">No answer method available for this question type.</p>';
             }
 
             // Render math formulas if any

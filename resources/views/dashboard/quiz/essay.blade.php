@@ -14,13 +14,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- MathLive for Matrix/Formula Rendering -->
-    <script defer src="https://unpkg.com/mathlive"></script>
+    <script defer src="https://unpkg.com/mathlive" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
 
     <!-- Quill.js for Rich Text Editing -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
 
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         (function () {
             const theme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', theme);
@@ -657,7 +657,7 @@
 
     <!-- Hidden Form -->
     <form id="submissionForm" method="POST" action="{{ route('quiz.essay.submit', $quiz['encoded_id']) }}"
-        style="display: none;">
+        data-quiz-form="true" style="display: none;">
         @csrf
         <textarea name="essay" id="finalEssay"></textarea>
         <input type="hidden" name="answers" id="finalAnswers" value="">
@@ -671,6 +671,11 @@
         const quillInstances = [];
         let timeRemaining = {{ (int) ($seconds ?? 180) }};
         const timeLimit = {{ (int) ($seconds ?? 180) }};
+
+        // Anti-cheat sync globals
+        window.answers = {};
+        window.timeLimitMinutes = Math.ceil(timeLimit / 60);
+        window.timeRemaining = timeRemaining;
 
         // Initialize Editors & Math
         document.addEventListener('DOMContentLoaded', () => {
@@ -717,6 +722,14 @@
                     const content = quill.root.innerHTML;
                     localStorage.setItem(storageKeyPrefix + idSuffix, content);
                     updateSpecificWordCount(quill, countElId);
+
+                    // Sync to window.answers for anti-cheat auto-submission
+                    if (sIdx !== undefined) {
+                        if (!window.answers[qIdx]) window.answers[qIdx] = {};
+                        window.answers[qIdx][sIdx] = content;
+                    } else {
+                        window.answers[qIdx] = content;
+                    }
                 });
 
                 quillInstances.push({
@@ -809,6 +822,7 @@
                 else if (timeRemaining <= 300) timerBox.className = 'timer-box warning';
 
                 timeRemaining--;
+                window.timeRemaining = timeRemaining; // Sync for anti-cheat
             };
 
             tick();
@@ -893,6 +907,7 @@
                 localStorage.removeItem(`essay_save_${quizId}_` + item.idSuffix);
             });
 
+            window.isSubmitting = true;
             document.getElementById('submissionForm').submit();
         }
     </script>

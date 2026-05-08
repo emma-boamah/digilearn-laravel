@@ -33,6 +33,7 @@ return [
             'https://www.googletagmanager.com',
             "'strict-dynamic'",
             "'unsafe-inline'",
+            'https://unpkg.com',
             'https:',
             'http:',
         ],
@@ -114,6 +115,7 @@ return [
             'https://schema.org',
             'https://googleads.g.doubleclick.net',
             'https://www.googleadservices.com',
+            'https://unpkg.com',
     	 ],
         'frame-src' => [
             "'self'",

@@ -1473,51 +1473,7 @@
                 </div>
             </div>
 
-            <!-- Performance Insights (Strengths & Weaknesses) -->
-            @php
-                $grading = is_array($quiz_attempt->grading_details ?? null) ? $quiz_attempt->grading_details : (json_decode($quiz_attempt->grading_details ?? '[]', true) ?? []);
-                $analysis = $grading['analysis'] ?? null;
-            @endphp
 
-            @if($analysis && (!empty($analysis['strengths']) || !empty($analysis['weaknesses'])))
-                <div class="performance-insights" style="margin-top: 2rem; margin-bottom: 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
-                    @if(!empty($analysis['strengths']))
-                        <div class="insight-card" style="background: #f0fdf4; border: 1px solid #bcf0da; border-radius: 16px; padding: 1.5rem;">
-                            <h3 style="font-size: 0.875rem; font-weight: 800; color: #166534; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="fas fa-check-circle"></i> Mastered Concepts
-                            </h3>
-                            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;">
-                                @foreach(array_unique($analysis['strengths']) as $strength)
-                                    @if(!empty($strength))
-                                        <li style="font-size: 0.93rem; color: #14532d; display: flex; align-items: flex-start; gap: 0.5rem;">
-                                            <span style="color: #22c55e; margin-top: 3px;">•</span>
-                                            <span>{{ $strength }}</span>
-                                        </li>
-                                    @endif
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
-
-                    @if(!empty($analysis['weaknesses']))
-                        <div class="insight-card" style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 16px; padding: 1.5rem;">
-                            <h3 style="font-size: 0.875rem; font-weight: 800; color: #92400e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="fas fa-lightbulb"></i> Areas for Improvement
-                            </h3>
-                            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;">
-                                @foreach(array_unique($analysis['weaknesses']) as $weakness)
-                                    @if(!empty($weakness))
-                                        <li style="font-size: 0.93rem; color: #78350f; display: flex; align-items: flex-start; gap: 0.5rem;">
-                                            <span style="color: #f59e0b; margin-top: 3px;">•</span>
-                                            <span>{{ $weakness }}</span>
-                                        </li>
-                                    @endif
-                                @endforeach
-                            </ul>
-                        </div>
-                    @endif
-                </div>
-            @endif
 
             <!-- Review Layout Grid -->
             <div class="review-layout">
@@ -1731,7 +1687,6 @@
                                                                 <div style="font-size: 0.75rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
                                                                     <span><i class="fas fa-user-pen"></i> Your Response</span>
                                                                     @php
-                                                                        $grading = is_array($quiz_attempt->grading_details ?? null) ? $quiz_attempt->grading_details : (json_decode($quiz_attempt->grading_details ?? '[]', true) ?? []);
                                                                         $awarded = $grading['marks']["{$index}_{$sIdx}"] ?? null;
                                                                     @endphp
                                                                     @if($awarded !== null)
@@ -1752,6 +1707,28 @@
                                                                 @if(!empty($grading['feedback']["{$index}_{$sIdx}"]))
                                                                     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--gray-200); font-size: 0.875rem; color: var(--primary-blue);">
                                                                         <i class="fas fa-comment-dots mr-1"></i> <strong>Instructor Feedback:</strong> {{ $grading['feedback']["{$index}_{$sIdx}"] }}
+                                                                    </div>
+                                                                @endif
+
+                                                                @if(!empty($grading['strengths']["{$index}_{$sIdx}"]) || !empty($grading['weaknesses']["{$index}_{$sIdx}"]))
+                                                                    <div class="ai-insights-box" style="margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, rgba(36, 128, 241, 0.05) 0%, rgba(36, 128, 241, 0.02) 100%); border: 1px solid rgba(36, 128, 241, 0.1); border-radius: 12px;">
+                                                                        <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                                                            <i class="fas fa-robot"></i> AI Insights
+                                                                        </div>
+                                                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                                                            @if(!empty($grading['strengths']["{$index}_{$sIdx}"]))
+                                                                                <div style="font-size: 0.875rem;">
+                                                                                    <div style="color: var(--success-green); font-weight: 700; margin-bottom: 0.25rem;"><i class="fas fa-plus-circle"></i> Strengths</div>
+                                                                                    <div style="color: var(--gray-700);">{{ $grading['strengths']["{$index}_{$sIdx}"] }}</div>
+                                                                                </div>
+                                                                            @endif
+                                                                            @if(!empty($grading['weaknesses']["{$index}_{$sIdx}"]))
+                                                                                <div style="font-size: 0.875rem;">
+                                                                                    <div style="color: var(--error-red); font-weight: 700; margin-bottom: 0.25rem;"><i class="fas fa-minus-circle"></i> Weaknesses</div>
+                                                                                    <div style="color: var(--gray-700);">{{ $grading['weaknesses']["{$index}_{$sIdx}"] }}</div>
+                                                                                </div>
+                                                                            @endif
+                                                                        </div>
                                                                     </div>
                                                                 @endif
                                                             </div>
@@ -1775,7 +1752,6 @@
                                                     <div style="font-size: 0.75rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
                                                         <span><i class="fas fa-user-pen"></i> Your Response</span>
                                                         @php
-                                                            $grading = is_array($quiz_attempt->grading_details ?? null) ? $quiz_attempt->grading_details : (json_decode($quiz_attempt->grading_details ?? '[]', true) ?? []);
                                                             $awarded = $grading['marks'][$index] ?? null;
                                                         @endphp
                                                         @if($awarded !== null)
@@ -1792,6 +1768,28 @@
                                                     @if(!empty($grading['feedback'][$index]))
                                                         <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--gray-200); font-size: 0.875rem; color: var(--primary-blue);">
                                                             <i class="fas fa-comment-dots mr-1"></i> <strong>Instructor Feedback:</strong> {{ $grading['feedback'][$index] }}
+                                                        </div>
+                                                    @endif
+
+                                                    @if(!empty($grading['strengths'][$index]) || !empty($grading['weaknesses'][$index]))
+                                                        <div class="ai-insights-box" style="margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, rgba(36, 128, 241, 0.05) 0%, rgba(36, 128, 241, 0.02) 100%); border: 1px solid rgba(36, 128, 241, 0.1); border-radius: 12px;">
+                                                            <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                                                <i class="fas fa-robot"></i> AI Insights
+                                                            </div>
+                                                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                                                @if(!empty($grading['strengths'][$index]))
+                                                                    <div style="font-size: 0.875rem;">
+                                                                        <div style="color: var(--success-green); font-weight: 700; margin-bottom: 0.25rem;"><i class="fas fa-plus-circle"></i> Strengths</div>
+                                                                        <div style="color: var(--gray-700);">{{ $grading['strengths'][$index] }}</div>
+                                                                    </div>
+                                                                @endif
+                                                                @if(!empty($grading['weaknesses'][$index]))
+                                                                    <div style="font-size: 0.875rem;">
+                                                                        <div style="color: var(--error-red); font-weight: 700; margin-bottom: 0.25rem;"><i class="fas fa-minus-circle"></i> Weaknesses</div>
+                                                                        <div style="color: var(--gray-700);">{{ $grading['weaknesses'][$index] }}</div>
+                                                                    </div>
+                                                                @endif
+                                                            </div>
                                                         </div>
                                                     @endif
                                                 </div>
