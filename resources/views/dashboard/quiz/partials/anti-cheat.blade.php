@@ -67,7 +67,7 @@
   [id*="grammarly"],
   [class*="prowritingaid"],
   [id*="quillbot"],
-  div[style*="z-index: 2147483647"]:not([id^="sb_"]) {
+  div[style*="z-index: 2147483647"]:not([id^="sb_"]):not([class*="ML__"]):not([id*="MathJax"]) {
     display: none !important;
     visibility: hidden !important;
     opacity: 0 !important;
@@ -78,8 +78,8 @@
 <script id="security-script" nonce="{{ request()->attributes->get('csp_nonce') }}">
 (function() {
   const quizId = {!! json_encode($quiz['id'] ?? null) !!};
-  // Use the verified route structure
-  const baseUrl = '{{ url("/quiz") }}/' + quizId;
+  const encodedId = {!! json_encode($quiz['encoded_id'] ?? null) !!};
+  const baseUrl = '{{ url("/quiz") }}/' + (encodedId || quizId);
   const violationUrl = baseUrl + '/violation';
   const heartbeatUrl = baseUrl + '/heartbeat';
 
@@ -88,6 +88,7 @@
   let isLockedOut = false;
   let isClearingBlocker = false;
   let isInitialLoad = true; // Prevents instant lockout on page load
+  let isTransitioningFullscreen = false;
 
   // Enhanced Mobile Detection (Hardware-Level)
   const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -339,11 +340,10 @@
     console.log(element);
     console.clear();
 
-    // 3. Calibrated Dimension Analysis (Fixes Chrome false positives)
-    // We increase the threshold to 200 to account for scrollbars/high-DPI scaling
-    const threshold = 200;
-    const widthDiff = window.outerWidth - window.innerWidth > threshold;
-    const heightDiff = window.outerHeight - window.innerHeight > threshold;
+    // 3. Removed Dimension Analysis: Modern browsers with sidebars (Brave, Opera, Vivaldi)
+    // and high-DPI scaling trigger too many false positives.
+    const widthDiff = false;
+    const heightDiff = false;
 
     // 4. Firebug/External detection check
     const isFirebug = window.Firebug && window.Firebug.chrome && window.Firebug.chrome.isInitialized;
@@ -433,6 +433,8 @@
 
   function monitorEnvironment() {
     if (isLockedOut) return;
+    if (window.isSubmitting) return; // Prevent blockers during form submission
+    if (isTransitioningFullscreen) return; // Skip ALL checks during fullscreen transition
     
     // Auto-Correct: If screen is large, it's NOT a mobile device bypass
     if (isMobile && window.screen.width > 1024) {
@@ -467,10 +469,8 @@
     // 2. Secondary Monitor Check
     if (checkMultiMonitor()) return;
 
-    // 3. Maximization Check (Desktop Only)
-    // Checks if the browser window is at least 90% of the available screen area
-    const isNotMaximized = (window.screen.availWidth - window.outerWidth > 150) ||
-      (window.screen.availHeight - window.outerHeight > 150);
+    // 3. Maximization Check (Desktop Only) - Disabled to prevent race conditions with Fullscreen
+    const isNotMaximized = false;
 
     if (!isMobile && isNotMaximized) {
       updateBlockerMessage(
@@ -482,14 +482,40 @@
     }
 
     // 4. Fullscreen Enforcement (Desktop Only)
-    if (!isMobile && !document.fullscreenElement) {
+    const fsElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+    if (!isMobile && !fsElement && !isTransitioningFullscreen) {
       updateBlockerMessage(
         "Fullscreen mode is required to ensure a focused environment.",
         "Enter Fullscreen",
         () => {
-          document.documentElement.requestFullscreen().catch(() => {
-            alert("Fullscreen failed. Please ensure you are not using a 'Private/Incognito' window that blocks it.");
-          });
+          isTransitioningFullscreen = true;
+          const docElm = document.documentElement;
+          const bodyElm = document.body;
+          
+          const requestFs = (el) => {
+            const fn = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+            if (fn) return fn.call(el);
+            return Promise.reject("API_NOT_SUPPORTED");
+          };
+          
+          requestFs(docElm)
+            .catch((err) => {
+                console.warn('[Security] Fullscreen on documentElement failed, trying body...', err);
+                return requestFs(bodyElm);
+            })
+            .catch((err) => {
+              isTransitioningFullscreen = false;
+              console.error('[Security] Fullscreen failed:', err);
+              
+              let msg = "Fullscreen failed. This is often caused by browser privacy settings, 'Incognito' mode, or a missing user gesture.";
+              if (err === "API_NOT_SUPPORTED") {
+                  msg = "Your browser does not support the Fullscreen API. Please maximize your window manually.";
+              } else if (err && err.message) {
+                  msg += "\n\nError: " + err.message;
+              }
+              
+              alert(msg);
+            });
         }
       );
       return;
@@ -500,7 +526,7 @@
     if (existingBlocker) {
       isClearingBlocker = true;
       existingBlocker.remove();
-      setTimeout(() => isClearingBlocker = false, 100);
+      setTimeout(() => isClearingBlocker = false, 500);
     }
   }
 
@@ -512,7 +538,8 @@
         mutation.removedNodes.forEach(node => {
           if (node.id === SECURITY_ID || node.id === 'security-script') {
             // Only lock if the blocker was removed while environment was still invalid
-            if (!document.fullscreenElement && !isMobile) {
+            const fsElement = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+            if (!fsElement && !isMobile && !isTransitioningFullscreen) {
               triggerLockout('tampering', 'Critical security modules were modified or removed.');
             }
           }
@@ -527,8 +554,32 @@
 
   // Run monitor every 1000ms (Slowed down to prevent race conditions)
   setInterval(monitorEnvironment, 1000);
-  document.addEventListener('fullscreenchange', monitorEnvironment);
-  window.addEventListener('resize', () => { if (!isInitialLoad) monitorEnvironment(); });
+  document.addEventListener('fullscreenchange', () => {
+    // Delay slightly to allow the browser to settle the fullscreen state
+    setTimeout(() => {
+        isTransitioningFullscreen = false;
+        monitorEnvironment();
+    }, 300);
+  });
+  document.addEventListener('webkitfullscreenchange', () => {
+    setTimeout(() => {
+        isTransitioningFullscreen = false;
+        monitorEnvironment();
+    }, 300);
+  });
+  document.addEventListener('mozfullscreenchange', () => {
+    setTimeout(() => {
+        isTransitioningFullscreen = false;
+        monitorEnvironment();
+    }, 300);
+  });
+  document.addEventListener('MSFullscreenChange', () => {
+    setTimeout(() => {
+        isTransitioningFullscreen = false;
+        monitorEnvironment();
+    }, 300);
+  });
+  window.addEventListener('resize', () => { if (!isInitialLoad && !isTransitioningFullscreen) monitorEnvironment(); });
   monitorEnvironment(); // Run immediately
 
   /**
@@ -542,6 +593,8 @@
 
   // 1. Visibility & Blur (With Grace Period & Screenshot Defense)
   window.addEventListener('blur', () => { 
+    if (window.isSubmitting) return; // Skip during form submission
+    if (isTransitioningFullscreen) return; // Fullscreen transitions cause transient blur
     lastBlurTime = Date.now();
     document.body.classList.add('is-blurred');
     // Screenshot Defense: Instant Blur Overlay
@@ -549,6 +602,8 @@
   });
 
   document.addEventListener('visibilitychange', () => { 
+    if (window.isSubmitting) return; // Skip during form submission
+    if (isTransitioningFullscreen) return; // Fullscreen transitions cause transient visibility changes
     if (document.hidden) {
       lastVisibilityHiddenTime = Date.now();
       document.body.classList.add('is-blurred');
@@ -569,7 +624,7 @@
   function maintainFocusShield() {
     const shield = document.getElementById('focus-shield-element');
     
-    if (!document.hasFocus() && !isLockedOut && !isInitialLoad) {
+    if (!document.hasFocus() && !isLockedOut && !isInitialLoad && !isTransitioningFullscreen) {
       document.body.classList.add('is-blurred');
       if (shield) shield.style.display = 'flex';
     } else {
@@ -712,6 +767,16 @@
       csrfInput.value = document.querySelector('meta[name="csrf-token"]').content;
       form.appendChild(csrfInput);
 
+      // Handle essay field for essay quizzes
+      const finalEssay = document.getElementById('finalEssay');
+      if (finalEssay) {
+        const essayInput = document.createElement('input');
+        essayInput.type = 'hidden';
+        essayInput.name = 'essay';
+        essayInput.value = finalEssay.value;
+        form.appendChild(essayInput);
+      }
+
       document.body.appendChild(form);
     }
 
@@ -723,6 +788,7 @@
       form.appendChild(input);
     }
 
+    window.isSubmitting = true;
     form.submit();
   }
 

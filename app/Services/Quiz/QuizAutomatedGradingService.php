@@ -27,6 +27,8 @@ class QuizAutomatedGradingService
         $results = [
             'marks' => [],
             'feedback' => [],
+            'strengths' => [],
+            'weaknesses' => [],
             'analysis' => [
                 'strengths' => [],
                 'weaknesses' => []
@@ -45,6 +47,8 @@ class QuizAutomatedGradingService
                     
                     $results['marks']["{$qIdx}_{$sIdx}"] = $analysis['score'];
                     $results['feedback']["{$qIdx}_{$sIdx}"] = $analysis['feedback'];
+                    $results['strengths']["{$qIdx}_{$sIdx}"] = $analysis['strengths'];
+                    $results['weaknesses']["{$qIdx}_{$sIdx}"] = $analysis['weaknesses'];
                     
                     if (!empty($analysis['strengths'])) $results['analysis']['strengths'][] = $analysis['strengths'];
                     if (!empty($analysis['weaknesses'])) $results['analysis']['weaknesses'][] = $analysis['weaknesses'];
@@ -53,6 +57,8 @@ class QuizAutomatedGradingService
                 $analysis = $this->analyzePart($userResponse, $question['correct_answer'] ?? '', $question['points'] ?? 10);
                 $results['marks'][$qIdx] = $analysis['score'];
                 $results['feedback'][$qIdx] = $analysis['feedback'];
+                $results['strengths'][$qIdx] = $analysis['strengths'];
+                $results['weaknesses'][$qIdx] = $analysis['weaknesses'];
                 
                 if (!empty($analysis['strengths'])) $results['analysis']['strengths'][] = $analysis['strengths'];
                 if (!empty($analysis['weaknesses'])) $results['analysis']['weaknesses'][] = $analysis['weaknesses'];
@@ -67,6 +73,11 @@ class QuizAutomatedGradingService
      */
     protected function analyzePart($studentAnswer, $modelAnswer, $maxPoints)
     {
+        $geminiKey = config('services.gemini.key');
+        if ($geminiKey) {
+            return $this->analyzeWithGemini($studentAnswer, $modelAnswer, $maxPoints, $geminiKey);
+        }
+
         $apiKey = config('services.openai.key') ?: env('OPENAI_API_KEY');
 
         if ($apiKey) {
@@ -139,7 +150,7 @@ class QuizAutomatedGradingService
             $response = Http::withToken($apiKey)->post('https://api.openai.com/v1/chat/completions', [
                 'model' => 'gpt-4o',
                 'messages' => [
-                    ['role' => 'system', 'content' => 'You are a professional educational assessor. Grade the student response against the marking scheme. Return ONLY JSON.'],
+                    ['role' => 'system', 'content' => 'You are a professional educational assessor. Grade the student response against the marking scheme. Address the student directly using 2nd-person pronouns (e.g., "You stated...", "Your answer..."). Do NOT use 3rd-person pronouns like "The student". Return ONLY JSON.'],
                     ['role' => 'user', 'content' => "Marking Scheme: $modelAnswer\nStudent Response: $studentAnswer\nMax Points: $maxPoints\nReturn JSON: {score: float, feedback: string, strengths: string, weaknesses: string}"]
                 ],
                 'response_format' => ['type' => 'json_object']
@@ -157,6 +168,60 @@ class QuizAutomatedGradingService
             }
         } catch (\Exception $e) {
             Log::error('AI Grading Failed: ' . $e->getMessage());
+        }
+
+        return $this->analyzeWithLocalLogic($studentAnswer, $modelAnswer, $maxPoints);
+    }
+
+    /**
+     * Google Gemini Agent driver.
+     */
+    protected function analyzeWithGemini($studentAnswer, $modelAnswer, $maxPoints, $apiKey)
+    {
+        try {
+            $model = config('services.gemini.model', 'gemini-1.5-flash');
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+
+            $prompt = "You are a professional educational assessor. Grade the student response against the marking scheme.\n" .
+                      "IMPORTANT: Address the student directly using 2nd-person pronouns (e.g., 'You stated...', 'Your answer...'). Do NOT use 3rd-person pronouns like 'The student'.\n\n" .
+                      "Marking Scheme: $modelAnswer\n" .
+                      "Student Response: $studentAnswer\n" .
+                      "Max Points: $maxPoints\n\n" .
+                      "Provide your evaluation in JSON format with the following keys:\n" .
+                      "- score: (float) The marks awarded out of $maxPoints\n" .
+                      "- feedback: (string) A brief explanation of the grade addressed directly to the student\n" .
+                      "- strengths: (string) What they did well, addressed directly to the student\n" .
+                      "- weaknesses: (string) Areas for improvement, addressed directly to the student";
+
+            $response = Http::post($url, [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $prompt]
+                        ]
+                    ]
+                ],
+                'generationConfig' => [
+                    'responseMimeType' => 'application/json'
+                ]
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $jsonString = $data['candidates'][0]['content']['parts'][0]['text'] ?? '{}';
+                $content = json_decode($jsonString, true);
+
+                return [
+                    'score' => $content['score'] ?? 0,
+                    'feedback' => $content['feedback'] ?? 'Gemini Review completed.',
+                    'strengths' => $content['strengths'] ?? '',
+                    'weaknesses' => $content['weaknesses'] ?? ''
+                ];
+            } else {
+                Log::error('Gemini API Error: ' . $response->body());
+            }
+        } catch (\Exception $e) {
+            Log::error('Gemini Grading Failed: ' . $e->getMessage());
         }
 
         return $this->analyzeWithLocalLogic($studentAnswer, $modelAnswer, $maxPoints);
