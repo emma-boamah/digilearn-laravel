@@ -357,6 +357,10 @@ Route::middleware(['auth'])->group(function () {
                 )->name('api.lessons.track-analytics');
                 Route::get('/api/dashboard/search-lessons', [DashboardController::class , 'searchLessons'])->name('api.dashboard.search-lessons');
                 Route::post('/api/dashboard/change-plan', [DashboardController::class , 'changePlan'])->name('api.dashboard.change-plan');
+                
+                // Search Analytics
+                Route::post('/api/search/track', [\App\Http\Controllers\SearchAnalyticsController::class, 'track'])->name('api.search.track');
+                Route::get('/api/search/suggestions', [\App\Http\Controllers\SearchAnalyticsController::class, 'suggestions'])->name('api.search.suggestions');
             }
             );
         });

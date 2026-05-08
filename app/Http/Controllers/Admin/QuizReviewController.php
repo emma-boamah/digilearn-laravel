@@ -154,8 +154,27 @@ class QuizReviewController extends Controller
     {
         $attempt = QuizAttempt::findOrFail($id);
         $service = new \App\Services\Quiz\QuizAutomatedGradingService();
-        $suggestions = $service->suggestMarks($attempt);
-        
-        return response()->json($suggestions);
+
+        // Check if rate-limited before even trying
+        if ($service->isGeminiRateLimited()) {
+            $cooldown = $service->geminiCooldownRemaining();
+            return response()->json([
+                'error' => 'rate_limited',
+                'message' => "AI grading is temporarily unavailable due to API rate limits. Please try again in {$cooldown} seconds, or grade manually.",
+                'cooldown_seconds' => $cooldown,
+            ], 429);
+        }
+
+        try {
+            $suggestions = $service->suggestMarks($attempt);
+            $suggestions['grading_driver'] = $service->getGradingDriver();
+            return response()->json($suggestions);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Auto-grade failed: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'grading_failed',
+                'message' => 'AI grading encountered an error. Please grade manually or try again later.',
+            ], 500);
+        }
     }
 }

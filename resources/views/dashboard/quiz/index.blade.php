@@ -82,5 +82,6 @@
     </div>
 
     @include('dashboard.quiz.partials.scripts')
+    @include('components.search-autocomplete')
 </body>
 </html>

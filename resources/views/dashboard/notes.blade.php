@@ -9,7 +9,7 @@
         <p class="page-subtitle">Manage your saved lesson notes</p>
 
         <div class="filter-tabs">
-            <div class="search-container">
+            <div class="search-container" data-search-domain="note">
                 <input type="text" id="notes-search" placeholder="Search notes..." class="search-input">
                 <i class="fas fa-search search-icon"></i>
             </div>
