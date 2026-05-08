@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\SearchAnalytic;
+use App\Models\Quiz;
+use App\Models\Lesson;
+use App\Models\Note;
 use Illuminate\Support\Facades\Auth;
 
 class SearchAnalyticsController extends Controller
@@ -44,29 +47,85 @@ class SearchAnalyticsController extends Controller
     }
 
     /**
-     * Get auto-complete suggestions
+     * Get auto-complete suggestions.
+     *
+     * Blends past search history with real content titles from the database,
+     * so suggestions are always relevant to what actually exists.
      */
     public function suggestions(Request $request)
     {
-        $query = $request->input('q', '');
+        $query = strtolower(trim($request->input('q', '')));
         $domain = $request->input('domain', 'lesson');
+        $limit = 8;
 
-        if (empty(trim($query))) {
-            // Optional: return popular default searches if query is empty
+        if (empty($query)) {
+            // When input is empty: show trending searches for this domain
             $suggestions = SearchAnalytic::where('domain', $domain)
                 ->orderBy('hits', 'desc')
                 ->limit(5)
                 ->pluck('query');
-                
+
             return response()->json(['suggestions' => $suggestions]);
         }
 
-        $suggestions = SearchAnalytic::where('domain', $domain)
-            ->where('query', 'like', strtolower($query) . '%')
+        // 1. Get matching past searches (ranked by popularity)
+        $historySuggestions = SearchAnalytic::where('domain', $domain)
+            ->where('query', 'like', $query . '%')
             ->orderBy('hits', 'desc')
-            ->limit(8)
-            ->pluck('query');
+            ->limit($limit)
+            ->pluck('query')
+            ->toArray();
 
-        return response()->json(['suggestions' => $suggestions]);
+        // 2. Get matching content titles from the actual database
+        $contentSuggestions = $this->getContentSuggestions($domain, $query, $limit);
+
+        // 3. Merge, deduplicate, and prioritize (history first, then content)
+        $merged = collect($historySuggestions)
+            ->merge($contentSuggestions)
+            ->unique()
+            ->take($limit)
+            ->values();
+
+        return response()->json(['suggestions' => $merged]);
+    }
+
+    /**
+     * Fetch real content titles matching the query for the given domain.
+     */
+    protected function getContentSuggestions(string $domain, string $query, int $limit): array
+    {
+        switch ($domain) {
+            case 'quiz':
+                return Quiz::where('title', 'like', '%' . $query . '%')
+                    ->orderBy('created_at', 'desc')
+                    ->limit($limit)
+                    ->pluck('title')
+                    ->map(fn($t) => strtolower($t))
+                    ->toArray();
+
+            case 'lesson':
+            case 'saved_lesson':
+                return Lesson::where('title', 'like', '%' . $query . '%')
+                    ->orderBy('created_at', 'desc')
+                    ->limit($limit)
+                    ->pluck('title')
+                    ->map(fn($t) => strtolower($t))
+                    ->toArray();
+
+            case 'note':
+                if (class_exists(Note::class)) {
+                    return Note::where('title', 'like', '%' . $query . '%')
+                        ->where('user_id', Auth::id())
+                        ->orderBy('created_at', 'desc')
+                        ->limit($limit)
+                        ->pluck('title')
+                        ->map(fn($t) => strtolower($t))
+                        ->toArray();
+                }
+                return [];
+
+            default:
+                return [];
+        }
     }
 }
