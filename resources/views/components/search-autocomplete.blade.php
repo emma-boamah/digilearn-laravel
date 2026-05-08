@@ -61,6 +61,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const input = container.querySelector('.search-input');
         const searchButton = container.querySelector('.search-button');
 
+        // Detect current level group: data attribute > URL param > user's default
+        const levelGroup = container.getAttribute('data-level-group')
+            || new URLSearchParams(window.location.search).get('level_group')
+            || document.body.getAttribute('data-level-group')
+            || '';
+
         if (!input) return;
 
         // Disable browser's native autocomplete to prevent conflict with our custom dropdown
@@ -150,6 +156,9 @@ document.addEventListener('DOMContentLoaded', function () {
             url.searchParams.append('domain', domain);
             if (query) {
                 url.searchParams.append('q', query);
+            }
+            if (levelGroup) {
+                url.searchParams.append('level_group', levelGroup);
             }
 
             fetch(url, {

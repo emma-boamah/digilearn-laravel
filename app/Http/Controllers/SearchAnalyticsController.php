@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\SearchAnalytic;
 use App\Models\Quiz;
-use App\Models\Lesson;
-use App\Models\Note;
+use App\Models\Video;
+use App\Models\UserNote;
+use App\Models\LevelGroup;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class SearchAnalyticsController extends Controller
 {
@@ -50,13 +52,17 @@ class SearchAnalyticsController extends Controller
      * Get auto-complete suggestions.
      *
      * Blends past search history with real content titles from the database,
-     * so suggestions are always relevant to what actually exists.
+     * filtered by the user's current level group for relevance.
      */
     public function suggestions(Request $request)
     {
         $query = strtolower(trim($request->input('q', '')));
         $domain = $request->input('domain', 'lesson');
+        $levelGroup = $request->input('level_group', '');
         $limit = 8;
+
+        // Resolve level group slug to its grade level titles (cached for 10 min)
+        $gradeLevels = $this->resolveGradeLevels($levelGroup);
 
         if (empty($query)) {
             // When input is empty: show trending searches for this domain
@@ -76,8 +82,8 @@ class SearchAnalyticsController extends Controller
             ->pluck('query')
             ->toArray();
 
-        // 2. Get matching content titles from the actual database
-        $contentSuggestions = $this->getContentSuggestions($domain, $query, $limit);
+        // 2. Get matching content titles from the database, filtered by level group
+        $contentSuggestions = $this->getContentSuggestions($domain, $query, $gradeLevels, $limit);
 
         // 3. Merge, deduplicate, and prioritize (history first, then content)
         $merged = collect($historySuggestions)
@@ -90,14 +96,44 @@ class SearchAnalyticsController extends Controller
     }
 
     /**
-     * Fetch real content titles matching the query for the given domain.
+     * Resolve a level group slug to its grade level titles.
+     * Cached for 10 minutes to avoid repeated DB lookups.
+     *
+     * @return array e.g. ['JHS 1', 'JHS 2', 'JHS 3']
      */
-    protected function getContentSuggestions(string $domain, string $query, int $limit): array
+    protected function resolveGradeLevels(string $levelGroupSlug): array
+    {
+        if (empty($levelGroupSlug)) {
+            return [];
+        }
+
+        return Cache::remember("level_group_grades:{$levelGroupSlug}", 600, function () use ($levelGroupSlug) {
+            $group = LevelGroup::where('slug', $levelGroupSlug)->with('levels')->first();
+            if (!$group) {
+                return [];
+            }
+            return $group->levels->pluck('title')->toArray();
+        });
+    }
+
+    /**
+     * Fetch real content titles matching the query for the given domain,
+     * filtered by the user's current level group grade levels.
+     *
+     * Uses select() for efficiency — only fetches the title column.
+     */
+    protected function getContentSuggestions(string $domain, string $query, array $gradeLevels, int $limit): array
     {
         switch ($domain) {
             case 'quiz':
-                return Quiz::where('title', 'like', '%' . $query . '%')
-                    ->orderBy('created_at', 'desc')
+                $q = Quiz::select('title')
+                    ->where('title', 'like', '%' . $query . '%');
+
+                if (!empty($gradeLevels)) {
+                    $q->whereIn('grade_level', $gradeLevels);
+                }
+
+                return $q->orderBy('created_at', 'desc')
                     ->limit($limit)
                     ->pluck('title')
                     ->map(fn($t) => strtolower($t))
@@ -105,24 +141,29 @@ class SearchAnalyticsController extends Controller
 
             case 'lesson':
             case 'saved_lesson':
-                return Lesson::where('title', 'like', '%' . $query . '%')
-                    ->orderBy('created_at', 'desc')
+                $q = Video::select('title')
+                    ->where('title', 'like', '%' . $query . '%');
+
+                if (!empty($gradeLevels)) {
+                    $q->whereIn('grade_level', $gradeLevels);
+                }
+
+                return $q->orderBy('created_at', 'desc')
                     ->limit($limit)
                     ->pluck('title')
                     ->map(fn($t) => strtolower($t))
                     ->toArray();
 
             case 'note':
-                if (class_exists(Note::class)) {
-                    return Note::where('title', 'like', '%' . $query . '%')
-                        ->where('user_id', Auth::id())
-                        ->orderBy('created_at', 'desc')
-                        ->limit($limit)
-                        ->pluck('title')
-                        ->map(fn($t) => strtolower($t))
-                        ->toArray();
-                }
-                return [];
+                // Notes are user-specific, no grade level filtering needed
+                return UserNote::select('title')
+                    ->where('title', 'like', '%' . $query . '%')
+                    ->where('user_id', Auth::id())
+                    ->orderBy('created_at', 'desc')
+                    ->limit($limit)
+                    ->pluck('title')
+                    ->map(fn($t) => strtolower($t))
+                    ->toArray();
 
             default:
                 return [];
