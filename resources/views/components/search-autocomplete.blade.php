@@ -63,6 +63,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (!input) return;
 
+        // Disable browser's native autocomplete to prevent conflict with our custom dropdown
+        input.setAttribute('autocomplete', 'off');
+
         // Create dropdown and append to document.body (escapes all overflow:hidden parents)
         const dropdown = document.createElement('div');
         dropdown.className = 'search-autocomplete-dropdown';
