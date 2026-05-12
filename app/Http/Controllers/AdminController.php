@@ -4391,8 +4391,14 @@ class AdminController extends Controller
                             'shuffle_questions' => $request->boolean('shuffle_questions'),
                         ]);
 
-                        // Clear cache to reflect updates immediately
-                        Cache::forget("quiz.{$quiz->id}");
+                        // Clear comprehensive caches to reflect updates immediately
+                        try {
+                            $quizController = new \App\Http\Controllers\Quiz\QuizController();
+                            $quizController->clearQuizCaches($quiz->id);
+                        } catch (\Exception $e) {
+                            Log::warning('Could not clear comprehensive quiz cache', ['error' => $e->getMessage()]);
+                            Cache::forget("quiz.{$quiz->id}");
+                        }
                     }
                 }
             } else {
@@ -4418,8 +4424,14 @@ class AdminController extends Controller
                     'shuffle_questions' => $request->boolean('shuffle_questions'),
                 ]);
 
-                // Clear cache for standalone quiz
-                Cache::forget("quiz.{$contentId}");
+                // Clear comprehensive caches for standalone quiz
+                try {
+                    $quizController = new \App\Http\Controllers\Quiz\QuizController();
+                    $quizController->clearQuizCaches($contentId);
+                } catch (\Exception $e) {
+                    Log::warning('Could not clear comprehensive quiz cache', ['error' => $e->getMessage()]);
+                    Cache::forget("quiz.{$contentId}");
+                }
 
                 // Update description in the associated video container if it exists
                 if ($content->video_id) {
@@ -5097,6 +5109,16 @@ class AdminController extends Controller
             if (!empty($question['image']) && strpos($question['image'], 'data:image') === 0) {
                 // Base64 image - convert to file
                 $question['image'] = $this->saveBase64Image($question['image'], $quizImagesDir);
+            }
+
+            // Handle sub-questions (specifically for essay questions)
+            if (!empty($question['sub_questions'])) {
+                foreach ($question['sub_questions'] as &$sub) {
+                    if (!empty($sub['image']) && strpos($sub['image'], 'data:image') === 0) {
+                        // Base64 image - convert to file
+                        $sub['image'] = $this->saveBase64Image($sub['image'], $quizImagesDir);
+                    }
+                }
             }
 
             // Process options images
