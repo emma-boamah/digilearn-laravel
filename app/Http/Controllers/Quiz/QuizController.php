@@ -1202,16 +1202,33 @@ class QuizController extends Controller
     {
         Log::info('getQuizById called', ['quiz_id' => $quizId]);
 
-        $cacheKey = "quiz.{$quizId}";
+        // Standardize the ID (numeric or decoded) to ensure cache hits/misses are consistent
+        $numericId = $quizId;
+        if (!is_numeric($quizId)) {
+            // Try to decode as an obfuscated ID
+            $decodedId = UrlObfuscator::decode($quizId);
+            
+            // If decoding failed, it might be an SEO URL (e.g. "encodedID-slug")
+            if (!$decodedId) {
+                $parsed = UrlObfuscator::parseSeoUrl($quizId);
+                $decodedId = $parsed['id'] ?? null;
+            }
+            
+            if ($decodedId && is_numeric($decodedId)) {
+                $numericId = $decodedId;
+            }
+        }
+
+        $cacheKey = "quiz.{$numericId}";
         $cacheDuration = 600; // 10 minutes
 
-        Log::info('getQuizById cache key', ['cache_key' => $cacheKey]);
+        Log::info('getQuizById standardized cache key', ['cache_key' => $cacheKey, 'original_id' => $quizId]);
 
         try {
-            $result = Cache::remember($cacheKey, $cacheDuration, function () use ($quizId) {
-                Log::info('getQuizById cache miss, querying database', ['quiz_id' => $quizId]);
+            $result = Cache::remember($cacheKey, $cacheDuration, function () use ($numericId) {
+                Log::info('getQuizById cache miss, querying database', ['quiz_id' => $numericId]);
 
-                $quiz = Quiz::with('uploader')->find($quizId);
+                $quiz = Quiz::with('uploader')->find($numericId);
                 Log::info('getQuizById database result', ['quiz_found' => $quiz ? true : false]);
 
                 if (!$quiz) {
@@ -1700,25 +1717,35 @@ class QuizController extends Controller
     /**
      * Clear quiz-related caches (helper method for cache invalidation)
      */
-    private function clearQuizCaches($quizId = null, $userId = null)
+    public function clearQuizCaches($quizId = null, $userId = null)
     {
         if ($quizId) {
             // Clear specific quiz cache
             Cache::forget("quiz.{$quizId}");
+            
+            // Also try to clear any cached encoded version just in case
+            $encodedId = UrlObfuscator::encode($quizId);
+            Cache::forget("quiz.{$encodedId}");
 
             if ($userId) {
                 // Clear user-specific data for this quiz
                 Cache::forget("quiz_user_data.{$userId}.{$quizId}");
-            } else {
-                // Clear all user caches for this quiz (expensive, use sparingly)
-                // This would require iterating through all users, so we skip it for now
+                Cache::forget("quiz_user_data_v2.{$userId}.{$quizId}");
             }
         }
 
-        // Clear quiz listing caches for all grade levels
-        $gradeLevels = ['grade-1-3', 'grade-4-6', 'jhs', 'shs', 'tertiary', 'all'];
+        // Clear all possible listing caches for common grade levels and contexts
+        $gradeLevels = ['primary-lower', 'grade-1-3', 'grade-4-6', 'jhs', 'shs', 'tertiary', 'all'];
+        $contexts = ['all', 'exam', 'practice', 'revision'];
+
         foreach ($gradeLevels as $level) {
             Cache::forget("quizzes.{$level}");
+            foreach ($contexts as $ctx) {
+                Cache::forget("quizzes_v2.{$level}.all.context.{$ctx}");
+                Cache::forget("quizzes_v2.{$level}.all.context.{$ctx}.search.");
+            }
         }
+        
+        Log::info('Quiz caches cleared', ['quiz_id' => $quizId]);
     }
 }
