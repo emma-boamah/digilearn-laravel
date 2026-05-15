@@ -173,7 +173,7 @@ class LearningAgentService
                     'thumbnail' => $existingVideo->getThumbnailUrl(),
                     'title' => $existingVideo->title,
                     'duration' => $existingVideo->duration_seconds,
-                    'summary' => $analysis['summary'] ?? null,
+                    'summary' => $analysis['summary'] ?? ($existingVideo->description ?? $this->getTopicSummary($analysis['topic'], $gradeLevel, $levelGroup)),
                 ];
             }
 
@@ -238,7 +238,7 @@ class LearningAgentService
                 'thumbnail' => $video->getThumbnailUrl(),
                 'title' => $video->title,
                 'duration' => $video->duration_seconds,
-                'summary' => $analysis['summary'] ?? null,
+                'summary' => $analysis['summary'] ?? ($video->description ?? $this->getTopicSummary($analysis['topic'], $gradeLevel, $levelGroup)),
             ];
 
         } catch (Exception $e) {
@@ -300,7 +300,7 @@ Analyze this request and return a JSON object with:
 2. "subject" - The academic subject this belongs to. Must be one of: Mathematics, English, Science, Social Studies, ICT, French, Religious and Moral Education, Creative Arts, Ghanaian Language, History, Geography, Physics, Chemistry, Biology, Economics, Government, Literature, Integrated Science, Elective Mathematics, General Science. Pick the closest match.
 3. "search_keywords" - Array of 3-5 keywords for finding educational videos on this topic
 4. "youtube_search_query" - A single optimized YouTube search string that would find the best educational video for this student's level. Include grade-appropriate language markers (e.g. "for junior high school", "simple explanation for kids", "GCSE level")
-5. "summary" - A 2-3 paragraph educational summary of the topic tailored to their grade level, explaining key concepts clearly.
+5. "summary" - A comprehensive 2-3 paragraph educational summary of the topic ITSELF (e.g. if they ask about "respiration", explain what respiration is, the key concepts, and why it's important). This MUST be an educational explanation of the topic, tailored to their grade level.
 6. "ges_relevance" - A brief sentence on how this aligns with the GES syllabus.
 7. "difficulty_level" - One of: "beginner", "intermediate", "advanced"
 8. "is_valid_educational_topic" - Boolean, false if the query is not about education/learning
@@ -381,7 +381,7 @@ PROMPT;
             'topic' => $topic,
             'subject' => 'General Science',
             'search_keywords' => explode(' ', $topic),
-            'youtube_search_query' => $topic . ' explained for ' . $gradeLevel . ' students',
+                    'youtube_search_query' => $topic . ' explained for ' . $gradeLevel . ' students',
             'summary' => "I've found a great lesson on {$topic} for you. This video will explain the key concepts of this topic in detail, tailored for your level.",
             'difficulty_level' => 'intermediate',
             'is_valid_educational_topic' => true,
@@ -401,7 +401,33 @@ PROMPT;
             'university' => 'University level. Content should be comprehensive and academic.',
         ];
 
-        return $contexts[$levelGroup] ?? 'General education level.';
+        return $contexts[$levelGroup] ?? 'General education context.';
+    }
+
+    /**
+     * Generate a standalone topic summary if missing from the main analysis.
+     */
+    private function getTopicSummary(string $topic, string $gradeLevel, string $levelGroup): ?string
+    {
+        if (empty($this->geminiApiKey)) return null;
+
+        $context = $this->getGradeLevelContext($gradeLevel, $levelGroup);
+        $prompt = "Act as an expert teacher for a student in {$gradeLevel}. Provide a 2-3 paragraph educational summary of the topic: \"{$topic}\". Explain the key concepts clearly and accurately. Context: {$context}. Return ONLY the summary text.";
+
+        try {
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->geminiModel}:generateContent?key={$this->geminiApiKey}";
+            $response = Http::timeout(30)->post($url, [
+                'contents' => [['parts' => [['text' => $prompt]]]]
+            ]);
+
+            if ($response->successful()) {
+                return $response->json()['candidates'][0]['content']['parts'][0]['text'] ?? null;
+            }
+        } catch (Exception $e) {
+            Log::warning('Fallback summary generation failed', ['error' => $e->getMessage()]);
+        }
+
+        return null;
     }
 
     /**
