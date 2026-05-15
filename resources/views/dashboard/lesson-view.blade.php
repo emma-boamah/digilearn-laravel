@@ -7954,12 +7954,17 @@
         const descriptionToggle = document.getElementById('lessonDescriptionToggle');
 
         if (descriptionContent && descriptionToggle) {
-            // Check for overflow after a short delay to ensure rendering
-            setTimeout(() => {
-                if (descriptionContent.scrollHeight > descriptionContent.offsetHeight + 5) {
-                    descriptionToggle.style.display = 'block';
-                }
-            }, 500);
+            const checkOverflow = () => {
+                const hasOverflow = descriptionContent.scrollHeight > descriptionContent.offsetHeight + 2;
+                descriptionToggle.style.display = hasOverflow ? 'block' : 'none';
+            };
+
+            // Check multiple times as content might load (images, etc)
+            [100, 500, 1500, 3000].forEach(delay => {
+                setTimeout(checkOverflow, delay);
+            });
+
+            window.addEventListener('resize', checkOverflow);
 
             descriptionToggle.addEventListener('click', function () {
                 descriptionContent.classList.toggle('expanded');
