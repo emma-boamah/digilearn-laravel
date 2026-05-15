@@ -54,6 +54,14 @@ class AgentRequest extends Model
     }
 
     /**
+     * Get the quiz that was created/found for this request.
+     */
+    public function quiz(): BelongsTo
+    {
+        return $this->belongsTo(Quiz::class);
+    }
+
+    /**
      * Scope for successful requests.
      */
     public function scopeSuccessful($query)
