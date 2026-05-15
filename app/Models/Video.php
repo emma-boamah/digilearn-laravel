@@ -39,13 +39,17 @@ class Video extends Model
         'external_video_id',
         'external_video_url',
         'unit_number',
-        'unit_name'
+        'unit_name',
+        'is_agent_generated',
+        'agent_query',
+        'agent_topic'
     ];
 
     protected $casts = [
         'temp_expires_at' => 'datetime',
         'reviewed_at' => 'datetime',
         'is_featured' => 'boolean',
+        'is_agent_generated' => 'boolean',
     ];
 
     /**
@@ -366,6 +370,14 @@ class Video extends Model
     public function scopeApproved($query)
     {
         return $query->where('status', 'approved');
+    }
+
+    /**
+     * Scope for agent-generated videos
+     */
+    public function scopeAgentGenerated($query)
+    {
+        return $query->where('is_agent_generated', true);
     }
 
     /**

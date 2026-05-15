@@ -3644,7 +3644,7 @@ class AdminController extends Controller
         $contents = collect();
 
         // Get videos
-        if ($type === 'all' || $type === 'videos' || $type === 'pending') {
+        if ($type === 'all' || $type === 'videos' || $type === 'pending' || $type === 'agent') {
             $videoQuery = Video::with(['uploader:id,name,email', 'subject:id,name', 'documents', 'quizzes', 'categories'])
                 ->when($query, function ($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
@@ -3654,6 +3654,11 @@ class AdminController extends Controller
             // Filter for pending videos if type is 'pending'
             if ($type === 'pending') {
                 $videoQuery->where('status', 'pending');
+            }
+
+            // Filter for agent-generated videos if type is 'agent'
+            if ($type === 'agent') {
+                $videoQuery->where('is_agent_generated', true);
             }
 
             // Filter by level group
@@ -3687,6 +3692,7 @@ class AdminController extends Controller
                 'document_path',
                 'quiz_id',
                 'subject_id',
+                'is_agent_generated',
                 DB::raw("'video' as content_type"),
                 DB::raw('0 as likes'),
                 DB::raw('0 as dislikes')

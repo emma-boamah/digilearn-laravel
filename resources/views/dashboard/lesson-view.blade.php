@@ -4072,7 +4072,15 @@
 
                 <!-- Enhanced Lesson Info -->
                 <div class="lesson-info-card">
-                    <h1 class="lesson-title">{{ $lesson['title'] ?? 'Living and Non Living organism' }}</h1>
+                    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                        <h1 class="lesson-title" style="margin-bottom: 0;">{{ $lesson['title'] ?? 'Living and Non Living organism' }}</h1>
+                        @if(isset($lesson['is_agent_generated']) && $lesson['is_agent_generated'])
+                            <span style="font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; font-weight: 500; background: #dbeafe; color: #1e40af; display: inline-flex; align-items: center; gap: 0.25rem;">
+                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                AI Found
+                            </span>
+                        @endif
+                    </div>
 
                     <div class="lesson-meta-actions-row">
                         <div class="lesson-meta">

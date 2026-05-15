@@ -417,13 +417,26 @@ class DashboardController extends Controller
 
         if ($selectedLevelGroup === 'university') {
             $universityCourses = $this->getUniversityCourses();
+
+            // Include agent-generated/standalone videos for University level
+            $agentVideos = Video::where('is_agent_generated', true)
+                ->where(function($q) {
+                    $q->where('grade_level', 'LIKE', '%Uni%')
+                      ->orWhere('grade_level', 'LIKE', '%University%');
+                })
+                ->get();
+
+            foreach ($agentVideos as $video) {
+                $universityCourses[] = $this->formatVideoAsUniversityCourse($video);
+            }
+
             $universityCourses = $this->filterCoursesBySubscription($user, $universityCourses);
             $universityCourses = $this->subscriptionPreviewService->processRelatedLessons($universityCourses, $user);
             $subjects = $this->getSubjectsFromCourses($universityCourses);
 
             // Default initializations to prevent undefined variable errors in view
             $lessons = [];
-            $totalLessons = 0;
+            $totalLessons = count($universityCourses);
 
             return view('dashboard.digilearn', compact(
                 'selectedLevelGroup',
@@ -980,6 +993,7 @@ class DashboardController extends Controller
                     'encoded_quiz_id' => $video->quiz ? UrlObfuscator::encode($video->quiz->id) : null,
                     'views' => $video->views ?? 0,
                     'is_featured' => $video->is_featured,
+                    'is_agent_generated' => $video->is_agent_generated ?? false,
                 ];
 
                 $lessons[] = $lesson;
@@ -1071,6 +1085,7 @@ class DashboardController extends Controller
                     'id' => $course->id,
                     'title' => $course->title,
                     'subject' => $course->subject,
+                    'subject_slug' => Str::slug($course->subject ?? 'university'),
                     'duration' => $this->calculateCourseDuration($course),
                     'thumbnail' => $course->getThumbnailUrl(),
                     'video_url' => $this->getCourseIntroVideoUrl($course),
@@ -1112,6 +1127,45 @@ class DashboardController extends Controller
             // Return empty array as fallback
             return [];
         }
+    }
+
+    /**
+     * Format a standalone video as a university course for display
+     */
+    private function formatVideoAsUniversityCourse(Video $video)
+    {
+        $subject = $video->subject ? $video->subject->name : 'AI Lesson';
+        return [
+            'id' => $video->id,
+            'is_standalone_video' => true, // Flag for view to handle differently if needed
+            'title' => $video->title,
+            'subject' => $subject,
+            'subject_slug' => Str::slug($subject),
+            'duration' => $this->formatDuration($video->getDuration()),
+            'thumbnail' => $video->getThumbnailUrl(),
+            'video_url' => $video->getVideoUrl(),
+            'video_source' => $video->video_source,
+            'vimeo_id' => $video->vimeo_id,
+            'external_video_id' => $video->external_video_id,
+            'mux_playback_id' => $video->mux_playback_id,
+            'instructor' => $video->uploader ? $video->uploader->name : 'Unknown',
+            'year' => $video->created_at->format('Y'),
+            'level_display' => $video->grade_level,
+            'description' => $video->description,
+            'credit_hours' => 1,
+            'semester' => 1,
+            'lessons_count' => 1,
+            'documents_count' => $video->documents->count(),
+            'quizzes_count' => $video->quiz ? 1 : 0,
+            'quizzes' => collect(),
+            'total_content' => 1,
+            'first_lesson_id' => $video->id,
+            'is_agent_generated' => $video->is_agent_generated,
+            'access_info' => [
+                'level' => 'full',
+                'upgrade_prompt' => null
+            ]
+        ];
     }
 
     /**
@@ -1205,8 +1259,16 @@ class DashboardController extends Controller
      */
     public function viewLesson($lessonId, Request $request)
     {
+        $courseId = $request->query('course_id');
         $user = Auth::user();
         $selectedLevelGroup = $user->current_level_group;
+
+        Log::info('viewLesson entry', [
+            'lessonId' => $lessonId,
+            'courseId' => $courseId,
+            'user' => Auth::id(),
+            'selectedLevelGroup' => $selectedLevelGroup
+        ]);
 
         if (!$selectedLevelGroup) {
             // Fallback to session for backward compatibility
@@ -1217,7 +1279,6 @@ class DashboardController extends Controller
         }
 
         // Check if this is a course view (when course_id is passed)
-        $courseId = $request->get('course_id');
         if ($courseId) {
             // Load course content instead of individual lesson
             $course = Course::with([
@@ -1231,29 +1292,35 @@ class DashboardController extends Controller
                 'quizzes' => function ($query) {
                     $query->orderBy('course_quizzes.order');
                 }
-            ])->findOrFail($courseId);
+            ])->find($courseId);
 
-            // Check if course is published
-            if (!$course->isPublished()) {
-                return redirect()->route('dashboard.digilearn')
-                    ->withErrors(['course' => 'Course not available.']);
+            if ($course) {
+                // Check if course is published
+                if (!$course->isPublished()) {
+                    return redirect()->route('dashboard.digilearn')
+                        ->withErrors(['course' => 'Course not available.']);
+                }
+
+                // Increment views for all videos in the course
+                $course->videos()->increment('views');
+
+                $stats = $course->getStats();
+
+                Log::channel('security')->info('course_viewed_via_lesson', [
+                    'user_id' => Auth::id(),
+                    'course_id' => $courseId,
+                    'course_title' => $course->title,
+                    'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
+                    'ip' => request()->ip(),
+                    'timestamp' => Carbon::now()->toISOString()
+                ]);
+
+                return view('dashboard.lesson-view', compact('course', 'selectedLevelGroup', 'stats'));
+            } else {
+                Log::warning('Course not found in viewLesson, falling back to lesson search', ['course_id' => $courseId]);
+                // Clear courseId so it falls through to individual lesson loading
+                $courseId = null;
             }
-
-            // Increment views for all videos in the course
-            $course->videos()->increment('views');
-
-            $stats = $course->getStats();
-
-            Log::channel('security')->info('course_viewed_via_lesson', [
-                'user_id' => Auth::id(),
-                'course_id' => $courseId,
-                'course_title' => $course->title,
-                'subscription_plan' => $user->currentSubscription?->pricingPlan?->name ?? 'Free',
-                'ip' => request()->ip(),
-                'timestamp' => Carbon::now()->toISOString()
-            ]);
-
-            return view('dashboard.lesson-view', compact('course', 'selectedLevelGroup', 'stats'));
         }
 
         // Debug: Log lesson loading attempt
@@ -1289,6 +1356,30 @@ class DashboardController extends Controller
                 if ($l['id'] == $lessonId) {
                     $lesson = $l;
                     break;
+                }
+            }
+
+            // Fallback for AI-generated/standalone videos at University level
+            if (!$lesson) {
+                $video = Video::find($lessonId);
+                if ($video && (str_contains(strtoupper($video->grade_level), 'UNI') || $video->is_agent_generated)) {
+                    $lesson = [
+                        'id' => $video->id,
+                        'video_id' => $video->id,
+                        'title' => $video->title,
+                        'description' => $video->description,
+                        'duration' => $this->formatDuration($video->getDuration()),
+                        'video_url' => $video->getVideoUrl(),
+                        'thumbnail' => $video->getThumbnailUrl(),
+                        'instructor' => $video->uploader ? $video->uploader->name : 'Unknown',
+                        'subject' => $video->subject ? $video->subject->name : 'University Studies',
+                        'year' => $video->created_at->format('Y'),
+                        'level' => $this->convertLevelFormatBack($video->grade_level),
+                        'video_source' => $video->video_source,
+                        'is_agent_generated' => $video->is_agent_generated,
+                        'has_quiz' => $video->quiz ? true : false,
+                        'quiz_id' => $video->quiz ? $video->quiz->id : null,
+                    ];
                 }
             }
 
