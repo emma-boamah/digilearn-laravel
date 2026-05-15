@@ -173,7 +173,7 @@ class LearningAgentService
                     'thumbnail' => $existingVideo->getThumbnailUrl(),
                     'title' => $existingVideo->title,
                     'duration' => $existingVideo->duration_seconds,
-                    'summary' => $analysis['summary'] ?? ($existingVideo->description ?? $this->getTopicSummary($analysis['topic'], $gradeLevel, $levelGroup)),
+                    'summary' => $analysis['summary'] ?? ($this->getTopicSummary($analysis['topic'], $gradeLevel, $levelGroup) ?? $existingVideo->description),
                 ];
             }
 
@@ -238,7 +238,7 @@ class LearningAgentService
                 'thumbnail' => $video->getThumbnailUrl(),
                 'title' => $video->title,
                 'duration' => $video->duration_seconds,
-                'summary' => $analysis['summary'] ?? ($video->description ?? $this->getTopicSummary($analysis['topic'], $gradeLevel, $levelGroup)),
+                'summary' => $analysis['summary'] ?? ($this->getTopicSummary($analysis['topic'], $gradeLevel, $levelGroup) ?? $video->description),
             ];
 
         } catch (Exception $e) {

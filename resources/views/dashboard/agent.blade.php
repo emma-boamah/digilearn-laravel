@@ -312,11 +312,42 @@
         color: var(--text-main);
         max-width: 85%;
         padding: 1.25rem;
+        padding-bottom: 2.5rem; /* Space for the toggle */
         font-size: 0.95rem;
         line-height: 1.7;
         box-shadow: var(--shadow-sm);
         border-radius: 0 1.25rem 1.25rem 1.25rem;
         margin-bottom: 1.5rem;
+        position: relative;
+        max-height: 160px; /* Approx 3-4 lines */
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+    }
+
+    .chat-bubble.tutor-explanation.expanded {
+        max-height: 2000px;
+        padding-bottom: 3rem;
+    }
+
+    .tutor-explanation-toggle {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        padding: 0.5rem 1.25rem;
+        background: linear-gradient(to top, #fff 70%, transparent);
+        border: none;
+        color: #2677B8;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-align: left;
+        cursor: pointer;
+        display: none;
+        z-index: 10;
+    }
+
+    .chat-bubble.tutor-explanation.expanded .tutor-explanation-toggle {
+        background: #fff;
     }
 
     .chat-bubble.tutor-explanation p {
@@ -1021,13 +1052,27 @@
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
                     Topic Explanation
                 </div>
-                ${paragraphs}
+                <div class="explanation-body">${paragraphs}</div>
+                <button class="tutor-explanation-toggle">Show More</button>
             `;
+            
+            chatArea.appendChild(bubble);
+            
+            // Handle toggle visibility
+            setTimeout(() => {
+                const toggle = bubble.querySelector('.tutor-explanation-toggle');
+                if (bubble.scrollHeight > 160) {
+                    toggle.style.display = 'block';
+                }
+                toggle.addEventListener('click', () => {
+                    bubble.classList.toggle('expanded');
+                    toggle.textContent = bubble.classList.contains('expanded') ? 'Show Less' : 'Show More';
+                });
+            }, 100);
         } else {
             bubble.textContent = text;
+            chatArea.appendChild(bubble);
         }
-        
-        chatArea.appendChild(bubble);
         chatArea.scrollTop = chatArea.scrollHeight;
     }
 
