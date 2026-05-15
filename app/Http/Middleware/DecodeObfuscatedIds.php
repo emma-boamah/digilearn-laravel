@@ -26,7 +26,9 @@ class DecodeObfuscatedIds
             foreach ($parameters as $key => $value) {
                 // Check if this parameter might be an obfuscated ID
                 if ($this->isLikelyObfuscatedId($value)) {
-                    $decoded = UrlObfuscator::decode($value);
+                    // Try parsing as SEO URL first (ID-slug format)
+                    $parsedSeo = UrlObfuscator::parseSeoUrl($value);
+                    $decoded = $parsedSeo ? $parsedSeo['id'] : UrlObfuscator::decode($value);
 
                     if ($decoded !== null) {
                         // Replace the obfuscated parameter with the decoded ID
