@@ -76,6 +76,42 @@ class DecodeObfuscatedIds
                     }
                 }
             }
+
+            // Also check query parameters (e.g., course_id)
+            $queryParams = $request->query();
+            foreach ($queryParams as $key => $value) {
+                if ($this->isLikelyObfuscatedId($value)) {
+                    $decoded = UrlObfuscator::decode($value);
+                    if ($decoded !== null) {
+                        $request->query->set($key, $decoded);
+                        // Also merge into request input for convenience
+                        $request->merge([$key => $decoded]);
+                        
+                        Log::info('Decoded obfuscated ID in query parameter', [
+                            'parameter' => $key,
+                            'obfuscated' => $value,
+                            'decoded' => $decoded
+                        ]);
+                    } else {
+                        $fallbackDecoded = UrlObfuscator::simpleDecode($value);
+                        if ($fallbackDecoded !== null) {
+                            $request->query->set($key, $fallbackDecoded);
+                            $request->merge([$key => $fallbackDecoded]);
+                            
+                            Log::info('Decoded obfuscated ID in query parameter (fallback)', [
+                                'parameter' => $key,
+                                'obfuscated' => $value,
+                                'decoded' => $fallbackDecoded
+                            ]);
+                        } else {
+                            Log::warning('Failed to decode obfuscated ID in query parameter', [
+                                'parameter' => $key,
+                                'value' => $value
+                            ]);
+                        }
+                    }
+                }
+            }
         }
 
         return $next($request);

@@ -20,6 +20,7 @@ class Quiz extends Model
         'views_count',
         'attempts_count',
         'is_featured',
+        'is_agent_generated',
         'time_limit_minutes',
         'average_rating',
         'total_ratings',

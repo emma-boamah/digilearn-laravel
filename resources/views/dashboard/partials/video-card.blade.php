@@ -2,7 +2,12 @@
     $isUniversity = isset($universityCourses);
     $item = $isUniversity ? $course : $lesson;
     $id = $item['id'];
-    $encodedId = \App\Services\UrlObfuscator::encode($id);
+    $encodedCourseId = \App\Services\UrlObfuscator::encode($id);
+    
+    // For university, the lesson ID should be the first_lesson_id
+    $lessonId = $isUniversity ? ($item['first_lesson_id'] ?? $id) : $id;
+    $encodedLessonId = \App\Services\UrlObfuscator::encode($lessonId);
+    
     $quizId = $item['quiz_id'] ?? null;
     $encodedQuizId = $item['encoded_quiz_id'] ?? ($quizId ? \App\Services\UrlObfuscator::encode($quizId) : null);
 @endphp
@@ -36,8 +41,8 @@
     data-subject="{{ $item['subject_slug'] }}"
     :instructor="$item['instructor']"
     year="{{ $item['year'] }}"
-    lessonId="{{ $encodedId }}"
-    courseId="{{ $isUniversity ? $encodedId : null }}"
+    lessonId="{{ $encodedLessonId }}"
+    courseId="{{ ($isUniversity && !($item['is_standalone_video'] ?? false)) ? $encodedCourseId : null }}"
     data-video-url="{{ $item['video_url'] ?? '' }}"
     data-selected-level="{{ $selectedLevelGroup ?? 'primary-lower' }}"
     :showLevelBadge="true"
@@ -61,7 +66,7 @@
         @endif
         <div class="lesson-actions">
             <div class="action-icons-group">
-                <button class="action-icon-btn save-btn" title="Save for later" data-course-id="{{ $encodedId }}">
+                <button class="action-icon-btn save-btn" title="Save for later" data-course-id="{{ $encodedCourseId }}">
                     <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
                     </svg>
@@ -80,7 +85,7 @@
         <div class="lesson-actions">
             {{-- Primary action is now clicking the card itself --}}
             <div class="action-icons-group">
-                <button class="action-icon-btn save-btn" title="Save for later" data-lesson-id="{{ $encodedId }}">
+                <button class="action-icon-btn save-btn" title="Save for later" data-lesson-id="{{ $encodedLessonId }}">
                     <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
                     </svg>

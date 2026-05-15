@@ -1106,6 +1106,11 @@
            class="filter-tab {{ $type === 'documents' ? 'active' : '' }}">Documents</a>
         <a href="{{ route('admin.contents.index', ['q' => $query, 'type' => 'quizzes', 'sort' => $sort]) }}"
            class="filter-tab {{ $type === 'quizzes' ? 'active' : '' }}">Quizzes</a>
+        <a href="{{ route('admin.contents.index', ['q' => $query, 'type' => 'agent', 'sort' => $sort]) }}"
+           class="filter-tab {{ $type === 'agent' ? 'active' : '' }}">
+           <svg style="width:14px;height:14px;display:inline-block;margin-right:4px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+           AI Generated
+        </a>
     </div>
 
     <!-- Content Table -->
@@ -1195,7 +1200,15 @@
                                 @endif
                             </div>
                             <div class="video-info">
-                                <div class="video-title">{{ $content->title }}</div>
+                                <div class="video-title">
+                                    {{ $content->title }}
+                                    @if(isset($content->is_agent_generated) && $content->is_agent_generated)
+                                        <span style="font-size: 0.65rem; padding: 2px 6px; border-radius: 999px; font-weight: 500; background: #dbeafe; color: #1e40af; display: inline-flex; align-items: center; gap: 2px; vertical-align: middle; margin-left: 6px;">
+                                            <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                            AI
+                                        </span>
+                                    @endif
+                                </div>
                                 @if($content->description)
                                     <div class="video-description">{!! $content->description !!}</div>
                                 @endif
