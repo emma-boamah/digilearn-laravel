@@ -903,7 +903,8 @@
                data-query="{{ addslashes($item['query']) }}"
                data-lesson-url="{{ $item['lesson_url'] ?? '' }}"
                data-quiz-url="{{ $item['quiz_url'] ?? '' }}"
-               data-quiz-type="{{ $item['quiz_type'] ?? '' }}">
+               data-quiz-type="{{ $item['quiz_type'] ?? '' }}"
+               data-summary="{{ $item['summary'] ?? '' }}">
                 <div class="history-item-icon {{ $item['thumbnail'] ? '' : 'no-thumb' }}">
                     @if($item['thumbnail'])
                         <img src="{{ $item['thumbnail'] }}" alt="" loading="lazy">
@@ -1235,6 +1236,7 @@
                     const roadmap = item.dataset.roadmap;
                     const query = item.dataset.query;
                     const lessonUrl = item.dataset.lessonUrl;
+                    const summary = item.dataset.summary;
 
                     e.preventDefault();
                     
@@ -1250,14 +1252,14 @@
                         
                         // Re-show what was given for that prompt
                         addBubble(query, 'user');
+                        addBubble('Here is the quiz I generated for you earlier.', 'ai');
                         addResultCard({
                             success: true,
                             type: 'quiz',
                             topic: query,
                             quiz_url: quizUrl,
                             quiz_type: quizType,
-                            is_existing: true,
-                            message: 'Here is the quiz I generated for you earlier.'
+                            is_existing: true
                         });
                     } else if (lessonUrl) {
                         // Clear welcome state if visible
@@ -1266,6 +1268,7 @@
                         
                         // Re-show what was given for that prompt
                         addBubble(query, 'user');
+                        addBubble('Here is the lesson I found for you earlier.', 'ai');
                         addResultCard({
                             success: true,
                             type: 'lesson',
@@ -1273,7 +1276,7 @@
                             lesson_url: lessonUrl,
                             thumbnail: item.querySelector('img')?.src,
                             is_existing: true,
-                            message: 'Here is the lesson I found for you earlier.'
+                            summary: summary
                         });
                     } else {
                         // Fallback: trigger a new search if no URL is stored
