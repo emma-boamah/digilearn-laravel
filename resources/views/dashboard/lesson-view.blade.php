@@ -3602,9 +3602,9 @@
     /* YouTube style description box */
     .lesson-description-container {
         margin-top: 1.5rem;
-        padding: 1rem;
+        padding: 1.25rem;
         background-color: var(--gray-50);
-        border-radius: 0.75rem;
+        border-radius: 1rem;
         transition: background-color 0.2s ease;
         position: relative;
     }
@@ -3621,14 +3621,21 @@
     }
 
     .lesson-description-content {
-        font-size: 0.875rem;
-        line-height: 1.5;
+        font-size: 0.9375rem;
+        line-height: 1.7;
         color: var(--gray-800);
         overflow: hidden;
         display: -webkit-box;
-        -webkit-line-clamp: 3;
+        -webkit-line-clamp: 5;
         -webkit-box-orient: vertical;
-        transition: max-height 0.3s ease;
+        max-height: 8rem; /* Matches approx 5 lines */
+        transition: all 0.3s ease;
+    }
+
+    .lesson-description-content.expanded {
+        display: block;
+        -webkit-line-clamp: unset;
+        max-height: none;
     }
     
     .lesson-description-content p {
@@ -3676,11 +3683,6 @@
     [data-theme="dark"] .lesson-description-content img {
         border-color: #374151;
         background-color: #1f2937;
-    }
-
-    .lesson-description-content.expanded {
-        display: block;
-        -webkit-line-clamp: unset;
     }
 
     [data-theme="dark"] .lesson-description-content {
@@ -7952,10 +7954,12 @@
         const descriptionToggle = document.getElementById('lessonDescriptionToggle');
 
         if (descriptionContent && descriptionToggle) {
-            // Check if content overflows 3 lines
-            if (descriptionContent.scrollHeight > descriptionContent.clientHeight) {
-                descriptionToggle.style.display = 'block';
-            }
+            // Check for overflow after a short delay to ensure rendering
+            setTimeout(() => {
+                if (descriptionContent.scrollHeight > descriptionContent.offsetHeight + 5) {
+                    descriptionToggle.style.display = 'block';
+                }
+            }, 500);
 
             descriptionToggle.addEventListener('click', function () {
                 descriptionContent.classList.toggle('expanded');

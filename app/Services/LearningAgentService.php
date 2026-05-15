@@ -644,7 +644,7 @@ PROMPT;
 
         $video = Video::create([
             'title' => html_entity_decode($youtubeVideo['title'], ENT_QUOTES, 'UTF-8'),
-            'description' => html_entity_decode($youtubeVideo['description'] ?? '', ENT_QUOTES, 'UTF-8'),
+            'description' => html_entity_decode($analysis['summary'] ?? ($youtubeVideo['description'] ?? ''), ENT_QUOTES, 'UTF-8'),
             'subject_id' => $subjectId,
             'grade_level' => $gradeLevel,
             'video_source' => 'youtube',

@@ -294,14 +294,49 @@
     }
 
     .summary-box {
-        margin: 1rem 0;
-        padding: 0.75rem;
+        margin: 0.5rem 0 1rem 0;
+        padding: 0.5rem 0.75rem;
         background: var(--gray-50);
-        border-left: 3px solid #2677B8;
-        border-radius: 0.375rem;
-        font-size: 0.85rem;
-        line-height: 1.6;
+        border-left: 2px solid #2677B8;
+        border-radius: 0.25rem;
+        font-size: 0.8rem;
+        line-height: 1.4;
         color: var(--text-main);
+    }
+
+    /* ============= Tutor Explanation Bubble ============= */
+    .chat-bubble.tutor-explanation {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-left: 4px solid #2677B8;
+        color: var(--text-main);
+        max-width: 85%;
+        padding: 1.25rem;
+        font-size: 0.95rem;
+        line-height: 1.7;
+        box-shadow: var(--shadow-sm);
+        border-radius: 0 1.25rem 1.25rem 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .chat-bubble.tutor-explanation p {
+        margin-bottom: 1rem;
+    }
+
+    .chat-bubble.tutor-explanation p:last-child {
+        margin-bottom: 0;
+    }
+
+    .explanation-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 700;
+        color: #2677B8;
+        margin-bottom: 0.75rem;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 
     .summary-box p {
@@ -970,13 +1005,28 @@
     }
 
     function addBubble(text, type) {
+        if (!text) return;
+        
         const welcomeState = document.getElementById('welcomeState');
         if (welcomeState) welcomeState.style.display = 'none';
 
         const chatArea = document.getElementById('chatArea');
         const bubble = document.createElement('div');
         bubble.className = 'chat-bubble ' + type;
-        bubble.textContent = text;
+        
+        if (type === 'tutor-explanation') {
+            const paragraphs = text.split('\n').filter(p => p.trim()).map(p => `<p>${p}</p>`).join('');
+            bubble.innerHTML = `
+                <div class="explanation-title">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                    Topic Explanation
+                </div>
+                ${paragraphs}
+            `;
+        } else {
+            bubble.textContent = text;
+        }
+        
         chatArea.appendChild(bubble);
         chatArea.scrollTop = chatArea.scrollHeight;
     }
@@ -1082,10 +1132,6 @@
                     <div class="result-card-meta">
                         <span class="result-card-badge ${badgeClass}">${badgeText}</span>
                     </div>
-                    ${data.summary ? `
-                    <div class="summary-box">
-                        ${data.summary.split('\n').filter(p => p.trim()).map(p => `<p>${p}</p>`).join('')}
-                    </div>` : ''}
                     <a href="${data.lesson_url}" class="watch-btn">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1181,12 +1227,17 @@
 
             showTyping(false);
 
-            // Add agent response
-            addBubble(data.message, data.success ? 'agent' : 'agent error');
-
             // Show result card if successful
-            if (data.success && (data.lesson_url || data.quiz_url || data.roadmap)) {
-                addResultCard(data);
+            if (data.success) {
+                addBubble(data.message, 'ai');
+                if (data.summary) {
+                    addBubble(data.summary, 'tutor-explanation');
+                }
+                if (data.lesson_url || data.quiz_url || data.roadmap) {
+                    addResultCard(data);
+                }
+            } else {
+                addBubble(data.message, 'agent error');
             }
 
             // Update remaining count
@@ -1269,14 +1320,16 @@
                         // Re-show what was given for that prompt
                         addBubble(query, 'user');
                         addBubble('Here is the lesson I found for you earlier.', 'ai');
+                        if (summary) {
+                            addBubble(summary, 'tutor-explanation');
+                        }
                         addResultCard({
                             success: true,
                             type: 'lesson',
                             title: query,
                             lesson_url: lessonUrl,
                             thumbnail: item.querySelector('img')?.src,
-                            is_existing: true,
-                            summary: summary
+                            is_existing: true
                         });
                     } else {
                         // Fallback: trigger a new search if no URL is stored
