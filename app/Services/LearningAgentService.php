@@ -382,7 +382,7 @@ PROMPT;
             'subject' => 'General Science',
             'search_keywords' => explode(' ', $topic),
                     'youtube_search_query' => $topic . ' explained for ' . $gradeLevel . ' students',
-            'summary' => "I've found a great lesson on {$topic} for you. This video will explain the key concepts of this topic in detail, tailored for your level.",
+            'summary' => null,
             'difficulty_level' => 'intermediate',
             'is_valid_educational_topic' => true,
         ];
