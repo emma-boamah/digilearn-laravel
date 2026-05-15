@@ -776,6 +776,29 @@
         color: #fca5a5;
     }
 
+    .show-more-history-btn {
+        width: 100%;
+        padding: 0.5rem;
+        margin-top: 0.5rem;
+        background: transparent;
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        color: #2677B8;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+    }
+
+    .show-more-history-btn:hover {
+        background: #F3F7FB;
+        border-color: #2677B8;
+    }
+
     /* ============= Welcome State (no messages) ============= */
     .welcome-state {
         flex: 1;
@@ -871,9 +894,10 @@
     <div class="history-section" id="historySection">
         <div class="history-title">Recent Requests</div>
         <div class="history-list" id="historyList">
-            @foreach($history as $item)
+            @foreach($history as $index => $item)
             <a href="#"
-               class="history-item"
+               class="history-item {{ $index >= 5 ? 'hidden-history-item' : '' }}"
+               style="{{ $index >= 5 ? 'display: none;' : '' }}"
                data-type="{{ $item['type'] }}"
                data-roadmap="{{ $item['type'] === 'roadmap' ? json_encode($item['roadmap']) : '' }}"
                data-query="{{ addslashes($item['query']) }}"
@@ -904,6 +928,11 @@
             </a>
             @endforeach
         </div>
+        @if(count($history) > 5)
+        <button id="showMoreHistoryBtn" class="show-more-history-btn" type="button">
+            Show More <i class="fas fa-chevron-down ml-1" id="showMoreHistoryIcon"></i>
+        </button>
+        @endif
     </div>
     @endif
 </div>
@@ -1250,6 +1279,27 @@
                         // Fallback: trigger a new search if no URL is stored
                         askSuggestion(null, query);
                     }
+                }
+            });
+        }
+
+        const showMoreHistoryBtn = document.getElementById('showMoreHistoryBtn');
+        if (showMoreHistoryBtn) {
+            showMoreHistoryBtn.addEventListener('click', function() {
+                const hiddenItems = document.querySelectorAll('.hidden-history-item');
+                
+                let isShowingAll = this.dataset.showing === 'true';
+                
+                hiddenItems.forEach(item => {
+                    item.style.display = isShowingAll ? 'none' : 'flex';
+                });
+                
+                if (isShowingAll) {
+                    this.dataset.showing = 'false';
+                    this.innerHTML = 'Show More <i class="fas fa-chevron-down ml-1" id="showMoreHistoryIcon"></i>';
+                } else {
+                    this.dataset.showing = 'true';
+                    this.innerHTML = 'Show Less <i class="fas fa-chevron-up ml-1" id="showMoreHistoryIcon"></i>';
                 }
             });
         }
