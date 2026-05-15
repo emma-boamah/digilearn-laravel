@@ -84,6 +84,11 @@
                         {{ round(collect($analyticsData['active_users'])->avg('count')) }}
                     </p>
                 </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <p class="text-sm font-medium text-gray-500 uppercase">AI Tutor Requests (Total)</p>
+                    <p class="text-3xl font-bold text-blue-600 mt-2">{{ number_format($analyticsData['ai_tutor_engagement']['total_requests']) }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ $analyticsData['ai_tutor_engagement']['success_rate'] }}% Success Rate</p>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -110,18 +115,18 @@
                 </div>
 
                 <!-- Lesson Views -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden lg:col-span-2">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden lg:col-span-1">
                     <div class="p-6 border-b border-gray-100 flex items-center justify-between">
                         <h2 class="text-xl font-semibold text-gray-900">Lesson Views by Subject</h2>
                         <i class="fas fa-book-open text-blue-500"></i>
                     </div>
                     <div class="p-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+                        <div class="space-y-4">
                             @foreach($analyticsData['lesson_views'] as $view)
                                 <div>
                                     <div class="flex justify-between text-sm mb-1">
                                         <span class="font-medium text-gray-700">{{ $view['subject'] }}</span>
-                                        <span class="text-gray-500">{{ number_format($view['views']) }} views</span>
+                                        <span class="text-gray-500">{{ number_format($view['views']) }}</span>
                                     </div>
                                     <div class="w-full bg-gray-100 rounded-full h-2">
                                         <div class="bg-blue-600 h-2 rounded-full" style="width: {{ min(100, ($view['views'] / ($analyticsData['lesson_views'][0]['views'] ?: 1)) * 100) }}%"></div>
@@ -129,6 +134,42 @@
                                 </div>
                             @endforeach
                         </div>
+                    </div>
+                </div>
+
+                <!-- AI Tutor Popular Topics -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden lg:col-span-1">
+                    <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+                        <h2 class="text-xl font-semibold text-gray-900">AI Tutor Popular Topics</h2>
+                        <i class="fas fa-robot text-blue-500"></i>
+                    </div>
+                    <div class="p-6">
+                        <div class="space-y-4">
+                            @forelse($analyticsData['ai_tutor_engagement']['popular_topics'] as $topic)
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="font-medium text-gray-700 italic">"{{ $topic['query'] }}"</span>
+                                        <span class="text-gray-500">{{ $topic['hits'] }} hits</span>
+                                    </div>
+                                    <div class="w-full bg-gray-100 rounded-full h-2">
+                                        <div class="bg-indigo-500 h-2 rounded-full" style="width: {{ min(100, ($topic['hits'] / ($analyticsData['ai_tutor_engagement']['popular_topics'][0]['hits'] ?: 1)) * 100) }}%"></div>
+                                    </div>
+                                </div>
+                            @empty
+                                <p class="text-sm text-gray-500 italic">No AI Tutor data yet.</p>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Tutor Request Trend -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden lg:col-span-2">
+                    <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+                        <h2 class="text-xl font-semibold text-gray-900">AI Tutor Request Trend (30d)</h2>
+                        <i class="fas fa-brain text-purple-500"></i>
+                    </div>
+                    <div class="p-6">
+                        <canvas id="aiTutorTrendChart" height="150"></canvas>
                     </div>
                 </div>
             </div>
@@ -388,6 +429,39 @@
                     options: {
                         cutout: '70%',
                         plugins: { legend: { display: false } }
+                    }
+                });
+            }
+
+            // Initialization for AI Tutor Trend Chart
+            if (document.getElementById('aiTutorTrendChart')) {
+                const ctx = document.getElementById('aiTutorTrendChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: {!! json_encode(collect($analyticsData['ai_tutor_engagement']['requests_trend'])->pluck('date')) !!},
+                        datasets: [{
+                            label: 'AI Requests',
+                            data: {!! json_encode(collect($analyticsData['ai_tutor_engagement']['requests_trend'])->pluck('count')) !!},
+                            backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                            borderColor: '#3b82f6',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { 
+                            y: { 
+                                beginAtZero: true, 
+                                ticks: { stepSize: 5, color: '#94a3b8' },
+                                grid: { color: 'rgba(0,0,0,0.05)' }
+                            },
+                            x: {
+                                ticks: { color: '#94a3b8' },
+                                grid: { display: false }
+                            }
+                        }
                     }
                 });
             }

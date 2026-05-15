@@ -1443,9 +1443,6 @@ class AdminController extends Controller
         ];
     }
 
-    /**
-     * Get analytics data
-     */
     private function getAnalyticsData()
     {
         return [
@@ -1454,7 +1451,53 @@ class AdminController extends Controller
             'lesson_views' => $this->getLessonViewData(),
             'popular_subjects' => $this->getPopularSubjectsData(),
             'user_engagement' => $this->getUserEngagementData(),
+            'ai_tutor_engagement' => $this->getAITutorEngagementData(),
         ];
+    }
+
+    /**
+     * Get AI Tutor engagement data
+     */
+    private function getAITutorEngagementData()
+    {
+        $totalRequests = \App\Models\AgentRequest::count();
+        $successfulRequests = \App\Models\AgentRequest::whereIn('status', ['created', 'found_existing'])->count();
+        
+        $popularTopics = \App\Models\SearchAnalytic::where('domain', 'agent')
+            ->orderByDesc('hits')
+            ->limit(5)
+            ->get()
+            ->map(function($analytic) {
+                return [
+                    'query' => $analytic->query,
+                    'hits' => $analytic->hits
+                ];
+            })
+            ->toArray();
+
+        return [
+            'total_requests' => $totalRequests,
+            'success_rate' => $totalRequests > 0 ? round(($successfulRequests / $totalRequests) * 100) : 0,
+            'popular_topics' => $popularTopics,
+            'requests_trend' => $this->getAITutorTrendData()
+        ];
+    }
+
+    /**
+     * Get AI Tutor request trend data (last 30 days)
+     */
+    private function getAITutorTrendData()
+    {
+        $data = [];
+        for ($i = 29; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+            $count = \App\Models\AgentRequest::whereDate('created_at', $date)->count();
+            $data[] = [
+                'date' => $date->format('M d'),
+                'count' => $count
+            ];
+        }
+        return $data;
     }
 
     /**
