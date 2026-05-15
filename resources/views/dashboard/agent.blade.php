@@ -307,21 +307,42 @@
     /* ============= Tutor Explanation Bubble ============= */
     .chat-bubble.tutor-explanation {
         background: #fff;
-        border: 1px solid #e2e8f0;
-        border-left: 4px solid #2677B8;
+        border: 1px solid var(--border-color);
         color: var(--text-main);
-        max-width: 85%;
-        padding: 1.25rem;
+        max-width: 90%;
+        padding: 1.5rem;
         padding-bottom: 2.5rem; /* Space for the toggle */
         font-size: 0.95rem;
-        line-height: 1.7;
+        line-height: 1.8;
         box-shadow: var(--shadow-sm);
-        border-radius: 0 1.25rem 1.25rem 1.25rem;
-        margin-bottom: 1.5rem;
+        border-radius: 1rem;
+        margin-bottom: 2rem;
         position: relative;
-        max-height: 160px; /* Approx 3-4 lines */
+        max-height: 180px; /* Approx 4-5 lines */
         overflow: hidden;
         transition: max-height 0.3s ease;
+    }
+
+    [data-theme="dark"] .chat-bubble.tutor-explanation {
+        background: var(--bg-surface);
+        border-color: #374151;
+    }
+
+    .explanation-title {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin-bottom: 1rem;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        opacity: 0.8;
+    }
+
+    .explanation-title svg {
+        color: #2677B8;
     }
 
     .chat-bubble.tutor-explanation.expanded {

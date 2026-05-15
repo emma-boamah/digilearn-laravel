@@ -157,10 +157,13 @@ class LearningAgentService
 
             if ($existingVideo) {
                 $processingTime = (int)((microtime(true) - $startTime) * 1000);
+                $summary = $analysis['summary'] ?? ($this->getTopicSummary($analysis['topic'], $gradeLevel, $levelGroup) ?? $existingVideo->description);
+                
                 $agentRequest->update([
                     'status' => 'found_existing',
                     'video_id' => $existingVideo->id,
                     'processing_time_ms' => $processingTime,
+                    'gemini_response' => array_merge($analysis, ['summary' => $summary])
                 ]);
 
                 return [
@@ -173,7 +176,7 @@ class LearningAgentService
                     'thumbnail' => $existingVideo->getThumbnailUrl(),
                     'title' => $existingVideo->title,
                     'duration' => $existingVideo->duration_seconds,
-                    'summary' => $analysis['summary'] ?? ($this->getTopicSummary($analysis['topic'], $gradeLevel, $levelGroup) ?? $existingVideo->description),
+                    'summary' => $summary,
                 ];
             }
 
@@ -221,11 +224,13 @@ class LearningAgentService
             $video = $this->createVideoRecord($bestVideo, $analysis, $user, $query);
 
             $processingTime = (int)((microtime(true) - $startTime) * 1000);
+            $summary = $analysis['summary'] ?? ($this->getTopicSummary($analysis['topic'], $gradeLevel, $levelGroup) ?? $video->description);
             $agentRequest->update([
                 'status' => 'created',
                 'video_id' => $video->id,
                 'youtube_video_id' => $bestVideo['videoId'],
                 'processing_time_ms' => $processingTime,
+                'gemini_response' => array_merge($analysis, ['summary' => $summary])
             ]);
 
             return [
@@ -238,7 +243,7 @@ class LearningAgentService
                 'thumbnail' => $video->getThumbnailUrl(),
                 'title' => $video->title,
                 'duration' => $video->duration_seconds,
-                'summary' => $analysis['summary'] ?? ($this->getTopicSummary($analysis['topic'], $gradeLevel, $levelGroup) ?? $video->description),
+                'summary' => $summary,
             ];
 
         } catch (Exception $e) {
@@ -730,7 +735,7 @@ PROMPT;
                     'quiz_url' => $quizUrl,
                     'quiz_type' => $hasEssay ? 'essay' : 'mcq',
                     'summary' => is_array($request->gemini_response) 
-                        ? ($request->gemini_response['summary'] ?? null) 
+                        ? ($request->gemini_response['summary'] ?? ($request->video?->description ?? null)) 
                         : $request->gemini_response,
                     'created_at' => $request->created_at->diffForHumans(),
                     'processing_time' => $request->processing_time_ms,
