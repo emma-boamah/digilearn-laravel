@@ -42,17 +42,17 @@ class LearningAgentService
         $queryLower = strtolower($query);
 
         // 1. Check for Quiz intent (e.g. "create a quiz", "test me", "assessment on X")
-        if (preg_match('/\b(quiz|test|exam|assessment|questions|answer|test me|give me a quiz)\b/', $queryLower)) {
+        if (preg_match('/\b(quiz|test|exam|assessment|questions|answer|test me|test my knowledge|give me a quiz|create a quiz|generate a quiz|mock exam)\b/i', $queryLower)) {
             return 'quiz';
         }
 
         // 2. Check for Roadmap intent (e.g. "roadmap for X", "how to learn X", "learning path")
-        if (preg_match('/\b(roadmap|curriculum|syllabus|plan|series|how to learn|step by step|guide|learning path)\b/', $queryLower)) {
+        if (preg_match('/\b(roadmap|curriculum|syllabus|plan|series|how to learn|step by step|guide|learning path|study plan|course path)\b/i', $queryLower)) {
             return 'roadmap';
         }
 
         // 3. Check for Lesson intent (explicit video requests or standard learning)
-        if (preg_match('/\b(video|watch|show me|lesson on|explain|tutorial)\b/', $queryLower)) {
+        if (preg_match('/\b(video|watch|show me|lesson on|explain|tutorial|teach me|tell me about)\b/i', $queryLower)) {
             return 'lesson';
         }
 

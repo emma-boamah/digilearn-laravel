@@ -319,6 +319,55 @@
             font-weight: 500; /* YouTube uses medium weight for active */
         }
 
+        /* AI Tutor Premium Sidebar Effect */
+        .sidebar-menu-item.ai-tutor-premium {
+            overflow: hidden;
+            z-index: 1;
+            margin: 0.25rem 0.75rem;
+            border-radius: 0.5rem;
+            border-left: none !important;
+            padding: 0.75rem 1.25rem;
+        }
+
+        .sidebar-menu-item.ai-tutor-premium::before {
+            content: '';
+            position: absolute;
+            z-index: -2;
+            top: -150%;
+            left: -150%;
+            width: 400%;
+            height: 400%;
+            background: conic-gradient(transparent,
+                    var(--secondary-blue),
+                    transparent 30%,
+                    #1a508b,
+                    transparent 50%);
+            animation: rotate-border 4s linear infinite;
+        }
+
+        .sidebar-menu-item.ai-tutor-premium::after {
+            content: '';
+            position: absolute;
+            z-index: -1;
+            inset: 1.5px;
+            background: var(--bg-surface);
+            border-radius: calc(0.5rem - 1.5px);
+            transition: background 0.2s;
+        }
+
+        .sidebar-menu-item.ai-tutor-premium:hover::after {
+            background: var(--gray-100);
+        }
+
+        .sidebar-menu-item.ai-tutor-premium.active::after {
+            background: rgba(38, 119, 184, 0.08);
+        }
+
+        @keyframes rotate-border {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         .sidebar-menu-icon {
             width: 24px;   /* YouTube standard */
             height: 24px;

@@ -90,27 +90,40 @@ class UrlObfuscator
      */
     public static function parseSeoUrl($seoUrl)
     {
-        // Find the last dash (slug separator)
-        $lastDashPos = strrpos($seoUrl, '-');
-
-        if ($lastDashPos === false) {
+        if (empty($seoUrl)) {
             return null;
         }
 
-        $encryptedId = substr($seoUrl, 0, $lastDashPos);
-        $slug = substr($seoUrl, $lastDashPos + 1);
+        // Find all possible split points (dashes)
+        $dashPositions = [];
+        $pos = strpos($seoUrl, '-');
+        while ($pos !== false) {
+            $dashPositions[] = $pos;
+            $pos = strpos($seoUrl, '-', $pos + 1);
+        }
 
-        $id = self::decode($encryptedId);
-
-        if ($id === null) {
+        if (empty($dashPositions)) {
             return null;
         }
 
-        return [
-            'id' => $id,
-            'slug' => $slug,
-            'encrypted_id' => $encryptedId
-        ];
+        // Try splitting at each dash from left to right
+        // The first successful decode identifies the correct separator
+        foreach ($dashPositions as $dashPos) {
+            if ($dashPos === 0) continue;
+            
+            $encryptedId = substr($seoUrl, 0, $dashPos);
+            $id = self::decode($encryptedId);
+
+            if ($id !== null) {
+                return [
+                    'id' => $id,
+                    'slug' => substr($seoUrl, $dashPos + 1),
+                    'encrypted_id' => $encryptedId
+                ];
+            }
+        }
+
+        return null;
     }
 
     /**

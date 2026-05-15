@@ -274,7 +274,7 @@
         align-items: center;
         gap: 0.5rem;
         padding: 0.625rem 1.25rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #2677B8 0%, #1a508b 100%);
         color: #fff;
         font-size: 0.85rem;
         font-weight: 600;
@@ -297,7 +297,7 @@
         margin: 1rem 0;
         padding: 0.75rem;
         background: var(--gray-50);
-        border-left: 3px solid #667eea;
+        border-left: 3px solid #2677B8;
         border-radius: 0.375rem;
         font-size: 0.85rem;
         line-height: 1.6;
@@ -326,7 +326,7 @@
 
     .roadmap-header {
         padding: 1.25rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #2677B8 0%, #1a508b 100%);
         color: #fff;
     }
 
@@ -390,19 +390,19 @@
         width: 32px;
         height: 32px;
         background: var(--bg-surface);
-        border: 2px solid #667eea;
+        border: 2px solid #2677B8;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 0.75rem;
         font-weight: 700;
-        color: #667eea;
+        color: #2677B8;
         flex-shrink: 0;
     }
 
     .roadmap-step:hover .step-number {
-        background: #667eea;
+        background: #2677B8;
         color: #fff;
     }
 
@@ -1010,6 +1010,25 @@
                         ${stepsHtml}
                     </div>
                 </div>
+            `;
+            chatArea.appendChild(card);
+        } else if (data.quiz_url || data.type === 'quiz') {
+            const card = document.createElement('div');
+            card.className = 'quiz-card';
+            
+            card.innerHTML = `
+                <div class="quiz-card-header">
+                    <div class="quiz-card-icon">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                    </div>
+                    <h4 class="quiz-card-title">${data.topic || data.title}</h4>
+                </div>
+                <div class="quiz-card-meta">
+                    <span>${data.quiz_type === 'essay' ? '📝 Structured Essay' : '✅ Multiple Choice'}</span>
+                </div>
+                <a href="${data.quiz_url}" class="quiz-btn">
+                    Start Quiz Now
+                </a>
             `;
             chatArea.appendChild(card);
         } else {
