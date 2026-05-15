@@ -872,12 +872,14 @@
         <div class="history-title">Recent Requests</div>
         <div class="history-list" id="historyList">
             @foreach($history as $item)
-            <a href="{{ $item['type'] === 'roadmap' ? '#' : ($item['lesson_url'] ?? '#') }}"
+            <a href="#"
                class="history-item"
                data-type="{{ $item['type'] }}"
                data-roadmap="{{ $item['type'] === 'roadmap' ? json_encode($item['roadmap']) : '' }}"
                data-query="{{ addslashes($item['query']) }}"
-               data-lesson-url="{{ $item['lesson_url'] ?? '' }}">
+               data-lesson-url="{{ $item['lesson_url'] ?? '' }}"
+               data-quiz-url="{{ $item['quiz_url'] ?? '' }}"
+               data-quiz-type="{{ $item['quiz_type'] ?? '' }}">
                 <div class="history-item-icon {{ $item['thumbnail'] ? '' : 'no-thumb' }}">
                     @if($item['thumbnail'])
                         <img src="{{ $item['thumbnail'] }}" alt="" loading="lazy">
@@ -1071,11 +1073,18 @@
         chatArea.scrollTop = chatArea.scrollHeight;
     }
 
-    function showRoadmapInChat(roadmapData) {
+    function showRoadmapInChat(roadmapData, query = 'Roadmap Request') {
         const welcomeState = document.getElementById('welcomeState');
         if (welcomeState) welcomeState.style.display = 'none';
         
-        addResultCard({ roadmap: roadmapData });
+        addBubble(query, 'user');
+        addResultCard({ 
+            success: true,
+            type: 'roadmap',
+            roadmap: roadmapData,
+            is_existing: true,
+            message: 'Here is the learning roadmap I designed for you.'
+        });
     }
 
     function showTyping(show) {
@@ -1198,11 +1207,47 @@
                     const query = item.dataset.query;
                     const lessonUrl = item.dataset.lessonUrl;
 
+                    e.preventDefault();
+                    
                     if (type === 'roadmap' && roadmap) {
-                        e.preventDefault();
-                        showRoadmapInChat(JSON.parse(roadmap));
-                    } else if (!lessonUrl) {
-                        e.preventDefault();
+                        showRoadmapInChat(JSON.parse(roadmap), query);
+                    } else if (type === 'quiz' || item.dataset.quizUrl) {
+                        const quizUrl = item.dataset.quizUrl;
+                        const quizType = item.dataset.quizType;
+                        
+                        // Clear welcome state if visible
+                        const welcomeState = document.getElementById('welcomeState');
+                        if (welcomeState) welcomeState.style.display = 'none';
+                        
+                        // Re-show what was given for that prompt
+                        addBubble(query, 'user');
+                        addResultCard({
+                            success: true,
+                            type: 'quiz',
+                            topic: query,
+                            quiz_url: quizUrl,
+                            quiz_type: quizType,
+                            is_existing: true,
+                            message: 'Here is the quiz I generated for you earlier.'
+                        });
+                    } else if (lessonUrl) {
+                        // Clear welcome state if visible
+                        const welcomeState = document.getElementById('welcomeState');
+                        if (welcomeState) welcomeState.style.display = 'none';
+                        
+                        // Re-show what was given for that prompt
+                        addBubble(query, 'user');
+                        addResultCard({
+                            success: true,
+                            type: 'lesson',
+                            title: query,
+                            lesson_url: lessonUrl,
+                            thumbnail: item.querySelector('img')?.src,
+                            is_existing: true,
+                            message: 'Here is the lesson I found for you earlier.'
+                        });
+                    } else {
+                        // Fallback: trigger a new search if no URL is stored
                         askSuggestion(null, query);
                     }
                 }

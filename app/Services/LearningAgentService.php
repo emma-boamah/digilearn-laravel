@@ -661,22 +661,37 @@ PROMPT;
     public function getHistory(int $userId, int $limit = 20): array
     {
         return AgentRequest::where('user_id', $userId)
-            ->with('video:id,title,thumbnail_path,external_video_id,video_source,duration_seconds')
+            ->with([
+                'video:id,title,thumbnail_path,external_video_id,video_source,duration_seconds',
+                'quiz:id,title,quiz_data'
+            ])
             ->orderByDesc('created_at')
             ->limit($limit)
             ->get()
             ->map(function ($request) {
+                $hasEssay = false;
+                $quizUrl = null;
+                if ($request->quiz) {
+                    $hasEssay = collect(json_decode($request->quiz->quiz_data, true)['questions'] ?? [])->contains('type', 'essay');
+                    $quizUrl = $hasEssay 
+                        ? route('quiz.essay', $request->quiz->seo_url)
+                        : route('quiz.take', $request->quiz->seo_url);
+                }
+
                 return [
                     'id' => $request->id,
                     'query' => $request->query,
                     'topic' => $request->topic,
                     'status' => $request->status,
-                    'type' => $request->type ?? 'lesson',
+                    'type' => $request->type ?? ($request->quiz_id ? 'quiz' : ($request->video_id ? 'lesson' : 'lesson')),
                     'roadmap' => $request->roadmap_data,
                     'video_id' => $request->video_id,
                     'video_title' => $request->video?->title,
                     'thumbnail' => $request->video?->getThumbnailUrl(),
                     'lesson_url' => $request->video ? $this->buildLessonUrl($request->video) : null,
+                    'quiz_id' => $request->quiz_id,
+                    'quiz_url' => $quizUrl,
+                    'quiz_type' => $hasEssay ? 'essay' : 'mcq',
                     'created_at' => $request->created_at->diffForHumans(),
                     'processing_time' => $request->processing_time_ms,
                 ];
