@@ -359,6 +359,11 @@
             background: var(--gray-100);
         }
 
+        .sidebar-menu-item.ai-tutor-premium.active {
+            background-color: transparent;
+            color: #2677B8;
+        }
+
         .sidebar-menu-item.ai-tutor-premium.active::after {
             background: rgba(38, 119, 184, 0.08);
         }
