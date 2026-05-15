@@ -678,12 +678,22 @@ PROMPT;
                         : route('quiz.take', $request->quiz->seo_url);
                 }
 
+                // Determine the correct type based on associated data
+                $type = $request->type;
+                if ($request->quiz_id) {
+                    $type = 'quiz';
+                } elseif ($request->roadmap_data) {
+                    $type = 'roadmap';
+                } elseif (!$type) {
+                    $type = 'lesson';
+                }
+
                 return [
                     'id' => $request->id,
                     'query' => $request->query,
                     'topic' => $request->topic,
                     'status' => $request->status,
-                    'type' => $request->type ?? ($request->quiz_id ? 'quiz' : ($request->video_id ? 'lesson' : 'lesson')),
+                    'type' => $type,
                     'roadmap' => $request->roadmap_data,
                     'video_id' => $request->video_id,
                     'video_title' => $request->video?->title,
