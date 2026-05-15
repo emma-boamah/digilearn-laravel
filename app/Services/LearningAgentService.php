@@ -115,7 +115,7 @@ class LearningAgentService
             $agentRequest->update([
                 'topic' => $analysis['topic'] ?? null,
                 'subject' => $analysis['subject'] ?? null,
-                'gemini_response' => $analysis['summary'] ?? ($analysis['explanation'] ?? null),
+                'gemini_response' => $analysis,
             ]);
 
 
@@ -382,6 +382,7 @@ PROMPT;
             'subject' => 'General Science',
             'search_keywords' => explode(' ', $topic),
             'youtube_search_query' => $topic . ' explained for ' . $gradeLevel . ' students',
+            'summary' => "I've found a great lesson on {$topic} for you. This video will explain the key concepts of this topic in detail, tailored for your level.",
             'difficulty_level' => 'intermediate',
             'is_valid_educational_topic' => true,
         ];
@@ -702,6 +703,9 @@ PROMPT;
                     'quiz_id' => $request->quiz_id,
                     'quiz_url' => $quizUrl,
                     'quiz_type' => $hasEssay ? 'essay' : 'mcq',
+                    'summary' => is_array($request->gemini_response) 
+                        ? ($request->gemini_response['summary'] ?? null) 
+                        : $request->gemini_response,
                     'created_at' => $request->created_at->diffForHumans(),
                     'processing_time' => $request->processing_time_ms,
                 ];
