@@ -65,7 +65,7 @@ class LearningAgentService
      *
      * @return array{success: bool, video_id: ?int, lesson_url: ?string, topic: ?string, message: string, is_existing: bool}
      */
-    public function findOrCreateLesson(string $query, User $user): array
+    public function findOrCreateLesson(string $query, User $user, ?int $contextId = null): array
     {
         $startTime = microtime(true);
 
@@ -105,12 +105,13 @@ class LearningAgentService
                     'topic' => null,
                     'message' => 'You\'ve reached your daily limit of ' . self::DAILY_LIMIT . ' AI lesson requests. Try again tomorrow!',
                     'is_existing' => false,
+                    'request_id' => $agentRequest->id,
                 ];
             }
 
             // Step 1: Analyze query with Gemini
             $agentRequest->update(['status' => 'analyzing']);
-            $analysis = $this->analyzeQuery($query, $gradeLevel, $levelGroup);
+            $analysis = $this->analyzeQuery($query, $gradeLevel, $levelGroup, $user->id, $contextId);
 
             $agentRequest->update([
                 'topic' => $analysis['topic'] ?? null,
@@ -129,6 +130,7 @@ class LearningAgentService
                     'success' => false,
                     'message' => $analysis['refusal_message'] ?? "I'm sorry, I'm specialized in finding educational videos and roadmaps. I can't do that specific task, but I'd be happy to find you a lesson on it!",
                     'is_supported' => false,
+                    'request_id' => $agentRequest->id,
                 ];
             }
 
@@ -144,6 +146,7 @@ class LearningAgentService
                     'topic' => null,
                     'message' => 'I couldn\'t understand what topic you\'re looking for. Try being more specific, like "Teach me about photosynthesis" or "Explain quadratic equations".',
                     'is_existing' => false,
+                    'request_id' => $agentRequest->id,
                 ];
             }
 
@@ -177,6 +180,7 @@ class LearningAgentService
                     'title' => $existingVideo->title,
                     'duration' => $existingVideo->duration_seconds,
                     'summary' => $summary,
+                    'request_id' => $agentRequest->id,
                 ];
             }
 
@@ -199,6 +203,7 @@ class LearningAgentService
                     'topic' => $analysis['topic'],
                     'message' => 'I couldn\'t find a suitable video lesson on "' . $analysis['topic'] . '" right now. Try rephrasing your request or check back later!',
                     'is_existing' => false,
+                    'request_id' => $agentRequest->id,
                 ];
             }
 
@@ -217,6 +222,7 @@ class LearningAgentService
                     'topic' => $analysis['topic'],
                     'message' => 'I found some videos but none met our quality standards for your level. Try a different topic!',
                     'is_existing' => false,
+                    'request_id' => $agentRequest->id,
                 ];
             }
 
@@ -244,6 +250,7 @@ class LearningAgentService
                 'title' => $video->title,
                 'duration' => $video->duration_seconds,
                 'summary' => $summary,
+                'request_id' => $agentRequest->id,
             ];
 
         } catch (Exception $e) {
@@ -269,6 +276,7 @@ class LearningAgentService
                 'topic' => null,
                 'message' => 'Something went wrong while searching for your lesson. Please try again!',
                 'is_existing' => false,
+                'request_id' => $agentRequest->id ?? null,
             ];
         }
     }
@@ -282,9 +290,50 @@ class LearningAgentService
     }
 
     /**
+     * Get recent conversation history for context.
+     */
+    private function getRecentHistoryContext(int $userId, ?int $contextId = null): string
+    {
+        $history = AgentRequest::where('user_id', $userId)
+            ->whereIn('status', ['created', 'found_existing'])
+            ->latest()
+            ->take(5)
+            ->get();
+            
+        if ($contextId) {
+            $specificContext = AgentRequest::where('user_id', $userId)
+                ->where('id', $contextId)
+                ->whereIn('status', ['created', 'found_existing'])
+                ->first();
+                
+            if ($specificContext && !$history->contains('id', $contextId)) {
+                $history->push($specificContext);
+            }
+        }
+        
+        $history = $history->sortBy('id');
+
+        if ($history->isEmpty()) {
+            return "No previous conversation history.";
+        }
+
+        $context = "Recent conversation history (for context if the user refers to previous topics using pronouns like 'it', 'that', 'this'):\n";
+        foreach ($history as $req) {
+            $type = 'Lesson';
+            if ($req->roadmap_data) $type = 'Roadmap';
+            if ($req->quiz_id) $type = 'Quiz';
+            
+            $q = $req->getAttribute('query');
+            $context .= "- User asked: \"{$q}\" -> AI generated a {$type} on topic: \"{$req->topic}\"\n";
+        }
+
+        return $context;
+    }
+
+    /**
      * Step 1: Use Gemini to analyze the user's natural language query.
      */
-    private function analyzeQuery(string $query, string $gradeLevel, string $levelGroup): array
+    private function analyzeQuery(string $query, string $gradeLevel, string $levelGroup, int $userId, ?int $contextId = null): array
     {
         if (empty($this->geminiApiKey)) {
             // Fallback: simple extraction without AI
@@ -292,11 +341,14 @@ class LearningAgentService
         }
 
         $gradeLevelContext = $this->getGradeLevelContext($gradeLevel, $levelGroup);
+        $historyContext = $this->getRecentHistoryContext($userId, $contextId);
 
         $prompt = <<<PROMPT
 You are an educational content curator for a Ghanaian e-learning platform. A student has asked for a lesson.
 
-Student's query: "{$query}"
+{$historyContext}
+
+Student's current query: "{$query}"
 Student's grade level: {$gradeLevel}
 Educational context: {$gradeLevelContext}
 
@@ -756,7 +808,7 @@ PROMPT;
     /**
      * Create a structured learning roadmap with multiple lessons.
      */
-    public function findOrCreateRoadmap(string $query, User $user): array
+    public function findOrCreateRoadmap(string $query, User $user, ?int $contextId = null): array
     {
         $startTime = microtime(true);
         $gradeLevel = $user->grade ?? 'Primary 1';
@@ -789,6 +841,7 @@ PROMPT;
                 return [
                     'success' => false,
                     'message' => 'You\'ve reached your daily limit of ' . self::DAILY_LIMIT . ' AI lesson requests. Try again tomorrow!',
+                    'request_id' => $agentRequest->id,
                 ];
             }
 
@@ -806,12 +859,13 @@ PROMPT;
                     'roadmap' => $existingRequest->roadmap_data,
                     'is_existing' => true,
                     'message' => 'I found an existing GES-aligned roadmap for "' . ($existingRequest->topic ?? $query) . '"!',
+                    'request_id' => $agentRequest->id,
                 ];
             }
 
             // Step 1: Analyze Roadmap Query with Gemini
             $agentRequest->update(['status' => 'analyzing']);
-            $roadmap = $this->analyzeRoadmapQuery($query, $gradeLevel, $levelGroup);
+            $roadmap = $this->analyzeRoadmapQuery($query, $gradeLevel, $levelGroup, $user->id, $contextId);
 
             if (isset($roadmap['is_supported']) && $roadmap['is_supported'] === false) {
                 $agentRequest->update([
@@ -822,6 +876,7 @@ PROMPT;
                     'success' => false,
                     'message' => $roadmap['refusal_message'] ?? "I'm sorry, I specialize in GES-aligned learning roadmaps. I can't perform that specific request, but I can help you plan your studies!",
                     'is_supported' => false,
+                    'request_id' => $agentRequest->id,
                 ];
             }
 
@@ -893,6 +948,7 @@ PROMPT;
                 'success' => true,
                 'roadmap' => $finalRoadmapData,
                 'message' => 'Your GES-aligned roadmap for "' . $roadmap['roadmap_title'] . '" is ready!',
+                'request_id' => $agentRequest->id,
             ];
 
         } catch (Exception $e) {
@@ -916,6 +972,7 @@ PROMPT;
             return [
                 'success' => false,
                 'message' => $friendlyMessage,
+                'request_id' => $agentRequest->id ?? null,
             ];
         }
     }
@@ -923,7 +980,7 @@ PROMPT;
     /**
      * Create a quiz for the user based on their query.
      */
-    public function findOrCreateQuiz(string $query, User $user): array
+    public function findOrCreateQuiz(string $query, User $user, ?int $contextId = null): array
     {
         $startTime = microtime(true);
         $gradeLevel = $user->grade ?? 'Primary 1';
@@ -953,6 +1010,7 @@ PROMPT;
                 return [
                     'success' => false,
                     'message' => 'You\'ve reached your daily limit of ' . self::DAILY_LIMIT . ' AI requests. Try again tomorrow!',
+                    'request_id' => $agentRequest->id,
                 ];
             }
             
@@ -982,12 +1040,13 @@ PROMPT;
                     'quiz_type' => $hasEssay ? 'essay' : 'mcq',
                     'is_existing' => true,
                     'message' => 'I found an existing quiz on "' . $existingQuiz->title . '" for you!',
+                    'request_id' => $agentRequest->id,
                 ];
             }
 
             // Step 1: Generate Quiz with Gemini
             $agentRequest->update(['status' => 'analyzing']);
-            $quizData = $this->analyzeQuizQuery($query, $gradeLevel, $levelGroup);
+            $quizData = $this->analyzeQuizQuery($query, $gradeLevel, $levelGroup, $user->id, $contextId);
 
             if (isset($quizData['is_supported']) && $quizData['is_supported'] === false) {
                 $agentRequest->update([
@@ -998,6 +1057,7 @@ PROMPT;
                     'success' => false,
                     'message' => $quizData['refusal_message'] ?? "I'm sorry, I specialize in GES-aligned quizzes. I can't perform that specific request, but I can help you test your knowledge on other topics!",
                     'is_supported' => false,
+                    'request_id' => $agentRequest->id,
                 ];
             }
 
@@ -1047,6 +1107,7 @@ PROMPT;
                 'type' => 'quiz',
                 'quiz_type' => $hasEssay ? 'essay' : 'mcq',
                 'message' => 'I generated a ' . ($hasEssay ? 'structured essay' : 'multiple-choice') . ' quiz on "' . $quiz->title . '" for you!',
+                'request_id' => $agentRequest->id,
             ];
 
         } catch (Exception $e) {
@@ -1072,6 +1133,7 @@ PROMPT;
             return [
                 'success' => false,
                 'message' => $friendlyMessage,
+                'request_id' => $agentRequest->id ?? null,
             ];
         }
     }
@@ -1079,18 +1141,21 @@ PROMPT;
     /**
      * Use Gemini to create a structured roadmap based on the GES syllabus.
      */
-    private function analyzeRoadmapQuery(string $query, string $gradeLevel, string $levelGroup): ?array
+    private function analyzeRoadmapQuery(string $query, string $gradeLevel, string $levelGroup, int $userId, ?int $contextId = null): ?array
     {
         if (empty($this->geminiApiKey)) {
             return null;
         }
 
         $gradeLevelContext = $this->getGradeLevelContext($gradeLevel, $levelGroup);
+        $historyContext = $this->getRecentHistoryContext($userId, $contextId);
 
         $prompt = <<<PROMPT
 You are an expert curriculum designer for the Ghana Education Service (GES). Create a comprehensive learning roadmap for: "{$query}".
 The student is in grade level: {$gradeLevel}.
 Context: {$gradeLevelContext}
+
+{$historyContext}
 
 Your roadmap MUST be strictly based on the current GES syllabus for this subject and level.
 
@@ -1154,18 +1219,21 @@ PROMPT;
     /**
      * Use Gemini to create a structured quiz based on the GES syllabus.
      */
-    private function analyzeQuizQuery(string $query, string $gradeLevel, string $levelGroup): ?array
+    private function analyzeQuizQuery(string $query, string $gradeLevel, string $levelGroup, int $userId, ?int $contextId = null): ?array
     {
         if (empty($this->geminiApiKey)) {
             return null;
         }
 
         $gradeLevelContext = $this->getGradeLevelContext($gradeLevel, $levelGroup);
+        $historyContext = $this->getRecentHistoryContext($userId, $contextId);
 
         $prompt = <<<PROMPT
 You are an expert curriculum developer for the Ghana Education Service (GES).
 Create a quiz for a student in: {$gradeLevel}
 Context: {$gradeLevelContext}
+
+{$historyContext}
 
 Based on the student's request: "{$query}"
 
