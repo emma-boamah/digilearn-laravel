@@ -986,6 +986,7 @@
                class="history-item {{ $index >= 5 ? 'hidden-history-item' : '' }}"
                style="{{ $index >= 5 ? 'display: none;' : '' }}"
                data-type="{{ $item['type'] }}"
+               data-id="{{ $item['id'] }}"
                data-roadmap="{{ $item['type'] === 'roadmap' ? json_encode($item['roadmap']) : '' }}"
                data-query="{{ addslashes($item['query']) }}"
                data-lesson-url="{{ $item['lesson_url'] ?? '' }}"
@@ -1032,6 +1033,7 @@
     let isProcessing = false;
     let remaining = {{ $remainingRequests }};
     let currentMode = 'lesson';
+    let activeContextId = null;
 
     function setMode(mode) {
         currentMode = mode;
@@ -1285,7 +1287,8 @@
                 },
                 body: JSON.stringify({ 
                     query: query,
-                    type: currentMode
+                    type: currentMode,
+                    context_id: activeContextId
                 }),
             });
 
@@ -1295,6 +1298,10 @@
 
             // Show result card if successful
             if (data.success) {
+                if (data.request_id) {
+                    activeContextId = data.request_id;
+                }
+                
                 addBubble(data.message, 'ai');
                 if (data.summary) {
                     addBubble(data.summary, 'tutor-explanation');
@@ -1350,12 +1357,16 @@
                 const item = e.target.closest('.history-item');
                 if (item) {
                     const type = item.dataset.type;
+                    const itemId = item.dataset.id;
                     const roadmap = item.dataset.roadmap;
                     const query = item.dataset.query;
                     const lessonUrl = item.dataset.lessonUrl;
                     const summary = item.dataset.summary;
 
                     e.preventDefault();
+                    
+                    // Set active context ID
+                    activeContextId = itemId;
                     
                     if (type === 'roadmap' && roadmap) {
                         showRoadmapInChat(JSON.parse(roadmap), query);

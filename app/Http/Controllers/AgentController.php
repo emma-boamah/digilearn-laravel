@@ -46,11 +46,13 @@ class AgentController extends Controller
         $request->validate([
             'query' => 'required|string|min:3|max:500',
             'type' => 'sometimes|string|in:lesson,roadmap,quiz',
+            'context_id' => 'sometimes|nullable|integer',
         ]);
 
         $user = Auth::user();
         $query = trim($request->input('query'));
         $type = $request->input('type', 'lesson');
+        $contextId = $request->input('context_id');
 
         Log::info('Agent ask request', [
             'user_id' => $user->id,
@@ -64,11 +66,11 @@ class AgentController extends Controller
         $detectedType = $this->agentService->detectIntent($query, $type);
 
         if ($detectedType === 'roadmap') {
-            $result = $this->agentService->findOrCreateRoadmap($query, $user);
+            $result = $this->agentService->findOrCreateRoadmap($query, $user, $contextId);
         } elseif ($detectedType === 'quiz') {
-            $result = $this->agentService->findOrCreateQuiz($query, $user);
+            $result = $this->agentService->findOrCreateQuiz($query, $user, $contextId);
         } else {
-            $result = $this->agentService->findOrCreateLesson($query, $user);
+            $result = $this->agentService->findOrCreateLesson($query, $user, $contextId);
         }
 
         return response()->json($result);
