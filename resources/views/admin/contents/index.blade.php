@@ -1273,9 +1273,21 @@
                     <td>
                         @if($content->content_type === 'video')
                             @if($content->quizzes_count > 0 || $content->quiz_id)
-                                <span class="badge badge-available">
-                                    <i class="fas fa-check-circle"></i>
-                                </span>
+                                @php
+                                    $hasDraftQuiz = false;
+                                    if ($content->quiz_id && $content->quiz) {
+                                        $hasDraftQuiz = ($content->quiz->status ?? 'published') === 'draft';
+                                    }
+                                @endphp
+                                @if($hasDraftQuiz)
+                                    <span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold">
+                                        <i class="fas fa-pencil-alt mr-1"></i>Draft
+                                    </span>
+                                @else
+                                    <span class="badge badge-available">
+                                        <i class="fas fa-check-circle"></i>
+                                    </span>
+                                @endif
                             @else
                                 <span class="badge badge-none">—</span>
                             @endif
@@ -1811,8 +1823,11 @@
                 <button type="button" id="nextBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                     Next <i class="fas fa-arrow-right ml-2"></i>
                 </button>
+                <button type="button" id="saveDraftBtn" class="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 hidden">
+                    <i class="fas fa-save mr-2"></i>Save as Draft
+                </button>
                 <button type="button" id="finishBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 hidden">
-                    <i class="fas fa-check mr-2"></i>Finish
+                    <i class="fas fa-check mr-2"></i>Publish
                 </button>
             </div>
         </div>
@@ -2504,6 +2519,7 @@
             const openModal = () => {
                 uploadModal.classList.add('show');
                 resetWizard();
+                setTimeout(checkAndRestoreDraft, 100);
             };
             if (uploadBtn) uploadBtn.addEventListener('click', openModal);
             const uploadBtnToolbar = document.getElementById('uploadBtnToolbar');
@@ -2527,7 +2543,13 @@
             prevBtn.addEventListener('click', () => navigateStep(currentStep - 1));
             nextBtn.addEventListener('click', () => navigateStep(currentStep + 1));
             skipBtn.addEventListener('click', () => navigateStep(currentStep + 1));
-            finishBtn.addEventListener('click', submitWizard);
+            finishBtn.addEventListener('click', () => submitWizard('published'));
+
+            // Save as Draft button
+            const saveDraftBtn = document.getElementById('saveDraftBtn');
+            if (saveDraftBtn) {
+                saveDraftBtn.addEventListener('click', () => submitWizard('draft'));
+            }
 
             // Step 1: Video upload
             initializeVideoSourceSelection();
@@ -2540,6 +2562,9 @@
             // Step 3: Quiz builder
             initializeQuizStep();
             initializeQuizSettings();
+
+            // Setup Auto-save interval (every 10 seconds)
+            setInterval(autoSaveWizardState, 10000);
         }
 
         function resetWizard() {
@@ -2641,6 +2666,133 @@
             const videoPreviewContainer = document.getElementById('videoPreviewContainer');
             if (videoPreview) videoPreview.src = '';
             if (videoPreviewContainer) videoPreviewContainer.classList.add('hidden');
+        }
+
+        function autoSaveWizardState() {
+            if (!document.getElementById('uploadModal').classList.contains('show')) return; // Only autosave when modal is open
+
+            const title = document.getElementById('title');
+            const subjectId = document.getElementById('subject_id');
+            const description = document.getElementById('description');
+            const gradeLevel = document.getElementById('grade_level');
+            const quizTitle = document.getElementById('quiz_title');
+
+            const selectedCategoryIds = Array.from(document.querySelectorAll('input[name="upload_category_ids[]"]:checked'))
+                .map(cb => cb.value);
+
+            const draftData = {
+                title: title ? title.value : '',
+                subject_id: subjectId ? subjectId.value : '',
+                description: description ? description.value : '',
+                grade_level: gradeLevel ? gradeLevel.value : '',
+                category_ids: selectedCategoryIds,
+                video_source: uploadData.video_source,
+                external_video_url: uploadData.external_video_url,
+                quiz: uploadData.quiz,
+                quiz_title_input: quizTitle ? quizTitle.value : ''
+            };
+
+            localStorage.setItem('digilearn_upload_draft', JSON.stringify(draftData));
+        }
+
+        function checkAndRestoreDraft() {
+            const draftJson = localStorage.getItem('digilearn_upload_draft');
+            if (!draftJson) return;
+
+            try {
+                const draftData = JSON.parse(draftJson);
+                
+                // If it's completely empty, skip
+                if (!draftData.title && !draftData.description && (!draftData.quiz || draftData.quiz.questions.length === 0)) {
+                    return;
+                }
+
+                if (confirm('We found an unsaved draft from a previous session. Would you like to restore your text inputs and quiz questions? (Note: You will need to re-select any video or document files)')) {
+                    // Restore text fields
+                    const title = document.getElementById('title');
+                    if (title) title.value = draftData.title || '';
+
+                    const subjectId = document.getElementById('subject_id');
+                    if (subjectId) subjectId.value = draftData.subject_id || '';
+
+                    const description = document.getElementById('description');
+                    if (description) {
+                        description.value = draftData.description || '';
+                        if (typeof quillDescModal !== 'undefined' && quillDescModal && draftData.description) {
+                            quillDescModal.clipboard.dangerouslyPasteHTML(draftData.description);
+                        }
+                    }
+
+                    if (draftData.grade_level) {
+                        const gradeLevel = document.getElementById('grade_level');
+                        if (gradeLevel) gradeLevel.value = draftData.grade_level;
+                        const gradePickerTriggerText = document.getElementById('gradePickerTriggerText');
+                        if (gradePickerTriggerText) gradePickerTriggerText.textContent = draftData.grade_level;
+                        const gradePickerTrigger = document.getElementById('gradePickerTrigger');
+                        if (gradePickerTrigger) gradePickerTrigger.classList.add('has-value');
+                        
+                        // Select the visual item
+                        const item = document.querySelector(`.grade-picker-item[data-grade="${draftData.grade_level}"]`);
+                        if (item) item.classList.add('selected');
+                    }
+
+                    if (draftData.category_ids && draftData.category_ids.length > 0) {
+                        draftData.category_ids.forEach(id => {
+                            const cb = document.querySelector(`input[name="upload_category_ids[]"][value="${id}"]`);
+                            if (cb) cb.checked = true;
+                        });
+                    }
+                    
+                    if (draftData.video_source) {
+                        const sourceRadio = document.querySelector(`input[name="video_source"][value="${draftData.video_source}"]`);
+                        if (sourceRadio) {
+                            sourceRadio.checked = true;
+                            if (typeof toggleVideoSourceSections === 'function') toggleVideoSourceSections(draftData.video_source);
+                        }
+                    }
+                    
+                    if (draftData.external_video_url) {
+                        const externalUrlInput = document.getElementById('external_video_url');
+                        if (externalUrlInput) externalUrlInput.value = draftData.external_video_url;
+                    }
+
+                    if (draftData.quiz_title_input) {
+                        const quizTitle = document.getElementById('quiz_title');
+                        if (quizTitle) quizTitle.value = draftData.quiz_title_input;
+                    }
+
+                    if (draftData.quiz) {
+                        uploadData.quiz = draftData.quiz;
+                        
+                        // Apply settings
+                        const quizDifficulty = document.getElementById('quiz_difficulty');
+                        if (quizDifficulty && draftData.quiz.difficulty_level) {
+                            quizDifficulty.value = draftData.quiz.difficulty_level;
+                        }
+                        
+                        const quizTimeLimit = document.getElementById('quiz_time_limit');
+                        if (quizTimeLimit && draftData.quiz.time_limit_minutes !== undefined) {
+                            quizTimeLimit.value = draftData.quiz.time_limit_minutes;
+                        }
+                        
+                        const quizShuffle = document.getElementById('quiz_shuffle_questions');
+                        if (quizShuffle && draftData.quiz.shuffle_questions !== undefined) {
+                            quizShuffle.checked = draftData.quiz.shuffle_questions;
+                        }
+
+                        // Re-render quiz builder if function exists
+                        if (typeof renderQuizList === 'function') {
+                            renderQuizList();
+                        }
+                    }
+                } else {
+                    // User declined, clear it
+                    localStorage.removeItem('digilearn_upload_draft');
+                }
+            } catch (e) {
+                console.error("Failed to restore draft", e);
+                localStorage.removeItem('digilearn_upload_draft');
+            }
         }
 
         function navigateStep(step) {
@@ -2750,6 +2902,8 @@
             skipBtn.style.display = currentStep < 3 ? 'block' : 'none';
             nextBtn.style.display = currentStep < 3 ? 'block' : 'none';
             finishBtn.style.display = currentStep === 3 ? 'block' : 'none';
+            const saveDraftBtnNav = document.getElementById('saveDraftBtn');
+            if (saveDraftBtnNav) saveDraftBtnNav.style.display = currentStep === 3 ? 'block' : 'none';
         }
 
         // Video Format & Size Validation Constants
@@ -3832,7 +3986,9 @@
         }
 
         // Final submission with progress tracking
-        async function submitWizard() {
+        async function submitWizard(status = 'published') {
+            // Store status so uploadQuiz can use it
+            window._quizUploadStatus = status;
             try {
                 // Video is now optional, so we'll just handle it by the backend
                 
@@ -4016,15 +4172,18 @@
                 }
 
                 // Step 3: Upload Quiz
-                if (finalData.quiz.questions.length > 0) {
-                    updateOverallProgress(overallProgress + 10, 'Uploading quiz...');
+                const isDraftSave = window._quizUploadStatus === 'draft';
+                if (finalData.quiz.questions.length > 0 || isDraftSave) {
+                    const quizLabel = isDraftSave ? 'Saving quiz draft...' : 'Uploading quiz...';
+                    updateOverallProgress(overallProgress + 10, quizLabel);
                     document.getElementById('quizProgressSection').classList.remove('hidden');
 
                     const quizResult = await uploadQuiz(finalData);
                     if (quizResult.success) {
-                        updateProgress('quiz', 100, 'Quiz uploaded successfully');
+                        const successMsg = isDraftSave ? 'Quiz saved as draft' : 'Quiz uploaded successfully';
+                        updateProgress('quiz', 100, successMsg);
                         overallProgress += 30;
-                        updateOverallProgress(100, 'All uploads completed successfully!');
+                        updateOverallProgress(100, isDraftSave ? 'Draft saved successfully!' : 'All uploads completed successfully!');
                     } else {
                         errors.push(`Quiz upload failed: ${quizResult.error}`);
                         updateProgress('quiz', 100, 'Failed', true);
@@ -4040,6 +4199,7 @@
                     updateOverallProgress(100, 'Upload completed with errors');
                 } else {
                     updateOverallProgress(100, 'All uploads completed successfully!');
+                    localStorage.removeItem('digilearn_upload_draft'); // Clear autosaved draft on success
                     setTimeout(() => {
                         document.getElementById('closeUploadBtn').classList.remove('hidden');
                         document.getElementById('cancelUploadBtn').classList.add('hidden');
@@ -4555,6 +4715,7 @@
                 formData.append('difficulty_level', difficultyLevel);
                 formData.append('time_limit_minutes', timeLimitMinutes);
                 formData.append('shuffle_questions', finalData.quiz.shuffle_questions ? '1' : '0');
+                formData.append('status', window._quizUploadStatus || 'published');
 
                 updateProgress('quiz', 50, 'Sending quiz to server...', false, {
                     speed: 0

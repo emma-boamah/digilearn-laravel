@@ -87,7 +87,7 @@ class QuizController extends Controller
 
         // Get base quiz data with caching
         $baseQuizzes = Cache::remember($cacheKey, $cacheDuration, function () use ($selectedLevelGroup, $validSelectedGrade, $userId, $allowedGradeLevels, $requiresSubscription, $user, $context) {
-            $query = Quiz::with(['uploader', 'ratings', 'attempts', 'subject', 'categories']);
+            $query = Quiz::published()->with(['uploader', 'ratings', 'attempts', 'subject', 'categories']);
 
             if ($context && $context !== 'all') {
                 $query->whereHas('categories', function ($q) use ($context) {
@@ -1228,7 +1228,7 @@ class QuizController extends Controller
             $result = Cache::remember($cacheKey, $cacheDuration, function () use ($numericId) {
                 Log::info('getQuizById cache miss, querying database', ['quiz_id' => $numericId]);
 
-                $quiz = Quiz::with('uploader')->find($numericId);
+                $quiz = Quiz::published()->with('uploader')->find($numericId);
                 Log::info('getQuizById database result', ['quiz_found' => $quiz ? true : false]);
 
                 if (!$quiz) {

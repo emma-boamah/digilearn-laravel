@@ -26,6 +26,7 @@ class Quiz extends Model
         'total_ratings',
         'difficulty_level',
         'shuffle_questions',
+        'status',
     ];
 
     protected $casts = [
@@ -144,6 +145,30 @@ class Quiz extends Model
     public function scopeByGradeLevel($query, $gradeLevel)
     {
         return $query->where('grade_level', $gradeLevel);
+    }
+
+    /**
+     * Scope for draft quizzes
+     */
+    public function scopeDraft($query)
+    {
+        return $query->where('status', 'draft');
+    }
+
+    /**
+     * Scope for published quizzes
+     */
+    public function scopePublished($query)
+    {
+        return $query->where('status', 'published');
+    }
+
+    /**
+     * Check if the quiz is a draft
+     */
+    public function isDraft()
+    {
+        return $this->status === 'draft';
     }
 
     /**
