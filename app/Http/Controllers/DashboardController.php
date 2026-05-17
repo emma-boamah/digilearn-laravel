@@ -418,17 +418,8 @@ class DashboardController extends Controller
         if ($selectedLevelGroup === 'university') {
             $universityCourses = $this->getUniversityCourses();
 
-            // Include agent-generated/standalone videos for University level
-            $agentVideos = Video::where('is_agent_generated', true)
-                ->where(function($q) {
-                    $q->where('grade_level', 'LIKE', '%Uni%')
-                      ->orWhere('grade_level', 'LIKE', '%University%');
-                })
-                ->get();
-
-            foreach ($agentVideos as $video) {
-                $universityCourses[] = $this->formatVideoAsUniversityCourse($video);
-            }
+            // AI-generated videos are excluded from the main digilearn index page
+            // per request to keep it strictly admin-uploaded content.
 
             $universityCourses = $this->filterCoursesBySubscription($user, $universityCourses);
             $universityCourses = $this->subscriptionPreviewService->processRelatedLessons($universityCourses, $user);
@@ -888,6 +879,9 @@ class DashboardController extends Controller
             $query = Video::approved()
                 ->distinct()
                 ->where('video_source', '!=', 'none')
+                ->where(function ($q) {
+                    $q->whereNull('is_agent_generated')->orWhere('is_agent_generated', false);
+                })
                 ->where(function ($q) use ($dbLevel, $categorySlug) {
 
                     // Base case: Videos specifically for this grade level
