@@ -5055,30 +5055,45 @@ class AdminController extends Controller
     public function uploadQuizComponent(Request $request)
     {
         try {
+            $isDraft = $request->input('status') === 'draft';
+
             Log::info('Quiz upload component request received', [
                 'has_video_id' => $request->filled('video_id'),
                 'video_id' => $request->input('video_id'),
                 'has_quiz_data' => $request->filled('quiz_data'),
+                'is_draft' => $isDraft,
                 'all_params' => array_keys($request->all())
             ]);
 
-            $request->validate([
-                'video_id' => 'required|exists:videos,id',
-                'quiz_data' => 'required|string',
-                'difficulty_level' => 'required|string',
-                'time_limit_minutes' => 'required|integer|min:1'
-            ]);
+            // Use relaxed validation for drafts, strict for publishing
+            if ($isDraft) {
+                $request->validate([
+                    'video_id' => 'required|exists:videos,id',
+                    'quiz_data' => 'nullable|string',
+                    'difficulty_level' => 'nullable|string',
+                    'time_limit_minutes' => 'nullable|integer|min:0'
+                ]);
+            } else {
+                $request->validate([
+                    'video_id' => 'required|exists:videos,id',
+                    'quiz_data' => 'required|string',
+                    'difficulty_level' => 'required|string',
+                    'time_limit_minutes' => 'required|integer|min:1'
+                ]);
+            }
 
             Log::info('Quiz upload validation passed', [
                 'video_id' => $request->video_id,
                 'difficulty_level' => $request->difficulty_level,
-                'time_limit_minutes' => $request->time_limit_minutes
+                'time_limit_minutes' => $request->time_limit_minutes,
+                'status' => $isDraft ? 'draft' : 'published'
             ]);
 
             $video = Video::findOrFail($request->video_id);
-            $quizData = json_decode($request->quiz_data, true);
+            $quizData = json_decode($request->quiz_data ?? '{"questions":[]}', true);
 
-            if (empty($quizData['questions'])) {
+            // Only enforce non-empty questions for published quizzes
+            if (!$isDraft && empty($quizData['questions'])) {
                 throw new \Exception('No questions found in quiz data');
             }
 
@@ -5104,7 +5119,8 @@ class AdminController extends Controller
                 'video_id' => $video->id,
                 'quiz_data' => json_encode($quizData),
                 'shuffle_questions' => $request->boolean('shuffle_questions'),
-                'is_featured' => false
+                'is_featured' => false,
+                'status' => $isDraft ? 'draft' : 'published',
             ];
 
             $quiz = Quiz::create($quizDataToCreate);
@@ -5119,14 +5135,20 @@ class AdminController extends Controller
             $video->quiz_id = $quiz->id;
             $video->save();
 
-            $this->notificationService->notifyNewQuiz($quiz);
+            // Only send notifications for published quizzes
+            if (!$isDraft) {
+                $this->notificationService->notifyNewQuiz($quiz);
+            }
+
+            $statusLabel = $isDraft ? 'saved as draft' : 'uploaded successfully';
 
             return response()->json([
                 'success' => true,
-                'message' => 'Quiz uploaded successfully',
+                'message' => "Quiz {$statusLabel}",
                 'data' => [
                     'quiz_id' => $quiz->id,
-                    'questions_count' => $quiz->questions()->count()
+                    'questions_count' => $quiz->questions()->count(),
+                    'status' => $isDraft ? 'draft' : 'published'
                 ]
             ]);
 
