@@ -1015,7 +1015,8 @@ PROMPT;
             }
             
             // NEW: Step 0 - Check for existing quizzes first to save API quota
-            $existingQuiz = \App\Models\Quiz::where('title', 'LIKE', '%' . $query . '%')
+            $existingQuiz = \App\Models\Quiz::published()
+                ->where('title', 'LIKE', '%' . $query . '%')
                 ->where('grade_level', $gradeLevel)
                 ->first();
 
