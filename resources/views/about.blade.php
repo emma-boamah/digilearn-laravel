@@ -6,12 +6,14 @@
 
 @section('head')
     <!-- Preload critical LCP image -->
-    <link rel="preload" as="image" href="{{ secure_asset('images/student-laptop-about.webp') }}" type="image/webp" fetchpriority="high">
+    <link rel="preload" as="image" href="{{ secure_asset('images/student-laptop-about.webp') }}" type="image/webp"
+        fetchpriority="high">
     <link rel="preload" as="image" href="{{ secure_asset('images/student-laptop-about.jpg') }}" fetchpriority="high">
 
     <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="About ShoutOutGH - Online Education Platform in Ghana">
-    <meta property="og:description" content="Learn about ShoutOutGH, Ghana's premier digital learning platform. Transforming education and making quality learning accessible to every Ghanaian student.">
+    <meta property="og:description"
+        content="Learn about ShoutOutGH, Ghana's premier digital learning platform. Transforming education and making quality learning accessible to every Ghanaian student.">
     <meta property="og:image" content="{{ secure_asset('images/shoutoutgh-logo.png') }}">
     <meta property="og:url" content="{{ url('/about') }}">
     <meta property="og:type" content="website">
@@ -254,14 +256,8 @@
             <!-- WebP format for modern browsers -->
             <source srcset="{{ secure_asset('images/student-laptop-about.webp') }}" type="image/webp">
             <!-- Fallback to JPEG -->
-            <img src="{{ secure_asset('images/student-laptop-about.jpg') }}"
-                 alt="Student with laptop"
-                 class="student-image"
-                 loading="eager"
-                 decoding="async"
-                 width="1200"
-                 height="540"
-                 fetchpriority="high">
+            <img src="{{ secure_asset('images/student-laptop-about.jpg') }}" alt="Student with laptop" class="student-image"
+                loading="eager" decoding="async" width="1200" height="540" fetchpriority="high">
         </picture>
     </section>
 
@@ -273,7 +269,10 @@
                 <div class="left-content">
                     <h2 class="brand-title">ShoutOutGh</h2>
                     <p class="description-text">
-                        ShoutOutGh is a digital learning platform created by Emmanuel Kwadwo Boamah. We are on a mission to transform education and make quality learning accessible to everyone, everywhere. Our platform provides innovative tools and resources to enhance the learning experience for students and educators alike.
+                        ShoutOutGh is a digital learning platform created by Emmanuel Kwadwo Boamah and Samuel Aboagye. We
+                        are on a mission to transform education and make quality learning accessible to everyone,
+                        everywhere. Our platform provides innovative tools and resources to enhance the learning experience
+                        for students and educators alike.
                     </p>
                     <a href="#" class="cta-button">Learn More</a>
                 </div>
