@@ -331,6 +331,25 @@ class LearningAgentService
     }
 
     /**
+     * Get pricing context for the AI Tutor to upsell.
+     */
+    private function getPricingContext(): string
+    {
+        return \Illuminate\Support\Facades\Cache::remember('agent_pricing_context', 3600, function () {
+            $plans = \App\Models\PricingPlan::where('is_active', true)->orderBy('price')->get();
+            if ($plans->isEmpty()) {
+                return "Subscription Link: " . url('/pricing');
+            }
+            
+            $context = "Available Subscription Plans (Upgrade Link: " . url('/pricing') . "):\n";
+            foreach ($plans as $plan) {
+                $context .= "- {$plan->name}: {$plan->currency} {$plan->price}\n";
+            }
+            return $context;
+        });
+    }
+
+    /**
      * Step 1: Use Gemini to analyze the user's natural language query.
      */
     private function analyzeQuery(string $query, string $gradeLevel, string $levelGroup, int $userId, ?int $contextId = null): array
@@ -342,6 +361,7 @@ class LearningAgentService
 
         $gradeLevelContext = $this->getGradeLevelContext($gradeLevel, $levelGroup);
         $historyContext = $this->getRecentHistoryContext($userId, $contextId);
+        $pricingContext = $this->getPricingContext();
 
         $prompt = <<<PROMPT
 You are an educational content curator for a Ghanaian e-learning platform. A student has asked for a lesson.
@@ -351,6 +371,7 @@ You are an educational content curator for a Ghanaian e-learning platform. A stu
 Student's current query: "{$query}"
 Student's grade level: {$gradeLevel}
 Educational context: {$gradeLevelContext}
+Pricing context: {$pricingContext}
 
 Analyze this request and return a JSON object with:
 1. "topic" - The core educational topic (concise, 2-5 words). e.g. "Photosynthesis", "Quadratic Equations", "Water Cycle"
@@ -361,8 +382,8 @@ Analyze this request and return a JSON object with:
 6. "ges_relevance" - A brief sentence on how this aligns with the GES syllabus.
 7. "difficulty_level" - One of: "beginner", "intermediate", "advanced"
 8. "is_valid_educational_topic" - Boolean, false if the query is not about education/learning
-9. "is_supported" - Boolean. False if the user asks for something you cannot do (e.g. generating images, recording audio, writing full essays, or anything that isn't finding an educational video/roadmap).
-10. "refusal_message" - If is_supported is false, a friendly 1-sentence explanation of why you can't do that, and what you CAN do instead (find videos and roadmaps).
+9. "is_supported" - Boolean. False if the user asks for something you cannot do (e.g. generating images, writing full essays), OR if the requested topic is significantly beyond the cognitive or curriculum level of {$gradeLevel} (e.g., a JHS student asking for advanced university topics).
+10. "refusal_message" - If is_supported is false due to the topic being too advanced, provide a friendly 1-2 sentence explanation stating what educational level it IS taught at, and let them know they can upgrade their subscription (mention the upgrade link and pricing if applicable) or update their grade level to access it. Also offer to teach them a related, age-appropriate foundational concept instead. Otherwise, explain what you CAN do (find videos and roadmaps).
 
 Return ONLY the JSON object, no markdown formatting, no code blocks, no explanation.
 PROMPT;
@@ -1150,11 +1171,13 @@ PROMPT;
 
         $gradeLevelContext = $this->getGradeLevelContext($gradeLevel, $levelGroup);
         $historyContext = $this->getRecentHistoryContext($userId, $contextId);
+        $pricingContext = $this->getPricingContext();
 
         $prompt = <<<PROMPT
 You are an expert curriculum designer for the Ghana Education Service (GES). Create a comprehensive learning roadmap for: "{$query}".
 The student is in grade level: {$gradeLevel}.
 Context: {$gradeLevelContext}
+Pricing Context: {$pricingContext}
 
 {$historyContext}
 
@@ -1170,8 +1193,8 @@ Return a JSON object with:
    - "description" - What the student will learn in this step.
    - "youtube_search_query" - Optimized search query to find the best educational video for this specific step and grade level.
 
-6. "is_supported" - Boolean. False if they are asking for something you cannot do (like drawing, recording, or tasks that aren't roadmap generation).
-7. "refusal_message" - If is_supported is false, a friendly explanation of what you CAN do (find GES roadmaps).
+6. "is_supported" - Boolean. False if they ask for something you cannot do, OR if the requested topic is significantly beyond the cognitive or curriculum level of {$gradeLevel} (e.g., a Primary student asking for Quantum Mechanics).
+7. "refusal_message" - If is_supported is false due to the topic being too advanced, provide a friendly explanation stating what educational level it IS taught at, and let them know they can upgrade their subscription (mention the upgrade link and pricing if applicable) or update their grade level to access it. Also offer to teach them a related, age-appropriate foundational concept instead. Otherwise, explain what you CAN do (find GES roadmaps).
 
 Return ONLY the JSON object, no explanation or markdown.
 PROMPT;
@@ -1228,11 +1251,13 @@ PROMPT;
 
         $gradeLevelContext = $this->getGradeLevelContext($gradeLevel, $levelGroup);
         $historyContext = $this->getRecentHistoryContext($userId, $contextId);
+        $pricingContext = $this->getPricingContext();
 
         $prompt = <<<PROMPT
 You are an expert curriculum developer for the Ghana Education Service (GES).
 Create a quiz for a student in: {$gradeLevel}
 Context: {$gradeLevelContext}
+Pricing Context: {$pricingContext}
 
 {$historyContext}
 
@@ -1248,8 +1273,8 @@ Instructions:
     "subject": "The most relevant subject (e.g. Science, Mathematics, English)",
     "difficulty_level": "easy, medium, or hard",
     "time_limit_minutes": 15,
-    "is_supported": true, // False if the request is non-educational or out of scope
-    "refusal_message": null, // Explanation if is_supported is false
+    "is_supported": true, // False if the request is non-educational, OR if the requested topic is significantly beyond the cognitive or curriculum level of {$gradeLevel}
+    "refusal_message": null, // Explanation if is_supported is false. If too advanced, explain what level it IS taught at, suggest they can upgrade their subscription (mention the link and pricing if applicable) or change their grade level to access it, and offer a foundational concept instead.
     "questions": [
         // For MCQ:
         {
