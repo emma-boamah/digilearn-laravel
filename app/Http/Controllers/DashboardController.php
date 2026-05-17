@@ -2853,7 +2853,7 @@ class DashboardController extends Controller
                     ->whereIn('grade_level', $gradeLevels)
                     ->count();
 
-                $totalQuizzes = \App\Models\Quiz::whereIn('grade_level', $gradeLevels)
+                $totalQuizzes = \App\Models\Quiz::published()->whereIn('grade_level', $gradeLevels)
                     ->count();
 
                 // Create progress record for the selected level group

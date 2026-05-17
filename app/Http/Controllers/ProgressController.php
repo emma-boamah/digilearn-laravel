@@ -129,7 +129,7 @@ class ProgressController extends Controller
                 ->first();
 
             $totalLessons = \App\Models\Video::where('grade_level', $grade)->where('status', 'approved')->count();
-            $totalQuizzes = \App\Models\Quiz::where('grade_level', $grade)->count();
+            $totalQuizzes = \App\Models\Quiz::published()->where('grade_level', $grade)->count();
 
             $attemptedLessons = (int)($lessonStat->attempted_lessons ?? 0);
             $completedLessons = (int)($lessonStat->completed_lessons ?? 0);

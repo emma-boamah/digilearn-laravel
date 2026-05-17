@@ -238,7 +238,7 @@ class RecommendationService
                     ->toArray();
 
             case 'quiz':
-                $query = Quiz::whereNotIn('id', $engagedContentIds);
+                $query = Quiz::published()->whereNotIn('id', $engagedContentIds);
                 if (!empty($preferredSubjects)) {
                     $query->whereIn('subject', $preferredSubjects);
                 }
@@ -273,7 +273,7 @@ class RecommendationService
                 return $content ? ['title' => $content->title, 'subject' => $content->subject] : null;
 
             case 'quiz':
-                $content = Quiz::find($contentId);
+                $content = Quiz::published()->find($contentId);
                 return $content ? ['title' => $content->title, 'subject' => $content->subject] : null;
 
             case 'document':
