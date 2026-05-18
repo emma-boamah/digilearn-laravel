@@ -6,6 +6,7 @@
 @endsection
 
 @push('styles')
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mathlive/mathlive-static.css" />
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         /* ============= Agent Page Container ============= */
         .agent-page {
@@ -1153,6 +1154,10 @@
 @endsection
 
 @push('scripts')
+    <script type="module" nonce="{{ request()->attributes->get('csp_nonce') }}">
+        import { renderMathInElement } from "https://unpkg.com/mathlive?module";
+        window.renderMathInElement = renderMathInElement;
+    </script>
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
         let isProcessing = false;
@@ -1260,6 +1265,25 @@
             return html;
         }
 
+        function renderMath(element) {
+            if (window.renderMathInElement) {
+                window.renderMathInElement(element, {
+                    TeX: {
+                        delimiters: {
+                            inline: [
+                                ['$', '$'],
+                                ['\\(', '\\)']
+                            ],
+                            display: [
+                                ['$$', '$$'],
+                                ['\\[', '\\]']
+                            ]
+                        }
+                    }
+                });
+            }
+        }
+
         function addBubble(text, type) {
             if (!text) return;
 
@@ -1282,6 +1306,7 @@
                 `;
 
                 chatArea.appendChild(bubble);
+                renderMath(bubble);
 
                 // Handle toggle visibility
                 setTimeout(() => {
@@ -1297,6 +1322,7 @@
             } else {
                 bubble.innerHTML = markdownToHtml(text);
                 chatArea.appendChild(bubble);
+                renderMath(bubble);
             }
             chatArea.scrollTop = chatArea.scrollHeight;
         }
