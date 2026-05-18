@@ -706,17 +706,17 @@
 
         .input-area:focus-within {
             border-color: #2677B8;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.08), 0 0 0 3px rgba(38, 119, 184, 0.15);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08), 0 0 0 3px rgba(38, 119, 184, 0.15);
         }
 
         [data-theme="dark"] .input-area {
             background: var(--gray-50);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
             border-color: rgba(255, 255, 255, 0.15);
         }
 
         [data-theme="dark"] .input-area:focus-within {
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6), 0 0 0 3px rgba(38, 119, 184, 0.2);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 0 3px rgba(38, 119, 184, 0.2);
         }
 
         .input-wrapper {
@@ -758,13 +758,20 @@
             display: none;
         }
 
-        .input-inner input:placeholder-shown:not(:focus) ~ .fake-caret {
+        .input-inner input:placeholder-shown:not(:focus)~.fake-caret {
             display: block;
         }
 
         @keyframes caretBlink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
         }
 
         .input-wrapper input::placeholder {
@@ -817,7 +824,7 @@
         }
 
         .send-btn:hover::after {
-            background: #eef2f8;
+            background: var(--gray-100);
         }
 
         .send-btn:disabled {
@@ -1032,7 +1039,8 @@
         <div class="agent-header">
             <h1>Hi {{ Auth::user() ? explode(' ', Auth::user()->name)[0] : 'there' }}, what would you like to learn today?
             </h1>
-            <p>Ask me to find a lesson, design a learning roadmap, solve a homework question, or create an interactive quiz on any topic. I'm here to
+            <p>Ask me to find a lesson, design a learning roadmap, solve a homework question, or create an interactive quiz
+                on any topic. I'm here to
                 help you master your subjects!</p>
             <div class="requests-badge">
                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1047,28 +1055,64 @@
             <!-- Welcome state shown when no messages -->
             <div class="welcome-state" id="welcomeState">
                 <div class="suggestions" id="suggestions">
-                                        <button class="suggestion-chip" data-suggestion="Roadmap for JHS 3 Science">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v13a3 3 0 0 0 6 0V3"/><path d="M8 3h8"/><path d="M12 9h.01"/></svg>
+                    <button class="suggestion-chip" data-suggestion="Roadmap for JHS 3 Science">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 3v13a3 3 0 0 0 6 0V3" />
+                            <path d="M8 3h8" />
+                            <path d="M12 9h.01" />
+                        </svg>
                         Roadmap for JHS 3 Science
                     </button>
-                                        <button class="suggestion-chip" data-suggestion="Create a quiz on Photosynthesis">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+                    <button class="suggestion-chip" data-suggestion="Create a quiz on Photosynthesis">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+                            <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+                        </svg>
                         Create a quiz on Photosynthesis
                     </button>
-                                        <button class="suggestion-chip" data-suggestion="Teach me Quadratic Equations">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20"/><path d="M8 7v6l6-6v6"/><path d="M15 13h5"/></svg>
+                    <button class="suggestion-chip" data-suggestion="Teach me Quadratic Equations">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20" />
+                            <path d="M8 7v6l6-6v6" />
+                            <path d="M15 13h5" />
+                        </svg>
                         Teach me Quadratic Equations
                     </button>
-                                        <button class="suggestion-chip" data-suggestion="Roadmap for Core Mathematics">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+                    <button class="suggestion-chip" data-suggestion="Roadmap for Core Mathematics">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="16" height="20" x="4" y="2" rx="2" />
+                            <line x1="8" x2="16" y1="6" y2="6" />
+                            <line x1="16" x2="16" y1="14" y2="18" />
+                            <path d="M16 10h.01" />
+                            <path d="M12 10h.01" />
+                            <path d="M8 10h.01" />
+                            <path d="M12 14h.01" />
+                            <path d="M8 14h.01" />
+                            <path d="M12 18h.01" />
+                            <path d="M8 18h.01" />
+                        </svg>
                         Roadmap for Core Mathematics
                     </button>
-                                        <button class="suggestion-chip" data-suggestion="Create a quiz on Electricity">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    <button class="suggestion-chip" data-suggestion="Create a quiz on Electricity">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                        </svg>
                         Create a quiz on Electricity
                     </button>
-                                        <button class="suggestion-chip" data-suggestion="Explain DNA and Genetics">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 15c6.667-6 13.333 0 20-6"/><path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993"/><path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993"/><path d="M17 9l.819 3.276"/><path d="M2 9c6.667 6 13.333 0 20 6"/></svg>
+                    <button class="suggestion-chip" data-suggestion="Explain DNA and Genetics">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2 15c6.667-6 13.333 0 20-6" />
+                            <path d="M9 22c1.798-1.998 2.518-3.995 2.807-5.993" />
+                            <path d="M15 2c-1.798 1.998-2.518 3.995-2.807 5.993" />
+                            <path d="M17 9l.819 3.276" />
+                            <path d="M2 9c6.667 6 13.333 0 20 6" />
+                        </svg>
                         Explain DNA and Genetics
                     </button>
                 </div>
@@ -1092,8 +1136,9 @@
             </div>
             <form class="input-wrapper" id="agentForm">
                 <div class="input-inner">
-                    <input type="text" id="agentInput" placeholder=" Ask for a lesson... e.g. 'Teach me about photosynthesis'"
-                        maxlength="500" autocomplete="off" required>
+                    <input type="text" id="agentInput"
+                        placeholder=" Ask for a lesson... e.g. 'Teach me about photosynthesis'" maxlength="500"
+                        autocomplete="off" required>
                     <div class="fake-caret"></div>
                 </div>
                 <button type="submit" class="send-btn" id="sendBtn">
@@ -1202,12 +1247,12 @@
             escaped = escaped.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 
             // 3. Parse Markdown-style links: [Link Text](url)
-            escaped = escaped.replace(/\[([^\]]+)\]\(((?:https?:\/\/[^\s)]+|\/[^\s)]*))\)/gi, function(match, label, url) {
+            escaped = escaped.replace(/\[([^\]]+)\]\(((?:https?:\/\/[^\s)]+|\/[^\s)]*))\)/gi, function (match, label, url) {
                 return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #2677B8; text-decoration: underline; font-weight: 600;">${label}</a>`;
             });
 
             // 4. Parse raw URLs (http:// or https://)
-            escaped = escaped.replace(/(?<!href=")(https?:\/\/[^\s<)]+)/gi, function(url) {
+            escaped = escaped.replace(/(?<!href=")(https?:\/\/[^\s<)]+)/gi, function (url) {
                 return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #2677B8; text-decoration: underline; font-weight: 600;">${url}</a>`;
             });
 
@@ -1297,13 +1342,13 @@
             if (type === 'tutor-explanation') {
                 const parsedBody = markdownToHtml(text);
                 bubble.innerHTML = `
-                    <div class="explanation-title">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-                        Topic Explanation
-                    </div>
-                    <div class="explanation-body">${parsedBody}</div>
-                    <button class="tutor-explanation-toggle">Show More</button>
-                `;
+                            <div class="explanation-title">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                                Topic Explanation
+                            </div>
+                            <div class="explanation-body">${parsedBody}</div>
+                            <button class="tutor-explanation-toggle">Show More</button>
+                        `;
 
                 chatArea.appendChild(bubble);
                 renderMath(bubble);
@@ -1335,27 +1380,27 @@
                 card.className = 'quiz-card';
 
                 card.innerHTML = `
-                    <div class="quiz-card-header">
-                        <div class="quiz-card-icon">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-                            </svg>
-                        </div>
-                        <h4 class="quiz-card-title">${data.topic}</h4>
-                    </div>
-                    <div class="quiz-card-meta">
-                        <span class="result-card-badge ${data.is_existing ? 'existing' : 'new'}">${data.is_existing ? '📚 Library Quiz' : '✨ Freshly Created'}</span>
-                        <span><i class="fas fa-tag"></i> ${data.quiz_type === 'essay' ? 'Essay' : 'MCQ'}</span>
-                        <span><i class="fas fa-brain"></i> GES</span>
-                    </div>
-                    <a href="${data.quiz_url}" class="quiz-btn">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5L6 9H2V15H6L11 19V5Z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"></path>
-                        </svg>
-                        Start Quiz Now
-                    </a>
-                `;
+                            <div class="quiz-card-header">
+                                <div class="quiz-card-icon">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                                    </svg>
+                                </div>
+                                <h4 class="quiz-card-title">${data.topic}</h4>
+                            </div>
+                            <div class="quiz-card-meta">
+                                <span class="result-card-badge ${data.is_existing ? 'existing' : 'new'}">${data.is_existing ? '📚 Library Quiz' : '✨ Freshly Created'}</span>
+                                <span><i class="fas fa-tag"></i> ${data.quiz_type === 'essay' ? 'Essay' : 'MCQ'}</span>
+                                <span><i class="fas fa-brain"></i> GES</span>
+                            </div>
+                            <a href="${data.quiz_url}" class="quiz-btn">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5L6 9H2V15H6L11 19V5Z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"></path>
+                                </svg>
+                                Start Quiz Now
+                            </a>
+                        `;
                 chatArea.appendChild(card);
             } else if (data.roadmap) {
                 const card = document.createElement('div');
@@ -1364,50 +1409,50 @@
                 let stepsHtml = '';
                 data.roadmap.steps.forEach((step, index) => {
                     stepsHtml += `
-                        <a href="${step.lesson_url || '#'}" class="roadmap-step" ${!step.lesson_url ? 'onclick="return false"' : ''}>
-                            <div class="step-number">${index + 1}</div>
-                            <div class="step-content">
-                                <div class="step-title">${step.title}</div>
-                                <div class="step-desc">${step.description}</div>
-                            </div>
-                        </a>
-                    `;
+                                <a href="${step.lesson_url || '#'}" class="roadmap-step" ${!step.lesson_url ? 'onclick="return false"' : ''}>
+                                    <div class="step-number">${index + 1}</div>
+                                    <div class="step-content">
+                                        <div class="step-title">${step.title}</div>
+                                        <div class="step-desc">${step.description}</div>
+                                    </div>
+                                </a>
+                            `;
                 });
 
                 card.innerHTML = `
-                    <div class="roadmap-header">
-                        <div class="roadmap-badge">
-                            <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.9L10 1.55l7.834 3.35a1 1 0 01.666.92v6.57a1 1 0 01-.17.55l-8 11a1 1 0 01-1.66 0l-8-11a1 1 0 01-.17-.55V5.82a1 1 0 01.666-.92zM10 3.24l-6 2.57v5.61l6 8.25 6-8.25v-5.61l-6-2.57z" clip-rule="evenodd"></path></svg>
-                            GES Syllabus Aligned • ${data.is_existing ? '📚 Library' : '✨ New'}
-                        </div>
-                        <h3>${data.roadmap.roadmap_title}</h3>
-                        <p style="font-size: 0.75rem; opacity: 0.9; margin: 0;">${data.roadmap.description}</p>
-                    </div>
-                    <div class="roadmap-body">
-                        <div class="roadmap-steps">
-                            ${stepsHtml}
-                        </div>
-                    </div>
-                `;
+                            <div class="roadmap-header">
+                                <div class="roadmap-badge">
+                                    <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.9L10 1.55l7.834 3.35a1 1 0 01.666.92v6.57a1 1 0 01-.17.55l-8 11a1 1 0 01-1.66 0l-8-11a1 1 0 01-.17-.55V5.82a1 1 0 01.666-.92zM10 3.24l-6 2.57v5.61l6 8.25 6-8.25v-5.61l-6-2.57z" clip-rule="evenodd"></path></svg>
+                                    GES Syllabus Aligned • ${data.is_existing ? '📚 Library' : '✨ New'}
+                                </div>
+                                <h3>${data.roadmap.roadmap_title}</h3>
+                                <p style="font-size: 0.75rem; opacity: 0.9; margin: 0;">${data.roadmap.description}</p>
+                            </div>
+                            <div class="roadmap-body">
+                                <div class="roadmap-steps">
+                                    ${stepsHtml}
+                                </div>
+                            </div>
+                        `;
                 chatArea.appendChild(card);
             } else if (data.quiz_url || data.type === 'quiz') {
                 const card = document.createElement('div');
                 card.className = 'quiz-card';
 
                 card.innerHTML = `
-                    <div class="quiz-card-header">
-                        <div class="quiz-card-icon">
-                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
-                        </div>
-                        <h4 class="quiz-card-title">${data.topic || data.title}</h4>
-                    </div>
-                    <div class="quiz-card-meta">
-                        <span>${data.quiz_type === 'essay' ? '📝 Structured Essay' : '✅ Multiple Choice'}</span>
-                    </div>
-                    <a href="${data.quiz_url}" class="quiz-btn">
-                        Start Quiz Now
-                    </a>
-                `;
+                            <div class="quiz-card-header">
+                                <div class="quiz-card-icon">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                                </div>
+                                <h4 class="quiz-card-title">${data.topic || data.title}</h4>
+                            </div>
+                            <div class="quiz-card-meta">
+                                <span>${data.quiz_type === 'essay' ? '📝 Structured Essay' : '✅ Multiple Choice'}</span>
+                            </div>
+                            <a href="${data.quiz_url}" class="quiz-btn">
+                                Start Quiz Now
+                            </a>
+                        `;
                 chatArea.appendChild(card);
             } else {
                 const card = document.createElement('div');
@@ -1418,27 +1463,27 @@
                 const badgeText = data.is_existing ? '📚 Already in Library' : '✨ Freshly Found';
 
                 card.innerHTML = `
-                    ${data.thumbnail ? `
-                    <div class="result-card-thumb">
-                        <img src="${data.thumbnail}" alt="${data.title || data.topic}" loading="lazy">
-                        ${durationDisplay ? `<span class="result-card-duration">${durationDisplay}</span>` : ''}
-                    </div>` : ''}
-                    <div class="result-card-body">
-                        <h4>${data.title || data.topic}</h4>
-                        <div class="result-card-meta">
-                            <span class="result-card-badge ${badgeClass}">${badgeText}</span>
-                        </div>
-                        <a href="${data.lesson_url}" class="watch-btn">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            Watch Lesson
-                        </a>
-                    </div>
-                `;
+                            ${data.thumbnail ? `
+                            <div class="result-card-thumb">
+                                <img src="${data.thumbnail}" alt="${data.title || data.topic}" loading="lazy">
+                                ${durationDisplay ? `<span class="result-card-duration">${durationDisplay}</span>` : ''}
+                            </div>` : ''}
+                            <div class="result-card-body">
+                                <h4>${data.title || data.topic}</h4>
+                                <div class="result-card-meta">
+                                    <span class="result-card-badge ${badgeClass}">${badgeText}</span>
+                                </div>
+                                <a href="${data.lesson_url}" class="watch-btn">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    Watch Lesson
+                                </a>
+                            </div>
+                        `;
                 chatArea.appendChild(card);
             }
 
