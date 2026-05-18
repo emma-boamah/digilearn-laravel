@@ -150,6 +150,30 @@ class LearningAgentService
                 ];
             }
 
+            // Check if AI determined this is a direct explanation
+            if (isset($analysis['response_type']) && $analysis['response_type'] === 'explanation') {
+                $processingTime = (int)((microtime(true) - $startTime) * 1000);
+                $summary = $analysis['summary'] ?? 'Here is the explanation you requested.';
+                
+                $agentRequest->update([
+                    'status' => 'created',
+                    'processing_time_ms' => $processingTime,
+                    'gemini_response' => array_merge($analysis, ['summary' => $summary])
+                ]);
+
+                return [
+                    'success' => true,
+                    'type' => 'explanation',
+                    'video_id' => null,
+                    'lesson_url' => null,
+                    'topic' => $analysis['topic'] ?? 'Explanation',
+                    'message' => 'Here is the explanation you asked for:',
+                    'is_existing' => false,
+                    'summary' => $summary,
+                    'request_id' => $agentRequest->id,
+                ];
+            }
+
             // Step 2: Check for existing content
             $existingVideo = $this->findExistingContent(
                 $analysis['topic'],
@@ -374,11 +398,12 @@ Educational context: {$gradeLevelContext}
 Pricing context: {$pricingContext}
 
 Analyze this request and return a JSON object with:
-1. "topic" - The core educational topic (concise, 2-5 words). e.g. "Photosynthesis", "Quadratic Equations", "Water Cycle"
-2. "subject" - The academic subject this belongs to. Must be one of: Mathematics, English, Science, Social Studies, ICT, French, Religious and Moral Education, Creative Arts, Ghanaian Language, History, Geography, Physics, Chemistry, Biology, Economics, Government, Literature, Integrated Science, Elective Mathematics, General Science. Pick the closest match.
-3. "search_keywords" - Array of 3-5 keywords for finding educational videos on this topic
-4. "youtube_search_query" - A single optimized YouTube search string that would find the best educational video for this student's level. Include grade-appropriate language markers (e.g. "for junior high school", "simple explanation for kids", "GCSE level")
-5. "summary" - A comprehensive 2-3 paragraph educational summary of the topic ITSELF (e.g. if they ask about "respiration", explain what respiration is, the key concepts, and why it's important). This MUST be an educational explanation of the topic, tailored to their grade level.
+1. "response_type" - The type of response needed. Must be "video_lesson" (default) or "explanation". If the user is asking a highly specific factual question or homework question where a specific video might not exist, set this to "explanation".
+2. "topic" - The core educational topic (concise, 2-5 words). e.g. "Photosynthesis", "Quadratic Equations", "Water Cycle"
+3. "subject" - The academic subject this belongs to. Must be one of: Mathematics, English, Science, Social Studies, ICT, French, Religious and Moral Education, Creative Arts, Ghanaian Language, History, Geography, Physics, Chemistry, Biology, Economics, Government, Literature, Integrated Science, Elective Mathematics, General Science. Pick the closest match.
+4. "search_keywords" - Array of 3-5 keywords for finding educational videos on this topic
+5. "youtube_search_query" - A single optimized YouTube search string that would find the best educational video for this student's level. Include grade-appropriate language markers (e.g. "for junior high school", "simple explanation for kids", "GCSE level")
+6. "summary" - A comprehensive 2-3 paragraph educational summary of the topic ITSELF (e.g. if they ask about "respiration", explain what respiration is, the key concepts, and why it's important). If response_type is "explanation", this should be the complete direct answer to their question. This MUST be an educational explanation tailored to their grade level.
 6. "ges_relevance" - A brief sentence on how this aligns with the GES syllabus.
 7. "difficulty_level" - One of: "beginner", "intermediate", "advanced"
 8. "is_valid_educational_topic" - Boolean, false if the query is not about education/learning
@@ -397,7 +422,7 @@ PROMPT;
                 ],
                 'generationConfig' => [
                     'temperature' => 0.2,
-                    'maxOutputTokens' => 1000,
+                    'maxOutputTokens' => 4096,
                     'response_mime_type' => 'application/json',
                 ],
             ]);
@@ -783,12 +808,16 @@ PROMPT;
                         : route('quiz.take', $request->quiz->seo_url);
                 }
 
+                $geminiResponse = is_string($request->gemini_response) ? json_decode($request->gemini_response, true) : $request->gemini_response;
+
                 // Determine the correct type based on associated data
                 $type = $request->type;
                 if ($request->quiz_id) {
                     $type = 'quiz';
                 } elseif ($request->roadmap_data) {
                     $type = 'roadmap';
+                } elseif (isset($geminiResponse['response_type']) && $geminiResponse['response_type'] === 'explanation') {
+                    $type = 'explanation';
                 } elseif (!$type) {
                     $type = 'lesson';
                 }
