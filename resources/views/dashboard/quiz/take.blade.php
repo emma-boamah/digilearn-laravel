@@ -11,7 +11,12 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mathlive/mathlive-static.css" />
     <script defer src="https://unpkg.com/mathlive" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+    <script type="module" nonce="{{ request()->attributes->get('csp_nonce') }}">
+        import { renderMathInElement } from "https://unpkg.com/mathlive?module";
+        window.renderMathInElement = renderMathInElement;
+    </script>
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         (function () {
@@ -1269,6 +1274,23 @@
             }
 
             // Render math formulas if any
+            if (window.renderMathInElement) {
+                const texConfig = {
+                    TeX: {
+                        delimiters: {
+                            inline: [['$', '$'], ['\\(', '\\)']],
+                            display: [['$$', '$$'], ['\\[', '\\]']]
+                        }
+                    }
+                };
+                window.renderMathInElement(document.getElementById('questionText'), texConfig);
+                window.renderMathInElement(document.getElementById('optionsContainer'), texConfig);
+                const preambleText = document.getElementById('preambleText');
+                if (preambleText) {
+                    window.renderMathInElement(preambleText, texConfig);
+                }
+            }
+
             // Sync math fields to read-only reliably without race conditions
             customElements.whenDefined('math-field').then(() => {
                 document.querySelectorAll('math-field').forEach(mf => {
