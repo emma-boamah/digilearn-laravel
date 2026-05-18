@@ -1161,6 +1161,32 @@
             return m + ':' + String(s).padStart(2, '0');
         }
 
+        function formatLinks(text) {
+            if (!text) return '';
+            // 1. Escape HTML to prevent XSS
+            let escaped = String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+
+            // 2. Parse Markdown-style bolding: **text**
+            escaped = escaped.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+            // 3. Parse Markdown-style links: [Link Text](url)
+            escaped = escaped.replace(/\[([^\]]+)\]\(((?:https?:\/\/[^\s)]+|\/[^\s)]*))\)/gi, function(match, label, url) {
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #2677B8; text-decoration: underline; font-weight: 600;">${label}</a>`;
+            });
+
+            // 4. Parse raw URLs (http:// or https://)
+            escaped = escaped.replace(/(?<!href=")(https?:\/\/[^\s<)]+)/gi, function(url) {
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #2677B8; text-decoration: underline; font-weight: 600;">${url}</a>`;
+            });
+
+            return escaped;
+        }
+
         function addBubble(text, type) {
             if (!text) return;
 
@@ -1172,7 +1198,10 @@
             bubble.className = 'chat-bubble ' + type;
 
             if (type === 'tutor-explanation') {
-                const paragraphs = text.split('\n').filter(p => p.trim()).map(p => `<p>${p}</p>`).join('');
+                const paragraphs = text.split('\n')
+                    .filter(p => p.trim())
+                    .map(p => `<p>${formatLinks(p)}</p>`)
+                    .join('');
                 bubble.innerHTML = `
                     <div class="explanation-title">
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
@@ -1196,7 +1225,7 @@
                     });
                 }, 100);
             } else {
-                bubble.textContent = text;
+                bubble.innerHTML = formatLinks(text);
                 chatArea.appendChild(bubble);
             }
             chatArea.scrollTop = chatArea.scrollHeight;
@@ -1492,6 +1521,17 @@
                                 quiz_type: quizType,
                                 is_existing: true
                             });
+                        } else if (type === 'explanation') {
+                            // Clear welcome state if visible
+                            const welcomeState = document.getElementById('welcomeState');
+                            if (welcomeState) welcomeState.style.display = 'none';
+
+                            // Re-show what was given for that prompt
+                            addBubble(query, 'user');
+                            addBubble('Here is the explanation you asked for:', 'ai');
+                            if (summary) {
+                                addBubble(summary, 'tutor-explanation');
+                            }
                         } else if (lessonUrl) {
                             // Clear welcome state if visible
                             const welcomeState = document.getElementById('welcomeState');
