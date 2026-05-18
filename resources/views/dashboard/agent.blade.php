@@ -395,6 +395,28 @@
             margin-bottom: 0;
         }
 
+        .explanation-list {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+        }
+
+        ul.explanation-list {
+            list-style-type: disc;
+        }
+
+        ol.explanation-list {
+            list-style-type: decimal;
+        }
+
+        .explanation-list li {
+            margin-bottom: 0.5rem;
+            line-height: 1.7;
+        }
+
+        .explanation-list li:last-child {
+            margin-bottom: 0;
+        }
+
         .explanation-title {
             display: flex;
             align-items: center;
@@ -1009,7 +1031,7 @@
         <div class="agent-header">
             <h1>Hi {{ Auth::user() ? explode(' ', Auth::user()->name)[0] : 'there' }}, what would you like to learn today?
             </h1>
-            <p>Ask me to find a lesson, design a learning roadmap, or create an interactive quiz on any topic. I'm here to
+            <p>Ask me to find a lesson, design a learning roadmap, solve a homework question, or create an interactive quiz on any topic. I'm here to
                 help you master your subjects!</p>
             <div class="requests-badge">
                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1187,6 +1209,57 @@
             return escaped;
         }
 
+        function markdownToHtml(text) {
+            if (!text) return '';
+            const lines = text.split('\n');
+            let html = '';
+            let inList = null; // 'ul', 'ol', or null
+
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (!trimmed) {
+                    if (inList) {
+                        html += `</${inList}>`;
+                        inList = null;
+                    }
+                    return;
+                }
+
+                // Check for bullet list item: starts with - or * followed by space
+                const bulletMatch = trimmed.match(/^[-*]\s+(.*)/);
+                // Check for numbered list item: starts with digit(s) followed by dot and space
+                const numberMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
+
+                if (bulletMatch) {
+                    if (inList !== 'ul') {
+                        if (inList) html += `</${inList}>`;
+                        html += '<ul class="explanation-list">';
+                        inList = 'ul';
+                    }
+                    html += `<li>${formatLinks(bulletMatch[1])}</li>`;
+                } else if (numberMatch) {
+                    if (inList !== 'ol') {
+                        if (inList) html += `</${inList}>`;
+                        html += '<ol class="explanation-list">';
+                        inList = 'ol';
+                    }
+                    html += `<li>${formatLinks(numberMatch[2])}</li>`;
+                } else {
+                    if (inList) {
+                        html += `</${inList}>`;
+                        inList = null;
+                    }
+                    html += `<p>${formatLinks(trimmed)}</p>`;
+                }
+            });
+
+            if (inList) {
+                html += `</${inList}>`;
+            }
+
+            return html;
+        }
+
         function addBubble(text, type) {
             if (!text) return;
 
@@ -1198,16 +1271,13 @@
             bubble.className = 'chat-bubble ' + type;
 
             if (type === 'tutor-explanation') {
-                const paragraphs = text.split('\n')
-                    .filter(p => p.trim())
-                    .map(p => `<p>${formatLinks(p)}</p>`)
-                    .join('');
+                const parsedBody = markdownToHtml(text);
                 bubble.innerHTML = `
                     <div class="explanation-title">
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
                         Topic Explanation
                     </div>
-                    <div class="explanation-body">${paragraphs}</div>
+                    <div class="explanation-body">${parsedBody}</div>
                     <button class="tutor-explanation-toggle">Show More</button>
                 `;
 
@@ -1225,7 +1295,7 @@
                     });
                 }, 100);
             } else {
-                bubble.innerHTML = formatLinks(text);
+                bubble.innerHTML = markdownToHtml(text);
                 chatArea.appendChild(bubble);
             }
             chatArea.scrollTop = chatArea.scrollHeight;
