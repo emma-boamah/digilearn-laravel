@@ -14,7 +14,12 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,701&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script defer src="https://unpkg.com/mathlive"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mathlive/mathlive-static.css" />
+    <script defer src="https://unpkg.com/mathlive" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+    <script type="module" nonce="{{ request()->attributes->get('csp_nonce') }}">
+        import { renderMathInElement } from "https://unpkg.com/mathlive?module";
+        window.renderMathInElement = renderMathInElement;
+    </script>
 
     <script>
         (function () {
@@ -1926,6 +1931,22 @@
                     mf.removeAttribute('tabindex');
                 });
             });
+
+            // Render static LaTeX equations inside the container if any
+            if (window.renderMathInElement) {
+                const texConfig = {
+                    TeX: {
+                        delimiters: {
+                            inline: [['$', '$'], ['\\(', '\\)']],
+                            display: [['$$', '$$'], ['\\[', '\\]']]
+                        }
+                    }
+                };
+                const container = document.getElementById('questionsContainer');
+                if (container) {
+                    window.renderMathInElement(container, texConfig);
+                }
+            }
         }
 
         function openShareModal() { document.getElementById('shareModal').classList.add('active'); }

@@ -1296,7 +1296,8 @@ Instructions:
 1. Determine if the student wants a multiple-choice quiz (MCQ), an essay quiz, or a mix. If not specified, default to 5 MCQs.
 2. Return ONLY a valid JSON object.
 3. The quiz MUST be strictly aligned with the current GES syllabus.
-4. The JSON MUST exactly match this structure:
+4. **Math Formulas & Scientific Symbols**: If the quiz involves mathematics, science, equations, or formulas, you MUST wrap all mathematical expressions, fractions, symbols, and equations inside `<math-field>` custom HTML tags. For example, `<math-field>x^2 + y^2 = z^2</math-field>`, `<math-field>\sin(\theta)</math-field>`, `<math-field>\frac{a}{b}</math-field>`, or `<math-field>360^\circ</math-field>`. Never output raw LaTeX or formulas without wrapping them inside `<math-field>` tags. This ensures textbook-quality textbook layout rendering.
+5. The JSON MUST exactly match this structure:
 {
     "title": "A short, catchy title for the quiz",
     "subject": "The most relevant subject (e.g. Science, Mathematics, English)",
