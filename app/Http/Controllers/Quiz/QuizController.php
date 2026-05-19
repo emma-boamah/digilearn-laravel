@@ -415,7 +415,10 @@ class QuizController extends Controller
             $answers = [0 => $request->input('essay')];
         }
 
-        $questions = $quiz['questions'] ?? [];
+        // Filter for essay questions ONLY to align indices with takeEssay
+        $questions = collect($quiz['questions'] ?? [])->filter(function ($q) {
+            return ($q['type'] ?? '') === 'essay';
+        })->values()->all();
         $totalQuestions = count($questions);
 
         // Record the attempt for review visibility
@@ -919,20 +922,26 @@ class QuizController extends Controller
                 ->first();
 
             if ($lastAttempt && $lastAttempt->grading_details) {
-                $grading = is_string($lastAttempt->grading_details) ? json_decode($lastAttempt->grading_details, true) : (array) $lastAttempt->grading_details;
+                $grading = $lastAttempt->grading_details;
                 $analysis = $grading['ai_analysis'] ?? [];
             }
 
-            // Apply identical seeded shuffle to ensure review matches the user's view
-            if ($quiz['shuffle_questions'] ?? true) {
-                $userIdForShuffle = $lastAttempt ? $lastAttempt->user_id : Auth::id();
-                $quiz = $this->applySeededShuffle($quiz, $userIdForShuffle);
+            // Get questions from attempt if available, otherwise from quiz
+            $attemptQuestions = $lastAttempt ? $lastAttempt->question_details : null;
+
+            if (empty($attemptQuestions)) {
+                // Apply identical seeded shuffle to ensure review matches the user's view
+                if ($quiz['shuffle_questions'] ?? true) {
+                    $userIdForShuffle = $lastAttempt ? $lastAttempt->user_id : Auth::id();
+                    $quiz = $this->applySeededShuffle($quiz, $userIdForShuffle);
+                }
+                $attemptQuestions = $quiz['questions'];
             }
 
             $userAnswers = $lastAttempt ? (is_array($lastAttempt->answers) ? $lastAttempt->answers : json_decode($lastAttempt->answers ?? '[]', true)) : [];
             $timeTaken = $lastAttempt ? $lastAttempt->time_taken_seconds : 0;
 
-            foreach ($quiz['questions'] as $index => $question) {
+            foreach ($attemptQuestions as $index => $question) {
                 if (!is_array($question)) {
                     Log::warning('Skipping invalid question in results', [
                         'quiz_id' => $quizId,

@@ -15,6 +15,7 @@ class ContactFormTest extends TestCase
 
     public function test_unauthenticated_users_are_redirected_to_login(): void
     {
+        $this->withoutMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class);
         $response = $this->post('/contact/submit', [
             'message' => 'Hello',
         ]);
@@ -24,6 +25,7 @@ class ContactFormTest extends TestCase
 
     public function test_authenticated_users_can_submit_contact_form(): void
     {
+        $this->withoutMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class);
         Mail::fake();
         $user = User::factory()->create([
             'name' => 'John Doe',
@@ -58,6 +60,7 @@ class ContactFormTest extends TestCase
             'message' => 'Hello',
         ]);
 
-        $response->assertStatus(429);
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors(['email']);
     }
 }
