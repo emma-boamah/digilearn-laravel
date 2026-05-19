@@ -103,6 +103,8 @@
 
         /* Top Header */
         .header {
+            position: sticky;
+            top: 0;
             height: var(--header-height);
             background-color: var(--white);
             border-bottom: 1px solid var(--gray-200);
@@ -780,9 +782,20 @@
             document.getElementById(`booklet-${idx}`).classList.add('active');
 
             const qEl = document.getElementById(`q-${idx}`);
-            if (qEl) {
+            const qPane = document.getElementById('questionPane');
+            if (qEl && qPane) {
                 qEl.classList.add('active');
-                qEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                
+                // Calculate position relative to the scroll container (questionPane)
+                const containerRect = qPane.getBoundingClientRect();
+                const elementRect = qEl.getBoundingClientRect();
+                const relativeTop = elementRect.top - containerRect.top + qPane.scrollTop;
+                
+                // Scroll only the question pane to the element with top padding
+                qPane.scrollTo({
+                    top: relativeTop - 32,
+                    behavior: 'smooth'
+                });
             }
 
             currentIdx = idx;
