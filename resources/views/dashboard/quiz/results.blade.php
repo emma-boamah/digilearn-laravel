@@ -28,7 +28,7 @@
         })();
     </script>
 
-    <style>
+    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         /* Clean Student Math Display */
         math-field {
             font-size: 1.1rem;

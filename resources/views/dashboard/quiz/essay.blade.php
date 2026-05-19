@@ -27,7 +27,7 @@
         })();
     </script>
 
-    <style>
+    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         /* Clean Student Math Display */
         math-field {
             font-size: 1.1rem;
@@ -42,6 +42,22 @@
         math-field::part(virtual-keyboard-toggle),
         math-field::part(menu-toggle) {
             display: none !important;
+        }
+
+        /* Allow editing math-fields inside the Quill editor */
+        .ql-editor math-field {
+            pointer-events: auto;
+            cursor: text;
+            background: rgba(38, 119, 184, 0.05);
+            border: 1px solid rgba(38, 119, 184, 0.2);
+            border-radius: 4px;
+            padding: 2px 6px;
+            min-width: 30px;
+            display: inline-block;
+        }
+        
+        .ql-editor math-field::part(virtual-keyboard-toggle) {
+            display: flex !important;
         }
 
         :root {
@@ -499,8 +515,7 @@
     <!-- Header -->
     <header class="header">
         <div class="header-left">
-            <a href="{{ route('quiz.instructions', $quiz['encoded_id']) }}" class="back-link"
-                onclick="return confirm('Exit quiz? Progress will be lost.')">
+            <a href="{{ route('quiz.instructions', $quiz['encoded_id']) }}" class="back-link" id="quitBtn">
                 <i class="fas fa-arrow-left"></i>
                 <span>Quit</span>
             </a>
@@ -518,7 +533,7 @@
                 <i class="far fa-clock"></i>
                 <span id="countdown">--:--</span>
             </div>
-            <button class="btn-submit" onclick="submitEssay()">
+            <button class="btn-submit" id="submitBtn">
                 <i class="fas fa-paper-plane"></i>
                 <span>Finish & Submit</span>
             </button>
@@ -585,7 +600,7 @@
         <div class="answer-pane">
             <div class="booklet-tabs">
                 @foreach($quiz['questions'] ?? [] as $index => $question)
-                    <div class="tab {{ $index === 0 ? 'active' : '' }}" onclick="switchBooklet({{ $index }})"
+                    <div class="tab {{ $index === 0 ? 'active' : '' }}" data-tab-idx="{{ $index }}"
                         id="tab-{{ $index }}">
                         Booklet {{ $index + 1 }}
                     </div>
@@ -644,13 +659,13 @@
             </div>
 
             <div class="workspace-footer">
-                <button class="nav-btn" id="prevBtn" onclick="prevBooklet()" disabled>
+                <button class="nav-btn" id="prevBtn" disabled>
                     <i class="fas fa-chevron-left"></i> Previous Question
                 </button>
                 <div class="muted" style="font-size: 0.8rem; color: var(--gray-400);">
                     <i class="fas fa-save"></i> Auto-saving...
                 </div>
-                <button class="nav-btn" id="nextBtn" onclick="nextBooklet()">
+                <button class="nav-btn" id="nextBtn">
                     Next Question <i class="fas fa-chevron-right"></i>
                 </button>
             </div>
@@ -667,6 +682,7 @@
     </form>
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        window.isSubmitting = false;
         const quizDataQuestions = @json($quiz['questions'] ?? []);
         let currentIdx = 0;
         const totalQuestions = {{ count($quiz['questions'] ?? []) }};
@@ -678,6 +694,34 @@
         window.answers = {};
         window.timeLimitMinutes = Math.ceil(timeLimit / 60);
         window.timeRemaining = timeRemaining;
+
+        // Register MathLive Custom Blot for Quill
+        const Embed = Quill.import('blots/embed');
+        class MathliveBlot extends Embed {
+            static create(value) {
+                const node = super.create(value);
+                node.setAttribute('contenteditable', 'false');
+                node.value = value || '';
+                node.innerHTML = value || '';
+                return node;
+            }
+            static value(node) {
+                return node.value;
+            }
+        }
+        MathliveBlot.blotName = 'mathlive';
+        MathliveBlot.tagName = 'math-field';
+        Quill.register(MathliveBlot);
+
+        // Add standard math icon to toolbar
+        const icons = Quill.import('ui/icons');
+        icons['mathlive'] = icons['formula'] || '<svg viewBox="0 0 18 18"> <text x="3" y="14" font-family="sans-serif" font-weight="bold" font-size="14" fill="currentColor">∑</text> </svg>';
+        icons['math_fraction'] = '<svg viewBox="0 0 18 18"> <text x="2" y="13" font-family="serif" font-weight="bold" font-size="14" fill="currentColor">x/y</text> </svg>';
+
+        const subjectName = "{{ strtolower($quiz['subject'] ?? '') }}";
+        const mathSubjects = ['math', 'science', 'physics', 'chemistry', 'biology', 'ict', 'computing'];
+        // Show tools if subject matches, or if subject is undefined/empty
+        const needsMathTools = subjectName === '' || mathSubjects.some(sub => subjectName.includes(sub));
 
         // Initialize Editors & Math
         document.addEventListener('DOMContentLoaded', () => {
@@ -696,15 +740,45 @@
                     placeholderText = `Write your answer for Part ${subLabel}) here...`;
                 }
 
+                let toolbarContainer = [
+                    ['bold', 'italic', 'underline']
+                ];
+
+                if (needsMathTools) {
+                    toolbarContainer.push([{ 'script': 'sub'}, { 'script': 'super' }]);
+                }
+
+                toolbarContainer.push([{ 'list': 'ordered' }, { 'list': 'bullet' }]);
+
+                if (needsMathTools) {
+                    toolbarContainer.push(['mathlive', 'math_fraction']);
+                }
+
+                toolbarContainer.push(['clean']);
+
                 const quill = new Quill(`#${containerId}`, {
                     theme: 'snow',
                     placeholder: placeholderText,
                     modules: {
-                        toolbar: [
-                            ['bold', 'italic', 'underline'],
-                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                            ['clean']
-                        ]
+                        toolbar: {
+                            container: toolbarContainer,
+                            handlers: {
+                                'mathlive': function() {
+                                    const range = this.quill.getSelection();
+                                    if (range) {
+                                        this.quill.insertEmbed(range.index, 'mathlive', '');
+                                        this.quill.setSelection(range.index + 1);
+                                    }
+                                },
+                                'math_fraction': function() {
+                                    const range = this.quill.getSelection();
+                                    if (range) {
+                                        this.quill.insertEmbed(range.index, 'mathlive', '\\frac{}{}');
+                                        this.quill.setSelection(range.index + 1);
+                                    }
+                                }
+                            }
+                        }
                     },
                     scrollingContainer: sIdx !== undefined ? `#${containerId}` : `#booklet-${qIdx}`,
                     spellcheck: false // Explicitly disable native spellcheck
@@ -751,6 +825,44 @@
 
             startTimer();
             updateNavButtons();
+
+            // Add event listeners for CSP compliance
+            const quitBtn = document.getElementById('quitBtn');
+            if (quitBtn) {
+                quitBtn.addEventListener('click', (e) => {
+                    if (!confirmExitEssay()) {
+                        e.preventDefault();
+                    }
+                });
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn) {
+                submitBtn.addEventListener('click', () => {
+                    submitEssay();
+                });
+            }
+
+            const prevBtn = document.getElementById('prevBtn');
+            if (prevBtn) {
+                prevBtn.addEventListener('click', () => {
+                    prevBooklet();
+                });
+            }
+
+            const nextBtn = document.getElementById('nextBtn');
+            if (nextBtn) {
+                nextBtn.addEventListener('click', () => {
+                    nextBooklet();
+                });
+            }
+
+            document.querySelectorAll('.booklet-tabs .tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const idx = parseInt(tab.dataset.tabIdx);
+                    switchBooklet(idx);
+                });
+            });
         });
 
         function renderMath() {
@@ -773,6 +885,7 @@
         }
 
         function switchBooklet(idx) {
+            if (window.isSubmitting) return;
             // Update Active Classes
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.booklet').forEach(b => b.classList.remove('active'));
@@ -803,10 +916,12 @@
         }
 
         function nextBooklet() {
+            if (window.isSubmitting) return;
             if (currentIdx < totalQuestions - 1) switchBooklet(currentIdx + 1);
         }
 
         function prevBooklet() {
+            if (window.isSubmitting) return;
             if (currentIdx > 0) switchBooklet(currentIdx - 1);
         }
 
@@ -843,16 +958,46 @@
         }
 
         function submitEssay() {
+            if (window.isSubmitting) return;
             if (!confirm('Are you sure you want to finish and submit your paper?')) return;
             performSubmission();
         }
 
+        function confirmExitEssay() {
+            if (window.isSubmitting) return false;
+            return confirm('Exit quiz? Progress will be lost.');
+        }
+
         function autoSubmit() {
+            if (window.isSubmitting) return;
             alert('Time is up! Your answers are being submitted automatically.');
             performSubmission();
         }
 
         function performSubmission() {
+            if (window.isSubmitting) return;
+            window.isSubmitting = true;
+
+            // Show submitting overlay
+            const overlay = document.getElementById('submittingOverlay');
+            if (overlay) {
+                overlay.style.display = 'flex';
+            }
+
+            // Disable all Quill instances immediately to prevent typing
+            quillInstances.forEach(item => {
+                try {
+                    item.quill.disable();
+                } catch(e) {}
+            });
+
+            // Disable header submit button
+            const submitBtn = document.querySelector('.btn-submit');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            }
+
             let fullEssay = '';
             
             // Group instances by question
@@ -924,6 +1069,15 @@
             document.getElementById('submissionForm').submit();
         }
     </script>
+
+    <!-- Submitting Overlay -->
+    <div id="submittingOverlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; color: white; gap: 1rem;">
+        <div style="background: var(--white); color: var(--gray-900); padding: 2.5rem; border-radius: 1rem; box-shadow: var(--shadow-xl); max-width: 400px; width: 90%; text-align: center; border: 1px solid var(--gray-200); display: flex; flex-direction: column; align-items: center; gap: 1.25rem;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 2.5rem; color: var(--primary-blue);"></i>
+            <h2 style="font-weight: 700; font-size: 1.25rem; margin: 0;">Submitting Your Booklet</h2>
+            <p style="color: var(--gray-500); font-size: 0.95rem; line-height: 1.5; margin: 0;">Please wait while our AI tutor reviews and grades your answers. Do not close this window.</p>
+        </div>
+    </div>
 
     @include('dashboard.quiz.partials.anti-cheat')
 </body>

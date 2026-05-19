@@ -36,7 +36,7 @@ class PricingStructuredDataTest extends TestCase
         $response->assertSee('"name": "Essential Plus Plan"', false);
         $response->assertSee('"image"', false);
         $response->assertSee('shoutoutgh-logo.png', false);
-        $response->assertSee('"price": "19.99"', false);
+        $response->assertSee('"price": 19.99', false);
         $response->assertSee('"priceCurrency": "GHS"', false);
         $response->assertSee('"availability": "https://schema.org/InStock"', false);
     }

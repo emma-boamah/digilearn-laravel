@@ -25,7 +25,7 @@
         })();
     </script>
 
-    <style>
+    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         /* Clean Student Math Display */
         math-field {
             font-size: 1.1rem;
@@ -36,10 +36,12 @@
             cursor: default;
             pointer-events: none;
         }
+
         math-field::part(virtual-keyboard-toggle),
         math-field::part(menu-toggle) {
             display: none !important;
         }
+
         :root {
             --primary-red: #E11E2D;
             --primary-red-hover: #c41e2a;
@@ -892,7 +894,7 @@
     <!-- Top Header -->
     <div class="top-header">
         <div class="header-left">
-            <button class="back-button" onclick="confirmExit()">
+            <button class="back-button" id="exitBtn">
                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                 </svg>
@@ -920,7 +922,8 @@
         <!-- Left Column -->
         <div class="quiz-left-column">
             <div class="quiz-sidebar">
-                <h2 class="quiz-title">{{ str_replace('Quiz for: ', '', $quiz['title'] ?? 'Introduction to Computer Hardware') }}</h2>
+                <h2 class="quiz-title">
+                    {{ str_replace('Quiz for: ', '', $quiz['title'] ?? 'Introduction to Computer Hardware') }}</h2>
 
                 <div class="timer-container">
                     <div class="timer" id="timer">--:--</div>
@@ -934,7 +937,7 @@
                 </div>
 
                 <div class="quiz-actions">
-                    <button class="submit-quiz-btn" id="submitQuizBtn" onclick="submitQuiz()">Submit Quiz</button>
+                    <button class="submit-quiz-btn" id="submitQuizBtn">Submit Quiz</button>
                 </div>
             </div>
 
@@ -1009,13 +1012,13 @@
             </div>
 
             <div class="navigation-buttons">
-                <button class="nav-btn" id="prevBtn" onclick="previousQuestion()" disabled>
+                <button class="nav-btn" id="prevBtn" disabled>
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
                     Previous
                 </button>
-                <button class="nav-btn primary" id="nextBtn" onclick="nextQuestion()">
+                <button class="nav-btn primary" id="nextBtn">
                     Next
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -1034,80 +1037,81 @@
                     after submission.</p>
             </div>
             <div class="modal-actions">
-                <button class="modal-btn secondary" onclick="closeModal()">Cancel</button>
-                <button class="modal-btn primary" onclick="confirmSubmit()">Submit</button>
+                <button class="modal-btn secondary" id="closeModalBtn">Cancel</button>
+                <button class="modal-btn primary" id="confirmSubmitBtn">Submit</button>
             </div>
         </div>
     </div>
 
     @php
-    $defaultQuestions = [
-    [
-    'id' => 1,
-    'question' => 'Identify the component highlighted in the image above.',
-    'image' => secure_asset('images/computer-hardware-cpu.png'),
-    'options' => [
-    'Central Processing Unit (CPU)',
-    'Random Access Memory (RAM)',
-    'Graphics Processing Unit (GPU)',
-    'Power Supply Unit (PSU)'
-    ],
-    'correct_answer' => 0
-    ],
-    [
-    'id' => 2,
-    'question' => 'What is the main function of RAM in a computer system?',
-    'image' => null,
-    'options' => [
-    'Permanent storage of files',
-    'Temporary data storage for active processes',
-    'Processing graphics and videos',
-    'Power distribution to components'
-    ],
-    'correct_answer' => 1
-    ],
-    [
-    'id' => 3,
-    'question' => 'Which component is shown in this image?',
-    'image' => secure_asset('images/computer-hardware-gpu.png'),
-    'options' => [
-    'Motherboard',
-    'Hard Disk Drive',
-    'Graphics Card',
-    'Network Interface Card'
-    ],
-    'correct_answer' => 2
-    ],
-    [
-    'id' => 4,
-    'question' => 'What does this component do?',
-    'image' => secure_asset('images/computer-hardware-psu.png'),
-    'options' => [
-    'Processes audio signals',
-    'Converts AC to DC power',
-    'Manages network connections',
-    'Cools the system components'
-    ],
-    'correct_answer' => 1
-    ],
-    [
-    'id' => 5,
-    'question' => 'Which component connects all other components together?',
-    'image' => secure_asset('images/computer-hardware-motherboard.png'),
-    'options' => [
-    'Power Supply',
-    'Motherboard',
-    'CPU',
-    'Case'
-    ],
-    'correct_answer' => 1
-    ]
-    ];
+        $defaultQuestions = [
+            [
+                'id' => 1,
+                'question' => 'Identify the component highlighted in the image above.',
+                'image' => secure_asset('images/computer-hardware-cpu.png'),
+                'options' => [
+                    'Central Processing Unit (CPU)',
+                    'Random Access Memory (RAM)',
+                    'Graphics Processing Unit (GPU)',
+                    'Power Supply Unit (PSU)'
+                ],
+                'correct_answer' => 0
+            ],
+            [
+                'id' => 2,
+                'question' => 'What is the main function of RAM in a computer system?',
+                'image' => null,
+                'options' => [
+                    'Permanent storage of files',
+                    'Temporary data storage for active processes',
+                    'Processing graphics and videos',
+                    'Power distribution to components'
+                ],
+                'correct_answer' => 1
+            ],
+            [
+                'id' => 3,
+                'question' => 'Which component is shown in this image?',
+                'image' => secure_asset('images/computer-hardware-gpu.png'),
+                'options' => [
+                    'Motherboard',
+                    'Hard Disk Drive',
+                    'Graphics Card',
+                    'Network Interface Card'
+                ],
+                'correct_answer' => 2
+            ],
+            [
+                'id' => 4,
+                'question' => 'What does this component do?',
+                'image' => secure_asset('images/computer-hardware-psu.png'),
+                'options' => [
+                    'Processes audio signals',
+                    'Converts AC to DC power',
+                    'Manages network connections',
+                    'Cools the system components'
+                ],
+                'correct_answer' => 1
+            ],
+            [
+                'id' => 5,
+                'question' => 'Which component connects all other components together?',
+                'image' => secure_asset('images/computer-hardware-motherboard.png'),
+                'options' => [
+                    'Power Supply',
+                    'Motherboard',
+                    'CPU',
+                    'Case'
+                ],
+                'correct_answer' => 1
+            ]
+        ];
     @endphp
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         // Quiz data and state (Globally Exposed for Anti-Cheat)
         window.currentQuestion = 0;
+        window.isSubmitting = false;
         window.timeLimitMinutes = {{ $quiz['time_limit_minutes'] ?? 3 }};
         window.timeRemaining = window.timeLimitMinutes * 60;
         window.answers = {};
@@ -1119,6 +1123,49 @@
         document.addEventListener('DOMContentLoaded', function () {
             initializeQuiz();
             startTimer();
+
+            // Add event listeners for CSP compliance
+            const exitBtn = document.getElementById('exitBtn');
+            if (exitBtn) {
+                exitBtn.addEventListener('click', () => {
+                    confirmExit();
+                });
+            }
+
+            const submitQuizBtn = document.getElementById('submitQuizBtn');
+            if (submitQuizBtn) {
+                submitQuizBtn.addEventListener('click', () => {
+                    submitQuiz();
+                });
+            }
+
+            const prevBtn = document.getElementById('prevBtn');
+            if (prevBtn) {
+                prevBtn.addEventListener('click', () => {
+                    previousQuestion();
+                });
+            }
+
+            const nextBtn = document.getElementById('nextBtn');
+            if (nextBtn) {
+                nextBtn.addEventListener('click', () => {
+                    nextQuestion();
+                });
+            }
+
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            if (closeModalBtn) {
+                closeModalBtn.addEventListener('click', () => {
+                    closeModal();
+                });
+            }
+
+            const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
+            if (confirmSubmitBtn) {
+                confirmSubmitBtn.addEventListener('click', () => {
+                    confirmSubmit();
+                });
+            }
         });
 
         function initializeQuiz() {
@@ -1162,7 +1209,7 @@
             const sanitizeMathLive = (htmlStr) => {
                 if (!htmlStr) return '';
                 return htmlStr.replace(/contenteditable="true"/g, 'contenteditable="false" read-only')
-                              .replace(/tabindex="0"/g, 'tabindex="-1"');
+                    .replace(/tabindex="0"/g, 'tabindex="-1"');
             };
 
             // Update question label
@@ -1206,26 +1253,26 @@
                 const essayWrapper = document.createElement('div');
                 essayWrapper.className = 'essay-answer-wrapper';
                 essayWrapper.style.width = '100%';
-                
+
                 const textarea = document.createElement('textarea');
                 textarea.className = 'essay-input';
                 textarea.placeholder = 'Type your essay response here...';
                 textarea.style.cssText = 'width: 100%; min-height: 200px; padding: 1.5rem; border: 2px solid var(--gray-200); border-radius: 1rem; font-size: 1.125rem; font-family: inherit; resize: vertical; transition: all 0.2s ease; outline: none; background: var(--gray-25);';
-                
+
                 textarea.value = answers[currentQuestion] || '';
-                
+
                 textarea.addEventListener('focus', () => {
                     textarea.style.borderColor = 'var(--secondary-blue)';
                     textarea.style.background = 'var(--white)';
                     textarea.style.boxShadow = '0 0 0 4px rgba(38, 119, 184, 0.1)';
                 });
-                
+
                 textarea.addEventListener('blur', () => {
                     textarea.style.borderColor = 'var(--gray-200)';
                     textarea.style.background = 'var(--gray-25)';
                     textarea.style.boxShadow = 'none';
                 });
-                
+
                 textarea.addEventListener('input', (e) => {
                     answers[currentQuestion] = e.target.value;
                     updateProgressOverview();
@@ -1235,21 +1282,21 @@
                 // Add character/word counter
                 const counter = document.createElement('div');
                 counter.style.cssText = 'display: flex; justify-content: flex-end; gap: 1rem; margin-top: 0.75rem; font-size: 0.875rem; color: var(--gray-500); font-weight: 500;';
-                
+
                 const updateCounter = () => {
                     const text = textarea.value.trim();
                     const words = text ? text.split(/\s+/).length : 0;
                     const chars = text.length;
                     counter.innerHTML = `<span>${words} words</span> <span>${chars} characters</span>`;
                 };
-                
+
                 textarea.addEventListener('input', updateCounter);
                 updateCounter();
 
                 essayWrapper.appendChild(textarea);
                 essayWrapper.appendChild(counter);
                 optionsContainer.appendChild(essayWrapper);
-                
+
             } else if (question && question.options && Array.isArray(question.options)) {
                 // MCQ Rendering
                 question.options.forEach((option, index) => {
@@ -1302,6 +1349,7 @@
         }
 
         function selectOption(optionIndex) {
+            if (window.isSubmitting) return;
             answers[currentQuestion] = optionIndex;
             renderCurrentQuestion();
             renderQuestionsGrid();
@@ -1310,6 +1358,7 @@
         }
 
         function goToQuestion(questionIndex) {
+            if (window.isSubmitting) return;
             currentQuestion = questionIndex;
             renderCurrentQuestion();
             renderQuestionsGrid();
@@ -1317,6 +1366,7 @@
         }
 
         function previousQuestion() {
+            if (window.isSubmitting) return;
             if (currentQuestion > 0) {
                 currentQuestion--;
                 renderCurrentQuestion();
@@ -1326,6 +1376,7 @@
         }
 
         function nextQuestion() {
+            if (window.isSubmitting) return;
             if (currentQuestion < questions.length - 1) {
                 currentQuestion++;
                 renderCurrentQuestion();
@@ -1400,17 +1451,36 @@
         }
 
         function submitQuiz() {
+            if (window.isSubmitting) return;
             document.getElementById('modalOverlay').classList.add('active');
             document.body.style.overflow = 'hidden';
         }
 
         function closeModal() {
+            if (window.isSubmitting) return;
             document.getElementById('modalOverlay').classList.remove('active');
             document.body.style.overflow = '';
         }
 
         function confirmSubmit() {
+            if (window.isSubmitting) return;
+            window.isSubmitting = true;
             clearInterval(timerInterval);
+
+            // Disable cancel button
+            const cancelBtn = document.querySelector('.modal-btn.secondary');
+            if (cancelBtn) {
+                cancelBtn.disabled = true;
+                cancelBtn.style.opacity = 0.5;
+                cancelBtn.style.pointerEvents = 'none';
+            }
+
+            // Show loading state
+            const submitBtn = document.querySelector('.modal-btn.primary');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+                submitBtn.disabled = true;
+            }
 
             // Calculate score
             let correctAnswers = 0;
@@ -1423,11 +1493,6 @@
 
             const totalQuestions = questions.length;
             const percentage = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
-
-            // Show loading state
-            const submitBtn = document.querySelector('.modal-btn.primary');
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-            submitBtn.disabled = true;
 
             // Submit the quiz
             console.log('Starting quiz submission...');
@@ -1470,11 +1535,13 @@
         }
 
         function autoSubmitQuiz() {
+            if (window.isSubmitting) return;
             alert('Time is up! Your quiz will be submitted automatically.');
             confirmSubmit();
         }
 
         function confirmExit() {
+            if (window.isSubmitting) return;
             if (confirm('Are you sure you want to exit the quiz? Your progress will be lost.')) {
                 clearInterval(timerInterval);
                 window.history.back();
@@ -1483,7 +1550,7 @@
 
         // Prevent accidental page refresh (only when quiz is active and not submitting)
         window.addEventListener('beforeunload', function (e) {
-            if (timeRemaining > 0 && Object.keys(answers).length > 0 && !document.querySelector('.modal-overlay.active')) {
+            if (timeRemaining > 0 && Object.keys(answers).length > 0 && !window.isSubmitting) {
                 e.preventDefault();
                 e.returnValue = '';
             }
@@ -1491,6 +1558,7 @@
 
         // Keyboard navigation
         document.addEventListener('keydown', function (e) {
+            if (window.isSubmitting) return;
             if (e.key === 'ArrowLeft') {
                 previousQuestion();
             } else if (e.key === 'ArrowRight') {

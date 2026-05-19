@@ -1297,7 +1297,8 @@ Instructions:
 2. Return ONLY a valid JSON object.
 3. The quiz MUST be strictly aligned with the current GES syllabus.
 4. **Math Formulas & Scientific Symbols**: If the quiz involves mathematics, science, equations, or formulas, you MUST wrap all mathematical expressions, fractions, symbols, and equations inside `<math-field>` custom HTML tags. For example, `<math-field>x^2 + y^2 = z^2</math-field>`, `<math-field>\sin(\theta)</math-field>`, `<math-field>\frac{a}{b}</math-field>`, or `<math-field>360^\circ</math-field>`. Never output raw LaTeX or formulas without wrapping them inside `<math-field>` tags. This ensures textbook-quality textbook layout rendering.
-5. The JSON MUST exactly match this structure:
+5. **Essay Answers and Keywords**: For every essay question and sub-question, you MUST generate a detailed, clear reference/sample answer, and a `keywords` array of 3-6 critical terms or key concepts. These are required to grade the student's answer and for local grading fallback when AI services are offline or rate-limited.
+6. The JSON MUST exactly match this structure:
 {
     "title": "A short, catchy title for the quiz",
     "subject": "The most relevant subject (e.g. Science, Mathematics, English)",
@@ -1324,13 +1325,15 @@ Instructions:
             "question": "The main essay prompt or instructions (HTML allowed)",
             "preamble": null,
             "points": 5, // total points
-            "correct_answer": "A sample reference answer or grading rubric for auto-grading",
+            "correct_answer": "A detailed sample reference answer containing key concepts and terms for auto-grading",
+            "keywords": ["keyword1", "keyword2", "keyword3"], // 3-6 essential keywords/phrases for local grading fallback
             "sub_questions": [ // optional, if the essay has parts a, b, c
                 {
                     "id": <generate_random_integer>,
                     "label": "a",
                     "text": "Sub question part a",
-                    "sample_answer": "Expected answer for part a",
+                    "sample_answer": "Expected detailed answer for part a",
+                    "keywords": ["keyword1", "keyword2"], // 3-6 essential keywords/phrases for this sub-question
                     "points": 2
                 }
             ]

@@ -13,6 +13,12 @@ class GooglePasswordResetTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        \Illuminate\Support\Facades\RateLimiter::fake();
+    }
+
     public function test_google_user_receives_google_account_info_mail_instead_of_rest_link()
     {
         Mail::fake();

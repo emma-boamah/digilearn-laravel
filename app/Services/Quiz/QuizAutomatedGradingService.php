@@ -74,6 +74,7 @@ class QuizAutomatedGradingService
      */
     public function suggestMarks(QuizAttempt $attempt)
     {
+        $this->gradingDriver = 'local';
         $quiz = Quiz::find($attempt->quiz_id);
         if (!$quiz) return [];
 
@@ -94,30 +95,124 @@ class QuizAutomatedGradingService
             'rate_limited' => false,
         ];
 
+        $partsToGrade = [];
+        $localGrades = [];
+
+        // 1. Gather all parts and pre-grade blank answers
         foreach ($questions as $qIdx => $question) {
             if (($question['type'] ?? 'mcq') !== 'essay') continue;
 
             $userResponse = $userAnswers[$qIdx] ?? '';
+            $mainText = $this->cleanAndStripHtml($question['question'] ?? '');
             
             if (!empty($question['sub_questions'])) {
                 foreach ($question['sub_questions'] as $sIdx => $sub) {
                     $subResponse = is_array($userResponse) ? ($userResponse[$sIdx] ?? '') : ($sIdx == 0 ? $userResponse : '');
-                    $analysis = $this->analyzePart($subResponse, $sub['sample_answer'] ?? '', $sub['points'] ?? 1);
+                    $subText = $this->cleanAndStripHtml($sub['text'] ?? '');
+                    $fullQuestionText = $mainText ? "{$mainText} - Part {$sub['label']}: {$subText}" : "Part {$sub['label']}: {$subText}";
+                    $points = $sub['points'] ?? 1;
+                    $sample = $sub['sample_answer'] ?? '';
+                    $key = "{$qIdx}_{$sIdx}";
+
+                    if (empty(trim($this->cleanAndStripHtml($subResponse)))) {
+                        $localGrades[$key] = [
+                            'score' => 0,
+                            'feedback' => 'No response provided.',
+                            'strengths' => '',
+                            'weaknesses' => 'Question was left blank.'
+                        ];
+                    } else {
+                        $partsToGrade[] = [
+                            'key' => $key,
+                            'question' => $fullQuestionText,
+                            'student_answer' => $this->cleanAndStripHtml($subResponse),
+                            'model_answer' => $this->cleanAndStripHtml($sample),
+                            'max_points' => $points
+                        ];
+                    }
+                }
+            } else {
+                $points = $question['points'] ?? 10;
+                $sample = $question['correct_answer'] ?? '';
+                $key = (string)$qIdx;
+
+                if (empty(trim($this->cleanAndStripHtml($userResponse)))) {
+                    $localGrades[$key] = [
+                        'score' => 0,
+                        'feedback' => 'No response provided.',
+                        'strengths' => '',
+                        'weaknesses' => 'Question was left blank.'
+                    ];
+                } else {
+                    $partsToGrade[] = [
+                        'key' => $key,
+                        'question' => $mainText,
+                        'student_answer' => $this->cleanAndStripHtml($userResponse),
+                        'model_answer' => $this->cleanAndStripHtml($sample),
+                        'max_points' => $points
+                    ];
+                }
+            }
+        }
+
+        // 2. Batch grade non-empty responses via AI if configured
+        $aiGrades = null;
+        if (!empty($partsToGrade)) {
+            $geminiKey = config('services.gemini.key');
+            if ($geminiKey && !$this->isGeminiRateLimited()) {
+                $aiGrades = $this->analyzeBatchWithGemini($partsToGrade, $geminiKey);
+            }
+
+            if ($aiGrades === null) {
+                $openAiKey = config('services.openai.key') ?: env('OPENAI_API_KEY');
+                if ($openAiKey && !Cache::has(self::OPENAI_COOLDOWN_KEY)) {
+                    $aiGrades = $this->analyzeBatchWithAi($partsToGrade, $openAiKey);
+                }
+            }
+        }
+
+        // 3. Map results back and apply fallback where needed
+        foreach ($questions as $qIdx => $question) {
+            if (($question['type'] ?? 'mcq') !== 'essay') continue;
+
+            $userResponse = $userAnswers[$qIdx] ?? '';
+
+            if (!empty($question['sub_questions'])) {
+                foreach ($question['sub_questions'] as $sIdx => $sub) {
+                    $key = "{$qIdx}_{$sIdx}";
                     
-                    $results['marks']["{$qIdx}_{$sIdx}"] = $analysis['score'];
-                    $results['feedback']["{$qIdx}_{$sIdx}"] = $analysis['feedback'];
-                    $results['strengths']["{$qIdx}_{$sIdx}"] = $analysis['strengths'];
-                    $results['weaknesses']["{$qIdx}_{$sIdx}"] = $analysis['weaknesses'];
+                    if (isset($localGrades[$key])) {
+                        $analysis = $localGrades[$key];
+                    } elseif (isset($aiGrades[$key])) {
+                        $analysis = $aiGrades[$key];
+                    } else {
+                        $subResponse = is_array($userResponse) ? ($userResponse[$sIdx] ?? '') : ($sIdx == 0 ? $userResponse : '');
+                        $analysis = $this->analyzeWithLocalLogic($subResponse, $sub['sample_answer'] ?? '', $sub['points'] ?? 1, $sub['keywords'] ?? []);
+                    }
+
+                    $results['marks'][$key] = $analysis['score'] ?? 0;
+                    $results['feedback'][$key] = $analysis['feedback'] ?? '';
+                    $results['strengths'][$key] = $analysis['strengths'] ?? '';
+                    $results['weaknesses'][$key] = $analysis['weaknesses'] ?? '';
                     
                     if (!empty($analysis['strengths'])) $results['analysis']['strengths'][] = $analysis['strengths'];
                     if (!empty($analysis['weaknesses'])) $results['analysis']['weaknesses'][] = $analysis['weaknesses'];
                 }
             } else {
-                $analysis = $this->analyzePart($userResponse, $question['correct_answer'] ?? '', $question['points'] ?? 10);
-                $results['marks'][$qIdx] = $analysis['score'];
-                $results['feedback'][$qIdx] = $analysis['feedback'];
-                $results['strengths'][$qIdx] = $analysis['strengths'];
-                $results['weaknesses'][$qIdx] = $analysis['weaknesses'];
+                $key = (string)$qIdx;
+
+                if (isset($localGrades[$key])) {
+                    $analysis = $localGrades[$key];
+                } elseif (isset($aiGrades[$key])) {
+                    $analysis = $aiGrades[$key];
+                } else {
+                    $analysis = $this->analyzeWithLocalLogic($userResponse, $question['correct_answer'] ?? '', $question['points'] ?? 10, $question['keywords'] ?? []);
+                }
+
+                $results['marks'][$key] = $analysis['score'] ?? 0;
+                $results['feedback'][$key] = $analysis['feedback'] ?? '';
+                $results['strengths'][$key] = $analysis['strengths'] ?? '';
+                $results['weaknesses'][$key] = $analysis['weaknesses'] ?? '';
                 
                 if (!empty($analysis['strengths'])) $results['analysis']['strengths'][] = $analysis['strengths'];
                 if (!empty($analysis['weaknesses'])) $results['analysis']['weaknesses'][] = $analysis['weaknesses'];
@@ -131,26 +226,162 @@ class QuizAutomatedGradingService
     }
 
     /**
-     * Analyze a specific part of a response.
+     * Batch analyze using Gemini.
+     */
+    protected function analyzeBatchWithGemini(array $partsToGrade, $apiKey)
+    {
+        try {
+            $model = config('services.gemini.model', 'gemini-1.5-flash');
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+
+            $partsJson = json_encode($partsToGrade, JSON_PRETTY_PRINT);
+
+            $prompt = "You are a professional educational assessor. Grade each of the student responses provided below against their respective marking schemes.\n" .
+                      "IMPORTANT: Address the student directly using 2nd-person pronouns (e.g., 'You stated...', 'Your answer...'). Do NOT use 3rd-person pronouns like 'The student'.\n\n" .
+                      "Here is the list of questions, student responses, reference answers, and maximum points for each part:\n" .
+                      "```json\n" . $partsJson . "\n```\n\n" .
+                      "Provide your evaluation in JSON format with a single root key 'grades' which maps each key to its evaluation:\n" .
+                      "{\n" .
+                      "  \"grades\": {\n" .
+                      "    \"key_here\": {\n" .
+                      "      \"score\": (float) The marks awarded,\n" .
+                      "      \"feedback\": (string) A brief explanation of the grade addressed directly to the student,\n" .
+                      "      \"strengths\": (string) What they did well,\n" .
+                      "      \"weaknesses\": (string) Areas for improvement\n" .
+                      "    }\n" .
+                      "  }\n" .
+                      "}";
+
+            $response = Http::timeout(45)->post($url, [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $prompt]
+                        ]
+                    ]
+                ],
+                'generationConfig' => [
+                    'responseMimeType' => 'application/json'
+                ]
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $jsonString = $data['candidates'][0]['content']['parts'][0]['text'] ?? '{}';
+                $content = json_decode($jsonString, true);
+
+                if (isset($content['grades']) && is_array($content['grades'])) {
+                    $this->gradingDriver = 'gemini';
+                    return $content['grades'];
+                }
+            }
+
+            // Circuit Breaker detection
+            $status = $response->status();
+            $body = $response->body();
+
+            if ($status === 429 || str_contains($body, 'RESOURCE_EXHAUSTED') || str_contains($body, 'quota')) {
+                $retryAfter = (int) ($response->header('Retry-After') ?: self::COOLDOWN_SECONDS);
+                Cache::put(self::GEMINI_COOLDOWN_KEY, now()->timestamp + $retryAfter, $retryAfter);
+
+                Log::warning("Gemini API rate-limited (HTTP {$status}). Circuit breaker activated for {$retryAfter}s.", [
+                    'status' => $status,
+                    'body' => substr($body, 0, 300),
+                ]);
+
+                $this->notifyAdminsOfRateLimit('Gemini', $retryAfter, self::GEMINI_NOTIFIED_KEY);
+            } else {
+                Log::error('Gemini API Error: HTTP ' . $status . ' - ' . substr($body, 0, 300));
+            }
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('Gemini API Connection Timeout: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Gemini Grading Failed: ' . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Batch analyze using OpenAI.
+     */
+    protected function analyzeBatchWithAi(array $partsToGrade, $apiKey)
+    {
+        try {
+            $partsJson = json_encode($partsToGrade, JSON_PRETTY_PRINT);
+
+            $response = Http::timeout(45)->withToken($apiKey)->post('https://api.openai.com/v1/chat/completions', [
+                'model' => 'gpt-4o',
+                'messages' => [
+                    [
+                        'role' => 'system', 
+                        'content' => 'You are a professional educational assessor. Grade the student responses against the respective marking schemes. Address the student directly using 2nd-person pronouns (e.g., "You stated...", "Your answer..."). Do NOT use 3rd-person pronouns like "The student". Return ONLY JSON matching the requested structure.'
+                    ],
+                    [
+                        'role' => 'user', 
+                        'content' => "Here is the list of questions, student responses, reference answers, and maximum points:\n" .
+                                     "```json\n" . $partsJson . "\n```\n\n" .
+                                     "Provide your evaluation in JSON format with a single root key 'grades' mapping each key to its evaluation:\n" .
+                                     "{\n" .
+                                     "  \"grades\": {\n" .
+                                     "    \"key_here\": {\n" .
+                                     "      \"score\": float,\n" .
+                                     "      \"feedback\": string,\n" .
+                                     "      \"strengths\": string,\n" .
+                                     "      \"weaknesses\": string\n" .
+                                     "    }\n" .
+                                     "  }\n" .
+                                     "}"
+                    ]
+                ],
+                'response_format' => ['type' => 'json_object']
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $jsonString = $data['choices'][0]['message']['content'] ?? '{}';
+                $content = json_decode($jsonString, true);
+
+                if (isset($content['grades']) && is_array($content['grades'])) {
+                    $this->gradingDriver = 'openai';
+                    return $content['grades'];
+                }
+            }
+
+            if ($response->status() === 429) {
+                $retryAfter = (int) ($response->header('Retry-After') ?: self::COOLDOWN_SECONDS);
+                Cache::put(self::OPENAI_COOLDOWN_KEY, now()->timestamp + $retryAfter, $retryAfter);
+                Log::warning("OpenAI API rate-limited. Cooldown set for {$retryAfter}s.", [
+                    'status' => $response->status(),
+                    'body' => substr($response->body(), 0, 300),
+                ]);
+
+                $this->notifyAdminsOfRateLimit('OpenAI', $retryAfter, self::OPENAI_NOTIFIED_KEY);
+            } else {
+                Log::error('OpenAI API Error: ' . $response->status() . ' - ' . substr($response->body(), 0, 300));
+            }
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('OpenAI API Connection Timeout: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('AI Grading Failed: ' . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Legacy/Single-part analyze method, redirects to analyzePart for backward compatibility.
      */
     protected function analyzePart($studentAnswer, $modelAnswer, $maxPoints)
     {
-        // --- Circuit Breaker: Skip API calls if rate-limited ---
         $geminiKey = config('services.gemini.key');
         if ($geminiKey && !$this->isGeminiRateLimited()) {
             return $this->analyzeWithGemini($studentAnswer, $modelAnswer, $maxPoints, $geminiKey);
         }
 
-        if ($geminiKey && $this->isGeminiRateLimited()) {
-            Log::info('Gemini API is rate-limited, falling back to local grading. Cooldown: ' . $this->geminiCooldownRemaining() . 's remaining.');
-            $this->gradingDriver = 'local (gemini rate-limited)';
-            return $this->analyzeWithLocalLogic($studentAnswer, $modelAnswer, $maxPoints);
-        }
-
         $apiKey = config('services.openai.key') ?: env('OPENAI_API_KEY');
-
         if ($apiKey && !Cache::has(self::OPENAI_COOLDOWN_KEY)) {
-            return $this->analyzeWithAi($studentAnswer, $modelAnswer, $maxPoints, $apiKey);
+            return $this->analyzeWithAiSingle($studentAnswer, $modelAnswer, $maxPoints, $apiKey);
         }
 
         $this->gradingDriver = 'local';
@@ -158,12 +389,24 @@ class QuizAutomatedGradingService
     }
 
     /**
+     * Cleans HTML content by ensuring block elements have spaces around them before tag stripping.
+     */
+    private function cleanAndStripHtml($html)
+    {
+        if (empty($html)) return '';
+        // Replace block tags and list items with spaces to prevent merging words
+        $text = preg_replace('/<\/(p|div|li|h[1-6])>/i', ' ', $html);
+        $text = preg_replace('/<(br|hr)\s*\/?>/i', ' ', $text);
+        return trim(strip_tags($text));
+    }
+
+    /**
      * Fallback driver: Keyword & Complexity analysis.
      */
-    protected function analyzeWithLocalLogic($studentAnswer, $modelAnswer, $maxPoints)
+    public function analyzeWithLocalLogic($studentAnswer, $modelAnswer, $maxPoints, array $keywords = [])
     {
-        $sClean = strtolower(strip_tags($studentAnswer));
-        $mClean = strtolower(strip_tags($modelAnswer));
+        $sClean = strtolower($this->cleanAndStripHtml($studentAnswer));
+        $mClean = strtolower($this->cleanAndStripHtml($modelAnswer));
 
         if (empty($sClean)) {
             return [
@@ -174,20 +417,22 @@ class QuizAutomatedGradingService
             ];
         }
 
-        // Basic keyword matching
-        $mWords = array_unique(explode(' ', preg_replace('/[^\w\s]/', '', $mClean)));
         $sWords = array_unique(explode(' ', preg_replace('/[^\w\s]/', '', $sClean)));
 
-        // Remove common stop words (simplified)
-        $stopWords = ['the', 'is', 'at', 'which', 'on', 'and', 'a', 'an', 'of', 'for', 'it', 'in'];
-        $mKeywords = array_filter($mWords, fn($w) => strlen($w) > 3 && !in_array($w, $stopWords));
+        if (!empty($keywords)) {
+            $mKeywords = array_map(fn($w) => strtolower(trim($w)), $keywords);
+            $mKeywords = array_filter($mKeywords, fn($w) => strlen($w) > 0);
+        } else {
+            $mWords = array_unique(explode(' ', preg_replace('/[^\w\s]/', '', $mClean)));
+            $stopWords = ['the', 'is', 'at', 'which', 'on', 'and', 'a', 'an', 'of', 'for', 'it', 'in'];
+            $mKeywords = array_filter($mWords, fn($w) => strlen($w) > 3 && !in_array($w, $stopWords));
+        }
         
         if (empty($mKeywords)) {
-            // If no marking scheme provided, give baseline for length
             $score = min($maxPoints, count($sWords) > 10 ? ($maxPoints * 0.5) : 0);
             return [
                 'score' => $score,
-                'feedback' => 'Automated check: Response submitted. Manual review recommended as no marking scheme was provided.',
+                'feedback' => 'Automated check: Response submitted. Manual review recommended as no marking scheme or keywords were provided.',
                 'strengths' => count($sWords) > 10 ? 'Detailed response length.' : '',
                 'weaknesses' => 'Missing marking scheme for deeper analysis.'
             ];
@@ -198,7 +443,6 @@ class QuizAutomatedGradingService
         
         $score = round($ratio * $maxPoints, 1);
         
-        // Strength/Weakness generation
         $missed = array_diff($mKeywords, $sWords);
         $strength = count($matches) > 0 ? "You correctly identified concepts like: " . implode(', ', array_slice($matches, 0, 3)) : "";
         $weakness = count($missed) > 0 ? "Try to include terms such as: " . implode(', ', array_slice($missed, 0, 3)) : "";
@@ -212,9 +456,9 @@ class QuizAutomatedGradingService
     }
 
     /**
-     * Future-proof: AI Agent driver.
+     * Single OpenAI driver (retained for backward compatibility / fallback).
      */
-    protected function analyzeWithAi($studentAnswer, $modelAnswer, $maxPoints, $apiKey)
+    protected function analyzeWithAiSingle($studentAnswer, $modelAnswer, $maxPoints, $apiKey)
     {
         try {
             $response = Http::timeout(30)->withToken($apiKey)->post('https://api.openai.com/v1/chat/completions', [
@@ -238,32 +482,20 @@ class QuizAutomatedGradingService
                 ];
             }
 
-            // Rate limit or quota exceeded
             if ($response->status() === 429) {
                 $retryAfter = (int) ($response->header('Retry-After') ?: self::COOLDOWN_SECONDS);
                 Cache::put(self::OPENAI_COOLDOWN_KEY, now()->timestamp + $retryAfter, $retryAfter);
-                Log::warning("OpenAI API rate-limited. Cooldown set for {$retryAfter}s.", [
-                    'status' => $response->status(),
-                    'body' => substr($response->body(), 0, 300),
-                ]);
-
-                // Notify super admins (once per cooldown period)
                 $this->notifyAdminsOfRateLimit('OpenAI', $retryAfter, self::OPENAI_NOTIFIED_KEY);
-            } else {
-                Log::error('OpenAI API Error: ' . $response->status() . ' - ' . substr($response->body(), 0, 300));
             }
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            Log::error('OpenAI API Connection Timeout: ' . $e->getMessage());
         } catch (\Exception $e) {
-            Log::error('AI Grading Failed: ' . $e->getMessage());
+            Log::error('AI Grading Single Failed: ' . $e->getMessage());
         }
 
-        $this->gradingDriver = 'local (openai fallback)';
         return $this->analyzeWithLocalLogic($studentAnswer, $modelAnswer, $maxPoints);
     }
 
     /**
-     * Google Gemini Agent driver with circuit breaker protection.
+     * Single Gemini driver (retained for backward compatibility / fallback).
      */
     protected function analyzeWithGemini($studentAnswer, $modelAnswer, $maxPoints, $apiKey)
     {
@@ -309,31 +541,18 @@ class QuizAutomatedGradingService
                 ];
             }
 
-            // --- Circuit Breaker: Detect rate limit / quota exhaustion ---
             $status = $response->status();
             $body = $response->body();
 
             if ($status === 429 || str_contains($body, 'RESOURCE_EXHAUSTED') || str_contains($body, 'quota')) {
                 $retryAfter = (int) ($response->header('Retry-After') ?: self::COOLDOWN_SECONDS);
                 Cache::put(self::GEMINI_COOLDOWN_KEY, now()->timestamp + $retryAfter, $retryAfter);
-
-                Log::warning("Gemini API rate-limited (HTTP {$status}). Circuit breaker activated for {$retryAfter}s.", [
-                    'status' => $status,
-                    'body' => substr($body, 0, 300),
-                ]);
-
-                // Notify super admins (once per cooldown period)
                 $this->notifyAdminsOfRateLimit('Gemini', $retryAfter, self::GEMINI_NOTIFIED_KEY);
-            } else {
-                Log::error('Gemini API Error: HTTP ' . $status . ' - ' . substr($body, 0, 300));
             }
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            Log::error('Gemini API Connection Timeout: ' . $e->getMessage());
         } catch (\Exception $e) {
-            Log::error('Gemini Grading Failed: ' . $e->getMessage());
+            Log::error('Gemini Grading Single Failed: ' . $e->getMessage());
         }
 
-        $this->gradingDriver = 'local (gemini fallback)';
         return $this->analyzeWithLocalLogic($studentAnswer, $modelAnswer, $maxPoints);
     }
 
@@ -342,7 +561,6 @@ class QuizAutomatedGradingService
      */
     protected function notifyAdminsOfRateLimit(string $provider, int $cooldownSeconds, string $notifiedCacheKey): void
     {
-        // Only send one notification per cooldown window
         if (Cache::has($notifiedCacheKey)) {
             return;
         }
