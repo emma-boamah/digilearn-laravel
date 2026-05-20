@@ -67,6 +67,9 @@ class EssayQuizGradingTest extends TestCase
             1 => 'This is my response for essay two.'
         ];
 
+        $this->withoutMiddleware();
+        $this->withoutExceptionHandling();
+
         $response = $this->actingAs($user)
             ->post(route('quiz.essay.submit', UrlObfuscator::encode($quiz->id)), [
                 'essay' => 'This is the combined essay body.',

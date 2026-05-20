@@ -137,9 +137,9 @@
             @csrf
             <div class="space-y-8">
                 @php 
-                    $userAnswers = is_array($attempt->answers) ? $attempt->answers : (json_decode($attempt->answers, true) ?? []);
-                    $questions = is_array($attempt->question_details) ? $attempt->question_details : (json_decode($attempt->question_details, true) ?? []);
-                    $gradingDetails = is_array($attempt->grading_details) ? $attempt->grading_details : (json_decode($attempt->grading_details, true) ?? []);
+                    $userAnswers = $attempt->getParsedAnswers();
+                    $questions = $attempt->getParsedQuestions();
+                    $gradingDetails = $attempt->getParsedGradingDetails();
                     
                     $sanitizeMath = function($html) {
                         $html = str_replace('contenteditable="true"', 'contenteditable="false" read-only', $html);
