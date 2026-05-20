@@ -273,26 +273,40 @@ class DocumentController extends Controller
 
         // For PPT documents, return slide structure
         if ($type === 'ppt') {
+            $fullPath = storage_path('app/public/' . $document->file_path);
+            $slides = \App\Services\PptxParser::parse($fullPath);
+
+            // Fallback to mock representation if parsing returned no slides
+            if (empty($slides)) {
+                $slides = [
+                    [
+                        'number' => 1,
+                        'title' => $document->title,
+                        'subtitle' => $document->video->subject->name ?? 'General',
+                        'type' => 'title',
+                        'content' => []
+                    ],
+                    [
+                        'number' => 2,
+                        'title' => 'Document Overview',
+                        'content' => [
+                            [
+                                'text' => $document->description ?: 'Document slides not available for preview.',
+                                'is_bullet' => false
+                            ]
+                        ],
+                        'type' => 'definition'
+                    ]
+                ];
+            }
+
             return [
                 'id' => $document->id,
                 'title' => $document->title,
                 'file_path' => $document->file_path,
                 'file_size' => $this->formatFileSize($document->file_path),
-                'subject' => $document->video->subject ?? 'General',
-                'slides' => [
-                    [
-                        'number' => 1,
-                        'title' => $document->title,
-                        'subtitle' => $document->video->subject ?? 'General',
-                        'type' => 'title'
-                    ],
-                    [
-                        'number' => 2,
-                        'title' => 'Document Overview',
-                        'content' => $document->description ?: 'Document slides not available for preview.',
-                        'type' => 'definition'
-                    ]
-                ]
+                'subject' => $document->video->subject->name ?? 'General',
+                'slides' => $slides
             ];
         }
 

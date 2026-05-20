@@ -2280,7 +2280,9 @@ class AdminController extends Controller
             'title' => 'required|string|max:255',
             'video_file' => 'required|file|mimes:mp4,mov,avi,wmv|max:600000', // Max 600MB
             'thumbnail_file' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Max 2MB
+            'document_file' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx|max:10240', // Max 10MB
             'grade_level' => 'nullable|string|max:255',
+            'subject_id' => 'nullable|exists:subjects,id',
             'description' => 'nullable|string',
             'is_featured' => 'boolean',
         ]);
@@ -2302,9 +2304,9 @@ class AdminController extends Controller
         // Get the absolute path for FFmpeg
         $absolutePath = Storage::disk('public')->path($tempVideoPath);
 
-        // Calculate real duration using FFmpeg
-        $ffprobe = \FFMpeg\FFProbe::create();
-        $durationSeconds = (float) round($ffprobe->format($absolutePath)->get('duration'), 2);
+        // Calculate real duration using VideoDurationService
+        $durationService = app(\App\Services\VideoDurationService::class);
+        $durationSeconds = $durationService->getDuration($absolutePath);
 
         // Handle document upload
         $documentPath = null;
@@ -2319,6 +2321,7 @@ class AdminController extends Controller
             'temp_expires_at' => $tempExpiresAt,
             'thumbnail_path' => $thumbnailPath,
             'grade_level' => $request->grade_level,
+            'subject_id' => $request->subject_id,
             'duration_seconds' => $durationSeconds,
             'file_size_bytes' => $fileSize,
             'description' => $request->description,
@@ -2337,10 +2340,24 @@ class AdminController extends Controller
             $video->save();
         }
 
-        // Save document path if uploaded
+        // Save document path and create synced Document record if uploaded
         if ($documentPath) {
             $video->document_path = $documentPath;
             $video->save();
+
+            $fileExtension = strtolower(pathinfo($documentPath, PATHINFO_EXTENSION));
+            Document::updateOrCreate(
+                ['video_id' => $video->id],
+                [
+                    'title' => $video->title . ' Slides',
+                    'file_path' => $documentPath,
+                    'grade_level' => $video->grade_level,
+                    'description' => 'Presentation slides for ' . $video->title,
+                    'uploaded_by' => Auth::id(),
+                    'file_type' => in_array($fileExtension, ['ppt', 'pptx']) ? 'ppt' : 'pdf',
+                    'file_size_bytes' => Storage::disk('public')->size($documentPath),
+                ]
+            );
         }
 
         return redirect()->route('admin.content.videos.index')->with('success', 'Video uploaded successfully and is pending review!');
@@ -2349,6 +2366,7 @@ class AdminController extends Controller
     public function editVideo(Video $video)
     {
         $gradeLevels = Level::orderBy('id')->pluck('title')->toArray();
+        $video->setAttribute('seo_url', $video->seo_url); // Ensure seo_url is included in the JSON response
         return response()->json($video); // Return JSON for modal
     }
 
@@ -2358,6 +2376,7 @@ class AdminController extends Controller
             'title' => 'required|string|max:255',
             'video_file' => 'nullable|file|mimes:mp4,mov,avi,wmv|max:600000',
             'thumbnail_file' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'document_file' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx|max:10240', // Max 10MB
             'grade_level' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'is_featured' => 'boolean',
@@ -2377,23 +2396,55 @@ class AdminController extends Controller
             $video->thumbnail_path = $request->file('thumbnail_file')->store('thumbnails', 'public');
         }
 
-        // Handle document upload
+        // Handle document/slides upload
         if ($request->hasFile('document_file')) {
-            $documentPath = $request->file('document_file')->store('documents', 'public');
-            $video->document_path = $documentPath;
+            // Delete old slides file from storage if it exists
+            if ($video->document_path && Storage::disk('public')->exists($video->document_path)) {
+                Storage::disk('public')->delete($video->document_path);
+            }
+            $video->document_path = $request->file('document_file')->store('documents', 'public');
+        } elseif ($request->boolean('delete_document')) {
+            // Delete slides file and clean path
+            if ($video->document_path && Storage::disk('public')->exists($video->document_path)) {
+                Storage::disk('public')->delete($video->document_path);
+            }
+            $video->document_path = null;
         }
 
         // Handle quiz association
         if ($request->filled('quiz_id')) {
             $video->quiz_id = $request->quiz_id;
+        } else {
+            $video->quiz_id = null;
         }
 
-        $video->update([
-            'title' => $request->title,
-            'grade_level' => $request->grade_level,
-            'description' => $request->description,
-            'is_featured' => $request->has('is_featured'),
-        ]);
+        $video->title = $request->title;
+        $video->grade_level = $request->grade_level;
+        $video->description = $request->description;
+        $video->is_featured = $request->has('is_featured');
+        $video->save();
+
+        // Sync corresponding Document model record
+        if ($video->document_path) {
+            $fileExtension = strtolower(pathinfo($video->document_path, PATHINFO_EXTENSION));
+            Document::updateOrCreate(
+                ['video_id' => $video->id],
+                [
+                    'title' => $video->title . ' Slides',
+                    'file_path' => $video->document_path,
+                    'grade_level' => $video->grade_level,
+                    'description' => 'Presentation slides for ' . $video->title,
+                    'uploaded_by' => Auth::id(),
+                    'file_type' => in_array($fileExtension, ['ppt', 'pptx']) ? 'ppt' : 'pdf',
+                    'file_size_bytes' => Storage::disk('public')->exists($video->document_path)
+                        ? Storage::disk('public')->size($video->document_path)
+                        : 0,
+                ]
+            );
+        } else {
+            // If slides were removed or not present, clean up the Document table record
+            Document::where('video_id', $video->id)->delete();
+        }
 
         return redirect()->route('admin.content.videos.index')->with('success', 'Video updated successfully!');
     }
