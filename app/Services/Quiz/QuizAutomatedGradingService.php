@@ -80,7 +80,7 @@ class QuizAutomatedGradingService
 
         $quizData = json_decode($quiz->quiz_data, true);
         $questions = $quizData['questions'] ?? [];
-        $userAnswers = is_array($attempt->answers) ? $attempt->answers : json_decode($attempt->answers ?? '[]', true);
+        $userAnswers = $attempt->getParsedAnswers();
 
         $results = [
             'marks' => [],

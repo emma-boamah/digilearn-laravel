@@ -222,4 +222,88 @@ class QuizAttempt extends Model
                     ->groupBy('quiz_id')
                     ->get();
     }
+
+    /**
+     * Get parsed and normalized questions list from question_details.
+     * Handles recursive JSON decoding and extracts questions from whole-quiz objects if necessary.
+     *
+     * @return array
+     */
+    public function getParsedQuestions(): array
+    {
+        $details = $this->question_details;
+
+        // Recursively decode in case it's double-encoded JSON string
+        while (is_string($details)) {
+            $decoded = json_decode($details, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                break;
+            }
+            $details = $decoded;
+        }
+
+        if (!is_array($details)) {
+            return [];
+        }
+
+        // If it contains the whole quiz data object instead of just the questions array,
+        // extract the questions array.
+        if (isset($details['questions']) && is_array($details['questions'])) {
+            return $details['questions'];
+        }
+
+        return $details;
+    }
+
+    /**
+     * Get parsed and normalized answers list.
+     * Handles recursive JSON decoding.
+     *
+     * @return array
+     */
+    public function getParsedAnswers(): array
+    {
+        $answers = $this->answers;
+
+        // Recursively decode in case it's double-encoded JSON string
+        while (is_string($answers)) {
+            $decoded = json_decode($answers, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                break;
+            }
+            $answers = $decoded;
+        }
+
+        if (!is_array($answers)) {
+            return [];
+        }
+
+        return $answers;
+    }
+
+    /**
+     * Get parsed and normalized grading details.
+     * Handles recursive JSON decoding.
+     *
+     * @return array
+     */
+    public function getParsedGradingDetails(): array
+    {
+        $grading = $this->grading_details;
+
+        // Recursively decode in case it's double-encoded JSON string
+        while (is_string($grading)) {
+            $decoded = json_decode($grading, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                break;
+            }
+            $grading = $decoded;
+        }
+
+        if (!is_array($grading)) {
+            return [];
+        }
+
+        return $grading;
+    }
 }

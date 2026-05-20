@@ -927,7 +927,7 @@ class QuizController extends Controller
             }
 
             // Get questions from attempt if available, otherwise from quiz
-            $attemptQuestions = $lastAttempt ? $lastAttempt->question_details : null;
+            $attemptQuestions = $lastAttempt ? $lastAttempt->getParsedQuestions() : null;
 
             if (empty($attemptQuestions)) {
                 // Apply identical seeded shuffle to ensure review matches the user's view
@@ -938,7 +938,7 @@ class QuizController extends Controller
                 $attemptQuestions = $quiz['questions'];
             }
 
-            $userAnswers = $lastAttempt ? (is_array($lastAttempt->answers) ? $lastAttempt->answers : json_decode($lastAttempt->answers ?? '[]', true)) : [];
+            $userAnswers = $lastAttempt ? $lastAttempt->getParsedAnswers() : [];
             $timeTaken = $lastAttempt ? $lastAttempt->time_taken_seconds : 0;
 
             foreach ($attemptQuestions as $index => $question) {
@@ -1448,8 +1448,8 @@ class QuizController extends Controller
                 'passed' => $percentage >= 50, // Default passing score
                 'failed_due_to_violation' => $failedDueToViolation,
                 'attempt_number' => $this->getNextAttemptNumber($quizId, $currentUserId),
-                'answers' => json_encode($answers),
-                'question_details' => $quiz ? $quiz->quiz_data : null,
+                'answers' => $answers,
+                'question_details' => $questions,
                 'started_at' => now()->subSeconds($timeSpent),
                 'completed_at' => now(),
             ]);

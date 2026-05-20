@@ -105,7 +105,7 @@ class QuizReviewController extends Controller
         
         // Fetch total possible points from quiz data stored in attempt
         $totalPossible = 0;
-        $questionDetails = is_array($attempt->question_details) ? $attempt->question_details : [];
+        $questionDetails = $attempt->getParsedQuestions();
         
         foreach($questionDetails as $q) {
             // For older structures or MCQ, check points

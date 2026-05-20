@@ -1401,7 +1401,6 @@
             // Change next button to "Finish" on last question
             if (currentQuestion === questions.length - 1) {
                 nextBtn.textContent = 'Finish';
-                nextBtn.onclick = submitQuiz;
                 nextBtn.disabled = false;
             } else {
                 nextBtn.innerHTML = `
@@ -1410,7 +1409,6 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                     </svg>
                 `;
-                nextBtn.onclick = nextQuestion;
                 nextBtn.disabled = false;
             }
 
