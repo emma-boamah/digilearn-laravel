@@ -54,40 +54,150 @@
             overflow: hidden;
         }
 
-        /* PPT-specific Reveal.js customizations */
+        /* PPT-specific Gamma-style customizations */
         @if($type === 'ppt')
-        .reveal {
-            background: linear-gradient(135deg, var(--secondary-blue), var(--primary-red));
-        }
-        
-        .reveal .slides section {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 1rem;
-            padding: 2rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            color: var(--gray-900);
-        }
-        
-        .reveal .slides section.title-slide {
-            background: linear-gradient(135deg, var(--secondary-blue), var(--primary-red));
-            color: white;
-        }
-        
-        .reveal .slides section.definition-slide {
-            background: linear-gradient(135deg, #1e40af, #3b82f6);
-            color: white;
-        }
-        
-        .reveal .slides section.list-slide {
-            background: linear-gradient(135deg, #059669, #10b981);
-            color: white;
+        .slide-thumbnail-vertical {
+            background-color: var(--white);
+            border: 2px solid transparent;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
         }
 
-        .reveal .slide-content {
-            outline: none;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            min-height: 100px;
+        .slide-thumbnail-vertical:hover {
+            border-color: var(--secondary-blue);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        .slide-thumbnail-vertical.active {
+            border-color: var(--secondary-blue);
+            background-color: #eff6ff;
+        }
+
+        .slide-preview-text-vertical {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--gray-800);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ppt-slide-card {
+            background-color: var(--white);
+            border-radius: 1rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--gray-200);
+            margin-bottom: 2.5rem;
+            max-width: 900px;
+            width: 100%;
+            padding: 3rem;
+            position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .ppt-slide-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        .ppt-slide-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .ppt-slide-card-number {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--gray-400);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .ppt-slide-card-tag {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            text-transform: uppercase;
+        }
+
+        .ppt-slide-card-tag.title {
+            background-color: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .ppt-slide-card-tag.definition {
+            background-color: #f0fdf4;
+            color: #15803d;
+        }
+
+        .ppt-slide-card-tag.list {
+            background-color: #faf5ff;
+            color: #7e22ce;
+        }
+
+        .ppt-slide-card-title {
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: var(--gray-900);
+            line-height: 1.25;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.025em;
+        }
+
+        .ppt-slide-card-subtitle {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: var(--secondary-blue);
+            margin-bottom: 2rem;
+        }
+
+        .ppt-slide-card-content {
+            font-size: 1.125rem;
+            line-height: 1.75;
+            color: var(--gray-700);
+        }
+
+        .ppt-slide-card-text {
+            white-space: pre-wrap;
+        }
+
+        .ppt-slide-card-list {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .ppt-slide-card-list li {
+            position: relative;
+            padding-left: 1.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .ppt-slide-card-list li.bullet::before {
+            content: "";
+            position: absolute;
+            left: 0.5rem;
+            top: 0.75rem;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: var(--secondary-blue);
+        }
+
+        .ppt-slide-card-list li.plain {
+            padding-left: 0;
+            margin-top: 1rem;
+            font-weight: 500;
+            color: var(--gray-800);
         }
         @endif
 
@@ -751,34 +861,52 @@
     <!-- Main Layout -->
     <div class="main-layout">
         @if($type === 'ppt')
-            <!-- PPT with Reveal.js -->
-            <div class="reveal">
-                <div class="slides">
-                    @foreach($document['slides'] as $index => $slide)
-                    <section class="{{ $slide['type'] ?? '' }}-slide" data-slide-id="{{ $slide['number'] }}">
-                        @if(isset($slide['background_image']))
-                            <div class="slide-background" style="background-image: url('{{ $slide['background_image'] }}'); opacity: 0.2;"></div>
+            <!-- PPT Layout (Gamma style - Vertical Scrolling) -->
+            <div class="sidebar">
+                <div class="sidebar-title">Slides ({{ count($document['slides']) }})</div>
+                @foreach($document['slides'] as $index => $slide)
+                <div class="slide-thumbnail-vertical {{ $index === 0 ? 'active' : '' }}" data-slide="{{ $slide['number'] }}">
+                    <div class="page-number">Slide {{ $slide['number'] }}</div>
+                    <div class="slide-preview-text-vertical">{{ $slide['title'] ?: 'Slide ' . $slide['number'] }}</div>
+                </div>
+                @endforeach
+            </div>
+
+            <div class="content-area" id="pptContentArea">
+                @foreach($document['slides'] as $index => $slide)
+                <div class="ppt-slide-card" id="slide-{{ $slide['number'] }}" data-slide="{{ $slide['number'] }}">
+                    <div class="ppt-slide-card-header">
+                        <span class="ppt-slide-card-number">Slide {{ $slide['number'] }} of {{ count($document['slides']) }}</span>
+                        @if(isset($slide['type']))
+                            <span class="ppt-slide-card-tag {{ $slide['type'] }}">{{ ucfirst($slide['type']) }}</span>
                         @endif
+                    </div>
+                    
+                    <div class="ppt-slide-card-body">
+                        <h2 class="ppt-slide-card-title">{{ $slide['title'] }}</h2>
                         
-                        <div class="slide-content" data-slide-id="{{ $slide['number'] }}">
-                            @if($slide['type'] === 'title')
-                                <h1>{{ $slide['title'] }}</h1>
-                                <h2>{{ $slide['subtitle'] }}</h2>
-                            @elseif($slide['type'] === 'definition')
-                                <h2>{{ $slide['title'] }}</h2>
-                                <p>{{ $slide['content'] }}</p>
-                            @elseif($slide['type'] === 'list')
-                                <h2>{{ $slide['title'] }}</h2>
-                                <ul>
+                        @if(isset($slide['subtitle']) && $slide['subtitle'])
+                            <h3 class="ppt-slide-card-subtitle">{{ $slide['subtitle'] }}</h3>
+                        @endif
+
+                        <div class="ppt-slide-card-content">
+                            @if(is_array($slide['content']))
+                                <ul class="ppt-slide-card-list">
                                     @foreach($slide['content'] as $item)
-                                    <li>{{ $item }}</li>
+                                        @if(is_array($item))
+                                            <li class="{{ $item['is_bullet'] ? 'bullet' : 'plain' }}">{{ $item['text'] }}</li>
+                                        @else
+                                            <li>{{ $item }}</li>
+                                        @endif
                                     @endforeach
                                 </ul>
+                            @elseif($slide['content'])
+                                <p class="ppt-slide-card-text">{!! nl2br(e($slide['content'])) !!}</p>
                             @endif
                         </div>
-                    </section>
-                    @endforeach
+                    </div>
                 </div>
+                @endforeach
             </div>
         @else
             <!-- PDF Layout -->
@@ -845,28 +973,74 @@
 
     <!-- Scripts -->
     @if($type === 'ppt')
-        <!-- Reveal.js Scripts -->
-        <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.jsdelivr.net/npm/reveal.js@4.3.1/dist/reveal.js"></script>
-        <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.jsdelivr.net/npm/reveal.js@4.3.1/plugin/notes/notes.js"></script>
-        <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.jsdelivr.net/npm/reveal.js@4.3.1/plugin/markdown/markdown.js"></script>
-        <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.jsdelivr.net/npm/reveal.js@4.3.1/plugin/highlight/highlight.js"></script>
-
         <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-            // Initialize Reveal.js for PPT (View Only)
-            Reveal.initialize({
-                hash: true,
-                controls: true,
-                progress: true,
-                center: true,
-                transition: 'slide',
-                plugins: [ RevealNotes, RevealMarkdown, RevealHighlight ]
-            });
+            document.addEventListener('DOMContentLoaded', function() {
+                const slideThumbnails = document.querySelectorAll('.slide-thumbnail-vertical');
+                const slideCards = document.querySelectorAll('.ppt-slide-card');
+                const contentArea = document.getElementById('pptContentArea');
+                
+                slideThumbnails.forEach(thumbnail => {
+                    thumbnail.addEventListener('click', function() {
+                        const slideNumber = this.dataset.slide;
+                        const targetCard = document.getElementById(`slide-${slideNumber}`);
+                        if (targetCard) {
+                            // Update active thumbnail
+                            slideThumbnails.forEach(t => t.classList.remove('active'));
+                            this.classList.add('active');
+                            
+                            targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    });
+                });
 
-            // Add keyboard navigation
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    history.back();
-                }
+                // Intersection Observer to highlight current slide in sidebar on scroll
+                const observerOptions = {
+                    root: contentArea,
+                    rootMargin: '-10% 0px -80% 0px',
+                    threshold: 0
+                };
+
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const slideNumber = entry.target.dataset.slide;
+                            slideThumbnails.forEach(t => {
+                                if (t.dataset.slide === slideNumber) {
+                                    t.classList.add('active');
+                                    t.scrollIntoView({ behavior: 'nearest', block: 'only' });
+                                } else {
+                                    t.classList.remove('active');
+                                }
+                            });
+                        }
+                    });
+                }, observerOptions);
+
+                slideCards.forEach(card => observer.observe(card));
+
+                // Keyboard navigation
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        history.back();
+                    }
+                    
+                    // Arrow key navigation
+                    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                        const activeThumbnail = document.querySelector('.slide-thumbnail-vertical.active');
+                        const nextThumbnail = activeThumbnail?.nextElementSibling;
+                        if (nextThumbnail && nextThumbnail.classList.contains('slide-thumbnail-vertical')) {
+                            nextThumbnail.click();
+                        }
+                    }
+                    
+                    if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                        const activeThumbnail = document.querySelector('.slide-thumbnail-vertical.active');
+                        const prevThumbnail = activeThumbnail?.previousElementSibling;
+                        if (prevThumbnail && prevThumbnail.classList.contains('slide-thumbnail-vertical')) {
+                            prevThumbnail.click();
+                        }
+                    }
+                });
             });
         </script>
     @else

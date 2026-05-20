@@ -369,8 +369,8 @@
             </button>
         </div>
         <div style="text-align: center; margin-bottom: 2rem;">
-            <h2 style="font-size: 1.875rem; font-weight: 700; color: var(--gray-900); margin-bottom: 0.5rem;">Upload New Video</h2>
-            <p style="color: var(--gray-600);">Drag and drop your files or click to browse</p>
+            <h2 id="formHeaderTitle" style="font-size: 1.875rem; font-weight: 700; color: var(--gray-900); margin-bottom: 0.5rem;">Upload New Video</h2>
+            <p id="formHeaderSubtitle" style="color: var(--gray-600);">Drag and drop your files or click to browse</p>
         </div>
 
         <form id="videoUploadForm" method="POST" action="{{ route('admin.content.videos.store') }}" enctype="multipart/form-data">
@@ -397,7 +397,7 @@
             <div class="upload-grid">
                 <!-- Video Upload Zone -->
                 <div>
-                    <label class="form-label">Video File *</label>
+                    <label class="form-label" id="videoFileLabel">Video File *</label>
                     <div class="drag-drop-zone" id="videoDropZone">
                         <input type="file" name="video_file" id="video_file" accept="video/*" style="display: none;">
                         <div class="upload-content">
@@ -429,7 +429,7 @@
                             </div>
                             <h4 style="font-weight: 500; color: var(--gray-900); margin-bottom: 0.25rem;">Add Thumbnail</h4>
                             <p style="font-size: 0.75rem; color: var(--gray-600); margin-bottom: 0.75rem;">JPG, PNG, GIF</p>
-                            <div style="background-color: #f0f9ff; color: #0284c7; padding: 0.25rem 0.75rem; border-radius: 0.25rem; font-size: 0.875rem;">
+                            <div style="background-color: #f0f9ff; color: #0284c7; padding: 0.25rem 0.75rem; border-radius: 0.25rem; font-size: 0.875rem; display: inline-block;">
                                 Browse
                             </div>
                             <p style="font-size: 0.75rem; color: var(--gray-500); margin-top: 0.5rem;">Max: 2MB</p>
@@ -442,7 +442,7 @@
             <div class="additional-files-grid">
                 <!-- Document Upload Zone -->
                 <div>
-                    <label class="form-label">Attach Document (Optional)</label>
+                    <label class="form-label">Attach Slides / Doc (Optional)</label>
                     <div class="drag-drop-zone" id="documentDropZone">
                         <input type="file" name="document_file" id="document_file" accept=".pdf,.doc,.docx,.ppt,.pptx" style="display: none;">
                         <div class="upload-content">
@@ -451,8 +451,8 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                 </svg>
                             </div>
-                            <h4 style="font-weight: 500; color: var(--gray-900); margin-bottom: 0.25rem;">Add Document</h4>
-                            <p style="font-size: 0.75rem; color: var(--gray-600); margin-bottom: 0.75rem;">PDF, DOC, PPT</p>
+                            <h4 style="font-weight: 500; color: var(--gray-900); margin-bottom: 0.25rem;">Add Slides or Document</h4>
+                            <p style="font-size: 0.75rem; color: var(--gray-600); margin-bottom: 0.75rem;">PDF, DOC, PPT, PPTX</p>
                             <div class="btn-secondary" style="font-size: 0.875rem;">
                                 Browse Files
                             </div>
@@ -493,16 +493,51 @@
             </div>
             @endif
 
+            <!-- Current Files Section (Edit Mode Only) -->
+            <div id="currentFilesSection" style="display: none; margin-bottom: 2rem; padding: 1.5rem; background-color: #f8fafc; border: 1px solid var(--gray-200); border-radius: 0.75rem;">
+                <h4 style="font-weight: 600; color: var(--gray-900); margin-bottom: 1rem; font-size: 0.95rem;">Current Attached Files</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <!-- Thumbnail info -->
+                    <div id="currentThumbnailInfo" style="display: none; align-items: center; gap: 1rem;">
+                        <img id="currentThumbnailImg" src="" alt="Thumbnail" style="height: 4rem; width: 6rem; object-fit: cover; border-radius: 0.375rem; border: 1px solid var(--gray-200);">
+                        <div>
+                            <span style="display: block; font-size: 0.875rem; font-weight: 500; color: var(--gray-900);">Current Thumbnail</span>
+                            <span style="font-size: 0.75rem; color: var(--gray-500);">Uploading a new thumbnail will replace this.</span>
+                        </div>
+                    </div>
+                    <!-- Document/Slides info -->
+                    <div id="currentDocumentInfo" style="display: none; align-items: center; gap: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <svg style="width: 1.5rem; height: 1.5rem; color: var(--gray-500);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <div>
+                                <span style="display: block; font-size: 0.875rem; font-weight: 500; color: var(--gray-900);">Slides / Document Attached</span>
+                                <a id="currentDocumentLink" href="" target="_blank" style="font-size: 0.75rem; color: var(--primary-blue); text-decoration: underline;">View Current File</a>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; margin-left: auto;">
+                            <input type="checkbox" name="delete_document" id="delete_document" value="1" style="height: 1rem; width: 1rem; color: var(--primary-blue); border: 1px solid var(--gray-300); border-radius: 0.25rem;">
+                            <label for="delete_document" style="margin-left: 0.5rem; font-size: 0.75rem; font-weight: 500; color: var(--accent-red); cursor: pointer;">
+                                Remove Attached Slides
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Submit Button -->
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <button type="button" id="hideUploadBtn" style="background: none; border: none; color: var(--gray-500); cursor: pointer; text-decoration: underline;">
                     Cancel
                 </button>
-                <button type="submit" class="btn-upload">
-                    <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                    </svg>
-                    Upload Video
+                <button type="submit" id="submitFormBtn" class="btn-upload">
+                    <span id="submitFormBtnIcon">
+                        <svg style="width: 1.25rem; height: 1.25rem; display: inline-block; vertical-align: middle; margin-right: 0.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                    </span>
+                    <span id="submitFormBtnText">Upload Video</span>
                 </button>
             </div>
         </form>
@@ -574,6 +609,7 @@
                         <th>Thumbnail</th>
                         <th>Title</th>
                         <th style="width: 6rem;">Grade</th>
+                        <th style="width: 8rem;">Slides</th>
                         <th style="width: 6rem;">Duration</th>
                         <th style="width: 6rem;">Views</th>
                         <th style="width: 6rem;">Featured</th>
@@ -594,6 +630,34 @@
                         </td>
                         <td style="font-size: 0.875rem; font-weight: 500; color: var(--gray-900);">{{ $video->title }}</td>
                         <td style="font-size: 0.875rem; color: var(--gray-500);">{{ $video->grade_level ?? 'N/A' }}</td>
+                        <td>
+                            @if($video->document_path)
+                                @php
+                                    $ext = strtolower(pathinfo($video->document_path, PATHINFO_EXTENSION));
+                                    $isPpt = in_array($ext, ['ppt', 'pptx']);
+                                @endphp
+                                <a href="{{ Storage::url($video->document_path) }}" target="_blank" 
+                                   title="Download attached slides"
+                                   style="display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.5rem; border-radius: 0.375rem; text-decoration: none; 
+                                          background-color: {{ $isPpt ? '#eff6ff' : '#fef2f2' }}; 
+                                          color: {{ $isPpt ? '#1d4ed8' : '#b91c1c' }}; 
+                                          border: 1px solid {{ $isPpt ? '#bfdbfe' : '#fecaca' }};">
+                                    @if($isPpt)
+                                        <svg style="width: 0.875rem; height: 0.875rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                        </svg>
+                                        PPT/Slides
+                                    @else
+                                        <svg style="width: 0.875rem; height: 0.875rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                        PDF/Doc
+                                    @endif
+                                </a>
+                            @else
+                                <span style="font-size: 0.75rem; color: var(--gray-400);">None</span>
+                            @endif
+                        </td>
                         <td style="font-size: 0.875rem; color: var(--gray-500);">
                             {{ gmdate("H:i:s", $video->duration_seconds) }}
                         </td>
@@ -645,7 +709,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9" class="empty-state">
+                        <td colspan="10" class="empty-state">
                             <div class="empty-icon">
                                 <svg style="width: 2rem; height: 2rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
@@ -737,32 +801,55 @@
             // File input change
             fileInput.addEventListener('change', function() {
                 if (this.files.length > 0) {
-                    updateDropZoneUI(dropZone, this.files[0], accept);
+                    if (validateFile(this.files[0], accept)) {
+                        updateDropZoneUI(dropZone, this.files[0], accept);
+                    } else {
+                        this.value = ''; // Reset input on invalid file
+                    }
                 }
             });
         });
     }
 
     function validateFile(file, accept) {
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        
+        const validExtensions = {
+            video: ['mp4', 'mov', 'avi', 'wmv', 'flv', 'webm'],
+            image: ['jpeg', 'jpg', 'png', 'gif'],
+            document: ['pdf', 'doc', 'docx', 'ppt', 'pptx']
+        };
+
         const validTypes = {
             video: ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm'],
             image: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'],
-            document: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation']
+            document: [
+                'application/pdf', 
+                'application/msword', 
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+                'application/vnd.ms-powerpoint', 
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'application/octet-stream' // fallback
+            ]
         };
 
-        if (!validTypes[accept].includes(file.type)) {
-            alert(`Please select a valid ${accept} file.`);
+        const hasValidExt = validExtensions[accept].includes(fileExt);
+        const hasValidMime = file.type ? validTypes[accept].includes(file.type) : false;
+
+        if (!hasValidExt && !hasValidMime) {
+            alert(`Please select a valid ${accept} file (.${validExtensions[accept].join(', .')}).`);
             return false;
         }
 
         const maxSizes = {
-            video: 500 * 1024 * 1024, // 500MB
+            video: 600 * 1024 * 1024, // 600MB
             image: 2 * 1024 * 1024,   // 2MB
             document: 10 * 1024 * 1024 // 10MB
         };
 
         if (file.size > maxSizes[accept]) {
-            alert(`File size exceeds the maximum limit for ${accept} files.`);
+            const sizeInMB = (maxSizes[accept] / (1024 * 1024)).toFixed(0);
+            alert(`File size exceeds the maximum limit of ${sizeInMB}MB for ${accept} files.`);
             return false;
         }
 
@@ -782,47 +869,261 @@
             </div>
             <h4 style="font-weight: 500; color: var(--gray-900); margin-bottom: 0.25rem;">${fileName}</h4>
             <p style="font-size: 0.75rem; color: var(--gray-500); margin-bottom: 0.5rem;">${fileSize}</p>
-            <div style="background-color: var(--primary-blue-light); color: var(--primary-blue); padding: 0.25rem 0.75rem; border-radius: 0.25rem; font-size: 0.875rem;">
+            <div style="background-color: var(--primary-blue-light); color: var(--primary-blue); padding: 0.25rem 0.75rem; border-radius: 0.25rem; font-size: 0.875rem; display: inline-block;">
                 File Selected
             </div>
         `;
     }
 
-    function editVideo(videoId) {
-        // This would typically open an edit modal or redirect to edit page
-        // For now, we'll just show the upload section
-        showUploadSection();
+    function resetFormToCreateMode() {
+        const form = document.getElementById('videoUploadForm');
+        if (!form) return;
+
+        // Reset title and subtitle
+        document.getElementById('formHeaderTitle').innerText = 'Upload New Video';
+        document.getElementById('formHeaderSubtitle').innerText = 'Drag and drop your files or click to browse';
+
+        // Revert action to store route
+        form.action = "{{ route('admin.content.videos.store') }}";
+
+        // Remove PUT method if exists
+        const methodField = form.querySelector('input[name="_method"]');
+        if (methodField) {
+            methodField.remove();
+        }
+
+        // Reset inputs
+        form.reset();
+
+        // Reset dropzones to original state
+        resetDropZoneUI('videoDropZone', 'Drop your video here', 'or click to browse files', 'Select Video File', 'Max size: 600MB • Duration: up to 60 minutes');
+        resetDropZoneUI('thumbnailDropZone', 'Add Thumbnail', 'JPG, PNG, GIF', 'Browse', 'Max: 2MB');
+        resetDropZoneUI('documentDropZone', 'Add Slides or Document', 'PDF, DOC, PPT, PPTX', 'Browse Files', 'Max: 10MB');
+
+        // Restore video required label
+        const videoLabel = document.getElementById('videoFileLabel');
+        if (videoLabel) {
+            videoLabel.innerHTML = 'Video File *';
+        }
+
+        // Hide current files section
+        const currentFilesSection = document.getElementById('currentFilesSection');
+        if (currentFilesSection) {
+            currentFilesSection.style.display = 'none';
+        }
+
+        // Restore submit button
+        document.getElementById('submitFormBtnText').innerText = 'Upload Video';
+        document.getElementById('submitFormBtnIcon').innerHTML = `
+            <svg style="width: 1.25rem; height: 1.25rem; display: inline-block; vertical-align: middle; margin-right: 0.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+        `;
+    }
+
+    function resetDropZoneUI(zoneId, title, sub, btnText, sizeInfo) {
+        const dropZone = document.getElementById(zoneId);
+        if (!dropZone) return;
+        const uploadContent = dropZone.querySelector('.upload-content');
+        if (!uploadContent) return;
+
+        let iconColor = 'primary';
+        let svgPath = '';
+        if (zoneId === 'videoDropZone') {
+            iconColor = 'primary';
+            svgPath = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>';
+        } else if (zoneId === 'thumbnailDropZone') {
+            iconColor = 'accent';
+            svgPath = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>';
+        } else {
+            iconColor = 'secondary';
+            svgPath = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>';
+        }
+
+        const isThumb = zoneId === 'thumbnailDropZone';
         
-        // You can implement edit functionality here
-        console.log('Edit video:', videoId);
+        uploadContent.innerHTML = isThumb ? `
+            <div class="upload-icon ${iconColor}" style="width: 3rem; height: 3rem;">
+                <svg style="width: 1.5rem; height: 1.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    ${svgPath}
+                </svg>
+            </div>
+            <h4 style="font-weight: 500; color: var(--gray-900); margin-bottom: 0.25rem;">${title}</h4>
+            <p style="font-size: 0.75rem; color: var(--gray-600); margin-bottom: 0.75rem;">${sub}</p>
+            <div style="background-color: #f0f9ff; color: #0284c7; padding: 0.25rem 0.75rem; border-radius: 0.25rem; font-size: 0.875rem; display: inline-block;">
+                ${btnText}
+            </div>
+            <p style="font-size: 0.75rem; color: var(--gray-500); margin-top: 0.5rem;">${sizeInfo}</p>
+        ` : `
+            <div class="upload-icon ${iconColor}">
+                <svg style="width: 2rem; height: 2rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    ${svgPath}
+                </svg>
+            </div>
+            <h3 style="font-size: 1.125rem; font-weight: 600; color: var(--gray-900); margin-bottom: 0.5rem;">${title}</h3>
+            <p style="color: var(--gray-600); margin-bottom: 1rem;">${sub}</p>
+            <div class="btn-${zoneId === 'videoDropZone' ? 'upload' : 'secondary'}" style="display: inline-flex;">
+                ${btnText}
+            </div>
+            <p style="font-size: 0.75rem; color: var(--gray-500); margin-top: 0.75rem;">${sizeInfo}</p>
+        `;
+    }
+
+    function loadVideoForEdit(videoId) {
+        // Reset form first
+        resetFormToCreateMode();
+
+        // Perform AJAX request to fetch video data
+        fetch(`/admin/content/videos/${videoId}/edit`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to load video details.');
+            }
+            return response.json();
+        })
+        .then(video => {
+            const form = document.getElementById('videoUploadForm');
+            if (!form) return;
+
+            // Change header to Edit
+            document.getElementById('formHeaderTitle').innerText = `Edit Video: ${video.title}`;
+            document.getElementById('formHeaderSubtitle').innerText = 'Modify video details, thumbnail, or attached slides below';
+
+            // Change form action to update route
+            form.action = `/admin/content/videos/${video.seo_url}`;
+
+            // Inject PUT method
+            let methodField = form.querySelector('input[name="_method"]');
+            if (!methodField) {
+                methodField = document.createElement('input');
+                methodField.type = 'hidden';
+                methodField.name = '_method';
+                form.appendChild(methodField);
+            }
+            methodField.value = 'PUT';
+
+            // Fill text/select inputs
+            document.getElementById('title').value = video.title || '';
+            document.getElementById('grade_level').value = video.grade_level || '';
+            document.getElementById('quiz_id').value = video.quiz_id || '';
+            document.getElementById('description').value = video.description || '';
+            
+            const isFeatured = document.getElementById('is_featured');
+            if (isFeatured) {
+                isFeatured.checked = !!video.is_featured;
+            }
+
+            // Mark video file optional
+            const videoLabel = document.getElementById('videoFileLabel');
+            if (videoLabel) {
+                videoLabel.innerHTML = 'Video File (Optional)';
+            }
+
+            // Setup current files section
+            const currentFilesSection = document.getElementById('currentFilesSection');
+            const currentThumbnailInfo = document.getElementById('currentThumbnailInfo');
+            const currentThumbnailImg = document.getElementById('currentThumbnailImg');
+            const currentDocumentInfo = document.getElementById('currentDocumentInfo');
+            const currentDocumentLink = document.getElementById('currentDocumentLink');
+            const deleteDocumentCheckbox = document.getElementById('delete_document');
+
+            let hasFiles = false;
+
+            if (video.thumbnail_path) {
+                currentThumbnailImg.src = `/storage/${video.thumbnail_path}`;
+                currentThumbnailInfo.style.display = 'flex';
+                hasFiles = true;
+            } else {
+                currentThumbnailInfo.style.display = 'none';
+            }
+
+            if (video.document_path) {
+                currentDocumentLink.href = `/storage/${video.document_path}`;
+                currentDocumentInfo.style.display = 'flex';
+                if (deleteDocumentCheckbox) {
+                    deleteDocumentCheckbox.checked = false;
+                }
+                hasFiles = true;
+            } else {
+                currentDocumentInfo.style.display = 'none';
+            }
+
+            if (hasFiles && currentFilesSection) {
+                currentFilesSection.style.display = 'block';
+            } else if (currentFilesSection) {
+                currentFilesSection.style.display = 'none';
+            }
+
+            // Change submit button
+            document.getElementById('submitFormBtnText').innerText = 'Save Changes';
+            document.getElementById('submitFormBtnIcon').innerHTML = `
+                <svg style="width: 1.25rem; height: 1.25rem; display: inline-block; vertical-align: middle; margin-right: 0.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            `;
+
+            // Open the upload section visually
+            showUploadSection();
+        })
+        .catch(error => {
+            console.error(error);
+            alert('Error loading video data. Please try again.');
+        });
     }
 
     // Initialize drag and drop when DOM is loaded
     document.addEventListener('DOMContentLoaded', function() {
         setupDragAndDrop();
 
+        // Handle Edit Video button click via event delegation
+        document.addEventListener('click', function(e) {
+            const editBtn = e.target.closest('.editVideoBtn');
+            if (editBtn) {
+                e.preventDefault();
+                const videoId = editBtn.getAttribute('data-video-id');
+                loadVideoForEdit(videoId);
+            }
+        });
+
         // Show upload section
         const showUploadBtn = document.getElementById('showUploadBtn');
         if (showUploadBtn) {
-            showUploadBtn.addEventListener('click', showUploadSection);
+            showUploadBtn.addEventListener('click', function() {
+                resetFormToCreateMode();
+                showUploadSection();
+            });
         }
 
         // Close (X) button for upload section
         const closeBtn = document.getElementById('closeUploadSectionBtn');
         if (closeBtn) {
-            closeBtn.addEventListener('click', hideUploadSection);
+            closeBtn.addEventListener('click', function() {
+                hideUploadSection();
+                resetFormToCreateMode();
+            });
         }
 
         // Hide upload section
         const hideUploadBtn = document.getElementById('hideUploadBtn');
         if (hideUploadBtn) {
-            hideUploadBtn.addEventListener('click', hideUploadSection);
+            hideUploadBtn.addEventListener('click', function() {
+                hideUploadSection();
+                resetFormToCreateMode();
+            });
         }
 
         // Empty state upload button
         const emptyUploadBtn = document.querySelector('.empty-state .btn-upload');
         if (emptyUploadBtn) {
-            emptyUploadBtn.addEventListener('click', showUploadSection);
+            emptyUploadBtn.addEventListener('click', function() {
+                resetFormToCreateMode();
+                showUploadSection();
+            });
         }
 
         // Add form validation
@@ -832,8 +1133,10 @@
                 const videoFile = document.getElementById('video_file');
                 const titleInput = document.querySelector('input[name="title"]');
                 
-                // Check if video file is selected
-                if (!videoFile.files || videoFile.files.length === 0) {
+                const isEditMode = uploadForm.querySelector('input[name="_method"]')?.value === 'PUT';
+                
+                // Only require video file when creating a new record
+                if (!isEditMode && (!videoFile.files || videoFile.files.length === 0)) {
                     e.preventDefault();
                     alert('Please select a video file to upload.');
                     return false;

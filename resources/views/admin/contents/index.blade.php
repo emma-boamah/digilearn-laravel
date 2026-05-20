@@ -1680,7 +1680,7 @@
             <!-- Step 2: Documents Upload -->
             <div class="step-pane" id="step2">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Add Related Documents <span class="text-sm text-gray-500">(Optional)</span></h3>
-                <p class="text-gray-600 mb-2">Upload PDF, DOC, or DOCX files related to this lesson. Max file size: 32GB per document.</p>
+                <p class="text-gray-600 mb-2">Upload PDF, DOC, DOCX, PPT, or PPTX files related to this lesson. Max file size: 32GB per document.</p>
                 <div class="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
                     <p class="text-sm text-gray-600">
                         <i class="fas fa-info-circle mr-1"></i>
@@ -1695,7 +1695,7 @@
                 <button type="button" id="addDocumentBtn" class="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors">
                     <i class="fas fa-plus mr-2"></i>Add Document
                 </button>
-                <input type="file" id="documentInput" class="hidden" accept=".pdf,.doc,.docx" multiple>
+                <input type="file" id="documentInput" class="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx" multiple>
             </div>
 
             <!-- Step 3: Quiz Builder -->
@@ -3179,7 +3179,9 @@
                 files.forEach(file => {
                     if (file.type === 'application/pdf' ||
                         file.type === 'application/msword' ||
-                        file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                        file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                        file.type === 'application/vnd.ms-powerpoint' ||
+                        file.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
                         uploadData.documents.push(file);
                         addDocumentToList(file);
                     }
@@ -3195,11 +3197,21 @@
                 return;
             }
 
+            let iconClass = 'fa-file-alt text-blue-600';
+            const fileName = file.name.toLowerCase();
+            if (fileName.endsWith('.pdf')) {
+                iconClass = 'fa-file-pdf text-red-600';
+            } else if (fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
+                iconClass = 'fa-file-word text-blue-600';
+            } else if (fileName.endsWith('.ppt') || fileName.endsWith('.pptx')) {
+                iconClass = 'fa-file-powerpoint text-orange-600';
+            }
+
             const documentItem = document.createElement('div');
             documentItem.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
             documentItem.innerHTML = `
                 <div class="flex items-center">
-                    <i class="fas fa-file-alt text-blue-600 mr-3"></i>
+                    <i class="fas ${iconClass} mr-3"></i>
                     <div>
                         <p class="font-medium text-gray-900">${file.name}</p>
                         <p class="text-sm text-gray-500">${(file.size / 1024).toFixed(1)} KB</p>
