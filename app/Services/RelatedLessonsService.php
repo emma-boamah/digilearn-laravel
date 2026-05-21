@@ -213,6 +213,7 @@ class RelatedLessonsService
         
         $query = Video::approved()
             ->whereIn('grade_level', $gradeLevels)
+            ->where('video_source', '!=', 'none')
             ->with(['uploader', 'subject', 'categories'])
             ->where('id', '!=', $currentLesson['id']);
             
