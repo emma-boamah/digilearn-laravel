@@ -1324,7 +1324,7 @@
         .content-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1rem;
+            gap: 2rem 1rem;
             min-height: 400px;
             padding-bottom: 2rem;
             align-items: start;
@@ -2252,7 +2252,7 @@
         @media (min-width: 1024px) {
             .content-grid {
                 grid-template-columns: repeat(3, 1fr);
-                gap: 1rem;
+                gap: 2rem 1rem;
             }
         }
 
@@ -2261,7 +2261,7 @@
             /* Three column layout for large screens to prioritize thumbnail visibility */
             .content-grid {
                 grid-template-columns: repeat(3, 1fr);
-                gap: 1rem;
+                gap: 2rem 1rem;
             }
         }
 
