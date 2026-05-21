@@ -24,6 +24,11 @@
         color: var(--secondary-blue);
         font-weight: 500;
     }
+    .video-card-actions {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+        border-top: none !important;
+    }
 </style>
 @endpushonce
 
@@ -64,41 +69,45 @@
             {{ $item['lessons_count'] }} lessons • {{ $item['credit_hours'] ?? 3 }} credit hours
         </p>
         @endif
-        <div class="lesson-actions">
-            <div class="action-icons-group">
-                <button class="action-icon-btn save-btn" title="Save for later" data-course-id="{{ $encodedCourseId }}">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
-                    </svg>
-                </button>
-                @if($encodedQuizId)
-                <a href="{{ route('quiz.instructions', ['quizId' => $encodedQuizId]) }}" class="quiz-primary-btn" title="Take Quiz">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    <span>Take Quiz</span>
-                </a>
-                @endif
+        <x-slot name="actions">
+            <div class="lesson-actions video-card-actions">
+                <div class="action-icons-group">
+                    <button class="action-icon-btn save-btn" title="Save for later" data-course-id="{{ $encodedCourseId }}">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                        </svg>
+                    </button>
+                    @if($encodedQuizId)
+                    <a href="{{ route('quiz.instructions', ['quizId' => $encodedQuizId]) }}" class="quiz-primary-btn" title="Take Quiz">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span>Take Quiz</span>
+                    </a>
+                    @endif
+                </div>
             </div>
-        </div>
+        </x-slot>
     @else
-        <div class="lesson-actions">
-            {{-- Primary action is now clicking the card itself --}}
-            <div class="action-icons-group">
-                <button class="action-icon-btn save-btn" title="Save for later" data-lesson-id="{{ $encodedLessonId }}">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
-                    </svg>
-                </button>
-                @if($encodedQuizId)
-                <a href="{{ route('quiz.instructions', ['quizId' => $encodedQuizId]) }}" class="quiz-primary-btn" title="Take Quiz">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    <span>Take Quiz</span>
-                </a>
-                @endif
+        <x-slot name="actions">
+            <div class="lesson-actions video-card-actions">
+                {{-- Primary action is now clicking the card itself --}}
+                <div class="action-icons-group">
+                    <button class="action-icon-btn save-btn" title="Save for later" data-lesson-id="{{ $encodedLessonId }}">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                        </svg>
+                    </button>
+                    @if($encodedQuizId)
+                    <a href="{{ route('quiz.instructions', ['quizId' => $encodedQuizId]) }}" class="quiz-primary-btn" title="Take Quiz">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span>Take Quiz</span>
+                    </a>
+                    @endif
+                </div>
             </div>
-        </div>
+        </x-slot>
     @endif
 </x-video-facade>

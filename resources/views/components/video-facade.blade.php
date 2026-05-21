@@ -117,60 +117,96 @@ use Illuminate\Support\Str;
 
     <div class="lesson-info">
         <h3 class="lesson-title">{{ $title }}</h3>
-        <div class="lesson-meta">
-            @if($subject)
-            <span class="lesson-subject">({{ $subject }})</span>
-            @endif
-            @if($instructor && $year)
-            <span>{{ $instructor }} | {{ $year }}</span>
-            @endif
-        </div>
 
         <!-- Course-specific content -->
         @if(isset($course) && $course)
         @if(isset($course['description']))
-        <p class="course-description" style="font-size: 0.875rem; color: var(--gray-600); margin: 0.5rem 0;">
+        <p class="course-description facade-course-description">
             {{ $course['description'] }}
         </p>
         @endif
         @if(isset($course['lessons_count']))
-        <p class="course-lessons-count" style="font-size: 0.75rem; color: var(--secondary-blue); font-weight: 500;">
+        <p class="course-lessons-count facade-course-lessons-count">
             {{ $course['lessons_count'] }} lessons • {{ $course['credit_hours'] ?? 3 }} credit hours
         </p>
         @endif
         @endif
 
-        <!-- Action buttons -->
-        @if(isset($slot))
-        {{ $slot }}
-        @else
-        <div class="lesson-actions">
-            <div class="action-icons-group">
-                <button class="action-icon-btn save-btn" title="Save for later"
-                    data-lesson-id="{{ \App\Services\UrlObfuscator::encode($videoId) }}" @if(isset($courseId))
-                    data-course-id="{{ \App\Services\UrlObfuscator::encode($courseId) }}" @endif>
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                    </svg>
-                </button>
-                @php
-                $targetQuizId = isset($lesson['encoded_quiz_id']) ? $lesson['encoded_quiz_id'] : null;
-                $quizUrl = $targetQuizId ? route('quiz.instructions', ['quizId' => $targetQuizId]) :
-                route('quiz.index');
-                @endphp
-                <a href="{{ $quizUrl }}" class="action-icon-btn quiz-btn" title="Take Quiz">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                </a>
-            </div>
+        @if(isset($slot) && trim($slot) !== '')
+        <div class="lesson-content-slot">
+            {{ $slot }}
         </div>
         @endif
+
+        <div class="lesson-meta-row facade-lesson-meta-row">
+            <div class="lesson-meta">
+                @if($subject)
+                <span class="lesson-subject">({{ $subject }})</span>
+                @endif
+                @if($instructor && $year)
+                <span>{{ $instructor }} | {{ $year }}</span>
+                @endif
+            </div>
+
+            <div class="lesson-actions-wrapper">
+                @if(isset($actions))
+                {{ $actions }}
+                @else
+                <div class="lesson-actions facade-lesson-actions">
+                    <div class="action-icons-group">
+                        <button class="action-icon-btn save-btn" title="Save for later"
+                            data-lesson-id="{{ \App\Services\UrlObfuscator::encode($videoId) }}" @if(isset($courseId))
+                            data-course-id="{{ \App\Services\UrlObfuscator::encode($courseId) }}" @endif>
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                            </svg>
+                        </button>
+                        @php
+                        $targetQuizId = isset($lesson['encoded_quiz_id']) ? $lesson['encoded_quiz_id'] : null;
+                        $quizUrl = $targetQuizId ? route('quiz.instructions', ['quizId' => $targetQuizId]) :
+                        route('quiz.index');
+                        @endphp
+                        <a href="{{ $quizUrl }}" class="action-icon-btn quiz-btn" title="Take Quiz">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                @endif
+            </div>
+        </div>
     </div>
 </div>
 
 <style nonce="{{ request()->attributes->get('csp_nonce') }}">
+    .facade-course-description {
+        font-size: 0.875rem;
+        color: var(--gray-600);
+        margin: 0.5rem 0;
+    }
+
+    .facade-course-lessons-count {
+        font-size: 0.75rem;
+        color: var(--secondary-blue);
+        font-weight: 500;
+    }
+
+    .facade-lesson-meta-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-top: 1rem; /* Replaced auto to prevent huge gaps */
+        padding-top: 0.5rem;
+    }
+
+    .facade-lesson-actions {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: none;
+    }
+
     .video-facade-card {
         display: flex;
         flex-direction: column;
@@ -188,18 +224,18 @@ use Illuminate\Support\Str;
         aspect-ratio: 16/9;
         overflow: hidden;
         flex-shrink: 0;
-        min-height: 240px; /* Increased for better presence */
+        min-height: 180px; /* Reduced to decrease card height */
     }
 
     .lesson-duration {
         position: absolute;
-        bottom: 0.75rem; /* Increased spacing */
-        right: 0.75rem;
+        bottom: 0.5rem; /* Reduced spacing */
+        right: 0.5rem;
         background-color: rgba(0, 0, 0, 0.82);
         color: #ffffff;
-        padding: 0.35rem 0.65rem;
-        border-radius: 0.375rem;
-        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.7rem;
         font-weight: 600;
         z-index: 10;
     }

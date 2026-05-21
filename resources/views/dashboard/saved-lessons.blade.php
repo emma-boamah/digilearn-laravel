@@ -486,7 +486,8 @@
         .content-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.5rem;
+            gap: 1rem;
+            align-items: start;
         }
 
         .lesson-actions {
@@ -497,6 +498,13 @@
             margin-top: 1rem;
             padding-top: 1rem;
             border-top: 1px solid var(--gray-100);
+        }
+
+        .saved-lesson-actions {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+            border-top: none !important;
+            width: 100% !important;
         }
 
         .saved-date {
@@ -729,15 +737,17 @@
                                 data-selected-level="{{ $savedLesson->selected_level }}"
                                 :categories="isset($savedLesson->video) ? $savedLesson->video->categories->toArray() : []"
                             >
-                                <div class="lesson-actions">
-                                    <span class="saved-date">Saved {{ $savedLesson->saved_at->diffForHumans() }}</span>
-                                    <button class="unsave-btn" data-lesson-id="{{ $savedLesson->lesson_id }}">
-                                        <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M6 18L18 6M6 6l12 12"/>
-                                        </svg>
-                                        Remove
-                                    </button>
-                                </div>
+                                <x-slot name="actions">
+                                    <div class="lesson-actions saved-lesson-actions">
+                                        <span class="saved-date">Saved {{ $savedLesson->saved_at->diffForHumans() }}</span>
+                                        <button class="unsave-btn" data-lesson-id="{{ $savedLesson->lesson_id }}">
+                                            <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M6 18L18 6M6 6l12 12"/>
+                                            </svg>
+                                            Remove
+                                        </button>
+                                    </div>
+                                </x-slot>
                             </x-video-facade>
                         @endforeach
                     </div>
