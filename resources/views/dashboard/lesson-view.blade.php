@@ -1592,6 +1592,12 @@
         height: 28px;
         color: var(--white);
         filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        transition: transform 0.2s ease;
+    }
+
+    .video-item:hover .play-icon,
+    .video-thumbnail:hover .play-icon {
+        transform: scale(1.2);
     }
 
     /* Restricted Lessons */
@@ -3409,6 +3415,7 @@
         width: 100%;
         height: 100%;
         position: relative;
+        cursor: pointer;
     }
 
     .csp-video-thumb {
@@ -3453,6 +3460,11 @@
         height: 64px;
         color: white;
         filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .csp-video-card:hover .csp-play-icon {
+        transform: scale(1.15);
     }
 
     .csp-debug-info {
@@ -3975,12 +3987,12 @@
                     @endphp
                     @if($embedHtml)
                     <!-- Video Player Container for Main Lesson Video -->
-                    <div id="lesson-video-player" class="video-facade-card lesson-main-video"
+                    <div id="lesson-video-player"
                         data-video-id="{{ $lesson->id ?? '' }}" data-video-source="{{ $lesson->video_source ?? '' }}"
                         data-vimeo-id="{{ $lesson->vimeo_id ?? '' }}"
                         data-external-video-id="{{ $lesson->external_video_id ?? '' }}"
                         data-mux-playback-id="{{ $lesson->mux_playback_id ?? '' }}"
-                        data-video-path="{{ $lesson->video_path ?? '' }}" data-title="{{ $lesson->title ?? '' }}" data-lazy="false"
+                        data-video-path="{{ $videoUrl ?? $lesson->video_path }}" data-title="{{ $lesson->title ?? '' }}" data-lazy="false"
                         class="video-facade-card lesson-main-video csp-video-card">
 
                         <!-- Video Thumbnail (Poster) -->
@@ -4043,7 +4055,11 @@
                     @if(!empty($lesson['video_url']))
                     <!-- Video Player Container for Array-based Lesson Video -->
                     <div id="lesson-video-player" class="video-facade-card lesson-main-video csp-video-card"
-                        data-video-id="{{ $lesson['id'] ?? 'unknown' }}" data-video-source="local"
+                        data-video-id="{{ $lesson['id'] ?? 'unknown' }}" 
+                        data-video-source="{{ str_contains($lesson['video_url'], 'youtube') || str_contains($lesson['video_url'], 'youtu.be') ? 'youtube' : 
+                                            (str_contains($lesson['video_url'], 'vimeo') ? 'vimeo' : 
+                                            (str_contains($lesson['video_url'], 'mux') ? 'mux' : 'local')) }}"
+                        data-external-video-id="{{ (str_contains($lesson['video_url'], 'youtube') || str_contains($lesson['video_url'], 'youtu.be')) ? preg_replace('/^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/', '$7', $lesson['video_url']) : '' }}"
                         data-video-path="{{ $lesson['video_url'] ?? '' }}"
                         data-title="{{ $lesson['title'] ?? 'Lesson Video' }}" data-lazy="false">
 
@@ -4501,109 +4517,6 @@
 </div>
 
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-    // Video Player Initialization for Lesson View
-    document.addEventListener('DOMContentLoaded', () => {
-        const card = document.querySelector('.video-facade-card');
-        if (!card) return;
-
-        let source = card.dataset.videoSource;
-        const container = document.getElementById('lesson-video-player');
-
-        if (!container) return;
-
-        // Detect actual video type from URL if source is 'local' but path looks external
-        if (source === 'local') {
-            const videoPath = card.dataset.videoPath || '';
-            if (videoPath.includes('youtube.com') || videoPath.includes('youtu.be')) {
-                source = 'youtube';
-                // Extract video ID from URL
-                const youtubeMatch = videoPath.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-                if (youtubeMatch) {
-                    card.dataset.externalVideoId = youtubeMatch[1];
-                }
-            } else if (videoPath.includes('vimeo.com')) {
-                source = 'vimeo';
-                // Extract video ID from URL
-                const vimeoMatch = videoPath.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-                if (vimeoMatch) {
-                    card.dataset.vimeoId = vimeoMatch[1];
-                }
-            }
-        }
-
-        if (source === 'local') {
-            container.innerHTML = `
-                    <video controls autoplay playsinline class="csp-video-auto">
-                        <source src="${card.dataset.videoPath}" type="video/mp4">
-                    </video>
-                `;
-        }
-
-        if (source === 'vimeo') {
-            container.innerHTML = `
-                    <iframe
-                        src="https://player.vimeo.com/video/${card.dataset.vimeoId}?autoplay=1&muted=0"
-                        frameborder="0"
-                        allow="autoplay; fullscreen"
-                        allowfullscreen
-                        class="csp-video-aspect"
-                    ></iframe>
-                `;
-        }
-
-        if (source === 'youtube') {
-            container.innerHTML = `
-                    <iframe
-                        src="https://www.youtube.com/embed/${card.dataset.externalVideoId}?autoplay=1&mute=0&rel=0&modestbranding=1&showinfo=0&iv_load_policy=3&fs=1"
-                        frameborder="0"
-                        allow="autoplay; fullscreen; encrypted-media"
-                        allowfullscreen
-                        class="csp-video-aspect"
-                    ></iframe>
-                `;
-        }
-
-        if (source === 'mux') {
-            container.innerHTML = `
-                    <mux-player
-                        playback-id="${card.dataset.muxPlaybackId}"
-                        autoplay
-                        controls
-                        class="csp-mux-aspect">
-                    </mux-player>
-                `;
-        }
-
-        // Logic to gradually disappear the lesson-level badge
-        const mobileBadge = document.querySelector('.mobile-video-badge');
-        if (mobileBadge) {
-            const triggerFadeOut = () => {
-                if (mobileBadge.classList.contains('fade-out')) return;
-                mobileBadge.classList.add('fade-out');
-            };
-
-            // For local/Mux, we can listen for play events
-            if (source === 'local' || source === 'mux') {
-                const mediaElement = container.querySelector(source === 'local' ? 'video' : 'mux-player');
-                if (mediaElement) {
-                    mediaElement.addEventListener('play', () => {
-                        // Fade out 4 seconds after play starts
-                        setTimeout(triggerFadeOut, 4000);
-                    }, { once: true });
-                }
-            } else {
-                // For iframes (YT, Vimeo), we use a standard timeout from load or interaction
-                setTimeout(triggerFadeOut, 8000);
-                // Also fade if user taps the container to interact
-                container.addEventListener('pointerdown', (e) => {
-                    if (e.pointerType === 'touch') {
-                        setTimeout(triggerFadeOut, 3000);
-                    }
-                }, { once: true });
-            }
-        }
-    });
-
     // Global variables for the rich text editor
     const defaultNoteTitle = '{{ \Illuminate\Support\Str::slug($lesson["title"] ?? "") }}';
     let notesQuill = null;
@@ -4722,6 +4635,7 @@
 
     function initializeAll() {
         // Initialize all functionality
+        initializeMainLessonVideo(); // Click-to-play for the main video player
         initializeFilters();
         initializeComments();
         initializeActionButtons();
@@ -4730,7 +4644,7 @@
         initializeSaveLesson();
         initializeSearch();
         initializeVideoItems();
-        initializeVideoCards(); // Add hover-to-play functionality
+        initializeVideoCards(); // Add hover-to-play functionality for related videos
         initializeKeyboardShortcuts();
         initializeCommentsToggle();
         initializeMobileVideoScroll();
@@ -4739,6 +4653,89 @@
         initializeVideoProgressTracking();
         initializeSearchToggle(); // Initialize mobile search toggle
         initializeFocusMode();
+    }
+
+    /**
+     * Click-to-play for the main lesson video on lesson-view page.
+     * Replaces the thumbnail + play overlay with a full interactive player embed.
+     */
+    function initializeMainLessonVideo() {
+        const mainCard = document.querySelector('.lesson-main-video');
+        if (!mainCard) return;
+
+        const overlay = mainCard.querySelector('.play-overlay, .csp-play-overlay');
+        const thumbnail = mainCard.querySelector('.video-facade-thumbnail, .csp-video-thumb');
+        const preview = mainCard.querySelector('.video-preview, .csp-video-preview');
+
+        if (!overlay || !preview) return;
+
+        // Make the entire card clickable to start the video
+        function startMainVideo() {
+            const videoSource = mainCard.dataset.videoSource;
+            const externalVideoId = mainCard.dataset.externalVideoId;
+            const vimeoId = mainCard.dataset.vimeoId;
+            const muxPlaybackId = mainCard.dataset.muxPlaybackId;
+            const videoPath = mainCard.dataset.videoPath;
+
+            let iframe;
+
+            if (videoSource === 'youtube' && externalVideoId) {
+                iframe = document.createElement('iframe');
+                iframe.src = `https://www.youtube.com/embed/${externalVideoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1&origin=${window.location.origin}`;
+                iframe.allow = 'autoplay; encrypted-media; fullscreen';
+                iframe.allowFullscreen = true;
+                iframe.frameBorder = '0';
+                iframe.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:4;';
+            } else if (videoSource === 'vimeo' && vimeoId) {
+                iframe = document.createElement('iframe');
+                iframe.src = `https://player.vimeo.com/video/${vimeoId}?autoplay=1&dnt=1`;
+                iframe.allow = 'autoplay; fullscreen';
+                iframe.allowFullscreen = true;
+                iframe.frameBorder = '0';
+                iframe.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:4;';
+            } else if (videoSource === 'mux' && muxPlaybackId) {
+                iframe = document.createElement('iframe');
+                iframe.src = `https://stream.mux.com/${muxPlaybackId}.m3u8`;
+                iframe.allow = 'autoplay; fullscreen';
+                iframe.allowFullscreen = true;
+                iframe.frameBorder = '0';
+                iframe.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:4;';
+            } else if (videoPath) {
+                // Local video
+                const video = document.createElement('video');
+                video.src = videoPath;
+                video.autoplay = true;
+                video.controls = true;
+                video.playsInline = true;
+                video.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:4;object-fit:contain;background:#000;';
+                preview.appendChild(video);
+            }
+
+            if (iframe) {
+                preview.appendChild(iframe);
+            }
+
+            // Hide the thumbnail and play overlay
+            if (overlay) overlay.style.display = 'none';
+            if (thumbnail) thumbnail.style.opacity = '0';
+            preview.style.opacity = '1';
+            mainCard.classList.add('playing');
+
+            // Dispatch event so progress tracking can detect the player
+            window.dispatchEvent(new CustomEvent('mainVideoStarted', {
+                detail: { source: videoSource, element: iframe || preview.querySelector('video') }
+            }));
+        }
+
+        // Click to play
+        overlay.style.cursor = 'pointer';
+        overlay.style.opacity = '1'; // Ensure overlay is visible initially
+        mainCard.addEventListener('click', function handleMainClick(e) {
+            // Don't trigger if clicking on action buttons or focus mode toggle
+            if (e.target.closest('.focus-mode-toggle, .lesson-level-badge, .csp-debug-info')) return;
+            startMainVideo();
+            mainCard.removeEventListener('click', handleMainClick);
+        });
     }
 
     function initializeFocusMode() {
@@ -7574,8 +7571,11 @@
 
             // Extract video ID from iframe src
             const src = this.videoElement.getAttribute('src') || '';
+            let videoId = null;
+            
+            // Try to get from data attribute first (most reliable), then from src
             const videoIdMatch = src.match(/embed\/([^?&]+)/);
-            const videoId = videoIdMatch ? videoIdMatch[1] : null;
+            videoId = this.videoElement.parentElement.dataset.externalVideoId || (videoIdMatch ? videoIdMatch[1] : null);
 
             if (!videoId) {
                 console.error('Could not extract YouTube video ID');

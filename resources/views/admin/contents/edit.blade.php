@@ -57,6 +57,7 @@
             @method('PUT')
             <input type="hidden" name="content_type" value="{{ $contentType }}">
             <input type="hidden" name="quiz_data" id="quiz_data_input">
+            <input type="hidden" name="status" id="status_input" value="">
 
             <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
                 <div class="px-6 py-4 card-header-premium">
@@ -280,13 +281,33 @@
             @endif
 
             <!-- Submit Buttons -->
+            @php
+                $isDraft = false;
+                if ($contentType === 'quiz') {
+                    $isDraft = ($content->status ?? 'published') === 'draft';
+                } elseif ($contentType === 'video' && $content->quiz) {
+                    $isDraft = ($content->quiz->status ?? 'published') === 'draft';
+                }
+            @endphp
             <div class="flex justify-end space-x-4">
                 <a href="{{ route('admin.contents.index') }}" class="px-6 py-2.5 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors">
                     Cancel
                 </a>
-                <button type="submit" class="px-8 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all">
-                    <i class="fas fa-save mr-2"></i>Save Changes
-                </button>
+                @if($isDraft)
+                    <button type="submit" id="saveDraftBtn" class="px-6 py-2.5 bg-amber-500 text-white font-bold rounded-lg hover:bg-amber-600 shadow-lg shadow-amber-200 transition-all">
+                        <i class="fas fa-save mr-2"></i>Save Draft
+                    </button>
+                    <button type="submit" id="publishBtn" class="px-8 py-2.5 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 shadow-lg shadow-green-200 transition-all">
+                        <i class="fas fa-check-circle mr-2"></i>Publish
+                    </button>
+                @else
+                    <button type="submit" id="revertDraftBtn" class="px-6 py-2.5 bg-amber-500 text-white font-bold rounded-lg hover:bg-amber-600 shadow-lg shadow-amber-200 transition-all">
+                        <i class="fas fa-undo mr-2"></i>Revert to Draft
+                    </button>
+                    <button type="submit" id="savePublishedBtn" class="px-8 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all">
+                        <i class="fas fa-save mr-2"></i>Save Changes
+                    </button>
+                @endif
             </div>
         </form>
     </div>
@@ -330,10 +351,24 @@
         }
     }
 
-    // Form submission handling
+    // Form submission handling — wire up status buttons
     const form = document.getElementById('editContentForm');
-    if (form) {
-        form.addEventListener('submit', function(e) {
+    const statusInput = document.getElementById('status_input');
+
+    // Each button sets the status before submit
+    ['saveDraftBtn', 'publishBtn', 'revertDraftBtn', 'savePublishedBtn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (id === 'saveDraftBtn' || id === 'revertDraftBtn') {
+                statusInput.value = 'draft';
+            } else if (id === 'publishBtn') {
+                statusInput.value = 'published';
+            } else {
+                statusInput.value = ''; // keep current
+            }
+            // Serialize quiz data then submit
             if (uploadData.quiz) {
                 const quizDataInput = document.getElementById('quiz_data_input');
                 if (quizDataInput) {
@@ -342,8 +377,9 @@
                     });
                 }
             }
+            form.submit();
         });
-    }
+    });
 
     // Initialize Quill for description
     if (document.getElementById('quill-description-editor')) {

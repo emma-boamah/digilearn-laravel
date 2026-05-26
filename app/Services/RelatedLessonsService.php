@@ -214,6 +214,10 @@ class RelatedLessonsService
         $query = Video::approved()
             ->whereIn('grade_level', $gradeLevels)
             ->where('video_source', '!=', 'none')
+            ->where(function($q) {
+                $q->whereNull('is_agent_generated')
+                  ->orWhere('is_agent_generated', false);
+            })
             ->with(['uploader', 'subject', 'categories'])
             ->where('id', '!=', $currentLesson['id']);
             
