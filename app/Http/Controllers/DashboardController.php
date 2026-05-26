@@ -1253,6 +1253,11 @@ class DashboardController extends Controller
      */
     public function viewLesson($lessonId, Request $request)
     {
+        // Note: The DecodeObfuscatedIds middleware has already decoded
+        // the obfuscated lessonId to its raw database integer before
+        // this controller method is reached. Invalid/guessed IDs are
+        // rejected by the middleware with a 404 abort.
+
         $courseId = $request->query('course_id');
         $user = Auth::user();
         $selectedLevelGroup = $user->current_level_group;
@@ -1467,16 +1472,48 @@ class DashboardController extends Controller
                 // Switch context to this lesson's group
                 $selectedLevelGroup = $this->getLevelGroup($levelSlug);
 
-                // Fetch lesson details from its specific level
-                $levelLessons = $this->getLessonsForLevel($levelSlug);
-                foreach ($levelLessons as $l) {
-                    if ($l['id'] == $lessonId) {
-                        $lesson = $l;
-                        Log::info('Lesson found in different level group', [
-                            'lesson_id' => $lessonId,
-                            'new_group' => $selectedLevelGroup
-                        ]);
-                        break;
+                if ($video->is_agent_generated) {
+                    $subjectName = $video->subject ? $video->subject->name : 'AI Tutor';
+                    $lesson = [
+                        'id' => $video->id,
+                        'video_id' => $video->id,
+                        'title' => $video->title,
+                        'description' => $video->description,
+                        'duration' => $this->formatDuration($video->getDuration()),
+                        'video_url' => $video->getVideoUrl(),
+                        'thumbnail' => $video->getThumbnailUrl(),
+                        'instructor' => $video->uploader ? $video->uploader->name : 'Unknown',
+                        'subject' => $subjectName,
+                        'subject_id' => $video->subject_id,
+                        'subject_slug' => Str::slug($subjectName),
+                        'year' => $video->created_at->format('Y'),
+                        'level' => $levelSlug,
+                        'level_display' => $this->getLevelDisplayName($levelSlug),
+                        'grade_level' => $video->grade_level,
+                        'video_source' => $video->video_source,
+                        'vimeo_id' => $video->vimeo_id,
+                        'external_video_id' => $video->external_video_id,
+                        'mux_playback_id' => $video->mux_playback_id,
+                        'is_agent_generated' => true,
+                        'has_quiz' => $video->quiz ? true : false,
+                        'quiz_id' => $video->quiz ? $video->quiz->id : null,
+                    ];
+                    Log::info('Agent-generated lesson resolved via fallback', [
+                        'lesson_id' => $lessonId,
+                        'group' => $selectedLevelGroup
+                    ]);
+                } else {
+                    // Fetch lesson details from its specific level
+                    $levelLessons = $this->getLessonsForLevel($levelSlug);
+                    foreach ($levelLessons as $l) {
+                        if ($l['id'] == $lessonId) {
+                            $lesson = $l;
+                            Log::info('Lesson found in different level group', [
+                                'lesson_id' => $lessonId,
+                                'new_group' => $selectedLevelGroup
+                            ]);
+                            break;
+                        }
                     }
                 }
             }

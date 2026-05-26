@@ -126,8 +126,10 @@ class VideoFacadeManager {
                 this.autoPlayIntersectionObserver.observe(card);
             }
 
-            // Event binding
-            this.bindCardEvents(card);
+            // Event binding (skip main lesson video - it uses its own click-to-play logic)
+            if (!card.classList.contains('lesson-main-video')) {
+                this.bindCardEvents(card);
+            }
         });
     }
 

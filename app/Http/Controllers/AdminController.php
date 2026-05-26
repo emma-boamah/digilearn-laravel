@@ -4434,7 +4434,11 @@ class AdminController extends Controller
             'quiz_difficulty' => 'nullable|string',
             'quiz_time_limit' => 'nullable|integer',
             'shuffle_questions' => 'boolean',
+            'status' => 'nullable|string|in:draft,published',
         ]);
+
+        // Resolve the target status from the form (empty = keep current)
+        $newStatus = $request->filled('status') ? $request->input('status') : null;
 
         // Find the content
         $content = Video::find($contentId);
@@ -4471,7 +4475,7 @@ class AdminController extends Controller
                     Document::where('video_id', $content->id)->update(['video_id' => null]);
                 }
 
-                // If quiz_data is provided, update the *associated* quiz
+                // If quiz_data is provided, update the *associated* quiz content
                 if ($request->filled('quiz_data') && $content->quiz_id) {
                     $quiz = Quiz::find($content->quiz_id);
                     if ($quiz) {
@@ -4483,13 +4487,17 @@ class AdminController extends Controller
                             unset($quizData['_shuffled_seed']);
                         }
 
-                        $quiz->update([
+                        $quizUpdateData = [
                             'title' => $request->filled('quiz_title') ? $request->quiz_title : $request->title,
                             'quiz_data' => json_encode($quizData),
                             'difficulty_level' => $request->quiz_difficulty ?? $quiz->difficulty_level,
                             'time_limit_minutes' => $request->quiz_time_limit ?? $quiz->time_limit_minutes,
                             'shuffle_questions' => $request->boolean('shuffle_questions'),
-                        ]);
+                        ];
+                        if ($newStatus) {
+                            $quizUpdateData['status'] = $newStatus;
+                        }
+                        $quiz->update($quizUpdateData);
 
                         // Clear comprehensive caches to reflect updates immediately
                         try {
@@ -4497,6 +4505,31 @@ class AdminController extends Controller
                             $quizController->clearQuizCaches($quiz->id);
                         } catch (\Exception $e) {
                             Log::warning('Could not clear comprehensive quiz cache', ['error' => $e->getMessage()]);
+                            Cache::forget("quiz.{$quiz->id}");
+                        }
+
+                        // Send notification when transitioning draft → published
+                        $wasQuizDraft = ($quiz->getOriginal('status') ?? 'published') === 'draft';
+                        if ($wasQuizDraft && $newStatus === 'published') {
+                            $this->notificationService->notifyNewQuiz($quiz);
+                        }
+                    }
+                }
+                // Update associated quiz status even when quiz_data wasn't edited
+                elseif ($newStatus && $content->quiz_id) {
+                    $quiz = Quiz::find($content->quiz_id);
+                    if ($quiz) {
+                        $wasQuizDraft = ($quiz->status ?? 'published') === 'draft';
+                        $quiz->update(['status' => $newStatus]);
+
+                        if ($wasQuizDraft && $newStatus === 'published') {
+                            $this->notificationService->notifyNewQuiz($quiz);
+                        }
+
+                        try {
+                            $quizController = new \App\Http\Controllers\Quiz\QuizController();
+                            $quizController->clearQuizCaches($quiz->id);
+                        } catch (\Exception $e) {
                             Cache::forget("quiz.{$quiz->id}");
                         }
                     }
@@ -4514,7 +4547,8 @@ class AdminController extends Controller
                     }
                 }
 
-                $content->update([
+                $wasStandaloneDraft = ($content->status ?? 'published') === 'draft';
+                $standaloneUpdateData = [
                     'title' => $request->title,
                     'subject_id' => $request->subject_id,
                     'grade_level' => $request->grade_level,
@@ -4522,7 +4556,16 @@ class AdminController extends Controller
                     'time_limit_minutes' => $request->quiz_time_limit,
                     'quiz_data' => !empty($quizData) ? json_encode($quizData) : $content->quiz_data,
                     'shuffle_questions' => $request->boolean('shuffle_questions'),
-                ]);
+                ];
+                if ($newStatus) {
+                    $standaloneUpdateData['status'] = $newStatus;
+                }
+                $content->update($standaloneUpdateData);
+
+                // Send notification when transitioning draft → published
+                if ($wasStandaloneDraft && $newStatus === 'published') {
+                    $this->notificationService->notifyNewQuiz($content);
+                }
 
                 // Clear comprehensive caches for standalone quiz
                 try {
@@ -4550,7 +4593,15 @@ class AdminController extends Controller
 
             DB::commit();
 
-            return redirect()->route('admin.contents.index')->with('success', 'Content updated successfully!');
+            // Build a user-friendly success message based on what happened
+            $statusMessage = 'Content updated successfully!';
+            if ($newStatus === 'published') {
+                $statusMessage = 'Content published successfully!';
+            } elseif ($newStatus === 'draft') {
+                $statusMessage = 'Content saved as draft.';
+            }
+
+            return redirect()->route('admin.contents.index')->with('success', $statusMessage);
 
         } catch (\Exception $e) {
             DB::rollBack();

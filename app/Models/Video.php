@@ -157,7 +157,7 @@ class Video extends Model
      */
     public function isApproved()
     {
-        return $this->status === 'approved';
+        return $this->status === 'approved' || (bool) $this->is_agent_generated;
     }
 
     /**
@@ -316,7 +316,8 @@ class Video extends Model
      */
     public function getFormattedFileSize()
     {
-        if (!$this->file_size_bytes) return 'Unknown';
+        if (!$this->file_size_bytes)
+            return 'Unknown';
 
         $bytes = $this->file_size_bytes;
         $units = ['B', 'KB', 'MB', 'GB'];
@@ -369,7 +370,9 @@ class Video extends Model
      */
     public function scopeApproved($query)
     {
-        return $query->where('status', 'approved');
+        return $query->where(function ($q) {
+            $q->where('status', 'approved')->orWhere('is_agent_generated', true);
+        });
     }
 
     /**
@@ -789,7 +792,7 @@ class Video extends Model
                 );
 
                 $duration = shell_exec($command);
-                $duration = (int)floatval(trim($duration));
+                $duration = (int) floatval(trim($duration));
 
                 if ($duration > 0) {
                     return $duration;
@@ -829,13 +832,16 @@ class Video extends Model
     public function getDurationFormatted()
     {
         $seconds = $this->duration_seconds;
-        if (!$seconds) return '0s';
+        if (!$seconds)
+            return '0s';
         $h = floor($seconds / 3600);
         $m = floor(($seconds % 3600) / 60);
         $s = $seconds % 60;
-        
-        if ($h > 0) return "{$h}h " . ($m > 0 ? "{$m}m" : "");
-        if ($m > 0) return "{$m}m " . ($s > 0 ? "{$s}s" : "");
+
+        if ($h > 0)
+            return "{$h}h " . ($m > 0 ? "{$m}m" : "");
+        if ($m > 0)
+            return "{$m}m " . ($s > 0 ? "{$s}s" : "");
         return "{$s}s";
     }
 }

@@ -2849,9 +2849,12 @@
                     }
 
                     hasMore = data.hasMore;
-                    if (!hasMore && sentinel) {
+                    if (!hasMore) {
                         const loader = document.getElementById('infinite-loader');
                         if (loader) loader.style.display = 'none';
+                        // Also hide the sentinel container itself
+                        const sentinel = document.getElementById('scroll-sentinel');
+                        if (sentinel) sentinel.style.display = 'none';
                     }
 
                     isLoading = false;
