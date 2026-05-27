@@ -2400,7 +2400,7 @@ $jsonLd = [
             poster="{{ secure_asset('images/hero-image.png') }}" aria-hidden="true"
             title="ShoutoutGH - Ghana's leading e-learning platform video background">
             <source
-                src="{{ secure_asset('videos/_users_ea54fd73-85a6-42d9-923f-e36dd7fc6d63_generated_d6bac217-3806-4c87-8cf8-16ea2b676063_generated_video.MP4') }}"
+                src="{{ secure_asset('videos/hailuo-2_3_animate_it_into_a_talking_head_video_make_the_characters_nod_and_use_subtle_hand-0.mp4') }}"
                 type="video/mp4">
             <source src="{{ secure_asset('videos/hero-video-new.webm') }}" type="video/webm">
             Your browser does not support the video tag.
