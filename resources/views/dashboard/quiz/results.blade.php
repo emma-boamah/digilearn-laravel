@@ -590,9 +590,37 @@
             color: var(--gray-600);
         }
 
+        /* Image Container */
+        .question-image-container {
+            margin-bottom: 1.5rem;
+            text-align: center;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            background-color: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            padding: 0.5rem;
+            max-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .question-image {
+            max-width: 100%;
+            max-height: 250px;
+            object-fit: contain;
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.3s ease;
+        }
+
+        .question-image:hover {
+            transform: scale(1.01);
+        }
+
         .question-text {
             font-size: 1.25rem;
-            font-weight: 600;
+            font-weight: 400;
             color: var(--gray-900);
             margin-bottom: 2rem;
             line-height: 1.4;
@@ -1597,6 +1625,12 @@
                                     $hasSubQuestions = !empty($question['sub_questions']) && count($question['sub_questions']) > 0;
                                 @endphp
 
+                                @if($question['image'])
+                                    <div class="question-image-container">
+                                        <img src="{{ $question['image'] }}" class="question-image" alt="Question illustration">
+                                    </div>
+                                @endif
+
                                 @if($qType === 'essay')
                                     <div class="essay-shared-content-box" style="background: rgba(239, 246, 255, 0.5); border: 1px solid #dbeafe; border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem;">
                                         @if($hasMainContent || !$hasSubQuestions)
@@ -1632,12 +1666,6 @@
                                 @endif
 
                                 <div class="question-layout">
-                                    @if($question['image'])
-                                        <div class="question-media">
-                                            <img src="{{ $question['image'] }}" alt="Question illustration">
-                                        </div>
-                                    @endif
-
                                     @if($qType === 'mcq')
                                         <div class="options-list">
                                             @php $labels = ['A', 'B', 'C', 'D', 'E']; @endphp

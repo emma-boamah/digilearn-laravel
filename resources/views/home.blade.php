@@ -166,7 +166,8 @@ $jsonLd = [
         /* Space between main and sub title */
         line-height: 1.2;
         padding-bottom: 0.1em;
-        white-space: nowrap;
+        white-space: normal;
+        word-wrap: break-word;
     }
 
     .hero-title-sub {
@@ -250,8 +251,8 @@ $jsonLd = [
         position: absolute;
         top: 0;
         left: 0;
-        min-width: 100%;
-        min-height: 100%;
+        width: 100%;
+        height: 100%;
         object-fit: cover;
         opacity: 0.5;
     }
