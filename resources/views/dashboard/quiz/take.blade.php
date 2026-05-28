@@ -431,7 +431,7 @@
 
         .question-text {
             font-size: 1.25rem;
-            font-weight: 600;
+            font-weight: 400;
             color: var(--gray-900);
             margin-bottom: 2rem;
             line-height: 1.5;
@@ -1001,6 +1001,11 @@
                     <i class="fas fa-align-left"></i> Preamble / Context
                 </div>
                 <div id="preambleText"></div>
+            </div>
+
+            <!-- Question Image Container -->
+            <div id="questionImageContainer" class="question-image-container" style="display: none;">
+                <img id="questionImage" class="question-image" src="" alt="Question Image">
             </div>
 
             <div class="question-text" id="questionText">

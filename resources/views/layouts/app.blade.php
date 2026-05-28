@@ -146,7 +146,7 @@
         @media (max-width: 1024px) {
             body {
                 /* Add safe area inset + header height */
-                padding-top: calc(130px + var(--safe-area-inset-top));
+                padding-top: calc(90px + var(--safe-area-inset-top));
             }
         }
 
@@ -193,7 +193,7 @@
             left: 0;
             right: 0;
             z-index: 50;
-            padding: calc(0.75rem + var(--safe-area-inset-top)) 1rem 0 1rem;
+            padding: calc(0.25rem + var(--safe-area-inset-top)) 1rem 0 1rem;
             transition: all var(--transition-duration) ease;
         }
 
@@ -241,31 +241,25 @@
             }
 
             .nav-content {
-                padding: 1rem 1.5rem;
-                min-height: 70px;
-            }
-
-            body {
-                padding-top: calc(130px + var(--safe-area-inset-top));
-                /* Increased from 120px */
+                padding: 0.75rem 1rem;
+                min-height: 60px;
             }
 
             .nav-buttons {
                 display: flex !important;
-                gap: 0.5rem;
+                gap: 0.75rem;
             }
 
             .nav-buttons::before {
                 display: none !important;
             }
 
-            .nav-buttons>*:not(#themeToggleBtn) {
+            .nav-buttons>*:not(#themeToggleBtn):not(#mobile-menu-button) {
                 display: none !important;
             }
 
             #themeToggleBtn {
-                margin-right: 4.5rem;
-                /* Space for the floating hamburger menu */
+                margin-right: 0;
             }
         }
 
@@ -454,12 +448,10 @@
         /* Modern Mobile Menu Styles */
         #mobile-menu-button {
             display: none;
-            position: fixed;
-            top: calc(1rem + var(--safe-area-inset-top));
-            right: 1.25rem;
+            position: relative;
             z-index: 100;
-            width: 3rem;
-            height: 3rem;
+            width: 2.75rem;
+            height: 2.75rem;
             border-radius: 50%;
             background: var(--primary-red);
             color: white;
@@ -564,24 +556,19 @@
             opacity: 1;
         }
 
-        /* Responsive adjustments */
         @media (max-width: 1024px) {
             #mobile-menu-button {
-                display: block;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
 
             .nav-links {
                 display: none;
             }
 
-            body {
-                padding-top: calc(75px + var(--safe-area-inset-top));
-            }
-
             .nav-content {
                 position: relative;
-                min-height: 75px;
-                padding: 0.5rem 1.25rem;
             }
         }
     </style>
@@ -704,20 +691,20 @@
                             <a href="{{ route('login') }}" class="btn btn-outline">Login</a>
                             <a href="{{ route('signup') }}" class="btn btn-primary">Sign Up Free</a>
                         @endauth
+
+                        <!-- Modern Mobile Menu -->
+                        <button id="mobile-menu-button" aria-label="Open navigation menu">
+                            <svg class="hamburger-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
+                            <svg class="close-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                                </path>
+                            </svg>
+                        </button>
                     </div>
                 </div>
-
-                <!-- Modern Mobile Menu -->
-                <button id="mobile-menu-button" aria-label="Open navigation menu">
-                    <svg class="hamburger-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 6h16M4 12h16M4 18h16"></path>
-                    </svg>
-                    <svg class="close-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
-                        </path>
-                    </svg>
-                </button>
 
                 <!-- Mobile menu -->
                 <div id="mobile-menu">

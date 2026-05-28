@@ -306,6 +306,15 @@
             margin-bottom: 1.5rem;
         }
 
+        .question-text img, .sub-text img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+            display: block;
+            box-shadow: var(--shadow-sm);
+        }
+
         .question-image {
             max-width: 100%;
             border-radius: 0.75rem;

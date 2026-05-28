@@ -561,6 +561,11 @@
                         </button>
                         <button type="button" class="toolbar-tool" data-command="removeFormat" title="Clear Formatting"><i class="fas fa-eraser"></i></button>
                     </div>
+                    <div class="toolbar-group">
+                        <button type="button" class="toolbar-tool insert-image-btn" data-command="insertImage" title="Insert Image">
+                            <i class="fas fa-image"></i>
+                        </button>
+                    </div>
                 </div>
             `;
 
@@ -713,6 +718,11 @@
                              e.preventDefault();
                              handleMathAction(tool, editor);
                          });
+                    } else if (tool.classList.contains('insert-image-btn')) {
+                        tool.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            handleImageUpload(editor);
+                        });
                     } else {
                         tool.addEventListener('click', (e) => {
                             e.preventDefault();
@@ -798,6 +808,72 @@
                     setTimeout(() => mf.focus(), 50);
                 }
                 updateQuestionModelFromEditor(editor);
+            }
+
+            function handleImageUpload(editor) {
+                const input = document.createElement('input');
+                input.setAttribute('type', 'file');
+                input.setAttribute('accept', 'image/png,image/jpeg,image/jpg,image/webp');
+                input.click();
+
+                input.onchange = async () => {
+                    const file = input.files[0];
+                    if (!file) return;
+
+                    // Validate file size (5MB max)
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('Image size must be less than 5MB');
+                        return;
+                    }
+
+                    // Validate file type
+                    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+                    if (!validTypes.includes(file.type)) {
+                        alert('Please upload a PNG, JPG, or WEBP image');
+                        return;
+                    }
+
+                    // Show uploading indicator on the button
+                    const btn = editor.closest('.editor-wrapper')?.querySelector('.insert-image-btn');
+                    const originalContent = btn ? btn.innerHTML : '';
+                    if (btn) {
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                        btn.disabled = true;
+                    }
+
+                    try {
+                        const formData = new FormData();
+                        formData.append('image', file);
+                        formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}');
+
+                        const response = await fetch('{{ route("admin.contents.upload.image") }}', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}'
+                            }
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success && result.url) {
+                            editor.focus();
+                            const imgHtml = `<img src="${result.url}" alt="Uploaded image" style="max-width: 100%; height: auto; border-radius: 8px; margin: 8px 0; display: block;">`;
+                            document.execCommand('insertHTML', false, imgHtml);
+                            updateQuestionModelFromEditor(editor);
+                        } else {
+                            alert('Image upload failed: ' + (result.message || 'Unknown error'));
+                        }
+                    } catch (error) {
+                        console.error('Image upload error:', error);
+                        alert('Error uploading image. Please try again.');
+                    } finally {
+                        if (btn) {
+                            btn.innerHTML = originalContent;
+                            btn.disabled = false;
+                        }
+                    }
+                };
             }
 
             function updateQuestionModelFromEditor(editor) {
