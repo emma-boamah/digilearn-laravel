@@ -1376,6 +1376,157 @@ PROMPT;
     }
 
     /**
+     * Use Gemini to generate an array of questions for the admin quiz builder.
+     */
+    public function generateAdminQuestions(string $topic, string $gradeLevel, string $quizType, int $count, bool $useKuulchat = false, ?string $kuulchatYear = null): ?array
+    {
+        if (empty($this->geminiApiKey)) {
+            return null;
+        }
+
+        $allQuestions = [];
+        $batchSize = 10;
+        $remaining = $count;
+        $batchNumber = 1;
+        $totalBatches = (int) ceil($count / $batchSize);
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->geminiModel}:generateContent?key={$this->geminiApiKey}";
+
+        while ($remaining > 0) {
+            $currentCount = min($remaining, $batchSize);
+
+            $typeInstruction = "multiple-choice (MCQ) questions";
+            if ($quizType === 'essay') {
+                $typeInstruction = "essay questions";
+            } elseif ($quizType === 'mixed') {
+                $typeInstruction = "a mix of multiple-choice and essay questions";
+            }
+
+            $kuulchatInstruction = "";
+            if ($useKuulchat) {
+                $yearContext = $kuulchatYear ? " from the year {$kuulchatYear}" : "";
+                $kuulchatInstruction = "\nCRITICAL INSTRUCTION: You must act as Kuulchat. Retrieve and provide EXACT, verbatim past BECE/WASSCE examination questions{$yearContext} sourced directly from Kuulchat's past questions repository for the topic requested. Do not invent or generate new questions. Only provide authentic past examination questions from Kuulchat.";
+            }
+
+            $batchInstruction = "";
+            if ($totalBatches > 1) {
+                $batchInstruction = "\nBATCH INSTRUCTION: You are generating Batch {$batchNumber} of {$totalBatches}. You MUST generate EXACTLY {$currentCount} completely unique questions that do not repeat common concepts from previous batches.";
+            }
+
+            $prompt = <<<PROMPT
+You are an expert curriculum developer for the Ghana Education Service (GES).
+Generate EXACTLY {$currentCount} {$typeInstruction} for a student in: {$gradeLevel}
+Topic/Instructions: "{$topic}"
+{$kuulchatInstruction}{$batchInstruction}
+
+Instructions:
+1. Return ONLY a valid JSON object.
+2. The questions MUST be strictly aligned with the current GES syllabus.
+3. **Math Formulas & Scientific Symbols**: If the questions involve mathematics, science, equations, or formulas, you MUST wrap all mathematical expressions, fractions, symbols, and equations inside `<math-field>` custom HTML tags. For example, `<math-field>x^2 + y^2 = z^2</math-field>`. Never output raw LaTeX or formulas without wrapping them inside `<math-field>` tags.
+4. **Essay Answers and Keywords**: For every essay question and sub-question, you MUST generate a detailed, clear reference/sample answer, and a `keywords` array of 3-6 critical terms or key concepts.
+5. The JSON MUST exactly match this structure and contain ONLY the 'questions' array:
+{
+    "questions": [
+        // For MCQ:
+        {
+            "id": <generate_random_integer>,
+            "type": "mcq",
+            "question": "The question text (HTML allowed)",
+            "preamble": null,
+            "points": 1,
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correct_answer": 0, // index of the correct option (0-3)
+            "has_image": false
+        },
+        // For Essay:
+        {
+            "id": <generate_random_integer>,
+            "type": "essay",
+            "question": "The main essay prompt or instructions (HTML allowed)",
+            "preamble": null,
+            "points": 5,
+            "correct_answer": "A detailed sample reference answer containing key concepts and terms for auto-grading",
+            "keywords": ["keyword1", "keyword2", "keyword3"],
+            "sub_questions": [
+                {
+                    "id": <generate_random_integer>,
+                    "label": "a",
+                    "text": "Sub question part a",
+                    "sample_answer": "Expected detailed answer for part a",
+                    "keywords": ["keyword1", "keyword2"],
+                    "points": 2
+                }
+            ]
+        }
+    ]
+}
+
+Return ONLY the JSON object, no explanation or markdown.
+PROMPT;
+
+            try {
+                $response = Http::timeout(300)
+                    ->retry(3, 3000, null, false)
+                    ->post($url, [
+                    'contents' => [
+                        [
+                            'parts' => [
+                                ['text' => $prompt]
+                            ]
+                        ]
+                    ],
+                    'generationConfig' => [
+                        'response_mime_type' => 'application/json',
+                        'maxOutputTokens' => 8192,
+                    ]
+                ]);
+
+                if ($response->failed()) {
+                    throw new Exception("Gemini API request failed for batch {$batchNumber}: " . $response->body());
+                }
+
+                $result = $response->json();
+                $text = $result['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                
+                // Clean up markdown formatting if the model wraps the JSON
+                $text = preg_replace('/^```json\s*/i', '', $text);
+                $text = preg_replace('/^```\s*/i', '', $text);
+                $text = preg_replace('/```$/i', '', $text);
+                $text = trim($text);
+
+                $decoded = json_decode($text, true);
+                $jsonErrorMsg = json_last_error_msg();
+
+                if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
+                    Log::error("Gemini JSON Parse Error in batch {$batchNumber}", [
+                        'error' => $jsonErrorMsg,
+                        'raw_text' => $text
+                    ]);
+                    throw new Exception("The AI returned an invalid JSON response format in batch {$batchNumber}. Error: " . $jsonErrorMsg);
+                }
+
+                if (isset($decoded['questions']) && is_array($decoded['questions'])) {
+                    $allQuestions = array_merge($allQuestions, $decoded['questions']);
+                }
+
+            } catch (Exception $e) {
+                Log::error("Gemini API Error (Admin Quiz Generation Batch {$batchNumber})", ['error' => $e->getMessage()]);
+                
+                // If we already generated some questions and hit an error on a subsequent batch, 
+                // it might be better to return what we have rather than failing the entire request.
+                if (count($allQuestions) > 0) {
+                    break;
+                }
+                throw $e;
+            }
+
+            $remaining -= $currentCount;
+            $batchNumber++;
+        }
+
+        return ['questions' => $allQuestions];
+    }
+
+    /**
      * Convert slug grade to display grade for database storage.
      */
     private function formatGradeForDb(string $grade): string
