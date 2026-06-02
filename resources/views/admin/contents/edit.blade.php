@@ -212,6 +212,9 @@
                             <button type="button" id="addEssayBtn" class="flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors text-sm font-medium">
                                 <i class="fas fa-plus mr-2"></i>Essay
                             </button>
+                            <button type="button" id="addAiBtn" class="flex items-center px-3 py-1.5 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-colors text-sm font-medium border border-purple-200 shadow-sm">
+                                <i class="fas fa-magic mr-2"></i>AI Generate
+                            </button>
                         </div>
                     </div>
                     <div class="p-6">

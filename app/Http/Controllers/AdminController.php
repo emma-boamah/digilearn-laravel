@@ -3029,6 +3029,62 @@ class AdminController extends Controller
         return back()->with('success', 'Quiz feature status updated.');
     }
 
+    public function generateAiQuestions(Request $request, \App\Services\LearningAgentService $agentService)
+    {
+        $request->validate([
+            'topic' => 'required|string|max:255',
+            'grade_level' => 'required|string|max:50',
+            'quiz_type' => 'required|in:mcq,essay,mixed',
+            'count' => 'required|integer|min:1|max:50',
+            'use_kuulchat' => 'nullable|boolean',
+            'use_kuulchat_year' => 'nullable|string|max:4',
+        ]);
+
+        try {
+            $quizData = $agentService->generateAdminQuestions(
+                $request->topic,
+                $request->grade_level,
+                $request->quiz_type,
+                $request->count,
+                $request->boolean('use_kuulchat'),
+                $request->input('use_kuulchat_year')
+            );
+
+            if (!$quizData || empty($quizData['questions'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to generate questions. The AI returned an empty response. Please try modifying your instructions or reducing the question count.',
+                ], 400);
+            }
+
+            return response()->json([
+                'success' => true,
+                'questions' => $quizData['questions'],
+            ]);
+
+        } catch (\Exception $e) {
+            $errorMessage = $e->getMessage();
+            $userMessage = 'An unexpected error occurred while contacting the AI server.';
+
+            if (str_contains($errorMessage, '503') || str_contains(strtolower($errorMessage), 'high demand') || str_contains($errorMessage, 'UNAVAILABLE')) {
+                $userMessage = "The Google Gemini AI is currently experiencing high demand and is unavailable. Spikes in demand are usually temporary. Please wait a few minutes and try again.";
+            } elseif (str_contains($errorMessage, 'cURL error 28') || str_contains(strtolower($errorMessage), 'timed out')) {
+                $userMessage = "The AI generation timed out. Generating full papers can take time. Please try asking for fewer questions or try again later.";
+            } elseif (str_contains($errorMessage, '429') || str_contains(strtolower($errorMessage), 'quota')) {
+                $userMessage = "The AI quota has been exceeded. Please try again later.";
+            } else {
+                $userMessage = "AI Error: " . $errorMessage;
+            }
+
+            \Illuminate\Support\Facades\Log::error('Admin AI Generation Exception', ['error' => $errorMessage]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $userMessage,
+            ], 500);
+        }
+    }
+
     // Content Management - Documents
     public function indexDocuments(Request $request)
     {

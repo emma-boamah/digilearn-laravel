@@ -1115,5 +1115,229 @@
 
             return div;
         }
+
+        // --- AI Question Generation Logic ---
+        function openAiModal() {
+            // Auto-detect Exam Type from selected categories
+            const categoryCheckboxes = document.querySelectorAll('input[name="upload_category_ids[]"]:checked, input[name="category_ids[]"]:checked');
+            let detectedType = 'normal';
+            categoryCheckboxes.forEach(cb => {
+                const labelText = cb.nextElementSibling ? cb.nextElementSibling.textContent.toLowerCase() : '';
+                if (labelText.includes('bece')) detectedType = 'bece';
+                if (labelText.includes('wassce')) detectedType = 'wassce';
+            });
+
+            const examTypeSelect = document.getElementById('aiExamType');
+            if (examTypeSelect) {
+                examTypeSelect.value = detectedType;
+                examTypeSelect.dispatchEvent(new Event('change')); // Triggers the year dropdown visibility
+            }
+
+            document.getElementById('aiGenerateModal').classList.remove('hidden');
+        }
+
+        function closeAiModal() {
+            const uploadModal = document.getElementById('uploadModal');
+            if (uploadModal) uploadModal.classList.remove('hidden');
+            document.getElementById('aiGenerateModal').classList.add('hidden');
+        }
+
+        async function handleAiGeneration() {
+            // Get data from the main form/page
+            const title = document.getElementById('title')?.value || '';
+            const subjectSelect = document.getElementById('subject_id');
+            const subjectName = subjectSelect && subjectSelect.options[subjectSelect.selectedIndex] ? subjectSelect.options[subjectSelect.selectedIndex].text : '';
+            const gradeLevel = document.getElementById('grade_level')?.value || '';
+
+            // Get data from the AI modal
+            const additionalContext = document.getElementById('aiTopic').value;
+            const quizType = document.getElementById('aiQuizType').value;
+            const count = document.getElementById('aiCount').value;
+            const examType = document.getElementById('aiExamType').value;
+            const examYear = document.getElementById('aiExamYear').value;
+
+            if (!title && !subjectName) {
+                alert('Please fill out the Lesson Title and Subject in the main form first.');
+                return;
+            }
+
+            // Auto-assemble the prompt topic
+            let assembledTopic = '';
+            if (examType === 'bece') {
+                assembledTopic = `Set BECE past questions for the subject "${subjectName}"`;
+                if (examYear) assembledTopic += ` for the year ${examYear}`;
+            } else if (examType === 'wassce') {
+                assembledTopic = `Set WASSCE past questions for the subject "${subjectName}"`;
+                if (examYear) assembledTopic += ` for the year ${examYear}`;
+            } else {
+                assembledTopic = `Set questions on the topic "${title}" for subject "${subjectName}" at the ${gradeLevel} level.`;
+            }
+
+            if (additionalContext) {
+                assembledTopic += ` Additional instructions: ${additionalContext}`;
+            }
+
+            const useKuulchat = (examType === 'bece' || examType === 'wassce');
+
+            const btn = document.getElementById('aiGenerateSubmitBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('{{ route("admin.contents.generate-ai-questions") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        topic: assembledTopic,
+                        grade_level: gradeLevel || 'General',
+                        quiz_type: quizType,
+                        count: parseInt(count),
+                        use_kuulchat: useKuulchat,
+                        use_kuulchat_year: useKuulchat ? (examYear || null) : null
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.questions && data.questions.length > 0) {
+                    // Replace random IDs with actual unique IDs
+                    const processedQuestions = data.questions.map(q => {
+                        q.id = Date.now() + Math.floor(Math.random() * 10000);
+                        if (q.sub_questions) {
+                            q.sub_questions = q.sub_questions.map(sq => {
+                                sq.id = Date.now() + Math.floor(Math.random() * 10000);
+                                return sq;
+                            });
+                        }
+                        return q;
+                    });
+
+                    // Append to existing questions
+                    uploadData.quiz.questions = [...uploadData.quiz.questions, ...processedQuestions];
+                    
+                    // Render UI
+                    renderQuestionNavigation();
+                    
+                    // Go to the first newly added question
+                    const newIndex = uploadData.quiz.questions.length - processedQuestions.length;
+                    showQuestion(newIndex);
+                    
+                    closeAiModal();
+                    document.getElementById('aiTopic').value = ''; // Reset
+                } else {
+                    alert(data.message || 'Failed to generate questions. Please try again.');
+                }
+            } catch (error) {
+                console.error('AI Generation Error:', error);
+                alert('An error occurred during generation: ' + error.message + '\n\nPlease check the browser console for more details.');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // Attach event listener if button exists (it will be added in index and edit views)
+        document.addEventListener('DOMContentLoaded', () => {
+            const addAiBtn = document.getElementById('addAiBtn');
+            if (addAiBtn) {
+                addAiBtn.addEventListener('click', openAiModal);
+                // Toggle Exam Year dropdown based on Exam Type
+                const examTypeSelect = document.getElementById('aiExamType');
+                const examYearSection = document.getElementById('aiExamYearSection');
+                if (examTypeSelect && examYearSection) {
+                    examTypeSelect.addEventListener('change', () => {
+                        const isExam = examTypeSelect.value === 'bece' || examTypeSelect.value === 'wassce';
+                        examYearSection.classList.toggle('hidden', !isExam);
+                        if (!isExam) {
+                            const yearSelect = document.getElementById('aiExamYear');
+                            if (yearSelect) yearSelect.value = '';
+                        }
+                    });
+                }
+            }
+        });
 </script>
+
+<!-- AI Generation Slide-over Drawer -->
+<div id="aiGenerateModal" class="hidden fixed inset-0 z-[60]">
+    <!-- Invisible Backdrop to capture clicks -->
+    <div class="fixed inset-0 bg-transparent" onclick="closeAiModal()"></div>
+
+    <!-- Drawer Panel -->
+    <div class="fixed inset-y-0 right-0 z-[60] w-full max-w-md bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out sm:rounded-l-2xl border-l border-gray-200">
+        
+        <!-- Drawer Header -->
+        <div class="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-white flex justify-between items-center sm:rounded-tl-2xl">
+            <h3 class="text-xl font-bold text-gray-900 flex items-center tracking-tight">
+                <div class="bg-white shadow-sm p-2 rounded-xl mr-3 text-purple-600 border border-purple-100">
+                    <i class="fas fa-magic"></i>
+                </div>
+                Generate with AI
+            </h3>
+            <button onclick="closeAiModal()" class="text-gray-400 hover:text-gray-700 transition-colors bg-white rounded-full p-2 hover:bg-gray-100 shadow-sm border border-transparent hover:border-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <!-- Drawer Body -->
+        <div class="p-6 flex-1 overflow-y-auto space-y-5 custom-scrollbar">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Additional Context (Optional)</label>
+                    <textarea id="aiTopic" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500" placeholder="e.g. Focus specifically on balancing chemical equations..."></textarea>
+                    <p class="text-xs text-gray-500 mt-1">We'll automatically use the Title, Subject, and Grade Level from your main form.</p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Question Type</label>
+                        <select id="aiQuizType" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                            <option value="mcq">Multiple Choice</option>
+                            <option value="essay">Essay</option>
+                            <option value="mixed">Mixed</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Number of Questions</label>
+                        <input type="number" id="aiCount" value="5" min="1" max="50" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                    </div>
+                </div>
+
+                <div class="mt-4 p-3 bg-purple-50 rounded-lg border border-purple-100">
+                    <label class="block text-sm font-medium text-purple-900 mb-1">Question Source / Exam Type</label>
+                    <select id="aiExamType" class="w-full px-3 py-2 border border-purple-200 rounded-md bg-white focus:ring-purple-500 focus:border-purple-500 text-purple-800">
+                        <option value="normal">Normal Lesson Quiz</option>
+                        <option value="bece">BECE Past Questions (Kuulchat)</option>
+                        <option value="wassce">WASSCE Past Questions (Kuulchat)</option>
+                    </select>
+                    <p class="text-xs text-purple-700 mt-1">Select BECE or WASSCE to retrieve exact verified past questions.</p>
+                </div>
+
+                <div id="aiExamYearSection" class="hidden mt-3 p-3 bg-purple-50 rounded-lg border border-purple-100">
+                    <label class="block text-sm font-medium text-purple-900 mb-1">Exam Year (Optional)</label>
+                    <select id="aiExamYear" class="w-full px-3 py-2 border border-purple-200 rounded-md bg-white focus:ring-purple-500 focus:border-purple-500">
+                        <option value="">Any Year</option>
+                        @for($y = 2024; $y >= 2010; $y--)
+                            <option value="{{ $y }}">{{ $y }}</option>
+                        @endfor
+                    </select>
+                    <p class="text-xs text-purple-600 mt-1">Select a year to retrieve a full paper from that specific exam session.</p>
+                </div>
+        </div>
+
+        <!-- Drawer Footer -->
+        <div class="p-6 border-t border-gray-100 bg-gray-50 flex flex-col-reverse sm:flex-row justify-end gap-3 sm:rounded-bl-2xl shrink-0">
+            <button type="button" onclick="closeAiModal()" class="w-full sm:w-auto px-5 py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl transition-all shadow-sm font-medium">
+                Cancel
+            </button>
+            <button type="button" id="aiGenerateSubmitBtn" onclick="handleAiGeneration()" class="w-full sm:w-auto px-5 py-2.5 bg-purple-600 text-white hover:bg-purple-700 hover:shadow-md hover:-translate-y-0.5 transform rounded-xl transition-all flex items-center justify-center font-medium shadow-sm">
+                <i class="fas fa-magic mr-2"></i> Generate Questions
+            </button>
+        </div>
+    </div>
+</div>
 @endpush
