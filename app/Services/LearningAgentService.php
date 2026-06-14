@@ -16,6 +16,7 @@ class LearningAgentService
 {
     private string $geminiApiKey;
     private string $geminiModel;
+    private string $openAiApiKey;
     private YouTubeService $youtubeService;
 
     /** Maximum agent requests per user per day */
@@ -31,6 +32,7 @@ class LearningAgentService
     {
         $this->geminiApiKey = config('services.gemini.key', '');
         $this->geminiModel = config('services.gemini.model', 'gemini-1.5-flash');
+        $this->openAiApiKey = config('services.openai.key', '');
         $this->youtubeService = app(YouTubeService::class);
     }
 
@@ -1378,14 +1380,20 @@ PROMPT;
     /**
      * Use Gemini to generate an array of questions for the admin quiz builder.
      */
-    public function generateAdminQuestions(string $topic, string $gradeLevel, string $quizType, int $count, bool $useKuulchat = false, ?string $kuulchatYear = null): ?array
+    public function generateAdminQuestions(string $topic, string $gradeLevel, string $quizType, int $count, bool $useKuulchat = false, ?string $kuulchatYear = null, ?string $modelPreference = 'gpt-4o'): ?array
     {
-        if (empty($this->geminiApiKey)) {
+        if (empty($this->geminiApiKey) && empty($this->openAiApiKey)) {
             return null;
         }
 
         $allQuestions = [];
         $batchSize = 10;
+        if ($quizType === 'essay') {
+            $batchSize = 2; // Generating complex essays is computationally heavy and often causes 503s
+        } elseif ($quizType === 'mixed') {
+            $batchSize = 5;
+        }
+        
         $remaining = $count;
         $batchNumber = 1;
         $totalBatches = (int) ceil($count / $batchSize);
@@ -1464,28 +1472,71 @@ Return ONLY the JSON object, no explanation or markdown.
 PROMPT;
 
             try {
-                $response = Http::timeout(300)
-                    ->retry(3, 3000, null, false)
-                    ->post($url, [
-                    'contents' => [
-                        [
-                            'parts' => [
-                                ['text' => $prompt]
+                $text = null;
+                $success = false;
+                $lastError = '';
+
+                if (($modelPreference === 'gpt-4o' || $modelPreference === 'gpt-4o-mini')) {
+                    if (empty($this->openAiApiKey)) {
+                        throw new Exception("OpenAI API key is missing. Please configure it in the environment.");
+                    }
+                    
+                    try {
+                        $response = Http::timeout(120)
+                            ->withToken($this->openAiApiKey)
+                            ->post('https://api.openai.com/v1/chat/completions', [
+                                'model' => $modelPreference,
+                                'messages' => [
+                                    ['role' => 'system', 'content' => 'You are an expert curriculum developer for the Ghana Education Service (GES). Your task is to output strictly formatted JSON matching the requested structure.'],
+                                    ['role' => 'user', 'content' => $prompt]
+                                ],
+                                'response_format' => ['type' => 'json_object']
+                            ]);
+
+                        if ($response->failed()) {
+                            throw new Exception("OpenAI API request failed: " . $response->body());
+                        }
+
+                        $result = $response->json();
+                        $text = $result['choices'][0]['message']['content'] ?? '';
+                        $success = true;
+                    } catch (Exception $e) {
+                        throw new Exception($e->getMessage());
+                    }
+                } elseif ($modelPreference === 'gemini') {
+                    if (empty($this->geminiApiKey)) {
+                        throw new Exception("Gemini API key is missing. Please configure it in the environment.");
+                    }
+                    
+                    try {
+                        $response = Http::timeout(120)
+                            ->post($url, [
+                            'contents' => [
+                                [
+                                    'parts' => [
+                                        ['text' => $prompt]
+                                    ]
+                                ]
+                            ],
+                            'generationConfig' => [
+                                'response_mime_type' => 'application/json',
+                                'maxOutputTokens' => 8192,
                             ]
-                        ]
-                    ],
-                    'generationConfig' => [
-                        'response_mime_type' => 'application/json',
-                        'maxOutputTokens' => 8192,
-                    ]
-                ]);
+                        ]);
 
-                if ($response->failed()) {
-                    throw new Exception("Gemini API request failed for batch {$batchNumber}: " . $response->body());
+                        if ($response->failed()) {
+                            throw new Exception("Gemini API request failed: " . $response->body());
+                        }
+
+                        $result = $response->json();
+                        $text = $result['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                        $success = true;
+                    } catch (Exception $e) {
+                        throw new Exception($e->getMessage());
+                    }
+                } else {
+                    throw new Exception("Invalid model preference: {$modelPreference}");
                 }
-
-                $result = $response->json();
-                $text = $result['candidates'][0]['content']['parts'][0]['text'] ?? '';
                 
                 // Clean up markdown formatting if the model wraps the JSON
                 $text = preg_replace('/^```json\s*/i', '', $text);
@@ -1497,7 +1548,8 @@ PROMPT;
                 $jsonErrorMsg = json_last_error_msg();
 
                 if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
-                    Log::error("Gemini JSON Parse Error in batch {$batchNumber}", [
+                    $provider = !empty($this->openAiApiKey) ? 'OpenAI' : 'Gemini';
+                    Log::error("{$provider} JSON Parse Error in batch {$batchNumber}", [
                         'error' => $jsonErrorMsg,
                         'raw_text' => $text
                     ]);
@@ -1509,7 +1561,8 @@ PROMPT;
                 }
 
             } catch (Exception $e) {
-                Log::error("Gemini API Error (Admin Quiz Generation Batch {$batchNumber})", ['error' => $e->getMessage()]);
+                $provider = !empty($this->openAiApiKey) ? 'OpenAI' : 'Gemini';
+                Log::error("{$provider} API Error (Admin Quiz Generation Batch {$batchNumber})", ['error' => $e->getMessage()]);
                 
                 // If we already generated some questions and hit an error on a subsequent batch, 
                 // it might be better to return what we have rather than failing the entire request.
