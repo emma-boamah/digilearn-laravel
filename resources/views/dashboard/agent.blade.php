@@ -600,23 +600,32 @@
             align-items: center;
             gap: 0.5rem;
             padding: 0.75rem 1.5rem;
-            background: #F59E0B;
-            color: #fff;
+            background-color: transparent;
+            color: var(--text-main);
+            border: 1px solid #2677B8;
             font-size: 0.875rem;
             font-weight: 600;
-            border-radius: 0.625rem;
+            border-radius: 0.5rem;
             text-decoration: none;
             transition: all 0.2s;
-            border: none;
             cursor: pointer;
             width: 100%;
             justify-content: center;
         }
 
         .quiz-btn:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-            color: #fff;
+            background-color: rgba(38, 119, 184, 0.05);
+            color: #2677B8;
+        }
+
+        [data-theme="dark"] .quiz-btn {
+            border-color: #3b82f6;
+            color: #e5e7eb;
+        }
+
+        [data-theme="dark"] .quiz-btn:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
         }
 
         /* ============= Roadmap Toggle ============= */
@@ -1579,6 +1588,37 @@
                     if (data.summary) {
                         addBubble(data.summary, 'tutor-explanation');
                     }
+                    
+                    if (data.suggested_actions && data.suggested_actions.length > 0) {
+                        const chatArea = document.getElementById('chatArea');
+                        const actionsDiv = document.createElement('div');
+                        actionsDiv.className = 'suggestions';
+                        actionsDiv.style.marginTop = '-1rem';
+                        actionsDiv.style.marginBottom = '1.5rem';
+                        actionsDiv.style.justifyContent = 'flex-start';
+                        
+                        data.suggested_actions.forEach(action => {
+                            const btn = document.createElement('button');
+                            btn.className = 'suggestion-chip';
+                            // Icon based on the label for better UI
+                            let iconSvg = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>';
+                            if (action.label.toLowerCase().includes('essay')) {
+                                iconSvg = '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5L6 9H2V15H6L11 19V5Z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"></path></svg>';
+                            }
+                            
+                            btn.innerHTML = `${iconSvg} ${action.label}`;
+                            btn.onclick = () => {
+                                if (action.mode) setMode(action.mode);
+                                document.getElementById('agentInput').value = action.query;
+                                handleSubmit(new Event('submit'));
+                            };
+                            actionsDiv.appendChild(btn);
+                        });
+                        
+                        chatArea.appendChild(actionsDiv);
+                        chatArea.scrollTop = chatArea.scrollHeight;
+                    }
+                    
                     if (data.lesson_url || data.quiz_url || data.roadmap) {
                         addResultCard(data);
                     }
