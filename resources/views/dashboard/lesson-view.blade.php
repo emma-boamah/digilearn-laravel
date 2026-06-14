@@ -4563,6 +4563,11 @@
             console.log(`Quill script ${index + 1}:`, script.src, 'loaded:', script.complete);
         });
 
+        // Initialize the main video player immediately so it doesn't wait for Quill
+        if (typeof window.initializeMainLessonVideo === 'function') {
+            window.initializeMainLessonVideo();
+        }
+
         // Check if Quill is loaded before initializing
         if (typeof Quill === 'undefined') {
             console.warn('Quill.js not loaded yet, waiting...');
@@ -4635,7 +4640,6 @@
 
     function initializeAll() {
         // Initialize all functionality
-        initializeMainLessonVideo(); // Click-to-play for the main video player
         initializeFilters();
         initializeComments();
         initializeActionButtons();
@@ -4659,7 +4663,8 @@
      * Click-to-play for the main lesson video on lesson-view page.
      * Replaces the thumbnail + play overlay with a full interactive player embed.
      */
-    function initializeMainLessonVideo() {
+    // Expose globally so it can be called immediately
+    window.initializeMainLessonVideo = function() {
         const mainCard = document.querySelector('.lesson-main-video');
         if (!mainCard) return;
 
@@ -4686,6 +4691,7 @@
                 iframe.allowFullscreen = true;
                 iframe.frameBorder = '0';
                 iframe.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:4;';
+                preview.appendChild(iframe);
             } else if (videoSource === 'vimeo' && vimeoId) {
                 iframe = document.createElement('iframe');
                 iframe.src = `https://player.vimeo.com/video/${vimeoId}?autoplay=1&dnt=1`;
@@ -4693,15 +4699,18 @@
                 iframe.allowFullscreen = true;
                 iframe.frameBorder = '0';
                 iframe.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:4;';
+                preview.appendChild(iframe);
             } else if (videoSource === 'mux' && muxPlaybackId) {
-                iframe = document.createElement('iframe');
-                iframe.src = `https://stream.mux.com/${muxPlaybackId}.m3u8`;
-                iframe.allow = 'autoplay; fullscreen';
-                iframe.allowFullscreen = true;
-                iframe.frameBorder = '0';
-                iframe.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:4;';
+                const video = document.createElement('video');
+                video.src = `https://stream.mux.com/${muxPlaybackId}.m3u8`;
+                video.autoplay = true;
+                video.controls = true;
+                video.playsInline = true;
+                video.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:4;object-fit:contain;background:#000;';
+                preview.appendChild(video);
+                iframe = video; // Store reference for event
             } else if (videoPath) {
-                // Local video
+                // Local video or fallback
                 const video = document.createElement('video');
                 video.src = videoPath;
                 video.autoplay = true;
@@ -4709,10 +4718,7 @@
                 video.playsInline = true;
                 video.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:4;object-fit:contain;background:#000;';
                 preview.appendChild(video);
-            }
-
-            if (iframe) {
-                preview.appendChild(iframe);
+                iframe = video; // Store reference for event
             }
 
             // Hide the thumbnail and play overlay
@@ -4723,7 +4729,7 @@
 
             // Dispatch event so progress tracking can detect the player
             window.dispatchEvent(new CustomEvent('mainVideoStarted', {
-                detail: { source: videoSource, element: iframe || preview.querySelector('video') }
+                detail: { source: videoSource, element: iframe }
             }));
         }
 
@@ -7268,7 +7274,7 @@
     let videoProgressTracker = null;
 
     // Initialize video progress tracking
-    function initializeVideoProgressTracking() {
+    function initializeVideoProgressTracking(dynamicVideoElement = null) {
         console.log('=== Starting Video Progress Tracking Initialization ===');
 
         // Get lesson data from page - INCLUDING DURATION
@@ -7296,29 +7302,38 @@
         }
 
         // Find video element
-        let videoElement = null;
-        const selectors = [
-            '.video-container video',
-            '.video-container iframe',
-            '.video-player video',
-            '.video-player iframe',
-            'video[controls]',
-            'iframe[src*="youtube.com"]',
-            'iframe[src*="vimeo.com"]',
-            'iframe[src*="mux.com"]'
-        ];
+        let videoElement = dynamicVideoElement;
+        
+        if (!videoElement) {
+            const selectors = [
+                '.video-container video',
+                '.video-container iframe',
+                '.video-player video',
+                '.video-player iframe',
+                'video[controls]',
+                'iframe[src*="youtube.com"]',
+                'iframe[src*="vimeo.com"]',
+                'iframe[src*="mux.com"]'
+            ];
 
-        for (const selector of selectors) {
-            const found = document.querySelector(selector);
-            if (found) {
-                videoElement = found;
-                console.log('Found video element with selector:', selector);
-                break;
+            for (const selector of selectors) {
+                const found = document.querySelector(selector);
+                if (found) {
+                    videoElement = found;
+                    console.log('Found video element with selector:', selector);
+                    break;
+                }
             }
         }
 
         if (!videoElement) {
-            console.warn('No video element found with any selector');
+            console.warn('No video element found yet. Will wait for mainVideoStarted event.');
+            return;
+        }
+
+        // If tracker is already initialized, don't do it again
+        if (typeof videoProgressTracker !== 'undefined' && videoProgressTracker !== null) {
+            console.log('VideoProgressTracker already initialized');
             return;
         }
 
@@ -7569,41 +7584,11 @@
         initYouTubeTracking() {
             console.log('Setting up YouTube IFrame API tracking');
 
-            // Extract video ID from iframe src
-            const src = this.videoElement.getAttribute('src') || '';
-            let videoId = null;
-            
-            // Try to get from data attribute first (most reliable), then from src
-            const videoIdMatch = src.match(/embed\/([^?&]+)/);
-            videoId = this.videoElement.parentElement.dataset.externalVideoId || (videoIdMatch ? videoIdMatch[1] : null);
-
-            if (!videoId) {
-                console.error('Could not extract YouTube video ID');
-                this.initGenericIframeTracking();
-                return;
-            }
-
-            console.log('YouTube video ID:', videoId);
-
-            // CRITICAL: Replace the iframe with a div container for YouTube API
-            const videoContainer = this.videoElement.parentElement;
-            const playerDiv = document.createElement('div');
-            playerDiv.id = 'youtube-player-' + videoId; // Unique ID for this player
-            playerDiv.style.width = '100%';
-            playerDiv.style.height = '100%';
-            playerDiv.style.position = 'absolute';
-            playerDiv.style.top = '0';
-            playerDiv.style.left = '0';
-
-            // Replace the iframe with the div
-            this.videoElement.parentElement.replaceChild(playerDiv, this.videoElement);
-            console.log('Replaced iframe with player div');
-
             // Wait for YouTube IFrame API to be ready
             const checkYTReady = () => {
                 if (typeof YT !== 'undefined' && YT.Player) {
-                    console.log('YouTube API ready, creating player');
-                    this.createYouTubePlayer(videoId, playerDiv.id);
+                    console.log('YouTube API ready, binding to existing iframe');
+                    this.bindYouTubePlayer();
                 } else {
                     console.log('Waiting for YouTube API...');
                     setTimeout(checkYTReady, 100);
@@ -7613,24 +7598,16 @@
             checkYTReady();
         }
 
-        createYouTubePlayer(videoId, containerId) {
-            console.log('Creating YouTube player for video:', videoId, 'in container:', containerId);
+        bindYouTubePlayer() {
+            console.log('Binding YouTube player to iframe');
 
             try {
-                const player = new YT.Player(containerId, {
-                    width: '100%',
-                    height: '100%',
-                    videoId: videoId, // Use videoId parameter instead of relying on iframe
-                    playerVars: {
-                        autoplay: 0, // Don't autoplay
-                        controls: 1,
-                        modestbranding: 1,
-                        rel: 0,
-                        showinfo: 0,
-                        fs: 1,
-                        iv_load_policy: 3,
-                        origin: window.location.origin
-                    },
+                // Ensure the iframe has an ID for the YT.Player constructor
+                if (!this.videoElement.id) {
+                    this.videoElement.id = 'yt-player-' + Date.now();
+                }
+
+                const player = new YT.Player(this.videoElement.id, {
                     events: {
                         'onReady': (event) => {
                             console.log('✓ YouTube player ready');
@@ -8005,6 +7982,14 @@
             setTimeout(() => {
                 initializeVideoProgressTracking();
             }, 1000);
+        }
+    });
+
+    // Listen for dynamically created video players
+    window.addEventListener('mainVideoStarted', function (e) {
+        console.log('mainVideoStarted event received, ensuring progress tracking is initialized');
+        if (typeof videoProgressTracker === 'undefined' || !videoProgressTracker) {
+            initializeVideoProgressTracking(e.detail.element);
         }
     });
 
