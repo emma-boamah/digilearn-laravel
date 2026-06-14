@@ -3416,6 +3416,7 @@
                     options: type === 'mcq' ? ['', '', '', ''] : null,
                     sub_questions: [], // Array for structured BECE-style parts
                     correct_answer: type === 'mcq' ? 0 : '',
+                    keywords: [], // Keywords for AI grading fallback
                     points: 1,
                     image: null,
                     imageFile: null
@@ -3491,6 +3492,75 @@
                         previewDiv.classList.add('hidden');
                     });
                 }
+            }
+
+            // --- Keywords Tag Input Helper ---
+            function setupKeywordsInput(inputEl, containerEl, dataObj) {
+                if (!inputEl || !containerEl || !dataObj) return;
+                if (!dataObj.keywords) dataObj.keywords = [];
+
+                function renderTags() {
+                    // Remove all existing tags
+                    containerEl.querySelectorAll('.keyword-tag').forEach(t => t.remove());
+                    // Re-render from model
+                    dataObj.keywords.forEach((kw, i) => {
+                        const tag = document.createElement('span');
+                        tag.className = 'keyword-tag';
+                        tag.dataset.index = i;
+                        tag.innerHTML = `${kw}<button type="button" class="keyword-remove" data-index="${i}">&times;</button>`;
+                        containerEl.insertBefore(tag, inputEl);
+
+                        tag.querySelector('.keyword-remove').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            dataObj.keywords.splice(i, 1);
+                            renderTags();
+                        });
+                    });
+                    inputEl.placeholder = dataObj.keywords.length === 0 ? 'Type a keyword and press Enter...' : 'Add more...';
+                }
+
+                function addKeyword(value) {
+                    const trimmed = value.trim().toLowerCase();
+                    if (trimmed && !dataObj.keywords.includes(trimmed)) {
+                        dataObj.keywords.push(trimmed);
+                        renderTags();
+                    }
+                    inputEl.value = '';
+                }
+
+                inputEl.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault();
+                        addKeyword(inputEl.value);
+                    }
+                    // Allow backspace to remove last tag when input is empty
+                    if (e.key === 'Backspace' && inputEl.value === '' && dataObj.keywords.length > 0) {
+                        dataObj.keywords.pop();
+                        renderTags();
+                    }
+                });
+
+                // Handle paste of comma-separated keywords
+                inputEl.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    const pasted = (e.clipboardData || window.clipboardData).getData('text');
+                    pasted.split(',').forEach(kw => addKeyword(kw));
+                });
+
+                // Also handle blur to add any typed keyword
+                inputEl.addEventListener('blur', () => {
+                    if (inputEl.value.trim()) addKeyword(inputEl.value);
+                });
+
+                // Wire up existing remove buttons (for initial render from AI data)
+                containerEl.querySelectorAll('.keyword-remove').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const idx = parseInt(btn.dataset.index);
+                        dataObj.keywords.splice(idx, 1);
+                        renderTags();
+                    });
+                });
             }
 
             function createQuestionElement(question) {
@@ -3650,6 +3720,29 @@
                                  <div class="rich-text-editor correct-answer bg-white" contenteditable="true" 
                                      placeholder="Describe the expected answer for grading reference..."
                                      aria-label="Sample answer">${question.correct_answer}</div>
+                            </div>
+
+                            <!-- Keywords for AI Grading -->
+                            <div class="mt-4 keywords-section" id="keywordsSection_${question.id}">
+                                <div class="flex items-center gap-2 mb-2 cursor-pointer keywords-toggle" data-target="keywordsBody_${question.id}">
+                                    <i class="fas fa-key text-amber-500 text-xs"></i>
+                                    <label class="text-xs font-bold text-amber-700 uppercase cursor-pointer">Grading Keywords</label>
+                                    <span class="text-[10px] text-gray-400 font-normal">(used for AI fallback grading)</span>
+                                    <i class="fas fa-chevron-down text-gray-400 text-[10px] keywords-chevron transition-transform"></i>
+                                </div>
+                                <div id="keywordsBody_${question.id}" class="keywords-body">
+                                    <div class="keywords-tags-container" id="keywordsTags_${question.id}">
+                                        ${(question.keywords || []).map((kw, i) => `
+                                            <span class="keyword-tag" data-index="${i}">
+                                                ${kw}
+                                                <button type="button" class="keyword-remove" data-index="${i}">&times;</button>
+                                            </span>
+                                        `).join('')}
+                                        <input type="text" class="keyword-input" id="keywordInput_${question.id}"
+                                               placeholder="${(question.keywords || []).length === 0 ? 'Type a keyword and press Enter...' : 'Add more...'}" />
+                                    </div>
+                                    <p class="text-[10px] text-gray-400 mt-1">Press <kbd class="px-1 py-0.5 bg-gray-100 border border-gray-200 rounded text-[9px]">Enter</kbd> or <kbd class="px-1 py-0.5 bg-gray-100 border border-gray-200 rounded text-[9px]">,</kbd> to add. These keywords are used by the grading engine when AI is unavailable.</p>
+                                </div>
                             </div>
                         </div>
 
@@ -3956,6 +4049,7 @@
                             label: subLabel,
                             text: '',
                             sample_answer: '',
+                            keywords: [],
                             points: 1
                         };
                         question.sub_questions.push(subQuestion);
@@ -4036,6 +4130,26 @@
                                      placeholder="Reference answer for this part..."
                                      aria-label="Sub-question sample answer">${subQuestion.sample_answer || ''}</div>
                             </div>
+                            <!-- Sub-question Keywords -->
+                            <div class="mt-2 mb-3 keywords-section sub-keywords-section">
+                                <div class="flex items-center gap-2 mb-1 cursor-pointer keywords-toggle" data-target="subKeywordsBody_${subQuestion.id}">
+                                    <i class="fas fa-key text-amber-500 text-[10px]"></i>
+                                    <label class="text-[10px] font-bold text-amber-700 uppercase cursor-pointer">Keywords</label>
+                                    <i class="fas fa-chevron-down text-gray-400 text-[10px] keywords-chevron transition-transform"></i>
+                                </div>
+                                <div id="subKeywordsBody_${subQuestion.id}" class="keywords-body">
+                                    <div class="keywords-tags-container" id="subKeywordsTags_${subQuestion.id}">
+                                        ${(subQuestion.keywords || []).map((kw, i) => `
+                                            <span class="keyword-tag" data-index="${i}">
+                                                ${kw}
+                                                <button type="button" class="keyword-remove" data-index="${i}">&times;</button>
+                                            </span>
+                                        `).join('')}
+                                        <input type="text" class="keyword-input" id="subKeywordInput_${subQuestion.id}"
+                                               placeholder="${(subQuestion.keywords || []).length === 0 ? 'Add keyword...' : 'More...'}" />
+                                    </div>
+                                </div>
+                            </div>
                             <div class="sub-question-footer">
                                 <label class="text-xs font-bold text-gray-500 uppercase">Marks for this part:</label>
                                 <input type="number" class="w-20 px-2 py-1 border border-gray-300 rounded sub-points" 
@@ -4062,7 +4176,45 @@
                             updateTotalPoints();
                         });
 
+                        // Handle sub-question keywords
+                        setupKeywordsInput(
+                            subDiv.querySelector(`#subKeywordInput_${subQuestion.id}`),
+                            subDiv.querySelector(`#subKeywordsTags_${subQuestion.id}`),
+                            subQuestion
+                        );
+
+                        // Handle sub-question keywords toggle
+                        const subKwToggle = subDiv.querySelector('.keywords-toggle');
+                        if (subKwToggle) {
+                            subKwToggle.addEventListener('click', () => {
+                                const targetId = subKwToggle.dataset.target;
+                                const body = document.getElementById(targetId);
+                                const chevron = subKwToggle.querySelector('.keywords-chevron');
+                                if (body) body.classList.toggle('collapsed');
+                                if (chevron) chevron.classList.toggle('rotated');
+                            });
+                        }
+
                         return subDiv;
+                    }
+
+                    // Main question keywords input
+                    setupKeywordsInput(
+                        div.querySelector(`#keywordInput_${question.id}`),
+                        div.querySelector(`#keywordsTags_${question.id}`),
+                        question
+                    );
+
+                    // Main question keywords toggle
+                    const mainKwToggle = div.querySelector(`#keywordsSection_${question.id} .keywords-toggle`);
+                    if (mainKwToggle) {
+                        mainKwToggle.addEventListener('click', () => {
+                            const targetId = mainKwToggle.dataset.target;
+                            const body = document.getElementById(targetId);
+                            const chevron = mainKwToggle.querySelector('.keywords-chevron');
+                            if (body) body.classList.toggle('collapsed');
+                            if (chevron) chevron.classList.toggle('rotated');
+                        });
                     }
                 } // end if essay
 
@@ -5081,6 +5233,7 @@
 
                 // Get data from the AI modal settings
                 const additionalContext = document.getElementById('aiTopic').value;
+                const aiModel = document.getElementById('aiModelSelect') ? document.getElementById('aiModelSelect').value : 'gemini';
                 const quizType = document.getElementById('aiQuizType').value;
                 const count = document.getElementById('aiCount').value;
                 const examType = document.getElementById('aiExamType').value;
@@ -5166,6 +5319,7 @@
                             grade_level: gradeLevel || 'General',
                             quiz_type: quizType,
                             count: parseInt(count),
+                            ai_model: aiModel,
                             use_kuulchat: useKuulchat,
                             use_kuulchat_year: useKuulchat ? (examYear || null) : null
                         })
@@ -5235,7 +5389,55 @@
             // Toggle Exam Year dropdown and adjust question counts based on Exam Type
             const examTypeSelect = document.getElementById('aiExamType');
             const examYearSection = document.getElementById('aiExamYearSection');
-            if (examTypeSelect && examYearSection) {
+            const quizTypeSelect = document.getElementById('aiQuizType');
+            const aiSubjectSelect = document.getElementById('ai_subject_id');
+            
+            function adjustAiCount() {
+                if (!examTypeSelect || !quizTypeSelect) return;
+                
+                const countInput = document.getElementById('aiCount');
+                if (!countInput) return;
+                
+                const type = examTypeSelect.value;
+                const qType = quizTypeSelect.value;
+                const isExam = type === 'bece' || type === 'wassce';
+                
+                if (qType === 'essay') {
+                    let essayCount = isExam ? 4 : 5;
+                    
+                    if (isExam && aiSubjectSelect && aiSubjectSelect.selectedIndex >= 0) {
+                        const subj = aiSubjectSelect.options[aiSubjectSelect.selectedIndex].text.toLowerCase();
+                        
+                        if (type === 'bece') {
+                            if (subj.includes('math')) essayCount = 5;
+                            else if (subj.includes('science')) essayCount = 5;
+                            else if (subj.includes('english')) essayCount = 3;
+                            else if (subj.includes('social')) essayCount = 4;
+                            else if (subj.includes('religious') || subj.includes('rme') || subj.includes('moral')) essayCount = 4;
+                        } else if (type === 'wassce') {
+                            if (subj.includes('core math')) essayCount = 13;
+                            else if (subj.includes('english')) essayCount = 5;
+                            else if (subj.includes('integrated science')) essayCount = 6;
+                            else if (subj.includes('elective') || subj.includes('physics') || subj.includes('economics')) essayCount = 10;
+                            else essayCount = 6;
+                        }
+                    }
+                    countInput.value = essayCount;
+                } else {
+                    if (type === 'bece') {
+                        countInput.value = 40;
+                    } else if (type === 'wassce') {
+                        countInput.value = 50;
+                    } else {
+                        const current = parseInt(countInput.value);
+                        if ([40, 50, 4, 5, 3, 6, 13, 10].includes(current)) {
+                            countInput.value = 5;
+                        }
+                    }
+                }
+            }
+
+            if (examTypeSelect && examYearSection && quizTypeSelect) {
                 examTypeSelect.addEventListener('change', () => {
                     const type = examTypeSelect.value;
                     const isExam = type === 'bece' || type === 'wassce';
@@ -5246,20 +5448,11 @@
                         if (yearSelect) yearSelect.value = '';
                     }
 
-                    // Auto-adjust question count for exams
-                    const countInput = document.getElementById('aiCount');
-                    if (countInput) {
-                        if (type === 'bece') {
-                            countInput.value = 40;
-                        } else if (type === 'wassce') {
-                            countInput.value = 50;
-                        } else {
-                            if (countInput.value == 40 || countInput.value == 50) {
-                                countInput.value = 5;
-                            }
-                        }
-                    }
+                    adjustAiCount();
                 });
+                
+                quizTypeSelect.addEventListener('change', adjustAiCount);
+                if (aiSubjectSelect) aiSubjectSelect.addEventListener('change', adjustAiCount);
             }
         }
 
@@ -5341,7 +5534,7 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Additional Context (Optional)</label>
                     <textarea id="aiTopic" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500" placeholder="e.g. Focus specifically on balancing chemical equations..."></textarea>
                 </div>
-                
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Question Type</label>
@@ -5382,16 +5575,25 @@
                 </div>
             </div>
             <!-- Drawer Footer -->
-            <div
-                class="p-6 border-t border-gray-100 bg-gray-50 flex flex-col-reverse sm:flex-row justify-end gap-3 sm:rounded-bl-2xl shrink-0">
-                <button type="button" onclick="closeAiModal()"
-                    class="w-full sm:w-auto px-5 py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl transition-all shadow-sm font-medium">
-                    Cancel
-                </button>
-                <button type="button" id="aiGenerateSubmitBtn" onclick="handleAiGeneration()"
-                    class="w-full sm:w-auto px-5 py-2.5 bg-purple-600 text-white hover:bg-purple-700 hover:shadow-md hover:-translate-y-0.5 transform rounded-xl transition-all flex items-center justify-center font-medium shadow-sm">
-                    <i class="fas fa-magic mr-2"></i> Generate Questions
-                </button>
+            <div class="p-6 border-t border-gray-100 bg-gray-50 flex flex-col gap-4 sm:rounded-bl-2xl shrink-0">
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">AI Model Engine <span class="text-gray-500 font-normal ml-1">(Used for Generation)</span></label>
+                    <select id="aiModelSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 bg-white text-sm">
+                        <option value="gemini" selected>Google Gemini (Standard)</option>
+                        <option value="gpt-4o-mini">OpenAI GPT-4o-mini (Fast & Reliable)</option>
+                        <option value="gpt-4o">OpenAI GPT-4o (High Precision)</option>
+                    </select>
+                </div>
+                <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
+                    <button type="button" onclick="closeAiModal()"
+                        class="w-full sm:w-auto px-5 py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl transition-all shadow-sm font-medium">
+                        Cancel
+                    </button>
+                    <button type="button" id="aiGenerateSubmitBtn" onclick="handleAiGeneration()"
+                        class="w-full sm:w-auto px-5 py-2.5 bg-purple-600 text-white hover:bg-purple-700 hover:shadow-md hover:-translate-y-0.5 transform rounded-xl transition-all flex items-center justify-center font-medium shadow-sm">
+                        <i class="fas fa-magic mr-2"></i> Generate Questions
+                    </button>
+                </div>
             </div>
         </div>
     </div>

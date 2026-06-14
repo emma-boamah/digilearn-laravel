@@ -3036,6 +3036,7 @@ class AdminController extends Controller
             'grade_level' => 'required|string|max:50',
             'quiz_type' => 'required|in:mcq,essay,mixed',
             'count' => 'required|integer|min:1|max:50',
+            'ai_model' => 'nullable|string|in:gpt-4o,gpt-4o-mini,gemini',
             'use_kuulchat' => 'nullable|boolean',
             'use_kuulchat_year' => 'nullable|string|max:4',
         ]);
@@ -3047,7 +3048,8 @@ class AdminController extends Controller
                 $request->quiz_type,
                 $request->count,
                 $request->boolean('use_kuulchat'),
-                $request->input('use_kuulchat_year')
+                $request->input('use_kuulchat_year'),
+                $request->input('ai_model', 'gemini')
             );
 
             if (!$quizData || empty($quizData['questions'])) {
@@ -3065,18 +3067,19 @@ class AdminController extends Controller
         } catch (\Exception $e) {
             $errorMessage = $e->getMessage();
             $userMessage = 'An unexpected error occurred while contacting the AI server.';
+            $requestedModel = $request->input('ai_model', 'gemini');
 
             if (str_contains($errorMessage, '503') || str_contains(strtolower($errorMessage), 'high demand') || str_contains($errorMessage, 'UNAVAILABLE')) {
-                $userMessage = "The Google Gemini AI is currently experiencing high demand and is unavailable. Spikes in demand are usually temporary. Please wait a few minutes and try again.";
+                $userMessage = "The selected model ({$requestedModel}) is currently experiencing high demand and is unavailable. Please try a different model from the dropdown.";
             } elseif (str_contains($errorMessage, 'cURL error 28') || str_contains(strtolower($errorMessage), 'timed out')) {
-                $userMessage = "The AI generation timed out. Generating full papers can take time. Please try asking for fewer questions or try again later.";
+                $userMessage = "The AI generation timed out for {$requestedModel}. Generating full papers can take time. Please try asking for fewer questions or try a faster model like GPT-4o-mini.";
             } elseif (str_contains($errorMessage, '429') || str_contains(strtolower($errorMessage), 'quota')) {
-                $userMessage = "The AI quota has been exceeded. Please try again later.";
+                $userMessage = "The API quota or rate limit has been exceeded for {$requestedModel}. Please select a different AI model (like GPT-4o-mini) and try again.";
             } else {
-                $userMessage = "AI Error: " . $errorMessage;
+                $userMessage = "AI Error ({$requestedModel}): " . $errorMessage;
             }
 
-            \Illuminate\Support\Facades\Log::error('Admin AI Generation Exception', ['error' => $errorMessage]);
+            \Illuminate\Support\Facades\Log::error('Admin AI Generation Exception', ['error' => $errorMessage, 'model' => $requestedModel]);
 
             return response()->json([
                 'success' => false,

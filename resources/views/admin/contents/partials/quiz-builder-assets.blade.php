@@ -169,6 +169,114 @@
         text-decoration: underline;
     }
 
+    /* Keywords Tag Editor */
+    .keywords-section {
+        border-top: 1px dashed #e5e7eb;
+        padding-top: 12px;
+    }
+
+    .keywords-body {
+        overflow: hidden;
+        max-height: 200px;
+        transition: max-height 0.3s ease, opacity 0.3s ease;
+        opacity: 1;
+    }
+
+    .keywords-body.collapsed {
+        max-height: 0;
+        opacity: 0;
+        padding: 0;
+    }
+
+    .keywords-chevron {
+        transition: transform 0.3s ease;
+    }
+
+    .keywords-chevron.rotated {
+        transform: rotate(-90deg);
+    }
+
+    .keywords-tags-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        padding: 6px 8px;
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-radius: 8px;
+        min-height: 36px;
+        cursor: text;
+    }
+
+    .keywords-tags-container:focus-within {
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+    }
+
+    .keyword-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: #fef3c7;
+        color: #92400e;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 999px;
+        border: 1px solid #fcd34d;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    .keyword-remove {
+        background: none;
+        border: none;
+        color: #b45309;
+        cursor: pointer;
+        font-size: 0.875rem;
+        line-height: 1;
+        padding: 0 2px;
+        opacity: 0.6;
+        transition: opacity 0.15s ease;
+    }
+
+    .keyword-remove:hover {
+        opacity: 1;
+        color: #dc2626;
+    }
+
+    .keyword-input {
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 0.75rem;
+        color: #78350f;
+        min-width: 100px;
+        flex: 1;
+        padding: 2px 0;
+    }
+
+    .keyword-input::placeholder {
+        color: #d97706;
+        opacity: 0.5;
+    }
+
+    .sub-keywords-section {
+        border-top: none;
+        padding-top: 0;
+    }
+
+    .sub-keywords-section .keywords-tags-container {
+        padding: 4px 6px;
+        min-height: 30px;
+    }
+
+    .sub-keywords-section .keyword-tag {
+        font-size: 0.6875rem;
+        padding: 2px 6px;
+    }
+
     /* Premium Question Card */
     .question-item {
         background: white !important;
