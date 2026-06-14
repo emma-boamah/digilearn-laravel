@@ -4060,6 +4060,7 @@
                                             (str_contains($lesson['video_url'], 'vimeo') ? 'vimeo' : 
                                             (str_contains($lesson['video_url'], 'mux') ? 'mux' : 'local')) }}"
                         data-external-video-id="{{ (str_contains($lesson['video_url'], 'youtube') || str_contains($lesson['video_url'], 'youtu.be')) ? preg_replace('/^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/', '$7', $lesson['video_url']) : '' }}"
+                        data-vimeo-id="{{ $lesson['vimeo_id'] ?? (str_contains($lesson['video_url'] ?? '', 'vimeo') ? preg_replace('/^.*vimeo\.com\/(?:video\/)?(\d+).*/', '$1', $lesson['video_url']) : '') }}"
                         data-video-path="{{ $lesson['video_url'] ?? '' }}"
                         data-title="{{ $lesson['title'] ?? 'Lesson Video' }}" data-lazy="false">
 
