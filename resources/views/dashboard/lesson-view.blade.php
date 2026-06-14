@@ -4672,76 +4672,63 @@
         const thumbnail = mainCard.querySelector('.video-facade-thumbnail, .csp-video-thumb');
         const preview = mainCard.querySelector('.video-preview, .csp-video-preview');
 
-        if (!overlay || !preview) return;
+        if (!preview) return;
 
-        // Make the entire card clickable to start the video
-        function startMainVideo() {
-            const videoSource = mainCard.dataset.videoSource;
-            const externalVideoId = mainCard.dataset.externalVideoId;
-            const vimeoId = mainCard.dataset.vimeoId;
-            const muxPlaybackId = mainCard.dataset.muxPlaybackId;
-            const videoPath = mainCard.dataset.videoPath;
+        const videoSource = mainCard.dataset.videoSource;
+        const externalVideoId = mainCard.dataset.externalVideoId;
+        const vimeoId = mainCard.dataset.vimeoId;
+        const muxPlaybackId = mainCard.dataset.muxPlaybackId;
+        const videoPath = mainCard.dataset.videoPath;
 
-            let iframe;
+        let iframe;
 
-            if (videoSource === 'youtube' && externalVideoId) {
-                iframe = document.createElement('iframe');
-                iframe.src = `https://www.youtube.com/embed/${externalVideoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1&origin=${window.location.origin}`;
-                iframe.allow = 'autoplay; encrypted-media; fullscreen';
-                iframe.allowFullscreen = true;
-                iframe.frameBorder = '0';
-                iframe.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:4;';
-                preview.appendChild(iframe);
-            } else if (videoSource === 'vimeo' && vimeoId) {
-                iframe = document.createElement('iframe');
-                iframe.src = `https://player.vimeo.com/video/${vimeoId}?autoplay=1&dnt=1`;
-                iframe.allow = 'autoplay; fullscreen';
-                iframe.allowFullscreen = true;
-                iframe.frameBorder = '0';
-                iframe.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:4;';
-                preview.appendChild(iframe);
-            } else if (videoSource === 'mux' && muxPlaybackId) {
-                const video = document.createElement('video');
-                video.src = `https://stream.mux.com/${muxPlaybackId}.m3u8`;
-                video.autoplay = true;
-                video.controls = true;
-                video.playsInline = true;
-                video.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:4;object-fit:contain;background:#000;';
-                preview.appendChild(video);
-                iframe = video; // Store reference for event
-            } else if (videoPath) {
-                // Local video or fallback
-                const video = document.createElement('video');
-                video.src = videoPath;
-                video.autoplay = true;
-                video.controls = true;
-                video.playsInline = true;
-                video.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:4;object-fit:contain;background:#000;';
-                preview.appendChild(video);
-                iframe = video; // Store reference for event
-            }
-
-            // Hide the thumbnail and play overlay
-            if (overlay) overlay.style.display = 'none';
-            if (thumbnail) thumbnail.style.opacity = '0';
-            preview.style.opacity = '1';
-            mainCard.classList.add('playing');
-
-            // Dispatch event so progress tracking can detect the player
-            window.dispatchEvent(new CustomEvent('mainVideoStarted', {
-                detail: { source: videoSource, element: iframe }
-            }));
+        if (videoSource === 'youtube' && externalVideoId) {
+            iframe = document.createElement('iframe');
+            // Removed autoplay=1 so it acts as a normal player the user can click
+            iframe.src = `https://www.youtube.com/embed/${externalVideoId}?rel=0&modestbranding=1&enablejsapi=1&origin=${window.location.origin}`;
+            iframe.allow = 'encrypted-media; fullscreen';
+            iframe.allowFullscreen = true;
+            iframe.frameBorder = '0';
+            iframe.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:4;';
+            preview.appendChild(iframe);
+        } else if (videoSource === 'vimeo' && vimeoId) {
+            iframe = document.createElement('iframe');
+            // Removed autoplay=1
+            iframe.src = `https://player.vimeo.com/video/${vimeoId}?dnt=1`;
+            iframe.allow = 'fullscreen';
+            iframe.allowFullscreen = true;
+            iframe.frameBorder = '0';
+            iframe.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:4;';
+            preview.appendChild(iframe);
+        } else if (videoSource === 'mux' && muxPlaybackId) {
+            const video = document.createElement('video');
+            video.src = `https://stream.mux.com/${muxPlaybackId}.m3u8`;
+            video.controls = true;
+            video.playsInline = true;
+            video.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:4;object-fit:contain;background:#000;';
+            preview.appendChild(video);
+            iframe = video; // Store reference for event
+        } else if (videoPath) {
+            // Local video or fallback
+            const video = document.createElement('video');
+            video.src = videoPath;
+            video.controls = true;
+            video.playsInline = true;
+            video.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:4;object-fit:contain;background:#000;';
+            preview.appendChild(video);
+            iframe = video; // Store reference for event
         }
 
-        // Click to play
-        overlay.style.cursor = 'pointer';
-        overlay.style.opacity = '1'; // Ensure overlay is visible initially
-        mainCard.addEventListener('click', function handleMainClick(e) {
-            // Don't trigger if clicking on action buttons or focus mode toggle
-            if (e.target.closest('.focus-mode-toggle, .lesson-level-badge, .csp-debug-info')) return;
-            startMainVideo();
-            mainCard.removeEventListener('click', handleMainClick);
-        });
+        // Hide the custom thumbnail and play overlay, show the native player immediately
+        if (overlay) overlay.style.display = 'none';
+        if (thumbnail) thumbnail.style.opacity = '0';
+        preview.style.opacity = '1';
+        mainCard.classList.add('playing');
+
+        // Dispatch event so progress tracking can detect the player immediately
+        window.dispatchEvent(new CustomEvent('mainVideoStarted', {
+            detail: { source: videoSource, element: iframe }
+        }));
     }
 
     function initializeFocusMode() {
