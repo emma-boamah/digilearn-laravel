@@ -71,6 +71,12 @@ class LogUserActivityJob implements ShouldQueue
      */
     private function clearActivityCaches(?int $userId, ?string $type): void
     {
-        Cache::tags(['activities'])->flush();
+        try {
+            Cache::tags(['activities'])->flush();
+        } catch (\Exception $e) {
+            // phpredis can sometimes throw exceptions or errors with scan/tags
+            // Ignore the cache flush error to prevent the job from repeatedly failing
+            Log::warning('Failed to flush activities cache tag', ['error' => $e->getMessage()]);
+        }
     }
 }
