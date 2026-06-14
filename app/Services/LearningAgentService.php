@@ -43,8 +43,8 @@ class LearningAgentService
     {
         $queryLower = strtolower($query);
 
-        // 1. Check for Quiz intent (e.g. "create a quiz", "test me", "assessment on X")
-        if (preg_match('/\b(quiz|test|exam|assessment|questions|answer|test me|test my knowledge|give me a quiz|create a quiz|generate a quiz|mock exam)\b/i', $queryLower)) {
+        // 1. Check for Quiz intent (e.g. "create a quiz", "test me", "assessment on X", "word problems", "practice")
+        if (preg_match('/\b(quiz|test|exam|assessment|questions|answer|test me|test my knowledge|give me a quiz|create a quiz|generate a quiz|mock exam|problems|practice|exercise)\b/i', $queryLower)) {
             return 'quiz';
         }
 
@@ -173,6 +173,18 @@ class LearningAgentService
                     'is_existing' => false,
                     'summary' => $summary,
                     'request_id' => $agentRequest->id,
+                    'suggested_actions' => [
+                        [
+                            'label' => 'Create Essay Question',
+                            'query' => 'Create an essay question on ' . ($analysis['topic'] ?? 'this topic'),
+                            'mode' => 'quiz'
+                        ],
+                        [
+                            'label' => 'Generate MCQ Quiz',
+                            'query' => 'Create a multiple choice quiz on ' . ($analysis['topic'] ?? 'this topic'),
+                            'mode' => 'quiz'
+                        ]
+                    ]
                 ];
             }
 
