@@ -44,34 +44,37 @@ class AgentController extends Controller
     public function ask(Request $request)
     {
         $request->validate([
-            'query' => 'required|string|min:3|max:500',
+            'query' => 'sometimes|string|min:2|max:1000',
+            'messages' => 'sometimes|array',
+            'messages.*.role' => 'required_with:messages|string|in:user,model',
+            'messages.*.text' => 'required_with:messages|string',
             'type' => 'sometimes|string|in:lesson,roadmap,quiz',
             'context_id' => 'sometimes|nullable|integer',
         ]);
 
         $user = Auth::user();
-        $query = trim($request->input('query'));
+        $query = trim($request->input('query', ''));
+        $messages = $request->input('messages', []);
         $type = $request->input('type', 'lesson');
         $contextId = $request->input('context_id');
 
-        Log::info('Agent ask request', [
+        // Backward compatibility: if only query is sent
+        if (empty($messages) && !empty($query)) {
+            $messages = [
+                ['role' => 'user', 'text' => $query]
+            ];
+        }
+
+        Log::info('Agent chat request', [
             'user_id' => $user->id,
-            'query' => $query,
+            'message_count' => count($messages),
             'type' => $type,
             'grade' => $user->grade,
             'level_group' => $user->current_level_group,
         ]);
 
-        // Detect smart intent based on query
-        $detectedType = $this->agentService->detectIntent($query, $type);
-
-        if ($detectedType === 'roadmap') {
-            $result = $this->agentService->findOrCreateRoadmap($query, $user, $contextId);
-        } elseif ($detectedType === 'quiz') {
-            $result = $this->agentService->findOrCreateQuiz($query, $user, $contextId);
-        } else {
-            $result = $this->agentService->findOrCreateLesson($query, $user, $contextId);
-        }
+        // Chat with tutor
+        $result = $this->agentService->chatWithTutor($messages, $user, $contextId, $type);
 
         return response()->json($result);
     }

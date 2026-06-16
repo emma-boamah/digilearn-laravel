@@ -1218,6 +1218,7 @@
         let remaining = {{ $remainingRequests }};
         let currentMode = 'lesson';
         let activeContextId = null;
+        let chatHistory = [];
 
         function setMode(mode) {
             currentMode = mode;
@@ -1555,6 +1556,11 @@
             // Show user message
             addBubble(query, 'user');
             input.value = '';
+            
+            // Add to chat history
+            chatHistory.push({ role: 'user', text: query });
+            // Keep history manageable
+            if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
 
             setLoading(true);
             showTyping(true);
@@ -1569,6 +1575,7 @@
                     },
                     body: JSON.stringify({
                         query: query,
+                        messages: chatHistory,
                         type: currentMode,
                         context_id: activeContextId
                     }),
@@ -1584,7 +1591,11 @@
                         activeContextId = data.request_id;
                     }
 
-                    addBubble(data.message, 'ai');
+                    if (data.message) {
+                        addBubble(data.message, 'ai');
+                        // Add AI response to history
+                        chatHistory.push({ role: 'model', text: data.message });
+                    }
                     if (data.summary) {
                         addBubble(data.summary, 'tutor-explanation');
                     }

@@ -62,6 +62,133 @@ class LearningAgentService
         return $defaultType;
     }
 
+    public function chatWithTutor(array $messages, User $user, ?int $contextId = null, string $defaultType = 'lesson'): array
+    {
+        $startTime = microtime(true);
+        $gradeLevel = $user->grade ?? 'Primary 1';
+        $levelGroup = $user->current_level_group ?? 'primary-lower';
+        
+        $latestUserMessage = '';
+        foreach (array_reverse($messages) as $msg) {
+            if ($msg['role'] === 'user') {
+                $latestUserMessage = $msg['text'];
+                break;
+            }
+        }
+        
+        if (empty($latestUserMessage)) {
+            return ['success' => false, 'message' => 'No message provided.'];
+        }
+
+        // Check if rate limited
+        if ($this->isRateLimited($user->id)) {
+            return [
+                'success' => false,
+                'message' => 'You\'ve reached your daily limit of ' . self::DAILY_LIMIT . ' AI lesson requests. Try again tomorrow!',
+            ];
+        }
+
+        // Format for Gemini
+        $contents = [];
+        foreach ($messages as $msg) {
+            $contents[] = [
+                'role' => $msg['role'] === 'model' ? 'model' : 'user',
+                'parts' => [['text' => $msg['text']]]
+            ];
+        }
+
+        $systemPrompt = <<<PROMPT
+You are Digilearn AI, an expert, friendly educational tutor for the Ghana Education Service (GES).
+You are currently chatting with a {$gradeLevel} student.
+Your goal is to be conversational, encouraging, and helpful. 
+Answer their questions directly and naturally in a conversational format.
+
+CRITICAL INSTRUCTION:
+If the student specifically asks for a full lesson, a quiz, or a study roadmap, OR if you determine that generating a structured interactive widget is the best way to teach the current concept, you MUST append a special JSON command at the VERY END of your response.
+Do not use this command for simple questions (like "What is 2+2?"). Only use it when a comprehensive video lesson or quiz would be highly beneficial.
+
+The command format is:
+[ACTION: {"type": "lesson", "topic": "Exact Topic Name"}]
+or
+[ACTION: {"type": "quiz", "topic": "Exact Topic Name"}]
+or
+[ACTION: {"type": "roadmap", "topic": "Exact Topic Name"}]
+
+Example Response:
+That's a great question! Photosynthesis is the process by which plants make their own food using sunlight. Let me generate a complete video lesson on this for you!
+[ACTION: {"type": "lesson", "topic": "Photosynthesis"}]
+PROMPT;
+
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->geminiModel}:generateContent?key={$this->geminiApiKey}";
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::timeout(60)->post($url, [
+                'systemInstruction' => [
+                    'parts' => [['text' => $systemPrompt]]
+                ],
+                'contents' => $contents,
+                'generationConfig' => [
+                    'temperature' => 0.7,
+                    'maxOutputTokens' => 2048,
+                ],
+            ]);
+
+            if (!$response->successful()) {
+                throw new \Exception("Gemini API error: " . $response->body());
+            }
+
+            $data = $response->json();
+            $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+            
+            // Check for [ACTION: ...]
+            $actionMatches = [];
+            $actionCommand = null;
+            if (preg_match('/\[ACTION:\s*({[^}]+})\s*\]/is', $text, $actionMatches)) {
+                $actionCommand = json_decode($actionMatches[1], true);
+                // Remove the action block from the visible text
+                $text = trim(str_replace($actionMatches[0], '', $text));
+            }
+            
+            $result = [
+                'success' => true,
+                'message' => $text,
+                'summary' => null,
+            ];
+
+            if ($actionCommand && isset($actionCommand['type']) && isset($actionCommand['topic'])) {
+                $type = $actionCommand['type'];
+                $topicQuery = $actionCommand['topic'];
+                
+                // Trigger the generation!
+                if ($type === 'quiz') {
+                    $genResult = $this->findOrCreateQuiz($topicQuery, $user, $contextId);
+                } elseif ($type === 'roadmap') {
+                    $genResult = $this->findOrCreateRoadmap($topicQuery, $user, $contextId);
+                } else {
+                    $genResult = $this->findOrCreateLesson($topicQuery, $user, $contextId);
+                }
+                
+                // Merge genResult into result (keeping the conversational message)
+                $result = array_merge($genResult, [
+                    'message' => $text . ($genResult['message'] ? "\n\n*" . $genResult['message'] . "*" : '')
+                ]);
+            }
+
+            // Log query for search analytics
+            $this->logToSearchAnalytics($latestUserMessage, $user->id);
+
+            return $result;
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Agent chat error: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'I encountered an error trying to respond. Please try again.',
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
     /**
      * Main entry point: find or create a lesson for the user's query.
      *
