@@ -377,6 +377,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/dashboard/agent', [AgentController::class, 'index'])->name('dashboard.agent');
             Route::post('/api/agent/ask', [AgentController::class, 'ask'])->name('api.agent.ask');
             Route::get('/api/agent/history', [AgentController::class, 'history'])->name('api.agent.history');
+            Route::get('/api/agent/session/{id}', [AgentController::class, 'loadSession'])->name('api.agent.session.load');
         }
     );
 });

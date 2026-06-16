@@ -6,10 +6,14 @@
 @endsection
 
 @push('styles')
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mathlive/mathlive-static.css" />
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         /* ============= Agent Page Container ============= */
         .agent-page {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
             padding: 1.5rem;
             max-width: 900px;
             margin: 0 auto;
@@ -84,8 +88,9 @@
             max-width: 85%;
             padding: 0.875rem 1.125rem;
             border-radius: 1.125rem;
-            font-size: 0.9rem;
-            line-height: 1.6;
+            font-size: 1rem;
+            line-height: 1.75;
+            font-weight: 400;
             animation: slideUp 0.3s ease-out;
             word-wrap: break-word;
         }
@@ -107,6 +112,9 @@
             background: linear-gradient(135deg, #2677B8 0%, #1a508b 100%);
             color: #fff;
             border-bottom-right-radius: 0.375rem;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 500;
         }
 
         .chat-bubble.agent {
@@ -115,6 +123,15 @@
             color: var(--text-main);
             border: 1px solid var(--border-color);
             border-bottom-left-radius: 0.375rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            line-height: 1.8;
+            font-weight: 400;
+            max-width: 750px;
+        }
+
+        .chat-bubble.agent strong {
+            font-weight: 600;
         }
 
         .chat-bubble.agent.error {
@@ -321,15 +338,17 @@
 
         /* ============= Tutor Explanation Bubble ============= */
         .chat-bubble.tutor-explanation {
+            font-family: 'Inter', sans-serif;
             background: var(--bg-surface);
             border: 1px solid var(--border-color);
             color: var(--text-main);
-            max-width: 90%;
+            max-width: 750px;
             padding: 1.5rem;
             padding-bottom: 2.5rem;
             /* Space for the toggle */
-            font-size: 0.95rem;
+            font-size: 1.05rem;
             line-height: 1.8;
+            font-weight: 400;
             box-shadow: var(--shadow-sm);
             border-radius: 1rem;
             margin-bottom: 2rem;
@@ -338,6 +357,10 @@
             /* Approx 4-5 lines */
             overflow: hidden;
             transition: max-height 0.3s ease;
+        }
+
+        .chat-bubble.tutor-explanation strong {
+            font-weight: 600;
         }
 
         [data-theme="dark"] .chat-bubble.tutor-explanation {
@@ -422,10 +445,11 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            font-family: 'Poppins', 'Inter', sans-serif;
             font-weight: 700;
             color: #2677B8;
             margin-bottom: 0.75rem;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
@@ -1028,6 +1052,18 @@
 
             .chat-bubble {
                 max-width: 92%;
+                font-size: 0.9375rem;
+                line-height: 1.7;
+            }
+
+            .chat-bubble.agent,
+            .chat-bubble.tutor-explanation {
+                max-width: 95%;
+                font-size: 0.9375rem;
+            }
+
+            .chat-bubble.user {
+                font-size: 0.875rem;
             }
 
             .result-card {
@@ -1160,50 +1196,42 @@
             </form>
         </div>
 
-        <!-- History Section -->
-        @if(count($history) > 0)
-            <div class="history-section" id="historySection">
-                <div class="history-title">Recent Requests</div>
+        <!-- Recent Chats Section -->
+        <div class="history-section" id="historySection">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="history-title mb-0">Recent Chats</div>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="newChatBtn">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="mr-1"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    New Chat
+                </button>
+            </div>
+            @if(count($allSessions) > 0)
                 <div class="history-list" id="historyList">
-                    @foreach($history as $index => $item)
-                        <a href="#" class="history-item {{ $index >= 5 ? 'hidden-history-item' : '' }}"
-                            style="{{ $index >= 5 ? 'display: none;' : '' }}" data-type="{{ $item['type'] }}"
-                            data-id="{{ $item['id'] }}"
-                            data-roadmap="{{ $item['type'] === 'roadmap' ? json_encode($item['roadmap']) : '' }}"
-                            data-query="{{ addslashes($item['query']) }}" data-lesson-url="{{ $item['lesson_url'] ?? '' }}"
-                            data-quiz-url="{{ $item['quiz_url'] ?? '' }}" data-quiz-type="{{ $item['quiz_type'] ?? '' }}"
-                            data-summary="{{ $item['summary'] ?? '' }}">
-                            <div class="history-item-icon {{ $item['thumbnail'] ? '' : 'no-thumb' }}">
-                                @if($item['thumbnail'])
-                                    <img src="{{ $item['thumbnail'] }}" alt="" loading="lazy">
-                                @elseif($item['type'] === 'roadmap')
-                                    🗺️
-                                @else
-                                    💡
-                                @endif
+                    @foreach($allSessions as $index => $session)
+                        <a href="#" class="history-item {{ $index >= 10 ? 'hidden-history-item' : '' }}"
+                            style="{{ $index >= 10 ? 'display: none;' : '' }}"
+                            data-session-id="{{ $session->id }}">
+                            <div class="history-item-icon no-thumb">
+                                💬
                             </div>
                             <div class="history-item-info">
                                 <div class="history-item-query">
-                                    @if($item['type'] === 'roadmap')
-                                        <span class="roadmap-tag">ROADMAP</span>
-                                    @endif
-                                    {{ $item['query'] }}
+                                    {{ $session->title ?: 'New Chat' }}
                                 </div>
-                                <div class="history-item-time">{{ $item['created_at'] }}</div>
+                                <div class="history-item-time">{{ $session->updated_at->diffForHumans() }}</div>
                             </div>
-                            <span class="history-item-status status-{{ $item['status'] }}">
-                                {{ $item['status'] === 'found_existing' ? 'Found' : ucfirst($item['status']) }}
-                            </span>
                         </a>
                     @endforeach
                 </div>
-                @if(count($history) > 5)
+                @if(count($allSessions) > 10)
                     <button id="showMoreHistoryBtn" class="show-more-history-btn" type="button">
                         Show More <i class="fas fa-chevron-down ml-1" id="showMoreHistoryIcon"></i>
                     </button>
                 @endif
-            </div>
-        @endif
+            @else
+                <div class="text-muted small text-center py-3">No recent chats. Start one above!</div>
+            @endif
+        </div>
     </div>
 @endsection
 
@@ -1218,7 +1246,8 @@
         let remaining = {{ $remainingRequests }};
         let currentMode = 'lesson';
         let activeContextId = null;
-        let chatHistory = [];
+        let activeSessionId = {{ $chatSession ? $chatSession->id : 'null' }};
+        let chatHistory = {!! json_encode($chatMessages->map(function($msg) { return ['role' => $msg->role, 'text' => $msg->text, 'metadata' => $msg->metadata]; })->toArray()) !!};
 
         function setMode(mode) {
             currentMode = mode;
@@ -1577,7 +1606,8 @@
                         query: query,
                         messages: chatHistory,
                         type: currentMode,
-                        context_id: activeContextId
+                        context_id: activeContextId,
+                        session_id: activeSessionId
                     }),
                 });
 
@@ -1590,11 +1620,27 @@
                     if (data.request_id) {
                         activeContextId = data.request_id;
                     }
+                    if (data.session_id) {
+                        activeSessionId = data.session_id;
+                    }
 
                     if (data.message) {
                         addBubble(data.message, 'ai');
                         // Add AI response to history
-                        chatHistory.push({ role: 'model', text: data.message });
+                        let meta = null;
+                        if (data.type) {
+                            meta = {
+                                type: data.type,
+                                topic: data.topic,
+                                lesson_url: data.lesson_url,
+                                quiz_url: data.quiz_url,
+                                quiz_type: data.quiz_type,
+                                roadmap: data.roadmap,
+                                is_existing: data.is_existing,
+                                thumbnail: data.thumbnail
+                            };
+                        }
+                        chatHistory.push({ role: 'model', text: data.message, metadata: meta });
                     }
                     if (data.summary) {
                         addBubble(data.summary, 'tutor-explanation');
@@ -1658,6 +1704,16 @@
             const suggestions = document.getElementById('suggestions');
             const historyList = document.getElementById('historyList');
 
+            // Render Initial Chat History
+            if (chatHistory && chatHistory.length > 0) {
+                chatHistory.forEach(msg => {
+                    addBubble(msg.text, msg.role === 'model' ? 'ai' : 'user');
+                    if (msg.metadata && msg.metadata.type) {
+                        addResultCard(msg.metadata);
+                    }
+                });
+            }
+
             if (agentForm) {
                 agentForm.addEventListener('submit', handleSubmit);
             }
@@ -1677,77 +1733,58 @@
             }
 
             if (historyList) {
-                historyList.addEventListener('click', function (e) {
+                historyList.addEventListener('click', async function (e) {
                     const item = e.target.closest('.history-item');
                     if (item) {
-                        const type = item.dataset.type;
-                        const itemId = item.dataset.id;
-                        const roadmap = item.dataset.roadmap;
-                        const query = item.dataset.query;
-                        const lessonUrl = item.dataset.lessonUrl;
-                        const summary = item.dataset.summary;
-
                         e.preventDefault();
+                        const sessionId = item.dataset.sessionId;
+                        if (!sessionId) return;
+                        
+                        // Clear welcome state if visible
+                        const welcomeState = document.getElementById('welcomeState');
+                        if (welcomeState) welcomeState.style.display = 'none';
 
-                        // Set active context ID
-                        activeContextId = itemId;
-
-                        if (type === 'roadmap' && roadmap) {
-                            showRoadmapInChat(JSON.parse(roadmap), query);
-                        } else if (type === 'quiz' || item.dataset.quizUrl) {
-                            const quizUrl = item.dataset.quizUrl;
-                            const quizType = item.dataset.quizType;
-
-                            // Clear welcome state if visible
-                            const welcomeState = document.getElementById('welcomeState');
-                            if (welcomeState) welcomeState.style.display = 'none';
-
-                            // Re-show what was given for that prompt
-                            addBubble(query, 'user');
-                            addBubble('Here is the quiz I generated for you earlier.', 'ai');
-                            addResultCard({
-                                success: true,
-                                type: 'quiz',
-                                topic: query,
-                                quiz_url: quizUrl,
-                                quiz_type: quizType,
-                                is_existing: true
-                            });
-                        } else if (type === 'explanation') {
-                            // Clear welcome state if visible
-                            const welcomeState = document.getElementById('welcomeState');
-                            if (welcomeState) welcomeState.style.display = 'none';
-
-                            // Re-show what was given for that prompt
-                            addBubble(query, 'user');
-                            addBubble('Here is the explanation you asked for:', 'ai');
-                            if (summary) {
-                                addBubble(summary, 'tutor-explanation');
+                        const chatArea = document.getElementById('chatArea');
+                        chatArea.innerHTML = '';
+                        
+                        setLoading(true);
+                        showTyping(true);
+                        
+                        try {
+                            const response = await fetch(`/api/agent/session/${sessionId}`);
+                            const data = await response.json();
+                            
+                            if (data.success) {
+                                activeSessionId = data.session_id;
+                                chatHistory = data.messages;
+                                
+                                chatHistory.forEach(msg => {
+                                    addBubble(msg.text, msg.role === 'model' ? 'ai' : 'user');
+                                    if (msg.metadata && msg.metadata.type) {
+                                        addResultCard(msg.metadata);
+                                    }
+                                });
                             }
-                        } else if (lessonUrl) {
-                            // Clear welcome state if visible
-                            const welcomeState = document.getElementById('welcomeState');
-                            if (welcomeState) welcomeState.style.display = 'none';
-
-                            // Re-show what was given for that prompt
-                            addBubble(query, 'user');
-                            addBubble('Here is the lesson I found for you earlier.', 'ai');
-                            if (summary) {
-                                addBubble(summary, 'tutor-explanation');
-                            }
-                            addResultCard({
-                                success: true,
-                                type: 'lesson',
-                                title: query,
-                                lesson_url: lessonUrl,
-                                thumbnail: item.querySelector('img')?.src,
-                                is_existing: true
-                            });
-                        } else {
-                            // Fallback: trigger a new search if no URL is stored
-                            askSuggestion(null, query);
+                        } catch (error) {
+                            console.error('Error loading session:', error);
+                            addBubble('Failed to load chat history.', 'agent error');
                         }
+                        
+                        showTyping(false);
+                        setLoading(false);
                     }
+                });
+            }
+            
+            const newChatBtn = document.getElementById('newChatBtn');
+            if (newChatBtn) {
+                newChatBtn.addEventListener('click', function() {
+                    activeSessionId = null;
+                    chatHistory = [];
+                    const chatArea = document.getElementById('chatArea');
+                    chatArea.innerHTML = '';
+                    const welcomeState = document.getElementById('welcomeState');
+                    if (welcomeState) welcomeState.style.display = 'flex';
                 });
             }
 
