@@ -171,6 +171,7 @@ PROMPT;
                 
                 // Merge genResult into result (keeping the conversational message)
                 $result = array_merge($genResult, [
+                    'type' => $type,
                     'message' => $text . ($genResult['message'] ? "\n\n*" . $genResult['message'] . "*" : '')
                 ]);
             }
