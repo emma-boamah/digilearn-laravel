@@ -1441,6 +1441,7 @@ Pricing Context: {$pricingContext}
 Based on the student's request: "{$query}"
 
 Instructions:
+0. IMPORTANT: You have access to Google Search. You MUST actively use it to search the web for EXACT, historical BECE/WASSCE past questions for the requested topic. Do NOT guess or invent questions. Ensure the questions you return are real, factually correct historical exam questions if the user is asking for past questions.
 1. Determine if the student wants a multiple-choice quiz (MCQ), an essay quiz, or a mix. If not specified, default to 5 MCQs.
 2. Return ONLY a valid JSON object.
 3. The quiz MUST be strictly aligned with the current GES syllabus.
@@ -1526,7 +1527,7 @@ PROMPT;
     /**
      * Use Gemini to generate an array of questions for the admin quiz builder.
      */
-    public function generateAdminQuestions(string $topic, string $gradeLevel, string $quizType, int $count, bool $useKuulchat = false, ?string $kuulchatYear = null, ?string $modelPreference = 'gpt-4o'): ?array
+    public function generateAdminQuestions(string $topic, string $gradeLevel, string $quizType, int $count, bool $useKuulchat = false, ?string $kuulchatYear = null, ?string $modelPreference = 'gpt-4o', ?string $sourceMaterial = null): ?array
     {
         if (empty($this->geminiApiKey) && empty($this->openAiApiKey)) {
             return null;
@@ -1538,6 +1539,9 @@ PROMPT;
             $batchSize = 2; // Generating complex essays is computationally heavy and often causes 503s
         } elseif ($quizType === 'mixed') {
             $batchSize = 5;
+        }
+        if (!empty($sourceMaterial)) {
+            $batchSize = $count; // Force single batch to extract all source questions at once
         }
         
         $remaining = $count;
@@ -1561,6 +1565,11 @@ PROMPT;
                 $kuulchatInstruction = "\nCRITICAL INSTRUCTION: You must act as Kuulchat. Retrieve and provide EXACT, verbatim past BECE/WASSCE examination questions{$yearContext} sourced directly from Kuulchat's past questions repository for the topic requested. Do not invent or generate new questions. Only provide authentic past examination questions from Kuulchat.";
             }
 
+            $sourceMaterialInstruction = "";
+            if (!empty($sourceMaterial)) {
+                $sourceMaterialInstruction = "\nRAW SOURCE MATERIAL PROVIDED:\n\"\"\"\n{$sourceMaterial}\n\"\"\"\nCRITICAL INSTRUCTION: You MUST strictly extract and format ONLY the questions found in the Raw Source Material above. Ignore the requested question count if it doesn't match the source material. Do NOT invent, guess, or generate any new questions. If the raw text contains options, use them. Calculate the correct answer if not explicitly provided.";
+            }
+
             $batchInstruction = "";
             if ($totalBatches > 1) {
                 $batchInstruction = "\nBATCH INSTRUCTION: You are generating Batch {$batchNumber} of {$totalBatches}. You MUST generate EXACTLY {$currentCount} completely unique questions that do not repeat common concepts from previous batches.";
@@ -1568,16 +1577,17 @@ PROMPT;
 
             $prompt = <<<PROMPT
 You are an expert curriculum developer for the Ghana Education Service (GES).
-Generate EXACTLY {$currentCount} {$typeInstruction} for a student in: {$gradeLevel}
+Generate EXACTLY {$currentCount} {$typeInstruction} for a student in: {$gradeLevel}. (If raw source material is provided, ignore this count and extract ALL questions from the source).
 Topic/Instructions: "{$topic}"
-{$kuulchatInstruction}{$batchInstruction}
+{$kuulchatInstruction}{$batchInstruction}{$sourceMaterialInstruction}
 
 Instructions:
 1. Return ONLY a valid JSON object.
 2. The questions MUST be strictly aligned with the current GES syllabus.
-3. **Math Formulas & Scientific Symbols**: If the questions involve mathematics, science, equations, or formulas, you MUST wrap all mathematical expressions, fractions, symbols, and equations inside `<math-field>` custom HTML tags. For example, `<math-field>x^2 + y^2 = z^2</math-field>`. Never output raw LaTeX or formulas without wrapping them inside `<math-field>` tags.
-4. **Essay Answers and Keywords**: For every essay question and sub-question, you MUST generate a detailed, clear reference/sample answer, and a `keywords` array of 3-6 critical terms or key concepts.
-5. The JSON MUST exactly match this structure and contain ONLY the 'questions' array:
+3. **Data Tables**: If the source material contains tabular data, or if a question requires a table, you MUST format it using standard HTML `<table>`, `<tr>`, `<th>`, and `<td>` tags. Ensure the table uses standard structure without relying exclusively on Tailwind utility classes. Do NOT use markdown tables.
+4. **Math Formulas & Scientific Symbols**: If the questions involve mathematics, science, equations, or formulas, you MUST wrap all mathematical expressions, fractions, symbols, and equations inside `<math-field>` custom HTML tags. For example, `<math-field>x^2 + y^2 = z^2</math-field>`. Never output raw LaTeX or formulas without wrapping them inside `<math-field>` tags.
+5. **Essay Answers and Keywords**: For every essay question and sub-question, you MUST generate a detailed, clear reference/sample answer, and a `keywords` array of 3-6 critical terms or key concepts.
+6. The JSON MUST exactly match this structure and contain ONLY the 'questions' array:
 {
     "questions": [
         // For MCQ:

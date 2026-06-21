@@ -670,6 +670,9 @@
                         <button type="button" class="toolbar-tool" data-command="removeFormat" title="Clear Formatting"><i class="fas fa-eraser"></i></button>
                     </div>
                     <div class="toolbar-group">
+                        <button type="button" class="toolbar-tool insert-table-btn" data-command="insertTable" title="Insert Table">
+                            <i class="fas fa-table"></i>
+                        </button>
                         <button type="button" class="toolbar-tool insert-image-btn" data-command="insertImage" title="Insert Image">
                             <i class="fas fa-image"></i>
                         </button>
@@ -831,6 +834,11 @@
                             e.preventDefault();
                             handleImageUpload(editor);
                         });
+                    } else if (tool.classList.contains('insert-table-btn')) {
+                        tool.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            handleTableInsert(editor);
+                        });
                     } else {
                         tool.addEventListener('click', (e) => {
                             e.preventDefault();
@@ -915,6 +923,34 @@
                     
                     setTimeout(() => mf.focus(), 50);
                 }
+                updateQuestionModelFromEditor(editor);
+            }
+
+            function handleTableInsert(editor) {
+                editor.focus();
+                const tableHtml = `
+                    <div class="table-responsive my-3 overflow-x-auto">
+                        <table class="w-full border-collapse border border-gray-300 text-sm" style="min-width: 100%;">
+                            <thead>
+                                <tr class="bg-gray-100">
+                                    <th class="border border-gray-300 p-2 text-left"><br></th>
+                                    <th class="border border-gray-300 p-2 text-left"><br></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="border border-gray-300 p-2 text-left"><br></td>
+                                    <td class="border border-gray-300 p-2 text-left"><br></td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-gray-300 p-2 text-left"><br></td>
+                                    <td class="border border-gray-300 p-2 text-left"><br></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div><p><br></p>
+                `;
+                document.execCommand('insertHTML', false, tableHtml);
                 updateQuestionModelFromEditor(editor);
             }
 
@@ -1263,6 +1299,7 @@
             const count = document.getElementById('aiCount').value;
             const examType = document.getElementById('aiExamType').value;
             const examYear = document.getElementById('aiExamYear').value;
+            const sourceMaterial = document.getElementById('aiSourceMaterial')?.value || '';
 
             if (!title && !subjectName) {
                 alert('Please fill out the Lesson Title and Subject in the main form first.');
@@ -1306,7 +1343,8 @@
                         quiz_type: quizType,
                         count: parseInt(count),
                         use_kuulchat: useKuulchat,
-                        use_kuulchat_year: useKuulchat ? (examYear || null) : null
+                        use_kuulchat_year: useKuulchat ? (examYear || null) : null,
+                        source_material: sourceMaterial
                     })
                 });
 
@@ -1434,6 +1472,15 @@
                         @endfor
                     </select>
                     <p class="text-xs text-purple-600 mt-1">Select a year to retrieve a full paper from that specific exam session.</p>
+                </div>
+
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1 flex justify-between">
+                        <span>Raw Source Material (Optional)</span>
+                        <span class="text-xs text-purple-600 font-semibold bg-purple-100 px-2 py-0.5 rounded">Bypasses API Quota</span>
+                    </label>
+                    <textarea id="aiSourceMaterial" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 font-mono text-xs" placeholder="Paste raw text from Kuulchat or a PDF here. The AI will extract and cleanly format exactly these questions."></textarea>
+                    <p class="text-xs text-gray-500 mt-1">If provided, the AI will ONLY format the questions pasted above and will NOT generate new ones.</p>
                 </div>
         </div>
 

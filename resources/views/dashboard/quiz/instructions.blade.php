@@ -539,7 +539,25 @@
                     startBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
 
                     @if (isset($quiz['encoded_id']))
-                        window.location.href = `{{ route('quiz.take', $quiz['encoded_id']) }}`;
+                        @php
+                            $mcqCount = 0;
+                            $essayCount = 0;
+                            if (isset($quiz['questions']) && is_array($quiz['questions'])) {
+                                foreach($quiz['questions'] as $q) {
+                                    if (($q['type'] ?? 'mcq') === 'essay') {
+                                        $essayCount++;
+                                    } else {
+                                        $mcqCount++;
+                                    }
+                                }
+                            }
+                        @endphp
+
+                        @if($mcqCount === 0 && $essayCount > 0)
+                            window.location.href = `{{ route('quiz.essay', $quiz['encoded_id']) }}`;
+                        @else
+                            window.location.href = `{{ route('quiz.take', $quiz['encoded_id']) }}`;
+                        @endif
                     @endif
                 };
 

@@ -306,6 +306,53 @@
             margin-bottom: 1.5rem;
         }
 
+        /* Table Styling */
+        .question-text table, .preamble table, .sub-text table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.95rem;
+            background-color: var(--white);
+            border: 1px solid var(--gray-300);
+        }
+
+        .question-text th, .preamble th, .sub-text th {
+            border: 1px solid var(--gray-300);
+            padding: 0.75rem 1rem;
+            text-align: left;
+            background-color: var(--gray-100);
+            font-weight: 600;
+            color: var(--gray-800);
+        }
+
+        .question-text td, .preamble td, .sub-text td {
+            border: 1px solid var(--gray-300);
+            padding: 0.75rem 1rem;
+            color: var(--gray-700);
+        }
+
+        [data-theme="dark"] .question-text table,
+        [data-theme="dark"] .preamble table,
+        [data-theme="dark"] .sub-text table {
+            background-color: var(--gray-50);
+            border-color: var(--gray-300);
+        }
+
+        [data-theme="dark"] .question-text th,
+        [data-theme="dark"] .preamble th,
+        [data-theme="dark"] .sub-text th {
+            background-color: var(--gray-100);
+            border-color: var(--gray-300);
+            color: var(--gray-800);
+        }
+
+        [data-theme="dark"] .question-text td,
+        [data-theme="dark"] .preamble td,
+        [data-theme="dark"] .sub-text td {
+            border-color: var(--gray-300);
+            color: var(--gray-700);
+        }
+
         .question-text img, .sub-text img {
             max-width: 100%;
             height: auto;
@@ -375,6 +422,7 @@
             box-shadow: var(--shadow-lg);
             border: 1px solid var(--gray-200);
             flex-direction: column;
+            overflow: hidden;
         }
 
         .booklet.active {
@@ -638,7 +686,7 @@
                         </div>
 
                         @if(!empty($question['sub_questions']) && count($question['sub_questions']) > 0)
-                            <div class="sub-editors-container" style="display: flex; flex-direction: column; gap: 1.5rem; overflow-y: auto; padding: 1.5rem; flex: 1;">
+                            <div class="sub-editors-container" style="display: flex; flex-direction: column; gap: 1.5rem; overflow-y: auto; padding: 1.5rem; flex: 1; min-height: 0;">
                                 @foreach($question['sub_questions'] as $sIndex => $sub)
                                     <div class="sub-editor-group" style="display: flex; flex-direction: column; border: 1px solid var(--gray-200); border-radius: 0.75rem; overflow: hidden; background: var(--white); min-height: 250px;">
                                         <div class="sub-editor-header" style="background: var(--gray-50); padding: 0.75rem 1rem; border-bottom: 1px solid var(--gray-200); font-size: 0.875rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center;">

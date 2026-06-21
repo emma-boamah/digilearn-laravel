@@ -3039,6 +3039,7 @@ class AdminController extends Controller
             'ai_model' => 'nullable|string|in:gpt-4o,gpt-4o-mini,gemini',
             'use_kuulchat' => 'nullable|boolean',
             'use_kuulchat_year' => 'nullable|string|max:4',
+            'source_material' => 'nullable|string',
         ]);
 
         try {
@@ -3049,7 +3050,8 @@ class AdminController extends Controller
                 $request->count,
                 $request->boolean('use_kuulchat'),
                 $request->input('use_kuulchat_year'),
-                $request->input('ai_model', 'gemini')
+                $request->input('ai_model', 'gemini'),
+                $request->input('source_material')
             );
 
             if (!$quizData || empty($quizData['questions'])) {
