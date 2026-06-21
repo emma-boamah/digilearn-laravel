@@ -103,12 +103,12 @@ class QuizAutomatedGradingService
             if (($question['type'] ?? 'mcq') !== 'essay') continue;
 
             $userResponse = $userAnswers[$qIdx] ?? '';
-            $mainText = $this->cleanAndStripHtml($question['question'] ?? '');
+            $mainText = $this->cleanAndStripHtml($question['question'] ?? '', true);
             
             if (!empty($question['sub_questions'])) {
                 foreach ($question['sub_questions'] as $sIdx => $sub) {
                     $subResponse = is_array($userResponse) ? ($userResponse[$sIdx] ?? '') : ($sIdx == 0 ? $userResponse : '');
-                    $subText = $this->cleanAndStripHtml($sub['text'] ?? '');
+                    $subText = $this->cleanAndStripHtml($sub['text'] ?? '', true);
                     $fullQuestionText = $mainText ? "{$mainText} - Part {$sub['label']}: {$subText}" : "Part {$sub['label']}: {$subText}";
                     $points = $sub['points'] ?? 1;
                     $sample = $sub['sample_answer'] ?? '';
@@ -125,8 +125,8 @@ class QuizAutomatedGradingService
                         $partsToGrade[] = [
                             'key' => $key,
                             'question' => $fullQuestionText,
-                            'student_answer' => $this->cleanAndStripHtml($subResponse),
-                            'model_answer' => $this->cleanAndStripHtml($sample),
+                            'student_answer' => $this->cleanAndStripHtml($subResponse, true),
+                            'model_answer' => $this->cleanAndStripHtml($sample, true),
                             'max_points' => $points
                         ];
                     }
@@ -147,8 +147,8 @@ class QuizAutomatedGradingService
                     $partsToGrade[] = [
                         'key' => $key,
                         'question' => $mainText,
-                        'student_answer' => $this->cleanAndStripHtml($userResponse),
-                        'model_answer' => $this->cleanAndStripHtml($sample),
+                        'student_answer' => $this->cleanAndStripHtml($userResponse, true),
+                        'model_answer' => $this->cleanAndStripHtml($sample, true),
                         'max_points' => $points
                     ];
                 }
@@ -391,9 +391,15 @@ class QuizAutomatedGradingService
     /**
      * Cleans HTML content by ensuring block elements have spaces around them before tag stripping.
      */
-    private function cleanAndStripHtml($html)
+    private function cleanAndStripHtml($html, $retainStructure = false)
     {
         if (empty($html)) return '';
+        
+        if ($retainStructure) {
+            // Retain basic structure for the AI so tables and lists make sense
+            return trim(strip_tags($html, '<table><tr><th><td><tbody><thead><tfoot><br><p><ul><ol><li><div><strong><em><b><i>'));
+        }
+
         // Replace block tags and list items with spaces to prevent merging words
         $text = preg_replace('/<\/(p|div|li|h[1-6])>/i', ' ', $html);
         $text = preg_replace('/<(br|hr)\s*\/?>/i', ' ', $text);

@@ -602,6 +602,53 @@
             letter-spacing: 0.05em;
         }
 
+        /* Table Styling */
+        .question-text table, .preamble-box table, .option-text table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.95rem;
+            background-color: var(--white);
+            border: 1px solid var(--gray-300);
+        }
+
+        .question-text th, .preamble-box th, .option-text th {
+            border: 1px solid var(--gray-300);
+            padding: 0.75rem 1rem;
+            text-align: left;
+            background-color: var(--gray-100);
+            font-weight: 600;
+            color: var(--gray-800);
+        }
+
+        .question-text td, .preamble-box td, .option-text td {
+            border: 1px solid var(--gray-300);
+            padding: 0.75rem 1rem;
+            color: var(--gray-700);
+        }
+
+        [data-theme="dark"] .question-text table,
+        [data-theme="dark"] .preamble-box table,
+        [data-theme="dark"] .option-text table {
+            background-color: var(--gray-50);
+            border-color: var(--gray-300);
+        }
+
+        [data-theme="dark"] .question-text th,
+        [data-theme="dark"] .preamble-box th,
+        [data-theme="dark"] .option-text th {
+            background-color: var(--gray-100);
+            border-color: var(--gray-300);
+            color: var(--gray-800);
+        }
+
+        [data-theme="dark"] .question-text td,
+        [data-theme="dark"] .preamble-box td,
+        [data-theme="dark"] .option-text td {
+            border-color: var(--gray-300);
+            color: var(--gray-700);
+        }
+
         /* Mobile Responsive */
         @media (max-width: 1024px) {
             .main-layout {

@@ -5238,6 +5238,7 @@
                 const count = document.getElementById('aiCount').value;
                 const examType = document.getElementById('aiExamType').value;
                 const examYear = document.getElementById('aiExamYear').value;
+                const sourceMaterial = document.getElementById('aiSourceMaterial')?.value || '';
 
                 if (!title || !subjectValue || !gradeLevel) {
                     alert('Please fill out the Title, Subject, and Grade Level in the AI Generator before proceeding.');
@@ -5321,7 +5322,8 @@
                             count: parseInt(count),
                             ai_model: aiModel,
                             use_kuulchat: useKuulchat,
-                            use_kuulchat_year: useKuulchat ? (examYear || null) : null
+                            use_kuulchat_year: useKuulchat ? (examYear || null) : null,
+                            source_material: sourceMaterial
                         })
                     });
 
@@ -5572,6 +5574,15 @@
                     </select>
                     <p class="text-xs text-purple-600 mt-1">Select a year to retrieve a full paper from that specific exam
                         session.</p>
+                </div>
+
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1 flex justify-between">
+                        <span>Raw Source Material (Optional)</span>
+                        <span class="text-xs text-purple-600 font-semibold bg-purple-100 px-2 py-0.5 rounded">Bypasses API Quota</span>
+                    </label>
+                    <textarea id="aiSourceMaterial" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 font-mono text-xs" placeholder="Paste raw text from Kuulchat or a PDF here. The AI will extract and cleanly format exactly these questions."></textarea>
+                    <p class="text-xs text-gray-500 mt-1">If provided, the AI will ONLY format the questions pasted above and will NOT generate new ones.</p>
                 </div>
             </div>
             <!-- Drawer Footer -->
