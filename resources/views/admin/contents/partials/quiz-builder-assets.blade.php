@@ -1480,7 +1480,17 @@
                         <span class="text-xs text-purple-600 font-semibold bg-purple-100 px-2 py-0.5 rounded">Bypasses API Quota</span>
                     </label>
                     <textarea id="aiSourceMaterial" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 font-mono text-xs" placeholder="Paste raw text from Kuulchat or a PDF here. The AI will extract and cleanly format exactly these questions."></textarea>
-                    <p class="text-xs text-gray-500 mt-1">If provided, the AI will ONLY format the questions pasted above and will NOT generate new ones.</p>
+                    <p class="text-xs text-gray-500 mt-1 mb-3">If provided, the AI will ONLY format the questions pasted above and will NOT generate new ones.</p>
+                    
+                    <div class="bg-amber-50 border border-amber-200 rounded-md p-3">
+                        <h4 class="text-amber-800 text-xs font-bold uppercase tracking-wider mb-1">
+                            <i class="fas fa-lightbulb text-amber-500 mr-1"></i> Pro Tips for Best Results
+                        </h4>
+                        <ul class="text-xs text-amber-700 space-y-1.5 list-disc pl-4 mt-2">
+                            <li><strong>Avoid Timeout Errors:</strong> Generate complex exams in batches of <strong>10-15 questions</strong> at a time. Trying to generate 40+ questions at once often causes the AI to timeout or return broken JSON.</li>
+                            <li><strong>Missing Images:</strong> The AI cannot read copied images. The AI will now automatically detect if an image is missing and insert an <span class="font-mono bg-amber-100 px-1 rounded">Image Placeholder</span> for you. You can then click the placeholder in the Quiz Builder and use the <strong>Insert Image</strong> toolbar button to upload the correct diagram!</li>
+                        </ul>
+                    </div>
                 </div>
         </div>
 

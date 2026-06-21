@@ -1447,7 +1447,8 @@ Instructions:
 3. The quiz MUST be strictly aligned with the current GES syllabus.
 4. **Math Formulas & Scientific Symbols**: If the quiz involves mathematics, science, equations, or formulas, you MUST wrap all mathematical expressions, fractions, symbols, and equations inside `<math-field>` custom HTML tags. For example, `<math-field>x^2 + y^2 = z^2</math-field>`, `<math-field>\sin(\theta)</math-field>`, `<math-field>\frac{a}{b}</math-field>`, or `<math-field>360^\circ</math-field>`. Never output raw LaTeX or formulas without wrapping them inside `<math-field>` tags. This ensures textbook-quality textbook layout rendering.
 5. **Essay Answers and Keywords**: For every essay question and sub-question, you MUST generate a detailed, clear reference/sample answer, and a `keywords` array of 3-6 critical terms or key concepts. These are required to grade the student's answer and for local grading fallback when AI services are offline or rate-limited.
-6. The JSON MUST exactly match this structure:
+6. **Data Tables**: If a question, preamble, or option requires a table (e.g. for accounting, statistics, data interpretation), you MUST format it using standard HTML `<table>`, `<tr>`, `<th>`, and `<td>` tags. Do NOT use markdown tables.
+7. The JSON MUST exactly match this structure:
 {
     "title": "A short, catchy title for the quiz",
     "subject": "The most relevant subject (e.g. Science, Mathematics, English)",
@@ -1587,7 +1588,8 @@ Instructions:
 3. **Data Tables**: If the source material contains tabular data, or if a question requires a table, you MUST format it using standard HTML `<table>`, `<tr>`, `<th>`, and `<td>` tags. Ensure the table uses standard structure without relying exclusively on Tailwind utility classes. Do NOT use markdown tables.
 4. **Math Formulas & Scientific Symbols**: If the questions involve mathematics, science, equations, or formulas, you MUST wrap all mathematical expressions, fractions, symbols, and equations inside `<math-field>` custom HTML tags. For example, `<math-field>x^2 + y^2 = z^2</math-field>`. Never output raw LaTeX or formulas without wrapping them inside `<math-field>` tags.
 5. **Essay Answers and Keywords**: For every essay question and sub-question, you MUST generate a detailed, clear reference/sample answer, and a `keywords` array of 3-6 critical terms or key concepts.
-6. The JSON MUST exactly match this structure and contain ONLY the 'questions' array:
+6. **Missing Images/Diagrams**: If the source material implies the presence of an image, map, or diagram (e.g., "Use the diagram below", "In the image above") but you cannot see the image, you MUST insert a placeholder like `<div class="p-4 border-2 border-dashed border-gray-300 rounded text-center text-gray-500 my-2"><i class="fas fa-image text-2xl mb-2"></i><br>Image Placeholder: Insert Diagram Here</div>` in the question or preamble. This signals to the teacher to manually upload the image later. Do NOT skip the question.
+7. The JSON MUST exactly match this structure and contain ONLY the 'questions' array:
 {
     "questions": [
         // For MCQ:
