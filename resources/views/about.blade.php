@@ -301,8 +301,13 @@
         }
 
         @keyframes scrollMarquee {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(calc(-50% - 1rem)); }
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(calc(-50% - 1rem));
+            }
         }
 
         .testimonial-card {
@@ -561,18 +566,18 @@
     </section>
 
     <!-- Platform Numbers & Impact (Stats)
-                                @if(isset($stats) && count($stats) > 0)
-                                    <section class="stats-section">
-                                        <div class="stats-grid">
-                                            @foreach($stats as $stat)
-                                                <div class="stat-item">
-                                                    <h3>{{ $stat['value'] }}</h3>
-                                                    <p>{{ $stat['label'] }}</p>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    </section>
-                                @endif -->
+                                    @if(isset($stats) && count($stats) > 0)
+                                        <section class="stats-section">
+                                            <div class="stats-grid">
+                                                @foreach($stats as $stat)
+                                                    <div class="stat-item">
+                                                        <h3>{{ $stat['value'] }}</h3>
+                                                        <p>{{ $stat['label'] }}</p>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </section>
+                                    @endif -->
 
     <!-- Introduction Section -->
     <section class="intro-section">
@@ -591,7 +596,8 @@
                     delivering knowledge in formats that capture attention and inspire action.
                 </p>
                 <p>
-                    ShoutOutGh is more than an educational platform—it is Africa's leading edutainment ecosystem, a movement
+                    ShoutOutGh is more than an educational platform, it is Africa's leading edutainment ecosystem, a
+                    movement
                     to make learning a daily, enjoyable experience that empowers individuals, strengthens communities, and
                     prepares Africa's youth for the future.
                 </p>
@@ -681,7 +687,7 @@
                                 </div>
                             </article>
                         @endforeach
-                        
+
                         <!-- Second Set for Seamless Looping -->
                         @foreach($testimonials as $testimonial)
                             <article class="testimonial-card" aria-hidden="true">
