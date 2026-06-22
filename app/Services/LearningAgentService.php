@@ -1589,7 +1589,8 @@ Instructions:
 4. **Math Formulas & Scientific Symbols**: If the questions involve mathematics, science, equations, or formulas, you MUST wrap all mathematical expressions, fractions, symbols, and equations inside `<math-field>` custom HTML tags. For example, `<math-field>x^2 + y^2 = z^2</math-field>`. Never output raw LaTeX or formulas without wrapping them inside `<math-field>` tags.
 5. **Essay Answers and Keywords**: For every essay question and sub-question, you MUST generate a detailed, clear reference/sample answer, and a `keywords` array of 3-6 critical terms or key concepts.
 6. **Missing Images/Diagrams**: If the source material implies the presence of an image, map, or diagram (e.g., "Use the diagram below", "In the image above") but you cannot see the image, you MUST insert a placeholder like `<div class="p-4 border-2 border-dashed border-gray-300 rounded text-center text-gray-500 my-2"><i class="fas fa-image text-2xl mb-2"></i><br>Image Placeholder: Insert Diagram Here</div>` in the question or preamble. This signals to the teacher to manually upload the image later. Do NOT skip the question.
-7. The JSON MUST exactly match this structure and contain ONLY the 'questions' array:
+7. **Incomplete/Garbled Questions**: If a question in the source material is missing options, missing the equation, or contains text like "[expression not fully extracted]" or "[value]", you MUST STILL GENERATE the question. Insert the exact text given, and for any missing options, just use "Option A", "Option B", etc. DO NOT skip any questions from the source material; the teacher will fill in the missing data later.
+8. The JSON MUST exactly match this structure and contain ONLY the 'questions' array:
 {
     "questions": [
         // For MCQ:
@@ -1701,6 +1702,9 @@ PROMPT;
                 $text = preg_replace('/^```\s*/i', '', $text);
                 $text = preg_replace('/```$/i', '', $text);
                 $text = trim($text);
+                
+                // Sanitize: replace literal control characters (like unescaped newlines/tabs inside strings) with spaces to prevent JSON_ERROR_CTRL_CHAR
+                $text = preg_replace('/[\x00-\x1F\x7F]/u', ' ', $text);
 
                 $decoded = json_decode($text, true);
                 $jsonErrorMsg = json_last_error_msg();

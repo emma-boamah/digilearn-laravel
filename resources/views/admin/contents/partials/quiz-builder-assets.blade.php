@@ -524,6 +524,31 @@
         showQuestion(uploadData.quiz.questions.length - 1);
     }
 
+    function isQuestionIncomplete(q) {
+        const checkStr = str => {
+            if (!str) return false;
+            const lower = str.toLowerCase();
+            return lower.includes('image placeholder') || 
+                   lower.includes('[expression') || 
+                   lower.includes('[value]') ||
+                   (q.type === 'mcq' && lower.includes('option a'));
+        };
+
+        if (checkStr(q.question) || checkStr(q.preamble)) return true;
+        
+        if (q.type === 'mcq') {
+            if (q.options && q.options.some(opt => checkStr(opt))) return true;
+        } else if (q.type === 'essay') {
+            if (checkStr(q.correct_answer)) return true;
+            if (q.sub_questions) {
+                for(let sq of q.sub_questions) {
+                    if (checkStr(sq.text) || checkStr(sq.sample_answer)) return true;
+                }
+            }
+        }
+        return false;
+    }
+
     function renderQuestionNavigation() {
         const navGrid = document.getElementById('quizNavGrid');
         if (!navGrid) return;
@@ -532,8 +557,19 @@
         uploadData.quiz.questions.forEach((q, index) => {
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = `quiz-nav-item ${q.type} ${index === currentQuestionIndex ? 'active' : ''}`;
+            btn.className = `quiz-nav-item relative ${q.type} ${index === currentQuestionIndex ? 'active' : ''}`;
             btn.textContent = index + 1;
+            
+            if (isQuestionIncomplete(q)) {
+                const indicator = document.createElement('span');
+                indicator.className = 'absolute -top-1.5 -right-1.5 flex h-3 w-3';
+                indicator.innerHTML = `
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-amber-500 border-2 border-white" title="Needs Review (Incomplete Data)"></span>
+                `;
+                btn.appendChild(indicator);
+            }
+            
             btn.addEventListener('click', () => showQuestion(index));
             navGrid.appendChild(btn);
         });
@@ -1056,6 +1092,9 @@
                 } else if (editor.classList.contains('correct-answer')) {
                     question.correct_answer = finalHtml;
                 }
+                
+                // Re-render nav grid to update any "incomplete" indicators dynamically
+                renderQuestionNavigation();
             }
 
             // Sub-question Logic
