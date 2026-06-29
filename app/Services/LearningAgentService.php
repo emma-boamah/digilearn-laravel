@@ -120,75 +120,115 @@ That's a great question! Photosynthesis is the process by which plants make thei
 [ACTION: {"type": "lesson", "topic": "Photosynthesis"}]
 PROMPT;
 
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->geminiModel}:generateContent?key={$this->geminiApiKey}";
+        // Ordered list of models to try — verified against the API key's available models.
+        $modelsToTry = [
+            'gemini-flash-latest',       // Primary (may be overloaded)
+            'gemini-flash-lite-latest',  // Fallback 1: Lighter variant, less likely to be overloaded
+            'gemini-2.0-flash',          // Fallback 2: Stable version
+            'gemini-2.5-flash',          // Fallback 3: Latest stable
+        ];
 
-        try {
-            $response = \Illuminate\Support\Facades\Http::timeout(60)->post($url, [
-                'systemInstruction' => [
-                    'parts' => [['text' => $systemPrompt]]
-                ],
-                'contents' => $contents,
-                'generationConfig' => [
-                    'temperature' => 0.7,
-                    'maxOutputTokens' => 2048,
-                ],
-            ]);
+        // If a specific model is configured and differs from our primary, prepend it
+        if (!empty($this->geminiModel) && !in_array($this->geminiModel, $modelsToTry)) {
+            array_unshift($modelsToTry, $this->geminiModel);
+        }
+        $modelsToTry = array_values(array_unique($modelsToTry));
 
-            if (!$response->successful()) {
-                throw new \Exception("Gemini API error: " . $response->body());
-            }
+        $lastError = null;
 
-            $data = $response->json();
-            $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
-            
-            // Check for [ACTION: ...]
-            $actionMatches = [];
-            $actionCommand = null;
-            if (preg_match('/\[ACTION:\s*({[^}]+})\s*\]/is', $text, $actionMatches)) {
-                $actionCommand = json_decode($actionMatches[1], true);
-                // Remove the action block from the visible text
-                $text = trim(str_replace($actionMatches[0], '', $text));
-            }
-            
-            $result = [
-                'success' => true,
-                'message' => $text,
-                'summary' => null,
-            ];
+        foreach ($modelsToTry as $modelName) {
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$modelName}:generateContent?key={$this->geminiApiKey}";
+            try {
+                $response = \Illuminate\Support\Facades\Http::timeout(90)->post($url, [
+                    'systemInstruction' => [
+                        'parts' => [['text' => $systemPrompt]]
+                    ],
+                    'contents' => $contents,
+                    'generationConfig' => [
+                        'temperature' => 0.7,
+                        'maxOutputTokens' => 2048,
+                    ],
+                ]);
 
-            if ($actionCommand && isset($actionCommand['type']) && isset($actionCommand['topic'])) {
-                $type = $actionCommand['type'];
-                $topicQuery = $actionCommand['topic'];
+                if (!$response->successful()) {
+                    $statusCode = $response->status();
+                    $lastError = "Gemini API error (HTTP {$statusCode}) on model {$modelName}";
+                    \Illuminate\Support\Facades\Log::warning('Agent chat model unavailable, trying next', [
+                        'model' => $modelName,
+                        'status' => $statusCode,
+                    ]);
+                    // 429 = rate limited, 503 = overloaded, 404 = wrong model name — all retryable with fallback
+                    if (in_array($statusCode, [429, 503, 404])) {
+                        continue;
+                    }
+                    throw new \Exception("Gemini API error: " . $response->body());
+                }
+
+                $data = $response->json();
+                $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
                 
-                // Trigger the generation!
-                if ($type === 'quiz') {
-                    $genResult = $this->findOrCreateQuiz($topicQuery, $user, $contextId);
-                } elseif ($type === 'roadmap') {
-                    $genResult = $this->findOrCreateRoadmap($topicQuery, $user, $contextId);
-                } else {
-                    $genResult = $this->findOrCreateLesson($topicQuery, $user, $contextId);
+                // Check for [ACTION: ...]
+                $actionMatches = [];
+                $actionCommand = null;
+                if (preg_match('/\[ACTION:\s*({[^}]+})\s*\]/is', $text, $actionMatches)) {
+                    $actionCommand = json_decode($actionMatches[1], true);
+                    $text = trim(str_replace($actionMatches[0], '', $text));
                 }
                 
-                // Merge genResult into result (keeping the conversational message)
-                $result = array_merge($genResult, [
-                    'type' => $type,
-                    'message' => $text . ($genResult['message'] ? "\n\n*" . $genResult['message'] . "*" : '')
-                ]);
+                $result = [
+                    'success' => true,
+                    'message' => $text,
+                    'summary' => null,
+                ];
+
+                if ($actionCommand && isset($actionCommand['type']) && isset($actionCommand['topic'])) {
+                    $type = $actionCommand['type'];
+                    $topicQuery = $actionCommand['topic'];
+                    
+                    if ($type === 'quiz') {
+                        $genResult = $this->findOrCreateQuiz($topicQuery, $user, $contextId);
+                    } elseif ($type === 'roadmap') {
+                        $genResult = $this->findOrCreateRoadmap($topicQuery, $user, $contextId);
+                    } else {
+                        $genResult = $this->findOrCreateLesson($topicQuery, $user, $contextId);
+                    }
+                    
+                    $result = array_merge($genResult, [
+                        'type' => $type,
+                        'message' => $text . ($genResult['message'] ? "\n\n*" . $genResult['message'] . "*" : '')
+                    ]);
+                }
+
+                $this->logToSearchAnalytics($latestUserMessage, $user->id);
+
+                return $result;
+
+            } catch (\Exception $e) {
+                $errorMsg = $e->getMessage();
+                $lastError = $errorMsg;
+                \Illuminate\Support\Facades\Log::error('Agent chat error on model ' . $modelName . ': ' . $errorMsg);
+                // For non-503 exceptions, don't try other models
+                if (!str_contains($errorMsg, '503') && !str_contains($errorMsg, 'UNAVAILABLE')) {
+                    return [
+                        'success' => false,
+                        'message' => str_contains($errorMsg, 'timed out') || str_contains($errorMsg, 'cURL error 28')
+                            ? 'The AI Tutor is a bit busy right now. Please try again in a moment!'
+                            : 'I encountered an error trying to respond. Please try again.',
+                        'error' => $errorMsg
+                    ];
+                }
+                // For 503/UNAVAILABLE, try the next model
+                continue;
             }
-
-            // Log query for search analytics
-            $this->logToSearchAnalytics($latestUserMessage, $user->id);
-
-            return $result;
-
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Agent chat error: ' . $e->getMessage());
-            return [
-                'success' => false,
-                'message' => 'I encountered an error trying to respond. Please try again.',
-                'error' => $e->getMessage()
-            ];
         }
+
+        // All models exhausted
+        \Illuminate\Support\Facades\Log::error('Agent chat: all Gemini models unavailable.', ['last_error' => $lastError]);
+        return [
+            'success' => false,
+            'message' => 'The AI Tutor is currently experiencing very high demand across all models. Please try again in a minute!',
+            'error' => $lastError
+        ];
     }
 
     /**
@@ -1548,7 +1588,18 @@ PROMPT;
         $remaining = $count;
         $batchNumber = 1;
         $totalBatches = (int) ceil($count / $batchSize);
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->geminiModel}:generateContent?key={$this->geminiApiKey}";
+        
+        // Verified fallback models for this API key — same list as the chat() method
+        $geminiModelsToTry = [
+            'gemini-flash-latest',
+            'gemini-flash-lite-latest',
+            'gemini-2.0-flash',
+            'gemini-2.5-flash',
+        ];
+        if (!empty($this->geminiModel) && !in_array($this->geminiModel, $geminiModelsToTry)) {
+            array_unshift($geminiModelsToTry, $this->geminiModel);
+        }
+        $geminiModelsToTry = array_values(array_unique($geminiModelsToTry));
 
         while ($remaining > 0) {
             $currentCount = min($remaining, $batchSize);
@@ -1667,31 +1718,57 @@ PROMPT;
                         throw new Exception("Gemini API key is missing. Please configure it in the environment.");
                     }
                     
-                    try {
-                        $response = Http::timeout(120)
-                            ->post($url, [
-                            'contents' => [
-                                [
-                                    'parts' => [
-                                        ['text' => $prompt]
+                    $geminiSuccess = false;
+                    foreach ($geminiModelsToTry as $geminiModel) {
+                        $geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/{$geminiModel}:generateContent?key={$this->geminiApiKey}";
+                        try {
+                            $response = Http::timeout(120)
+                                ->post($geminiUrl, [
+                                'contents' => [
+                                    [
+                                        'parts' => [
+                                            ['text' => $prompt]
+                                        ]
                                     ]
+                                ],
+                                'generationConfig' => [
+                                    'response_mime_type' => 'application/json',
+                                    'maxOutputTokens' => 8192,
                                 ]
-                            ],
-                            'generationConfig' => [
-                                'response_mime_type' => 'application/json',
-                                'maxOutputTokens' => 8192,
-                            ]
-                        ]);
+                            ]);
 
-                        if ($response->failed()) {
-                            throw new Exception("Gemini API request failed: " . $response->body());
+                            if ($response->failed()) {
+                                $statusCode = $response->status();
+                                Log::warning('Admin AI: Gemini model unavailable, trying next', [
+                                    'model' => $geminiModel,
+                                    'status' => $statusCode,
+                                    'batch' => $batchNumber,
+                                ]);
+                                if (in_array($statusCode, [429, 503, 404])) {
+                                    continue; // try next model
+                                }
+                                throw new Exception("Gemini API request failed: " . $response->body());
+                            }
+
+                            $result = $response->json();
+                            $text = $result['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                            $success = true;
+                            $geminiSuccess = true;
+                            Log::info('Admin AI: Gemini responded successfully', ['model' => $geminiModel, 'batch' => $batchNumber]);
+                            break; // success, stop trying models
+
+                        } catch (Exception $e) {
+                            $eMsg = $e->getMessage();
+                            if (str_contains($eMsg, '503') || str_contains($eMsg, 'UNAVAILABLE') || str_contains($eMsg, '429')) {
+                                Log::warning('Admin AI: Gemini model exception, trying next', ['model' => $geminiModel, 'error' => $eMsg]);
+                                continue;
+                            }
+                            throw $e; // non-retryable
                         }
+                    }
 
-                        $result = $response->json();
-                        $text = $result['candidates'][0]['content']['parts'][0]['text'] ?? '';
-                        $success = true;
-                    } catch (Exception $e) {
-                        throw new Exception($e->getMessage());
+                    if (!$geminiSuccess) {
+                        throw new Exception("All Gemini models are currently unavailable (503/429). Please try again in a moment.");
                     }
                 } else {
                     throw new Exception("Invalid model preference: {$modelPreference}");
