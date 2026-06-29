@@ -591,9 +591,9 @@ $jsonLd = [
         position: relative;
         border-radius: var(--border-radius-lg);
         overflow: hidden;
-        aspect-ratio: 16 / 9;
         width: 100%;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        display: flex;
     }
 
     .video-container:hover {
@@ -610,10 +610,11 @@ $jsonLd = [
 
     .youtube-style-video-container video {
         width: 100%;
-        height: 100%;
+        height: auto;
         object-fit: contain;
         background-color: #000;
         border-radius: var(--border-radius-lg);
+        display: block;
     }
 
     .video-overlay {
@@ -935,21 +936,19 @@ $jsonLd = [
         position: relative;
         border-radius: var(--border-radius-lg);
         overflow: hidden;
-        padding-top: 56.25%;
-        /* 16:9 Aspect Ratio */
         background-color: #000;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
         cursor: pointer;
+        display: flex;
     }
 
     .youtube-style-video-container video {
-        position: absolute;
-        top: 0;
-        left: 0;
         width: 100%;
-        height: 100%;
-        object-fit: cover;
+        height: auto;
+        object-fit: contain;
+        background-color: #000;
         transition: opacity 0.3s ease;
+        display: block;
     }
 
     /* All Learning Resources */
@@ -2227,9 +2226,9 @@ $jsonLd = [
     /* Modern responsive techniques for Why Choose section */
     @media (max-width: 768px) {
         .why-choose {
-            flex-direction: column-reverse;
-            /* Better content flow on mobile */
-            gap: 1.5rem;
+            flex-direction: column;
+            /* Video beneath text on mobile */
+            gap: 2rem;
         }
 
         .why-choose-videos {
@@ -2238,8 +2237,8 @@ $jsonLd = [
         }
 
         .youtube-style-video-container {
-            height: 250px !important;
-            /* Better aspect ratio for mobile */
+            height: auto !important;
+            /* Let video dictate height */
             border-radius: 16px;
             overflow: hidden;
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
@@ -2512,7 +2511,6 @@ $jsonLd = [
                 <div class="why-choose-videos">
                     <div class="youtube-style-video-container">
                         <video preload="auto" loading="lazy" autoplay id="whyChooseVideo" muted loop playsinline
-                            preload="metadata" poster="{{ secure_asset('images/student-focus.png') }}"
                             aria-label="Video demonstration of ShoutOutGH's interactive learning features">
                             <source src="{{ secure_asset('videos/shoutoutgh_quiz-guide.mp4') }}" type="video/mp4">
                             <track kind="captions" src="" srclang="en" label="English captions">
