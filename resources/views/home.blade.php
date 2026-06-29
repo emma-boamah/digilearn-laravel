@@ -517,17 +517,12 @@ $jsonLd = [
     @media (min-width: 48rem) {
         .why-choose {
             flex-direction: row;
+            gap: 5rem;
         }
     }
 
     .why-choose-text {
-        flex: 2;
-    }
-
-    @media (min-width: 48rem) and (max-width: 64rem) {
-        .why-choose-text {
-            flex: 1;
-        }
+        flex: 1;
     }
 
     .feature-list {
@@ -574,7 +569,7 @@ $jsonLd = [
 
     /* Video Grid Styles */
     .why-choose-videos {
-        flex: 1;
+        flex: 1.25;
         display: flex;
         flex-direction: column;
         gap: 1.5rem;
@@ -610,6 +605,14 @@ $jsonLd = [
         width: 100%;
         height: 100%;
         object-fit: cover;
+        border-radius: var(--border-radius-lg);
+    }
+
+    .youtube-style-video-container video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background-color: #000;
         border-radius: var(--border-radius-lg);
     }
 
@@ -2511,7 +2514,7 @@ $jsonLd = [
                         <video preload="auto" loading="lazy" autoplay id="whyChooseVideo" muted loop playsinline
                             preload="metadata" poster="{{ secure_asset('images/student-focus.png') }}"
                             aria-label="Video demonstration of ShoutOutGH's interactive learning features">
-                            <source src="{{ secure_asset('videos/personalized-study.mp4') }}" type="video/mp4">
+                            <source src="{{ secure_asset('videos/shoutoutgh_quiz-guide.mp4') }}" type="video/mp4">
                             <track kind="captions" src="" srclang="en" label="English captions">
                             Your browser does not support the video tag.
                         </video>
