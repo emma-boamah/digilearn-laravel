@@ -359,43 +359,41 @@
         }
 
         .social-btn {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            border: 1px solid var(--gray-300);
+            text-decoration-line: none;
+            background: var(--white);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
-            border: 1px solid var(--gray-300);
-            background-color: var(--white);
-            width: 100%;
-            max-width: 200px;
-            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
         }
 
         .social-btn:hover {
-            background-color: var(--gray-50);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
         }
 
         .social-btn.google {
-            background-color: #fff;
-            color: var(--gray-900);
+            color: #DB4437;
+            background: var(--white);
         }
 
         .social-btn.apple {
-            background-color: #000;
-            color: var(--white);
-            border-color: #000;
+            color: #000;
+            background: var(--white);
         }
 
         .social-btn svg,
+        .social-btn i,
         .social-btn .material-symbols-outlined {
-            width: 1.25rem;
-            height: 1.25rem;
-            font-size: 1.25rem;
+            width: 24px;
+            height: 24px;
+            font-size: 1.4rem;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1115,19 +1113,18 @@
 
             <div class="social-login">
                 <a href="{{ route('auth.google', ['signup' => '1']) }}" class="social-btn google">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="20" height="20">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24" height="24">
                         <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/>
                     </svg>
-                    <span>Sign up with Google</span>
                 </a>
 
-                <button class="social-btn apple">
+                {{-- <button class="social-btn apple">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
                         <path d="M17.05 12.04C17.02 8.97 19.62 7.45 19.71 7.39C18.41 5.57 16.37 5.33 15.72 5.31C14.1 5.12 12.63 6.4 11.76 6.4C10.88 6.4 9.69 5.34 8.3 5.38C6.52 5.43 4.92 6.51 4.04 8.2C2.06 11.69 3.5 16.45 5.28 19C6.16 20.32 7.2 21.79 8.58 21.75C9.92 21.71 10.41 20.85 12.07 20.85C13.72 20.85 14.17 21.75 15.58 21.72C17.02 21.69 17.92 20.37 18.79 19.04C19.8 17.56 20.25 16.11 20.27 16.04C20.23 16.02 17.08 14.79 17.05 12.04Z" fill="white"/>
                         <path d="M14.74 3.78C15.44 2.9 15.95 1.64 15.79 0.39C14.69 0.44 13.36 1.13 12.63 2.01C11.98 2.79 11.37 4.1 11.56 5.31C12.78 5.41 13.99 4.69 14.74 3.78Z" fill="white"/>
                     </svg>
                     <span>Sign up with Apple</span>
-                </button>
+                </button> --}}
             </div>
         </div>
     </div>
