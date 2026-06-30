@@ -447,11 +447,11 @@ class DashboardController extends Controller
         $lessons = $this->filterLessonsBySubscription($user, $lessons);
         $lessons = $this->subscriptionPreviewService->processRelatedLessons($lessons, $user);
 
+        $subjects = $this->getSubjectsFromLessons($lessons);
+
         // Paginate for initial load (show 12 lessons)
         $totalLessons = count($lessons);
         $lessons = array_slice($lessons, 0, 12);
-
-        $subjects = $this->getSubjectsFromLessons($lessons);
 
 
         return view('dashboard.digilearn', compact(
@@ -3610,12 +3610,14 @@ class DashboardController extends Controller
 
         foreach ($allSubjects as $subject) {
             $count = collect($lessons)->where('subject_id', $subject->id)->count();
-            $subjects[] = [
-                'name' => $subject->name,
-                'slug' => Str::slug($subject->name),
-                'icon' => $subjectIcons[$subject->name] ?? 'fas fa-book-open',
-                'count' => $count
-            ];
+            if ($count > 0) {
+                $subjects[] = [
+                    'name' => $subject->name,
+                    'slug' => Str::slug($subject->name),
+                    'icon' => $subjectIcons[$subject->name] ?? 'fas fa-book-open',
+                    'count' => $count
+                ];
+            }
         }
 
         // Add 'All' subject at the beginning
@@ -3648,12 +3650,14 @@ class DashboardController extends Controller
 
         foreach ($allSubjects as $subject) {
             $count = collect($courses)->where('subject', $subject->name)->count();
-            $subjects[] = [
-                'name' => $subject->name,
-                'slug' => Str::slug($subject->name),
-                'icon' => $subjectIcons[$subject->name] ?? 'fas fa-book-open',
-                'count' => $count
-            ];
+            if ($count > 0) {
+                $subjects[] = [
+                    'name' => $subject->name,
+                    'slug' => Str::slug($subject->name),
+                    'icon' => $subjectIcons[$subject->name] ?? 'fas fa-book-open',
+                    'count' => $count
+                ];
+            }
         }
 
         // Add 'All' subject at the beginning
