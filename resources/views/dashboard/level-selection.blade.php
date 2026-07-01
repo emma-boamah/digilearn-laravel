@@ -60,7 +60,7 @@ $isFromLessonView = $referrer && str_contains($referrer, '/dashboard/lesson/');
             @endphp
             @if($hasAccess)
             {{-- Accessible card with individual grade selection --}}
-            <div class="level-group-card accessible">
+            <div class="level-group-card accessible clickable-card">
                 <div class="level-header">
                     <h3 class="level-title">{{ $level['title'] }}</h3>
                     @if(session('selected_level_group') === $level['id'])
@@ -86,7 +86,10 @@ $isFromLessonView = $referrer && str_contains($referrer, '/dashboard/lesson/');
 
                 <div class="card-footer">
                     <button type="button" class="enter-group-btn"
-                        onclick="handleGroupEntry('{{ $level['id'] }}', '{{ $level['title'] }}', {{ json_encode($level['levels'] ?? $level['years'] ?? []) }}, '{{ Auth::user()->grade }}')">
+                        data-level-id="{{ $level['id'] }}"
+                        data-level-title="{{ $level['title'] }}"
+                        data-level-grades="{{ json_encode($level['levels'] ?? $level['years'] ?? []) }}"
+                        data-user-grade="{{ Auth::user()->grade }}">
                         <span>Enter Group</span>
                         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -102,7 +105,7 @@ $isFromLessonView = $referrer && str_contains($referrer, '/dashboard/lesson/');
             </div>
             @else
             {{-- Non-accessible card: has upgrade button --}}
-            <div class="level-group-card explore-more">
+            <div class="level-group-card explore-more clickable-card">
                 <div class="level-header">
                     <h3 class="level-title">{{ $level['title'] }}</h3>
                 </div>
@@ -391,13 +394,12 @@ $isFromLessonView = $referrer && str_contains($referrer, '/dashboard/lesson/');
 
     .enter-group-btn {
         width: 100%;
-        background: #3b82f6;
-        color: white;
+        background: transparent;
+        color: var(--secondary-blue, #3b82f6);
         border: none;
-        padding: 0.75rem;
-        border-radius: 8px;
+        padding: 0.5rem;
         font-weight: 600;
-        font-size: 0.875rem;
+        font-size: 1rem;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -406,10 +408,9 @@ $isFromLessonView = $referrer && str_contains($referrer, '/dashboard/lesson/');
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .enter-group-btn:hover {
-        background: #2563eb;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    .level-group-card.clickable-card:hover .enter-group-btn {
+        color: #2563eb;
+        transform: translateX(4px);
     }
 
     /* Modal Styles */
@@ -688,30 +689,30 @@ $isFromLessonView = $referrer && str_contains($referrer, '/dashboard/lesson/');
 
 
     .upgrade-btn {
-        background-color: #3b82f6;
-        color: white;
+        width: 100%;
+        background: transparent;
+        color: var(--secondary-blue, #3b82f6);
         border: none;
-        padding: 0.75rem 2rem;
-        border-radius: 6px;
-        font-weight: 500;
+        padding: 0.5rem;
+        font-weight: 600;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
         cursor: pointer;
         transition: all 0.2s ease;
-        width: 100%;
-        font-size: 1rem;
-        box-shadow: 0 1px 3px rgba(59, 130, 246, 0.3);
     }
 
-    .upgrade-btn:hover {
-        background-color: #2563eb;
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-        transform: translateY(-1px);
+    .level-group-card.clickable-card:hover .upgrade-btn {
+        color: #2563eb;
+        transform: translateX(4px);
     }
 
     .upgrade-btn:disabled {
-        background-color: #9ca3af;
+        color: #9ca3af;
         cursor: not-allowed;
         transform: none;
-        box-shadow: none;
     }
 
     @media (max-width: 768px) {
@@ -743,25 +744,25 @@ $isFromLessonView = $referrer && str_contains($referrer, '/dashboard/lesson/');
     }
 
     .price-badge {
+        width: 100%;
+        background: transparent;
+        color: var(--secondary-blue, #3b82f6);
+        border: none;
+        padding: 0.5rem;
+        font-weight: 600;
+        font-size: 1rem;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 0.75rem 1rem;
-        background: var(--bg-main);
-        border: 2px solid var(--secondary-blue);
-        color: var(--text-main);
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 0.875rem;
+        gap: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
         text-decoration: none;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .price-badge:hover {
-        background: var(--bg-surface);
-        border-color: var(--secondary-blue);
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-sm);
+    .level-group-card.clickable-card:hover .price-badge {
+        color: #2563eb;
+        transform: translateX(4px);
     }
 </style>
 
@@ -792,6 +793,28 @@ $isFromLessonView = $referrer && str_contains($referrer, '/dashboard/lesson/');
                 e.preventDefault();
                 const planSlug = this.getAttribute('data-plan-slug');
                 openUpgradeModal(planSlug);
+            });
+        });
+
+        // Handle clickable cards delegation
+        document.querySelectorAll('.clickable-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                if (!e.target.closest('button')) {
+                    const btn = this.querySelector('button');
+                    if (btn) btn.click();
+                }
+            });
+        });
+
+        // Handle enter group button
+        document.querySelectorAll('.enter-group-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const groupId = this.getAttribute('data-level-id');
+                const groupTitle = this.getAttribute('data-level-title');
+                const gradesStr = this.getAttribute('data-level-grades');
+                const userGrade = this.getAttribute('data-user-grade');
+                const grades = gradesStr ? JSON.parse(gradesStr) : [];
+                handleGroupEntry(groupId, groupTitle, grades, userGrade);
             });
         });
     });
