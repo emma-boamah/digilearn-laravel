@@ -627,6 +627,16 @@
         }
 
         /* Table Styling */
+        /* Inline Image Styling */
+        .question-text img, .preamble-box img, .option-text img, .option-item img, .sample-answer-box img {
+            max-width: 100% !important;
+            height: auto !important;
+            border-radius: 0.5rem;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
         .question-text table, .preamble-box table, .option-text table, .option-item table {
             width: 100%;
             border-collapse: collapse;
@@ -2169,6 +2179,7 @@
             span.textContent = isHidden ? 'Sample Answer' : 'Hide Answer';
         }
     </script>
+    @include('dashboard.quiz.partials.lightbox')
 </body>
 
 </html>

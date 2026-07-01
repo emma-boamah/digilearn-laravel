@@ -353,11 +353,11 @@
             color: var(--gray-700);
         }
 
-        .question-text img, .sub-text img {
-            max-width: 100%;
-            height: auto;
+        .question-text img, .preamble img, .sub-text img {
+            max-width: 100% !important;
+            height: auto !important;
             border-radius: 0.5rem;
-            margin: 1rem 0;
+            margin: 1rem auto;
             display: block;
             box-shadow: var(--shadow-sm);
         }
@@ -1137,6 +1137,7 @@
     </div>
 
     @include('dashboard.quiz.partials.anti-cheat')
+    @include('dashboard.quiz.partials.lightbox')
 </body>
 
 </html>
