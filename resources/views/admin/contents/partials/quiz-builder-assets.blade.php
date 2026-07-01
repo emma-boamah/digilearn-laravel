@@ -121,6 +121,15 @@
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
 
+    .rich-text-editor img {
+        transition: outline 0.2s ease;
+        cursor: pointer;
+    }
+    .rich-text-editor img:hover {
+        outline: 2px solid #3b82f6;
+        outline-offset: 2px;
+    }
+
     .rich-text-editor[placeholder]:empty:before {
         content: attr(placeholder);
         color: #94a3b8;
@@ -1038,7 +1047,7 @@
 
                         if (result.success && result.url) {
                             editor.focus();
-                            const imgHtml = `<img src="${result.url}" alt="Uploaded image" style="max-width: 100%; height: auto; border-radius: 8px; margin: 8px 0; display: block;">`;
+                            const imgHtml = `<img src="${result.url}" alt="Uploaded image" style="max-width: 100%; width: 100%; height: auto; border-radius: 8px; margin: 8px auto; display: block;" title="Click to resize image">`;
                             document.execCommand('insertHTML', false, imgHtml);
                             updateQuestionModelFromEditor(editor);
                         } else {
@@ -1096,6 +1105,23 @@
                 // Re-render nav grid to update any "incomplete" indicators dynamically
                 renderQuestionNavigation();
             }
+
+            // Image resize click handler
+            div.addEventListener('click', (e) => {
+                if (e.target.tagName === 'IMG' && e.target.closest('.rich-text-editor')) {
+                    const img = e.target;
+                    // Cycle through widths: 100% -> 75% -> 50% -> 25% -> 100%
+                    const currentWidth = img.style.width || '100%';
+                    let newWidth = '100%';
+                    if (currentWidth === '100%') newWidth = '75%';
+                    else if (currentWidth === '75%') newWidth = '50%';
+                    else if (currentWidth === '50%') newWidth = '25%';
+                    else newWidth = '100%';
+                    
+                    img.style.width = newWidth;
+                    updateQuestionModelFromEditor(img.closest('.rich-text-editor'));
+                }
+            });
 
             // Sub-question Logic
             if (question.type === 'essay') {

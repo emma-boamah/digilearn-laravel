@@ -603,6 +603,15 @@
         }
 
         /* Table Styling */
+        .question-text img, .preamble-box img, .option-text img {
+            max-width: 100% !important;
+            height: auto !important;
+            border-radius: 0.5rem;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
         .question-text table, .preamble-box table, .option-text table {
             width: 100%;
             border-collapse: collapse;
@@ -1674,6 +1683,7 @@
         };
     </script>
     @include('dashboard.quiz.partials.anti-cheat')
+    @include('dashboard.quiz.partials.lightbox')
 </body>
 
 </html>
