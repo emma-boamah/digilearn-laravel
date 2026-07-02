@@ -201,7 +201,6 @@
         margin-top: 80px;
         overflow-x: hidden;
         box-sizing: border-box;
-        transition: all var(--transition-speed) var(--transition-timing);
     }
 
     .lesson-page.focus-mode {
