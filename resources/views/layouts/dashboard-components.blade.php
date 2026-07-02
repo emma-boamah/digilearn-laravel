@@ -105,6 +105,10 @@
             --white: #16181c;
         }
 
+        html {
+            overflow-y: scroll; /* Force vertical scrollbar to prevent layout shifts */
+        }
+
         .no-pointer-events {
             pointer-events: none !important;
         }
@@ -497,19 +501,19 @@
             position: fixed !important;
             left: 0 !important;
             top: calc(116px + var(--safe-area-inset-top)) !important;
-            width: 100vw !important;
+            width: 100% !important;
             }
 
             .main-content {
                 margin-left: 0 !important;
-                width: 100vw !important;
-                max-width: 100vw !important;
+                width: 100% !important;
+                max-width: 100% !important;
             }
 
             .youtube-sidebar.collapsed ~ .main-content {
                 margin-left: 0 !important;
-                width: 100vw !important;
-                max-width: 100vw !important;
+                width: 100% !important;
+                max-width: 100% !important;
             }
 
             /* Ensure sidebar is never collapsed on mobile when open */
