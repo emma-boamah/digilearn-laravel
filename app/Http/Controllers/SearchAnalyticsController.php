@@ -126,7 +126,8 @@ class SearchAnalyticsController extends Controller
     {
         switch ($domain) {
             case 'quiz':
-                $q = Quiz::select('title')
+                $q = Quiz::published()
+                    ->select('title')
                     ->where('title', 'like', '%' . $query . '%');
 
                 if (!empty($gradeLevels)) {
@@ -141,7 +142,8 @@ class SearchAnalyticsController extends Controller
 
             case 'lesson':
             case 'saved_lesson':
-                $q = Video::select('title')
+                $q = Video::approved()
+                    ->select('title')
                     ->where('title', 'like', '%' . $query . '%');
 
                 if (!empty($gradeLevels)) {
