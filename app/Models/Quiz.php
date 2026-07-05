@@ -234,4 +234,12 @@ class Quiz extends Model
     {
         return $this->morphToMany(ContentCategory::class, 'categorizable');
     }
+
+    /**
+     * Get all assessment records that link to this quiz (CBT mode).
+     */
+    public function assessments()
+    {
+        return $this->hasMany(Assessment::class);
+    }
 }

@@ -380,6 +380,24 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/api/agent/session/{id}', [AgentController::class, 'loadSession'])->name('api.agent.session.load');
         }
     );
+
+    // Teacher Routes (Protected by role)
+    Route::middleware(['role:teacher|school-admin'])->prefix('teacher')->name('teacher.')->group(function () {
+        Route::get('/classes', [App\Http\Controllers\TeacherController::class, 'classes'])->name('classes');
+        Route::get('/gradebook/{classSubjectId}/{termId?}', [App\Http\Controllers\TeacherController::class, 'gradebook'])->name('gradebook');
+        Route::post('/assessments', [App\Http\Controllers\TeacherController::class, 'storeAssessment'])->name('assessments.store');
+        Route::post('/scores', [App\Http\Controllers\TeacherController::class, 'saveScores'])->name('scores.save');
+
+        // CBT Integration
+        Route::get('/cbt/available-quizzes', [App\Http\Controllers\TeacherController::class, 'availableQuizzes'])->name('cbt.available-quizzes');
+        Route::post('/cbt/assign', [App\Http\Controllers\TeacherController::class, 'assignCbt'])->name('cbt.assign');
+
+        // Reporting
+        Route::get('/reports', [App\Http\Controllers\ReportCardController::class, 'index'])->name('reports.index');
+        Route::post('/reports/generate', [App\Http\Controllers\ReportCardController::class, 'generate'])->name('reports.generate');
+        Route::get('/reports/class/{classId}/term/{termId}', [App\Http\Controllers\ReportCardController::class, 'viewClassReports'])->name('reports.view');
+        Route::get('/reports/{id}/pdf', [App\Http\Controllers\ReportCardController::class, 'downloadPdf'])->name('reports.pdf');
+    });
 });
 
 /*
