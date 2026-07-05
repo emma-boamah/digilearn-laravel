@@ -521,4 +521,20 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Task::class, 'creator_id');
     }
+
+    /**
+     * Get the school the user belongs to.
+     */
+    public function school()
+    {
+        return $this->belongsTo(School::class);
+    }
+
+    /**
+     * Get the class the user is enrolled in or teaches.
+     */
+    public function schoolClass()
+    {
+        return $this->belongsTo(SchoolClass::class, 'school_class_id');
+    }
 }

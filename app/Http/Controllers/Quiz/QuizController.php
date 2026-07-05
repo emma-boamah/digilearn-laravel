@@ -277,14 +277,6 @@ class QuizController extends Controller
         return view('dashboard.quiz.instructions', compact('quiz'));
     }
 
-    //Convert duration to seconds
-    private function convertDurationToSeconds($duration)
-    {
-        if (preg_match('/(\d+)\s*min/', $duration, $matches)) {
-            return (int) $matches[1] * 60;
-        }
-        return 180; // Default to 3 minutes
-    }
 
     /**
      * Show quiz taking page
@@ -361,7 +353,7 @@ class QuizController extends Controller
                 ->with('error', 'This quiz does not contain any essay questions.');
         }
 
-        $seconds = $this->convertDurationToSeconds(is_array($quiz) && isset($quiz['duration']) ? $quiz['duration'] : '3 min');
+        $seconds = (is_array($quiz) && isset($quiz['time_limit_minutes']) ? $quiz['time_limit_minutes'] : 3) * 60;
         $hasAttempted = $this->checkUserAttempt($quizId, Auth::id());
         return view('dashboard.quiz.essay', compact('quiz', 'seconds', 'hasAttempted'));
     }
@@ -509,6 +501,27 @@ class QuizController extends Controller
             }
         }
 
+
+        // ── CBT INTEGRATION HOOK (Essay) ──
+        // Same logic as MCQ — if student belongs to a school and quiz is linked
+        // to a CBT assessment, auto-record the score in the gradebook.
+        try {
+            $gradebookService = new \App\Services\GradebookService();
+            $recorded = $gradebookService->recordCbtScore(Auth::id(), (int) $quizId, (float) $percentage);
+            if ($recorded) {
+                Log::info('CBT essay score recorded in gradebook', [
+                    'student_id' => Auth::id(),
+                    'quiz_id' => $quizId,
+                    'percentage' => $percentage,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('CBT gradebook hook failed for essay (non-blocking)', [
+                'student_id' => Auth::id(),
+                'quiz_id' => $quizId,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return redirect()->route('quiz.results', [
             'quiz' => UrlObfuscator::encode($quizId),
@@ -1532,6 +1545,29 @@ class QuizController extends Controller
         // Clear user-specific cache for this quiz
         $userId = $currentUserId ?: Auth::id();
         Cache::forget("quiz_user_data.{$userId}.{$quizId}");
+
+        // ── CBT INTEGRATION HOOK ──
+        // If this student belongs to a school, check if this quiz is linked
+        // to a CBT assessment and auto-record the score in the gradebook.
+        // Individual users (school_id = null) are skipped by GradebookService.
+        try {
+            $gradebookService = new \App\Services\GradebookService();
+            $recorded = $gradebookService->recordCbtScore($userId, (int) $quizId, (float) $percentage);
+            if ($recorded) {
+                Log::info('CBT score recorded in gradebook', [
+                    'student_id' => $userId,
+                    'quiz_id' => $quizId,
+                    'percentage' => $percentage,
+                ]);
+            }
+        } catch (\Exception $e) {
+            // Never let gradebook issues break the quiz submission flow
+            Log::error('CBT gradebook hook failed (non-blocking)', [
+                'student_id' => $userId,
+                'quiz_id' => $quizId,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return [
             'score' => $correctAnswers,
