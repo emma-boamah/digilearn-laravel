@@ -494,7 +494,7 @@
     @media (max-width: 768px) {
         .filter-bar {
             position: fixed !important;
-            top: calc(60px + var(--safe-area-inset-top)) !important;
+            top: calc(76px + var(--safe-area-inset-top)) !important;
             left: 0 !important;
             width: 100vw !important;
             height: 56px !important;
@@ -525,7 +525,7 @@
             flex-direction: column !important;
             align-items: flex-start !important;
             position: fixed !important;
-            top: calc(116px + var(--safe-area-inset-top)) !important;
+            top: calc(132px + var(--safe-area-inset-top)) !important;
             z-index: 997 !important;
             gap: 0 !important;
             background-color: var(--white);

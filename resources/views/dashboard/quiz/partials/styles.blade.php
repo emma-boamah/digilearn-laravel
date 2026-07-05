@@ -65,6 +65,7 @@
         color: var(--gray-900);
         line-height: 1.6;
         overflow-x: hidden;
+        overflow-y: scroll;
         width: 100%;
         max-width: 100%;
     }
@@ -286,8 +287,8 @@
     .main-content {
         flex: 1;
         margin-left: var(--sidebar-width-expanded);
-        width: calc(100vw - var(--sidebar-width-expanded));
-        max-width: calc(100vw - var(--sidebar-width-expanded));
+        width: calc(100% - var(--sidebar-width-expanded));
+        max-width: calc(100% - var(--sidebar-width-expanded));
         margin-top: calc({{ $mainContentTopOffset ?? '250px' }} + var(--safe-area-inset-top, 0px)) !important;
         /* Header (60) + Filter (56) = 116 */
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -300,8 +301,8 @@
 
     .youtube-sidebar.collapsed~.main-content {
         margin-left: var(--sidebar-width-collapsed);
-        width: calc(100vw - var(--sidebar-width-collapsed));
-        max-width: calc(100vw - var(--sidebar-width-collapsed));
+        width: calc(100% - var(--sidebar-width-collapsed));
+        max-width: calc(100% - var(--sidebar-width-collapsed));
     }
 
     /* Top Header */

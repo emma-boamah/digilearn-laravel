@@ -5,25 +5,25 @@
     }
 
     body::-webkit-scrollbar {
-        width: 0;
+        width: 8px;
         background: transparent;
     }
 
     body:hover::-webkit-scrollbar {
-        width: 8px;
-        background: var(--grey-100);
+        background: var(--gray-100);
     }
 
     body::-webkit-scrollbar-thumb {
-        background: var(--grey-50);
+        background: transparent;
         border-radius: 4px;
-        opacity: 0;
-        transition: opacity 0.3s ease;
+    }
+
+    body:hover::-webkit-scrollbar-thumb {
+        background: var(--gray-300);
     }
 
     body::-webkit-scrollbar-thumb:hover {
-        background: var(--grey-100);
-        opacity: 0.5;
+        background: var(--gray-400);
     }
 
     /* Top Header */
