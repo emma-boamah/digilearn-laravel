@@ -55,6 +55,7 @@ secure_asset('images/shoutoutgh-logo.png')
 @endsection
 
 @section('content')
+<x-skeleton-loader type="pricing" />
 <style nonce="{{ request()->attributes->get('csp_nonce') }}">
     html,
     body {

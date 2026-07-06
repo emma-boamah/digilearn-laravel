@@ -1,6 +1,7 @@
 @extends('layouts.dashboard-simple')
 
 @section('content')
+<x-skeleton-loader type="level-selection" />
 <!-- Back Button -->
 @php
 $referrer = request()->headers->get('referer');

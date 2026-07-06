@@ -20,6 +20,7 @@
 @endsection
 
 @section('content')
+    <x-skeleton-loader type="about" />
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         /* Modern Premium CSS Variables */
         :root {
