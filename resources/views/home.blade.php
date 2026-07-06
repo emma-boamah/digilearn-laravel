@@ -124,7 +124,7 @@ $jsonLd = [
 @endsection
 
 @section('content')
-
+<x-skeleton-loader type="home" />
 <style nonce="{{ request()->attributes->get('csp_nonce') }}">
     html,
     body {
@@ -2394,6 +2394,8 @@ $jsonLd = [
         background-color: #282828 !important;
         color: #ffffff !important;
     }
+
+
 </style>
 
 <!-- Hero Section -->

@@ -2436,6 +2436,7 @@
 </head>
 
 <body>
+    <x-skeleton-loader type="digilearn" />
     @php
         function abbreviateGrade($grade)
         {
