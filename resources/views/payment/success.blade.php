@@ -22,15 +22,37 @@
             </svg>
         </div>
         <h1 class="payment-title">Payment Successful!</h1>
-        <p class="payment-text">Your payment has been processed successfully. You now have access to your selected plan.</p>
-        <div class="button-container">
-            <a href="{{ route('dashboard.main') }}" class="btn-primary">
-                Go to Dashboard
-            </a>
-            <a href="{{ route('profile.show') }}" class="btn-secondary">
-                View Profile
-            </a>
-        </div>
+        @if(auth()->check() && auth()->user()->school && auth()->user()->school->status === 'active')
+            <p class="payment-text">Your school profile has been activated! Your dedicated portal is now live.</p>
+            <div class="button-container">
+                @php
+                    $appUrl = parse_url(config('app.url'), PHP_URL_HOST);
+                    $scheme = parse_url(config('app.url'), PHP_URL_SCHEME) ?? 'http';
+                    $schoolUrl = $scheme . '://' . auth()->user()->school->subdomain . '.' . $appUrl;
+                    
+                    // Fallback for local development
+                    if ($appUrl === 'localhost') {
+                        $schoolUrl = $scheme . '://' . auth()->user()->school->subdomain . '.localhost:' . parse_url(config('app.url'), PHP_URL_PORT);
+                    }
+                @endphp
+                <a href="{{ $schoolUrl }}/dashboard" class="btn-primary">
+                    Go to School Portal
+                </a>
+                <a href="{{ $schoolUrl }}/login" class="btn-secondary">
+                    Portal Login Link
+                </a>
+            </div>
+        @else
+            <p class="payment-text">Your payment has been processed successfully. You now have access to your selected plan.</p>
+            <div class="button-container">
+                <a href="{{ route('dashboard.main') }}" class="btn-primary">
+                    Go to Dashboard
+                </a>
+                <a href="{{ route('profile.show') }}" class="btn-secondary">
+                    View Profile
+                </a>
+            </div>
+        @endif
     </div>
 </div>
 @endsection

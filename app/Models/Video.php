@@ -15,6 +15,7 @@ class Video extends Model
     protected $fillable = [
         'title',
         'subject_id',
+        'school_id',
         'video_path',
         'temp_file_path',
         'thumbnail_path',
@@ -843,5 +844,13 @@ class Video extends Model
         if ($m > 0)
             return "{$m}m " . ($s > 0 ? "{$s}s" : "");
         return "{$s}s";
+    }
+
+    /**
+     * Get the school that owns the video (B2B).
+     */
+    public function school()
+    {
+        return $this->belongsTo(School::class);
     }
 }

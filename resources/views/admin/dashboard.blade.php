@@ -893,7 +893,7 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
     // Initialize everything when DOM is loaded
     document.addEventListener('DOMContentLoaded', function () {

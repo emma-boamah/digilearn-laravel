@@ -87,7 +87,16 @@ class QuizController extends Controller
 
         // Get base quiz data with caching
         $baseQuizzes = Cache::remember($cacheKey, $cacheDuration, function () use ($selectedLevelGroup, $validSelectedGrade, $userId, $allowedGradeLevels, $requiresSubscription, $user, $context) {
-            $query = Quiz::published()->with(['uploader', 'ratings', 'attempts', 'subject', 'categories']);
+            $schoolId = $user ? $user->school_id : null;
+            $query = Quiz::published()
+                ->with(['uploader', 'ratings', 'attempts', 'subject', 'categories'])
+                ->where(function ($q) use ($schoolId) {
+                    if ($schoolId) {
+                        $q->whereNull('school_id')->orWhere('school_id', $schoolId);
+                    } else {
+                        $q->whereNull('school_id');
+                    }
+                });
 
             if ($context && $context !== 'all') {
                 $query->whereHas('categories', function ($q) use ($context) {
@@ -461,7 +470,13 @@ class QuizController extends Controller
                             $totalPossible += ($q['points'] ?? 1);
                         } else {
                             foreach ($q['sub_questions'] as $sub) {
-                                $totalPossible += ($sub['points'] ?? 1);
+                                if (!empty($sub['has_sub_parts']) && !empty($sub['sub_parts'])) {
+                                    foreach ($sub['sub_parts'] as $sp) {
+                                        $totalPossible += ($sp['points'] ?? 1);
+                                    }
+                                } else {
+                                    $totalPossible += ($sub['points'] ?? 1);
+                                }
                             }
                         }
                     }
@@ -985,7 +1000,13 @@ class QuizController extends Controller
                         $qMarks = 0;
                         if (!empty($question['sub_questions'])) {
                             foreach ($question['sub_questions'] as $sIdx => $sub) {
-                                $qMarks += (float) ($marks["{$index}_{$sIdx}"] ?? 0);
+                                if (!empty($sub['has_sub_parts']) && !empty($sub['sub_parts'])) {
+                                    foreach ($sub['sub_parts'] as $spIdx => $sp) {
+                                        $qMarks += (float) ($marks["{$index}_{$sIdx}_{$spIdx}"] ?? 0);
+                                    }
+                                } else {
+                                    $qMarks += (float) ($marks["{$index}_{$sIdx}"] ?? 0);
+                                }
                             }
                         } else {
                             $qMarks = (float) ($marks[$index] ?? 0);

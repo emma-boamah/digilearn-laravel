@@ -960,7 +960,7 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
     @if($activeTab === 'revenue')
     // ApexCharts Modern Revenue Trend

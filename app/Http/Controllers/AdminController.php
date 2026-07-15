@@ -5352,6 +5352,14 @@ class AdminController extends Controller
                         // Base64 image - convert to file
                         $sub['image'] = $this->saveBase64Image($sub['image'], $quizImagesDir);
                     }
+                    // Handle nested sub_parts (roman numeral parts)
+                    if (!empty($sub['has_sub_parts']) && !empty($sub['sub_parts'])) {
+                        foreach ($sub['sub_parts'] as &$sp) {
+                            if (!empty($sp['image']) && strpos($sp['image'], 'data:image') === 0) {
+                                $sp['image'] = $this->saveBase64Image($sp['image'], $quizImagesDir);
+                            }
+                        }
+                    }
                 }
             }
 

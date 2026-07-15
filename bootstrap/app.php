@@ -27,6 +27,14 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
 
+        // Customize redirect for unauthenticated users
+        $middleware->redirectGuestsTo(function (\Illuminate\Http\Request $request) {
+            if (! $request->expectsJson()) {
+                session()->flash('error', 'Please login or register to perform this action.');
+                return route('login');
+            }
+        });
+
         // Global middleware (applies to all requests) - Order matters!
         $middleware->append(RealIpMiddleware::class);
         $middleware->append(SecurityHeaders::class);
@@ -40,6 +48,8 @@ return Application::configure(basePath: dirname(__DIR__))
             CookieConsentMiddleware::class,
             CheckSuspended::class,
             TrackUsersActivity::class,
+            \App\Http\Middleware\IdentifyTenant::class,
+            \App\Http\Middleware\VerifyB2BSubscription::class,
         ]);
         
         // API middleware group

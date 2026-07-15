@@ -132,4 +132,9 @@ class HomeController extends Controller
 
         return redirect()->route('home')->with('success', 'Thank you for subscribing to our newsletter!');
     }
+
+    public function forSchools(Request $request)
+    {
+        return view('for-schools');
+    }
 }

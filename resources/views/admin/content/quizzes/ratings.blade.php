@@ -6,7 +6,7 @@
     <title>Quiz Ratings - Admin Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
+    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         .rating-stars {
             display: flex;
             gap: 0.125rem;
@@ -241,7 +241,7 @@
         </div>
     </div>
 
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         // Add any interactive functionality here
         document.addEventListener('DOMContentLoaded', function() {
             // Rating distribution animation

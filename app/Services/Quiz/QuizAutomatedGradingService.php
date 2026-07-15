@@ -107,28 +107,63 @@ class QuizAutomatedGradingService
             
             if (!empty($question['sub_questions'])) {
                 foreach ($question['sub_questions'] as $sIdx => $sub) {
-                    $subResponse = is_array($userResponse) ? ($userResponse[$sIdx] ?? '') : ($sIdx == 0 ? $userResponse : '');
                     $subText = $this->cleanAndStripHtml($sub['text'] ?? '', true);
-                    $fullQuestionText = $mainText ? "{$mainText} - Part {$sub['label']}: {$subText}" : "Part {$sub['label']}: {$subText}";
-                    $points = $sub['points'] ?? 1;
-                    $sample = $sub['sample_answer'] ?? '';
-                    $key = "{$qIdx}_{$sIdx}";
+                    $subLabel = $sub['label'] ?? chr(97 + $sIdx);
 
-                    if (empty(trim($this->cleanAndStripHtml($subResponse)))) {
-                        $localGrades[$key] = [
-                            'score' => 0,
-                            'feedback' => 'No response provided.',
-                            'strengths' => '',
-                            'weaknesses' => 'Question was left blank.'
-                        ];
+                    // Check for nested roman numeral sub_parts
+                    if (!empty($sub['has_sub_parts']) && !empty($sub['sub_parts'])) {
+                        foreach ($sub['sub_parts'] as $spIdx => $sp) {
+                            $spResponse = '';
+                            if (is_array($userResponse) && isset($userResponse[$sIdx]) && is_array($userResponse[$sIdx]) && isset($userResponse[$sIdx][$spIdx])) {
+                                $spResponse = $userResponse[$sIdx][$spIdx];
+                            }
+                            $spText = $this->cleanAndStripHtml($sp['text'] ?? '', true);
+                            $spLabel = $sp['label'] ?? '';
+                            $fullQuestionText = $mainText ? "{$mainText} - Part {$subLabel}({$spLabel}): {$subText} - {$spText}" : "Part {$subLabel}({$spLabel}): {$subText} - {$spText}";
+                            $points = $sp['points'] ?? 1;
+                            $sample = $sp['sample_answer'] ?? '';
+                            $key = "{$qIdx}_{$sIdx}_{$spIdx}";
+
+                            if (empty(trim($this->cleanAndStripHtml($spResponse)))) {
+                                $localGrades[$key] = [
+                                    'score' => 0,
+                                    'feedback' => 'No response provided.',
+                                    'strengths' => '',
+                                    'weaknesses' => 'Question was left blank.'
+                                ];
+                            } else {
+                                $partsToGrade[] = [
+                                    'key' => $key,
+                                    'question' => $fullQuestionText,
+                                    'student_answer' => $this->cleanAndStripHtml($spResponse, true),
+                                    'model_answer' => $this->cleanAndStripHtml($sample, true),
+                                    'max_points' => $points
+                                ];
+                            }
+                        }
                     } else {
-                        $partsToGrade[] = [
-                            'key' => $key,
-                            'question' => $fullQuestionText,
-                            'student_answer' => $this->cleanAndStripHtml($subResponse, true),
-                            'model_answer' => $this->cleanAndStripHtml($sample, true),
-                            'max_points' => $points
-                        ];
+                        $subResponse = is_array($userResponse) ? ($userResponse[$sIdx] ?? '') : ($sIdx == 0 ? $userResponse : '');
+                        $fullQuestionText = $mainText ? "{$mainText} - Part {$subLabel}: {$subText}" : "Part {$subLabel}: {$subText}";
+                        $points = $sub['points'] ?? 1;
+                        $sample = $sub['sample_answer'] ?? '';
+                        $key = "{$qIdx}_{$sIdx}";
+
+                        if (empty(trim($this->cleanAndStripHtml($subResponse)))) {
+                            $localGrades[$key] = [
+                                'score' => 0,
+                                'feedback' => 'No response provided.',
+                                'strengths' => '',
+                                'weaknesses' => 'Question was left blank.'
+                            ];
+                        } else {
+                            $partsToGrade[] = [
+                                'key' => $key,
+                                'question' => $fullQuestionText,
+                                'student_answer' => $this->cleanAndStripHtml($subResponse, true),
+                                'model_answer' => $this->cleanAndStripHtml($sample, true),
+                                'max_points' => $points
+                            ];
+                        }
                     }
                 }
             } else {
@@ -179,24 +214,51 @@ class QuizAutomatedGradingService
 
             if (!empty($question['sub_questions'])) {
                 foreach ($question['sub_questions'] as $sIdx => $sub) {
-                    $key = "{$qIdx}_{$sIdx}";
-                    
-                    if (isset($localGrades[$key])) {
-                        $analysis = $localGrades[$key];
-                    } elseif (isset($aiGrades[$key])) {
-                        $analysis = $aiGrades[$key];
-                    } else {
-                        $subResponse = is_array($userResponse) ? ($userResponse[$sIdx] ?? '') : ($sIdx == 0 ? $userResponse : '');
-                        $analysis = $this->analyzeWithLocalLogic($subResponse, $sub['sample_answer'] ?? '', $sub['points'] ?? 1, $sub['keywords'] ?? []);
-                    }
+                    // Check for nested roman numeral sub_parts
+                    if (!empty($sub['has_sub_parts']) && !empty($sub['sub_parts'])) {
+                        foreach ($sub['sub_parts'] as $spIdx => $sp) {
+                            $key = "{$qIdx}_{$sIdx}_{$spIdx}";
+                            
+                            if (isset($localGrades[$key])) {
+                                $analysis = $localGrades[$key];
+                            } elseif (isset($aiGrades[$key])) {
+                                $analysis = $aiGrades[$key];
+                            } else {
+                                $spResponse = '';
+                                if (is_array($userResponse) && isset($userResponse[$sIdx]) && is_array($userResponse[$sIdx]) && isset($userResponse[$sIdx][$spIdx])) {
+                                    $spResponse = $userResponse[$sIdx][$spIdx];
+                                }
+                                $analysis = $this->analyzeWithLocalLogic($spResponse, $sp['sample_answer'] ?? '', $sp['points'] ?? 1, $sp['keywords'] ?? []);
+                            }
 
-                    $results['marks'][$key] = $analysis['score'] ?? 0;
-                    $results['feedback'][$key] = $analysis['feedback'] ?? '';
-                    $results['strengths'][$key] = $analysis['strengths'] ?? '';
-                    $results['weaknesses'][$key] = $analysis['weaknesses'] ?? '';
-                    
-                    if (!empty($analysis['strengths'])) $results['analysis']['strengths'][] = $analysis['strengths'];
-                    if (!empty($analysis['weaknesses'])) $results['analysis']['weaknesses'][] = $analysis['weaknesses'];
+                            $results['marks'][$key] = $analysis['score'] ?? 0;
+                            $results['feedback'][$key] = $analysis['feedback'] ?? '';
+                            $results['strengths'][$key] = $analysis['strengths'] ?? '';
+                            $results['weaknesses'][$key] = $analysis['weaknesses'] ?? '';
+                            
+                            if (!empty($analysis['strengths'])) $results['analysis']['strengths'][] = $analysis['strengths'];
+                            if (!empty($analysis['weaknesses'])) $results['analysis']['weaknesses'][] = $analysis['weaknesses'];
+                        }
+                    } else {
+                        $key = "{$qIdx}_{$sIdx}";
+                        
+                        if (isset($localGrades[$key])) {
+                            $analysis = $localGrades[$key];
+                        } elseif (isset($aiGrades[$key])) {
+                            $analysis = $aiGrades[$key];
+                        } else {
+                            $subResponse = is_array($userResponse) ? ($userResponse[$sIdx] ?? '') : ($sIdx == 0 ? $userResponse : '');
+                            $analysis = $this->analyzeWithLocalLogic($subResponse, $sub['sample_answer'] ?? '', $sub['points'] ?? 1, $sub['keywords'] ?? []);
+                        }
+
+                        $results['marks'][$key] = $analysis['score'] ?? 0;
+                        $results['feedback'][$key] = $analysis['feedback'] ?? '';
+                        $results['strengths'][$key] = $analysis['strengths'] ?? '';
+                        $results['weaknesses'][$key] = $analysis['weaknesses'] ?? '';
+                        
+                        if (!empty($analysis['strengths'])) $results['analysis']['strengths'][] = $analysis['strengths'];
+                        if (!empty($analysis['weaknesses'])) $results['analysis']['weaknesses'][] = $analysis['weaknesses'];
+                    }
                 }
             } else {
                 $key = (string)$qIdx;

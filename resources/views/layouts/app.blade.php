@@ -591,12 +591,24 @@
     <div class="min-h-screen flex flex-col">
         <!-- Main Navigation -->
         <header class="header">
+            <!-- B2B Top Bar (Only visible on global domain) -->
+            @if(!isset($tenant))
+            <div class="top-nav-bar" style="background-color: #111827; padding: 8px 30px; font-size: 0.85rem; display: flex; justify-content: flex-start; gap: 24px; margin-bottom: 8px; border-radius: var(--border-radius-full);">
+                <a href="{{ route('home') }}" style="color: {{ request()->routeIs('home') ? '#ffffff' : '#9ca3af' }}; text-decoration: none; font-weight: {{ request()->routeIs('home') ? '600' : '400' }}; transition: color 0.2s;">For Individuals</a>
+                <a href="{{ route('for-schools') }}" style="color: {{ request()->routeIs('for-schools') ? '#ffffff' : '#9ca3af' }}; text-decoration: none; font-weight: {{ request()->routeIs('for-schools') ? '600' : '400' }}; transition: color 0.2s;">For Schools & Businesses</a>
+                <a href="#" style="color: #9ca3af; text-decoration: none; transition: color 0.2s;">For Universities</a>
+            </div>
+            @endif
+
             <div class="nav-container">
                 <div class="nav-content" id="nav-content">
                     <div class="flex items-center">
                         <a href="{{ route('home') }}" class="logo">
-                            <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh"
-                                class="logo-image">
+                            @if(isset($tenant) && $tenant->logo)
+                                <img src="{{ secure_asset('storage/' . $tenant->logo) }}" alt="{{ $tenant->name }}" class="logo-image">
+                            @else
+                                <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image">
+                            @endif
                         </a>
                         <nav class="nav-links">
                             <a href="{{ route('home', ['show_home' => 'true']) }}"

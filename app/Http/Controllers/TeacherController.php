@@ -157,7 +157,13 @@ class TeacherController extends Controller
         // Match quizzes by subject name and grade level of the class
         $gradeLevelTitle = $classSubject->schoolClass->level->title ?? null;
 
+        $teacher = Auth::user();
+
         $quizzes = \App\Models\Quiz::published()
+            ->where(function($q) use ($teacher) {
+                $q->whereNull('school_id')
+                  ->orWhere('school_id', $teacher->school_id);
+            })
             ->when($classSubject->subject, function ($q) use ($classSubject) {
                 $q->whereHas('subject', function ($sq) use ($classSubject) {
                     $sq->where('name', $classSubject->subject->name);

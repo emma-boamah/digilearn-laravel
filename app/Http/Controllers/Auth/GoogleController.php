@@ -27,18 +27,35 @@ class GoogleController extends Controller
 
     public function redirectToGoogle(Request $request)
     {
-        // Socialite handles state automatically via session. 
-        // We only use the 'signup' query param if needed.
+        // Force the callback to the main central domain to avoid Google OAuth mismatch errors
+        $mainDomainCallback = rtrim(config('app.url'), '/') . '/auth/google/callback/route';
+
+        // We use the 'state' parameter to pass the subdomain because local browsers (Chrome) 
+        // often block cross-subdomain cookies for '.localhost', destroying the session.
+        $subdomainState = app()->has('tenant') ? 'b2b=' . app('tenant')->subdomain : 'b2c=main';
+
         return Socialite::driver('google')
-            ->redirectUrl(route('auth.google.callback'))
+            ->stateless() // Required because session state is lost across subdomains locally
+            ->with(['state' => $subdomainState])
+            ->redirectUrl($mainDomainCallback)
             ->redirect();
     }
 
     public function handleGoogleCallback(Request $request)
     {
         try {
+            $mainDomainCallback = rtrim(config('app.url'), '/') . '/auth/google/callback/route';
+
+            // Extract subdomain from the custom state parameter we sent
+            $state = $request->query('state');
+            if ($state && str_starts_with($state, 'b2b=')) {
+                $subdomain = str_replace('b2b=', '', $state);
+                session(['b2b_login_subdomain' => $subdomain]);
+            }
+
             $googleUser = Socialite::driver('google')
-                ->redirectUrl(route('auth.google.callback'))
+                ->stateless() // Required to prevent InvalidStateException across domains locally
+                ->redirectUrl($mainDomainCallback)
                 ->user();
 
             if (!$googleUser->getEmail()) {
@@ -140,6 +157,19 @@ class GoogleController extends Controller
             
             // Redirect to main dashboard directly regardless of level selection
             // The main dashboard will handle cases where no level is selected
+            if (session()->has('b2b_login_subdomain')) {
+                $subdomain = session('b2b_login_subdomain');
+                session()->forget('b2b_login_subdomain');
+                
+                // Construct the full URL to the subdomain's dashboard dynamically based on APP_URL
+                $parsedUrl = parse_url(config('app.url'));
+                $scheme = $parsedUrl['scheme'] ?? 'http';
+                $host = $parsedUrl['host'] ?? 'localhost';
+                $port = isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '';
+                
+                return redirect()->intended("{$scheme}://{$subdomain}.{$host}{$port}/dashboard/main");
+            }
+
             return redirect()->intended(route('dashboard.main'));
 
         } catch (\Illuminate\Http\Client\ConnectionException $e) {

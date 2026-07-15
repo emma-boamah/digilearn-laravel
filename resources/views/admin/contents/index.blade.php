@@ -1095,7 +1095,7 @@
         }
     </style>
 
-    <script defer src="https://unpkg.com/mathlive"></script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}" defer src="https://unpkg.com/mathlive"></script>
 @endpush
 
 @section('content')

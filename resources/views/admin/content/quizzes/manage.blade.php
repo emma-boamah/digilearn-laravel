@@ -6,7 +6,7 @@
     <title>Manage Quiz - Admin Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
+    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         .difficulty-easy { background-color: #10B981; }
         .difficulty-medium { background-color: #F59E0B; }
         .difficulty-hard { background-color: #EF4444; }
@@ -281,7 +281,7 @@
         </div>
     </div>
 
-    <script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         document.addEventListener('DOMContentLoaded', function() {
             // Load existing quiz data if editing
             @if(isset($quiz) && $quiz->quiz_data)

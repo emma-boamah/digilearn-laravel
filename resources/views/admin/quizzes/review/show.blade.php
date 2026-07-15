@@ -165,60 +165,127 @@
 
                             @if(!empty($q['sub_questions']))
                                 @foreach($q['sub_questions'] as $sIdx => $sub)
-                                    <div class="bg-white border border-gray-100 rounded-lg p-5 shadow-sm">
-                                        <div class="flex justify-between items-start mb-4">
-                                            <div class="font-bold text-blue-600">{{ $sub['label'] }}) {!! $sanitizeMath($sub['text']) !!}</div>
-                                            <span class="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded">[{{ $sub['points'] }} pts]</span>
-                                        </div>
+                                    @if(!empty($sub['has_sub_parts']) && !empty($sub['sub_parts']))
+                                        {{-- Sub-question with nested roman numeral parts --}}
+                                        <div class="bg-white border border-gray-100 rounded-lg p-5 shadow-sm">
+                                            <div class="font-bold text-blue-600 mb-4">{{ $sub['label'] }}) {!! $sanitizeMath($sub['text']) !!}</div>
+                                            
+                                            <div class="space-y-6 pl-4 border-l-2 border-blue-100">
+                                                @foreach($sub['sub_parts'] as $spIdx => $sp)
+                                                    <div class="bg-gray-50/50 border border-gray-100 rounded-lg p-4">
+                                                        <div class="flex justify-between items-start mb-4">
+                                                            <div class="font-bold text-indigo-600"><span class="italic">{{ $sp['label'] }})</span> {!! $sanitizeMath($sp['text']) !!}</div>
+                                                            <span class="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded">[{{ $sp['points'] }} pts]</span>
+                                                        </div>
 
-                                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                            <!-- Student Response -->
-                                            <div class="space-y-2">
-                                                <div class="text-[10px] uppercase font-black text-gray-400 tracking-widest">Student's Response</div>
-                                                <div class="p-4 bg-gray-50 rounded-lg border border-gray-100 text-sm leading-relaxed text-gray-700 min-h-[100px]">
-                                                    @php
-                                                        $ans = $userAnswers[$qIdx] ?? null;
-                                                        $subAns = is_array($ans) && isset($ans[$sIdx]) ? $ans[$sIdx] : (is_string($ans) ? $ans : null);
-                                                    @endphp
-                                                    @if($subAns)
-                                                        {!! $sanitizeMath($subAns) !!}
-                                                    @else
-                                                        <span class="italic text-gray-400">No response provided.</span>
-                                                    @endif
+                                                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                                            <!-- Student Response -->
+                                                            <div class="space-y-2">
+                                                                <div class="text-[10px] uppercase font-black text-gray-400 tracking-widest">Student's Response</div>
+                                                                <div class="p-4 bg-white rounded-lg border border-gray-100 text-sm leading-relaxed text-gray-700 min-h-[100px]">
+                                                                    @php
+                                                                        $ans = $userAnswers[$qIdx] ?? null;
+                                                                        $spAns = is_array($ans) && isset($ans[$sIdx]) && is_array($ans[$sIdx]) && isset($ans[$sIdx][$spIdx]) ? $ans[$sIdx][$spIdx] : null;
+                                                                    @endphp
+                                                                    @if($spAns)
+                                                                        {!! $sanitizeMath($spAns) !!}
+                                                                    @else
+                                                                        <span class="italic text-gray-400">No response provided.</span>
+                                                                    @endif
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Marking Scheme -->
+                                                            <div class="space-y-2">
+                                                                <div class="text-[10px] uppercase font-black text-green-500 tracking-widest">Marking Scheme (Model Answer)</div>
+                                                                <div class="p-4 bg-green-50 rounded-lg border border-green-100 text-sm leading-relaxed text-green-900 min-h-[100px]">
+                                                                    {!! $sanitizeMath($sp['sample_answer'] ?? 'No marking scheme provided.') !!}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Awarding Marks -->
+                                                        <div class="mt-4 pt-4 border-t border-gray-50 flex flex-wrap items-end gap-6">
+                                                            <div class="w-32">
+                                                                <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Award Marks</label>
+                                                                <div class="relative">
+                                                                    <input type="number" step="0.5" min="0" max="{{ $sp['points'] }}" 
+                                                                           name="marks[{{ $qIdx }}_{{ $sIdx }}_{{ $spIdx }}]" 
+                                                                           value="{{ $gradingDetails['marks']["{$qIdx}_{$sIdx}_{$spIdx}"] ?? '' }}"
+                                                                           class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-bold pr-12"
+                                                                           placeholder="0.0">
+                                                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">/ {{ $sp['points'] }}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="flex-1">
+                                                                <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Feedback/Comment (Optional)</label>
+                                                                <input type="text" name="feedback[{{ $qIdx }}_{{ $sIdx }}_{{ $spIdx }}]"
+                                                                       value="{{ $gradingDetails['feedback']["{$qIdx}_{$sIdx}_{$spIdx}"] ?? '' }}"
+                                                                       class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                                                       placeholder="Explain deductions or provide praise...">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @else
+                                        {{-- Standard flat sub-question --}}
+                                        <div class="bg-white border border-gray-100 rounded-lg p-5 shadow-sm">
+                                            <div class="flex justify-between items-start mb-4">
+                                                <div class="font-bold text-blue-600">{{ $sub['label'] }}) {!! $sanitizeMath($sub['text']) !!}</div>
+                                                <span class="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded">[{{ $sub['points'] }} pts]</span>
+                                            </div>
+
+                                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                                <!-- Student Response -->
+                                                <div class="space-y-2">
+                                                    <div class="text-[10px] uppercase font-black text-gray-400 tracking-widest">Student's Response</div>
+                                                    <div class="p-4 bg-gray-50 rounded-lg border border-gray-100 text-sm leading-relaxed text-gray-700 min-h-[100px]">
+                                                        @php
+                                                            $ans = $userAnswers[$qIdx] ?? null;
+                                                            $subAns = is_array($ans) && isset($ans[$sIdx]) ? $ans[$sIdx] : (is_string($ans) ? $ans : null);
+                                                        @endphp
+                                                        @if($subAns)
+                                                            {!! $sanitizeMath($subAns) !!}
+                                                        @else
+                                                            <span class="italic text-gray-400">No response provided.</span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+
+                                                <!-- Marking Scheme -->
+                                                <div class="space-y-2">
+                                                    <div class="text-[10px] uppercase font-black text-green-500 tracking-widest">Marking Scheme (Model Answer)</div>
+                                                    <div class="p-4 bg-green-50 rounded-lg border border-green-100 text-sm leading-relaxed text-green-900 min-h-[100px]">
+                                                        {!! $sanitizeMath($sub['sample_answer'] ?? 'No marking scheme provided.') !!}
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            <!-- Marking Scheme -->
-                                            <div class="space-y-2">
-                                                <div class="text-[10px] uppercase font-black text-green-500 tracking-widest">Marking Scheme (Model Answer)</div>
-                                                <div class="p-4 bg-green-50 rounded-lg border border-green-100 text-sm leading-relaxed text-green-900 min-h-[100px]">
-                                                    {!! $sanitizeMath($sub['sample_answer'] ?? 'No marking scheme provided.') !!}
+                                            <!-- Awarding Marks -->
+                                            <div class="mt-4 pt-4 border-t border-gray-50 flex flex-wrap items-end gap-6">
+                                                <div class="w-32">
+                                                    <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Award Marks</label>
+                                                    <div class="relative">
+                                                        <input type="number" step="0.5" min="0" max="{{ $sub['points'] }}" 
+                                                               name="marks[{{ $qIdx }}_{{ $sIdx }}]" 
+                                                               value="{{ $gradingDetails['marks']["{$qIdx}_{$sIdx}"] ?? '' }}"
+                                                               class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-bold pr-12"
+                                                               placeholder="0.0">
+                                                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">/ {{ $sub['points'] }}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Feedback/Comment (Optional)</label>
+                                                    <input type="text" name="feedback[{{ $qIdx }}_{{ $sIdx }}]"
+                                                           value="{{ $gradingDetails['feedback']["{$qIdx}_{$sIdx}"] ?? '' }}"
+                                                           class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                                           placeholder="Explain deductions or provide praise...">
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <!-- Awarding Marks -->
-                                        <div class="mt-4 pt-4 border-t border-gray-50 flex flex-wrap items-end gap-6">
-                                            <div class="w-32">
-                                                <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Award Marks</label>
-                                                <div class="relative">
-                                                    <input type="number" step="0.5" min="0" max="{{ $sub['points'] }}" 
-                                                           name="marks[{{ $qIdx }}_{{ $sIdx }}]" 
-                                                           value="{{ $gradingDetails['marks']["{$qIdx}_{$sIdx}"] ?? '' }}"
-                                                           class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-bold pr-12"
-                                                           placeholder="0.0">
-                                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">/ {{ $sub['points'] }}</span>
-                                                </div>
-                                            </div>
-                                            <div class="flex-1">
-                                                <label class="block text-[10px] uppercase font-bold text-gray-500 mb-1">Feedback/Comment (Optional)</label>
-                                                <input type="text" name="feedback[{{ $qIdx }}_{{ $sIdx }}]"
-                                                       value="{{ $gradingDetails['feedback']["{$qIdx}_{$sIdx}"] ?? '' }}"
-                                                       class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                                       placeholder="Explain deductions or provide praise...">
-                                            </div>
-                                        </div>
-                                    </div>
+                                    @endif
                                 @endforeach
                             @else
                                 <!-- Standard Essay Question -->
@@ -381,7 +448,7 @@
 @endsection
 
 @push('scripts')
-<script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
 document.getElementById('autoSuggestBtn').addEventListener('click', async function() {
     const btn = this;
     const originalHtml = btn.innerHTML;
