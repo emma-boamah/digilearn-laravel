@@ -26,16 +26,14 @@
             <p class="payment-text">Your school profile has been activated! Your dedicated portal is now live.</p>
             <div class="button-container">
                 @php
-                    $appUrl = parse_url(config('app.url'), PHP_URL_HOST);
-                    $scheme = parse_url(config('app.url'), PHP_URL_SCHEME) ?? 'http';
-                    $schoolUrl = $scheme . '://' . auth()->user()->school->subdomain . '.' . $appUrl;
+                    $parsedUrl = parse_url(config('app.url'));
+                    $scheme = $parsedUrl['scheme'] ?? 'http';
+                    $host = $parsedUrl['host'] ?? 'localhost';
+                    $port = isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '';
                     
-                    // Fallback for local development
-                    if ($appUrl === 'localhost') {
-                        $schoolUrl = $scheme . '://' . auth()->user()->school->subdomain . '.localhost:' . parse_url(config('app.url'), PHP_URL_PORT);
-                    }
+                    $schoolUrl = "{$scheme}://" . auth()->user()->school->subdomain . ".{$host}{$port}";
                 @endphp
-                <a href="{{ $schoolUrl }}/dashboard" class="btn-primary">
+                <a href="{{ $schoolUrl }}/school-admin" class="btn-primary">
                     Go to School Portal
                 </a>
                 <a href="{{ $schoolUrl }}/login" class="btn-secondary">

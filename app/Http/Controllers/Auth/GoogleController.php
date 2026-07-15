@@ -167,7 +167,9 @@ class GoogleController extends Controller
                 $host = $parsedUrl['host'] ?? 'localhost';
                 $port = isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '';
                 
-                return redirect()->intended("{$scheme}://{$subdomain}.{$host}{$port}/dashboard/main");
+                $targetPath = $user->hasRole('school-admin') ? '/school-admin' : '/dashboard/main';
+                
+                return redirect()->intended("{$scheme}://{$subdomain}.{$host}{$port}{$targetPath}");
             }
 
             return redirect()->intended(route('dashboard.main'));

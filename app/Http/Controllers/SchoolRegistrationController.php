@@ -20,7 +20,7 @@ class SchoolRegistrationController extends Controller
     {
         $plan = $request->query('plan', 'school-pro');
         $pricingPlan = PricingPlan::where('slug', $plan)->first();
-        
+
         if (!$pricingPlan) {
             return redirect()->route('for-schools')->with('error', 'Invalid plan selected.');
         }
@@ -34,10 +34,10 @@ class SchoolRegistrationController extends Controller
     {
         $user = auth()->user();
         $draft = $user->school_registration_draft ? json_decode($user->school_registration_draft, true) : [];
-        
+
         $newData = $request->except(['_token', 'plan_slug', 'ges_certificate', 'business_certificate']);
         $draft = array_merge($draft, $newData);
-        
+
         $user->school_registration_draft = json_encode($draft);
         $user->save();
 
@@ -51,23 +51,23 @@ class SchoolRegistrationController extends Controller
     {
         $request->validate([
             // Step 1 — School Profile
-            'school_name'             => 'required|string|max:255',
-            'school_type'             => 'required|in:public,private,international,faith_based',
+            'school_name' => 'required|string|max:255',
+            'school_type' => 'required|in:public,private,international,faith_based',
             'ges_registration_number' => 'required|string|max:50',
-            'school_phone'            => 'required|string|regex:/^(\+233|0)[0-9]{9}$/',
-            'school_email'            => 'required|email|max:255',
-            'subdomain'               => 'required|string|max:50|unique:schools,subdomain|regex:/^[a-z0-9\-]+$/i',
+            'school_phone' => ['required', 'string', 'regex:/^(\+233|0)[0-9]{9}$/'],
+            'school_email' => 'required|email|max:255',
+            'subdomain' => ['required', 'string', 'max:50', 'unique:schools,subdomain', 'regex:/^[a-z0-9\-]+$/i'],
 
             // Step 2 — Location & Documents
-            'gps_address'             => 'required|string|regex:/^[A-Z]{2}-\d{3,4}-\d{4}$/i',
-            'region'                  => 'required|string|max:100',
-            'district'                => 'nullable|string|max:100',
-            'city'                    => 'nullable|string|max:100',
-            'ges_certificate'         => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'business_certificate'    => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'tin_number'              => 'required|string|max:20',
+            'gps_address' => ['required', 'string', 'regex:/^[A-Z]{2}-\d{3,4}-\d{4}$/i'],
+            'region' => 'required|string|max:100',
+            'district' => 'nullable|string|max:100',
+            'city' => 'nullable|string|max:100',
+            'ges_certificate' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'business_certificate' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'tin_number' => 'required|string|max:20',
 
-            'plan_slug'               => 'required|exists:pricing_plans,slug',
+            'plan_slug' => 'required|exists:pricing_plans,slug',
         ], [
             'subdomain.regex' => 'The subdomain may only contain letters, numbers, and dashes.',
             'school_phone.regex' => 'Please enter a valid Ghanaian phone number.',
@@ -99,7 +99,7 @@ class SchoolRegistrationController extends Controller
             'business_certificate_path' => $businessPath,
             'tin_number' => strtoupper($request->tin_number),
             'verification_status' => 'pending',
-            
+
             'status' => 'pending',
             'plan_tier' => $tier,
             'max_seats' => $tierConfig['max_seats'],
@@ -130,7 +130,7 @@ class SchoolRegistrationController extends Controller
     {
         $planSlug = $request->query('plan', 'school-pro');
         $plan = PricingPlan::where('slug', $planSlug)->firstOrFail();
-        
+
         $school = Auth::user()->school;
 
         if (!$school || $school->status === 'active') {
