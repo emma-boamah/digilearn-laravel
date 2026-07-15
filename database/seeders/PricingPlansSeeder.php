@@ -67,10 +67,47 @@ class PricingPlansSeeder extends Seeder
                 'is_featured' => true,
                 'sort_order' => 3,
             ],
+            [
+                'name' => 'School Pro',
+                'slug' => 'school-pro',
+                'price' => 25.00,
+                'currency' => 'GHS',
+                'period' => 'termly',
+                'description' => 'For up to 499 Students',
+                'features' => [
+                    'Access catalog of 1,000+ interactive lessons and quizzes',
+                    'Custom branded portal',
+                    'Teacher Gradebooks & analytics',
+                    'Automated CBT system'
+                ],
+                'is_active' => true,
+                'is_featured' => false,
+                'sort_order' => 4,
+            ],
+            [
+                'name' => 'Enterprise',
+                'slug' => 'enterprise',
+                'price' => 0.00,
+                'currency' => 'GHS',
+                'period' => 'termly',
+                'description' => 'For 500+ Students',
+                'features' => [
+                    'Everything in School Pro',
+                    'Upload private video content & documents',
+                    'AI-powered assessment generation',
+                    'Custom ERP integrations'
+                ],
+                'is_active' => true,
+                'is_featured' => false,
+                'sort_order' => 5,
+            ]
         ];
 
         foreach ($plans as $plan) {
-            PricingPlan::create($plan);
+            PricingPlan::updateOrCreate(
+                ['slug' => $plan['slug']],
+                $plan
+            );
         }
     }
 }
