@@ -874,6 +874,9 @@ class DashboardController extends Controller
             // Convert level format from "primary-1" to "Primary 1" to match database
             $dbLevel = $this->convertLevelFormat($level);
 
+            $user = Auth::user();
+            $schoolId = $user ? $user->school_id : null;
+
             // Query approved videos for the specific grade level,
             // with dynamic cross-level category fetching for BECE and WASSCE
             $query = Video::approved()
@@ -881,6 +884,13 @@ class DashboardController extends Controller
                 ->where('video_source', '!=', 'none')
                 ->where(function ($q) {
                     $q->whereNull('is_agent_generated')->orWhere('is_agent_generated', false);
+                })
+                ->where(function ($q) use ($schoolId) {
+                    if ($schoolId) {
+                        $q->whereNull('school_id')->orWhere('school_id', $schoolId);
+                    } else {
+                        $q->whereNull('school_id');
+                    }
                 })
                 ->where(function ($q) use ($dbLevel, $categorySlug) {
 
@@ -2879,10 +2889,19 @@ class DashboardController extends Controller
                 // Get grade levels for this level group
                 $gradeLevels = $this->getGradeLevelsForLevelGroup($levelGroup);
 
+                $schoolId = $user ? $user->school_id : null;
+
                 // Get actual counts from database for this level group
-                $totalLessons = Video::approved()
+                $totalLessonsQuery = Video::approved()
                     ->whereIn('grade_level', $gradeLevels)
-                    ->count();
+                    ->where(function ($q) use ($schoolId) {
+                        if ($schoolId) {
+                            $q->whereNull('school_id')->orWhere('school_id', $schoolId);
+                        } else {
+                            $q->whereNull('school_id');
+                        }
+                    });
+                $totalLessons = $totalLessonsQuery->count();
 
                 $totalQuizzes = \App\Models\Quiz::published()->whereIn('grade_level', $gradeLevels)
                     ->count();
@@ -3433,10 +3452,19 @@ class DashboardController extends Controller
         $user = Auth::user();
         $gradeLevels = $this->getGradeLevelsForLevelGroup($levelGroup);
 
+        $schoolId = $user ? $user->school_id : null;
+
         try {
             // YouTube-like search: split query into words and search each word
             $videos = Video::approved()
                 ->whereIn('grade_level', $gradeLevels)
+                ->where(function ($q) use ($schoolId) {
+                    if ($schoolId) {
+                        $q->whereNull('school_id')->orWhere('school_id', $schoolId);
+                    } else {
+                        $q->whereNull('school_id');
+                    }
+                })
                 ->where(function ($q) use ($query) {
                     if (empty($query)) {
                         return; // Return all if no query

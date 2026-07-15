@@ -49,7 +49,17 @@ class DocumentController extends Controller
 
         // Get lesson data from database (similar to DashboardController approach)
         $gradeLevels = $this->getGradeLevelForLevelGroup($selectedLevelGroup);
-        $videos = \App\Models\Video::approved()->whereIn('grade_level', $gradeLevels)->with('documents')->get();
+        $schoolId = $user ? $user->school_id : null;
+        $videos = \App\Models\Video::approved()
+            ->whereIn('grade_level', $gradeLevels)
+            ->where(function ($q) use ($schoolId) {
+                if ($schoolId) {
+                    $q->whereNull('school_id')->orWhere('school_id', $schoolId);
+                } else {
+                    $q->whereNull('school_id');
+                }
+            })
+            ->with('documents')->get();
         $lesson = $videos->firstWhere('id', (int)$lessonId);
 
         // Convert to array format expected by the view
@@ -108,7 +118,17 @@ class DocumentController extends Controller
 
         // Get lesson data from database (similar to DashboardController approach)
         $gradeLevels = $this->getGradeLevelForLevelGroup($selectedLevelGroup);
-        $videos = \App\Models\Video::approved()->whereIn('grade_level', $gradeLevels)->with('documents')->get();
+        $schoolId = $user ? $user->school_id : null;
+        $videos = \App\Models\Video::approved()
+            ->whereIn('grade_level', $gradeLevels)
+            ->where(function ($q) use ($schoolId) {
+                if ($schoolId) {
+                    $q->whereNull('school_id')->orWhere('school_id', $schoolId);
+                } else {
+                    $q->whereNull('school_id');
+                }
+            })
+            ->with('documents')->get();
 
         // Filter videos based on user's subscription access
         $user = Auth::user();
@@ -330,7 +350,17 @@ class DocumentController extends Controller
         }
 
         // Get lesson data from database (similar to DashboardController approach)
-        $videos = \App\Models\Video::approved()->where('grade_level', $this->getGradeLevelForLevelGroup($selectedLevelGroup))->with('documents')->get();
+        $schoolId = $user ? $user->school_id : null;
+        $videos = \App\Models\Video::approved()
+            ->where('grade_level', $this->getGradeLevelForLevelGroup($selectedLevelGroup))
+            ->where(function ($q) use ($schoolId) {
+                if ($schoolId) {
+                    $q->whereNull('school_id')->orWhere('school_id', $schoolId);
+                } else {
+                    $q->whereNull('school_id');
+                }
+            })
+            ->with('documents')->get();
         $lesson = $videos->firstWhere('id', (int)$lessonId);
 
         // Convert to array format expected by the view

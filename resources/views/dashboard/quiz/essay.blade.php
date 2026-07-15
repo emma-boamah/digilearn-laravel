@@ -634,8 +634,23 @@
                                                 {{ $sub['label'] }})
                                             @endif
                                         </div>
-                                        <div class="sub-text">{!! $sub['text'] !!}</div>
-                                        <div class="sub-marks">[{{ $sub['points'] }} {{ Str::plural('mark', $sub['points']) }}]</div>
+                                        <div class="sub-text">
+                                            {!! $sub['text'] !!}
+                                            @if(isset($sub['has_sub_parts']) && $sub['has_sub_parts'] && !empty($sub['sub_parts']))
+                                                <div class="sub-parts-list" style="margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                                                    @foreach($sub['sub_parts'] as $spIdx => $sp)
+                                                        <div class="sub-part-row" style="display: flex; gap: 0.75rem; align-items: flex-start;">
+                                                            <div class="sub-label" style="font-style: italic; min-width: 1.5rem;">{{ $sp['label'] }})</div>
+                                                            <div class="sub-text">{!! $sp['text'] !!}</div>
+                                                            <div class="sub-marks">[{{ $sp['points'] }} {{ Str::plural('mark', $sp['points']) }}]</div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                        </div>
+                                        @if(!isset($sub['has_sub_parts']) || !$sub['has_sub_parts'])
+                                            <div class="sub-marks">[{{ $sub['points'] }} {{ Str::plural('mark', $sub['points']) }}]</div>
+                                        @endif
                                     </div>
                                 @endforeach
                             </div>
@@ -688,22 +703,39 @@
                         @if(!empty($question['sub_questions']) && count($question['sub_questions']) > 0)
                             <div class="sub-editors-container" style="display: flex; flex-direction: column; gap: 1.5rem; overflow-y: auto; padding: 1.5rem; flex: 1; min-height: 0;">
                                 @foreach($question['sub_questions'] as $sIndex => $sub)
-                                    <div class="sub-editor-group" style="display: flex; flex-direction: column; border: 1px solid var(--gray-200); border-radius: 0.75rem; overflow: hidden; background: var(--white); min-height: 250px;">
-                                        <div class="sub-editor-header" style="background: var(--gray-50); padding: 0.75rem 1rem; border-bottom: 1px solid var(--gray-200); font-size: 0.875rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center;">
-                                            <span style="color: var(--primary-blue)">
-                                                @if(!$hasMainContent && $sIndex === 0)
-                                                    Answer for {{ $index + 1 }}{{ $sub['label'] }})
-                                                @else
-                                                    Answer for {{ $sub['label'] ?? '' }}) 
-                                                @endif
-                                                <span style="font-size: 0.75rem; color: var(--gray-500); margin-left: 0.5rem; font-weight: normal;">[{{ $sub['points'] ?? 0 }} Marks]</span>
-                                            </span>
-                                            <span class="word-count" id="count-{{ $index }}-{{ $sIndex }}">0 characters</span>
+                                    @if(isset($sub['has_sub_parts']) && $sub['has_sub_parts'] && !empty($sub['sub_parts']))
+                                        @foreach($sub['sub_parts'] as $spIndex => $sp)
+                                            <div class="sub-editor-group" style="display: flex; flex-direction: column; border: 1px solid var(--gray-200); border-radius: 0.75rem; overflow: hidden; background: var(--white); min-height: 250px;">
+                                                <div class="sub-editor-header" style="background: var(--gray-50); padding: 0.75rem 1rem; border-bottom: 1px solid var(--gray-200); font-size: 0.875rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center;">
+                                                    <span style="color: var(--primary-blue)">
+                                                        Answer for {{ $sub['label'] ?? '' }}({{ $sp['label'] ?? '' }})
+                                                        <span style="font-size: 0.75rem; color: var(--gray-500); margin-left: 0.5rem; font-weight: normal;">[{{ $sp['points'] ?? 0 }} Marks]</span>
+                                                    </span>
+                                                    <span class="word-count" id="count-{{ $index }}-{{ $sIndex }}-{{ $spIndex }}">0 characters</span>
+                                                </div>
+                                                <div class="editor-wrapper" style="flex: 1; display: flex; flex-direction: column; border: none;">
+                                                    <div id="editor-{{ $index }}-{{ $sIndex }}-{{ $spIndex }}" class="editor-instance" data-qidx="{{ $index }}" data-sidx="{{ $sIndex }}" data-spidx="{{ $spIndex }}"></div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    @else
+                                        <div class="sub-editor-group" style="display: flex; flex-direction: column; border: 1px solid var(--gray-200); border-radius: 0.75rem; overflow: hidden; background: var(--white); min-height: 250px;">
+                                            <div class="sub-editor-header" style="background: var(--gray-50); padding: 0.75rem 1rem; border-bottom: 1px solid var(--gray-200); font-size: 0.875rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center;">
+                                                <span style="color: var(--primary-blue)">
+                                                    @if(!$hasMainContent && $sIndex === 0)
+                                                        Answer for {{ $index + 1 }}{{ $sub['label'] }})
+                                                    @else
+                                                        Answer for {{ $sub['label'] ?? '' }}) 
+                                                    @endif
+                                                    <span style="font-size: 0.75rem; color: var(--gray-500); margin-left: 0.5rem; font-weight: normal;">[{{ $sub['points'] ?? 0 }} Marks]</span>
+                                                </span>
+                                                <span class="word-count" id="count-{{ $index }}-{{ $sIndex }}">0 characters</span>
+                                            </div>
+                                            <div class="editor-wrapper" style="flex: 1; display: flex; flex-direction: column; border: none;">
+                                                <div id="editor-{{ $index }}-{{ $sIndex }}" class="editor-instance" data-qidx="{{ $index }}" data-sidx="{{ $sIndex }}"></div>
+                                            </div>
                                         </div>
-                                        <div class="editor-wrapper" style="flex: 1; display: flex; flex-direction: column; border: none;">
-                                            <div id="editor-{{ $index }}-{{ $sIndex }}" class="editor-instance" data-qidx="{{ $index }}" data-sidx="{{ $sIndex }}"></div>
-                                        </div>
-                                    </div>
+                                    @endif
                                 @endforeach
                             </div>
                         @else
@@ -788,11 +820,16 @@
             document.querySelectorAll('.editor-instance').forEach(editorDiv => {
                 const qIdx = editorDiv.dataset.qidx;
                 const sIdx = editorDiv.dataset.sidx;
-                const idSuffix = sIdx !== undefined ? `${qIdx}_${sIdx}` : qIdx;
+                const spIdx = editorDiv.dataset.spidx;
+                const idSuffix = spIdx !== undefined ? `${qIdx}_${sIdx}_${spIdx}` : (sIdx !== undefined ? `${qIdx}_${sIdx}` : qIdx);
                 const containerId = editorDiv.id;
                 
                 let placeholderText = `Write your answer for Question ${parseInt(qIdx) + 1} here...`;
-                if (sIdx !== undefined) {
+                if (spIdx !== undefined) {
+                    const subLabel = quizDataQuestions[qIdx]?.sub_questions[sIdx]?.label ?? '?';
+                    const spLabel = quizDataQuestions[qIdx]?.sub_questions[sIdx]?.sub_parts[spIdx]?.label ?? '?';
+                    placeholderText = `Write your answer for Part ${subLabel}(${spLabel}) here...`;
+                } else if (sIdx !== undefined) {
                     const subLabel = quizDataQuestions[qIdx]?.sub_questions[sIdx]?.label ?? '?';
                     placeholderText = `Write your answer for Part ${subLabel}) here...`;
                 }
@@ -837,11 +874,11 @@
                             }
                         }
                     },
-                    scrollingContainer: sIdx !== undefined ? `#${containerId}` : `#booklet-${qIdx}`,
+                    scrollingContainer: (sIdx !== undefined || spIdx !== undefined) ? `#${containerId}` : `#booklet-${qIdx}`,
                     spellcheck: false // Explicitly disable native spellcheck
                 });
 
-                const countElId = sIdx !== undefined ? `count-${qIdx}-${sIdx}` : `count-${qIdx}`;
+                const countElId = spIdx !== undefined ? `count-${qIdx}-${sIdx}-${spIdx}` : (sIdx !== undefined ? `count-${qIdx}-${sIdx}` : `count-${qIdx}`);
 
                 // Load from LocalStorage
                 const saved = localStorage.getItem(storageKeyPrefix + idSuffix);
@@ -857,7 +894,11 @@
                     updateSpecificWordCount(quill, countElId);
 
                     // Sync to window.answers for anti-cheat auto-submission
-                    if (sIdx !== undefined) {
+                    if (spIdx !== undefined) {
+                        if (!window.answers[qIdx]) window.answers[qIdx] = {};
+                        if (!window.answers[qIdx][sIdx]) window.answers[qIdx][sIdx] = {};
+                        window.answers[qIdx][sIdx][spIdx] = content;
+                    } else if (sIdx !== undefined) {
                         if (!window.answers[qIdx]) window.answers[qIdx] = {};
                         window.answers[qIdx][sIdx] = content;
                     } else {
@@ -868,6 +909,7 @@
                 quillInstances.push({
                     qIdx: parseInt(qIdx),
                     sIdx: sIdx !== undefined ? parseInt(sIdx) : undefined,
+                    spIdx: spIdx !== undefined ? parseInt(spIdx) : undefined,
                     quill: quill,
                     idSuffix: idSuffix
                 });

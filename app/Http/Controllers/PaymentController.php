@@ -28,7 +28,7 @@ class PaymentController extends Controller
     {
         $request->validate([
             'plan_id' => 'required|exists:pricing_plans,slug',
-            'duration' => 'required|in:month,3month,6month,12month,trial',
+            'duration' => 'required|in:month,3month,6month,12month,trial,term',
         ]);
 
         $user = Auth::user();
@@ -111,6 +111,75 @@ class PaymentController extends Controller
                 'success' => false,
                 'message' => 'Payment initialization failed. Please try again.',
             ], 500);
+        }
+    }
+
+    /**
+     * Initiate payment for B2B Schools (Dynamic Seat-based Pricing)
+     */
+    public function initiateB2bPayment(Request $request)
+    {
+        $user = Auth::user();
+        $school = $user->school;
+
+        if (!$school) {
+            return response()->json(['success' => false, 'message' => 'No school associated with this account.'], 403);
+        }
+
+        $usedSeats = max(1, $school->usedSeats()); // Bill at least 1 seat or minimum seats
+        // If they are checking out for the first time, maybe we bill a minimum of 10 seats?
+        // Actually, let's bill the usedSeats. If 0, bill for 1.
+        $amount = $usedSeats * $school->price_per_seat;
+        $currency = 'GHS'; // Assuming GHS for now
+        $duration = $school->billing_cycle === 'annual' ? '12month' : 'term';
+
+        if ($amount <= 0) {
+            return response()->json(['success' => false, 'message' => 'Invalid payment amount.'], 400);
+        }
+
+        $reference = 'PAY-B2B-' . Str::uuid();
+
+        $payment = Payment::create([
+            'user_id' => $user->id,
+            'pricing_plan_id' => $school->pricing_plan_id ?? PricingPlan::where('slug', 'school-pro')->first()?->id,
+            'amount' => $amount,
+            'currency' => $currency,
+            'reference' => $reference,
+            'status' => 'pending',
+            'metadata' => [
+                'duration' => $duration,
+                'plan_name' => ucfirst($school->plan_tier) . ' Plan',
+                'is_b2b' => true,
+                'seats' => $usedSeats
+            ],
+        ]);
+
+        try {
+            $paystackResponse = $this->paystack->initializePayment([
+                'email' => $user->email,
+                'amount' => $amount * 100, // Convert to kobo
+                'reference' => $reference,
+                'callback_url' => route('payment.callback'),
+                'metadata' => [
+                    'payment_id' => $payment->id,
+                    'user_id' => $user->id,
+                    'is_b2b' => true,
+                ],
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'authorization_url' => $paystackResponse['data']['authorization_url'],
+                'reference' => $reference,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('B2B Paystack payment initialization failed', [
+                'error' => $e->getMessage(),
+                'payment_id' => $payment->id,
+            ]);
+
+            $payment->update(['status' => 'failed']);
+            return response()->json(['success' => false, 'message' => 'Payment initialization failed.'], 500);
         }
     }
 
@@ -273,6 +342,34 @@ class PaymentController extends Controller
             'reference' => $payment->reference,
             'plan_name' => $payment->pricingPlan->name ?? 'Unknown Plan',
         ]));
+
+        // If the user belongs to a pending school, activate it and set subscription dates
+        if ($payment->user->school) {
+            $school = $payment->user->school;
+            $duration = $payment->metadata['duration'] ?? 'term';
+
+            // Calculate subscription period
+            $subscriptionMonths = match($duration) {
+                'term' => 4,      // ~1 school term
+                'annual', '12month' => 12,
+                '6month' => 6,
+                '3month' => 3,
+                'month' => 1,
+                default => 4,
+            };
+
+            $updates = [
+                'subscription_starts_at' => now(),
+                'subscription_expires_at' => now()->addMonths($subscriptionMonths),
+                'grace_period_ends_at' => now()->addMonths($subscriptionMonths)->addDays(14),
+            ];
+
+            if ($school->status === 'pending') {
+                $updates['status'] = 'active';
+            }
+
+            $school->update($updates);
+        }
     }
 
     /**

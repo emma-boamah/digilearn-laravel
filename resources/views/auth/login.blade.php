@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - ShoutOutGH | Online Learning Platform Ghana</title>
+    <title>Login - {{ isset($tenant) ? $tenant->name : 'ShoutOutGH' }} | Online Learning Platform Ghana</title>
     <meta name="description" content="Log in to your ShoutOutGH account to access online lessons, quizzes, and study materials. Ghana's premier online education platform.">
     <meta name="keywords" content="ShoutOutGH login, online education ghana login, e-learning ghana, student login, online school ghana">
     <meta name="robots" content="noindex, follow">
     <link rel="canonical" href="{{ url('/login') }}">
 
     <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="Login - ShoutOutGH">
-    <meta property="og:description" content="Log in to your ShoutOutGH account. Access quality online education in Ghana.">
+    <meta property="og:title" content="Login - {{ isset($tenant) ? $tenant->name : 'ShoutOutGH' }}">
+    <meta property="og:description" content="Log in to your {{ isset($tenant) ? $tenant->name : 'ShoutOutGH' }} account. Access quality online education in Ghana.">
     <meta property="og:image" content="{{ secure_asset('images/shoutoutgh-logo.png') }}">
     <meta property="og:url" content="{{ url('/login') }}">
     <meta property="og:type" content="website">
@@ -594,9 +594,13 @@
             <div class="form-container">
                 <div class="form-header">
                     <a href="{{ route('home') }}" class="logo">
-                        <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image">
+                        @if(isset($tenant) && $tenant->logo)
+                            <img src="{{ secure_asset('storage/' . $tenant->logo) }}" alt="{{ $tenant->name }}" class="logo-image">
+                        @else
+                            <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image">
+                        @endif
                     </a>
-                    <p>Enter your email and password to continue</p>
+                    <p>Enter your email and password to continue @if(isset($tenant)) to {{ $tenant->name }} @endif</p>
                 </div>
                 
                 <div class="auth-tabs">

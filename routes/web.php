@@ -56,6 +56,51 @@ Route::get('/session-test', function (Request $request) {
  |--------------------------------------------------------------------------
  */
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/for-schools', [HomeController::class, 'forSchools'])->name('for-schools');
+Route::middleware('auth')->group(function () {
+    Route::get('/for-schools/register', [\App\Http\Controllers\SchoolRegistrationController::class, 'showRegistrationForm'])->name('school.register');
+    Route::post('/for-schools/register', [\App\Http\Controllers\SchoolRegistrationController::class, 'register'])->name('school.register.submit');
+    Route::post('/for-schools/register/draft', [\App\Http\Controllers\SchoolRegistrationController::class, 'saveDraft'])->name('school.register.draft');
+    Route::get('/for-schools/checkout', [\App\Http\Controllers\SchoolRegistrationController::class, 'checkout'])->name('school.checkout');
+});
+
+// School Admin Dashboard Routes
+Route::middleware(['auth', 'role:school-admin'])->prefix('school-admin')->name('school.admin.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\SchoolAdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/settings', [\App\Http\Controllers\SchoolAdminController::class, 'settings'])->name('settings');
+    Route::post('/settings', [\App\Http\Controllers\SchoolAdminController::class, 'updateSettings'])->name('settings.update');
+    Route::get('/users', [\App\Http\Controllers\SchoolAdminController::class, 'users'])->name('users');
+    Route::get('/users/invite', [\App\Http\Controllers\SchoolAdminController::class, 'showInviteForm'])->name('users.invite');
+    Route::post('/users/invite', [\App\Http\Controllers\SchoolAdminController::class, 'inviteUser'])->name('users.invite.submit');
+    Route::get('/users/import', [\App\Http\Controllers\SchoolAdminController::class, 'showImportForm'])->name('users.import');
+    Route::post('/users/import', [\App\Http\Controllers\SchoolAdminController::class, 'importUsers'])->name('users.import.submit');
+    Route::get('/users/import/template', [\App\Http\Controllers\SchoolAdminController::class, 'downloadTemplate'])->name('users.import.template');
+    Route::delete('/users/{user}', [\App\Http\Controllers\SchoolAdminController::class, 'removeUser'])->name('users.remove');
+
+    // Academic Setup
+    Route::get('/academic-setup', [\App\Http\Controllers\SchoolAdminController::class, 'academicSetup'])->name('academic.setup');
+    Route::post('/academic-setup/year', [\App\Http\Controllers\SchoolAdminController::class, 'storeAcademicYear'])->name('academic.year.store');
+    Route::post('/academic-setup/term', [\App\Http\Controllers\SchoolAdminController::class, 'storeTerm'])->name('academic.term.store');
+    Route::post('/academic-setup/class', [\App\Http\Controllers\SchoolAdminController::class, 'storeClass'])->name('academic.class.store');
+
+    // Billing & Subscription
+    Route::get('/billing', [\App\Http\Controllers\SchoolAdminController::class, 'billing'])->name('billing');
+    Route::get('/billing/renew', [\App\Http\Controllers\SchoolAdminController::class, 'renewalForm'])->name('billing.renew');
+});
+
+// School Content Studio (Phase 4)
+Route::middleware(['auth', 'role:school-admin|teacher'])->prefix('studio')->name('school.studio.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\ContentStudioController::class, 'index'])->name('index');
+    
+    // Videos
+    Route::get('/video/create', [\App\Http\Controllers\ContentStudioController::class, 'createVideo'])->name('video.create');
+    Route::post('/video', [\App\Http\Controllers\ContentStudioController::class, 'storeVideo'])->name('video.store');
+    
+    // Quizzes
+    Route::get('/quiz/create', [\App\Http\Controllers\ContentStudioController::class, 'createQuiz'])->name('quiz.create');
+    Route::post('/quiz', [\App\Http\Controllers\ContentStudioController::class, 'storeQuiz'])->name('quiz.store');
+    Route::post('/quiz/{id}/share', [\App\Http\Controllers\ContentStudioController::class, 'requestShare'])->name('quiz.share');
+});
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/about', [AboutController::class, 'index'])->name('about');
 Route::get('/contact', [ContactController::class, 'index'])->name('contact');
@@ -74,6 +119,7 @@ Route::middleware(['auth'])->group(function () {
 // Payment routes (authenticated)
 Route::middleware(['auth'])->group(function () {
     Route::post('/payment/initiate', [PaymentController::class, 'initiatePayment'])->name('payment.initiate');
+    Route::post('/payment/b2b-initiate', [PaymentController::class, 'initiateB2bPayment'])->name('payment.b2b.initiate');
     Route::get('/payment/success', [PaymentController::class, 'success'])->name('payment.success');
     Route::get('/payment/cancel', [PaymentController::class, 'cancel'])->name('payment.cancel');
 });

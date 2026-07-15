@@ -8,7 +8,7 @@
 
 @push('styles')
     <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
-    <style>
+    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         .card-header-premium {
             background: linear-gradient(to right, #f8fafc, #f1f5f9);
             border-bottom: 1px solid #e2e8f0;

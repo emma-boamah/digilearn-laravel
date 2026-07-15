@@ -113,7 +113,13 @@ class QuizReviewController extends Controller
                 $totalPossible += ($q['points'] ?? 1);
             } else {
                 foreach($q['sub_questions'] as $sub) {
-                    $totalPossible += ($sub['points'] ?? 1);
+                    if (!empty($sub['has_sub_parts']) && !empty($sub['sub_parts'])) {
+                        foreach ($sub['sub_parts'] as $sp) {
+                            $totalPossible += ($sp['points'] ?? 1);
+                        }
+                    } else {
+                        $totalPossible += ($sub['points'] ?? 1);
+                    }
                 }
             }
         }

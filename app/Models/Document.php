@@ -13,6 +13,7 @@ class Document extends Model
     protected $fillable = [
         'title',
         'file_path',
+        'school_id',
         'grade_level',
         'description',
         'uploaded_by',
@@ -109,5 +110,13 @@ class Document extends Model
     public function categories()
     {
         return $this->morphToMany(ContentCategory::class, 'categorizable');
+    }
+
+    /**
+     * Get the school that owns the document (B2B).
+     */
+    public function school()
+    {
+        return $this->belongsTo(School::class);
     }
 }

@@ -1,5 +1,5 @@
 @push('extra-css')
-<style>
+<style nonce="{{ request()->attributes->get('csp_nonce') }}">
     math-field {
         font-size: 1.1rem;
         border: 1px solid transparent;
@@ -120,6 +120,14 @@
         border-color: #3b82f6;
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
+
+    /* Restore Tailwind-reset formatting tags inside the editor */
+    .rich-text-editor b, .rich-text-editor strong { font-weight: bold; }
+    .rich-text-editor i, .rich-text-editor em { font-style: italic; }
+    .rich-text-editor u { text-decoration: underline; }
+    .rich-text-editor strike, .rich-text-editor s { text-decoration: line-through; }
+    .rich-text-editor ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 0.25rem; margin-bottom: 0.25rem; }
+    .rich-text-editor ol { list-style-type: decimal; padding-left: 1.5rem; margin-top: 0.25rem; margin-bottom: 0.25rem; }
 
     .rich-text-editor img {
         transition: outline 0.2s ease;
@@ -438,13 +446,26 @@
 @endpush
 
 @push('scripts')
-<script defer src="https://unpkg.com/mathlive"></script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}" defer src="https://unpkg.com/mathlive"></script>
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
     /**
      * Shared Quiz Builder Functions
      * Expects a global 'uploadData' object with 'quiz' property.
      */
     let currentQuestionIndex = 0;
+
+    function toRoman(num) {
+        var roman = {
+            M: 1000, CM: 900, D: 500, CD: 400, C: 100, XC: 90, L: 50, XL: 40, X: 10, IX: 9, V: 5, IV: 4, I: 1
+        };
+        var str = '';
+        for (var i of Object.keys(roman)) {
+            var q = Math.floor(num / roman[i]);
+            num -= q * roman[i];
+            str += i.repeat(q);
+        }
+        return str.toLowerCase();
+    }
 
     function initializeQuizStep() {
         const addMcqBtn = document.getElementById('addMcqBtn');
@@ -551,7 +572,14 @@
             if (checkStr(q.correct_answer)) return true;
             if (q.sub_questions) {
                 for(let sq of q.sub_questions) {
-                    if (checkStr(sq.text) || checkStr(sq.sample_answer)) return true;
+                    if (checkStr(sq.text)) return true;
+                    if (sq.has_sub_parts && sq.sub_parts) {
+                        for(let sp of sq.sub_parts) {
+                            if (checkStr(sp.text) || checkStr(sp.sample_answer)) return true;
+                        }
+                    } else {
+                        if (checkStr(sq.sample_answer)) return true;
+                    }
                 }
             }
         }
@@ -867,7 +895,18 @@
             // Setup rich text editor behaviors
             function setupEditorToolbar(container, editor) {
                container.querySelectorAll('.toolbar-tool').forEach(tool => {
-                    tool.addEventListener('mousedown', (e) => e.preventDefault());
+                    // Prevent focus loss and handle standard formatting immediately on mousedown
+                    tool.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        if (!tool.classList.contains('math-action') && 
+                            !tool.classList.contains('insert-image-btn') && 
+                            !tool.classList.contains('insert-table-btn')) {
+                            
+                            handleCommand(tool, editor);
+                            // Update toolbar state visually after a tiny delay to let the browser apply the formatting
+                            setTimeout(() => updateToolbarState(container), 10);
+                        }
+                    });
                     
                     if (tool.classList.contains('math-action')) {
                          tool.addEventListener('click', (e) => {
@@ -884,11 +923,6 @@
                             e.preventDefault();
                             handleTableInsert(editor);
                         });
-                    } else {
-                        tool.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            handleCommand(tool, editor);
-                        });
                     }
                 });
             }
@@ -898,8 +932,11 @@
                 if (command === 'math') {
                     insertMathField(tool);
                 } else {
+                    // Make sure the editor has focus before executing the command if it doesn't already
+                    if (document.activeElement !== editor) {
+                        editor.focus();
+                    }
                     document.execCommand(command, false, null);
-                    editor.focus();
                 }
                 updateQuestionModelFromEditor(editor);
             }
@@ -1094,6 +1131,26 @@
                     const subId = subItem.dataset.subId;
                     const subQuestion = question.sub_questions.find(sq => sq.id == subId);
                     if (subQuestion) subQuestion.sample_answer = finalHtml;
+                } else if (editor.classList.contains('sub-part-text')) {
+                    const subItem = editor.closest('.sub-question-item');
+                    const spItem = editor.closest('.sub-part-item');
+                    const subId = subItem.dataset.subId;
+                    const spId = spItem.dataset.spId;
+                    const subQuestion = question.sub_questions.find(sq => sq.id == subId);
+                    if (subQuestion && subQuestion.sub_parts) {
+                        const subPart = subQuestion.sub_parts.find(sp => sp.id == spId);
+                        if (subPart) subPart.text = finalHtml;
+                    }
+                } else if (editor.classList.contains('sub-part-sample-answer')) {
+                    const subItem = editor.closest('.sub-question-item');
+                    const spItem = editor.closest('.sub-part-item');
+                    const subId = subItem.dataset.subId;
+                    const spId = spItem.dataset.spId;
+                    const subQuestion = question.sub_questions.find(sq => sq.id == subId);
+                    if (subQuestion && subQuestion.sub_parts) {
+                        const subPart = subQuestion.sub_parts.find(sp => sp.id == spId);
+                        if (subPart) subPart.sample_answer = finalHtml;
+                    }
                 } else if (editor.classList.contains('option-text')) {
                     const allOptions = div.querySelectorAll('.option-text');
                     const index = Array.from(allOptions).indexOf(editor);
@@ -1172,13 +1229,37 @@
                             const labelSpan = item.querySelector('.sub-question-label');
                             if (labelSpan) {
                                 // Dynamic label style: Question Number + letter (e.g. 1a) for first part, just letter (e.g. b) for others
-                                labelSpan.textContent = (idx === 0) ? `${qIndex}${label})` : `${label})`;
+                                labelSpan.textContent = (idx === 0) ? `${qIndex}${label})` : `Part ${label})`;
                             }
                             const sq = question.sub_questions.find(s => s.id == item.dataset.subId);
-                            if (sq) sq.label = label;
+                            if (sq) {
+                                sq.label = label;
+                                
+                                // Re-label sub-parts if any
+                                if (sq.has_sub_parts && sq.sub_parts) {
+                                    item.querySelectorAll('.sub-part-item').forEach((spItem, spIdx) => {
+                                        const spLabel = toRoman(spIdx + 1);
+                                        const spLabelSpan = spItem.querySelector('.sub-part-label');
+                                        if (spLabelSpan) {
+                                            spLabelSpan.textContent = `Part ${spLabel})`;
+                                        }
+                                        const sp = sq.sub_parts.find(p => p.id == spItem.dataset.spId);
+                                        if (sp) sp.label = spLabel;
+                                    });
+                                }
+                            }
                         });
 
-                        const total = question.sub_questions.reduce((sum, sq) => sum + sq.points, 0);
+                        const total = question.sub_questions.reduce((sum, sq) => {
+                            if (sq.has_sub_parts && sq.sub_parts) {
+                                const subPartsTotal = sq.sub_parts.reduce((spSum, sp) => spSum + sp.points, 0);
+                                sq.points = subPartsTotal;
+                                const subPointsInp = div.querySelector(`.sub-question-item[data-sub-id="${sq.id}"] .sub-points`);
+                                if (subPointsInp) subPointsInp.value = subPartsTotal;
+                                return sum + subPartsTotal;
+                            }
+                            return sum + sq.points;
+                        }, 0);
                         question.points = total;
                         const questionPointsInp = div.querySelector('.question-points');
                         if (questionPointsInp) {
@@ -1199,36 +1280,53 @@
 
                 function createSubQuestionElement(subQuestion, parentQuestion, parentDiv) {
                     const subDiv = document.createElement('div');
-                    subDiv.className = 'sub-question-item';
+                    subDiv.className = 'sub-question-item bg-gray-50 p-4 rounded-xl border border-gray-200 relative mb-4';
                     subDiv.dataset.subId = subQuestion.id;
                     
                     subDiv.innerHTML = `
-                        <div class="sub-question-header">
-                            <div class="sub-question-label">Part ${subQuestion.label})</div>
-                            <button type="button" class="text-gray-400 hover:text-red-500 remove-sub-question">
-                                <i class="fas fa-times"></i>
-                            </button>
+                        <div class="sub-question-header flex justify-between items-center mb-3">
+                            <div class="sub-question-label font-bold text-gray-800 text-lg">Part ${subQuestion.label})</div>
+                            <div class="flex items-center gap-3">
+                                <button type="button" class="text-sm font-semibold text-purple-600 hover:text-purple-800 toggle-sub-parts">
+                                    <i class="fas fa-sitemap"></i> ${subQuestion.has_sub_parts ? 'Remove Roman Parts' : 'Add Roman Parts (i, ii)'}
+                                </button>
+                                <button type="button" class="text-gray-400 hover:text-red-500 remove-sub-question">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="editor-wrapper mb-3">
-                            <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Question Part Text:</label>
+                            <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Question Part Text / Context:</label>
                             ${toolbarHtml}
-                            <div class="rich-text-editor sub-question-text" contenteditable="true" 
+                            <div class="rich-text-editor sub-question-text bg-white" contenteditable="true" 
                                  placeholder="Type sub-question here..."
                                  aria-label="Sub-question text">${subQuestion.text || ''}</div>
                         </div>
-                        <div class="editor-wrapper mb-3">
-                            <label class="text-xs font-bold text-success-green uppercase mb-2 block flex items-center gap-2">
-                                <i class="fas fa-check-double"></i> Marking Scheme / Sample Answer (for Auto-Grading)
-                            </label>
-                            ${toolbarHtml}
-                            <div class="rich-text-editor sub-question-sample-answer" contenteditable="true" 
-                                 placeholder="Type expected answer or key points here..."
-                                 aria-label="Sample answer">${subQuestion.sample_answer || ''}</div>
+                        
+                        <!-- Direct Answer Mode -->
+                        <div class="direct-answer-section ${subQuestion.has_sub_parts ? 'hidden' : ''}">
+                            <div class="editor-wrapper mb-3">
+                                <label class="text-xs font-bold text-success-green uppercase mb-2 block flex items-center gap-2">
+                                    <i class="fas fa-check-double"></i> Marking Scheme / Sample Answer
+                                </label>
+                                ${toolbarHtml}
+                                <div class="rich-text-editor sub-question-sample-answer bg-white" contenteditable="true" 
+                                     placeholder="Type expected answer or key points here..."
+                                     aria-label="Sample answer">${subQuestion.sample_answer || ''}</div>
+                            </div>
+                            <div class="sub-question-footer">
+                                <label class="text-xs font-bold text-gray-500 uppercase">Marks for this part:</label>
+                                <input type="number" class="w-20 px-2 py-1 border border-gray-300 rounded sub-points" 
+                                       value="${subQuestion.points}" min="1">
+                            </div>
                         </div>
-                        <div class="sub-question-footer">
-                            <label class="text-xs font-bold text-gray-500 uppercase">Marks for this part:</label>
-                            <input type="number" class="w-20 px-2 py-1 border border-gray-300 rounded sub-points" 
-                                   value="${subQuestion.points}" min="1">
+
+                        <!-- Nested Roman Parts Mode -->
+                        <div class="nested-parts-section pl-6 border-l-2 border-purple-200 mt-4 ${subQuestion.has_sub_parts ? '' : 'hidden'}">
+                            <div class="sub-parts-container"></div>
+                            <button type="button" class="mt-3 text-sm font-semibold text-purple-600 hover:text-purple-800 add-sub-part-btn">
+                                <i class="fas fa-plus-circle"></i> Add Roman Part (i, ii, iii...)
+                            </button>
                         </div>
                     `;
 
@@ -1238,6 +1336,78 @@
                         setupEditorToolbar(subDiv, editor);
                     });
 
+                    // Handle toggle sub-parts
+                    const toggleBtn = subDiv.querySelector('.toggle-sub-parts');
+                    const directSection = subDiv.querySelector('.direct-answer-section');
+                    const nestedSection = subDiv.querySelector('.nested-parts-section');
+                    const subPointsInp = subDiv.querySelector('.sub-points');
+
+                    toggleBtn.addEventListener('click', () => {
+                        subQuestion.has_sub_parts = !subQuestion.has_sub_parts;
+                        if (subQuestion.has_sub_parts) {
+                            directSection.classList.add('hidden');
+                            nestedSection.classList.remove('hidden');
+                            toggleBtn.innerHTML = '<i class="fas fa-sitemap"></i> Remove Roman Parts';
+                            if (!subQuestion.sub_parts) subQuestion.sub_parts = [];
+                            if (subQuestion.sub_parts.length === 0) {
+                                subDiv.querySelector('.add-sub-part-btn').click();
+                            }
+                            if (subPointsInp) {
+                                subPointsInp.readOnly = true;
+                                subPointsInp.classList.add('bg-gray-50');
+                            }
+                        } else {
+                            if (confirm('Are you sure? This will delete all roman parts (i, ii) inside this section.')) {
+                                directSection.classList.remove('hidden');
+                                nestedSection.classList.add('hidden');
+                                toggleBtn.innerHTML = '<i class="fas fa-sitemap"></i> Add Roman Parts (i, ii)';
+                                subQuestion.sub_parts = [];
+                                subDiv.querySelector('.sub-parts-container').innerHTML = '';
+                                if (subPointsInp) {
+                                    subPointsInp.readOnly = false;
+                                    subPointsInp.classList.remove('bg-gray-50');
+                                }
+                            } else {
+                                subQuestion.has_sub_parts = true; // revert
+                            }
+                        }
+                        updateTotalPoints();
+                    });
+
+                    // Handle add sub-part
+                    const addSubPartBtn = subDiv.querySelector('.add-sub-part-btn');
+                    const subPartsContainer = subDiv.querySelector('.sub-parts-container');
+                    
+                    addSubPartBtn.addEventListener('click', () => {
+                        const spId = Date.now();
+                        const spLabel = toRoman((subQuestion.sub_parts ? subQuestion.sub_parts.length : 0) + 1);
+                        const subPart = {
+                            id: spId,
+                            label: spLabel,
+                            text: '',
+                            sample_answer: '',
+                            points: 1
+                        };
+                        if (!subQuestion.sub_parts) subQuestion.sub_parts = [];
+                        subQuestion.sub_parts.push(subPart);
+                        
+                        const spEl = createSubPartElement(subPart, subQuestion, subDiv);
+                        subPartsContainer.appendChild(spEl);
+                        updateTotalPoints();
+                    });
+
+                    // Render existing sub-parts
+                    if (subQuestion.has_sub_parts && subQuestion.sub_parts) {
+                        subQuestion.sub_parts.forEach(sp => {
+                            const spEl = createSubPartElement(sp, subQuestion, subDiv);
+                            subPartsContainer.appendChild(spEl);
+                        });
+                        if (subPointsInp) {
+                            subPointsInp.readOnly = true;
+                            subPointsInp.classList.add('bg-gray-50');
+                        }
+                    }
+
                     // Handle removal
                     subDiv.querySelector('.remove-sub-question').addEventListener('click', () => {
                         parentQuestion.sub_questions = parentQuestion.sub_questions.filter(sq => sq.id !== subQuestion.id);
@@ -1246,12 +1416,71 @@
                     });
 
                     // Handle points
-                    subDiv.querySelector('.sub-points').addEventListener('input', (e) => {
-                        subQuestion.points = parseInt(e.target.value) || 0;
-                        updateTotalPoints();
+                    subPointsInp.addEventListener('input', (e) => {
+                        if (!subQuestion.has_sub_parts) {
+                            subQuestion.points = parseInt(e.target.value) || 0;
+                            updateTotalPoints();
+                        }
                     });
 
                     return subDiv;
+                }
+
+                function createSubPartElement(subPart, parentSubQuestion, parentSubDiv) {
+                    const spDiv = document.createElement('div');
+                    spDiv.className = 'sub-part-item bg-white p-4 rounded-lg border border-purple-100 mb-3 relative';
+                    spDiv.dataset.spId = subPart.id;
+                    
+                    spDiv.innerHTML = `
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="sub-part-label font-bold text-purple-700 text-sm">Part ${subPart.label})</div>
+                            <button type="button" class="text-gray-400 hover:text-red-500 remove-sub-part text-sm">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="editor-wrapper mb-3">
+                            <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Roman Part Text:</label>
+                            ${toolbarHtml}
+                            <div class="rich-text-editor sub-part-text text-sm" contenteditable="true" 
+                                 placeholder="Type part i, ii... here"
+                                 aria-label="Sub-part text" style="min-height: 40px;">${subPart.text || ''}</div>
+                        </div>
+                        <div class="editor-wrapper mb-3">
+                            <label class="text-[10px] font-bold text-success-green uppercase mb-1 block flex items-center gap-1">
+                                <i class="fas fa-check-double"></i> Marking Scheme / Sample Answer
+                            </label>
+                            ${toolbarHtml}
+                            <div class="rich-text-editor sub-part-sample-answer text-sm" contenteditable="true" 
+                                 placeholder="Expected answer..."
+                                 aria-label="Sample answer" style="min-height: 40px;">${subPart.sample_answer || ''}</div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <label class="text-[10px] font-bold text-gray-500 uppercase">Marks:</label>
+                            <input type="number" class="w-16 px-1 py-1 border border-gray-300 rounded text-sm sp-points" 
+                                   value="${subPart.points}" min="1">
+                        </div>
+                    `;
+
+                    // Initialize editors
+                    spDiv.querySelectorAll('.rich-text-editor').forEach(editor => {
+                        editor.addEventListener('input', () => updateQuestionModelFromEditor(editor));
+                        setupEditorToolbar(spDiv, editor);
+                    });
+
+                    // Handle removal
+                    spDiv.querySelector('.remove-sub-part').addEventListener('click', () => {
+                        parentSubQuestion.sub_parts = parentSubQuestion.sub_parts.filter(sp => sp.id !== subPart.id);
+                        spDiv.remove();
+                        updateTotalPoints();
+                    });
+
+                    // Handle points
+                    spDiv.querySelector('.sp-points').addEventListener('input', (e) => {
+                        subPart.points = parseInt(e.target.value) || 0;
+                        updateTotalPoints();
+                    });
+
+                    return spDiv;
                 }
             } // end if essay
 
@@ -1422,6 +1651,12 @@
                         if (q.sub_questions) {
                             q.sub_questions = q.sub_questions.map(sq => {
                                 sq.id = Date.now() + Math.floor(Math.random() * 10000);
+                                if (sq.has_sub_parts && sq.sub_parts) {
+                                    sq.sub_parts = sq.sub_parts.map(sp => {
+                                        sp.id = Date.now() + Math.floor(Math.random() * 10000);
+                                        return sp;
+                                    });
+                                }
                                 return sq;
                             });
                         }

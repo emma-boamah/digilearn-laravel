@@ -552,7 +552,7 @@
     }
 </script>
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
     let growthData = @json($userGrowthData);
     let chart;

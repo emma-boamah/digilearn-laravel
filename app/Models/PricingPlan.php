@@ -78,6 +78,7 @@ class PricingPlan extends Model
         $months = match ($duration) {
             'trial' => 0,
             'month' => 1,
+            'term' => 4,
             '3month' => 3,
             '6month' => 6,
             '12month' => 12,

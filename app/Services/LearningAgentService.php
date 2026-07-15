@@ -1524,7 +1524,18 @@ Instructions:
                     "text": "Sub question part a",
                     "sample_answer": "Expected detailed answer for part a",
                     "keywords": ["keyword1", "keyword2"], // 3-6 essential keywords/phrases for this sub-question
-                    "points": 2
+                    "points": 2,
+                    "has_sub_parts": false, // set to true if this sub-question has further nested parts (i, ii, iii)
+                    "sub_parts": [ // optional, only if has_sub_parts is true - for roman numeral sub-parts like a(i), a(ii)
+                        {
+                            "id": <generate_random_integer>,
+                            "label": "i",
+                            "text": "Sub-part i of part a",
+                            "sample_answer": "Expected answer for a(i)",
+                            "keywords": ["keyword1", "keyword2"],
+                            "points": 1
+                        }
+                    ]
                 }
             ]
         }
@@ -1671,7 +1682,18 @@ Instructions:
                     "text": "Sub question part a",
                     "sample_answer": "Expected detailed answer for part a",
                     "keywords": ["keyword1", "keyword2"],
-                    "points": 2
+                    "points": 2,
+                    "has_sub_parts": false, // set to true if this sub-question has further nested parts (i, ii, iii)
+                    "sub_parts": [ // optional, only if has_sub_parts is true - for roman numeral sub-parts like a(i), a(ii)
+                        {
+                            "id": <generate_random_integer>,
+                            "label": "i",
+                            "text": "Sub-part i of part a",
+                            "sample_answer": "Expected answer for a(i)",
+                            "keywords": ["keyword1", "keyword2"],
+                            "points": 1
+                        }
+                    ]
                 }
             ]
         }

@@ -1754,90 +1754,165 @@
                                             @if($hasSubQuestions)
                                                 <div class="sub-questions-review" style="display: flex; flex-direction: column; gap: 1.5rem;">
                                                     @foreach($question['sub_questions'] as $sIdx => $sub)
-                                                        <div class="sub-review-item answer-hidden" id="sub-{{ $index }}-{{ $sIdx }}" style="border-left: 3px solid var(--primary-blue); padding-left: 1.5rem; margin-bottom: 2rem;">
-                                                            <div class="sub-q-header" style="font-weight: 700; color: var(--gray-900); margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
-                                                                <div>
+                                                        @if(isset($sub['has_sub_parts']) && $sub['has_sub_parts'] && !empty($sub['sub_parts']))
+                                                            <div class="sub-review-item" style="border-left: 3px solid var(--primary-blue); padding-left: 1.5rem; margin-bottom: 2rem;">
+                                                                <div class="sub-q-header" style="font-weight: 700; color: var(--gray-900); margin-bottom: 0.5rem;">
                                                                     @if(!$hasMainContent && $sIdx === 0)
                                                                         {{ $index + 1 }}{{ $sub['label'] }})
                                                                     @else
                                                                         {{ $sub['label'] }})
                                                                     @endif
-                                                                    <span style="font-size: 0.75rem; color: var(--gray-500); margin-left: 0.5rem;">[{{ $sub['points'] }} Marks]</span>
                                                                 </div>
+                                                                <div class="sub-q-text" style="font-size: 1rem; color: var(--gray-700); margin-bottom: 1rem;">{!! $sanitizeMath($sub['text']) !!}</div>
                                                                 
-                                                                @php
-                                                                    $subSample = $sub['sample_answer'] ?? ($sub['correct_answer'] ?? null);
-                                                                @endphp
+                                                                <div class="sub-parts-review" style="display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1rem; padding-left: 1rem; border-left: 2px solid var(--gray-200);">
+                                                                    @foreach($sub['sub_parts'] as $spIdx => $sp)
+                                                                        <div class="sub-part-review-item answer-hidden" id="sub-{{ $index }}-{{ $sIdx }}-{{ $spIdx }}">
+                                                                            <div class="sub-q-header" style="font-weight: 700; color: var(--gray-900); margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                                                                                <div>
+                                                                                    <span style="font-style: italic;">{{ $sp['label'] }})</span>
+                                                                                    <span style="font-size: 0.75rem; color: var(--gray-500); margin-left: 0.5rem;">[{{ $sp['points'] }} Marks]</span>
+                                                                                </div>
+                                                                                
+                                                                                @php
+                                                                                    $subSample = $sp['sample_answer'] ?? null;
+                                                                                @endphp
+                                                                                @if(!empty($subSample))
+                                                                                    <button class="reveal-toggle" onclick="toggleSubAnswer('{{ $index }}-{{ $sIdx }}-{{ $spIdx }}', this)">
+                                                                                        <i class="far fa-eye"></i> <span>Sample Answer</span>
+                                                                                    </button>
+                                                                                @endif
+                                                                            </div>
+                                                                            <div class="sub-q-text" style="font-size: 1rem; color: var(--gray-700); margin-bottom: 1rem;">{!! $sanitizeMath($sp['text']) !!}</div>
+                                                                            
+                                                                            <div class="user-response-box" style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
+                                                                                <div style="font-size: 0.75rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
+                                                                                    <span><i class="fas fa-user-pen"></i> Your Response</span>
+                                                                                    @php
+                                                                                        $awarded = $grading['marks']["{$index}_{$sIdx}_{$spIdx}"] ?? null;
+                                                                                    @endphp
+                                                                                    @if($awarded !== null)
+                                                                                        <span style="color: var(--primary-blue); font-weight: 800;">{{ $awarded }} / {{ $sp['points'] }} Marks</span>
+                                                                                    @endif
+                                                                                </div>
+                                                                                <div class="response-content" style="font-size: 1rem; line-height: 1.6; color: var(--gray-900);">
+                                                                                    @php
+                                                                                        $ans = $question['user_answer'] ?? null;
+                                                                                        $subAns = is_array($ans) && isset($ans[$sIdx]) && is_array($ans[$sIdx]) && isset($ans[$sIdx][$spIdx]) ? $ans[$sIdx][$spIdx] : null;
+                                                                                    @endphp
+                                                                                    @if($subAns)
+                                                                                        {!! $sanitizeMath($subAns) !!}
+                                                                                    @else
+                                                                                        <span style="color: var(--gray-400); font-style: italic;">No response provided.</span>
+                                                                                    @endif
+                                                                                </div>
+                                                                                @if(!empty($grading['feedback']["{$index}_{$sIdx}_{$spIdx}"]))
+                                                                                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--gray-200); font-size: 0.875rem; color: var(--primary-blue);">
+                                                                                        <i class="fas fa-comment-dots mr-1"></i> <strong>Instructor Feedback:</strong> {{ $grading['feedback']["{$index}_{$sIdx}_{$spIdx}"] }}
+                                                                                    </div>
+                                                                                @endif
+                                                                            </div>
+                                                                            
+                                                                            @if(!empty($subSample))
+                                                                                <div class="sample-answer-box" style="background: var(--success-green-light); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1.25rem;">
+                                                                                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--success-green); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                                                                        <i class="fas fa-check-circle"></i> Sample Answer
+                                                                                    </div>
+                                                                                    <div class="sample-content" style="font-size: 1rem; line-height: 1.6; color: var(--gray-900);">
+                                                                                        {!! $sanitizeMath($subSample) !!}
+                                                                                    </div>
+                                                                                </div>
+                                                                            @endif
+                                                                        </div>
+                                                                    @endforeach
+                                                                </div>
+                                                            </div>
+                                                        @else
+                                                            <div class="sub-review-item answer-hidden" id="sub-{{ $index }}-{{ $sIdx }}" style="border-left: 3px solid var(--primary-blue); padding-left: 1.5rem; margin-bottom: 2rem;">
+                                                                <div class="sub-q-header" style="font-weight: 700; color: var(--gray-900); margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                                                                    <div>
+                                                                        @if(!$hasMainContent && $sIdx === 0)
+                                                                            {{ $index + 1 }}{{ $sub['label'] }})
+                                                                        @else
+                                                                            {{ $sub['label'] }})
+                                                                        @endif
+                                                                        <span style="font-size: 0.75rem; color: var(--gray-500); margin-left: 0.5rem;">[{{ $sub['points'] }} Marks]</span>
+                                                                    </div>
+                                                                    
+                                                                    @php
+                                                                        $subSample = $sub['sample_answer'] ?? ($sub['correct_answer'] ?? null);
+                                                                    @endphp
+                                                                    @if(!empty($subSample))
+                                                                        <button class="reveal-toggle" onclick="toggleSubAnswer('{{ $index }}-{{ $sIdx }}', this)">
+                                                                            <i class="far fa-eye"></i> <span>Sample Answer</span>
+                                                                        </button>
+                                                                    @endif
+                                                                </div>
+                                                                <div class="sub-q-text" style="font-size: 1rem; color: var(--gray-700); margin-bottom: 1rem;">{!! $sanitizeMath($sub['text']) !!}</div>
+                                                                
+                                                                <div class="user-response-box" style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
+                                                                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
+                                                                        <span><i class="fas fa-user-pen"></i> Your Response</span>
+                                                                        @php
+                                                                            $awarded = $grading['marks']["{$index}_{$sIdx}"] ?? null;
+                                                                        @endphp
+                                                                        @if($awarded !== null)
+                                                                            <span style="color: var(--primary-blue); font-weight: 800;">{{ $awarded }} / {{ $sub['points'] }} Marks</span>
+                                                                        @endif
+                                                                    </div>
+                                                                    <div class="response-content" style="font-size: 1rem; line-height: 1.6; color: var(--gray-900);">
+                                                                        @php
+                                                                            $ans = $question['user_answer'] ?? null;
+                                                                            $subAns = is_array($ans) && isset($ans[$sIdx]) ? $ans[$sIdx] : (is_string($ans) ? $ans : null);
+                                                                        @endphp
+                                                                        @if($subAns)
+                                                                            {!! $sanitizeMath($subAns) !!}
+                                                                        @else
+                                                                            <span style="color: var(--gray-400); font-style: italic;">No response provided.</span>
+                                                                        @endif
+                                                                    </div>
+                                                                    @if(!empty($grading['feedback']["{$index}_{$sIdx}"]))
+                                                                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--gray-200); font-size: 0.875rem; color: var(--primary-blue);">
+                                                                            <i class="fas fa-comment-dots mr-1"></i> <strong>Instructor Feedback:</strong> {{ $grading['feedback']["{$index}_{$sIdx}"] }}
+                                                                        </div>
+                                                                    @endif
+    
+                                                                    @if(!empty($grading['strengths']["{$index}_{$sIdx}"]) || !empty($grading['weaknesses']["{$index}_{$sIdx}"]))
+                                                                        <div class="ai-insights-box" style="margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, rgba(36, 128, 241, 0.05) 0%, rgba(36, 128, 241, 0.02) 100%); border: 1px solid rgba(36, 128, 241, 0.1); border-radius: 12px;">
+                                                                            <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                                                                <i class="fas fa-robot"></i> AI Insights
+                                                                            </div>
+                                                                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                                                                @if(!empty($grading['strengths']["{$index}_{$sIdx}"]))
+                                                                                    <div style="font-size: 0.875rem;">
+                                                                                        <div style="color: var(--success-green); font-weight: 700; margin-bottom: 0.25rem;"><i class="fas fa-plus-circle"></i> Strengths</div>
+                                                                                        <div style="color: var(--gray-700);">{{ $grading['strengths']["{$index}_{$sIdx}"] }}</div>
+                                                                                    </div>
+                                                                                @endif
+                                                                                @if(!empty($grading['weaknesses']["{$index}_{$sIdx}"]))
+                                                                                    <div style="font-size: 0.875rem;">
+                                                                                        <div style="color: var(--error-red); font-weight: 700; margin-bottom: 0.25rem;"><i class="fas fa-minus-circle"></i> Weaknesses</div>
+                                                                                        <div style="color: var(--gray-700);">{{ $grading['weaknesses']["{$index}_{$sIdx}"] }}</div>
+                                                                                    </div>
+                                                                                @endif
+                                                                            </div>
+                                                                        </div>
+                                                                    @endif
+                                                                </div>
+    
+                                                                <!-- Sub-Question Sample Answer -->
                                                                 @if(!empty($subSample))
-                                                                    <button class="reveal-toggle" onclick="toggleSubAnswer({{ $index }}, {{ $sIdx }}, this)">
-                                                                        <i class="far fa-eye"></i> <span>Sample Answer</span>
-                                                                    </button>
-                                                                @endif
-                                                            </div>
-                                                            <div class="sub-q-text" style="font-size: 1rem; color: var(--gray-700); margin-bottom: 1rem;">{!! $sanitizeMath($sub['text']) !!}</div>
-                                                            
-                                                            <div class="user-response-box" style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;">
-                                                                <div style="font-size: 0.75rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
-                                                                    <span><i class="fas fa-user-pen"></i> Your Response</span>
-                                                                    @php
-                                                                        $awarded = $grading['marks']["{$index}_{$sIdx}"] ?? null;
-                                                                    @endphp
-                                                                    @if($awarded !== null)
-                                                                        <span style="color: var(--primary-blue); font-weight: 800;">{{ $awarded }} / {{ $sub['points'] }} Marks</span>
-                                                                    @endif
-                                                                </div>
-                                                                <div class="response-content" style="font-size: 1rem; line-height: 1.6; color: var(--gray-900);">
-                                                                    @php
-                                                                        $ans = $question['user_answer'] ?? null;
-                                                                        $subAns = is_array($ans) && isset($ans[$sIdx]) ? $ans[$sIdx] : (is_string($ans) ? $ans : null);
-                                                                    @endphp
-                                                                    @if($subAns)
-                                                                        {!! $sanitizeMath($subAns) !!}
-                                                                    @else
-                                                                        <span style="color: var(--gray-400); font-style: italic;">No response provided.</span>
-                                                                    @endif
-                                                                </div>
-                                                                @if(!empty($grading['feedback']["{$index}_{$sIdx}"]))
-                                                                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--gray-200); font-size: 0.875rem; color: var(--primary-blue);">
-                                                                        <i class="fas fa-comment-dots mr-1"></i> <strong>Instructor Feedback:</strong> {{ $grading['feedback']["{$index}_{$sIdx}"] }}
-                                                                    </div>
-                                                                @endif
-
-                                                                @if(!empty($grading['strengths']["{$index}_{$sIdx}"]) || !empty($grading['weaknesses']["{$index}_{$sIdx}"]))
-                                                                    <div class="ai-insights-box" style="margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, rgba(36, 128, 241, 0.05) 0%, rgba(36, 128, 241, 0.02) 100%); border: 1px solid rgba(36, 128, 241, 0.1); border-radius: 12px;">
-                                                                        <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                                                                            <i class="fas fa-robot"></i> AI Insights
+                                                                    <div class="sample-answer-box" style="background: var(--success-green-light); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1.25rem;">
+                                                                        <div style="font-size: 0.75rem; font-weight: 700; color: var(--success-green); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                                                            <i class="fas fa-check-circle"></i> Sample Answer
                                                                         </div>
-                                                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                                                                            @if(!empty($grading['strengths']["{$index}_{$sIdx}"]))
-                                                                                <div style="font-size: 0.875rem;">
-                                                                                    <div style="color: var(--success-green); font-weight: 700; margin-bottom: 0.25rem;"><i class="fas fa-plus-circle"></i> Strengths</div>
-                                                                                    <div style="color: var(--gray-700);">{{ $grading['strengths']["{$index}_{$sIdx}"] }}</div>
-                                                                                </div>
-                                                                            @endif
-                                                                            @if(!empty($grading['weaknesses']["{$index}_{$sIdx}"]))
-                                                                                <div style="font-size: 0.875rem;">
-                                                                                    <div style="color: var(--error-red); font-weight: 700; margin-bottom: 0.25rem;"><i class="fas fa-minus-circle"></i> Weaknesses</div>
-                                                                                    <div style="color: var(--gray-700);">{{ $grading['weaknesses']["{$index}_{$sIdx}"] }}</div>
-                                                                                </div>
-                                                                            @endif
+                                                                        <div class="sample-content" style="font-size: 1rem; line-height: 1.6; color: var(--gray-900);">
+                                                                            {!! $sanitizeMath($subSample) !!}
                                                                         </div>
                                                                     </div>
                                                                 @endif
                                                             </div>
-
-                                                            <!-- Sub-Question Sample Answer -->
-                                                            @if(!empty($subSample))
-                                                                <div class="sample-answer-box" style="background: var(--success-green-light); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1.25rem;">
-                                                                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--success-green); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                                                                        <i class="fas fa-check-circle"></i> Sample Answer
-                                                                    </div>
-                                                                    <div class="sample-content" style="font-size: 1rem; line-height: 1.6; color: var(--gray-900);">
-                                                                        {!! $sanitizeMath($subSample) !!}
-                                                                    </div>
-                                                                </div>
-                                                            @endif
-                                                        </div>
+                                                        @endif
                                                     @endforeach
                                                 </div>
                                             @else
@@ -2167,8 +2242,8 @@
             span.textContent = isHidden ? 'Reveal Answer' : 'Hide Answer';
         }
 
-        function toggleSubAnswer(qIdx, sIdx, btn) {
-            const item = document.getElementById(`sub-${qIdx}-${sIdx}`);
+        function toggleSubAnswer(idStr, btn) {
+            const item = document.getElementById(`sub-${idStr}`);
             const isHidden = item.classList.toggle('answer-hidden');
             
             const icon = btn.querySelector('i');

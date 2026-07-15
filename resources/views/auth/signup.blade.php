@@ -4,15 +4,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Sign Up - ShoutOutGH | Free Online Education in Ghana</title>
+    <title>Sign Up - {{ isset($tenant) ? $tenant->name : 'ShoutOutGH' }} | Free Online Education in Ghana</title>
     <meta name="description" content="Create a free ShoutOutGH account to access quality online education in Ghana. Interactive lessons, quizzes, and study materials for Primary, JHS, SHS, and University students.">
     <meta name="keywords" content="ShoutOutGH signup, register online education ghana, free online school ghana, create account, e-learning registration ghana">
     <meta name="robots" content="noindex, follow">
     <link rel="canonical" href="{{ url('/signup') }}">
 
     <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="Sign Up - ShoutOutGH | Free Online Education in Ghana">
-    <meta property="og:description" content="Create a free ShoutOutGH account. Access quality online education for Ghanaian students.">
+    <meta property="og:title" content="Sign Up - {{ isset($tenant) ? $tenant->name : 'ShoutOutGH' }} | Free Online Education in Ghana">
+    <meta property="og:description" content="Create a free {{ isset($tenant) ? $tenant->name : 'ShoutOutGH' }} account. Access quality online education for Ghanaian students.">
     <meta property="og:image" content="{{ secure_asset('images/shoutoutgh-logo.png') }}">
     <meta property="og:url" content="{{ url('/signup') }}">
     <meta property="og:type" content="website">
@@ -873,7 +873,11 @@
             @enderror
             <div class="auth-header">
                 <a href="{{ route('home') }}" class="logo">
-                    <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image">
+                    @if(isset($tenant) && $tenant->logo)
+                        <img src="{{ secure_asset('storage/' . $tenant->logo) }}" alt="{{ $tenant->name }}" class="logo-image">
+                    @else
+                        <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh" class="logo-image">
+                    @endif
                 </a>
 
                 <div class="auth-tabs">

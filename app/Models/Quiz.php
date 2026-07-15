@@ -13,6 +13,7 @@ class Quiz extends Model
     protected $fillable = [
         'title',
         'subject_id',
+        'school_id',
         'video_id',
         'grade_level',
         'uploaded_by',
@@ -241,5 +242,13 @@ class Quiz extends Model
     public function assessments()
     {
         return $this->hasMany(Assessment::class);
+    }
+
+    /**
+     * Get the school that owns the quiz (B2B).
+     */
+    public function school()
+    {
+        return $this->belongsTo(School::class);
     }
 }
