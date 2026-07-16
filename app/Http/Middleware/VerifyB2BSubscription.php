@@ -19,6 +19,13 @@ class VerifyB2BSubscription
 
         // If it's a B2B request and the school exists
         if ($school) {
+            $user = \Illuminate\Support\Facades\Auth::user();
+            
+            // Allow superusers to bypass subscription checks completely
+            if ($user && $user->is_superuser) {
+                return $next($request);
+            }
+
             // If the subscription is totally expired (past grace period)
             if (!$school->hasActiveSubscription() && !$school->isInGracePeriod()) {
                 // Allow access to essential routes: billing, auth routes, logout, etc.
