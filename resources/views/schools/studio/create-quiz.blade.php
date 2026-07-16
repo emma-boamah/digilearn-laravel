@@ -109,9 +109,9 @@
                 <div class="form-group">
                     <label class="form-label">Difficulty Level</label>
                     <select name="difficulty_level" class="form-select" required>
-                        <option value="beginner" @if(old('difficulty_level') == 'beginner') selected @endif>Beginner</option>
-                        <option value="intermediate" @if(old('difficulty_level') == 'intermediate') selected @endif>Intermediate</option>
-                        <option value="advanced" @if(old('difficulty_level') == 'advanced') selected @endif>Advanced</option>
+                        <option value="easy" @if(old('difficulty_level') == 'easy') selected @endif>Easy</option>
+                        <option value="medium" @if(old('difficulty_level') == 'medium') selected @endif>Medium</option>
+                        <option value="hard" @if(old('difficulty_level') == 'hard') selected @endif>Hard</option>
                     </select>
                     @error('difficulty_level') <span class="error-text">{{ $message }}</span> @enderror
                 </div>

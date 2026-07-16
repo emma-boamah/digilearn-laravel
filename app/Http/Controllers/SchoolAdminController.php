@@ -13,12 +13,32 @@ use Illuminate\Validation\Rules\Password;
 class SchoolAdminController extends Controller
 {
     /**
+     * Get the active school and authorize access.
+     */
+    protected function getSchool()
+    {
+        $user = Auth::user();
+        $school = app()->has('tenant') ? app('tenant') : $user->school;
+
+        if (!$school) {
+            abort(403, 'You are not associated with a school.');
+        }
+
+        // Allow superusers to bypass the school_id restriction
+        if ($user->school_id !== $school->id && !$user->is_superuser) {
+            abort(403, 'Unauthorized access to this school.');
+        }
+
+        return $school;
+    }
+
+    /**
      * School Admin Dashboard Overview.
      */
     public function dashboard()
     {
         $user = Auth::user();
-        $school = $user->school;
+        $school = $this->getSchool();
 
         if (!$school) {
             abort(403, 'You are not associated with a school.');
@@ -60,7 +80,7 @@ class SchoolAdminController extends Controller
      */
     public function settings()
     {
-        $school = Auth::user()->school;
+        $school = $this->getSchool();
 
         if (!$school) {
             abort(403);
@@ -74,7 +94,7 @@ class SchoolAdminController extends Controller
      */
     public function updateSettings(Request $request)
     {
-        $school = Auth::user()->school;
+        $school = $this->getSchool();
 
         if (!$school) {
             abort(403);
@@ -111,7 +131,7 @@ class SchoolAdminController extends Controller
      */
     public function users(Request $request)
     {
-        $school = Auth::user()->school;
+        $school = $this->getSchool();
 
         if (!$school) {
             abort(403);
@@ -143,7 +163,7 @@ class SchoolAdminController extends Controller
      */
     public function showInviteForm()
     {
-        $school = Auth::user()->school;
+        $school = $this->getSchool();
 
         if (!$school) {
             abort(403);
@@ -157,7 +177,7 @@ class SchoolAdminController extends Controller
      */
     public function inviteUser(Request $request)
     {
-        $school = Auth::user()->school;
+        $school = $this->getSchool();
 
         if (!$school) {
             abort(403);
@@ -191,7 +211,7 @@ class SchoolAdminController extends Controller
      */
     public function removeUser(User $user)
     {
-        $school = Auth::user()->school;
+        $school = $this->getSchool();
 
         if (!$school || $user->school_id !== $school->id) {
             abort(403);
@@ -213,7 +233,7 @@ class SchoolAdminController extends Controller
      */
     public function showImportForm()
     {
-        $school = Auth::user()->school;
+        $school = $this->getSchool();
 
         if (!$school) {
             abort(403);
@@ -248,7 +268,7 @@ class SchoolAdminController extends Controller
      */
     public function importUsers(Request $request)
     {
-        $school = Auth::user()->school;
+        $school = $this->getSchool();
 
         if (!$school) {
             abort(403);
@@ -333,7 +353,7 @@ class SchoolAdminController extends Controller
      */
     public function academicSetup()
     {
-        $school = Auth::user()->school;
+        $school = $this->getSchool();
 
         if (!$school) {
             abort(403);
@@ -351,7 +371,7 @@ class SchoolAdminController extends Controller
      */
     public function storeAcademicYear(Request $request)
     {
-        $school = Auth::user()->school;
+        $school = $this->getSchool();
 
         $request->validate([
             'year_name' => 'required|string|max:255',
@@ -381,7 +401,7 @@ class SchoolAdminController extends Controller
      */
     public function storeTerm(Request $request)
     {
-        $school = Auth::user()->school;
+        $school = $this->getSchool();
 
         $request->validate([
             'academic_year_id' => 'required|exists:academic_years,id',
@@ -410,7 +430,7 @@ class SchoolAdminController extends Controller
      */
     public function storeClass(Request $request)
     {
-        $school = Auth::user()->school;
+        $school = $this->getSchool();
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -431,7 +451,7 @@ class SchoolAdminController extends Controller
      */
     public function billing()
     {
-        $school = Auth::user()->school;
+        $school = $this->getSchool();
 
         if (!$school) {
             abort(403);
@@ -449,7 +469,7 @@ class SchoolAdminController extends Controller
      */
     public function renewalForm()
     {
-        $school = Auth::user()->school;
+        $school = $this->getSchool();
 
         if (!$school) {
             abort(403);

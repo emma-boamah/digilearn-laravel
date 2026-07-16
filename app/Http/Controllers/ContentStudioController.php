@@ -12,14 +12,30 @@ class ContentStudioController extends Controller
     /**
      * Display the Content Studio dashboard.
      */
-    public function index()
+    /**
+     * Get the active school and authorize access.
+     */
+    protected function getSchool()
     {
         $user = Auth::user();
-        $school = $user->school;
+        $school = app()->has('tenant') ? app('tenant') : $user->school;
 
         if (!$school) {
             abort(403, 'You are not associated with a school.');
         }
+
+        // Allow superusers to bypass the school_id restriction
+        if ($user->school_id !== $school->id && !$user->is_superuser) {
+            abort(403, 'Unauthorized access to this school.');
+        }
+
+        return $school;
+    }
+
+    public function index()
+    {
+        $user = Auth::user();
+        $school = $this->getSchool();
 
         // Fetch videos belonging to this school
         $videos = Video::where('school_id', $school->id)->latest()->paginate(10, ['*'], 'videos_page');
@@ -35,7 +51,7 @@ class ContentStudioController extends Controller
      */
     public function createVideo()
     {
-        $school = Auth::user()->school;
+        $school = $this->getSchool();
         
         // For subjects dropdown
         $subjects = \App\Models\Subject::orderBy('name')->get();
@@ -49,11 +65,7 @@ class ContentStudioController extends Controller
     public function storeVideo(Request $request)
     {
         $user = Auth::user();
-        $school = $user->school;
-
-        if (!$school) {
-            abort(403);
-        }
+        $school = $this->getSchool();
 
         $request->validate([
             'title' => 'required|string|max:255',
@@ -84,7 +96,7 @@ class ContentStudioController extends Controller
      */
     public function createQuiz()
     {
-        $school = Auth::user()->school;
+        $school = $this->getSchool();
         $subjects = \App\Models\Subject::orderBy('name')->get();
 
         return view('schools.studio.create-quiz', compact('school', 'subjects'));
@@ -96,18 +108,14 @@ class ContentStudioController extends Controller
     public function storeQuiz(Request $request)
     {
         $user = Auth::user();
-        $school = $user->school;
-
-        if (!$school) {
-            abort(403);
-        }
+        $school = $this->getSchool();
 
         $request->validate([
             'title' => 'required|string|max:255',
             'grade_level' => 'required|string',
             'subject_id' => 'required|exists:subjects,id',
             'time_limit_minutes' => 'required|integer|min:1',
-            'difficulty_level' => 'required|in:beginner,intermediate,advanced',
+            'difficulty_level' => 'required|in:easy,medium,hard',
         ]);
 
         $quiz = Quiz::create([
@@ -132,11 +140,7 @@ class ContentStudioController extends Controller
      */
     public function requestShare($id)
     {
-        $school = Auth::user()->school;
-        
-        if (!$school) {
-            abort(403);
-        }
+        $school = $this->getSchool();
 
         $quiz = Quiz::where('school_id', $school->id)->findOrFail($id);
         
