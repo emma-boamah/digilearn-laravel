@@ -433,6 +433,19 @@ secure_asset('images/shoutoutgh-logo.png')
     </div>
 </section>
 
+<!-- B2B Contact Sales Section -->
+<section style="background-color: var(--bg-surface, #f8fafc); padding: 4rem 0; border-top: 1px solid var(--border-color, #e2e8f0); text-align: center;">
+    <div class="container" style="max-width: 800px; margin: 0 auto; padding: 0 1rem;">
+        <h2 style="font-size: 2rem; color: var(--text-main, #1e293b); margin-bottom: 1rem;">For Schools & Enterprises</h2>
+        <p style="color: var(--text-muted, #64748b); font-size: 1.1rem; line-height: 1.6; margin-bottom: 2rem;">
+            Looking for a comprehensive digital learning solution for your institution? We offer custom branded portals, teacher analytics, and automated CBT systems tailored for schools.
+        </p>
+        <a href="{{ route('contact') }}" style="display: inline-block; background-color: var(--primary-blue, #2563eb); color: #ffffff; padding: 0.875rem 2rem; border-radius: 0.5rem; font-weight: 600; text-decoration: none; transition: background-color 0.2s ease; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);">
+            Contact Sales for B2B Pricing
+        </a>
+    </div>
+</section>
+
 @if(session('error'))
 <div id="subscriptionAlert" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background-color: var(--primary-red); color: white; padding: 1rem 2rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; display: flex; align-items: center; gap: 12px; font-weight: 500;">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
