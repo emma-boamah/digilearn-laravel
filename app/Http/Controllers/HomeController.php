@@ -61,6 +61,7 @@ class HomeController extends Controller
         ];
 
         $pricingPlans = PricingPlan::where('is_active', true)
+            ->whereNotIn('slug', ['school-pro', 'enterprise'])
             ->orderBy('sort_order')
             ->orderBy('price')
             ->get();

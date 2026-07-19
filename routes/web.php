@@ -99,6 +99,8 @@ Route::middleware(['auth', 'role:school-admin|teacher'])->prefix('studio')->name
     // Quizzes
     Route::get('/quiz/create', [\App\Http\Controllers\ContentStudioController::class, 'createQuiz'])->name('quiz.create');
     Route::post('/quiz', [\App\Http\Controllers\ContentStudioController::class, 'storeQuiz'])->name('quiz.store');
+    Route::get('/quiz/{id}/edit', [\App\Http\Controllers\ContentStudioController::class, 'editQuiz'])->name('quiz.edit');
+    Route::put('/quiz/{id}', [\App\Http\Controllers\ContentStudioController::class, 'updateQuiz'])->name('quiz.update');
     Route::post('/quiz/{id}/share', [\App\Http\Controllers\ContentStudioController::class, 'requestShare'])->name('quiz.share');
 });
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');

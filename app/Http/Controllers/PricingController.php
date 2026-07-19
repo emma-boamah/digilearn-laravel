@@ -10,6 +10,7 @@ class PricingController extends Controller
     public function index()
     {
         $pricingPlans = PricingPlan::where('is_active', true)
+            ->where('period', '!=', 'termly')
             ->orderBy('sort_order')
             ->orderBy('price')
             ->get();
@@ -25,18 +26,20 @@ class PricingController extends Controller
             // Decode the planId
             $decodedPlanId = \App\Services\UrlObfuscator::decode($planId);
             if ($decodedPlanId) {
-                $plan = PricingPlan::where('id', $decodedPlanId)->where('is_active', true)->first();
+                $plan = PricingPlan::where('id', $decodedPlanId)->where('is_active', true)->whereNotIn('slug', ['school-pro', 'enterprise'])->first();
                 if ($plan) {
                     $plans = collect([$plan]);
                 } else {
                     // Fallback to featured plans if plan not found
                     $plans = PricingPlan::where('is_active', true)
                         ->where('is_featured', true)
+                        ->whereNotIn('slug', ['school-pro', 'enterprise'])
                         ->orderBy('sort_order')
                         ->orderBy('price')
                         ->get();
                     if ($plans->isEmpty()) {
                         $plans = PricingPlan::where('is_active', true)
+                            ->whereNotIn('slug', ['school-pro', 'enterprise'])
                             ->orderBy('sort_order')
                             ->orderBy('price')
                             ->get();
@@ -46,11 +49,13 @@ class PricingController extends Controller
                 // Fallback if decoding fails
                 $plans = PricingPlan::where('is_active', true)
                     ->where('is_featured', true)
+                    ->whereNotIn('slug', ['school-pro', 'enterprise'])
                     ->orderBy('sort_order')
                     ->orderBy('price')
                     ->get();
                 if ($plans->isEmpty()) {
                     $plans = PricingPlan::where('is_active', true)
+                        ->whereNotIn('slug', ['school-pro', 'enterprise'])
                         ->orderBy('sort_order')
                         ->orderBy('price')
                         ->get();
@@ -60,6 +65,7 @@ class PricingController extends Controller
             // Get only featured pricing plans
             $plans = PricingPlan::where('is_active', true)
                 ->where('is_featured', true)
+                ->whereNotIn('slug', ['school-pro', 'enterprise'])
                 ->orderBy('sort_order')
                 ->orderBy('price')
                 ->get();
@@ -67,6 +73,7 @@ class PricingController extends Controller
             // If no featured plans, fall back to all active plans
             if ($plans->isEmpty()) {
                 $plans = PricingPlan::where('is_active', true)
+                    ->whereNotIn('slug', ['school-pro', 'enterprise'])
                     ->orderBy('sort_order')
                     ->orderBy('price')
                     ->get();

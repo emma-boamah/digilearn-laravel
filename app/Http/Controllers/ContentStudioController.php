@@ -98,8 +98,22 @@ class ContentStudioController extends Controller
     {
         $school = $this->getSchool();
         $subjects = \App\Models\Subject::orderBy('name')->get();
+        $levelGroups = \App\Models\LevelGroup::with('levels')->orderBy('display_order')->get();
 
-        return view('schools.studio.create-quiz', compact('school', 'subjects'));
+        return view('schools.studio.create-quiz', compact('school', 'subjects', 'levelGroups'));
+    }
+
+    /**
+     * Show the edit form for an existing private quiz.
+     */
+    public function editQuiz($id)
+    {
+        $school = $this->getSchool();
+        $quiz = Quiz::where('school_id', $school->id)->findOrFail($id);
+        $subjects = \App\Models\Subject::orderBy('name')->get();
+        $levelGroups = \App\Models\LevelGroup::with('levels')->orderBy('display_order')->get();
+
+        return view('schools.studio.create-quiz', compact('school', 'quiz', 'subjects', 'levelGroups'));
     }
 
     /**
@@ -118,6 +132,12 @@ class ContentStudioController extends Controller
             'difficulty_level' => 'required|in:easy,medium,hard',
         ]);
 
+        $quizData = $request->quiz_data ? json_decode($request->quiz_data, true) : ['questions' => []];
+        $status = $request->input('status', 'published');
+        if (!in_array($status, ['draft', 'published'])) {
+            $status = 'published';
+        }
+
         $quiz = Quiz::create([
             'school_id' => $school->id,
             'title' => $request->title,
@@ -125,14 +145,52 @@ class ContentStudioController extends Controller
             'subject_id' => $request->subject_id,
             'time_limit_minutes' => $request->time_limit_minutes,
             'difficulty_level' => $request->difficulty_level,
-            'status' => 'published',
+            'status' => $status,
             'uploaded_by' => $user->id,
-            'quiz_data' => json_encode(['questions' => []]), // Empty JSON structure to start
+            'quiz_data' => json_encode($quizData),
+            'shuffle_questions' => $request->boolean('shuffle_questions'),
         ]);
 
-        // In a real scenario, you'd redirect to a question builder.
-        // For MVP, we'll just go back to the studio.
-        return redirect()->route('school.studio.index')->with('success', 'Private quiz created. You can now add questions to it.');
+        return redirect()->route('school.studio.index')->with('success', "Quiz \"{$quiz->title}\" created successfully!");
+    }
+
+    /**
+     * Update an existing private quiz.
+     */
+    public function updateQuiz(Request $request, $id)
+    {
+        $user = Auth::user();
+        $school = $this->getSchool();
+        $quiz = Quiz::where('school_id', $school->id)->findOrFail($id);
+
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'grade_level' => 'required|string',
+            'subject_id' => 'required|exists:subjects,id',
+            'time_limit_minutes' => 'required|integer|min:1',
+            'difficulty_level' => 'required|in:easy,medium,hard',
+        ]);
+
+        $quizData = $request->quiz_data ? json_decode($request->quiz_data, true) : ['questions' => []];
+        $status = $request->input('status', '');
+        
+        $updateData = [
+            'title' => $request->title,
+            'grade_level' => $request->grade_level,
+            'subject_id' => $request->subject_id,
+            'time_limit_minutes' => $request->time_limit_minutes,
+            'difficulty_level' => $request->difficulty_level,
+            'quiz_data' => json_encode($quizData),
+            'shuffle_questions' => $request->boolean('shuffle_questions'),
+        ];
+
+        if (in_array($status, ['draft', 'published'])) {
+            $updateData['status'] = $status;
+        }
+
+        $quiz->update($updateData);
+
+        return redirect()->route('school.studio.index')->with('success', "Quiz \"{$quiz->title}\" updated successfully!");
     }
 
     /**

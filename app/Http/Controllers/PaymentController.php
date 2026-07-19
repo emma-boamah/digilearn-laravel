@@ -408,13 +408,31 @@ class PaymentController extends Controller
     private function createOrUpdateSubscription(Payment $payment, string $status)
     {
         $duration = $payment->metadata['duration'] ?? 'month';
-        $expiresAt = $this->calculateExpiryDate($duration);
+        
+        // Deactivate all existing active subscriptions for this user EXCEPT the one they are renewing
+        UserSubscription::where('user_id', $payment->user_id)
+            ->where('pricing_plan_id', '!=', $payment->pricing_plan_id)
+            ->whereIn('status', ['active', 'trial', 'grace_period'])
+            ->update(['status' => 'cancelled', 'metadata' => \DB::raw("JSON_SET(IFNULL(metadata, '{}'), '$.cancelled_reason', 'Upgraded/Switched Plan')")]);
+
+        $existingSub = UserSubscription::where('user_id', $payment->user_id)
+            ->where('pricing_plan_id', $payment->pricing_plan_id)
+            ->first();
+
+        $baseDate = now();
+        // If renewing the exact same active plan early, append to the existing expiry date instead of resetting
+        if ($existingSub && $existingSub->status === 'active' && $existingSub->expires_at && $existingSub->expires_at->isFuture()) {
+            $baseDate = $existingSub->expires_at;
+        }
+
+        $expiresAt = $this->calculateExpiryDateFromBase($duration, $baseDate);
 
         UserSubscription::updateOrCreate(
             ['user_id' => $payment->user_id, 'pricing_plan_id' => $payment->pricing_plan_id],
             [
                 'status' => $status,
-                'started_at' => now(),
+                // Only update started_at if it's a completely new/expired subscription
+                'started_at' => ($existingSub && $existingSub->status === 'active' && $existingSub->expires_at && $existingSub->expires_at->isFuture()) ? $existingSub->started_at : now(),
                 'expires_at' => $expiresAt,
                 'trial_ends_at' => $status === 'trial' ? $expiresAt : null,
                 'amount_paid' => $payment->amount,
@@ -442,17 +460,24 @@ class PaymentController extends Controller
     /**
      * Calculate subscription expiry date
      */
-    private function calculateExpiryDate(string $duration): ?\Carbon\Carbon
+    private function calculateExpiryDateFromBase(string $duration, \Carbon\Carbon $baseDate): ?\Carbon\Carbon
     {
-        $daysInMonth = now()->daysInMonth;
+        $daysInMonth = 30; // Standardize to 30 days or use $baseDate->copy()->addMonths(1)
+        
+        $date = $baseDate->copy();
 
         return match ($duration) {
-            'trial' => now()->addDays(7),
-            'month' => now()->addDays($daysInMonth),
-            '3month' => now()->addDays(3 * $daysInMonth),
-            '6month' => now()->addDays(6 * $daysInMonth),
-            '12month' => now()->addDays(12 * $daysInMonth),
+            'trial' => $date->addDays(7),
+            'month' => $date->addMonthsNoOverflow(1),
+            '3month' => $date->addMonthsNoOverflow(3),
+            '6month' => $date->addMonthsNoOverflow(6),
+            '12month' => $date->addMonthsNoOverflow(12),
             default => null,
         };
+    }
+
+    private function calculateExpiryDate(string $duration): ?\Carbon\Carbon
+    {
+        return $this->calculateExpiryDateFromBase($duration, now());
     }
 }
