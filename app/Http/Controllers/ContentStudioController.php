@@ -20,12 +20,23 @@ class ContentStudioController extends Controller
         $user = Auth::user();
         $school = app()->has('tenant') ? app('tenant') : $user->school;
 
+        // If no school is resolved from tenant or user, check if user is a super-admin
+        if (!$school && ($user->is_superuser || $user->hasRole('super-admin'))) {
+            $schoolId = request()->get('school_id');
+            if ($schoolId) {
+                $school = \App\Models\School::find($schoolId);
+            } else {
+                // Default to the first school to prevent 403 when a super-admin first visits the page
+                $school = \App\Models\School::first();
+            }
+        }
+
         if (!$school) {
             abort(403, 'You are not associated with a school.');
         }
 
         // Allow superusers to bypass the school_id restriction
-        if ($user->school_id !== $school->id && !$user->is_superuser) {
+        if ($user->school_id !== $school->id && !($user->is_superuser || $user->hasRole('super-admin'))) {
             abort(403, 'Unauthorized access to this school.');
         }
 
@@ -84,7 +95,7 @@ class ContentStudioController extends Controller
             'subject_id' => $request->subject_id,
             'description' => $request->description,
             'uploaded_by' => $user->id,
-            'status' => 'published', // Auto-publish for private school content
+            'status' => 'approved', // Auto-publish for private school content
             'is_agent_generated' => false,
         ]);
 

@@ -88,7 +88,7 @@ class DecodeObfuscatedIds
                         $request->query->set($key, $decoded);
                         // Also merge into request input for convenience
                         $request->merge([$key => $decoded]);
-                        
+
                         Log::info('Decoded obfuscated ID in query parameter', [
                             'parameter' => $key,
                             'obfuscated' => $value,
@@ -99,7 +99,7 @@ class DecodeObfuscatedIds
                         if ($fallbackDecoded !== null) {
                             $request->query->set($key, $fallbackDecoded);
                             $request->merge([$key => $fallbackDecoded]);
-                            
+
                             Log::info('Decoded obfuscated ID in query parameter (fallback)', [
                                 'parameter' => $key,
                                 'obfuscated' => $value,

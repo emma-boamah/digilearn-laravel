@@ -139,6 +139,32 @@
         border-right: 1px solid #e5e7eb;
     }
 
+    .plan-features {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .plan-features li {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 0;
+    }
+
+    .plan-features li .feature-icon {
+        flex-shrink: 0;
+        width: 20px;
+        height: 20px;
+        color: #16a34a;
+    }
+
+    .plan-features li .feature-title {
+        font-size: 0.95rem;
+        color: var(--gray-800, #1f2937);
+        font-weight: 500;
+    }
+
     .plan-duration-section {
         padding: 2rem;
         background-color: var(--gray-50);
@@ -399,11 +425,7 @@
         font-size: 0.95rem;
     }
 
-    .modal-feature-description {
-        font-size: 0.8rem;
-        color: var(--gray-600);
-        line-height: 1.4;
-    }
+
 
     .modal-duration-option {
         display: flex;
@@ -781,12 +803,7 @@
                                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                                     <polyline points="22 4 12 14.01 9 11.01"></polyline>
                                 </svg>
-                                <div class="feature-text">
-                                    <div class="feature-title">{{ $feature }}</div>
-                                    <div class="feature-description">Access to unlimited learning materials such as
-                                        demonstration videos, interactive videos presenting various subjects, learning
-                                        objectives, study guides</div>
-                                </div>
+                                <span class="feature-title">{{ $feature }}</span>
                             </li>
                             @endforeach
                             @else
@@ -797,12 +814,7 @@
                                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                                     <polyline points="22 4 12 14.01 9 11.01"></polyline>
                                 </svg>
-                                <div class="feature-text">
-                                    <div class="feature-title">{{ $plan->features }}</div>
-                                    <div class="feature-description">Access to unlimited learning materials such as
-                                        demonstration videos, interactive videos presenting various subjects, learning
-                                        objectives, study guides</div>
-                                </div>
+                                <span class="feature-title">{{ $plan->features }}</span>
                             </li>
                             @endif
                         </ul>
@@ -956,7 +968,6 @@ return [
                         </div>
                         <div>
                             <div class="modal-feature-title">${feature}</div>
-                            <div class="modal-feature-description">Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides</div>
                         </div>
                     </div>
                 `;
@@ -971,7 +982,6 @@ return [
                     </div>
                     <div>
                         <div class="modal-feature-title">${plan.features}</div>
-                        <div class="modal-feature-description">Access to unlimited learning materials such as demonstration videos, interactive videos presenting various subjects, learning objectives, study guides</div>
                     </div>
                 </div>
             `;

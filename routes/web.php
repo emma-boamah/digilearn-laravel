@@ -65,7 +65,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // School Admin Dashboard Routes
-Route::middleware(['auth', 'role:school-admin'])->prefix('school-admin')->name('school.admin.')->group(function () {
+Route::middleware(['auth', 'role:school-admin|super-admin'])->prefix('school-admin')->name('school.admin.')->group(function () {
     Route::get('/', [\App\Http\Controllers\SchoolAdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/settings', [\App\Http\Controllers\SchoolAdminController::class, 'settings'])->name('settings');
     Route::post('/settings', [\App\Http\Controllers\SchoolAdminController::class, 'updateSettings'])->name('settings.update');
@@ -89,7 +89,7 @@ Route::middleware(['auth', 'role:school-admin'])->prefix('school-admin')->name('
 });
 
 // School Content Studio (Phase 4)
-Route::middleware(['auth', 'role:school-admin|teacher'])->prefix('studio')->name('school.studio.')->group(function () {
+Route::middleware(['auth', 'role:school-admin|super-admin|teacher'])->prefix('studio')->name('school.studio.')->group(function () {
     Route::get('/', [\App\Http\Controllers\ContentStudioController::class, 'index'])->name('index');
     
     // Videos
@@ -430,7 +430,7 @@ Route::middleware(['auth'])->group(function () {
     );
 
     // Teacher Routes (Protected by role)
-    Route::middleware(['role:teacher|school-admin'])->prefix('teacher')->name('teacher.')->group(function () {
+    Route::middleware(['role:teacher|school-admin|super-admin'])->prefix('teacher')->name('teacher.')->group(function () {
         Route::get('/classes', [App\Http\Controllers\TeacherController::class, 'classes'])->name('classes');
         Route::get('/gradebook/{classSubjectId}/{termId?}', [App\Http\Controllers\TeacherController::class, 'gradebook'])->name('gradebook');
         Route::post('/assessments', [App\Http\Controllers\TeacherController::class, 'storeAssessment'])->name('assessments.store');
