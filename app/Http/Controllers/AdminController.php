@@ -149,6 +149,7 @@ class AdminController extends Controller
         $subscriptionAnalytics = [];
         $systemHealth = [];
         $popularLessons = [];
+        $b2bSchools = [];
 
         if (Auth::user()->hasRole('super-admin')) {
             $systemHealth = $this->getSystemHealth();
@@ -157,6 +158,7 @@ class AdminController extends Controller
             $revenueTrends = $this->getRevenueTrends();
             $topPlans = $this->getTopPerformingPlans();
             $subscriptionAnalytics = $this->getSubscriptionAnalytics();
+            $b2bSchools = \App\Models\School::withCount('users')->orderBy('created_at', 'desc')->take(5)->get();
         }
 
         // Check if website is locked
@@ -179,7 +181,8 @@ class AdminController extends Controller
             'revenueTrends',
             'topPlans',
             'subscriptionAnalytics',
-            'websiteLocked'
+            'websiteLocked',
+            'b2bSchools'
         ));
     }
 
@@ -1143,7 +1146,7 @@ class AdminController extends Controller
      */
     private function getSubscriptionPlansData()
     {
-        $plans = PricingPlan::active()->ordered()->get();
+        $plans = PricingPlan::active()->whereNotIn('slug', ['school-pro', 'enterprise'])->ordered()->get();
 
         if ($plans->isEmpty()) {
             // Return sample data if no plans exist in database

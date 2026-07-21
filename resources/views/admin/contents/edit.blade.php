@@ -4,7 +4,7 @@
 @section('page-title', 'Edit Content')
 @section('page-description', 'Edit content details, subject, grade level, and associations')
 
-@include('admin.contents.partials.quiz-builder-assets')
+
 
 @push('styles')
     <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
@@ -202,85 +202,7 @@
             @endphp
 
             @if($hasQuiz)
-                <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
-                    <div class="px-6 py-4 card-header-premium flex justify-between items-center">
-                        <h2 class="text-xl font-semibold text-gray-900">Quiz Questions</h2>
-                        <div class="flex gap-2">
-                            <button type="button" id="addMcqBtn" class="flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium">
-                                <i class="fas fa-plus mr-2"></i>MCQ
-                            </button>
-                            <button type="button" id="addEssayBtn" class="flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors text-sm font-medium">
-                                <i class="fas fa-plus mr-2"></i>Essay
-                            </button>
-                            <button type="button" id="addAiBtn" class="flex items-center px-3 py-1.5 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-colors text-sm font-medium border border-purple-200 shadow-sm">
-                                <i class="fas fa-magic mr-2"></i>AI Generate
-                            </button>
-                        </div>
-                    </div>
-                    <div class="p-6">
-
-
-                        <!-- Quiz Global Settings -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Difficulty</label>
-                                <select id="quiz_difficulty" name="quiz_difficulty" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
-                                    <option value="easy">Easy</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="hard">Hard</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Time Limit (Min)</label>
-                                <input type="number" id="quiz_time_limit" name="quiz_time_limit" class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" value="15">
-                            </div>
-                            <div class="col-span-1 md:col-span-2 mt-2">
-                                <label class="flex items-center cursor-pointer group">
-                                    <div class="relative">
-                                        @php
-                                            $isShuffle = old('shuffle_questions') !== null 
-                                                ? old('shuffle_questions') == 1 
-                                                : ($quizModel->shuffle_questions ?? false);
-                                        @endphp
-                                        <input type="hidden" name="shuffle_questions" value="0">
-                                        <input type="checkbox" id="shuffle_questions" name="shuffle_questions" value="1" 
-                                               {{ $isShuffle ? 'checked' : '' }}
-                                               class="sr-only peer">
-                                        <div class="w-10 h-5 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 transition-colors"></div>
-                                        <div class="absolute left-1 top-1 w-3 h-3 bg-white rounded-full peer-checked:translate-x-5 transition-transform"></div>
-                                    </div>
-                                    <span class="ml-3 text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors">Shuffle Questions</span>
-                                </label>
-                                <p class="mt-1 text-xs text-gray-500 ml-13">When enabled, questions will appear in a different order for each student.</p>
-                            </div>
-                        </div>
-
-                        <!-- Question Navigation -->
-                        <div id="quizNavigation" class="quiz-navigation-wrapper mb-6">
-                            <div class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Question Navigation</div>
-                            <div id="quizNavGrid" class="quiz-nav-grid">
-                                <!-- Navigation items injected via JS -->
-                            </div>
-                        </div>
-
-                        <div id="questionsList" class="space-y-6">
-                            <!-- Questions initialized via JS -->
-                        </div>
-
-                        <!-- Pagination Footer -->
-                        <div class="pagination-footer mt-8">
-                            <div id="currentQuestionLabel" class="text-sm font-semibold text-gray-600">Question 1 of 1</div>
-                            <div class="nav-btn-group">
-                                <button type="button" id="prevQuestionBtn" class="btn-nav">
-                                    <i class="fas fa-chevron-left"></i> Previous
-                                </button>
-                                <button type="button" id="nextQuestionBtn" class="btn-nav">
-                                    Next <i class="fas fa-chevron-right"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <x-quiz-editor :quiz="$quizModel" role="admin" />
             @endif
 
             <!-- Submit Buttons -->
@@ -321,39 +243,6 @@
 <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://unpkg.com/quill-magic-url"></script>
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-    // Initialize data for the quiz builder
-    const uploadData = {
-        contentType: @json($contentType),
-        quiz: @json($quizModel),
-        questions_to_remove: [] // Track questions to remove if needed (though currently we just overwrite quiz_data)
-    };
-
-    if (uploadData.quiz) {
-        // Standardize quiz_data
-        let questions = [];
-        if (typeof uploadData.quiz.quiz_data === 'string') {
-            try {
-                const parsed = JSON.parse(uploadData.quiz.quiz_data);
-                questions = parsed.questions || [];
-            } catch (e) { console.error('Error parsing quiz_data', e); }
-        } else if (uploadData.quiz.quiz_data && uploadData.quiz.quiz_data.questions) {
-            questions = uploadData.quiz.quiz_data.questions;
-        }
-        
-        uploadData.quiz.questions = questions;
-
-        // Initialize builder
-        initializeQuizStep();
-        initializeQuizSettings();
-
-        // Render existing questions
-        if (questions.length > 0) {
-            questions.forEach(q => {
-                addQuestion(q.type, q);
-            });
-        }
-    }
-
     // Form submission handling — wire up status buttons
     const form = document.getElementById('editContentForm');
     const statusInput = document.getElementById('status_input');
@@ -371,15 +260,15 @@
             } else {
                 statusInput.value = ''; // keep current
             }
-            // Serialize quiz data then submit
-            if (uploadData.quiz) {
-                const quizDataInput = document.getElementById('quiz_data_input');
-                if (quizDataInput) {
-                    quizDataInput.value = JSON.stringify({
-                        questions: uploadData.quiz.questions
-                    });
-                }
+            
+            // Serialize quiz data if quiz editor is present
+            const quizDataInput = document.getElementById('quiz_data_input');
+            if (quizDataInput && typeof extractQuizPayload === 'function') {
+                quizDataInput.value = JSON.stringify({
+                    questions: extractQuizPayload()
+                });
             }
+            
             form.submit();
         });
     });

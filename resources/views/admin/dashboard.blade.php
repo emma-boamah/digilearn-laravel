@@ -49,35 +49,99 @@
         content: '\f144';
         /* sort-down */
     }
+
+    /* Dashboard Tab Navigation */
+    .dashboard-tabs {
+        display: flex;
+        gap: 0;
+        border-bottom: 2px solid #e5e7eb;
+        margin-bottom: 2rem;
+        background: white;
+        border-radius: 0.75rem 0.75rem 0 0;
+        padding: 0 0.5rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .dashboard-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .dashboard-tab-btn {
+        padding: 1rem 1.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #6b7280;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .dashboard-tab-btn:hover {
+        color: #374151;
+        background: #f9fafb;
+    }
+
+    .dashboard-tab-btn.active {
+        color: #2563eb;
+        border-bottom-color: #2563eb;
+        font-weight: 600;
+    }
+
+    .dashboard-tab-btn .tab-icon {
+        font-size: 0.95rem;
+    }
+
+    .dashboard-tab-pane {
+        display: none;
+        animation: tabFadeIn 0.35s ease-out;
+    }
+
+    .dashboard-tab-pane.active {
+        display: block;
+    }
+
+    @keyframes tabFadeIn {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 640px) {
+        .dashboard-tab-btn {
+            padding: 0.75rem 1rem;
+            font-size: 0.8rem;
+        }
+    }
 </style>
 @endpush
 
 @section('content')
 <div class="min-h-screen bg-gray-50">
-    <!-- Header -->
-    <div class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-4">
-            <div class="flex justify-between items-center py-6">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-                    <p class="text-gray-600">Welcome back, {{ Auth::user()->name }}</p>
+    <!-- Action Bar -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-4 py-4">
+        <div class="flex justify-end items-center">
+            <div class="flex items-center space-x-4">
+                <div class="text-sm text-gray-500">
+                    Last updated: {{ now()->format('M d, Y H:i') }}
                 </div>
-                <div class="flex items-center space-x-4">
-                    <div class="text-sm text-gray-500">
-                        Last updated: {{ now()->format('M d, Y H:i') }}
-                    </div>
-                    @role('super-admin')
-                    <button id="refreshButton"
-                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                        <i class="fas fa-sync-alt mr-2"></i>Refresh
-                    </button>
-                    <button id="toggleLockButton"
-                        class="@if($websiteLocked) bg-green-600 @else bg-red-600 @endif text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
-                        <i class="fas @if($websiteLocked) fa-unlock @else fa-lock @endif mr-2"></i>
-                        @if($websiteLocked) Unlock Website @else Lock Website @endif
-                    </button>
-                    @endrole
-                </div>
+                @role('super-admin')
+                <button id="refreshButton"
+                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                    <i class="fas fa-sync-alt mr-2"></i>Refresh
+                </button>
+                <button id="toggleLockButton"
+                    class="@if($websiteLocked) bg-green-600 @else bg-red-600 @endif text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity text-sm">
+                    <i class="fas @if($websiteLocked) fa-unlock @else fa-lock @endif mr-2"></i>
+                    @if($websiteLocked) Unlock Website @else Lock Website @endif
+                </button>
+                @endrole
             </div>
         </div>
     </div>
@@ -227,8 +291,251 @@
         </div>
         @endrole
 
+
+        <!-- Tab Navigation -->
+        <div class="dashboard-tabs">
+            <button class="dashboard-tab-btn active" data-tab="overview">
+                <i class="fas fa-home tab-icon"></i> Overview
+            </button>
+            @role('super-admin')
+            <button class="dashboard-tab-btn" data-tab="business">
+                <i class="fas fa-chart-line tab-icon"></i> Business & Revenue
+            </button>
+            <button class="dashboard-tab-btn" data-tab="system">
+                <i class="fas fa-server tab-icon"></i> System Health
+            </button>
+            @endrole
+        </div>
+
+        <div class="dashboard-tab-pane active" data-tab="overview">
+<!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Recent Activities -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-xl font-semibold text-gray-900">Recent Activities</h2>
+                            <a href="{{ route('admin.security') }}"
+                                class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                                View All <i class="fas fa-arrow-right ml-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="space-y-4">
+                            @foreach($recentActivities as $activity)
+                            <div class="flex items-start space-x-3">
+                                <div class="flex-shrink-0">
+                                    @if($activity->type === 'user_registration')
+                                    <div class="bg-green-100 p-2 rounded-full">
+                                        <i class="fas fa-user-plus text-green-600 text-sm"></i>
+                                    </div>
+                                    @elseif($activity->type === 'lesson_view')
+                                    <div class="bg-blue-100 p-2 rounded-full">
+                                        <i class="fas fa-play text-blue-600 text-sm"></i>
+                                    </div>
+                                    @elseif($activity->type === 'login_attempt')
+                                    <div class="bg-purple-100 p-2 rounded-full">
+                                        <i class="fas fa-sign-in-alt text-purple-600 text-sm"></i>
+                                    </div>
+                                    @else
+                                    <div class="bg-gray-100 p-2 rounded-full">
+                                        <i class="fas fa-edit text-gray-600 text-sm"></i>
+                                    </div>
+                                    @endif
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm text-gray-900">
+                                        <span class="font-medium">{{ $activity->user ? $activity->user->name : 'Unknown
+                                            User' }}</span>
+                                        @if($activity->type === 'page_view')
+                                        {{ $activity->description }}
+                                        @elseif($activity->type === 'user_registration')
+                                        registered a new account
+                                        @elseif($activity->type === 'lesson_view')
+                                        viewed lesson "{{ $activity->metadata['lesson'] ?? 'N/A' }}"
+                                        @elseif($activity->type === 'login_attempt')
+                                        {{ ($activity->metadata['status'] ?? 'unknown') === 'success' ? 'logged in
+                                        successfully' : 'failed to log in' }}
+                                        @elseif($activity->type === 'profile_update')
+                                        updated their profile
+                                        @elseif($activity->type === 'password_change')
+                                        changed their password
+                                        @else
+                                        {{ $activity->description }}
+                                        @endif
+                                    </p>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        {{ $activity->created_at->diffForHumans() }}
+                                        @if($activity->ip_address)
+                                        • {{ $activity->ip_address }}
+                                        @endif
+                                    </p>
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                        <!-- System Health -->
+            <div class="space-y-6">
+                <!-- System Status -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="p-6 border-b border-gray-200">
+                        <h2 class="text-xl font-semibold text-gray-900">System Health</h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600">Server Status</span>
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-circle text-green-400 mr-1 text-xs"></i>
+                                    {{ ucfirst($systemHealth['server_status'] ?? 'Running') }}
+                                </span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600">Database</span>
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-circle text-green-400 mr-1 text-xs"></i>
+                                    {{ ucfirst($systemHealth['database_status']['status'] ?? 'Connected') }}
+                                </span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600">Cache</span>
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-circle text-green-400 mr-1 text-xs"></i>
+                                    {{ ucfirst($systemHealth['cache_status']['status'] ?? 'Ready') }}
+                                </span>
+                            </div>
+                            <div class="pt-4 border-t border-gray-200">
+                                <div class="space-y-3">
+                                    <div>
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-600">Storage Usage</span>
+                                            <span class="text-gray-900">{{
+                                                $systemHealth['storage_usage']['used_percentage'] ?? '0%' }}</span>
+                                        </div>
+                                        <div class="mt-1 bg-gray-200 rounded-full h-2">
+                                            <div class="bg-blue-600 h-2 rounded-full progress-bar-storage"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-600">Memory Usage</span>
+                                            <span class="text-gray-900">{{ $systemHealth['memory_usage'] ?? 'N/A'
+                                                }}</span>
+                                        </div>
+                                        <div class="mt-1 bg-gray-200 rounded-full h-2">
+                                            <div class="bg-yellow-500 h-2 rounded-full progress-bar-memory"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-600">CPU Usage</span>
+                                            <span class="text-gray-900">{{ $systemHealth['cpu_usage'] ?? 'N/A' }}</span>
+                                        </div>
+                                        <div class="mt-1 bg-gray-200 rounded-full h-2">
+                                            <div class="bg-green-500 h-2 rounded-full progress-bar-cpu"></div>
+                                        </div>
+                                    </div>
+                                    <a href="{{ route('admin.credentials') }}"
+                                        class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                                        <div class="bg-indigo-100 p-2 rounded-lg mr-3">
+                                            <i class="fas fa-key text-indigo-600"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900">Superuser Credentials</p>
+                                            <p class="text-xs text-gray-500">Manage website lock credentials</p>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="pt-4 border-t border-gray-200 text-xs text-gray-500">
+                                <p>Uptime: {{ $systemHealth['uptime'] ?? 'N/A' }}</p>
+                                <p>Last Backup: {{ $systemHealth['last_backup'] ?? 'N/A' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="p-6 border-b border-gray-200">
+                        <h2 class="text-xl font-semibold text-gray-900">Quick Actions</h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="space-y-3">
+                                                        <a href="{{ route('admin.users') }}"
+                                class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                                <div class="bg-blue-100 p-2 rounded-lg mr-3">
+                                    <i class="fas fa-users text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">Manage Users</p>
+                                    <p class="text-xs text-gray-500">View and manage user accounts</p>
+                                </div>
+                            </a>
+                    
+                            <a href="{{ route('admin.contents.index') }}"
+                                class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                                <div class="bg-purple-100 p-2 rounded-lg mr-3">
+                                    <i class="fas fa-book text-purple-600"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">Content Management</p>
+                                    <p class="text-xs text-gray-500">Manage lessons and content</p>
+                                </div>
+                            </a>
+
+                            <a href="{{ route('admin.subjects.index') }}"
+                                class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                                <div class="bg-teal-100 p-2 rounded-lg mr-3">
+                                    <i class="fas fa-tags text-teal-600"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">Manage Subjects</p>
+                                    <p class="text-xs text-gray-500">Organize content by subjects</p>
+                                </div>
+                            </a>
+
+                                                        <a href="{{ route('admin.analytics') }}"
+                                class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                                <div class="bg-green-100 p-2 rounded-lg mr-3">
+                                    <i class="fas fa-chart-bar text-green-600"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">Analytics</p>
+                                    <p class="text-xs text-gray-500">View platform analytics</p>
+                                </div>
+                            </a>
+
+                            <a href="{{ route('admin.security') }}"
+                                class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                                <div class="bg-red-100 p-2 rounded-lg mr-3">
+                                    <i class="fas fa-shield-alt text-red-600"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">Security Monitor</p>
+                                    <p class="text-xs text-gray-500">Monitor security events</p>
+                                </div>
+                            </a>
+                                            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        </div>
+
+        <div class="dashboard-tab-pane" data-tab="business">
         @role('super-admin')
-        <!-- Charts Row -->
+<!-- Charts Row -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <!-- Subscription Distribution -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -303,10 +610,8 @@
                 </div>
             </div>
         </div>
-        @endrole
 
-        @role('super-admin')
-        <!-- Plan Performance Table -->
+                <!-- Plan Performance Table -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8" id="plan-performance">
             <div class="flex items-center justify-between mb-6">
                 <div>
@@ -378,10 +683,80 @@
                 </table>
             </div>
         </div>
+
+                <!-- Subscription Plans Badges -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-900">Subscription Plans</h2>
+                <a href="{{ route('admin.revenue') }}" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                    View Revenue Analytics <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                @foreach($stats['subscription_plans'] as $plan)
+                <div
+                    class="bg-gradient-to-r from-{{ $plan['color'] }}-50 to-{{ $plan['color'] }}-100 rounded-lg p-4 border border-{{ $plan['color'] }}-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-{{ $plan['color'] }}-900">{{ $plan['name'] }}</h3>
+                            <p class="text-2xl font-bold text-{{ $plan['color'] }}-800">{{
+                                number_format($plan['subscribers']) }}</p>
+                            <p class="text-sm text-{{ $plan['color'] }}-700">subscribers</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-lg font-semibold text-{{ $plan['color'] }}-900">${{
+                                number_format($plan['revenue'], 0) }}</p>
+                            <p class="text-sm text-{{ $plan['color'] }}-700">revenue</p>
+                        </div>
+                    </div>
+                    <div class="mt-3 bg-{{ $plan['color'] }}-200 rounded-full h-2">
+                        <div class="bg-{{ $plan['color'] }}-600 h-2 rounded-full plan-progress-bar"
+                            data-width="{{ collect($stats['subscription_plans'])->sum('subscribers') > 0 ? ($plan['subscribers'] / collect($stats['subscription_plans'])->sum('subscribers')) * 100 : 0 }}">
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+
+        
+        <!-- B2B Schools -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-900">B2B Schools</h2>
+            </div>
+            @if(isset($b2bSchools) && count($b2bSchools) > 0)
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                @foreach($b2bSchools as $school)
+                <div class="bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-lg p-4 border border-emerald-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-emerald-900">{{ $school->name }}</h3>
+                            <p class="text-2xl font-bold text-emerald-800">{{ number_format($school->users_count ?? 0) }}</p>
+                            <p class="text-sm text-emerald-700">Students & Staff</p>
+                        </div>
+                        <div class="text-emerald-600">
+                            <i class="fas fa-school text-2xl"></i>
+                        </div>
+                    </div>
+                    <div class="mt-2 flex justify-between items-center text-xs text-emerald-700">
+                        <span>Tier: {{ ucfirst($school->plan_tier) }}</span>
+                        <span>{{ $school->hasActiveSubscription() ? 'Active' : 'Inactive' }}</span>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+            @else
+            <div class="text-gray-500 text-center py-4">No B2B schools registered yet.</div>
+            @endif
+        </div>
         @endrole
 
+        </div>
+
+        <div class="dashboard-tab-pane" data-tab="system">
         @role('super-admin')
-        <!-- Cookie Consent Stats -->
+<!-- Cookie Consent Stats -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-semibold text-gray-900">Cookie Consent Analytics</h2>
@@ -435,10 +810,8 @@
                 </div>
             </div>
         </div>
-        @endrole
 
-        @role('super-admin')
-        <!-- Storage Monitoring Dashboard -->
+                <!-- Storage Monitoring Dashboard -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-semibold text-gray-900">Storage Monitoring</h2>
@@ -619,282 +992,36 @@
             </div>
             @endif
         </div>
-        @endrole
 
-        <!-- Main Content Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        </div>
-
-        @role('super-admin')
-        <!-- Subscription Plans Badges -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-semibold text-gray-900">Subscription Plans</h2>
-                <a href="{{ route('admin.revenue') }}" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                    View Revenue Analytics <i class="fas fa-arrow-right ml-1"></i>
-                </a>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                @foreach($stats['subscription_plans'] as $plan)
-                <div
-                    class="bg-gradient-to-r from-{{ $plan['color'] }}-50 to-{{ $plan['color'] }}-100 rounded-lg p-4 border border-{{ $plan['color'] }}-200">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-lg font-semibold text-{{ $plan['color'] }}-900">{{ $plan['name'] }}</h3>
-                            <p class="text-2xl font-bold text-{{ $plan['color'] }}-800">{{
-                                number_format($plan['subscribers']) }}</p>
-                            <p class="text-sm text-{{ $plan['color'] }}-700">subscribers</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-lg font-semibold text-{{ $plan['color'] }}-900">${{
-                                number_format($plan['revenue'], 0) }}</p>
-                            <p class="text-sm text-{{ $plan['color'] }}-700">revenue</p>
-                        </div>
-                    </div>
-                    <div class="mt-3 bg-{{ $plan['color'] }}-200 rounded-full h-2">
-                        <div class="bg-{{ $plan['color'] }}-600 h-2 rounded-full plan-progress-bar"
-                            data-width="{{ collect($stats['subscription_plans'])->sum('subscribers') > 0 ? ($plan['subscribers'] / collect($stats['subscription_plans'])->sum('subscribers')) * 100 : 0 }}">
-                        </div>
-                    </div>
-                </div>
-                @endforeach
-            </div>
-        </div>
-        @endrole
-
-        <!-- Main Content Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Recent Activities -->
-            <div class="lg:col-span-2">
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                    <div class="p-6 border-b border-gray-200">
-                        <div class="flex items-center justify-between">
-                            <h2 class="text-xl font-semibold text-gray-900">Recent Activities</h2>
-                            <a href="{{ route('admin.security') }}"
-                                class="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                                View All <i class="fas fa-arrow-right ml-1"></i>
-                            </a>
-                        </div>
-                    </div>
-                    <div class="p-6">
-                        <div class="space-y-4">
-                            @foreach($recentActivities as $activity)
-                            <div class="flex items-start space-x-3">
-                                <div class="flex-shrink-0">
-                                    @if($activity->type === 'user_registration')
-                                    <div class="bg-green-100 p-2 rounded-full">
-                                        <i class="fas fa-user-plus text-green-600 text-sm"></i>
-                                    </div>
-                                    @elseif($activity->type === 'lesson_view')
-                                    <div class="bg-blue-100 p-2 rounded-full">
-                                        <i class="fas fa-play text-blue-600 text-sm"></i>
-                                    </div>
-                                    @elseif($activity->type === 'login_attempt')
-                                    <div class="bg-purple-100 p-2 rounded-full">
-                                        <i class="fas fa-sign-in-alt text-purple-600 text-sm"></i>
-                                    </div>
-                                    @else
-                                    <div class="bg-gray-100 p-2 rounded-full">
-                                        <i class="fas fa-edit text-gray-600 text-sm"></i>
-                                    </div>
-                                    @endif
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm text-gray-900">
-                                        <span class="font-medium">{{ $activity->user ? $activity->user->name : 'Unknown
-                                            User' }}</span>
-                                        @if($activity->type === 'page_view')
-                                        {{ $activity->description }}
-                                        @elseif($activity->type === 'user_registration')
-                                        registered a new account
-                                        @elseif($activity->type === 'lesson_view')
-                                        viewed lesson "{{ $activity->metadata['lesson'] ?? 'N/A' }}"
-                                        @elseif($activity->type === 'login_attempt')
-                                        {{ ($activity->metadata['status'] ?? 'unknown') === 'success' ? 'logged in
-                                        successfully' : 'failed to log in' }}
-                                        @elseif($activity->type === 'profile_update')
-                                        updated their profile
-                                        @elseif($activity->type === 'password_change')
-                                        changed their password
-                                        @else
-                                        {{ $activity->description }}
-                                        @endif
-                                    </p>
-                                    <p class="text-xs text-gray-500 mt-1">
-                                        {{ $activity->created_at->diffForHumans() }}
-                                        @if($activity->ip_address)
-                                        • {{ $activity->ip_address }}
-                                        @endif
-                                    </p>
-                                </div>
-                            </div>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            @role('super-admin')
-            <!-- System Health -->
-            <div class="space-y-6">
-                <!-- System Status -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                    <div class="p-6 border-b border-gray-200">
-                        <h2 class="text-xl font-semibold text-gray-900">System Health</h2>
-                    </div>
-                    <div class="p-6">
-                        <div class="space-y-4">
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm text-gray-600">Server Status</span>
-                                <span
-                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    <i class="fas fa-circle text-green-400 mr-1 text-xs"></i>
-                                    {{ ucfirst($systemHealth['server_status'] ?? 'Running') }}
-                                </span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm text-gray-600">Database</span>
-                                <span
-                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    <i class="fas fa-circle text-green-400 mr-1 text-xs"></i>
-                                    {{ ucfirst($systemHealth['database_status']['status'] ?? 'Connected') }}
-                                </span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm text-gray-600">Cache</span>
-                                <span
-                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    <i class="fas fa-circle text-green-400 mr-1 text-xs"></i>
-                                    {{ ucfirst($systemHealth['cache_status']['status'] ?? 'Ready') }}
-                                </span>
-                            </div>
-                            <div class="pt-4 border-t border-gray-200">
-                                <div class="space-y-3">
-                                    <div>
-                                        <div class="flex justify-between text-sm">
-                                            <span class="text-gray-600">Storage Usage</span>
-                                            <span class="text-gray-900">{{
-                                                $systemHealth['storage_usage']['used_percentage'] ?? '0%' }}</span>
-                                        </div>
-                                        <div class="mt-1 bg-gray-200 rounded-full h-2">
-                                            <div class="bg-blue-600 h-2 rounded-full progress-bar-storage"></div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="flex justify-between text-sm">
-                                            <span class="text-gray-600">Memory Usage</span>
-                                            <span class="text-gray-900">{{ $systemHealth['memory_usage'] ?? 'N/A'
-                                                }}</span>
-                                        </div>
-                                        <div class="mt-1 bg-gray-200 rounded-full h-2">
-                                            <div class="bg-yellow-500 h-2 rounded-full progress-bar-memory"></div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="flex justify-between text-sm">
-                                            <span class="text-gray-600">CPU Usage</span>
-                                            <span class="text-gray-900">{{ $systemHealth['cpu_usage'] ?? 'N/A' }}</span>
-                                        </div>
-                                        <div class="mt-1 bg-gray-200 rounded-full h-2">
-                                            <div class="bg-green-500 h-2 rounded-full progress-bar-cpu"></div>
-                                        </div>
-                                    </div>
-                                    <a href="{{ route('admin.credentials') }}"
-                                        class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                        <div class="bg-indigo-100 p-2 rounded-lg mr-3">
-                                            <i class="fas fa-key text-indigo-600"></i>
-                                        </div>
-                                        <div>
-                                            <p class="text-sm font-medium text-gray-900">Superuser Credentials</p>
-                                            <p class="text-xs text-gray-500">Manage website lock credentials</p>
-                                        </div>
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="pt-4 border-t border-gray-200 text-xs text-gray-500">
-                                <p>Uptime: {{ $systemHealth['uptime'] ?? 'N/A' }}</p>
-                                <p>Last Backup: {{ $systemHealth['last_backup'] ?? 'N/A' }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                 @endrole
 
-                <!-- Quick Actions -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                    <div class="p-6 border-b border-gray-200">
-                        <h2 class="text-xl font-semibold text-gray-900">Quick Actions</h2>
-                    </div>
-                    <div class="p-6">
-                        <div class="space-y-3">
-                            @role('super-admin')
-                            <a href="{{ route('admin.users') }}"
-                                class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                <div class="bg-blue-100 p-2 rounded-lg mr-3">
-                                    <i class="fas fa-users text-blue-600"></i>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-gray-900">Manage Users</p>
-                                    <p class="text-xs text-gray-500">View and manage user accounts</p>
-                                </div>
-                            </a>
-                            @endrole
-
-                            <a href="{{ route('admin.contents.index') }}"
-                                class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                <div class="bg-purple-100 p-2 rounded-lg mr-3">
-                                    <i class="fas fa-book text-purple-600"></i>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-gray-900">Content Management</p>
-                                    <p class="text-xs text-gray-500">Manage lessons and content</p>
-                                </div>
-                            </a>
-
-                            <a href="{{ route('admin.subjects.index') }}"
-                                class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                <div class="bg-teal-100 p-2 rounded-lg mr-3">
-                                    <i class="fas fa-tags text-teal-600"></i>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-gray-900">Manage Subjects</p>
-                                    <p class="text-xs text-gray-500">Organize content by subjects</p>
-                                </div>
-                            </a>
-
-                            @role('super-admin')
-                            <a href="{{ route('admin.analytics') }}"
-                                class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                <div class="bg-green-100 p-2 rounded-lg mr-3">
-                                    <i class="fas fa-chart-bar text-green-600"></i>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-gray-900">Analytics</p>
-                                    <p class="text-xs text-gray-500">View platform analytics</p>
-                                </div>
-                            </a>
-
-                            <a href="{{ route('admin.security') }}"
-                                class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                <div class="bg-red-100 p-2 rounded-lg mr-3">
-                                    <i class="fas fa-shield-alt text-red-600"></i>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-gray-900">Security Monitor</p>
-                                    <p class="text-xs text-gray-500">Monitor security events</p>
-                                </div>
-                            </a>
-                            @endrole
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>
 
 <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        // Tab Switching Logic
+    document.addEventListener('DOMContentLoaded', function () {
+        const tabBtns = document.querySelectorAll('.dashboard-tab-btn');
+        const tabPanes = document.querySelectorAll('.dashboard-tab-pane');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabPanes.forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+
+                const targetTab = btn.getAttribute('data-tab');
+                tabPanes.forEach(p => {
+                    if (p.getAttribute('data-tab') === targetTab) {
+                        p.classList.add('active');
+                    }
+                });
+            });
+        });
+    });
+
     // Initialize everything when DOM is loaded
     document.addEventListener('DOMContentLoaded', function () {
         // Attach critical administrative listeners first for resilience

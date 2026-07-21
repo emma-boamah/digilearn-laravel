@@ -347,6 +347,8 @@
         }
     </style>
     @yield('styles')
+    @stack('extra-css')
+    @stack('styles')
 </head>
 
 <body>
@@ -509,6 +511,8 @@
         }
     </script>
     @yield('scripts')
+    @stack('scripts')
+    @stack('extra-js')
 </body>
 
 </html>
