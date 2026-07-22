@@ -2461,6 +2461,24 @@ class AdminController extends Controller
 
     public function destroyVideo(Video $video, $deleteRelated = true)
     {
+        // Delete from Vimeo if the source is Vimeo
+        if ($video->video_source === 'vimeo' && $video->vimeo_id) {
+            try {
+                $vimeoService = new \App\Services\VimeoService();
+                $vimeoService->deleteVideo($video->vimeo_id);
+                Log::info('Successfully deleted video from Vimeo during destroyVideo', [
+                    'video_id' => $video->id,
+                    'vimeo_id' => $video->vimeo_id
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to delete video from Vimeo during destroyVideo', [
+                    'video_id' => $video->id,
+                    'vimeo_id' => $video->vimeo_id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
         if ($deleteRelated) {
             // Delete related documents and their files
             foreach ($video->documents as $document) {

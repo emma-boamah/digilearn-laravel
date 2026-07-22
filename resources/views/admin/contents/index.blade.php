@@ -4921,12 +4921,42 @@
                             speed: 0
                         });
 
-                        const response = await fetch('{{ route("admin.contents.upload.video") }}', {
-                            method: 'POST',
-                            headers: {
-                                'Accept': 'application/json',
-                            },
-                            body: formData
+                        const response = await new Promise((resolve, reject) => {
+                            const xhr = new XMLHttpRequest();
+                            xhr.open('POST', '{{ route("admin.contents.upload.video") }}', true);
+                            xhr.setRequestHeader('Accept', 'application/json');
+                            
+                            const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+                            if (tokenMeta) xhr.setRequestHeader('X-CSRF-TOKEN', tokenMeta.getAttribute('content'));
+
+                            xhr.upload.onprogress = function(e) {
+                                if (e.lengthComputable && videoFile) {
+                                    const elapsedSeconds = (Date.now() - startTime) / 1000;
+                                    const uploadSpeed = elapsedSeconds > 0 ? e.loaded / elapsedSeconds : 0;
+                                    const percent = 30 + (e.loaded / e.total) * 69; // 30% to 99%
+                                    
+                                    updateProgress('video', percent, 'Uploading video file...', false, {
+                                        uploadedBytes: e.loaded,
+                                        totalBytes: e.total,
+                                        speed: uploadSpeed,
+                                        timeRemaining: uploadSpeed > 0 ? (e.total - e.loaded) / uploadSpeed : 0
+                                    });
+                                }
+                            };
+
+                            xhr.onload = function() {
+                                resolve({
+                                    ok: xhr.status >= 200 && xhr.status < 300,
+                                    status: xhr.status,
+                                    json: async () => JSON.parse(xhr.responseText)
+                                });
+                            };
+
+                            xhr.onerror = function() {
+                                reject(new Error('Network error during upload'));
+                            };
+
+                            xhr.send(formData);
                         });
 
                         if (response.ok) {
@@ -4993,12 +5023,42 @@
                         totalBytes: totalDocSize
                     });
 
-                    const response = await fetch('{{ route("admin.contents.upload.documents") }}', {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                        },
-                        body: formData
+                    const documentStartTime = Date.now();
+                    const response = await new Promise((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('POST', '{{ route("admin.contents.upload.documents") }}', true);
+                        xhr.setRequestHeader('Accept', 'application/json');
+                        
+                        const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+                        if (tokenMeta) xhr.setRequestHeader('X-CSRF-TOKEN', tokenMeta.getAttribute('content'));
+
+                        xhr.upload.onprogress = function(e) {
+                            if (e.lengthComputable) {
+                                const elapsedSeconds = (Date.now() - documentStartTime) / 1000;
+                                const uploadSpeed = elapsedSeconds > 0 ? e.loaded / elapsedSeconds : 0;
+                                const percent = 5 + (e.loaded / e.total) * 90; // 5% to 95%
+                                
+                                updateProgress('document', percent, 'Uploading documents...', false, {
+                                    uploadedBytes: e.loaded,
+                                    totalBytes: e.total,
+                                    speed: uploadSpeed
+                                });
+                            }
+                        };
+
+                        xhr.onload = function() {
+                            resolve({
+                                ok: xhr.status >= 200 && xhr.status < 300,
+                                status: xhr.status,
+                                json: async () => JSON.parse(xhr.responseText)
+                            });
+                        };
+
+                        xhr.onerror = function() {
+                            reject(new Error('Network error during document upload'));
+                        };
+
+                        xhr.send(formData);
                     });
 
                     if (response.ok) {

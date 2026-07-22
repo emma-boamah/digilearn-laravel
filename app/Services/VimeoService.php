@@ -112,7 +112,7 @@ class VimeoService
     private function createVideoEntry($title, $fileSize, $description = null)
     {
         try {
-            $response = Http::withHeaders([
+            $response = Http::timeout(60)->withHeaders([
                 'Authorization' => 'Bearer ' . $this->accessToken,
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/vnd.vimeo.*+json;version=3.4'
@@ -170,7 +170,7 @@ class VimeoService
                 $chunk = fread($fileHandle, $chunkSize);
                 $chunkSizeActual = strlen($chunk);
 
-                $response = Http::withHeaders([
+                $response = Http::timeout(300)->withHeaders([
                     'Content-Type' => 'application/offset+octet-stream',
                     'Upload-Offset' => $offset,
                     'Tus-Resumable' => '1.0.0'
