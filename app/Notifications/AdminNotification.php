@@ -77,15 +77,13 @@ class AdminNotification extends Notification implements ShouldQueue
     {
         $mail = (new MailMessage)
             ->subject($this->title)
-            ->greeting('Hello ' . $notifiable->name . '!')
+            ->greeting(' ')
+            ->salutation(' ')
             ->line($this->message);
 
         if ($this->url) {
             $mail->action('View Details', $this->url);
         }
-
-        $mail->line('Thank you for using our platform!')
-            ->salutation('Best regards, ' . config('app.name') . ' Team');
 
         return $mail;
     }
