@@ -24,6 +24,7 @@ class NotificationTypesSeeder extends Seeder
                 'is_active' => true,
                 'default_channels' => ['database', 'mail'],
                 'priority' => 'critical',
+                'default_message' => 'Please be advised of an important system update. Let us know if you have any questions.',
             ],
 
             // Payment Notifications
@@ -37,6 +38,7 @@ class NotificationTypesSeeder extends Seeder
                 'is_active' => true,
                 'default_channels' => ['database', 'mail'],
                 'priority' => 'high',
+                'default_message' => 'Your recent payment was processed successfully. Thank you for your purchase!',
             ],
             [
                 'slug' => 'payment_failed',
@@ -48,6 +50,7 @@ class NotificationTypesSeeder extends Seeder
                 'is_active' => true,
                 'default_channels' => ['database', 'mail'],
                 'priority' => 'high',
+                'default_message' => 'Your recent payment has failed. Please update your payment method to continue accessing your content.',
             ],
 
             // Subscription Notifications
@@ -61,6 +64,7 @@ class NotificationTypesSeeder extends Seeder
                 'is_active' => true,
                 'default_channels' => ['database', 'mail'],
                 'priority' => 'high',
+                'default_message' => 'Your subscription is set to expire soon. Please renew it to ensure uninterrupted access.',
             ],
             [
                 'slug' => 'subscription_renewed',
@@ -72,6 +76,7 @@ class NotificationTypesSeeder extends Seeder
                 'is_active' => true,
                 'default_channels' => ['database', 'mail'],
                 'priority' => 'medium',
+                'default_message' => 'Your subscription has been successfully renewed. Thank you for staying with us!',
             ],
 
             // Learning Progress Notifications
@@ -85,6 +90,7 @@ class NotificationTypesSeeder extends Seeder
                 'is_active' => true,
                 'default_channels' => ['database'],
                 'priority' => 'low',
+                'default_message' => 'Congratulations on completing this lesson! Keep up the great work.',
             ],
             [
                 'slug' => 'quiz_completed',
@@ -96,6 +102,7 @@ class NotificationTypesSeeder extends Seeder
                 'is_active' => true,
                 'default_channels' => ['database'],
                 'priority' => 'medium',
+                'default_message' => 'Your recent quiz results are now available for review.',
             ],
 
             // Class Notifications
@@ -109,6 +116,7 @@ class NotificationTypesSeeder extends Seeder
                 'is_active' => true,
                 'default_channels' => ['database', 'mail'],
                 'priority' => 'high',
+                'default_message' => 'A virtual class you are enrolled in is starting soon. Please join the session.',
             ],
 
             // Message Notifications
@@ -122,6 +130,7 @@ class NotificationTypesSeeder extends Seeder
                 'is_active' => true,
                 'default_channels' => ['database'],
                 'priority' => 'medium',
+                'default_message' => 'You have received a new message.',
             ],
 
             // Achievement Notifications
@@ -135,6 +144,7 @@ class NotificationTypesSeeder extends Seeder
                 'is_active' => true,
                 'default_channels' => ['database'],
                 'priority' => 'medium',
+                'default_message' => 'Congratulations! You have unlocked a new achievement.',
             ],
         ];
 

@@ -710,7 +710,8 @@
                                 <option value="">Select notification type...</option>
                                 @foreach(\App\Models\NotificationType::active()->get() ?? [] as $type)
                                 <option value="{{ $type->id }}"
-                                    data-channels='{{ json_encode($type->default_channels ?? ["database"]) }}'>
+                                    data-channels='{{ json_encode($type->default_channels ?? ["database"]) }}'
+                                    data-default-message='{{ $type->default_message ?? "" }}'>
                                     {{ $type->name }}
                                 </option>
                                 @endforeach
@@ -1078,6 +1079,12 @@
     document.getElementById('userNotificationTypeSelect').addEventListener('change', function () {
         const selectedOption = this.options[this.selectedIndex];
         const channelsAttr = selectedOption.getAttribute('data-channels');
+        const defaultMessage = selectedOption.getAttribute('data-default-message');
+
+        const messageTextarea = document.querySelector('#sendUserNotificationForm textarea[name="message"]');
+        if (defaultMessage && messageTextarea) {
+            messageTextarea.value = defaultMessage;
+        }
 
         if (channelsAttr) {
             try {

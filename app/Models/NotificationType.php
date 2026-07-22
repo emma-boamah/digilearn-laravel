@@ -14,6 +14,7 @@ class NotificationType extends Model
         'slug',
         'name',
         'description',
+        'default_message',
         'icon',
         'color',
         'is_system',
