@@ -679,8 +679,8 @@
 </div>
 
 <!-- Send User Notification Modal -->
-<div class="modal fade" id="sendUserNotificationModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+<div class="hidden fixed inset-0 bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50" id="sendUserNotificationModal">
+    <div class="relative top-20 mx-auto p-0 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-2xl bg-white">
         <div class="modal-content border-0 rounded-2xl shadow-2xl">
             <div class="modal-header border-b border-gray-100 p-6 flex items-center justify-between">
                 <div class="flex items-center space-x-3">
@@ -694,7 +694,7 @@
                     </div>
                 </div>
                 <button type="button" class="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
-                    data-dismiss="modal" data-bs-dismiss="modal">
+                    onclick="closeMessageModal()">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
@@ -705,12 +705,12 @@
                         <div class="space-y-2">
                             <label class="block text-sm font-bold text-gray-700">Notification Type</label>
                             <select
-                                class="block w-full px-4 py-3 rounded-xl border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500/10 bg-white"
+                                class="block w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500/10 bg-white"
                                 name="notification_type_id" id="userNotificationTypeSelect" required>
                                 <option value="">Select notification type...</option>
                                 @foreach(\App\Models\NotificationType::active()->get() ?? [] as $type)
                                 <option value="{{ $type->id }}"
-                                    data-channels="{{ json_encode($type->default_channels ?? ['database']) }}">
+                                    data-channels='{{ json_encode($type->default_channels ?? ["database"]) }}'>
                                     {{ $type->name }}
                                 </option>
                                 @endforeach
@@ -720,7 +720,7 @@
                         <div class="space-y-2">
                             <label class="block text-sm font-bold text-gray-700">Title</label>
                             <input type="text"
-                                class="block w-full px-4 py-3 rounded-xl border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500/10 bg-white"
+                                class="block w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500/10 bg-white"
                                 name="title" placeholder="Enter notification title..." required>
                         </div>
                     </div>
@@ -728,7 +728,7 @@
                     <div class="space-y-2 mb-6">
                         <label class="block text-sm font-bold text-gray-700">Message</label>
                         <textarea
-                            class="block w-full px-4 py-3 rounded-xl border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500/10 bg-white"
+                            class="block w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500/10 bg-white"
                             name="message" rows="4" placeholder="Type your message here..." required></textarea>
                     </div>
 
@@ -737,12 +737,24 @@
                             <label class="block text-sm font-bold text-gray-700">URL <span
                                     class="text-xs font-normal text-gray-400">(Optional)</span></label>
                             <input type="url"
-                                class="block w-full px-4 py-3 rounded-xl border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500/10 bg-white"
+                                class="block w-full px-4 py-3 rounded-xl border border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500/10 bg-white"
                                 name="url" placeholder="https://example.com/...">
                         </div>
 
                         <div class="space-y-2">
-                            <label class="block text-sm font-bold text-gray-700 mb-3">Delivery Channels</label>
+                            <div class="flex items-center mb-3">
+                                <label class="block text-sm font-bold text-gray-700">Delivery Channels</label>
+                                <button type="button" class="ml-2 text-gray-400 hover:text-blue-600 focus:outline-none transition-colors" onclick="toggleChannelInfo()" title="What do these do?">
+                                    <i class="fas fa-question-circle"></i>
+                                </button>
+                            </div>
+                            
+                            <div id="channelInfoBox" class="hidden mb-3 p-3 bg-blue-50/80 rounded-lg border border-blue-100 text-xs text-blue-800 space-y-2">
+                                <p><strong class="font-bold text-blue-900"><i class="fas fa-bell mr-1"></i> In-App:</strong> Delivers the notification to the user's dashboard notification bell.</p>
+                                <p><strong class="font-bold text-blue-900"><i class="fas fa-envelope mr-1"></i> Email:</strong> Dispatches a formatted email directly to the user's registered inbox.</p>
+                                <p><strong class="font-bold text-blue-900"><i class="fas fa-satellite-dish mr-1"></i> Real-time:</strong> Instantly pushes the notification to the user's screen if they are currently online.</p>
+                            </div>
+
                             <div class="flex items-center space-x-6">
                                 <label class="flex items-center text-sm font-medium text-gray-700 cursor-pointer">
                                     <input type="checkbox" name="channels[]" value="database" id="userDatabase" checked
@@ -763,19 +775,36 @@
                         </div>
                     </div>
 
-                    <div class="p-4 bg-blue-50/50 rounded-xl border border-blue-100/50" id="userNotificationPreview">
-                        <div class="flex items-center text-blue-700">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            <span class="text-sm font-semibold italic"><strong>Preview:</strong> Select a notification
-                                type to see preview</span>
+                    <div class="p-4 bg-gray-50 rounded-xl border border-gray-200" id="userNotificationPreviewContainer">
+                        <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Live Preview</div>
+                        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                            <div class="flex items-start space-x-3">
+                                <div class="flex-shrink-0 mt-0.5">
+                                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <i class="fas fa-bell text-blue-600 text-sm"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-bold text-gray-900" id="previewTitle">Notification Title</p>
+                                    <p class="text-sm text-gray-600 mt-1 break-words whitespace-pre-wrap" id="previewMessage">Your message will appear here...</p>
+                                    <div id="previewAction" class="mt-3 hidden">
+                                        <span class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600">
+                                            View Details
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3 flex items-center text-xs text-gray-500" id="previewChannelsText">
+                            <i class="fas fa-info-circle mr-1"></i> Will be sent via: <span class="font-semibold ml-1">None</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="modal-footer border-t border-gray-100 p-6 space-x-3">
+                <div class="modal-footer border-t border-gray-100 p-6 flex justify-end items-center space-x-3">
                     <button type="button"
                         class="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors"
-                        data-dismiss="modal">Cancel</button>
+                        onclick="closeMessageModal()">Cancel</button>
                     <button type="submit"
                         class="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 shadow-lg shadow-blue-500/25 transition-all flex items-center">
                         <i class="fas fa-paper-plane mr-2 text-xs"></i>Send Notification
@@ -806,6 +835,68 @@
     </div>
 </div>
 
+<!-- Login History Modal -->
+<div id="loginHistoryModal" class="hidden fixed inset-0 bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+    <div class="relative bg-white w-full max-w-2xl mx-4 rounded-2xl shadow-2xl">
+        <!-- Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-100">
+            <div>
+                <h3 class="text-xl font-bold text-gray-900 flex items-center">
+                    <i class="fas fa-history text-green-500 mr-3"></i>
+                    Login History
+                </h3>
+                <p class="text-sm text-gray-500 mt-1">Recent login activity for {{ $user->name }}</p>
+            </div>
+            <button onclick="closeLoginHistory()" class="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 max-h-[60vh] overflow-y-auto">
+            @if(isset($loginHistory) && $loginHistory->count() > 0)
+                <div class="space-y-4">
+                    @foreach($loginHistory as $login)
+                        <div class="flex items-start p-4 bg-gray-50 rounded-xl border border-gray-100">
+                            <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mr-4">
+                                <i class="fas fa-sign-in-alt text-green-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-center mb-1">
+                                    <h4 class="text-sm font-bold text-gray-900">{{ $login->ip_address ?? 'Unknown IP' }}</h4>
+                                    <span class="text-xs text-gray-500 font-medium whitespace-nowrap ml-3">
+                                        {{ $login->created_at->format('M j, Y g:i A') }}
+                                        ({{ $login->created_at->diffForHumans() }})
+                                    </span>
+                                </div>
+                                <p class="text-xs text-gray-600 mb-2">{{ $login->user_agent ?? 'Unknown Device' }}</p>
+                                @if(!empty($login->metadata))
+                                    <div class="flex flex-wrap gap-2 mt-2">
+                                        @foreach($login->metadata as $key => $value)
+                                            <span class="px-2 py-1 bg-white border border-gray-200 rounded-md text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                                                {{ $key }}: {{ is_array($value) ? json_encode($value) : $value }}
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="text-center py-8">
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-history text-gray-400 text-2xl"></i>
+                    </div>
+                    <h4 class="text-gray-900 font-medium mb-1">No Login History</h4>
+                    <p class="text-sm text-gray-500">There are no recorded logins for this user yet.</p>
+                </div>
+            @endif
+        </div>
+    </div>
+</div>
+
+@push('scripts')
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
     function demoteAdmin(userId) {
         if (!confirm('Are you sure you want to demote this administrator to a regular user? This will revoke all administrative privileges.')) {
@@ -934,49 +1025,117 @@
 
     function sendMessage() {
         // Open the send notification modal
-        $('#sendUserNotificationModal').modal('show');
+        document.getElementById('sendUserNotificationModal').classList.remove('hidden');
+    }
+
+    function closeMessageModal() {
+        document.getElementById('sendUserNotificationModal').classList.add('hidden');
     }
 
     // Handle user notification form submission
-    $('#sendUserNotificationForm').submit(function (e) {
+    document.getElementById('sendUserNotificationForm').addEventListener('submit', function (e) {
         e.preventDefault();
 
         const formData = new FormData(this);
-        formData.append('user_ids', ['{{ $user->id }}']); // Send to this specific user
+        formData.append('send_type', 'specific');
+        formData.append('user_ids[]', '{{ $user->id }}'); // Send to this specific user
 
-        $.ajax({
-            url: '{{ route("admin.notifications.send") }}',
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalHtml = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2 text-xs"></i>Sending...';
+        submitBtn.disabled = true;
+
+        fetch('{{ route("admin.notifications.send") }}', {
             method: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
+            body: formData,
             headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function (data) {
-                if (data.success) {
-                    toastr.success('Notification sent successfully!');
-                    $('#sendUserNotificationModal').modal('hide');
-                    $('#sendUserNotificationForm')[0].reset();
-                } else {
-                    toastr.error(data.message || 'Failed to send notification');
-                }
-            },
-            error: function () {
-                toastr.error('An error occurred while sending the notification');
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json'
             }
+        })
+        .then(response => response.json())
+        .then(data => {
+            submitBtn.innerHTML = originalHtml;
+            submitBtn.disabled = false;
+
+            if (data.success) {
+                alert('Notification sent successfully!');
+                closeMessageModal();
+                this.reset();
+                updatePreview();
+            } else {
+                alert(data.message || 'Failed to send notification');
+            }
+        })
+        .catch(error => {
+            submitBtn.innerHTML = originalHtml;
+            submitBtn.disabled = false;
+            console.error('Error:', error);
+            alert('An error occurred while sending the notification');
         });
     });
 
-    // Update preview when notification type changes for user modal
-    $('#userNotificationTypeSelect').change(function () {
-        const selectedOption = $(this).find('option:selected');
-        const channels = selectedOption.data('channels');
+    document.getElementById('userNotificationTypeSelect').addEventListener('change', function () {
+        const selectedOption = this.options[this.selectedIndex];
+        const channelsAttr = selectedOption.getAttribute('data-channels');
 
-        if (channels) {
-            $('#userNotificationPreview').html(`<strong>Preview:</strong> This notification will be sent via: ${channels.join(', ')}`);
+        if (channelsAttr) {
+            try {
+                const channels = JSON.parse(channelsAttr);
+                
+                // Update checkboxes based on select
+                document.querySelectorAll('input[name="channels[]"]').forEach(checkbox => {
+                    checkbox.checked = channels.includes(checkbox.value);
+                });
+                
+                updatePreview();
+            } catch (e) {
+                console.error(e);
+            }
+        } else {
+            document.querySelectorAll('input[name="channels[]"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            updatePreview();
         }
     });
+
+    // Add change listeners to checkboxes to update preview when clicked
+    document.querySelectorAll('input[name="channels[]"]').forEach(checkbox => {
+        checkbox.addEventListener('change', updatePreview);
+    });
+
+    document.querySelectorAll('#sendUserNotificationForm input[name="title"], #sendUserNotificationForm textarea[name="message"], #sendUserNotificationForm input[name="url"]').forEach(el => {
+        el.addEventListener('input', updatePreview);
+    });
+
+    function updatePreview() {
+        const title = document.querySelector('#sendUserNotificationForm input[name="title"]').value.trim() || 'Notification Title';
+        const message = document.querySelector('#sendUserNotificationForm textarea[name="message"]').value.trim() || 'Your message will appear here...';
+        const url = document.querySelector('#sendUserNotificationForm input[name="url"]').value.trim();
+
+        document.getElementById('previewTitle').textContent = title;
+        document.getElementById('previewMessage').textContent = message;
+
+        const actionDiv = document.getElementById('previewAction');
+        if (url) {
+            actionDiv.classList.remove('hidden');
+        } else {
+            actionDiv.classList.add('hidden');
+        }
+
+        const checkedChannels = Array.from(document.querySelectorAll('input[name="channels[]"]:checked')).map(cb => cb.value);
+        if (checkedChannels.length > 0) {
+            document.getElementById('previewChannelsText').innerHTML = `<i class="fas fa-info-circle mr-1"></i> Will be sent via: <span class="font-semibold ml-1">${checkedChannels.join(', ')}</span>`;
+        } else {
+            document.getElementById('previewChannelsText').innerHTML = `<i class="fas fa-info-circle mr-1"></i> Will be sent via: <span class="font-semibold ml-1 text-red-500">None</span>`;
+        }
+    }
+
+    function toggleChannelInfo() {
+        const infoBox = document.getElementById('channelInfoBox');
+        infoBox.classList.toggle('hidden');
+    }
 
     function resetPassword() {
         if (confirm('Are you sure you want to reset this user\'s password?')) {
@@ -986,8 +1145,11 @@
     }
 
     function viewLoginHistory() {
-        // Implement login history view
-        alert('Login history functionality would be implemented here');
+        document.getElementById('loginHistoryModal').classList.remove('hidden');
+    }
+
+    function closeLoginHistory() {
+        document.getElementById('loginHistoryModal').classList.add('hidden');
     }
 
     function impersonateUser() {
@@ -1033,4 +1195,5 @@
             });
     });
 </script>
+@endpush
 @endsection

@@ -335,11 +335,14 @@ class NotificationController extends Controller
         try {
             $notificationType = \App\Models\NotificationType::findOrFail($validated['notification_type_id']);
 
+            $channels = $validated['channels'] ?? ['database'];
+
             $notification = new \App\Notifications\AdminNotification(
                 $validated['title'],
                 $validated['message'],
                 $validated['url'] ?? null,
-                $notificationType
+                $notificationType,
+                $channels
             );
 
             $channels = $validated['channels'] ?? ['database'];

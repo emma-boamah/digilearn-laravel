@@ -17,16 +17,18 @@ class AdminNotification extends Notification implements ShouldQueue
     protected string $message;
     protected ?string $url;
     protected $notificationType;
+    protected ?array $overrideChannels;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct(string $title, string $message, ?string $url = null, $notificationType = null)
+    public function __construct(string $title, string $message, ?string $url = null, $notificationType = null, ?array $overrideChannels = null)
     {
         $this->title = $title;
         $this->message = $message;
         $this->url = $url;
         $this->notificationType = $notificationType;
+        $this->overrideChannels = $overrideChannels;
     }
 
     /**
@@ -34,6 +36,10 @@ class AdminNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
+        if (!empty($this->overrideChannels)) {
+            return $this->overrideChannels;
+        }
+
         // Get user preferences for channels
         $channels = ['database']; // Default to database
 
