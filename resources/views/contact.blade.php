@@ -21,66 +21,50 @@ number, ShoutOutGH email')
         /* Contact page specific styles */
         .contact-hero {
             position: relative;
-            height: 300px;
+            padding: 3rem 1rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: #000;
-            overflow: hidden;
-        }
-
-        .hero-image {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0.7;
+            background-color: rgba(38, 119, 184, 0.08);
+            text-align: center;
         }
 
         .hero-content {
-            position: relative;
-            z-index: 10;
-            text-align: center;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 0 0.5rem;
         }
 
         .hero-content h1 {
-            font-size: 3rem;
-            font-weight: 600;
-            color: var(--white);
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 0.75rem;
+        }
+
+        .hero-content p {
+            font-size: 0.95rem;
+            color: var(--gray-600);
+            margin: 0;
+            line-height: 1.6;
         }
 
         .contact-section {
-            padding: 0;
-            background-color: var(--white);
+            padding: 2.5rem 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .contact-card {
-            background-color: var(--white);
+            background-color: transparent;
             border-radius: 0;
             max-width: 100%;
             margin: 0 auto;
-            position: relative;
-            z-index: 10;
-        }
-
-        .card-header {
-            padding: 1.25rem;
-            text-align: center;
-            background-color: var(--primary-red);
-        }
-
-        .card-header h2 {
-            font-size: 1.25rem;
-            font-weight: 500;
-            margin-bottom: 0;
-            color: var(--white);
         }
 
         .card-content {
-            padding: 2rem;
-            background-color: #f9f9f9;
+            padding: 0;
+            background-color: transparent;
         }
 
         .contact-methods {
@@ -99,6 +83,22 @@ number, ShoutOutGH email')
         }
 
         @media (min-width: 48rem) {
+            .contact-hero {
+                padding: 4.5rem 2rem;
+            }
+
+            .hero-content h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero-content p {
+                font-size: 1.05rem;
+            }
+
+            .contact-section {
+                padding: 3.5rem 2rem;
+            }
+
             .contact-methods {
                 flex-direction: row;
                 gap: 2rem;
@@ -108,9 +108,15 @@ number, ShoutOutGH email')
 
         .contact-item {
             background-color: #fff;
-            border-radius: 0;
-            padding: 1.25rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .contact-item:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
 
         .contact-content {
@@ -128,7 +134,7 @@ number, ShoutOutGH email')
         .icon svg {
             width: 1.5rem;
             height: 1.5rem;
-            color: var(--primary-red);
+            color: var(--secondary-blue);
         }
 
         .text {
@@ -152,7 +158,7 @@ number, ShoutOutGH email')
             width: 100%;
             padding: 0.75rem;
             border: 1px solid #d1d5db;
-            border-radius: 0;
+            border-radius: 0.375rem;
             margin-bottom: 1rem;
             min-height: 80px;
             resize: vertical;
@@ -162,8 +168,8 @@ number, ShoutOutGH email')
             background-color: var(--secondary-blue);
             color: var(--white);
             border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 0;
+            padding: 0.5rem 1.25rem;
+            border-radius: 0.375rem;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -172,43 +178,23 @@ number, ShoutOutGH email')
         }
 
 
-        /* Map section */
-        .map-section {
-            margin-top: 2rem;
-        }
-
-        .map-container {
-            position: relative;
-            height: 300px;
-            overflow: hidden;
-        }
-
-        .map-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
 
         /* Dark mode overrides */
         [data-theme="dark"] .contact-hero {
-            background-color: var(--bg-main);
+            background-color: rgba(38, 119, 184, 0.15);
         }
 
         [data-theme="dark"] .hero-content h1 {
             color: #ffffff !important;
         }
 
+        [data-theme="dark"] .hero-content p {
+            color: var(--text-muted) !important;
+        }
+
         [data-theme="dark"] .contact-section,
         [data-theme="dark"] .contact-card {
             background-color: var(--bg-main) !important;
-        }
-
-        [data-theme="dark"] .card-header {
-            background-color: var(--bg-surface) !important;
-        }
-
-        [data-theme="dark"] .card-header h2 {
-            color: var(--text-main) !important;
         }
 
         [data-theme="dark"] .card-content {
@@ -334,18 +320,15 @@ number, ShoutOutGH email')
 
     <!-- Hero Section -->
     <section class="contact-hero">
-        <img src="{{ secure_asset('images/contact-hero.jpg') }}" alt="Contact us" class="hero-image">
         <div class="hero-content">
-            <h1>Contact us</h1>
+            <h1>Contact Us</h1>
+            <p>Have questions? The quickest way to get in touch with us is using the contact information below.</p>
         </div>
     </section>
 
     <!-- Contact Form Section -->
     <section class="contact-section">
         <div class="contact-card">
-            <div class="card-header">
-                <h2>Let's connect</h2>
-            </div>
 
             @if(session('success'))
                 <div class="success-msg"
@@ -487,12 +470,7 @@ number, ShoutOutGH email')
         </div>
     </section>
 
-    <!-- Map Section -->
-    <section class="map-section">
-        <div class="map-container">
-            <img src="{{ secure_asset('images/map.jpg') }}" alt="Office location map">
-        </div>
-    </section>
+
 @endsection
 
 @push('scripts')
