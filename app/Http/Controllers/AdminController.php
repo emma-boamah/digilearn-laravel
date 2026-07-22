@@ -406,13 +406,20 @@ class AdminController extends Controller
     {
         $user = User::findOrFail($id);
 
-        // Get user activity logs (you might need to create this table)
+        // Get user activity logs
         $activities = $this->getUserActivities($user->id);
 
         // Get user lesson progress
         $lessonProgress = $this->getUserLessonProgress($user->id);
 
-        return view('admin.users.show', compact('user', 'activities', 'lessonProgress'));
+        // Get login history
+        $loginHistory = \App\Models\UserActivity::where('user_id', $user->id)
+            ->where('type', 'user_login')
+            ->latest()
+            ->limit(20)
+            ->get();
+
+        return view('admin.users.show', compact('user', 'activities', 'lessonProgress', 'loginHistory'));
     }
 
     /**

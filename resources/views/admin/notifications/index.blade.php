@@ -730,7 +730,7 @@
                     <select class="form-control form-select" name="notification_type_id" id="notificationTypeSelect" required>
                         <option value="">Select notification type...</option>
                         @foreach($notificationTypes ?? [] as $type)
-                        <option value="{{ $type->id }}" data-channels="{{ json_encode($type->default_channels ?? ['database']) }}">
+                        <option value="{{ $type->id }}" data-channels='{{ json_encode($type->default_channels ?? ["database"]) }}'>
                             {{ $type->name }}
                         </option>
                         @endforeach
