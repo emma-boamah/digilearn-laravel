@@ -2,11 +2,17 @@
 
 @section('content')
     <!-- Selected Level Info -->
+    <style nonce="{{ request()->attributes->get('csp_nonce') }}">
+        .level-info-row { display: flex; justify-content: space-between; align-items: center; }
+        .level-info-text { color: var(--text-muted); font-size: 0.875rem; }
+        .level-info-strong { color: var(--primary-red); }
+        .card-button-link { display: inline-block; text-decoration: none; text-align: center; }
+    </style>
     <div class="level-info-container">
         <div class="container">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: var(--text-muted); font-size: 0.875rem;">
-                    Selected Level: <strong style="color: var(--primary-red);">{{ $selectedLevelGroup ? ucwords(str_replace('-', ' ', $selectedLevelGroup)) : 'None' }}</strong>
+            <div class="level-info-row">
+                <span class="level-info-text">
+                    Selected Level: <strong class="level-info-strong">{{ $selectedLevelGroup ? ucwords(str_replace('-', ' ', $selectedLevelGroup)) : 'None' }}</strong>
                 </span>
             </div>
         </div>
@@ -25,7 +31,7 @@
                     <p class="card-description">
                         Practical, Demonstrative, Educative, Informative and Edutainment lessons which aids students to understand topics and with ease 21st Century tutoring approach
                     </p>
-                    <a href="{{ route('dashboard.digilearn') }}" class="card-button" style="display: inline-block; text-decoration: none; text-align: center;">
+                    <a href="{{ route('dashboard.digilearn') }}" class="card-button card-button-link">
                         Start Lessons
                     </a>
                 </div>
@@ -39,7 +45,7 @@
                     <p class="card-description">
                         Learn at your own pace with our tutors and explore more educative videos on personalized learning. Get the chance to schedule time with tutors.
                     </p>
-                    <a href="{{ route('coming-soon') }}" class="card-button" style="display: inline-block; text-decoration: none; text-align: center;">
+                    <a href="{{ route('tutors.index') }}" class="card-button card-button-link">
                         Start
                     </a>
                 </div>
@@ -53,7 +59,7 @@
                     <p class="card-description">
                         Purchase all your student needs here. Items are affordable and drastically reduced to suit your financial equilibrium.
                     </p>
-                    <a href="{{ route('coming-soon') }}" class="card-button" style="display: inline-block; text-decoration: none; text-align: center;">
+                    <a href="{{ route('coming-soon') }}" class="card-button card-button-link">
                         Shop now
                     </a>
                 </div>

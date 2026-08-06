@@ -33,6 +33,7 @@ use App\Mail\PasswordChangedMail;
 use App\Mail\OtpVerificationMail;
 
 use App\Traits\HasOtpVerification;
+use App\Helpers\PhoneNormalizerHelper;
 
 class AuthController extends Controller
 {
@@ -583,9 +584,12 @@ class AuthController extends Controller
         $validated['name'] = trim($validated['name']);
         $validated['email'] = strtolower(trim($validated['email']));
         $validated['country'] = trim($validated['country']);
-        if (isset($validated['phone']) && isset($validated['country_code'])) {
-            // Combine country code and phone, ensure phone starts with '+'
-            $validated['phone'] = trim($validated['country_code'] . preg_replace('/^\+/', '', trim($validated['phone'])));
+        if (!empty($validated['phone'])) {
+            // Normalize phone: handles leading zeros, duplicate country codes, spaces, etc.
+            $validated['phone'] = PhoneNormalizerHelper::normalize(
+                $validated['phone'],
+                $validated['country_code'] ?? '+233'
+            );
         }
 
         // Email verification: Always initiate OTP flow to ensure the user owns the email address

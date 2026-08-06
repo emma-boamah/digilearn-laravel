@@ -187,8 +187,8 @@
                             </div>
                         </div>
                     </div>
-                    <div class="bg-green-100 p-3 rounded-full">
-                        <i class="fas fa-user-check text-green-600 text-xl"></i>
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <i class="fas fa-user-check text-blue-600 text-xl"></i>
                     </div>
                 </div>
             </div>
@@ -203,7 +203,7 @@
                         <p class="text-3xl font-bold text-gray-900">GH₵{{ number_format($revenueData['total_revenue'] ??
                             0, 0) }}</p>
                         <div class="flex items-center justify-between mt-2">
-                            <p class="text-sm text-green-600">
+                            <p class="text-sm text-blue-600">
                                 <i class="fas fa-arrow-up mr-1"></i>+{{ $revenueData['revenue_growth'] ?? 0 }}%
                             </p>
                             <div class="sparkline-container w-16 h-4">
@@ -211,8 +211,8 @@
                             </div>
                         </div>
                     </div>
-                    <div class="bg-green-100 p-3 rounded-full">
-                        <i class="fas fa-dollar-sign text-green-600 text-xl"></i>
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <i class="fas fa-dollar-sign text-blue-600 text-xl"></i>
                     </div>
                 </div>
             </div>
@@ -235,8 +235,8 @@
                             </div>
                         </div>
                     </div>
-                    <div class="bg-purple-100 p-3 rounded-full">
-                        <i class="fas fa-crown text-purple-600 text-xl"></i>
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <i class="fas fa-crown text-blue-600 text-xl"></i>
                     </div>
                 </div>
             </div>
@@ -257,8 +257,8 @@
                             <span class="w-2 h-2 rounded-full bg-blue-500 mr-1"></span>Revenue
                         </span>
                         <span
-                            class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>Subscriptions
+                            class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-sky-100 text-sky-700">
+                            <span class="w-2 h-2 rounded-full bg-sky-500 mr-1"></span>Subscriptions
                         </span>
                     </div>
                     <button class="text-gray-400 hover:text-gray-600 export-btn" title="Export data">
@@ -277,14 +277,14 @@
                     <div style="font-size: 18px; font-weight: 700; color: #1e40af;">GH₵{{
                         number_format(collect($trends)->sum('revenue'), 0) }}</div>
                 </div>
-                <div style="flex: 1; text-align: center; padding: 8px; background: #ecfdf5; border-radius: 8px;">
+                <div style="flex: 1; text-align: center; padding: 8px; background: #eff6ff; border-radius: 8px;">
                     <div style="font-size: 11px; color: #6b7280; font-weight: 500;">Total Subscriptions</div>
-                    <div style="font-size: 18px; font-weight: 700; color: #065f46;">{{
+                    <div style="font-size: 18px; font-weight: 700; color: #1e40af;">{{
                         number_format(collect($trends)->sum('subscriptions')) }}</div>
                 </div>
-                <div style="flex: 1; text-align: center; padding: 8px; background: #faf5ff; border-radius: 8px;">
+                <div style="flex: 1; text-align: center; padding: 8px; background: #eff6ff; border-radius: 8px;">
                     <div style="font-size: 11px; color: #6b7280; font-weight: 500;">Avg Monthly</div>
-                    <div style="font-size: 18px; font-weight: 700; color: #7e22ce;">GH₵{{
+                    <div style="font-size: 18px; font-weight: 700; color: #1e40af;">GH₵{{
                         number_format(collect($trends)->avg('revenue'), 0) }}</div>
                 </div>
             </div>
@@ -328,16 +328,16 @@
                             <div class="flex items-start space-x-3">
                                 <div class="flex-shrink-0">
                                     @if($activity->type === 'user_registration')
-                                    <div class="bg-green-100 p-2 rounded-full">
-                                        <i class="fas fa-user-plus text-green-600 text-sm"></i>
+                                    <div class="bg-blue-100 p-2 rounded-full">
+                                        <i class="fas fa-user-plus text-blue-600 text-sm"></i>
                                     </div>
                                     @elseif($activity->type === 'lesson_view')
                                     <div class="bg-blue-100 p-2 rounded-full">
                                         <i class="fas fa-play text-blue-600 text-sm"></i>
                                     </div>
                                     @elseif($activity->type === 'login_attempt')
-                                    <div class="bg-purple-100 p-2 rounded-full">
-                                        <i class="fas fa-sign-in-alt text-purple-600 text-sm"></i>
+                                    <div class="bg-blue-100 p-2 rounded-full">
+                                        <i class="fas fa-sign-in-alt text-blue-600 text-sm"></i>
                                     </div>
                                     @else
                                     <div class="bg-gray-100 p-2 rounded-full">
@@ -392,62 +392,72 @@
                             <div class="flex items-center justify-between">
                                 <span class="text-sm text-gray-600">Server Status</span>
                                 <span
-                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    <i class="fas fa-circle text-green-400 mr-1 text-xs"></i>
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    <i class="fas fa-circle text-blue-500 mr-1 text-xs"></i>
                                     {{ ucfirst($systemHealth['server_status'] ?? 'Running') }}
                                 </span>
                             </div>
                             <div class="flex items-center justify-between">
                                 <span class="text-sm text-gray-600">Database</span>
                                 <span
-                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    <i class="fas fa-circle text-green-400 mr-1 text-xs"></i>
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    <i class="fas fa-circle text-blue-500 mr-1 text-xs"></i>
                                     {{ ucfirst($systemHealth['database_status']['status'] ?? 'Connected') }}
                                 </span>
                             </div>
                             <div class="flex items-center justify-between">
                                 <span class="text-sm text-gray-600">Cache</span>
                                 <span
-                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    <i class="fas fa-circle text-green-400 mr-1 text-xs"></i>
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    <i class="fas fa-circle text-blue-500 mr-1 text-xs"></i>
                                     {{ ucfirst($systemHealth['cache_status']['status'] ?? 'Ready') }}
                                 </span>
                             </div>
                             <div class="pt-4 border-t border-gray-200">
                                 <div class="space-y-3">
+                                    @php
+                                        $storagePct = floatval(str_replace('%', '', $systemHealth['storage_usage']['used_percentage'] ?? '0'));
+                                        $storageColor = $storagePct >= 85 ? 'bg-red-600' : ($storagePct >= 70 ? 'bg-yellow-500' : 'bg-blue-600');
+                                        
+                                        $memoryPct = floatval(str_replace('%', '', $systemHealth['memory_usage'] ?? '0'));
+                                        $memoryColor = $memoryPct >= 85 ? 'bg-red-600' : ($memoryPct >= 70 ? 'bg-yellow-500' : 'bg-blue-600');
+                                        
+                                        $cpuPct = floatval(str_replace('%', '', $systemHealth['cpu_usage'] ?? '0'));
+                                        $cpuColor = $cpuPct >= 85 ? 'bg-red-600' : ($cpuPct >= 70 ? 'bg-yellow-500' : 'bg-blue-600');
+                                    @endphp
                                     <div>
                                         <div class="flex justify-between text-sm">
                                             <span class="text-gray-600">Storage Usage</span>
-                                            <span class="text-gray-900">{{
+                                            <span class="font-medium {{ $storagePct >= 85 ? 'text-red-600 font-bold' : ($storagePct >= 70 ? 'text-yellow-600' : 'text-gray-900') }}">{{
                                                 $systemHealth['storage_usage']['used_percentage'] ?? '0%' }}</span>
                                         </div>
-                                        <div class="mt-1 bg-gray-200 rounded-full h-2">
-                                            <div class="bg-blue-600 h-2 rounded-full progress-bar-storage"></div>
+                                        <div class="mt-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+                                            <div class="{{ $storageColor }} h-2 rounded-full progress-bar-storage transition-all duration-500" style="width: {{ min(100, max(0, $storagePct)) }}%"></div>
                                         </div>
                                     </div>
                                     <div>
                                         <div class="flex justify-between text-sm">
                                             <span class="text-gray-600">Memory Usage</span>
-                                            <span class="text-gray-900">{{ $systemHealth['memory_usage'] ?? 'N/A'
+                                            <span class="font-medium {{ $memoryPct >= 85 ? 'text-red-600 font-bold' : ($memoryPct >= 70 ? 'text-yellow-600' : 'text-gray-900') }}">{{ $systemHealth['memory_usage'] ?? 'N/A'
                                                 }}</span>
                                         </div>
-                                        <div class="mt-1 bg-gray-200 rounded-full h-2">
-                                            <div class="bg-yellow-500 h-2 rounded-full progress-bar-memory"></div>
+                                        <div class="mt-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+                                            <div class="{{ $memoryColor }} h-2 rounded-full progress-bar-memory transition-all duration-500" style="width: {{ min(100, max(0, $memoryPct)) }}%"></div>
                                         </div>
                                     </div>
                                     <div>
                                         <div class="flex justify-between text-sm">
                                             <span class="text-gray-600">CPU Usage</span>
-                                            <span class="text-gray-900">{{ $systemHealth['cpu_usage'] ?? 'N/A' }}</span>
+                                            <span class="font-medium {{ $cpuPct >= 85 ? 'text-red-600 font-bold' : ($cpuPct >= 70 ? 'text-yellow-600' : 'text-gray-900') }}">{{ $systemHealth['cpu_usage'] ?? 'N/A' }}</span>
                                         </div>
-                                        <div class="mt-1 bg-gray-200 rounded-full h-2">
-                                            <div class="bg-green-500 h-2 rounded-full progress-bar-cpu"></div>
+                                        <div class="mt-1 bg-gray-200 rounded-full h-2 overflow-hidden">
+                                            <div class="{{ $cpuColor }} h-2 rounded-full progress-bar-cpu transition-all duration-500" style="width: {{ min(100, max(0, $cpuPct)) }}%"></div>
                                         </div>
                                     </div>
                                     <a href="{{ route('admin.credentials') }}"
                                         class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                        <div class="bg-indigo-100 p-2 rounded-lg mr-3">
-                                            <i class="fas fa-key text-indigo-600"></i>
+                                        <div class="bg-blue-100 p-2 rounded-lg mr-3">
+                                            <i class="fas fa-key text-blue-600"></i>
                                         </div>
                                         <div>
                                             <p class="text-sm font-medium text-gray-900">Superuser Credentials</p>
@@ -484,8 +494,8 @@
                     
                             <a href="{{ route('admin.contents.index') }}"
                                 class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                <div class="bg-purple-100 p-2 rounded-lg mr-3">
-                                    <i class="fas fa-book text-purple-600"></i>
+                                <div class="bg-blue-100 p-2 rounded-lg mr-3">
+                                    <i class="fas fa-book text-blue-600"></i>
                                 </div>
                                 <div>
                                     <p class="text-sm font-medium text-gray-900">Content Management</p>
@@ -495,8 +505,8 @@
 
                             <a href="{{ route('admin.subjects.index') }}"
                                 class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                <div class="bg-teal-100 p-2 rounded-lg mr-3">
-                                    <i class="fas fa-tags text-teal-600"></i>
+                                <div class="bg-blue-100 p-2 rounded-lg mr-3">
+                                    <i class="fas fa-tags text-blue-600"></i>
                                 </div>
                                 <div>
                                     <p class="text-sm font-medium text-gray-900">Manage Subjects</p>
@@ -506,8 +516,8 @@
 
                                                         <a href="{{ route('admin.analytics') }}"
                                 class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                <div class="bg-green-100 p-2 rounded-lg mr-3">
-                                    <i class="fas fa-chart-bar text-green-600"></i>
+                                <div class="bg-blue-100 p-2 rounded-lg mr-3">
+                                    <i class="fas fa-chart-bar text-blue-600"></i>
                                 </div>
                                 <div>
                                     <p class="text-sm font-medium text-gray-900">Analytics</p>
@@ -587,23 +597,23 @@
                         </div>
                     </div>
                     <div
-                        class="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg">
+                        class="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg">
                         <div>
-                            <p class="text-sm font-medium text-green-900">Weekly Revenue</p>
-                            <p class="text-2xl font-bold text-green-800" id="weekly-revenue">GH₵{{
+                            <p class="text-sm font-medium text-blue-900">Weekly Revenue</p>
+                            <p class="text-2xl font-bold text-blue-800" id="weekly-revenue">GH₵{{
                                 number_format($revenueData['weekly_revenue'] ?? 0, 0) }}</p>
                         </div>
-                        <div class="text-green-600">
+                        <div class="text-blue-600">
                             <i class="fas fa-dollar-sign text-3xl"></i>
                         </div>
                     </div>
                     <div
-                        class="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg">
+                        class="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg">
                         <div>
-                            <p class="text-sm font-medium text-purple-900">Churn Rate</p>
-                            <p class="text-2xl font-bold text-purple-800">{{ $revenueData['churn_rate'] ?? 0 }}%</p>
+                            <p class="text-sm font-medium text-blue-900">Churn Rate</p>
+                            <p class="text-2xl font-bold text-blue-800">{{ $revenueData['churn_rate'] ?? 0 }}%</p>
                         </div>
-                        <div class="text-purple-600">
+                        <div class="text-blue-600">
                             <i class="fas fa-users text-3xl"></i>
                         </div>
                     </div>
@@ -670,7 +680,7 @@
                                 number_format($plan['revenue'], 0) }}</td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                    @if($plan['growth'] > 0) bg-green-100 text-green-800
+                                    @if($plan['growth'] > 0) bg-blue-100 text-blue-800
                                     @elseif($plan['growth'] < 0) bg-red-100 text-red-800
                                     @else bg-gray-100 text-gray-800 @endif">
                                     @if($plan['growth'] > 0)+@endif{{ $plan['growth'] }}%
@@ -695,22 +705,22 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 @foreach($stats['subscription_plans'] as $plan)
                 <div
-                    class="bg-gradient-to-r from-{{ $plan['color'] }}-50 to-{{ $plan['color'] }}-100 rounded-lg p-4 border border-{{ $plan['color'] }}-200">
+                    class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h3 class="text-lg font-semibold text-{{ $plan['color'] }}-900">{{ $plan['name'] }}</h3>
-                            <p class="text-2xl font-bold text-{{ $plan['color'] }}-800">{{
+                            <h3 class="text-lg font-semibold text-blue-900">{{ $plan['name'] }}</h3>
+                            <p class="text-2xl font-bold text-blue-800">{{
                                 number_format($plan['subscribers']) }}</p>
-                            <p class="text-sm text-{{ $plan['color'] }}-700">subscribers</p>
+                            <p class="text-sm text-blue-700">subscribers</p>
                         </div>
                         <div class="text-right">
-                            <p class="text-lg font-semibold text-{{ $plan['color'] }}-900">${{
+                            <p class="text-lg font-semibold text-blue-900">${{
                                 number_format($plan['revenue'], 0) }}</p>
-                            <p class="text-sm text-{{ $plan['color'] }}-700">revenue</p>
+                            <p class="text-sm text-blue-700">revenue</p>
                         </div>
                     </div>
-                    <div class="mt-3 bg-{{ $plan['color'] }}-200 rounded-full h-2">
-                        <div class="bg-{{ $plan['color'] }}-600 h-2 rounded-full plan-progress-bar"
+                    <div class="mt-3 bg-blue-200 rounded-full h-2">
+                        <div class="bg-blue-600 h-2 rounded-full plan-progress-bar"
                             data-width="{{ collect($stats['subscription_plans'])->sum('subscribers') > 0 ? ($plan['subscribers'] / collect($stats['subscription_plans'])->sum('subscribers')) * 100 : 0 }}">
                         </div>
                     </div>
@@ -728,18 +738,18 @@
             @if(isset($b2bSchools) && count($b2bSchools) > 0)
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 @foreach($b2bSchools as $school)
-                <div class="bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-lg p-4 border border-emerald-200">
+                <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h3 class="text-lg font-semibold text-emerald-900">{{ $school->name }}</h3>
-                            <p class="text-2xl font-bold text-emerald-800">{{ number_format($school->users_count ?? 0) }}</p>
-                            <p class="text-sm text-emerald-700">Students & Staff</p>
+                            <h3 class="text-lg font-semibold text-blue-900">{{ $school->name }}</h3>
+                            <p class="text-2xl font-bold text-blue-800">{{ number_format($school->users_count ?? 0) }}</p>
+                            <p class="text-sm text-blue-700">Students & Staff</p>
                         </div>
-                        <div class="text-emerald-600">
+                        <div class="text-blue-600">
                             <i class="fas fa-school text-2xl"></i>
                         </div>
                     </div>
-                    <div class="mt-2 flex justify-between items-center text-xs text-emerald-700">
+                    <div class="mt-2 flex justify-between items-center text-xs text-blue-700">
                         <span>Tier: {{ ucfirst($school->plan_tier) }}</span>
                         <span>{{ $school->hasActiveSubscription() ? 'Active' : 'Inactive' }}</span>
                     </div>
@@ -766,16 +776,16 @@
                 </a>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+                <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h3 class="text-lg font-semibold text-green-900">Total Consents</h3>
-                            <p class="text-2xl font-bold text-green-800">{{
+                            <h3 class="text-lg font-semibold text-blue-900">Total Consents</h3>
+                            <p class="text-2xl font-bold text-blue-800">{{
                                 number_format($stats['cookie_consents']['total_consents']) }}</p>
-                            <p class="text-sm text-green-700">{{
+                            <p class="text-sm text-blue-700">{{
                                 number_format($stats['cookie_consents']['consent_rate'], 1) }}% of users</p>
                         </div>
-                        <div class="text-green-600">
+                        <div class="text-blue-600">
                             <i class="fas fa-cookie-bite text-2xl"></i>
                         </div>
                     </div>
@@ -795,15 +805,15 @@
                     </div>
                 </div>
 
-                <div class="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h3 class="text-lg font-semibold text-purple-900">Recent Activity</h3>
-                            <p class="text-2xl font-bold text-purple-800">{{
+                            <h3 class="text-lg font-semibold text-blue-900">Recent Activity</h3>
+                            <p class="text-2xl font-bold text-blue-800">{{
                                 number_format($stats['cookie_consents']['recent_consents']) }}</p>
-                            <p class="text-sm text-purple-700">Last 30 days</p>
+                            <p class="text-sm text-blue-700">Last 30 days</p>
                         </div>
-                        <div class="text-purple-600">
+                        <div class="text-blue-600">
                             <i class="fas fa-clock text-2xl"></i>
                         </div>
                     </div>
@@ -820,7 +830,7 @@
                         @if(isset($systemHealth['storage_usage']['issues']) && !empty($systemHealth['storage_usage']['issues']))
                             bg-red-100 text-red-800
                         @else
-                            bg-green-100 text-green-800
+                            bg-blue-100 text-blue-800
                         @endif">
                         @if(isset($systemHealth['storage_usage']['issues']) &&
                         !empty($systemHealth['storage_usage']['issues']))
@@ -859,7 +869,7 @@
                     @if(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'critical') from-red-50 to-red-100 border-red-200
                     @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'warning') from-yellow-50 to-yellow-100 border-yellow-200
                     @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'caution') from-orange-50 to-orange-100 border-orange-200
-                    @else from-green-50 to-green-100 border-green-200
+                    @else from-blue-50 to-blue-100 border-blue-200
                     @endif rounded-lg p-4 border">
                     <div class="flex items-center justify-between">
                         <div>
@@ -867,20 +877,20 @@
                                 @if(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'critical') text-red-900
                                 @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'warning') text-yellow-900
                                 @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'caution') text-orange-900
-                                @else text-green-900
+                                @else text-blue-900
                                 @endif">Status</h3>
                             <p class="text-xl font-bold
                                 @if(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'critical') text-red-800
                                 @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'warning') text-yellow-800
                                 @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'caution') text-orange-800
-                                @else text-green-800
+                                @else text-blue-800
                                 @endif">{{ ucfirst($systemHealth['storage_usage']['status'] ?? 'Unknown') }}</p>
                         </div>
                         <div class="
                             @if(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'critical') text-red-600
                             @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'warning') text-yellow-600
                             @elseif(isset($systemHealth['storage_usage']['status']) && $systemHealth['storage_usage']['status'] === 'caution') text-orange-600
-                            @else text-green-600
+                            @else text-blue-600
                             @endif">
                             @if(isset($systemHealth['storage_usage']['status']) &&
                             $systemHealth['storage_usage']['status'] === 'critical')
@@ -899,26 +909,26 @@
                 </div>
 
                 <!-- Recent Alerts -->
-                <div class="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h3 class="text-sm font-semibold text-purple-900">Recent Alerts</h3>
-                            <p class="text-xl font-bold text-purple-800">{{
+                            <h3 class="text-sm font-semibold text-blue-900">Recent Alerts</h3>
+                            <p class="text-xl font-bold text-blue-800">{{
                                 \App\Models\StorageAlert::recent(24)->count() }}</p>
-                            <p class="text-xs text-purple-700">Last 24 hours</p>
+                            <p class="text-xs text-blue-700">Last 24 hours</p>
                         </div>
-                        <div class="text-purple-600">
+                        <div class="text-blue-600">
                             <i class="fas fa-bell text-2xl"></i>
                         </div>
                     </div>
                 </div>
 
                 <!-- Growth Rate -->
-                <div class="bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-lg p-4 border border-indigo-200">
+                <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h3 class="text-sm font-semibold text-indigo-900">Growth Trend</h3>
-                            <p class="text-xl font-bold text-indigo-800">
+                            <h3 class="text-sm font-semibold text-blue-900">Growth Trend</h3>
+                            <p class="text-xl font-bold text-blue-800">
                                 @php
                                 $latestAnalytics =
                                 \App\Models\StorageAnalytic::forPath(storage_path())->latest('measured_at')->first();
@@ -926,15 +936,15 @@
                                 @endphp
                                 @if($growthRate > 0)
                                 <span class="text-red-600">+{{ number_format($growthRate, 1) }}%</span>
-                                @elseif($growthRate < 0) <span class="text-green-600">{{ number_format($growthRate, 1)
+                                @elseif($growthRate < 0) <span class="text-blue-600">{{ number_format($growthRate, 1)
                                     }}%</span>
                                     @else
                                     <span>0.0%</span>
                                     @endif
                             </p>
-                            <p class="text-xs text-indigo-700">Per hour</p>
+                            <p class="text-xs text-blue-700">Per hour</p>
                         </div>
-                        <div class="text-indigo-600">
+                        <div class="text-blue-600">
                             @if($growthRate > 0)
                             <i class="fas fa-arrow-up text-2xl"></i>
                             @elseif($growthRate < 0) <i class="fas fa-arrow-down text-2xl"></i>
@@ -1066,9 +1076,9 @@
     function initializeSparklines() {
         const sparklineData = {
             'users-sparkline': { data: [1200, 1250, 1180, 1320, 1280, 1350, 1420], color: '#3b82f6' },
-            'online-sparkline': { data: [85, 92, 78, 95, 88, 102, 98], color: '#10b981' },
-            'revenue-sparkline': { data: [8500, 9200, 8800, 9600, 9100, 9800, 10200], color: '#10b981' },
-            'subscriptions-sparkline': { data: [45, 48, 42, 52, 49, 55, 58], color: '#8b5cf6' }
+            'online-sparkline': { data: [85, 92, 78, 95, 88, 102, 98], color: '#2563eb' },
+            'revenue-sparkline': { data: [8500, 9200, 8800, 9600, 9100, 9800, 10200], color: '#3b82f6' },
+            'subscriptions-sparkline': { data: [45, 48, 42, 52, 49, 55, 58], color: '#60a5fa' }
         };
 
         Object.keys(sparklineData).forEach(id => {
@@ -1108,7 +1118,7 @@
             stroke: { curve: 'smooth', width: [3, 2] },
             markers: { size: 4, hover: { size: 6 } },
             fill: { type: ['gradient', 'solid'], gradient: { opacityFrom: 0.4, opacityTo: 0.1 } },
-            colors: ['#3b82f6', '#10b981'],
+            colors: ['#2563eb', '#0284c7'],
             xaxis: { categories: trends.map(t => t.month) },
             yaxis: [
                 { title: { text: 'Revenue (GH₵)' }, labels: { formatter: (v) => v ? "GH₵" + v.toLocaleString() : "GH₵0" } },
@@ -1130,7 +1140,7 @@
             series: subscriptionData.map(item => item.revenue),
             chart: { type: 'donut', height: 300 },
             labels: subscriptionData.map(item => item.name),
-            colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+            colors: ['#1e40af', '#2563eb', '#3b82f6', '#60a5fa', '#38bdf8'],
             dataLabels: { enabled: false },
             legend: { show: false },
             tooltip: {
@@ -1153,7 +1163,7 @@
         const legendContainer = document.getElementById('subscription-legend');
         if (!legendContainer) return;
         const total = data.reduce((sum, item) => sum + item.revenue, 0);
-        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+        const colors = ['#1e40af', '#2563eb', '#3b82f6', '#60a5fa', '#38bdf8'];
 
         legendContainer.innerHTML = data.map((item, i) => {
             const percentage = ((item.revenue / total) * 100).toFixed(1);

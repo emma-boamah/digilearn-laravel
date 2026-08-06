@@ -165,30 +165,31 @@
 
         /* Sidebar styles */
         .sidebar {
-            background-color: var(--gray-900);
+            background-color: #0f172a; /* Sleek dark slate theme */
             color: var(--white);
-            width: 16rem;
-            /* Made sidebar fixed position and full height */
+            width: 18rem;
             position: fixed;
             top: 0;
             left: 0;
             height: 100vh;
             overflow-y: auto;
-            padding: 1rem;
+            padding: 1.25rem 0.875rem;
             transition: all 0.3s ease-in-out;
             z-index: 40;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.15);
         }
 
         .sidebar.collapsed {
-            width: 4rem;
+            width: 4.5rem;
         }
 
         .sidebar.collapsed+.main-content {
-            margin-left: 4rem;
+            margin-left: 4.5rem;
         }
 
         .sidebar-link-text {
             display: block;
+            white-space: nowrap;
         }
 
         .sidebar.collapsed .sidebar-link-text {
@@ -203,29 +204,62 @@
             transform: rotate(180deg);
         }
 
-        /* Navigation styles */
+        /* Modern Navigation styles */
         .nav-link {
             display: flex;
             align-items: center;
-            padding: 0.5rem 1rem;
+            padding: 0.625rem 0.875rem;
             border-radius: 0.5rem;
-            color: var(--white);
+            color: #94a3b8;
             text-decoration: none;
-            transition: background-color 0.2s;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease-in-out;
         }
 
         .nav-link:hover {
-            background-color: var(--gray-800);
+            background-color: rgba(255, 255, 255, 0.06);
+            color: #f8fafc;
         }
 
         .nav-link.active {
-            background-color: var(--primary-blue);
+            background-color: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border-left-color: #3b82f6;
+            font-weight: 600;
         }
 
         .nav-link i {
             width: 1.25rem;
-            height: 1.25rem;
+            text-align: center;
             margin-right: 0.75rem;
+            font-size: 0.95rem;
+        }
+
+        .nav-link.active i {
+            color: #60a5fa;
+        }
+
+        /* Submenu refinement */
+        .submenu-link {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8125rem;
+            border-radius: 0.375rem;
+            color: #94a3b8;
+            border-left: 2px solid transparent;
+        }
+
+        .submenu-link:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+        }
+
+        .submenu-link.active {
+            background-color: rgba(59, 130, 246, 0.2);
+            color: #93c5fd;
+            border-left-color: #3b82f6;
+            font-weight: 600;
         }
 
         /* Header styles */
@@ -334,7 +368,7 @@
             overflow-x: hidden;
             overflow-y: auto;
             background-color: var(--gray-50);
-            margin-left: 16rem;
+            margin-left: 18rem;
             transition: margin-left 0.3s ease-in-out;
         }
 
@@ -691,6 +725,47 @@
                     <i class="fas fa-users"></i>
                     <span class="sidebar-link-text">Users</span>
                 </a>
+
+                <!-- Tutor Operations Parent Menu -->
+                @php
+                    $isTutorHubActive = request()->routeIs('admin.tutors*') || request()->routeIs('admin.platform-settings*');
+                    $pendingTutorsCount = \App\Models\TutorProfile::where('is_approved', false)->count();
+                @endphp
+                <div class="space-y-1 my-1">
+                    <button type="button" 
+                            onclick="document.getElementById('tutorHubSubmenu').classList.toggle('hidden'); document.getElementById('tutorHubChevron').classList.toggle('rotate-180');" 
+                            class="w-full nav-link flex items-center justify-between {{ $isTutorHubActive ? 'active' : '' }}">
+                        <div class="flex items-center">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                            <span class="sidebar-link-text">Tutor Operations</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 ml-auto">
+                            @if($pendingTutorsCount > 0)
+                                <span class="bg-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-sm">{{ $pendingTutorsCount }}</span>
+                            @endif
+                            <i id="tutorHubChevron" class="fas fa-chevron-down text-xs transition-transform duration-200 ml-1 {{ $isTutorHubActive ? 'rotate-180' : '' }}"></i>
+                        </div>
+                    </button>
+
+                    <div id="tutorHubSubmenu" class="{{ $isTutorHubActive ? '' : 'hidden' }} ml-4 pl-3 border-l border-slate-700/60 space-y-1 mt-1">
+                        <a href="{{ route('admin.tutors.index') }}"
+                            class="nav-link submenu-link flex items-center justify-between {{ request()->routeIs('admin.tutors*') ? 'active' : '' }}">
+                            <div class="flex items-center">
+                                <i class="fas fa-user-check"></i>
+                                <span class="sidebar-link-text">Applications & Verification</span>
+                            </div>
+                            @if($pendingTutorsCount > 0)
+                                <span class="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1">{{ $pendingTutorsCount }}</span>
+                            @endif
+                        </a>
+
+                        <a href="{{ route('admin.platform-settings.index') }}"
+                            class="nav-link submenu-link flex items-center {{ request()->routeIs('admin.platform-settings*') ? 'active' : '' }}">
+                            <i class="fas fa-sliders-h"></i>
+                            <span class="sidebar-link-text">Commission & Payout Rules</span>
+                        </a>
+                    </div>
+                </div>
                 @endrole
 
                 <!-- Student Progress Management -->
@@ -729,6 +804,12 @@
                     class="nav-link {{ request()->routeIs('admin.contents*') ? 'active' : '' }}">
                     <i class="fas fa-folder-open"></i>
                     <span class="sidebar-link-text">Contents</span>
+                </a>
+
+                <a href="{{ route('admin.ai-contents.index') }}"
+                    class="nav-link {{ request()->routeIs('admin.ai-contents*') ? 'active' : '' }}">
+                    <i class="fas fa-robot"></i>
+                    <span class="sidebar-link-text">AI Contents</span>
                 </a>
 
                 @role('super-admin')
@@ -809,26 +890,24 @@
 
                         <div class="flex items-center space-x-4">
 
-                            <!-- Notifications -->
+                            <!-- Dynamic Real-time Admin Notifications -->
                             <div class="dropdown" id="notificationDropdown">
-                                <button id="notificationDropdownBtn" class="notification-btn">
-                                    <i class="fas fa-bell w-6 h-6"></i>
-                                    <span class="notification-badge"></span>
+                                <button id="notificationDropdownBtn" class="notification-btn relative p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors" title="Notifications">
+                                    <i class="fas fa-bell text-xl"></i>
+                                    <span id="adminNotificationBadge" class="hidden absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-sm">0</span>
                                 </button>
 
-                                <div class="dropdown-menu dropdown-menu-wide">
-                                    <div class="notification-header">
-                                        <strong>Recent Notifications</strong>
+                                <div class="dropdown-menu dropdown-menu-wide shadow-xl rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800" style="width: 350px; max-height: 450px; overflow-y: auto;">
+                                    <div class="p-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                                        <strong class="text-sm font-bold text-gray-900 dark:text-white">Notifications</strong>
+                                        <button id="markAllReadBtn" class="text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold hidden">Mark all read</button>
                                     </div>
-                                    <a href="#" class="dropdown-item">
-                                        <div class="notification-title">New user registered</div>
-                                        <div class="notification-subtitle">john@example.com - 2 minutes ago</div>
-                                    </a>
-                                    <a href="#" class="dropdown-item">
-                                        <div class="notification-title">Security alert</div>
-                                        <div class="notification-subtitle">Multiple failed login attempts - 5 minutes
-                                            ago</div>
-                                    </a>
+                                    <div id="adminNotificationList" class="divide-y divide-gray-100 dark:divide-gray-700">
+                                        <div class="p-4 text-center text-xs text-gray-400">Loading notifications...</div>
+                                    </div>
+                                    <div class="p-2.5 text-center border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
+                                        <a href="{{ route('admin.notifications.index') }}" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">View All Notifications →</a>
+                                    </div>
                                 </div>
                             </div>
 
@@ -859,25 +938,47 @@
             <!-- Page Content -->
             <main class="content-wrapper">
                 <!-- Flash Messages -->
-                @if(session('success'))
-                <div class="alert alert-success">
-                    <span>{{ session('success') }}</span>
-                </div>
-                @endif
+                @if(session('success') || session('error') || (isset($errors) && $errors->any()))
+                <div id="flashAlertContainer" class="max-w-2xl mx-auto px-4 pt-4 transition-all duration-300">
+                    @if(session('success'))
+                    <div class="alert-banner bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl shadow-sm flex items-center justify-between gap-3 text-sm font-medium mb-4 transition-all duration-300" id="flashAlertSuccess">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-check-circle text-emerald-600 text-base flex-shrink-0"></i>
+                            <span>{{ session('success') }}</span>
+                        </div>
+                        <button type="button" onclick="dismissFlashAlert('flashAlertSuccess')" class="text-emerald-500 hover:text-emerald-700 p-1 rounded-lg hover:bg-emerald-100 transition-colors">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    @endif
 
-                @if(session('error'))
-                <div class="alert alert-error">
-                    <span>{{ session('error') }}</span>
-                </div>
-                @endif
+                    @if(session('error'))
+                    <div class="alert-banner bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl shadow-sm flex items-center justify-between gap-3 text-sm font-medium mb-4 transition-all duration-300" id="flashAlertError">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-exclamation-circle text-red-600 text-base flex-shrink-0"></i>
+                            <span>{{ session('error') }}</span>
+                        </div>
+                        <button type="button" onclick="dismissFlashAlert('flashAlertError')" class="text-red-500 hover:text-red-700 p-1 rounded-lg hover:bg-red-100 transition-colors">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    @endif
 
-                @if($errors->any())
-                <div class="alert alert-error">
-                    <ul class="error-list">
-                        @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
+                    @if(isset($errors) && $errors->any())
+                    <div class="alert-banner bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl shadow-sm flex items-start justify-between gap-3 text-sm font-medium mb-4 transition-all duration-300" id="flashAlertErrors">
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-exclamation-triangle text-red-600 text-base flex-shrink-0 mt-0.5"></i>
+                            <ul class="list-disc pl-4 space-y-1">
+                                @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                        <button type="button" onclick="dismissFlashAlert('flashAlertErrors')" class="text-red-500 hover:text-red-700 p-1 rounded-lg hover:bg-red-100 transition-colors">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    @endif
                 </div>
                 @endif
 
@@ -887,6 +988,30 @@
     </div>
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        function dismissFlashAlert(alertId) {
+            const el = document.getElementById(alertId);
+            if (el) {
+                el.style.transition = 'all 0.3s ease-out';
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(-10px)';
+                setTimeout(() => el.remove(), 300);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert-banner');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    if (alert && alert.parentElement) {
+                        alert.style.transition = 'all 0.4s ease-out';
+                        alert.style.opacity = '0';
+                        alert.style.transform = 'translateY(-10px)';
+                        setTimeout(() => alert.remove(), 400);
+                    }
+                }, 5000);
+            });
+        });
+
         // JavaScript for dropdown functionality and sidebar toggle
         function toggleDropdown(dropdownId) {
             const dropdown = document.getElementById(dropdownId);
@@ -958,9 +1083,9 @@
 
                 // Adjust main content margin when sidebar toggles 
                 if (sidebar.classList.contains('collapsed')) {
-                    mainContent.style.marginLeft = '4rem';
+                    mainContent.style.marginLeft = '4.5rem';
                 } else {
-                    mainContent.style.marginLeft = '16rem';
+                    mainContent.style.marginLeft = '18rem';
                 }
             }
 
@@ -1179,6 +1304,155 @@
                     alert('Upload failed. Please try again.');
                 }
             });
+        });
+    </script>
+
+    <!-- Real-time Admin Notification Engine & Toast Banner Container -->
+    <div id="adminToastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-3 pointer-events-none max-w-sm w-full"></div>
+
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        document.addEventListener('DOMContentLoaded', function () {
+            const badge = document.getElementById('adminNotificationBadge');
+            const listContainer = document.getElementById('adminNotificationList');
+            const markAllBtn = document.getElementById('markAllReadBtn');
+            let knownNotificationIds = new Set();
+            let isInitialFetch = true;
+
+            async function fetchAdminNotifications() {
+                try {
+                    const response = await fetch('/api/notifications?per_page=10', {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    if (!response.ok) return;
+
+                    const data = await response.json();
+                    if (!data.success) return;
+
+                    const rawNotifications = data.notifications.data || data.notifications || [];
+                    const unreadCount = data.unread_count || 0;
+
+                    // Update Badge
+                    if (badge) {
+                        if (unreadCount > 0) {
+                            badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                            badge.classList.remove('hidden');
+                        } else {
+                            badge.classList.add('hidden');
+                        }
+                    }
+
+                    // Update Mark All Read button
+                    if (markAllBtn) {
+                        if (unreadCount > 0) {
+                            markAllBtn.classList.remove('hidden');
+                        } else {
+                            markAllBtn.classList.add('hidden');
+                        }
+                    }
+
+                    // Render Dropdown List
+                    if (listContainer) {
+                        if (rawNotifications.length === 0) {
+                            listContainer.innerHTML = '<div class="p-4 text-center text-xs text-gray-400">No notifications found</div>';
+                        } else {
+                            listContainer.innerHTML = rawNotifications.map(n => {
+                                const title = n.data?.title || n.title || 'System Alert';
+                                const message = n.data?.message || n.message || '';
+                                const url = n.data?.url || n.url || '#';
+                                const isUnread = !n.read_at;
+                                const timeAgo = n.created_at ? new Date(n.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+
+                                return `
+                                    <a href="${url}" class="block p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition ${isUnread ? 'bg-blue-50/50 dark:bg-blue-900/10 font-semibold' : ''}">
+                                        <div class="flex items-start justify-between">
+                                            <div class="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                                                ${isUnread ? '<span class="w-2 h-2 rounded-full bg-blue-600 inline-block"></span>' : ''}
+                                                ${title}
+                                            </div>
+                                            <span class="text-[10px] text-gray-400">${timeAgo}</span>
+                                        </div>
+                                        <div class="text-xs text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">${message}</div>
+                                    </a>
+                                `;
+                            }).join('');
+                        }
+                    }
+
+                    // Check for NEW notifications to trigger Toast Popup
+                    rawNotifications.forEach(n => {
+                        if (!knownNotificationIds.has(n.id)) {
+                            knownNotificationIds.add(n.id);
+
+                            if (!isInitialFetch && !n.read_at) {
+                                showNotificationToast(n);
+                            }
+                        }
+                    });
+
+                    isInitialFetch = false;
+                } catch (e) {
+                    console.error('Error fetching admin notifications:', e);
+                }
+            }
+
+            function showNotificationToast(notification) {
+                const toastContainer = document.getElementById('adminToastContainer');
+                if (!toastContainer) return;
+
+                const title = notification.data?.title || notification.title || 'New Notification';
+                const message = notification.data?.message || notification.message || '';
+                const url = notification.data?.url || notification.url || '#';
+
+                const toast = document.createElement('div');
+                toast.className = 'pointer-events-auto bg-white dark:bg-gray-800 border-l-4 border-blue-600 rounded-lg shadow-xl p-4 transform transition-all duration-300 translate-y-5 opacity-0 flex items-start gap-3';
+                toast.innerHTML = `
+                    <div class="text-blue-600 text-xl font-bold mt-0.5">🔔</div>
+                    <div class="flex-1">
+                        <h4 class="text-sm font-bold text-gray-900 dark:text-white">${title}</h4>
+                        <p class="text-xs text-gray-600 dark:text-gray-300 mt-0.5">${message}</p>
+                        ${url !== '#' ? `<a href="${url}" class="inline-block mt-2 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">Inspect Application →</a>` : ''}
+                    </div>
+                    <button class="text-gray-400 hover:text-gray-600 dark:hover:text-white text-xs p-1" onclick="this.parentElement.remove()">✕</button>
+                `;
+
+                toastContainer.appendChild(toast);
+
+                // Animate In
+                setTimeout(() => {
+                    toast.classList.remove('translate-y-5', 'opacity-0');
+                }, 50);
+
+                // Auto Dismiss after 8 seconds
+                setTimeout(() => {
+                    toast.classList.add('opacity-0', 'translate-y-5');
+                    setTimeout(() => toast.remove(), 300);
+                }, 8000);
+            }
+
+            if (markAllBtn) {
+                markAllBtn.addEventListener('click', async function () {
+                    try {
+                        await fetch('/api/notifications/mark-all-read', {
+                            method: 'PUT',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json'
+                            }
+                        });
+                        fetchAdminNotifications();
+                    } catch (e) {
+                        console.error('Error marking all as read:', e);
+                    }
+                });
+            }
+
+            // Initial load + interval polling every 6 seconds
+            fetchAdminNotifications();
+            setInterval(fetchAdminNotifications, 6000);
         });
     </script>
 

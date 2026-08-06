@@ -71,36 +71,93 @@
             border-radius: 6px;
             overflow: hidden;
             flex-shrink: 0;
-            background: #000;
+            background: #0f172a;
         }
 
         .video-thumbnail img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            display: block;
         }
 
         .video-thumbnail-placeholder {
             width: 100%;
             height: 100%;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             font-size: 1.5rem;
+            position: relative;
+        }
+
+        .video-thumbnail-placeholder.placeholder-video {
+            background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+        }
+
+        .video-thumbnail-placeholder.placeholder-quiz {
+            background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+        }
+
+        .video-thumbnail-placeholder.placeholder-document {
+            background: linear-gradient(135deg, #d97706 0%, #ea580c 100%);
+        }
+
+        .content-type-badge-overlay {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            background: rgba(0, 0, 0, 0.65);
+            color: #ffffff;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 0.625rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            line-height: 1.2;
+            z-index: 2;
+        }
+
+        .video-play-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.75rem;
+            pointer-events: none;
+            transition: all 0.2s ease;
+            z-index: 2;
+        }
+
+        .video-thumbnail:hover .video-play-overlay {
+            transform: translate(-50%, -50%) scale(1.15);
+            background: rgba(225, 29, 72, 0.9);
+            border-color: rgba(255, 255, 255, 0.8);
         }
 
         .video-duration {
             position: absolute;
             bottom: 4px;
             right: 4px;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
             color: white;
             padding: 2px 6px;
             border-radius: 3px;
-            font-size: 0.75rem;
-            font-weight: 500;
+            font-size: 0.7rem;
+            font-weight: 600;
+            z-index: 2;
         }
 
         .video-info {
@@ -323,6 +380,54 @@
 
         .toolbar-btn.primary:hover {
             background: #1d4ed8;
+        }
+
+        .custom-select-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .custom-select-wrapper .toolbar-select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 8px 36px 8px 14px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #334155;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .custom-select-wrapper .toolbar-select:hover {
+            background-color: #f8fafc;
+            border-color: #cbd5e1;
+            color: #0f172a;
+        }
+
+        .custom-select-wrapper .toolbar-select:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        .custom-select-arrow {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: 0.75rem;
+            pointer-events: none;
+            transition: color 0.15s ease;
+        }
+
+        .custom-select-wrapper:hover .custom-select-arrow {
+            color: #0f172a;
         }
 
         .search-box {
@@ -1099,7 +1204,28 @@
 @endpush
 
 @section('content')
-    <div class="min-h-screen bg-gray-50">
+    <div class="min-h-screen bg-gray-50 relative">
+        <!-- Floating Bulk Action Bar -->
+        <div id="bulkActionBar" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3.5 rounded-full shadow-2xl z-50 transition-all duration-300 transform translate-y-24 opacity-0 pointer-events-none flex items-center gap-4 border border-slate-700">
+            <div class="flex items-center gap-2 pr-4 border-r border-slate-700 font-semibold text-sm">
+                <span class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold" id="bulkSelectedCount">0</span>
+                <span class="text-slate-200">selected</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="button" id="bulkApproveBtn" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full text-xs font-semibold transition-colors flex items-center gap-1.5 shadow">
+                    <i class="fas fa-check"></i>
+                    <span>Approve</span>
+                </button>
+                <button type="button" id="bulkDeleteBtn" class="px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-full text-xs font-semibold transition-colors flex items-center gap-1.5 shadow">
+                    <i class="fas fa-trash-alt"></i>
+                    <span>Delete Selected</span>
+                </button>
+                <button type="button" id="bulkDeselectBtn" class="px-3 py-1.5 text-slate-400 hover:text-white text-xs font-medium transition-colors">
+                    Deselect All
+                </button>
+            </div>
+        </div>
+
         <!-- Stats Overview -->
         <div class="stats-grid mb-6">
             <div class="stat-card">
@@ -1138,14 +1264,6 @@
                 class="filter-tab {{ $type === 'documents' ? 'active' : '' }}">Documents</a>
             <a href="{{ route('admin.contents.index', ['q' => $query, 'type' => 'quizzes', 'sort' => $sort]) }}"
                 class="filter-tab {{ $type === 'quizzes' ? 'active' : '' }}">Quizzes</a>
-            <a href="{{ route('admin.contents.index', ['q' => $query, 'type' => 'agent', 'sort' => $sort]) }}"
-                class="filter-tab {{ $type === 'agent' ? 'active' : '' }}">
-                <svg style="width:14px;height:14px;display:inline-block;margin-right:4px;" fill="none" stroke="currentColor"
-                    viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                AI Generated
-            </a>
         </div>
 
         <!-- Content Table -->
@@ -1161,20 +1279,26 @@
                         <i class="fas fa-search"></i>
                         <input type="text" placeholder="Search contents..." value="{{ $query }}" id="searchInput">
                     </div>
-                    <select id="levelGroupFilter" class="toolbar-select">
-                        <option value="">All Levels</option>
-                        @foreach($levelGroups as $group)
-                            <option value="{{ $group->slug }}">{{ $group->title }}</option>
-                        @endforeach
-                    </select>
-                    <select id="contextFilter" class="toolbar-select">
-                        <option value="">All Categories</option>
-                        @foreach($categories as $category)
-                            @if(strtolower($category->slug) !== 'normal')
-                                <option value="{{ $category->slug }}">{{ $category->name }}</option>
-                            @endif
-                        @endforeach
-                    </select>
+                    <div class="custom-select-wrapper">
+                        <select id="levelGroupFilter" class="toolbar-select">
+                            <option value="">All Levels</option>
+                            @foreach($levelGroups as $group)
+                                <option value="{{ $group->slug }}">{{ $group->title }}</option>
+                            @endforeach
+                        </select>
+                        <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    </div>
+                    <div class="custom-select-wrapper">
+                        <select id="contextFilter" class="toolbar-select">
+                            <option value="">All Categories</option>
+                            @foreach($categories as $category)
+                                @if(strtolower($category->slug) !== 'normal')
+                                    <option value="{{ $category->slug }}">{{ $category->name }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                        <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    </div>
                 </div>
                 <button class="toolbar-btn primary" id="uploadBtnToolbar">
                     <i class="fas fa-upload"></i>
@@ -1211,27 +1335,56 @@
                             @foreach($contents as $content)
                                 <tr>
                                     <td class="checkbox-cell">
-                                        <input type="checkbox" class="content-checkbox" value="{{ $content->id }}">
+                                        <input type="checkbox" class="content-checkbox" value="{{ $content->id }}" data-type="{{ $content->content_type }}">
                                     </td>
                                     <td>
                                         <div class="video-cell">
                                             <div class="video-thumbnail">
-                                                @if($content->content_type === 'video' && $content->thumbnail_path)
-                                                    <img src="{{ asset('storage/' . $content->thumbnail_path) }}"
-                                                        alt="{{ $content->title }}">
-                                                @else
-                                                    <div class="video-thumbnail-placeholder">
-                                                        @if($content->content_type === 'video')
+                                                @php
+                                                    $resolvedThumbnail = null;
+                                                    if ($content->content_type === 'video') {
+                                                        if (isset($content->thumbnail_url) && $content->thumbnail_url && !str_contains($content->thumbnail_url, 'video-placeholder.jpg')) {
+                                                            $resolvedThumbnail = $content->thumbnail_url;
+                                                        } elseif (method_exists($content, 'getThumbnailUrl')) {
+                                                            $url = $content->getThumbnailUrl();
+                                                            if ($url && !str_contains($url, 'video-placeholder.jpg')) {
+                                                                $resolvedThumbnail = $url;
+                                                            }
+                                                        } elseif (!empty($content->thumbnail_path)) {
+                                                            $resolvedThumbnail = asset('storage/' . $content->thumbnail_path);
+                                                        }
+                                                    }
+                                                @endphp
+
+                                                @if($content->content_type === 'video')
+                                                    @if($resolvedThumbnail)
+                                                        <img src="{{ $resolvedThumbnail }}"
+                                                            alt="{{ $content->title }}"
+                                                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                        <div class="video-thumbnail-placeholder placeholder-video" style="display: none;">
                                                             <i class="fas fa-play"></i>
-                                                        @elseif($content->content_type === 'document')
-                                                            <i class="fas fa-file-alt"></i>
-                                                        @else
-                                                            <i class="fas fa-question-circle"></i>
-                                                        @endif
+                                                        </div>
+                                                        <div class="video-play-overlay">
+                                                            <i class="fas fa-play" style="margin-left: 2px;"></i>
+                                                        </div>
+                                                    @else
+                                                        <div class="video-thumbnail-placeholder placeholder-video">
+                                                            <i class="fas fa-play"></i>
+                                                        </div>
+                                                    @endif
+                                                    @if($content->duration_formatted && $content->duration_formatted !== '00:00:00' && $content->duration_formatted !== 'N/A')
+                                                        <span class="video-duration">{{ $content->duration_formatted }}</span>
+                                                    @endif
+                                                @elseif($content->content_type === 'document')
+                                                    <div class="video-thumbnail-placeholder placeholder-document">
+                                                        <i class="fas fa-file-alt"></i>
                                                     </div>
-                                                @endif
-                                                @if($content->content_type === 'video' && $content->duration_formatted && $content->duration_formatted !== '00:00:00')
-                                                    <span class="video-duration">{{ $content->duration_formatted }}</span>
+                                                    <span class="content-type-badge-overlay">DOC</span>
+                                                @else
+                                                    <div class="video-thumbnail-placeholder placeholder-quiz">
+                                                        <i class="fas fa-clipboard-check"></i>
+                                                    </div>
+                                                    <span class="content-type-badge-overlay">QUIZ</span>
                                                 @endif
                                             </div>
                                             <div class="video-info">
@@ -2229,12 +2382,123 @@
             const contentCheckboxes = document.querySelectorAll('.content-checkbox');
             const searchInput = document.getElementById('searchInput');
 
-            // Select all checkbox
+            // Select all & Bulk Action Bar logic
+            const bulkActionBar = document.getElementById('bulkActionBar');
+            const bulkSelectedCount = document.getElementById('bulkSelectedCount');
+            const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+            const bulkApproveBtn = document.getElementById('bulkApproveBtn');
+            const bulkDeselectBtn = document.getElementById('bulkDeselectBtn');
+
+            function updateBulkSelection() {
+                const checkedBoxes = document.querySelectorAll('.content-checkbox:checked');
+                const count = checkedBoxes.length;
+
+                if (bulkSelectedCount) bulkSelectedCount.textContent = count;
+
+                if (bulkActionBar) {
+                    if (count > 0) {
+                        bulkActionBar.classList.remove('translate-y-24', 'opacity-0', 'pointer-events-none');
+                        bulkActionBar.classList.add('translate-y-0', 'opacity-100');
+                    } else {
+                        bulkActionBar.classList.add('translate-y-24', 'opacity-0', 'pointer-events-none');
+                        bulkActionBar.classList.remove('translate-y-0', 'opacity-100');
+                    }
+                }
+
+                if (selectAll) {
+                    selectAll.checked = contentCheckboxes.length > 0 && count === contentCheckboxes.length;
+                }
+            }
+
             if (selectAll) {
                 selectAll.addEventListener('change', function () {
                     contentCheckboxes.forEach(checkbox => {
                         checkbox.checked = this.checked;
                     });
+                    updateBulkSelection();
+                });
+            }
+
+            contentCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateBulkSelection);
+            });
+
+            if (bulkDeselectBtn) {
+                bulkDeselectBtn.addEventListener('click', function() {
+                    contentCheckboxes.forEach(checkbox => checkbox.checked = false);
+                    if (selectAll) selectAll.checked = false;
+                    updateBulkSelection();
+                });
+            }
+
+            function getSelectedItems() {
+                const selected = [];
+                document.querySelectorAll('.content-checkbox:checked').forEach(cb => {
+                    selected.push({
+                        id: cb.value,
+                        type: cb.getAttribute('data-type') || 'video'
+                    });
+                });
+                return selected;
+            }
+
+            async function performBulkAction(action, extraPayload = {}) {
+                const items = getSelectedItems();
+                if (items.length === 0) {
+                    alert('Please select at least one item.');
+                    return;
+                }
+
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                
+                try {
+                    const response = await fetch('{{ route("admin.contents.bulk-action") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            action: action,
+                            items: items,
+                            ...extraPayload
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        alert(data.message || 'Bulk action completed successfully.');
+                        window.location.reload();
+                    } else {
+                        alert(data.message || 'Failed to complete bulk action.');
+                    }
+                } catch (error) {
+                    console.error('Bulk action error:', error);
+                    alert('An unexpected error occurred during bulk operation.');
+                }
+            }
+
+            if (bulkDeleteBtn) {
+                bulkDeleteBtn.addEventListener('click', function() {
+                    const items = getSelectedItems();
+                    if (items.length === 0) return;
+                    
+                    if (confirm(`Are you sure you want to delete ${items.length} selected item(s)? This action cannot be undone.`)) {
+                        performBulkAction('delete', { delete_related: true });
+                    }
+                });
+            }
+
+            if (bulkApproveBtn) {
+                bulkApproveBtn.addEventListener('click', function() {
+                    const items = getSelectedItems();
+                    if (items.length === 0) return;
+
+                    if (confirm(`Approve ${items.length} selected item(s)?`)) {
+                        performBulkAction('approve');
+                    }
                 });
             }
 

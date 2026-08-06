@@ -21,6 +21,7 @@ use App\Models\UserPreference;
 use App\Services\UserActivityService;
 use App\Services\SubscriptionAccessService;
 use App\Services\ResubscriptionService;
+use App\Helpers\PhoneNormalizerHelper;
 
 class ProfileController extends Controller
 {
@@ -659,8 +660,10 @@ class ProfileController extends Controller
             ]);
 
             $oldPhone = $user->phone;
+            // Normalize phone number before storing
+            $normalizedPhone = PhoneNormalizerHelper::normalize($validated['phone']);
             $user->update([
-                'phone' => $validated['phone'],
+                'phone' => $normalizedPhone ?? $validated['phone'],
                 'phone_verified_at' => null, // Reset verification on change
             ]);
 

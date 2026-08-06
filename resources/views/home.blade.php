@@ -1155,14 +1155,6 @@ $jsonLd = [
         }
     }
 
-    .pricing-card {
-        background-color: transparent;
-        border-radius: var(--border-radius-lg);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        position: relative;
-        z-index: 1;
-    }
-
     .pricing-card-bg {
         position: absolute;
         top: 0;
@@ -1250,11 +1242,12 @@ $jsonLd = [
         flex-direction: column;
         justify-content: center;
         align-content: center;
+	margin-top: 2rem;
     }
 
     .pricing-description {
         color: var(--gray-600);
-        font-size: 0.875rem;
+        font-size: 0.9rem;
         line-height: 1.5;
         margin-bottom: 1.5rem;
     }
@@ -1268,21 +1261,6 @@ $jsonLd = [
         font-weight: bold;
         color: var(--gray-900);
         line-height: 1;
-    }
-
-    .pricing-features {
-        list-style: none;
-        padding: 0;
-        margin: 0 0 2rem 0;
-    }
-
-    .pricing-features li {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 0.75rem;
-        color: var(--gray-600);
-        font-size: 0.875rem;
     }
 
     .pricing-features svg {
@@ -2059,6 +2037,7 @@ $jsonLd = [
         position: relative;
         border: none;
         margin-top: 20px;
+	text-align: center;
         /* Add margin to accommodate floating badge */
         z-index: 1;
     }
@@ -2094,12 +2073,7 @@ $jsonLd = [
         gap: 0.75rem;
         margin-bottom: 1rem;
         color: var(--gray-600);
-        font-size: 0.875rem;
-    }
-
-    .pricing-features svg {
-        color: var(--primary-red);
-        flex-shrink: 0;
+        font-size: 0.9rem;
     }
 
     @media (max-width: 48rem) {
