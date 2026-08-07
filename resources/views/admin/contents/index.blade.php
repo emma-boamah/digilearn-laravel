@@ -579,6 +579,38 @@
             background: #f0f9ff;
         }
 
+        /* Enhanced Batch Dropdown Select Styling */
+        .batch-select-input {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-color: #ffffff !important;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232563eb' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 0.75rem center !important;
+            background-size: 0.875rem 0.875rem !important;
+            padding-right: 2.25rem !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 0.625rem !important;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+            font-weight: 600 !important;
+            color: #0f172a !important;
+            transition: all 0.2s ease-in-out !important;
+        }
+
+        .batch-select-input:hover {
+            border-color: #3b82f6 !important;
+            background-color: #f8fafc !important;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.08) !important;
+        }
+
+        .batch-select-input:focus {
+            border-color: #2563eb !important;
+            background-color: #ffffff !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+            outline: none !important;
+        }
+
         .file-upload-area.has-video {
             padding: 0;
             border: none;
@@ -1616,14 +1648,32 @@
     <!-- Multi-Step Upload Wizard -->
     <div id="uploadModal" class="upload-modal">
         <div class="upload-form">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-semibold text-gray-900">Create Content Package</h2>
-                <button id="closeModal" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
+            <!-- Modal Header with Prominent Brand Mode Switcher -->
+            <div class="border-b pb-5 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-2xl font-black text-gray-900 tracking-tight">Upload Content</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">Select your preferred upload mode below</p>
+                    </div>
+                    <button id="closeModal" class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Prominent Brand-Colored Mode Switcher Tab Bar -->
+                <div class="grid grid-cols-2 p-1.5 bg-blue-50/80 border border-blue-100 rounded-xl text-sm font-bold shadow-inner max-w-md mx-auto">
+                    <button type="button" id="modeSingleBtn" class="py-2.5 px-4 rounded-lg text-white bg-blue-600 shadow-md border border-blue-700 transition-all flex items-center justify-center gap-2">
+                        <i class="fas fa-box-open text-base"></i> Single Package Wizard
+                    </button>
+                    <button type="button" id="modeBatchBtn" class="py-2.5 px-4 rounded-lg text-blue-800 hover:bg-white/80 transition-all flex items-center justify-center gap-2 font-bold">
+                        <i class="fas fa-layer-group text-base text-blue-600"></i> Multi-Content Batch <span class="bg-red-600 text-white text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-black shadow-sm">New</span>
+                    </button>
+                </div>
             </div>
 
-            <!-- Step Indicators -->
+            <!-- Single Package Wizard Container -->
+            <div id="singlePackageWizard">
+                <!-- Step Indicators -->
             <div class="flex items-center justify-center mb-8">
                 <div class="flex items-center">
                     <div class="step-indicator active" data-step="1">
@@ -2087,6 +2137,144 @@
                     <button type="button" id="finishBtn"
                         class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 hidden">
                         <i class="fas fa-check mr-2"></i>Publish
+                    </button>
+                </div>
+            </div>
+            </div><!-- End #singlePackageWizard -->
+
+            <!-- Multi-Content Batch Container -->
+            <div id="batchUploadContainer" class="hidden">
+                <!-- Global Defaults Bar -->
+                <div class="bg-gradient-to-r from-blue-50 to-blue-100/40 border border-blue-200 rounded-xl p-4 mb-6 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-xs font-bold text-blue-950 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fas fa-sliders-h text-blue-600"></i> Batch Default Settings (Applies to all dropped files)
+                        </h4>
+                        <span class="text-[11px] text-blue-700 font-medium">You can override per file below</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-800 mb-1 flex items-center gap-1">
+                                <i class="fas fa-book text-blue-600 text-[10px]"></i> Default Subject
+                            </label>
+                            <select id="batchGlobalSubject" class="w-full text-xs py-2 px-3 batch-select-input">
+                                <option value="">-- Select Subject --</option>
+                                @foreach($subjects as $subject)
+                                    <option value="{{ $subject->id }}">{{ $subject->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-800 mb-1 flex items-center gap-1">
+                                <i class="fas fa-graduation-cap text-blue-600 text-[10px]"></i> Default Grade Level
+                            </label>
+                            <select id="batchGlobalGrade" class="w-full text-xs py-2 px-3 batch-select-input">
+                                <option value="General">General (All Grades)</option>
+                                @if(isset($levelGroups) && $levelGroups->count())
+                                    @foreach($levelGroups as $group)
+                                        <optgroup label="{{ strtoupper($group->name ?? $group->title) }}">
+                                            @foreach($group->levels as $level)
+                                                <option value="{{ $level->title }}">{{ $level->title }}</option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endforeach
+                                @else
+                                    <optgroup label="LOWER PRIMARY">
+                                        <option value="Basic 1">Basic 1</option>
+                                        <option value="Basic 2">Basic 2</option>
+                                        <option value="Basic 3">Basic 3</option>
+                                    </optgroup>
+                                    <optgroup label="UPPER PRIMARY">
+                                        <option value="Basic 4">Basic 4</option>
+                                        <option value="Basic 5">Basic 5</option>
+                                        <option value="Basic 6">Basic 6</option>
+                                    </optgroup>
+                                    <optgroup label="JUNIOR HIGH SCHOOL">
+                                        <option value="JHS 1">JHS 1</option>
+                                        <option value="JHS 2">JHS 2</option>
+                                        <option value="JHS 3">JHS 3</option>
+                                    </optgroup>
+                                    <optgroup label="SENIOR HIGH SCHOOL">
+                                        <option value="SHS 1">SHS 1</option>
+                                        <option value="SHS 2">SHS 2</option>
+                                        <option value="SHS 3">SHS 3</option>
+                                    </optgroup>
+                                    <optgroup label="HIGHER EDUCATION">
+                                        <option value="Tertiary">Tertiary</option>
+                                    </optgroup>
+                                @endif
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-800 mb-1 flex items-center gap-1">
+                                <i class="fas fa-server text-blue-600 text-[10px]"></i> Video Destination
+                            </label>
+                            <select id="batchGlobalDestination" class="w-full text-xs py-2 px-3 batch-select-input">
+                                <option value="local">Local Server Storage</option>
+                                <option value="vimeo">Vimeo Cloud Upload</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-800 mb-1 flex items-center gap-1">
+                                <i class="fas fa-check-circle text-blue-600 text-[10px]"></i> Default Status
+                            </label>
+                            <select id="batchGlobalStatus" class="w-full text-xs py-2 px-3 batch-select-input">
+                                <option value="pending">Pending Review</option>
+                                <option value="approved">Auto-Approved</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Drag and Drop Dropzone -->
+                <div id="batchDropzone" class="border-2 border-dashed border-blue-300 rounded-xl p-8 text-center bg-blue-50/30 hover:bg-blue-50/70 transition cursor-pointer mb-6 group">
+                    <input type="file" id="batchFileInput" multiple accept="video/*,.pdf,.doc,.docx,.ppt,.pptx,.json,.csv" class="hidden">
+                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-cloud-upload-alt text-xl"></i>
+                    </div>
+                    <h4 class="text-base font-bold text-gray-900 mb-1">Drag & Drop Two or More Files Here</h4>
+                    <p class="text-xs text-gray-500 mb-3">Upload Videos (.mp4), Documents (.pdf, .docx), and Quiz Papers simultaneously</p>
+                    <span class="inline-block px-4 py-1.5 bg-white border border-blue-200 text-blue-700 rounded-full text-xs font-bold shadow-sm hover:bg-blue-50 transition-colors">
+                        <i class="fas fa-folder-open mr-1.5 text-blue-600"></i> Browse Files from Computer
+                    </span>
+                </div>
+
+                <!-- Batch Items Matrix Table -->
+                <div id="batchTableWrapper" class="hidden mb-6 border rounded-xl overflow-hidden shadow-sm">
+                    <div class="bg-gray-50 px-4 py-2.5 border-b flex justify-between items-center">
+                        <span class="text-xs font-bold text-gray-700 uppercase tracking-wide">
+                            Files in Batch Queue (<span id="batchCountBadge">0</span>)
+                        </span>
+                        <button type="button" id="clearBatchBtn" class="text-xs text-red-600 hover:text-red-800 font-semibold">
+                            <i class="fas fa-trash-alt mr-1"></i> Clear All
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto max-h-72">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-gray-100 text-gray-600 font-semibold uppercase tracking-wider border-b">
+                                <tr>
+                                    <th class="p-3">File</th>
+                                    <th class="p-3">Title</th>
+                                    <th class="p-3">Type / PDF Action</th>
+                                    <th class="p-3">Subject & Grade</th>
+                                    <th class="p-3">Link To Video</th>
+                                    <th class="p-3 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="batchTableBody" class="divide-y divide-gray-200 bg-white">
+                                <!-- Rows dynamically generated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Batch Submit Action Bar -->
+                <div class="flex justify-end items-center gap-3 pt-4 border-t">
+                    <button type="button" id="cancelBatchBtn" class="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 text-xs font-semibold">
+                        Cancel
+                    </button>
+                    <button type="button" id="submitBatchBtn" class="px-5 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-md transition-all flex items-center gap-2 text-xs disabled:opacity-50" disabled>
+                        <i class="fas fa-rocket"></i> Start Batch Upload Process
                     </button>
                 </div>
             </div>
@@ -2886,6 +3074,363 @@
 
             // Initialize wizard
             initializeWizard();
+            initializeBatchUpload();
+
+            // Multi-Content Batch Upload Logic
+            let batchItems = [];
+
+            function initializeBatchUpload() {
+                const modeSingleBtn = document.getElementById('modeSingleBtn');
+                const modeBatchBtn = document.getElementById('modeBatchBtn');
+                const singlePackageWizard = document.getElementById('singlePackageWizard');
+                const batchUploadContainer = document.getElementById('batchUploadContainer');
+                const uploadFormModal = document.querySelector('.upload-form');
+
+                if (modeSingleBtn && modeBatchBtn) {
+                    modeSingleBtn.addEventListener('click', () => {
+                        modeSingleBtn.className = "py-2.5 px-4 rounded-lg text-white bg-blue-600 shadow-md border border-blue-700 transition-all flex items-center justify-center gap-2 font-bold";
+                        modeBatchBtn.className = "py-2.5 px-4 rounded-lg text-blue-800 hover:bg-white/80 transition-all flex items-center justify-center gap-2 font-bold";
+                        if (singlePackageWizard) singlePackageWizard.classList.remove('hidden');
+                        if (batchUploadContainer) batchUploadContainer.classList.add('hidden');
+                        if (uploadFormModal) uploadFormModal.style.maxWidth = "800px";
+                    });
+
+                    modeBatchBtn.addEventListener('click', () => {
+                        modeBatchBtn.className = "py-2.5 px-4 rounded-lg text-white bg-blue-600 shadow-md border border-blue-700 transition-all flex items-center justify-center gap-2 font-bold";
+                        modeSingleBtn.className = "py-2.5 px-4 rounded-lg text-blue-800 hover:bg-white/80 transition-all flex items-center justify-center gap-2 font-bold";
+                        if (singlePackageWizard) singlePackageWizard.classList.add('hidden');
+                        if (batchUploadContainer) batchUploadContainer.classList.remove('hidden');
+                        if (uploadFormModal) uploadFormModal.style.maxWidth = "1100px";
+                    });
+                }
+
+                const batchDropzone = document.getElementById('batchDropzone');
+                const batchFileInput = document.getElementById('batchFileInput');
+                const batchTableWrapper = document.getElementById('batchTableWrapper');
+                const batchTableBody = document.getElementById('batchTableBody');
+                const batchCountBadge = document.getElementById('batchCountBadge');
+                const submitBatchBtn = document.getElementById('submitBatchBtn');
+                const clearBatchBtn = document.getElementById('clearBatchBtn');
+                const cancelBatchBtn = document.getElementById('cancelBatchBtn');
+
+                if (cancelBatchBtn && uploadModal) {
+                    cancelBatchBtn.addEventListener('click', () => {
+                        uploadModal.classList.remove('show');
+                        batchItems = [];
+                        renderBatchTable();
+                    });
+                }
+
+                if (batchDropzone && batchFileInput) {
+                    batchDropzone.addEventListener('click', (e) => {
+                        if (e.target !== batchFileInput) {
+                            batchFileInput.click();
+                        }
+                    });
+
+                    batchDropzone.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        batchDropzone.classList.add('bg-blue-100/70', 'border-blue-500');
+                    });
+
+                    batchDropzone.addEventListener('dragleave', () => {
+                        batchDropzone.classList.remove('bg-blue-100/70', 'border-blue-500');
+                    });
+
+                    batchDropzone.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        batchDropzone.classList.remove('bg-blue-100/70', 'border-blue-500');
+                        if (e.dataTransfer.files && e.dataTransfer.files.length) {
+                            handleBatchFiles(e.dataTransfer.files);
+                        }
+                    });
+
+                    batchFileInput.addEventListener('change', (e) => {
+                        if (e.target.files && e.target.files.length) {
+                            handleBatchFiles(e.target.files);
+                        }
+                    });
+                }
+
+                function handleBatchFiles(files) {
+                    const globalSubj = document.getElementById('batchGlobalSubject')?.value || '';
+                    const globalGrade = document.getElementById('batchGlobalGrade')?.value || 'General';
+
+                    Array.from(files).forEach(file => {
+                        const ext = file.name.split('.').pop().toLowerCase();
+                        let type = 'document';
+                        if (['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(ext)) {
+                            type = 'video';
+                        } else if (['json', 'csv'].includes(ext)) {
+                            type = 'quiz';
+                        }
+
+                        const tempId = 'item_' + Math.random().toString(36).substr(2, 9);
+                        const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+
+                        batchItems.push({
+                            temp_id: tempId,
+                            file: file,
+                            title: nameWithoutExt,
+                            type: type,
+                            is_pdf: ext === 'pdf',
+                            convert_pdf_to_quiz: false,
+                            subject_id: globalSubj,
+                            grade_level: globalGrade,
+                            parent_temp_id: '',
+                            status: 'ready'
+                        });
+                    });
+
+                    renderBatchTable();
+                }
+
+                function renderBatchTable() {
+                    if (!batchTableBody || !batchTableWrapper) return;
+
+                    if (batchItems.length === 0) {
+                        batchTableWrapper.classList.add('hidden');
+                        if (submitBatchBtn) submitBatchBtn.disabled = true;
+                        if (batchCountBadge) batchCountBadge.textContent = '0';
+                        return;
+                    }
+
+                    batchTableWrapper.classList.remove('hidden');
+                    if (submitBatchBtn) submitBatchBtn.disabled = false;
+                    if (batchCountBadge) batchCountBadge.textContent = batchItems.length;
+
+                    const videoItems = batchItems.filter(i => i.type === 'video');
+
+                    batchTableBody.innerHTML = batchItems.map((item, index) => {
+                        const iconClass = item.type === 'video' ? 'fa-video text-blue-500' : (item.type === 'quiz' ? 'fa-question-circle text-purple-500' : 'fa-file-pdf text-red-500');
+
+                        let typeCellHTML = `
+                            <select onchange="window.updateBatchItemType(${index}, this.value)" class="text-xs py-1 px-2.5 batch-select-input font-semibold">
+                                <option value="video" ${item.type === 'video' ? 'selected' : ''}>Video</option>
+                                <option value="document" ${item.type === 'document' ? 'selected' : ''}>Document</option>
+                                <option value="quiz" ${item.type === 'quiz' ? 'selected' : ''}>Quiz</option>
+                            </select>
+                        `;
+
+                        if (item.is_pdf) {
+                            typeCellHTML += `
+                                <label class="flex items-center gap-1 mt-1 text-[11px] font-semibold text-blue-700 cursor-pointer">
+                                    <input type="checkbox" onchange="window.togglePdfQuiz(${index}, this.checked)" ${item.convert_pdf_to_quiz ? 'checked' : ''} class="rounded text-blue-600 focus:ring-blue-500">
+                                    <span>🧠 Convert to AI Quiz</span>
+                                </label>
+                            `;
+                        }
+
+                        let linkVideoOptions = `<option value="">-- Standalone Item --</option>`;
+                        videoItems.forEach(v => {
+                            if (v.temp_id !== item.temp_id) {
+                                linkVideoOptions += `<option value="${v.temp_id}" ${item.parent_temp_id === v.temp_id ? 'selected' : ''}>Attach to: ${v.title}</option>`;
+                            }
+                        });
+
+                        return `
+                            <tr>
+                                <td class="p-3">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas ${iconClass} text-base"></i>
+                                        <div>
+                                            <div class="font-medium text-gray-900 truncate max-w-[140px]">${item.file ? item.file.name : 'Uploaded'}</div>
+                                            <div class="text-[10px] text-gray-400">${item.file ? (item.file.size / (1024*1024)).toFixed(1) + ' MB' : ''}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="p-3">
+                                    <input type="text" value="${item.title}" onchange="window.updateBatchItemField(${index}, 'title', this.value)" class="w-full text-xs rounded-lg border-gray-300 py-1.5 px-2.5 font-medium focus:ring-blue-500 focus:border-blue-500">
+                                </td>
+                                <td class="p-3">
+                                    ${typeCellHTML}
+                                </td>
+                                <td class="p-3">
+                                    <div class="flex flex-col gap-1.5">
+                                        <select onchange="window.updateBatchItemField(${index}, 'subject_id', this.value)" class="text-xs py-1 px-2.5 batch-select-input">
+                                            <option value="">Subject</option>
+                                            @if(isset($subjects))
+                                                @foreach($subjects as $subj)
+                                                    <option value="{{ $subj->id }}" ${String(item.subject_id) === '{{ $subj->id }}' ? 'selected' : ''}>{{ $subj->name }}</option>
+                                                @endforeach
+                                            @endif
+                                        </select>
+                                        <select onchange="window.updateBatchItemField(${index}, 'grade_level', this.value)" class="text-xs py-1 px-2.5 batch-select-input">
+                                            <option value="General" ${item.grade_level === 'General' ? 'selected' : ''}>General (All Grades)</option>
+                                            @if(isset($levelGroups) && $levelGroups->count())
+                                                @foreach($levelGroups as $group)
+                                                    <optgroup label="{{ strtoupper($group->name ?? $group->title) }}">
+                                                        @foreach($group->levels as $level)
+                                                            <option value="{{ $level->title }}" ${item.grade_level === '{{ $level->title }}' ? 'selected' : ''}>{{ $level->title }}</option>
+                                                        @endforeach
+                                                    </optgroup>
+                                                @endforeach
+                                            @else
+                                                <optgroup label="LOWER PRIMARY">
+                                                    <option value="Basic 1" ${item.grade_level === 'Basic 1' ? 'selected' : ''}>Basic 1</option>
+                                                    <option value="Basic 2" ${item.grade_level === 'Basic 2' ? 'selected' : ''}>Basic 2</option>
+                                                    <option value="Basic 3" ${item.grade_level === 'Basic 3' ? 'selected' : ''}>Basic 3</option>
+                                                </optgroup>
+                                                <optgroup label="UPPER PRIMARY">
+                                                    <option value="Basic 4" ${item.grade_level === 'Basic 4' ? 'selected' : ''}>Basic 4</option>
+                                                    <option value="Basic 5" ${item.grade_level === 'Basic 5' ? 'selected' : ''}>Basic 5</option>
+                                                    <option value="Basic 6" ${item.grade_level === 'Basic 6' ? 'selected' : ''}>Basic 6</option>
+                                                </optgroup>
+                                                <optgroup label="JUNIOR HIGH SCHOOL">
+                                                    <option value="JHS 1" ${item.grade_level === 'JHS 1' ? 'selected' : ''}>JHS 1</option>
+                                                    <option value="JHS 2" ${item.grade_level === 'JHS 2' ? 'selected' : ''}>JHS 2</option>
+                                                    <option value="JHS 3" ${item.grade_level === 'JHS 3' ? 'selected' : ''}>JHS 3</option>
+                                                </optgroup>
+                                                <optgroup label="SENIOR HIGH SCHOOL">
+                                                    <option value="SHS 1" ${item.grade_level === 'SHS 1' ? 'selected' : ''}>SHS 1</option>
+                                                    <option value="SHS 2" ${item.grade_level === 'SHS 2' ? 'selected' : ''}>SHS 2</option>
+                                                    <option value="SHS 3" ${item.grade_level === 'SHS 3' ? 'selected' : ''}>SHS 3</option>
+                                                </optgroup>
+                                                <optgroup label="HIGHER EDUCATION">
+                                                    <option value="Tertiary" ${item.grade_level === 'Tertiary' ? 'selected' : ''}>Tertiary</option>
+                                                </optgroup>
+                                            @endif
+                                        </select>
+                                    </div>
+                                </td>
+                                <td class="p-3">
+                                    ${item.type !== 'video' ? `<select onchange="window.updateBatchItemField(${index}, 'parent_temp_id', this.value)" class="text-xs py-1 px-2.5 batch-select-input w-full">${linkVideoOptions}</select>` : '<span class="text-gray-400 text-[11px]">— Parent Video —</span>'}
+                                </td>
+                                <td class="p-3 text-right">
+                                    <button type="button" onclick="window.removeBatchItem(${index})" class="text-red-500 hover:text-red-700 p-1">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                window.updateBatchItemField = function(index, field, value) {
+                    if (batchItems[index]) {
+                        batchItems[index][field] = value;
+                        if (field === 'type') renderBatchTable();
+                    }
+                };
+
+                window.updateBatchItemType = function(index, type) {
+                    if (batchItems[index]) {
+                        batchItems[index].type = type;
+                        renderBatchTable();
+                    }
+                };
+
+                window.togglePdfQuiz = function(index, checked) {
+                    if (batchItems[index]) {
+                        batchItems[index].convert_pdf_to_quiz = checked;
+                    }
+                };
+
+                window.removeBatchItem = function(index) {
+                    batchItems.splice(index, 1);
+                    renderBatchTable();
+                };
+
+                if (clearBatchBtn) {
+                    clearBatchBtn.addEventListener('click', () => {
+                        batchItems = [];
+                        renderBatchTable();
+                    });
+                }
+
+                if (submitBatchBtn) {
+                    submitBatchBtn.addEventListener('click', async () => {
+                        if (!batchItems.length) return;
+
+                        submitBatchBtn.disabled = true;
+                        submitBatchBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-1"></i> Uploading Files & Processing Batch...`;
+
+                        const batchId = 'batch_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+                        const globalDefaults = {
+                            subject_id: document.getElementById('batchGlobalSubject')?.value || null,
+                            grade_level: document.getElementById('batchGlobalGrade')?.value || 'General',
+                            video_source: document.getElementById('batchGlobalDestination')?.value || 'local',
+                            status: document.getElementById('batchGlobalStatus')?.value || 'pending',
+                        };
+
+                        const submittedItems = [];
+
+                        for (let i = 0; i < batchItems.length; i++) {
+                            const item = batchItems[i];
+                            let tempFilePath = null;
+
+                            if (item.file) {
+                                const formData = new FormData();
+                                formData.append('documents[]', item.file);
+                                formData.append('document_file', item.file);
+                                formData.append('_token', '{{ csrf_token() }}');
+
+                                try {
+                                    const res = await fetch('{{ route("admin.contents.upload.documents") }}', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Accept': 'application/json'
+                                        },
+                                        body: formData
+                                    });
+                                    const resData = await res.json();
+                                    if (resData.success && resData.file_path) {
+                                        tempFilePath = resData.file_path;
+                                    } else if (resData.documents && resData.documents[0]) {
+                                        tempFilePath = resData.documents[0].file_path;
+                                    }
+                                } catch (err) {
+                                    console.warn('File upload direct warning:', err);
+                                }
+                            }
+
+                            submittedItems.push({
+                                temp_id: item.temp_id,
+                                type: item.type,
+                                title: item.title,
+                                subject_id: item.subject_id || globalDefaults.subject_id,
+                                grade_level: item.grade_level || globalDefaults.grade_level,
+                                convert_pdf_to_quiz: item.convert_pdf_to_quiz,
+                                parent_temp_id: item.parent_temp_id,
+                                temp_file_path: tempFilePath,
+                                video_source: globalDefaults.video_source,
+                                status: globalDefaults.status,
+                            });
+                        }
+
+                        try {
+                            const response = await fetch('{{ route("admin.contents.batch-store") }}', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    batch_id: batchId,
+                                    global_defaults: globalDefaults,
+                                    items: submittedItems
+                                })
+                            });
+
+                            const result = await response.json();
+
+                            if (result.success) {
+                                alert('Success! ' + result.message + '\nCreated: ' + result.counts.videos + ' videos, ' + result.counts.documents + ' documents, ' + result.counts.quizzes + ' quizzes.');
+                                window.location.reload();
+                            } else {
+                                alert('Batch Upload Error: ' + (result.message || 'Unknown error'));
+                                submitBatchBtn.disabled = false;
+                                submitBatchBtn.innerHTML = `<i class="fas fa-rocket"></i> Start Batch Upload Process`;
+                            }
+                        } catch (err) {
+                            alert('Server error processing batch: ' + err.message);
+                            submitBatchBtn.disabled = false;
+                            submitBatchBtn.innerHTML = `<i class="fas fa-rocket"></i> Start Batch Upload Process`;
+                        }
+                    });
+                }
+            }
 
             function initializeWizard() {
                 if (!uploadModal || !closeModal || !prevBtn || !nextBtn || !skipBtn || !finishBtn) {

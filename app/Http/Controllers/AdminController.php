@@ -2574,12 +2574,12 @@ class AdminController extends Controller
     {
         $video = Video::findOrFail($id);
 
-        if (!$video->isPending()) {
-            Log::warning('Video approval attempted on non-pending video', ['video_id' => $video->id, 'status' => $video->status]);
+        if ($video->status === 'approved') {
+            Log::warning('Video approval attempted on already approved video', ['video_id' => $video->id, 'status' => $video->status]);
             if ($request->expectsJson()) {
-                return response()->json(['success' => false, 'error' => 'Video is not pending approval.'], 400);
+                return response()->json(['success' => false, 'error' => 'Video is already approved.'], 400);
             }
-            return back()->withErrors(['error' => 'Video is not pending approval.']);
+            return back()->withErrors(['error' => 'Video is already approved.']);
         }
 
         try {
@@ -2593,38 +2593,33 @@ class AdminController extends Controller
                 'review_notes' => $request->input('review_notes')
             ]);
 
-            // Check if temporary file exists and hasn't expired
-            if (!$video->temp_file_path || $video->isTempExpired()) {
+            // Resolve temporary file path
+            $tempFilePath = null;
+            if ($video->temp_file_path) {
+                $checkPath1 = storage_path('app/public/' . ltrim($video->temp_file_path, '/'));
+                $checkPath2 = storage_path('app/' . ltrim($video->temp_file_path, '/'));
+                if (file_exists($checkPath1)) {
+                    $tempFilePath = $checkPath1;
+                } elseif (file_exists($checkPath2)) {
+                    $tempFilePath = $checkPath2;
+                }
+            }
+
+            // Check if temporary file exists
+            if (!$tempFilePath) {
                 Log::error('Temporary file issue', [
                     'video_id' => $video->id,
                     'temp_file_path' => $video->temp_file_path,
-                    'is_expired' => $video->isTempExpired()
                 ]);
 
                 $video->update([
                     'status' => 'rejected',
-                    'review_notes' => 'Temporary file expired or not found'
+                    'review_notes' => 'Temporary video file not found on server'
                 ]);
                 if ($request->expectsJson()) {
-                    return response()->json(['success' => false, 'error' => 'Temporary video file has expired or not found.'], 400);
+                    return response()->json(['success' => false, 'error' => 'Temporary video file not found on server. Please re-upload the video.'], 400);
                 }
-                return back()->withErrors(['error' => 'Temporary video file has expired or not found.']);
-            }
-
-            $tempFilePath = storage_path('app/public/' . $video->temp_file_path);
-
-            Log::info('Checking file existence', ['temp_path' => $tempFilePath]);
-
-            if (!file_exists($tempFilePath)) {
-                Log::error('File not found on server', ['temp_path' => $tempFilePath]);
-                $video->update([
-                    'status' => 'rejected',
-                    'review_notes' => 'Temporary file not found on server'
-                ]);
-                if ($request->expectsJson()) {
-                    return response()->json(['success' => false, 'error' => 'Video file not found on server.'], 400);
-                }
-                return back()->withErrors(['error' => 'Video file not found on server.']);
+                return back()->withErrors(['error' => 'Temporary video file not found on server. Please re-upload the video.']);
             }
 
             // Check file size and permissions
@@ -6202,5 +6197,247 @@ class AdminController extends Controller
         \App\Models\PlatformSetting::setValue('payout_processing_days', $request->payout_processing_days, 'integer', 'Standard payout processing days', Auth::id());
 
         return redirect()->back()->with('success', 'Platform settings updated successfully.');
+    }
+
+    /**
+     * Store a batch package of uploaded content (Videos, Documents, Quizzes, PDF Quizzes).
+     */
+    public function storeBatchContents(Request $request)
+    {
+        $request->validate([
+            'batch_id' => 'required|string',
+            'items' => 'required|array|min:1',
+            'global_defaults' => 'nullable|array',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $batchId = $request->batch_id;
+            $user = Auth::user();
+
+            $batch = \App\Models\UploadBatch::updateOrCreate(
+                ['batch_id' => $batchId],
+                [
+                    'user_id' => $user->id,
+                    'total_items' => count($request->items),
+                    'status' => 'processing',
+                    'metadata' => [
+                        'global_defaults' => $request->global_defaults ?? [],
+                        'submitted_at' => now()->toDateTimeString(),
+                    ]
+                ]
+            );
+
+            $createdCount = [
+                'videos' => 0,
+                'documents' => 0,
+                'quizzes' => 0,
+                'failed' => 0,
+            ];
+
+            $createdVideosMap = [];
+
+            // First pass: Process videos so documents/quizzes can link to them
+            foreach ($request->items as $item) {
+                if (($item['type'] ?? '') === 'video') {
+                    try {
+                        $video = $this->createBatchVideoItem($item, $request->global_defaults);
+                        if ($video) {
+                            $createdCount['videos']++;
+                            if (!empty($item['temp_id'])) {
+                                $createdVideosMap[$item['temp_id']] = $video;
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        Log::error("Batch video creation failed for item", ['error' => $e->getMessage(), 'item' => $item]);
+                        $createdCount['failed']++;
+                    }
+                }
+            }
+
+            // Second pass: Process documents and quizzes
+            $pdfParser = new \App\Services\PdfQuizParserService();
+
+            foreach ($request->items as $item) {
+                $type = $item['type'] ?? 'document';
+                if ($type === 'video') continue;
+
+                $linkedVideo = null;
+                if (!empty($item['parent_temp_id']) && isset($createdVideosMap[$item['parent_temp_id']])) {
+                    $linkedVideo = $createdVideosMap[$item['parent_temp_id']];
+                }
+
+                if ($type === 'document') {
+                    if (!empty($item['convert_pdf_to_quiz']) && !empty($item['temp_file_path'])) {
+                        try {
+                            $fullPath = storage_path('app/public/' . ltrim($item['temp_file_path'], '/'));
+                            if (!file_exists($fullPath)) {
+                                $fullPath = storage_path('app/' . ltrim($item['temp_file_path'], '/'));
+                            }
+
+                            $topic = $item['title'] ?? 'PDF Quiz';
+                            $grade = $item['grade_level'] ?? ($request->global_defaults['grade_level'] ?? 'General');
+                            $quizStructure = $pdfParser->parsePdfToQuiz($fullPath, $topic, $grade);
+
+                            $quiz = Quiz::create([
+                                'title' => $quizStructure['title'] ?? $topic,
+                                'description' => $quizStructure['description'] ?? 'Extracted from uploaded PDF paper',
+                                'subject_id' => $item['subject_id'] ?? ($request->global_defaults['subject_id'] ?? null),
+                                'grade_level' => $grade,
+                                'school_id' => $user->school_id,
+                                'uploaded_by' => $user->id,
+                                'status' => 'approved',
+                                'quiz_data' => json_encode($quizStructure['questions'] ?? []),
+                            ]);
+
+                            if ($linkedVideo) {
+                                $linkedVideo->update(['quiz_id' => $quiz->id]);
+                            }
+
+                            $createdCount['quizzes']++;
+                        } catch (\Exception $e) {
+                            Log::error("PDF to Quiz conversion failed", ['error' => $e->getMessage()]);
+                            $this->createBatchDocumentItem($item, $request->global_defaults, $linkedVideo);
+                            $createdCount['documents']++;
+                        }
+                    } else {
+                        $this->createBatchDocumentItem($item, $request->global_defaults, $linkedVideo);
+                        $createdCount['documents']++;
+                    }
+                } elseif ($type === 'quiz') {
+                    $quiz = Quiz::create([
+                        'title' => $item['title'] ?? 'Batch Uploaded Quiz',
+                        'description' => $item['description'] ?? null,
+                        'subject_id' => $item['subject_id'] ?? ($request->global_defaults['subject_id'] ?? null),
+                        'grade_level' => $item['grade_level'] ?? ($request->global_defaults['grade_level'] ?? 'General'),
+                        'school_id' => $user->school_id,
+                        'uploaded_by' => $user->id,
+                        'status' => 'approved',
+                        'quiz_data' => is_array($item['quiz_data'] ?? null) ? json_encode($item['quiz_data']) : ($item['quiz_data'] ?? '[]'),
+                    ]);
+
+                    if ($linkedVideo) {
+                        $linkedVideo->update(['quiz_id' => $quiz->id]);
+                    }
+
+                    $createdCount['quizzes']++;
+                }
+            }
+
+            DB::commit();
+
+            $batch->update([
+                'completed_items' => $createdCount['videos'] + $createdCount['documents'] + $createdCount['quizzes'],
+                'failed_items' => $createdCount['failed'],
+                'status' => 'completed',
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Batch content upload processed successfully!',
+                'batch_id' => $batchId,
+                'counts' => $createdCount,
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("storeBatchContents Exception: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to process batch upload: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    private function createBatchVideoItem($item, $globalDefaults)
+    {
+        $user = Auth::user();
+        $videoSource = $item['video_source'] ?? ($globalDefaults['video_source'] ?? 'local');
+
+        $videoData = [
+            'title' => $item['title'] ?? 'Untitled Video',
+            'subject_id' => $item['subject_id'] ?? ($globalDefaults['subject_id'] ?? null),
+            'grade_level' => $item['grade_level'] ?? ($globalDefaults['grade_level'] ?? 'General'),
+            'description' => $item['description'] ?? null,
+            'school_id' => $user->school_id,
+            'uploaded_by' => $user->id,
+            'video_source' => $videoSource,
+            'status' => $item['status'] ?? ($globalDefaults['status'] ?? 'pending'),
+        ];
+
+        if (!empty($item['temp_file_path'])) {
+            $videoData['temp_file_path'] = $item['temp_file_path'];
+            $videoData['video_path'] = $item['temp_file_path'];
+        }
+
+        if (!empty($item['external_video_url'])) {
+            $parsed = \App\Services\VideoSourceService::parseVideoUrl($item['external_video_url']);
+            if ($parsed) {
+                $videoData['external_video_id'] = $parsed['video_id'];
+                $videoData['external_video_url'] = $parsed['embed_url'];
+                $videoData['status'] = 'approved';
+            }
+        }
+
+        $video = Video::create($videoData);
+
+        if (!empty($item['category_ids'])) {
+            $video->categories()->sync($item['category_ids']);
+        }
+
+        // If upload destination is Vimeo and temp_file_path exists, trigger Vimeo upload
+        if ($videoSource === 'vimeo' && !empty($item['temp_file_path'])) {
+            try {
+                Log::info('Starting batch Vimeo upload for video', ['video_id' => $video->id]);
+                $vimeoService = new \App\Services\VimeoService();
+                $uploadId = 'batch_video_' . $video->id . '_' . time();
+                $result = $vimeoService->uploadVideo($item['temp_file_path'], $video->title, $video->description, Auth::id(), $uploadId);
+
+                if (!empty($result['success']) && !empty($result['video_id'])) {
+                    $video->update([
+                        'vimeo_id' => $result['video_id'],
+                        'vimeo_embed_url' => $result['embed_url'],
+                        'status' => 'approved',
+                    ]);
+                    Log::info('Batch Vimeo upload succeeded', ['video_id' => $video->id, 'vimeo_id' => $result['video_id']]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Batch Vimeo upload failed for video', ['video_id' => $video->id, 'error' => $e->getMessage()]);
+            }
+        }
+
+        return $video;
+    }
+
+    private function createBatchDocumentItem($item, $globalDefaults, $linkedVideo = null)
+    {
+        $user = Auth::user();
+        return Document::create([
+            'title' => $item['title'] ?? 'Uploaded Document',
+            'file_path' => $item['temp_file_path'] ?? $item['file_path'] ?? 'documents/sample.pdf',
+            'description' => $item['description'] ?? null,
+            'school_id' => $user->school_id,
+            'grade_level' => $item['grade_level'] ?? ($globalDefaults['grade_level'] ?? 'General'),
+            'uploaded_by' => $user->id,
+            'video_id' => $linkedVideo ? $linkedVideo->id : null,
+        ]);
+    }
+
+    /**
+     * Get batch status for polling/monitoring.
+     */
+    public function getBatchStatus($batchId)
+    {
+        $batch = \App\Models\UploadBatch::where('batch_id', $batchId)->where('user_id', Auth::id())->first();
+
+        if (!$batch) {
+            return response()->json(['success' => false, 'message' => 'Batch not found'], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'batch' => $batch,
+        ]);
     }
 }

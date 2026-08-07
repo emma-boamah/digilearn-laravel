@@ -597,6 +597,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/contents/upload/quiz', [AdminController::class, 'uploadQuizComponent'])->name('contents.upload.quiz');
     Route::post('/contents/upload/image', [AdminController::class, 'uploadImage'])->name('contents.upload.image');
     Route::post('/contents/generate-ai-questions', [AdminController::class, 'generateAiQuestions'])->name('contents.generate-ai-questions');
+    Route::post('/contents/batch-store', [AdminController::class, 'storeBatchContents'])->name('contents.batch-store');
+    Route::get('/contents/batch/{batchId}/status', [AdminController::class, 'getBatchStatus'])->name('contents.batch-status');
 
     // Super Admin Protected Routes
     Route::middleware(['superuser'])->group(

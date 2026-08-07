@@ -183,10 +183,6 @@
             width: 4.5rem;
         }
 
-        .sidebar.collapsed+.main-content {
-            margin-left: 4.5rem;
-        }
-
         .sidebar-link-text {
             display: block;
             white-space: nowrap;
@@ -270,7 +266,8 @@
         }
 
         .header-content {
-            max-width: 80rem;
+            width: 100%;
+            max-width: 100%;
             margin: 0 auto;
             padding: 1rem 1.5rem;
         }
@@ -369,14 +366,22 @@
             overflow-y: auto;
             background-color: var(--gray-50);
             margin-left: 18rem;
-            transition: margin-left 0.3s ease-in-out;
+            width: calc(100% - 18rem);
+            transition: margin-left 0.3s ease-in-out, width 0.3s ease-in-out;
+        }
+
+        .sidebar.collapsed + .main-content,
+        .sidebar.collapsed ~ .main-content,
+        body.sidebar-collapsed .main-content {
+            margin-left: 4.5rem !important;
+            width: calc(100% - 4.5rem) !important;
         }
 
         .content-wrapper {
-            max-width: 80rem;
+            width: 100%;
+            max-width: 100%;
             margin: 0 auto;
-            padding: 1rem;
-
+            padding: 1.25rem 1.75rem;
         }
 
         /* Alert styles */
@@ -1073,20 +1078,48 @@
             const sidebarToggle = document.querySelector('#sidebar-toggle');
             const mainContent = document.querySelector('.main-content');
 
-            if (sidebarToggle) {
-                sidebarToggle.addEventListener('click', function () {
-                    sidebar.classList.toggle('collapsed');
-                    const icon = this.querySelector('i');
-                    icon.classList.toggle('fa-chevron-left');
-                    icon.classList.toggle('fa-chevron-right');
-                });
+            if (sidebarToggle && sidebar && mainContent) {
+                const updateSidebarState = (isCollapsed) => {
+                    if (isCollapsed) {
+                        sidebar.classList.add('collapsed');
+                        document.body.classList.add('sidebar-collapsed');
+                        mainContent.style.marginLeft = '4.5rem';
+                        mainContent.style.width = 'calc(100% - 4.5rem)';
+                    } else {
+                        sidebar.classList.remove('collapsed');
+                        document.body.classList.remove('sidebar-collapsed');
+                        mainContent.style.marginLeft = '18rem';
+                        mainContent.style.width = 'calc(100% - 18rem)';
+                    }
 
-                // Adjust main content margin when sidebar toggles 
-                if (sidebar.classList.contains('collapsed')) {
-                    mainContent.style.marginLeft = '4.5rem';
-                } else {
-                    mainContent.style.marginLeft = '18rem';
-                }
+                    const icon = sidebarToggle.querySelector('i');
+                    if (icon) {
+                        if (isCollapsed) {
+                            icon.classList.remove('fa-chevron-left');
+                            icon.classList.add('fa-chevron-right');
+                        } else {
+                            icon.classList.remove('fa-chevron-right');
+                            icon.classList.add('fa-chevron-left');
+                        }
+                    }
+                };
+
+                // Restore sidebar state from localStorage
+                try {
+                    if (localStorage.getItem('sidebarCollapsed') === 'true') {
+                        updateSidebarState(true);
+                    }
+                } catch (e) {}
+
+                sidebarToggle.addEventListener('click', function () {
+                    const currentlyCollapsed = sidebar.classList.contains('collapsed');
+                    const nextState = !currentlyCollapsed;
+                    updateSidebarState(nextState);
+
+                    try {
+                        localStorage.setItem('sidebarCollapsed', nextState ? 'true' : 'false');
+                    } catch (e) {}
+                });
             }
 
             // Content dropdown functionality removed - now using simple navigation
@@ -1362,18 +1395,22 @@
                             listContainer.innerHTML = rawNotifications.map(n => {
                                 const title = n.data?.title || n.title || 'System Alert';
                                 const message = n.data?.message || n.message || '';
-                                const url = n.data?.url || n.url || '#';
+                                const hasActionUrl = !!(n.data?.url || n.url);
+                                const showUrl = `/admin/notifications/${n.id}`;
                                 const isUnread = !n.read_at;
                                 const timeAgo = n.created_at ? new Date(n.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
 
                                 return `
-                                    <a href="${url}" class="block p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition ${isUnread ? 'bg-blue-50/50 dark:bg-blue-900/10 font-semibold' : ''}">
-                                        <div class="flex items-start justify-between">
-                                            <div class="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                                                ${isUnread ? '<span class="w-2 h-2 rounded-full bg-blue-600 inline-block"></span>' : ''}
-                                                ${title}
+                                    <a href="${showUrl}" class="block p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition ${isUnread ? 'bg-blue-50/50 dark:bg-blue-900/10 font-semibold' : ''}">
+                                        <div class="flex items-start justify-between gap-2">
+                                            <div class="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5 flex-1 min-w-0">
+                                                ${isUnread ? '<span class="w-2 h-2 rounded-full bg-blue-600 inline-block flex-shrink-0"></span>' : ''}
+                                                <span class="truncate">${title}</span>
                                             </div>
-                                            <span class="text-[10px] text-gray-400">${timeAgo}</span>
+                                            <div class="flex items-center gap-1 flex-shrink-0">
+                                                ${hasActionUrl ? '<i class="fas fa-external-link-alt text-[10px] text-blue-500" title="Has action link"></i>' : ''}
+                                                <span class="text-[10px] text-gray-400">${timeAgo}</span>
+                                            </div>
                                         </div>
                                         <div class="text-xs text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">${message}</div>
                                     </a>
@@ -1405,7 +1442,7 @@
 
                 const title = notification.data?.title || notification.title || 'New Notification';
                 const message = notification.data?.message || notification.message || '';
-                const url = notification.data?.url || notification.url || '#';
+                const showUrl = `/admin/notifications/${notification.id}`;
 
                 const toast = document.createElement('div');
                 toast.className = 'pointer-events-auto bg-white dark:bg-gray-800 border-l-4 border-blue-600 rounded-lg shadow-xl p-4 transform transition-all duration-300 translate-y-5 opacity-0 flex items-start gap-3';
@@ -1414,7 +1451,7 @@
                     <div class="flex-1">
                         <h4 class="text-sm font-bold text-gray-900 dark:text-white">${title}</h4>
                         <p class="text-xs text-gray-600 dark:text-gray-300 mt-0.5">${message}</p>
-                        ${url !== '#' ? `<a href="${url}" class="inline-block mt-2 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">Inspect Application →</a>` : ''}
+                        <a href="${showUrl}" class="inline-block mt-2 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">View Notification Details →</a>
                     </div>
                     <button class="text-gray-400 hover:text-gray-600 dark:hover:text-white text-xs p-1" onclick="this.parentElement.remove()">✕</button>
                 `;

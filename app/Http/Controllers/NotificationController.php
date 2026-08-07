@@ -308,6 +308,10 @@ class NotificationController extends Controller
      */
     public function adminShow(\App\Models\Notification $notification)
     {
+        if (is_null($notification->read_at)) {
+            $notification->update(['read_at' => now()]);
+        }
+
         return view('admin.notifications.show', compact('notification'));
     }
 

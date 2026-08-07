@@ -127,7 +127,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('tutors.storeApplication') }}" method="POST" enctype="multipart/form-data" id="onboardingForm">
+            <form action="{{ route('tutors.storeApplication') }}" method="POST" enctype="multipart/form-data" id="onboardingForm" novalidate>
                 @csrf
                 
                 <!-- STEP 1: Professional Profile -->
@@ -395,6 +395,7 @@
             const btnPrev = document.getElementById('btn-prev');
             const btnNext = document.getElementById('btn-next');
             const btnSubmit = document.getElementById('btn-submit');
+            const onboardingForm = document.getElementById('onboardingForm');
             
             function updateUI() {
                 // Hide all steps
@@ -436,44 +437,56 @@
                 }
             }
 
-            // Simple validation before proceeding
-            function validateCurrentStep() {
-                const currentContainer = document.getElementById('step-' + currentStep);
-                const requiredInputs = currentContainer.querySelectorAll('input[required], textarea[required]');
+            // Step validation logic
+            function validateStep(stepNum) {
+                const container = document.getElementById('step-' + stepNum);
+                if (!container) return true;
+
+                const requiredInputs = container.querySelectorAll('input[required], textarea[required], select[required]');
                 let isValid = true;
                 
                 requiredInputs.forEach(input => {
-                    if (!input.value.trim() && input.type !== 'file') {
-                        isValid = false;
-                        input.classList.add('border-blue-500', 'ring-blue-500');
-                    } else if (input.type === 'file' && input.files.length === 0) {
-                        isValid = false;
+                    let fieldValid = true;
+                    if (input.type === 'file') {
+                        if (input.files.length === 0) {
+                            fieldValid = false;
+                        }
                     } else {
-                        input.classList.remove('border-blue-500', 'ring-blue-500');
+                        if (!input.value.trim()) {
+                            fieldValid = false;
+                        }
+                    }
+
+                    if (!fieldValid) {
+                        isValid = false;
+                        input.classList.add('border-red-500', 'ring-red-500');
+                    } else {
+                        input.classList.remove('border-red-500', 'ring-red-500');
                     }
                 });
                 
                 // For step 4, require at least one subject
-                if (currentStep === 4) {
+                if (stepNum === 4) {
                     const checkedSubjects = document.querySelectorAll('.subject-checkbox:checked');
                     if (checkedSubjects.length === 0) {
                         isValid = false;
-                        alert('Please select at least one subject to teach.');
                     }
                 }
 
-                if (!isValid && currentStep !== 4) {
-                    alert('Please fill out all required fields before proceeding.');
-                }
-                
                 return isValid;
             }
 
             btnNext.addEventListener('click', () => {
-                if (validateCurrentStep()) {
+                if (validateStep(currentStep)) {
                     currentStep++;
                     updateUI();
                     window.scrollTo(0, 0);
+                } else {
+                    if (currentStep === 4) {
+                        alert('Please select at least one subject to teach.');
+                    } else {
+                        alert('Please fill out all required fields before proceeding.');
+                    }
                 }
             });
 
@@ -482,6 +495,26 @@
                 updateUI();
                 window.scrollTo(0, 0);
             });
+
+            // Form Submit Listener
+            if (onboardingForm) {
+                onboardingForm.addEventListener('submit', function(e) {
+                    for (let s = 1; s <= totalSteps; s++) {
+                        if (!validateStep(s)) {
+                            e.preventDefault();
+                            currentStep = s;
+                            updateUI();
+                            window.scrollTo(0, 0);
+                            if (s === 4) {
+                                alert('Please select at least one subject to teach before submitting.');
+                            } else {
+                                alert('Please complete all required fields in Step ' + s + ' before submitting.');
+                            }
+                            return false;
+                        }
+                    }
+                });
+            }
             
             // Payout Method Toggle
             const payoutMethod = document.getElementById('payout_method');
