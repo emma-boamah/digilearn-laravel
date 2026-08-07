@@ -13,6 +13,13 @@ use App\Http\Controllers\NotesController;
 use App\Http\Controllers\Quiz\QuizController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\TutorController;
+use App\Http\Controllers\TutorEarningsController;
+use App\Http\Controllers\TutorScheduleController;
+use App\Http\Controllers\TutorBookingController;
+use App\Http\Controllers\TutorContentController;
+use App\Http\Controllers\TutorAnalyticsController;
+use App\Http\Controllers\BookingController;
 use App\Http\Controllers\ProgressController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\NotificationController;
@@ -39,6 +46,70 @@ use App\Models\User;
 if (app()->environment(['local', 'development', 'testing'])) {
     require __DIR__ . '/debug.php';
 }
+
+Route::get('/extract-layout', function() {
+    $path = resource_path('views/dashboard/digilearn.blade.php');
+    $content = file_get_contents($path);
+    
+    // Replace the body content
+    $bodyStart = strpos($content, '<body>') + strlen('<body>');
+    $scriptStart = strpos($content, '<script nonce="{{ request()->attributes->get(\'csp_nonce\') }}">', $bodyStart);
+    
+    $newBody = "
+    <!-- Sidebar Overlay for Mobile -->
+    <div class=\"sidebar-overlay\" id=\"sidebarOverlay\"></div>
+
+    <div class=\"main-container\">
+        @yield('sidebar')
+        @include('components.dashboard-header')
+
+        <!-- Search/Filter Bar -->
+        <div class=\"filter-bar\" id=\"filterBar\">
+            @yield('filter-bar')
+        </div>
+
+        <div class=\"subjects-filter-container\">
+            @yield('subjects-filter')
+        </div>
+
+        <!-- Main Content -->
+        <main class=\"main-content\">
+            @yield('content')
+        </main>
+    </div>
+";
+
+    $content = substr($content, 0, $bodyStart) . $newBody . substr($content, $scriptStart);
+    
+    // Remove digilearn specific initializers
+    $content = str_replace('initializeInfiniteScroll();', '', $content);
+    $content = str_replace('initializeContextFilter();', '', $content);
+    $content = str_replace('initializeSearch();', '', $content);
+    
+    // Remove video facade
+    $content = preg_replace('/if \(typeof window\.videoFacadeManager !==.*?initializeAllSaveButtons\(\);\n        }\);/s', '});', $content);
+    
+    // Remove functions
+    $content = preg_replace('/async function initializeAllSaveButtons\(\).*?}\n        }/s', '', $content);
+    $content = preg_replace('/window\.addEventListener\(\'pageshow\'.*?}\);/s', '', $content);
+    $content = preg_replace('/function escapeHTML\(str\).*?showSearchError\(\'Search failed\. Please try again\.\'\);\n            }\n        }/s', '', $content);
+    $content = preg_replace('/function updateLessonGrid\(lessons, query\).*?grid\.innerHTML = html;.*?}/s', '', $content);
+    $content = preg_replace('/function restoreOriginalLessons\(\).*?}/s', '', $content);
+    $content = preg_replace('/function showSearchError\(message\).*?}/s', '', $content);
+    $content = preg_replace('/let isSearching = false;/s', '', $content);
+    
+    // Remove includes
+    $content = str_replace("@include('partials._upgrade_modal')", "", $content);
+    $content = str_replace("@include('components.search-autocomplete')", "", $content);
+    $content = str_replace("<x-skeleton-loader type=\"digilearn\" />", "", $content);
+    
+    // Change offset
+    $content = str_replace("\$mainContentTopOffset = \$isPrimaryLevel ? '205px' : '255px';", "\$mainContentTopOffset = '145px';", $content);
+    $content = str_replace("\$isPrimaryLevel = str_contains(strtolower(\$currentLevelGroup), 'primary') || str_contains(strtolower(\$currentLevelGroup), 'grade');", "", $content);
+    
+    file_put_contents(resource_path('views/layouts/tutors-layout.blade.php'), $content);
+    return 'Done';
+});
 
 Route::get('/session-test', function (Request $request) {
     $count = $request->session()->get('count', 0);
@@ -405,6 +476,59 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/dashboard/join-class', [DashboardController::class, 'joinClass'])->name('dashboard.join-class');
             Route::get('/dashboard/classroom/{roomId}', [DashboardController::class, 'showClassroom'])->name('dashboard.classroom.show');
 
+            // Tutors and Bookings (Personalized Learning)
+            Route::prefix('tutors')->name('tutors.')->group(function () {
+                Route::get('/', [TutorController::class, 'index'])->name('index');
+                Route::get('/apply', [TutorController::class, 'apply'])->name('apply');
+                Route::post('/apply', [TutorController::class, 'storeApplication'])->name('storeApplication');
+                Route::get('/dashboard', [TutorController::class, 'dashboard'])->name('dashboard');
+
+                // Profile Settings
+                Route::get('/profile-settings', [TutorController::class, 'profileSettings'])->name('profile.settings');
+                Route::put('/profile-settings', [TutorController::class, 'updateProfileSettings'])->name('profile.settings.update');
+
+                // Wallet & Earnings
+                Route::get('/earnings', [TutorEarningsController::class, 'index'])->name('earnings.index');
+                Route::get('/earnings/transactions', [TutorEarningsController::class, 'transactions'])->name('earnings.transactions');
+                Route::post('/earnings/payout', [TutorEarningsController::class, 'requestPayout'])->name('earnings.payout');
+                // Schedule & Availability
+                Route::get('/schedule/availability', [TutorScheduleController::class, 'availability'])->name('schedule.availability');
+                Route::post('/schedule/availability', [TutorScheduleController::class, 'storeAvailability'])->name('schedule.availability.store');
+                Route::get('/schedule/calendar', [TutorScheduleController::class, 'calendar'])->name('schedule.calendar');
+                Route::post('/schedule/block-date', [TutorScheduleController::class, 'blockDate'])->name('schedule.block');
+                Route::delete('/schedule/unblock-date', [TutorScheduleController::class, 'unblockDate'])->name('schedule.unblock');
+                Route::get('/schedule/api/slots/{tutorId}', [TutorScheduleController::class, 'apiSlots'])->name('schedule.api.slots');
+
+                // Content Studio
+                Route::get('/content', [TutorContentController::class, 'index'])->name('content.index');
+                Route::get('/content/course/create', [TutorContentController::class, 'createCourse'])->name('content.course.create');
+                Route::post('/content/course', [TutorContentController::class, 'storeCourse'])->name('content.course.store');
+                Route::post('/content/video', [TutorContentController::class, 'storeVideo'])->name('content.video.store');
+                Route::post('/content/document', [TutorContentController::class, 'storeDocument'])->name('content.document.store');
+                Route::post('/content/quiz', [TutorContentController::class, 'storeQuiz'])->name('content.quiz.store');
+                Route::delete('/content/course/{id}', [TutorContentController::class, 'deleteCourse'])->name('content.course.delete');
+
+                // Booking Requests
+                Route::get('/my-bookings', [TutorBookingController::class, 'incoming'])->name('bookings.index');
+                Route::post('/my-bookings/{id}/accept', [TutorBookingController::class, 'accept'])->name('bookings.accept');
+                Route::post('/my-bookings/{id}/decline', [TutorBookingController::class, 'decline'])->name('bookings.decline');
+                Route::post('/my-bookings/{id}/reschedule', [TutorBookingController::class, 'reschedule'])->name('bookings.reschedule');
+                Route::post('/my-bookings/{id}/notes', [TutorBookingController::class, 'sessionNotes'])->name('bookings.notes');
+                Route::get('/my-bookings/history', [TutorBookingController::class, 'history'])->name('bookings.history');
+
+                // Analytics
+                Route::get('/analytics', [TutorAnalyticsController::class, 'index'])->name('analytics.index');
+                Route::get('/analytics/api', [TutorAnalyticsController::class, 'apiStats'])->name('analytics.api');
+
+                Route::get('/{tutorId}', [TutorController::class, 'show'])->name('show');
+            });
+
+            Route::prefix('bookings')->name('bookings.')->group(function () {
+                Route::post('/checkout', [BookingController::class, 'checkout'])->name('checkout');
+                Route::get('/{bookingId}/confirm', [BookingController::class, 'confirm'])->name('confirm'); // Could be webhook later
+                Route::post('/{bookingId}/complete', [BookingController::class, 'complete'])->name('complete');
+            });
+
             // Recommendations & Search
             Route::get('/api/dashboard/feeds', [RecommendationController::class, 'getDashboardFeeds'])->name('api.dashboard.feeds');
             Route::get('/api/analytics', [RecommendationController::class, 'getAnalytics'])->name('api.analytics');
@@ -457,7 +581,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard/stats', [AdminController::class, 'getDashboardStatsAjax'])->name('dashboard.stats');
     Route::get('/contents', [AdminController::class, 'contents'])->name('contents.index');
+    Route::get('/ai-contents', [AdminController::class, 'aiContents'])->name('ai-contents.index');
+    Route::get('/ai-contents/{id}', [AdminController::class, 'showAiContent'])->name('ai-contents.show');
     Route::post('/contents', [AdminController::class, 'storeContentPackage'])->name('contents.store');
+    Route::post('/contents/bulk-action', [AdminController::class, 'bulkAction'])->name('contents.bulk-action');
     Route::post('/fix-vimeo-privacy', [AdminController::class, 'fixVimeoPrivacy'])->name('fix-vimeo-privacy');
     Route::delete('/contents/youtube/{contentId}', [AdminController::class, 'destroyYouTubeContent'])->name('contents.youtube.destroy');
     Route::get('/contents/{contentId}/edit', [AdminController::class, 'editContent'])->name('contents.edit');
@@ -472,7 +599,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/contents/generate-ai-questions', [AdminController::class, 'generateAiQuestions'])->name('contents.generate-ai-questions');
 
     // Super Admin Protected Routes
-    Route::middleware(['role:super-admin'])->group(
+    Route::middleware(['superuser'])->group(
         function () {
             Route::get('/users', [AdminController::class, 'users'])->name('users');
             Route::get('/users/invite', [AdminController::class, 'inviteAdmin'])->name('users.invite');
@@ -483,7 +610,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             Route::post('/users/{id}/demote', [AdminController::class, 'demoteAdmin'])->name('users.demote');
             Route::post('/users/{id}/update-avatar', [AdminController::class, 'updateUserAvatar'])->name('users.update-avatar');
             Route::delete('/users/{id}/delete-avatar', [AdminController::class, 'deleteUserAvatar'])->name('users.delete-avatar');
-            Route::post('/users/bulk-action', [AdminController::class, 'bulkAction'])->name('users.bulk-action');
+            Route::post('/users/bulk-action', [AdminController::class, 'bulkUserAction'])->name('users.bulk-action');
             Route::post('/mark-invite-notice-seen', [AdminController::class, 'markInviteNoticeSeen'])->name('mark-invite-notice-seen');
             Route::get('/revenue', [AdminController::class, 'revenue'])->name('revenue');
             Route::get('/revenue/export/{type}', [AdminController::class, 'exportRevenueSummary'])->name('revenue.export');
@@ -508,6 +635,17 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             // Class management
             Route::get('/classes/create', [AdminController::class, 'showCreateClassForm'])->name('classes.create');
             Route::post('/classes', [AdminController::class, 'createClass'])->name('classes.store');
+
+            // Tutor Verification & Management
+            Route::get('/tutors', [AdminController::class, 'tutors'])->name('tutors.index');
+            Route::get('/tutors/{id}', [AdminController::class, 'showTutor'])->name('tutors.show');
+            Route::get('/tutors/{id}/document/{type}', [AdminController::class, 'viewTutorDocument'])->name('tutors.document');
+            Route::post('/tutors/{id}/approve', [AdminController::class, 'approveTutor'])->name('tutors.approve');
+            Route::post('/tutors/{id}/reject', [AdminController::class, 'rejectTutor'])->name('tutors.reject');
+
+            // Platform Settings (Commission & Payout Config)
+            Route::get('/platform-settings', [AdminController::class, 'platformSettings'])->name('platform-settings.index');
+            Route::post('/platform-settings', [AdminController::class, 'updatePlatformSettings'])->name('platform-settings.update');
         }
     );
 

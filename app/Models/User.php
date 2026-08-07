@@ -78,6 +78,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'suspension_reason',
         'school_id',
         'designation',
+        'credit_balance',
     ];
 
     /**
@@ -112,6 +113,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'last_activity_at' => 'datetime',
         'is_verified' => 'boolean',
         'suspended_at' => 'datetime',
+        'credit_balance' => 'decimal:2',
     ];
 
     /**
@@ -417,7 +419,7 @@ class User extends Authenticatable implements MustVerifyEmail
         $defaultClasses = 'rounded-full object-cover';
         $allClasses = trim($defaultClasses . ' ' . $classes);
         
-        return "<img src=\"{$avatarUrl}\" alt=\"{$this->name}\" class=\"{$allClasses}\" style=\"width: {$size}px; height: {$size}px;\" />";
+        return "<img src=\"{$avatarUrl}\" alt=\"{$this->name}\" class=\"{$allClasses}\" width=\"{$size}\" height=\"{$size}\" />";
     }
 
     /**
@@ -538,5 +540,37 @@ class User extends Authenticatable implements MustVerifyEmail
     public function schoolClass()
     {
         return $this->belongsTo(SchoolClass::class, 'school_class_id');
+    }
+
+    /**
+     * Get the tutor profile for the user.
+     */
+    public function tutorProfile()
+    {
+        return $this->hasOne(TutorProfile::class);
+    }
+
+    /**
+     * Get the tutor subjects for the user.
+     */
+    public function tutorSubjects()
+    {
+        return $this->hasMany(TutorSubject::class);
+    }
+
+    /**
+     * Get bookings where the user is a student.
+     */
+    public function studentBookings()
+    {
+        return $this->hasMany(Booking::class, 'student_id');
+    }
+
+    /**
+     * Get bookings where the user is a tutor.
+     */
+    public function tutorBookings()
+    {
+        return $this->hasMany(Booking::class, 'tutor_id');
     }
 }

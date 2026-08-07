@@ -1002,7 +1002,7 @@
                             name="phone" 
                             class="form-input phone-number-input {{ $errors->has('phone') ? 'error' : '' }}" 
                             value="{{ old('phone') }}"
-                            placeholder="24 123 4567"
+                            placeholder="50 826 0294"
                             autocomplete="tel"
                         >
                         <input type="hidden" id="country_code" name="country_code" value="{{ $detectedCountry['code'] }}">
@@ -1369,6 +1369,104 @@
             // Initialize with default countries
             populateCountries();
         }
+
+        // Auto-clean phone input: silently strips leading 0 and duplicate country code
+        function initializePhoneAutoCleaner() {
+            const phoneInput = document.getElementById('phone');
+            if (!phoneInput) return;
+
+            let cleanTimeout = null;
+
+            phoneInput.addEventListener('input', function() {
+                clearTimeout(cleanTimeout);
+                // Small debounce so we don't interfere while user is actively typing
+                cleanTimeout = setTimeout(() => {
+                    const selectedCode = document.getElementById('selectedCode');
+                    if (!selectedCode) return;
+
+                    const countryCode = selectedCode.textContent.trim(); // e.g. '+233'
+                    const codeDigits = countryCode.replace(/[^0-9]/g, ''); // e.g. '233'
+                    let raw = phoneInput.value.replace(/[^0-9]/g, ''); // digits only
+                    let cleaned = raw;
+                    let message = '';
+
+                    // Check if user typed the full country code digits at the start
+                    if (codeDigits && raw.startsWith(codeDigits) && raw.length > codeDigits.length + 6) {
+                        cleaned = raw.substring(codeDigits.length);
+                        message = `${countryCode} is already selected — we removed the extra digits`;
+                    }
+
+                    // Check for leading zero (local format)
+                    if (cleaned.startsWith('0') && cleaned.length > 7) {
+                        cleaned = cleaned.substring(1);
+                        if (!message) {
+                            message = 'We removed the leading 0 — the country code handles it';
+                        }
+                    }
+
+                    if (cleaned !== raw) {
+                        // Preserve any spacing the user might expect by just setting digits
+                        phoneInput.value = cleaned;
+                        
+                        // Show a subtle, non-intrusive toast
+                        if (message) {
+                            showPhoneHint(message);
+                        }
+                    }
+                }, 600);
+            });
+
+            // Also clean on blur (when user tabs away) for immediate correction
+            phoneInput.addEventListener('blur', function() {
+                clearTimeout(cleanTimeout);
+                const selectedCode = document.getElementById('selectedCode');
+                if (!selectedCode || !phoneInput.value.trim()) return;
+
+                const countryCode = selectedCode.textContent.trim();
+                const codeDigits = countryCode.replace(/[^0-9]/g, '');
+                let raw = phoneInput.value.replace(/[^0-9]/g, '');
+                let cleaned = raw;
+
+                if (codeDigits && raw.startsWith(codeDigits) && raw.length > codeDigits.length + 6) {
+                    cleaned = raw.substring(codeDigits.length);
+                }
+                if (cleaned.startsWith('0') && cleaned.length > 7) {
+                    cleaned = cleaned.substring(1);
+                }
+
+                if (cleaned !== raw) {
+                    phoneInput.value = cleaned;
+                }
+            });
+        }
+
+        // Subtle hint that appears briefly below the phone input
+        function showPhoneHint(message) {
+            // Remove any existing hint
+            const existingHint = document.getElementById('phoneAutoCleanHint');
+            if (existingHint) existingHint.remove();
+
+            const phoneContainer = document.querySelector('.phone-input-container');
+            if (!phoneContainer) return;
+
+            const hint = document.createElement('div');
+            hint.id = 'phoneAutoCleanHint';
+            hint.style.cssText = 'font-size: 0.8rem; color: var(--primary-blue); margin-top: 0.4rem; display: flex; align-items: center; gap: 0.35rem; opacity: 0; transition: opacity 0.3s ease;';
+            hint.innerHTML = '<i class="fas fa-magic" style="font-size: 0.75rem;"></i>' + message;
+            phoneContainer.parentNode.insertBefore(hint, phoneContainer.nextSibling);
+
+            // Fade in
+            requestAnimationFrame(() => { hint.style.opacity = '1'; });
+
+            // Fade out and remove after 4 seconds
+            setTimeout(() => {
+                hint.style.opacity = '0';
+                setTimeout(() => hint.remove(), 300);
+            }, 4000);
+        }
+
+        // Initialize phone auto-cleaner
+        initializePhoneAutoCleaner();
 
         // Skip phone number functionality
         function skipPhoneNumber() {

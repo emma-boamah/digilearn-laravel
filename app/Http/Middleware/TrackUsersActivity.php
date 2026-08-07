@@ -135,6 +135,23 @@ class TrackUsersActivity
             'admin/contents/upload/video-chunk', // Skip chunked video uploads to avoid temp file issues
         ];
 
+        // Skip background AJAX / polling requests that are not real user actions
+        $skipAjaxPatterns = [
+            'check-saved',       // Auto-fires on page load to check bookmark status
+            'user-notes',        // Auto-loads saved notes
+            '/progress',         // Auto-reports video progress
+            'dashboard/stats',   // Dashboard stats polling
+            'activity-stats',    // Activity stats API
+            'user-activities',   // Activity feed API
+            'security/data',     // Security data API
+        ];
+
+        foreach ($skipAjaxPatterns as $pattern) {
+            if (str_contains($path, $pattern)) {
+                return true;
+            }
+        }
+
         foreach ($skipPatterns as $pattern) {
             if (str_contains($path, $pattern)) {
                 return true;
@@ -196,14 +213,87 @@ class TrackUsersActivity
     }
 
     /**
+     * Known route name → human-readable description mapping.
+     * This avoids naive route-name-to-title conversion for common routes.
+     */
+    private const ROUTE_DESCRIPTIONS = [
+        // Auth
+        'login' => 'Logged in',
+        'login.submit' => 'Logged in',
+        'logout' => 'Logged out',
+        'register' => 'Registered',
+        'register.submit' => 'Registered',
+        'password.request' => 'Requested password reset',
+        'password.reset' => 'Reset password',
+
+        // Dashboard & Lessons
+        'dashboard' => 'Viewed dashboard',
+        'dashboard.digilearn' => 'Viewed learning dashboard',
+        'dashboard.lesson.view' => 'Viewed lesson',
+        'dashboard.lesson.save' => 'Saved lesson to bookmarks',
+        'dashboard.lesson.unsave' => 'Removed lesson from bookmarks',
+        'dashboard.lesson.comment' => 'Commented on lesson',
+        'dashboard.lesson.comment.store' => 'Posted a comment',
+        'dashboard.saved-lessons' => 'Viewed saved lessons',
+        'dashboard.lesson.document.pdf' => 'Downloaded lesson PDF',
+        'dashboard.lesson.document.ppt' => 'Downloaded lesson presentation',
+
+        // Profile
+        'profile.index' => 'Viewed profile',
+        'profile.update' => 'Updated profile',
+        'profile.avatar.update' => 'Changed avatar',
+
+        // Subscriptions & Payments
+        'subscription.checkout' => 'Started subscription checkout',
+        'payment.verify' => 'Verified payment',
+        'plans.index' => 'Viewed pricing plans',
+
+        // Admin
+        'admin.dashboard' => 'Viewed admin dashboard',
+        'admin.contents.index' => 'Viewed content library',
+        'admin.contents.store' => 'Uploaded content',
+        'admin.contents.update' => 'Updated content',
+        'admin.contents.destroy' => 'Deleted content',
+        'admin.users' => 'Viewed user management',
+        'admin.users.show' => 'Viewed user details',
+        'admin.tutors.index' => 'Viewed tutor applications',
+        'admin.tutors.show' => 'Reviewed tutor application',
+        'admin.tutors.approve' => 'Approved tutor application',
+        'admin.tutors.reject' => 'Rejected tutor application',
+        'admin.tutors.document' => 'Viewed tutor document',
+        'admin.platform-settings.index' => 'Viewed platform settings',
+        'admin.platform-settings.update' => 'Updated platform settings',
+
+        // Tutors
+        'tutors.apply' => 'Viewed tutor application form',
+        'tutors.apply.submit' => 'Submitted tutor application',
+        'tutors.dashboard' => 'Viewed tutor dashboard',
+        'tutors.profile-settings' => 'Viewed tutor profile settings',
+        'tutors.profile-settings.update' => 'Updated tutor profile settings',
+
+        // Quizzes
+        'quiz.index' => 'Viewed quizzes',
+        'quiz.show' => 'Started quiz',
+        'quiz.submit' => 'Submitted quiz answers',
+
+        // Bookings
+        'booking.checkout' => 'Started booking checkout',
+        'booking.complete' => 'Completed booking',
+    ];
+
+    /**
      * Generate a human-readable description
      */
     private function generateDescription(string $method, string $path, $route, int $statusCode): string
     {
-        $action = $this->getActionVerb($method);
-        $resource = $this->extractResourceName($path, $route);
-
-        $description = ucfirst($action) . ' ' . $resource;
+        // Check explicit mapping first
+        if ($route && $route->getName() && isset(self::ROUTE_DESCRIPTIONS[$route->getName()])) {
+            $description = self::ROUTE_DESCRIPTIONS[$route->getName()];
+        } else {
+            $action = $this->getActionVerb($method);
+            $resource = $this->extractResourceName($path, $route);
+            $description = ucfirst($action) . ' ' . $resource;
+        }
 
         if ($statusCode >= 400) {
             $description .= ' (Failed - ' . $statusCode . ')';
@@ -232,21 +322,34 @@ class TrackUsersActivity
     private function extractResourceName(string $path, $route): string
     {
         if ($route && $route->getName()) {
+            $routeName = $route->getName();
+
+            // Remove common prefixes for cleaner output
+            $routeName = preg_replace('/^(admin|dashboard|api)\./', '', $routeName);
+
             // Convert route name to readable format
-            $name = str_replace(['.', '-'], ' ', $route->getName());
-            return ucwords($name);
+            $name = str_replace(['.', '-', '_'], ' ', $routeName);
+            return ucwords(trim($name));
         }
 
-        // Extract from path
+        // Extract from path — filter out obfuscated/encoded IDs and numeric segments
         $segments = explode('/', trim($path, '/'));
-        $resource = end($segments);
+        $meaningful = array_filter($segments, function ($seg) {
+            // Skip numeric IDs
+            if (is_numeric($seg)) return false;
+            // Skip base64/obfuscated tokens (very long alphanumeric strings)
+            if (strlen($seg) > 40) return false;
+            // Skip common prefixes already implied
+            if (in_array($seg, ['api', 'v1', 'v2'])) return false;
+            return true;
+        });
 
-        // Handle common patterns
-        if (is_numeric($resource)) {
-            $resource = prev($segments) . ' item';
+        if (empty($meaningful)) {
+            return 'page';
         }
 
-        return str_replace(['_', '-'], ' ', $resource);
+        $resource = implode(' ', array_slice($meaningful, 0, 3));
+        return ucwords(str_replace(['_', '-'], ' ', $resource));
     }
 
     /**

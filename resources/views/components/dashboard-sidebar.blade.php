@@ -47,8 +47,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M8 5a2 2 0 012-2h2a2 2 0 012 2v2M8 5a2 2 0 000 4h8a2 2 0 000-4M8 5v0" />
                     </svg>
-                    <span class="sidebar-menu-text">Dashboard</span>
-                    <div class="tooltip">Dashboard</div>
+                    <span class="sidebar-menu-text">Learning Hub</span>
+                    <div class="tooltip">Learning Hub</div>
                 </a>
                 <a href="{{ route('dashboard.digilearn') }}"
                     class="sidebar-menu-item {{ request()->routeIs('dashboard.digilearn') ? 'active' : '' }}">

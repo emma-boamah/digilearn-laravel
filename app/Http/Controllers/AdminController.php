@@ -19,6 +19,7 @@ use App\Models\StorageAlert;
 use App\Models\SuperuserRecoveryCode;
 use App\Models\RevenueSummary;
 use App\Models\User;
+use App\Models\TutorProfile;
 use App\Models\WebsiteLockSetting;
 use App\Models\CookieConsent;
 use App\Models\LevelGroup;
@@ -54,6 +55,8 @@ use App\Services\UserActivityService;
 use App\Services\VimeoService;
 use App\Services\VideoSourceService;
 use App\Services\YouTubeService;
+use App\Services\AiContentService;
+use App\Services\BulkContentActionService;
 use App\Http\Requests\Admin\AdminInviteRequest;
 use App\Notifications\AdminNotification;
 
@@ -659,20 +662,39 @@ class AdminController extends Controller
     {
         $request->validate([
             'action' => 'required|in:suspend,unsuspend,verify,delete',
-            'user_ids' => 'required|array',
+            'user_ids' => 'required|array|min:1',
             'user_ids.*' => 'exists:users,id'
         ]);
 
-        $userIds = $request->user_ids;
+        $userIds = array_unique($request->user_ids);
         $action = $request->action;
+        $currentUserId = Auth::id();
+
+        // Prevent self-suspension or self-deletion
+        if (in_array($action, ['suspend', 'delete'])) {
+            $userIds = array_values(array_filter($userIds, function ($id) use ($currentUserId) {
+                return (int)$id !== (int)$currentUserId;
+            }));
+        }
+
+        if (empty($userIds)) {
+            $msg = 'No eligible users targeted for this action.';
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return redirect()->back()->with('error', $msg);
+        }
+
         $affectedCount = 0;
 
         switch ($action) {
             case 'suspend':
-                $affectedCount = User::whereIn('id', $userIds)->update([
-                    'suspended_at' => now(),
-                    'suspension_reason' => 'Bulk suspension by admin'
-                ]);
+                $affectedCount = User::whereIn('id', $userIds)
+                    ->where('id', '!=', $currentUserId)
+                    ->update([
+                        'suspended_at' => now(),
+                        'suspension_reason' => 'Bulk suspension by administrator'
+                    ]);
                 break;
 
             case 'unsuspend':
@@ -689,7 +711,9 @@ class AdminController extends Controller
                 break;
 
             case 'delete':
-                $affectedCount = User::whereIn('id', $userIds)->delete();
+                $affectedCount = User::whereIn('id', $userIds)
+                    ->where('id', '!=', $currentUserId)
+                    ->delete();
                 break;
         }
 
@@ -703,7 +727,17 @@ class AdminController extends Controller
             'timestamp' => now()->toISOString()
         ]);
 
-        return redirect()->back()->with('success', "Bulk {$action} completed. {$affectedCount} users affected.");
+        $message = "Bulk {$action} action completed successfully. {$affectedCount} user account(s) updated.";
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'affected_count' => $affectedCount
+            ]);
+        }
+
+        return redirect()->back()->with('success', $message);
     }
 
     /**
@@ -3820,14 +3854,66 @@ class AdminController extends Controller
     }
 
     /**
+     * Show dedicated AI Generated Contents page
+     */
+    public function aiContents(Request $request, AiContentService $aiContentService)
+    {
+        $query = (string) ($request->get('q') ?? '');
+        $type = (string) ($request->get('type') ?? 'all');
+        $sort = (string) ($request->get('sort') ?? 'newest');
+        $levelGroup = (string) ($request->get('level_group') ?? '');
+        $context = (string) ($request->get('context') ?? '');
+
+        // Get AI generated contents
+        $allContents = $aiContentService->getAiContents($query, $type, $sort, $levelGroup, $context);
+
+        // Paginate the collection manually
+        $page = Paginator::resolveCurrentPage() ?: 1;
+        $perPage = 15;
+        $contents = new LengthAwarePaginator(
+            $allContents->forPage($page, $perPage),
+            $allContents->count(),
+            $perPage,
+            $page,
+            ['path' => Paginator::resolveCurrentPath()]
+        );
+        $contents->appends($request->all());
+
+        // Get AI stats
+        $stats = $aiContentService->getAiStats();
+
+        // Get filter options
+        $levelGroups = LevelGroup::with('levels')->orderBy('display_order')->get();
+        $subjects = Subject::orderBy('name')->get();
+        $categories = ContentCategory::orderBy('name')->get();
+
+        return view('admin.ai_contents.index', compact('contents', 'stats', 'query', 'type', 'sort', 'subjects', 'levelGroups', 'context', 'categories'));
+    }
+
+    /**
+     * Show detailed view of a specific AI generated content
+     */
+    public function showAiContent(Request $request, $id, AiContentService $aiContentService)
+    {
+        $type = $request->get('type', 'video');
+        $content = $aiContentService->findAiContent((int) $id, $type);
+
+        if (!$content) {
+            return redirect()->route('admin.ai-contents.index')->with('error', 'AI content not found.');
+        }
+
+        return view('admin.ai_contents.show', compact('content'));
+    }
+
+    /**
      * Get unified contents from all sources (Video, Document, Quiz)
      */
     private function getUnifiedContents($query = '', $type = 'all', $sort = 'newest', $levelGroupSlug = '', $contextSlug = '')
     {
         $contents = collect();
 
-        // Get videos
-        if ($type === 'all' || $type === 'videos' || $type === 'pending' || $type === 'agent') {
+        // Get videos and content packages
+        if (in_array($type, ['all', 'videos', 'quizzes', 'documents', 'pending', 'agent'])) {
             $videoQuery = Video::with(['uploader:id,name,email', 'subject:id,name', 'documents', 'quizzes', 'categories'])
                 ->when($query, function ($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
@@ -3842,6 +3928,10 @@ class AdminController extends Controller
             // Filter for agent-generated videos if type is 'agent'
             if ($type === 'agent') {
                 $videoQuery->where('is_agent_generated', true);
+            } else {
+                $videoQuery->where(function ($q) {
+                    $q->whereNull('is_agent_generated')->orWhere('is_agent_generated', false);
+                });
             }
 
             // Filter by level group
@@ -3865,6 +3955,12 @@ class AdminController extends Controller
                 'title',
                 'description',
                 'thumbnail_path',
+                'video_source',
+                'vimeo_id',
+                'external_video_id',
+                'mux_playback_id',
+                'video_path',
+                'temp_file_path',
                 'views',
                 'comments_count',
                 'created_at',
@@ -3887,9 +3983,21 @@ class AdminController extends Controller
                 $item->uploader_email = $item->uploader->email ?? '';
                 $item->duration_formatted = $item->duration_seconds ? gmdate('H:i:s', $item->duration_seconds) : '00:00:00';
                 $item->subject_name = $item->subject->name ?? null;
+                $item->thumbnail_url = $item->getThumbnailUrl();
                 // Add counts manually
                 $item->documents_count = $item->documents->count();
                 $item->quizzes_count = $item->quizzes->count();
+
+                // If video_source is 'none' or no video media exists, classify based on attached content
+                $hasVideoMedia = !empty($item->video_path) || !empty($item->external_video_id) || !empty($item->vimeo_id) || !empty($item->mux_playback_id) || !empty($item->temp_file_path);
+                if ($item->video_source === 'none' || !$hasVideoMedia) {
+                    if ($item->quizzes_count > 0 || !empty($item->quiz_id)) {
+                        $item->content_type = 'quiz';
+                    } elseif ($item->documents_count > 0 || !empty($item->document_path)) {
+                        $item->content_type = 'document';
+                    }
+                }
+
                 return $item;
             }));
         }
@@ -3897,9 +4005,7 @@ class AdminController extends Controller
         // Get standalone documents (when specifically filtering for documents OR when 'all' is selected)
         if ($type === 'all' || $type === 'documents') {
             $documentsQuery = Document::with(['uploader:id,name,email'])
-                ->when($type === 'all', function ($q) {
-                    $q->whereNull('video_id'); // Only standalone in 'all' view
-                })
+                ->whereNull('video_id') // Only standalone in view to avoid duplicates
                 ->when($query, function ($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
                         ->orWhere('description', 'like', "%{$query}%");
@@ -3947,8 +4053,11 @@ class AdminController extends Controller
         // Get quizzes (when specifically filtering for quizzes OR when 'all' is selected)
         if ($type === 'all' || $type === 'quizzes') {
             $quizzesQuery = Quiz::with(['uploader:id,name,email', 'ratings', 'subject:id,name'])
-                ->when($type === 'all', function ($q) {
-                    $q->whereNull('video_id'); // Only standalone in 'all' view to avoid lesson duplicates
+                ->whereNull('video_id') // Only standalone in view to avoid duplicates
+                ->when($type !== 'agent', function ($q) {
+                    $q->where(function ($sub) {
+                        $sub->whereNull('is_agent_generated')->orWhere('is_agent_generated', false);
+                    });
                 })
                 ->when($query, function ($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
@@ -4003,6 +4112,19 @@ class AdminController extends Controller
 
                 return $item;
             }));
+        }
+
+        // Filter collection by active type tab if specific tab selected
+        $typeMap = [
+            'videos' => 'video',
+            'quizzes' => 'quiz',
+            'documents' => 'document',
+        ];
+        if (isset($typeMap[$type])) {
+            $targetType = $typeMap[$type];
+            $contents = $contents->filter(function ($item) use ($targetType) {
+                return ($item->content_type ?? 'video') === $targetType;
+            });
         }
 
         // Sort contents
@@ -4837,6 +4959,65 @@ class AdminController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete content: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Handle bulk actions (delete, approve, categorize) on contents
+     */
+    public function bulkAction(Request $request, BulkContentActionService $bulkService)
+    {
+        $request->validate([
+            'action' => 'required|string|in:delete,approve,categorize',
+            'items' => 'required|array|min:1',
+            'category_id' => 'nullable|integer|exists:content_categories,id',
+            'delete_related' => 'nullable|boolean',
+        ]);
+
+        $action = $request->input('action');
+        $items = $request->input('items', []);
+        $deleteRelated = $request->boolean('delete_related', true);
+        $categoryId = $request->input('category_id');
+
+        try {
+            switch ($action) {
+                case 'delete':
+                    $result = $bulkService->bulkDelete($items, $deleteRelated);
+                    break;
+                case 'approve':
+                    $result = $bulkService->bulkApprove($items);
+                    break;
+                case 'categorize':
+                    if (!$categoryId) {
+                        return response()->json(['success' => false, 'message' => 'Category is required for bulk categorization.'], 422);
+                    }
+                    $result = $bulkService->bulkCategorize($items, $categoryId);
+                    break;
+                default:
+                    return response()->json(['success' => false, 'message' => 'Invalid bulk action.'], 400);
+            }
+
+            Log::channel('security')->info('contents_bulk_action_executed', [
+                'admin_id' => Auth::id(),
+                'action' => $action,
+                'items_count' => count($items),
+                'result' => $result,
+                'ip' => get_client_ip(),
+                'timestamp' => now()->toISOString()
+            ]);
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            Log::error('Bulk content action failed', [
+                'admin_id' => Auth::id(),
+                'action' => $action,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Bulk action failed: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -5879,5 +6060,147 @@ class AdminController extends Controller
                 'message' => 'Image upload failed'
             ], 500);
         }
+    }
+
+    /**
+     * Display listing of tutor applications for admin verification.
+     */
+    public function tutors(Request $request)
+    {
+        $query = TutorProfile::with(['user', 'tutorSubjects.subject']);
+
+        if ($request->filled('status')) {
+            if ($request->status === 'approved') {
+                $query->where('is_approved', true);
+            } elseif ($request->status === 'pending') {
+                $query->where('is_approved', false);
+            }
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('user', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $tutors = $query->latest()->paginate(15);
+        $pendingCount = TutorProfile::where('is_approved', false)->count();
+        $approvedCount = TutorProfile::where('is_approved', true)->count();
+
+        return view('admin.tutors.index', compact('tutors', 'pendingCount', 'approvedCount'));
+    }
+
+    /**
+     * Show tutor application detail view for verification.
+     */
+    public function showTutor($id)
+    {
+        $tutorProfile = TutorProfile::with(['user', 'tutorSubjects.subject'])->findOrFail($id);
+        return view('admin.tutors.show', compact('tutorProfile'));
+    }
+
+    /**
+     * Approve tutor application.
+     */
+    public function approveTutor($id)
+    {
+        $tutorProfile = TutorProfile::with('user')->findOrFail($id);
+        $tutorProfile->update([
+            'is_approved' => true,
+            'is_verified' => true,
+        ]);
+
+        return redirect()->route('admin.tutors.index')
+            ->with('success', "Tutor application for {$tutorProfile->user->name} has been approved successfully.");
+    }
+
+    /**
+     * Reject tutor application.
+     */
+    public function rejectTutor(Request $request, $id)
+    {
+        $tutorProfile = TutorProfile::with('user')->findOrFail($id);
+        $tutorProfile->update([
+            'is_approved' => false,
+        ]);
+
+        return redirect()->route('admin.tutors.index')
+            ->with('info', "Tutor application for {$tutorProfile->user->name} has been set to unapproved.");
+    }
+
+    /**
+     * Securely stream/serve a tutor applicant's uploaded document (ID, Headshot, Certificate, Tax doc).
+     */
+    public function viewTutorDocument($id, $type)
+    {
+        $tutorProfile = TutorProfile::findOrFail($id);
+
+        $path = match ($type) {
+            'headshot' => $tutorProfile->headshot_path,
+            'id_document' => $tutorProfile->id_document_path,
+            'tax_document' => $tutorProfile->tax_document_path,
+            'certificates' => $tutorProfile->certificates_path,
+            'test_video' => $tutorProfile->test_video_path,
+            default => null,
+        };
+
+        if (!$path) {
+            abort(404, 'Document record not found.');
+        }
+
+        // Try local storage disk first, then public disk
+        $fullPath = null;
+        if (Storage::disk('local')->exists($path)) {
+            $fullPath = Storage::disk('local')->path($path);
+        } elseif (Storage::disk('public')->exists($path)) {
+            $fullPath = Storage::disk('public')->path($path);
+        } elseif (file_exists(storage_path('app/' . $path))) {
+            $fullPath = storage_path('app/' . $path);
+        } elseif (file_exists(storage_path('app/public/' . $path))) {
+            $fullPath = storage_path('app/public/' . $path);
+        }
+
+        if (!$fullPath || !file_exists($fullPath)) {
+            abort(404, 'File not found on disk.');
+        }
+
+        $mimeType = mime_content_type($fullPath) ?: 'application/octet-stream';
+
+        return response()->file($fullPath, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . basename($fullPath) . '"',
+        ]);
+    }
+
+    /**
+     * Show platform settings (tutor commission, payouts, etc.).
+     */
+    public function platformSettings()
+    {
+        $commissionRate = \App\Models\PlatformSetting::getValue('tutor_commission_rate', 0.15) * 100;
+        $minPayout = \App\Models\PlatformSetting::getValue('min_payout_amount', 50.00);
+        $processingDays = \App\Models\PlatformSetting::getValue('payout_processing_days', 3);
+
+        return view('admin.platform-settings', compact('commissionRate', 'minPayout', 'processingDays'));
+    }
+
+    /**
+     * Update platform settings.
+     */
+    public function updatePlatformSettings(Request $request)
+    {
+        $request->validate([
+            'tutor_commission_rate' => 'required|numeric|min:0|max:100',
+            'min_payout_amount' => 'required|numeric|min:1',
+            'payout_processing_days' => 'required|integer|min:1',
+        ]);
+
+        \App\Models\PlatformSetting::setValue('tutor_commission_rate', $request->tutor_commission_rate / 100, 'decimal', 'Tutor platform commission percentage', Auth::id());
+        \App\Models\PlatformSetting::setValue('min_payout_amount', $request->min_payout_amount, 'decimal', 'Minimum payout withdrawal threshold in GHS', Auth::id());
+        \App\Models\PlatformSetting::setValue('payout_processing_days', $request->payout_processing_days, 'integer', 'Standard payout processing days', Auth::id());
+
+        return redirect()->back()->with('success', 'Platform settings updated successfully.');
     }
 }
