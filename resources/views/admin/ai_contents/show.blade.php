@@ -69,11 +69,11 @@
                                 <div class="space-y-3">
                                     @forelse($content->questions as $index => $question)
                                         <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg text-sm">
-                                            <p class="font-semibold text-gray-900 mb-2">Q{{ $index + 1 }}. {{ $question->question_text ?? $question->question }}</p>
-                                            @if(isset($question->options) && is_array($question->options))
+                                            <p class="font-semibold text-gray-900 mb-2">Q{{ $index + 1 }}. {{ $question['question_text'] ?? $question['question'] ?? '' }}</p>
+                                            @if(isset($question['options']) && is_array($question['options']))
                                                 <ul class="space-y-1 pl-4 list-disc text-gray-600">
-                                                    @foreach($question->options as $opt)
-                                                        <li>{{ $opt }}</li>
+                                                    @foreach($question['options'] as $opt)
+                                                        <li>{{ is_array($opt) ? ($opt['text'] ?? json_encode($opt)) : $opt }}</li>
                                                     @endforeach
                                                 </ul>
                                             @endif
