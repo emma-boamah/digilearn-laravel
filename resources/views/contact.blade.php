@@ -374,8 +374,7 @@ number, ShoutOutGH email')
                                 <div class="text">
                                     <h3>Get feedback</h3>
                                     <p>
-                                        We have millions of teachers around the world as it helps us improve what you love to
-                                        learn.
+                                        Every voice matters in shaping the future of our learning ecosystem.
                                     </p>
                                     @auth
                                         <form action="{{ route('feedback.submit') }}" method="POST">
@@ -435,10 +434,9 @@ number, ShoutOutGH email')
                                     </svg>
                                 </div>
                                 <div class="text">
-                                    <h3>(+233) 546 994383</h3>
+                                    <h3>(+233) 59 210 3161</h3>
                                     <p>
-                                        We have a team of teachers around the world as it helps us provide the best for you. Our
-                                        team is available 24/7 to help you.
+                                        Reach our support team directly for immediate assistance with your inquiries.
                                     </p>
                                 </div>
                             </div>
@@ -457,7 +455,7 @@ number, ShoutOutGH email')
                                 <div class="text">
                                     <h3>Accra-Ghana</h3>
                                     <p>
-                                        We have a team of teachers around the world as it helps us provide the best for you. Contact our
+                                        The central hub where our global vision for education is brought to life. Contact our
                                         team at contact@shoutoutgh.com
                                     </p>
                                 </div>

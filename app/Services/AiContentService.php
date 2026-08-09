@@ -178,9 +178,10 @@ class AiContentService
     public function findAiContent(int $id, string $type = 'video')
     {
         if ($type === 'quiz') {
-            $item = Quiz::with(['uploader', 'subject', 'ratings', 'questions'])->where('is_agent_generated', true)->find($id);
+            $item = Quiz::with(['uploader', 'subject', 'ratings'])->where('is_agent_generated', true)->find($id);
             if ($item) {
                 $item->content_type = 'quiz';
+                $item->setRelation('questions', $item->questions());
                 $item->agent_request = AgentRequest::where('quiz_id', $id)->with('user')->first();
             }
             return $item;
@@ -188,9 +189,10 @@ class AiContentService
 
         $item = Video::with(['uploader', 'subject', 'documents', 'quizzes', 'categories'])->where('is_agent_generated', true)->find($id);
         if (!$item) {
-            $item = Quiz::with(['uploader', 'subject', 'ratings', 'questions'])->where('is_agent_generated', true)->find($id);
+            $item = Quiz::with(['uploader', 'subject', 'ratings'])->where('is_agent_generated', true)->find($id);
             if ($item) {
                 $item->content_type = 'quiz';
+                $item->setRelation('questions', $item->questions());
                 $item->agent_request = AgentRequest::where('quiz_id', $id)->with('user')->first();
                 return $item;
             }

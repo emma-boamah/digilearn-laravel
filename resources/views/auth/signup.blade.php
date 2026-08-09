@@ -1002,7 +1002,7 @@
                             name="phone" 
                             class="form-input phone-number-input {{ $errors->has('phone') ? 'error' : '' }}" 
                             value="{{ old('phone') }}"
-                            placeholder="50 826 0294"
+                            placeholder="xx xxx xxxx"
                             autocomplete="tel"
                         >
                         <input type="hidden" id="country_code" name="country_code" value="{{ $detectedCountry['code'] }}">
