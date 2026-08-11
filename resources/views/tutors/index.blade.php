@@ -10,30 +10,118 @@
 @section('subjects-filter')
     <div class="subjects-filter">
         <span class="filter-label">Subjects:</span>
-        <a href="{{ route('tutors.index') }}" class="subject-chip {{ !request('subject_id') ? 'active' : '' }}" style="text-decoration: none;">
+        <a href="{{ route('tutors.index', request('search') ? ['search' => request('search')] : []) }}" class="subject-chip {{ !request('subject_id') ? 'active' : '' }}" style="text-decoration: none;">
             <i class="fas fa-th-large"></i> All Subjects
         </a>
+        @php
+            $subjectIcons = [
+                'Mathematics' => 'fas fa-calculator',
+                'English' => 'fas fa-book',
+                'Science' => 'fas fa-flask',
+                'Social Studies' => 'fas fa-globe',
+                'History' => 'fas fa-clock',
+                'Computer Science' => 'fas fa-laptop-code',
+                'Physics' => 'fas fa-bolt',
+                'Chemistry' => 'fas fa-atom',
+                'Biology' => 'fas fa-heartbeat',
+                'Geography' => 'fas fa-globe-africa',
+                'Natural Science' => 'fas fa-leaf',
+                'Integrated Science' => 'fas fa-microscope',
+                'Art' => 'fas fa-palette',
+                'Music' => 'fas fa-music',
+                'General Education' => 'fas fa-graduation-cap',
+                'Primary Education' => 'fas fa-school',
+                'Junior High School' => 'fas fa-chalkboard-teacher',
+                'Senior High School' => 'fas fa-university',
+                'Business Administration' => 'fas fa-briefcase',
+                'Medicine' => 'fas fa-stethoscope',
+                'French' => 'fas fa-language',
+                'Economics' => 'fas fa-chart-line',
+                'Literature' => 'fas fa-feather-alt',
+                'Religious Studies' => 'fas fa-pray',
+                'Physical Education' => 'fas fa-running',
+                'ICT' => 'fas fa-desktop',
+            ];
+        @endphp
         @foreach($subjects as $subject)
-            <a href="{{ route('tutors.index', ['subject_id' => $subject->id]) }}" class="subject-chip {{ request('subject_id') == $subject->id ? 'active' : '' }}" style="text-decoration: none;">
-                <i class="fas fa-book"></i> {{ $subject->name }}
+            <a href="{{ route('tutors.index', array_merge(['subject_id' => $subject->id], request('search') ? ['search' => request('search')] : [])) }}" class="subject-chip {{ request('subject_id') == $subject->id ? 'active' : '' }}" style="text-decoration: none;">
+                <i class="{{ $subjectIcons[$subject->name] ?? 'fas fa-book-open' }}"></i> {{ $subject->name }}
             </a>
         @endforeach
     </div>
 @endsection
 
 @section('content')
-    <!-- Hero Section -->
-    <div class="hero-section" style="background: linear-gradient(135deg, var(--gray-900), var(--secondary-blue)); position: relative; height: 280px; display: flex; align-items: center; justify-content: center; text-align: center; color: white;">
+    <style>
+        #tutorSearchInput::placeholder {
+            color: var(--gray-400);
+        }
+        #tutorSearchInput:focus {
+            border-color: var(--secondary-blue);
+            box-shadow: 0 0 0 3px rgba(38, 119, 184, 0.1);
+        }
+        @media (max-width: 640px) {
+            .hero-section { height: 320px !important; }
+            .hero-section h1 { font-size: 1.85rem !important; }
+            .hero-section p { font-size: 0.95rem !important; line-height: 1.4 !important; }
+            .tutor-search-bar { padding: 1rem 1rem !important; }
+            #tutorSearchInput { font-size: 0.875rem !important; }
+        }
+    </style>
+    <!-- Hero Section (clean for ads) -->
+    <div class="hero-section" style="background: linear-gradient(135deg, var(--gray-900), var(--secondary-blue)); position: relative; height: 340px; display: flex; align-items: center; justify-content: center; text-align: center; color: white;">
         <div style="position: absolute; inset: 0; background: url('{{ asset('images/personalized.jpeg') }}') center/cover; opacity: 0.3;"></div>
-        <div class="hero-content" style="position: relative; z-index: 10;">
-            <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; color: white;">Personalized Learning</h1>
-            <p style="font-size: 1.125rem; opacity: 0.9; max-width: 600px; margin: 0 auto;">Connect with expert tutors and learn at your own pace.</p>
+        <div class="hero-content" style="position: relative; z-index: 10; padding: 0 1rem;">
+            <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 0.75rem; color: white;">Personalized Learning</h1>
+            <p style="font-size: 1.125rem; opacity: 0.9; max-width: 600px; margin: 0 auto; line-height: 1.5;">Connect with expert tutors and learn at your own pace.</p>
         </div>
+    </div>
+
+    <!-- Search Bar (below hero) -->
+    <div class="tutor-search-bar" style="padding: 1.25rem 2rem; background: var(--bg-surface); border-bottom: 1px solid var(--border-color);">
+        <form method="GET" action="{{ route('tutors.index') }}" id="tutorSearchForm" style="position: relative; max-width: 640px; margin: 0 auto;">
+            @if(request('subject_id'))
+                <input type="hidden" name="subject_id" value="{{ request('subject_id') }}">
+            @endif
+            <div style="position: relative; display: flex; align-items: center;">
+                <i class="fas fa-search" style="position: absolute; left: 1.125rem; color: var(--gray-400); font-size: 0.95rem; pointer-events: none; z-index: 2;"></i>
+                <input 
+                    type="text" 
+                    name="search" 
+                    id="tutorSearchInput"
+                    value="{{ request('search') }}" 
+                    placeholder="Search by tutor name, subject, or expertise..." 
+                    style="width: 100%; padding: 0.8rem 3rem 0.8rem 2.75rem; border: 1.5px solid var(--gray-200); border-radius: 50px; font-size: 0.925rem; color: var(--text-main); background: var(--bg-surface); outline: none; transition: all 0.25s ease;"
+                >
+                @if(request('search'))
+                    <a href="{{ route('tutors.index', request('subject_id') ? ['subject_id' => request('subject_id')] : []) }}" 
+                       style="position: absolute; right: 1rem; color: var(--gray-400); font-size: 0.95rem; z-index: 2; transition: color 0.2s;"
+                       onmouseover="this.style.color='var(--gray-700)'" onmouseout="this.style.color='var(--gray-400)'"
+                       title="Clear search">
+                        <i class="fas fa-times-circle"></i>
+                    </a>
+                @endif
+            </div>
+        </form>
     </div>
 
     <!-- Content Section -->
     <div class="content-section" style="padding: 2rem;">
         
+        @if(request('search'))
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; padding: 0.75rem 1.25rem; background: rgba(38, 119, 184, 0.06); border: 1px solid rgba(38, 119, 184, 0.15); border-radius: 10px;">
+                <i class="fas fa-search" style="color: var(--secondary-blue); font-size: 0.875rem;"></i>
+                <span style="font-size: 0.9rem; color: var(--text-main);">
+                    Showing results for "<strong>{{ request('search') }}</strong>"
+                    <span style="color: var(--text-muted); margin-left: 0.25rem;">· {{ $tutors->total() }} {{ Str::plural('tutor', $tutors->total()) }} found</span>
+                </span>
+                <a href="{{ route('tutors.index', request('subject_id') ? ['subject_id' => request('subject_id')] : []) }}" 
+                   style="margin-left: auto; font-size: 0.8rem; color: var(--secondary-blue); text-decoration: none; font-weight: 600; transition: opacity 0.2s;"
+                   onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
+                    Clear
+                </a>
+            </div>
+        @endif
         @if($tutors->count() > 0)
             <div class="content-grid">
                 @foreach($tutors as $tutor)

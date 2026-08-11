@@ -870,8 +870,7 @@
 <!-- Top Header -->
 <div class="top-header">
     <div class="header-left">
-        <!-- Hamburger for sidebar toggle (always visible) -->
-        <button class="sidebar-toggle-btn" id="sidebarToggle">
+        <button class="sidebar-toggle-btn" id="sidebarToggle" type="button" aria-label="Toggle Sidebar">
             <svg class="hamburger-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>

@@ -2478,18 +2478,7 @@
             initializeMobileUI();
             initializeSidebar();
             initializeDropdowns();
-            
             initializeSubjectFilter();
-            
-            
-
-            // Initialize video facade manager with auto-play enabled for YouTube-like behavior
-            });
-
-        
-
-        
-            }
         });
 
         // Add this new function to prevent scrolling on body when sidebar is open
@@ -2710,7 +2699,7 @@
                         sidebarContent.scrollTop = 0;
                     }
                 }
-            }
+            window.toggleSidebar = toggleSidebar;
 
             if (sidebarToggle) {
                 sidebarToggle.addEventListener('click', toggleSidebar);
