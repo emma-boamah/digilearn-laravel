@@ -37,4 +37,12 @@ class Subject extends Model
     {
         return $this->hasMany(\App\Models\Quiz::class, 'subject_id');
     }
+
+    /**
+     * Get the tutor subjects for this subject.
+     */
+    public function tutorSubjects()
+    {
+        return $this->hasMany(TutorSubject::class, 'subject_id');
+    }
 }

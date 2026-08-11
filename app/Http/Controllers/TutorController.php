@@ -29,8 +29,31 @@ class TutorController extends Controller
             });
         }
 
-        $tutors = $query->paginate(12);
-        $subjects = Subject::all();
+        // Search by tutor name, bio, tagline, or subject name
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhereHas('tutorProfile', function ($pq) use ($search) {
+                      $pq->where('bio', 'like', "%{$search}%")
+                         ->orWhere('tagline', 'like', "%{$search}%")
+                         ->orWhere('qualifications', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('tutorSubjects.subject', function ($sq) use ($search) {
+                      $sq->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $tutors = $query->paginate(12)->appends($request->query());
+        // Only fetch subjects that have at least one approved tutor
+        $subjects = Subject::whereHas('tutorSubjects', function ($q) {
+            $q->whereHas('user', function ($uq) {
+                $uq->whereHas('tutorProfile', function ($tq) {
+                    $tq->where('is_approved', true);
+                });
+            });
+        })->get();
 
         return view('tutors.index', compact('tutors', 'subjects'));
     }

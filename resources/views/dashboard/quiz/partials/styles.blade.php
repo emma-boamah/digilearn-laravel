@@ -572,52 +572,7 @@
         opacity: 0.9;
     }
 
-    /* Hero Section */
-    .hero-section {
-        position: relative;
-        height: 300px;
-        overflow: hidden;
-        background: linear-gradient(135deg, var(--secondary-blue), var(--primary-red));
-        width: 100%;
-        max-width: 100%;
-    }
 
-    .hero-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(135deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.3));
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 2rem;
-        width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
-    }
-
-    .hero-content h1 {
-        font-size: 3rem;
-        font-weight: 400;
-        color: var(--white);
-        line-height: 1.2;
-    }
-
-    .hero-content p {
-        font-size: 1.5rem;
-        color: var(--white);
-        margin-top: 0.5rem;
-        opacity: 0.9;
-    }
-
-    .hero-view-button {
-        background-color: var(--primary-red);
-        color: var(--white);
-        padding: 1rem 2rem;
-        border: none;
-        border-radius: 0.5rem;
         font-size: 1rem;
         font-weight: 500;
         cursor: pointer;
@@ -1657,22 +1612,7 @@
             max-width: 100%;
         }
 
-        .hero-section {
-            height: 160px;
-            width: 100%;
-            max-width: 100%;
-        }
 
-        .hero-overlay {
-            padding: 0 1rem;
-            width: 100%;
-            max-width: 100%;
-        }
-
-        .hero-content h1 {
-            font-size: 1.75rem;
-            margin-bottom: 0.5rem;
-        }
 
         .hero-content p {
             font-size: 1rem;
@@ -1813,9 +1753,7 @@
             min-height: calc(100dvh - 47px);
         }
 
-        .hero-section {
-            height: 200px;
-        }
+
 
         .content-grid {
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));

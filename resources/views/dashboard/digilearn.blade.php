@@ -1253,63 +1253,6 @@
             margin-top: 0.5rem;
         }
 
-        /* Hero Section */
-        .hero-section {
-            position: relative;
-            height: clamp(180px, 22vh, 280px);
-            /* Responsive height instead of fixed 300px */
-            min-height: 180px;
-            overflow: hidden;
-            width: 100%;
-            max-width: 100%;
-            box-sizing: border-box;
-        }
-
-        .hero-background {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        .hero-background video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .hero-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.3));
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 2rem;
-        }
-
-        .hero-content h1 {
-            font-size: 3rem;
-            font-weight: 400;
-            color: var(--white);
-            line-height: 1.2;
-        }
-
-        [data-theme="dark"] .hero-content h1,
-        [data-theme="dark"] .hero-content p {
-            color: var(--gray-900);
-        }
-
-        .hero-content p {
-            font-size: 1.5rem;
-            color: var(--white);
-            margin-top: 0.5rem;
-            opacity: 0.9;
-        }
 
         /* Content Section */
         .content-section {
@@ -2069,18 +2012,7 @@
                 padding: 1rem 0.75rem 2rem;
             }
 
-            /* Adjust hero section for mobile */
-            /* Removed fixed 200px hero height override, clamp() handles this responsively */
 
-            .hero-content h1 {
-                font-size: 24px;
-                margin-bottom: 8px;
-            }
-
-            .hero-content p {
-                font-size: 16px;
-                margin-bottom: 16px;
-            }
 
             .content-section {
                 min-height: calc(100vh - 172px - 200px);
@@ -2161,12 +2093,7 @@
                 /* Two columns with gap */
             }
 
-            .hero-overlay {
-                padding: 0 20px;
-                flex-direction: column;
-                justify-content: center;
-                text-align: center;
-            }
+
 
             .lesson-card {
                 border-radius: 12px;
@@ -2632,20 +2559,7 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Hero Section with Video Background -->
-            <div class="hero-section">
-                <div class="hero-background">
-                    <video autoplay muted loop playsinline>
-                        <source src="{{ secure_asset('videos/hero-video.mp4') }}" type="video/mp4">
-                    </video>
-                </div>
-                <div class="hero-overlay">
-                    <div class="hero-content">
-                        <h1>Explore & Learn</h1>
-                        <p>at your own pace.</p>
-                    </div>
-                </div>
-            </div>
+            <x-hero-video title="Explore & Learn" subtitle="at your own pace." />
 
             <!-- Content Section with Lessons/Courses Grid -->
             <div class="content-section">
@@ -2955,12 +2869,16 @@
             const body = document.body;
             const sidebarContent = document.querySelector('.sidebar-content');
 
+            function toggleSidebar(e) {
+                if (e) {
+                    e.preventDefault();
+                }
+                if (!youtubeSidebar) return;
 
-            function toggleSidebar() {
                 if (window.innerWidth <= 768) {
                     // Mobile behavior - overlay only, no layout changes
                     youtubeSidebar.classList.toggle('mobile-open');
-                    sidebarOverlay.classList.toggle('active');
+                    if (sidebarOverlay) sidebarOverlay.classList.toggle('active');
                     body.classList.toggle('sidebar-open');
 
                     // Reset scroll position when opening sidebar
@@ -2972,7 +2890,9 @@
                     youtubeSidebar.classList.toggle('collapsed');
 
                     // Update header position
-                    updateHeaderPosition();
+                    if (typeof updateHeaderPosition === 'function') {
+                        updateHeaderPosition();
+                    }
 
                     // Reset scroll position when collapsing/expanding
                     if (sidebarContent) {
@@ -2981,7 +2901,11 @@
                 }
             }
 
+            window.toggleSidebar = toggleSidebar;
+
             if (sidebarToggle) {
+                sidebarToggle.removeAttribute('onclick');
+                sidebarToggle.removeEventListener('click', toggleSidebar);
                 sidebarToggle.addEventListener('click', toggleSidebar);
             }
 

@@ -65,36 +65,35 @@
             sidebarOverlay
         });
 
-        // Sidebar toggle (works for both desktop and mobile)
-        if (sidebarToggle && youtubeSidebar) {
-            sidebarToggle.addEventListener('click', function(e) {
+        function toggleSidebar(e) {
+            if (e) {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Sidebar toggle clicked');
+            }
+            if (!youtubeSidebar) return;
 
-                if (window.innerWidth <= 768) {
-                    // Mobile behavior
-                    const isOpen = youtubeSidebar.classList.contains('mobile-open');
-                    console.log('Sidebar currently open:', isOpen);
-
-                    if (isOpen) {
-                        // Close sidebar
-                        youtubeSidebar.classList.remove('mobile-open');
-                        if (sidebarOverlay) sidebarOverlay.classList.remove('active');
-                        document.body.style.overflow = '';
-                        console.log('Closing sidebar');
-                    } else {
-                        // Open sidebar
-                        youtubeSidebar.classList.add('mobile-open');
-                        if (sidebarOverlay) sidebarOverlay.classList.add('active');
-                        document.body.style.overflow = 'hidden';
-                        console.log('Opening sidebar');
-                    }
+            if (window.innerWidth <= 768) {
+                const isOpen = youtubeSidebar.classList.contains('mobile-open');
+                if (isOpen) {
+                    youtubeSidebar.classList.remove('mobile-open');
+                    if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+                    document.body.style.overflow = '';
                 } else {
-                    // Desktop behavior
-                    youtubeSidebar.classList.toggle('collapsed');
+                    youtubeSidebar.classList.add('mobile-open');
+                    if (sidebarOverlay) sidebarOverlay.classList.add('active');
+                    document.body.style.overflow = 'hidden';
                 }
-            });
+            } else {
+                youtubeSidebar.classList.toggle('collapsed');
+            }
+        }
+
+        window.toggleSidebar = toggleSidebar;
+
+        // Sidebar toggle (works for both desktop and mobile)
+        if (sidebarToggle && youtubeSidebar) {
+            sidebarToggle.removeAttribute('onclick');
+            sidebarToggle.addEventListener('click', toggleSidebar);
         }
 
         // Close mobile sidebar when clicking overlay
@@ -102,7 +101,6 @@
             sidebarOverlay.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Overlay clicked - closing sidebar');
                 youtubeSidebar.classList.remove('mobile-open');
                 sidebarOverlay.classList.remove('active');
                 document.body.style.overflow = '';
@@ -121,16 +119,6 @@
                 document.body.style.overflow = '';
             }
         });
-
-        // Add touch event handling for better mobile experience
-        if (sidebarToggle) {
-            sidebarToggle.addEventListener('pointerdown', function(e) {
-                if (e.pointerType === 'touch') {
-                    e.preventDefault();
-                    this.click();
-                }
-            }, { passive: false });
-        }
     }
 
     function initializeSearch() {
