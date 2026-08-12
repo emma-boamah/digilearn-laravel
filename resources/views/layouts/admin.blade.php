@@ -769,6 +769,12 @@
                             <i class="fas fa-sliders-h"></i>
                             <span class="sidebar-link-text">Commission & Payout Rules</span>
                         </a>
+
+                        <a href="{{ route('admin.hero-banners.index') }}"
+                            class="nav-link submenu-link flex items-center {{ request()->routeIs('admin.hero-banners*') ? 'active' : '' }}">
+                            <i class="fas fa-images"></i>
+                            <span class="sidebar-link-text">Hero Banners</span>
+                        </a>
                     </div>
                 </div>
                 @endrole

@@ -21,6 +21,7 @@ use App\Http\Controllers\TutorContentController;
 use App\Http\Controllers\TutorAnalyticsController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\WalletController;
+use App\Http\Controllers\AdminHeroBannerController;
 use App\Http\Controllers\ProgressController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\NotificationController;
@@ -658,6 +659,17 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             // Platform Settings (Commission & Payout Config)
             Route::get('/platform-settings', [AdminController::class, 'platformSettings'])->name('platform-settings.index');
             Route::post('/platform-settings', [AdminController::class, 'updatePlatformSettings'])->name('platform-settings.update');
+
+            // Hero Banner Carousel Management
+            Route::prefix('hero-banners')->name('hero-banners.')->group(function () {
+                Route::get('/', [AdminHeroBannerController::class, 'index'])->name('index');
+                Route::get('/create', [AdminHeroBannerController::class, 'create'])->name('create');
+                Route::post('/', [AdminHeroBannerController::class, 'store'])->name('store');
+                Route::get('/{id}/edit', [AdminHeroBannerController::class, 'edit'])->name('edit');
+                Route::put('/{id}', [AdminHeroBannerController::class, 'update'])->name('update');
+                Route::delete('/{id}', [AdminHeroBannerController::class, 'destroy'])->name('destroy');
+                Route::post('/{id}/toggle', [AdminHeroBannerController::class, 'toggleActive'])->name('toggle');
+            });
         }
     );
 
