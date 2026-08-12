@@ -207,7 +207,10 @@ class PaymentController extends Controller
             if ($paystackResponse['data']['status'] === 'success') {
                 $this->handleSuccessfulPayment($payment, $paystackResponse['data']);
                 if (Auth::check()) {
-                    return redirect()->route('payment.success');
+                    $isWalletTopup = ($payment->fresh()->metadata['type'] ?? null) === 'credit_topup';
+                    return redirect()->route('payment.success')
+                        ->with('topup_success', $isWalletTopup)
+                        ->with('topup_amount', $isWalletTopup ? $payment->amount : null);
                 } else {
                     return redirect()->route('login')->with('success', 'Payment successful! Please login to access your account.');
                 }
@@ -331,6 +334,21 @@ class PaymentController extends Controller
             'payment_provider' => $this->extractPaymentProvider($paystackData),
             'paid_at' => now(),
         ]);
+
+        // Credit wallet top-up: add credits and return early
+        if (($payment->metadata['type'] ?? null) === 'credit_topup') {
+            $payment->user->increment('credit_balance', $payment->amount);
+
+            $payment->user->notify(new PaymentSuccessfulNotification([
+                'amount'         => $payment->amount,
+                'currency'       => $payment->currency,
+                'transaction_id' => $payment->transaction_id,
+                'reference'      => $payment->reference,
+                'plan_name'      => 'Credit Wallet Top-Up',
+            ]));
+
+            return;
+        }
 
         $this->createOrUpdateSubscription($payment, 'active');
 

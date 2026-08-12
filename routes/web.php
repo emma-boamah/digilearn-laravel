@@ -20,6 +20,7 @@ use App\Http\Controllers\TutorBookingController;
 use App\Http\Controllers\TutorContentController;
 use App\Http\Controllers\TutorAnalyticsController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\WalletController;
 use App\Http\Controllers\ProgressController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\NotificationController;
@@ -187,6 +188,12 @@ Route::get('/pricing/pricing-details', [PricingController::class, 'show'])->name
 // Coming soon route (authenticated)
 Route::middleware(['auth'])->group(function () {
     Route::get('/coming-soon', [ComingSoonController::class, 'index'])->name('coming-soon');
+});
+
+// Credit Wallet
+Route::middleware(['auth'])->prefix('wallet')->name('wallet.')->group(function () {
+    Route::get('/', [WalletController::class, 'index'])->name('index');
+    Route::post('/topup', [WalletController::class, 'initiate'])->name('topup');
 });
 
 // Payment routes (authenticated)
@@ -524,6 +531,9 @@ Route::middleware(['auth'])->group(function () {
             });
 
             Route::prefix('bookings')->name('bookings.')->group(function () {
+                Route::get('/checkout', function () {
+                    return redirect()->route('tutors.index');
+                });
                 Route::post('/checkout', [BookingController::class, 'checkout'])->name('checkout');
                 Route::get('/{bookingId}/confirm', [BookingController::class, 'confirm'])->name('confirm'); // Could be webhook later
                 Route::post('/{bookingId}/complete', [BookingController::class, 'complete'])->name('complete');

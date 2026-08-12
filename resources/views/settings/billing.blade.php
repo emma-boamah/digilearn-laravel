@@ -9,6 +9,23 @@
     <p class="page-description">Manage your subscription plan, payment methods, and billing history.</p>
 </div>
 
+<!-- Credit Wallet Card -->
+<div class="bg-card rounded-2xl p-6 border mb-6 shadow-sm">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <div style="width: 3rem; height: 3rem; border-radius: 0.75rem; background: #dcfce7; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: #16a34a; flex-shrink: 0;">
+                <i class="fas fa-coins"></i>
+            </div>
+            <div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.15rem;">Credit Wallet Balance</div>
+                <div style="font-size: 1.75rem; font-weight: 800; color: var(--text-main);">{{ number_format(auth()->user()->credit_balance, 2) }} Credits</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">1 Credit = GHS 1.00 · Used for tutor session bookings</div>
+            </div>
+        </div>
+        <a href="{{ route('wallet.index') }}" style="padding: 0.6rem 1.25rem; background: var(--primary-color); color: white; border-radius: 0.625rem; font-weight: 600; font-size: 0.875rem; text-decoration: none; white-space: nowrap;">Top Up Wallet</a>
+    </div>
+</div>
+
 <!-- Current Plan -->
 <div class="bg-card rounded-2xl p-6 border mb-8 shadow-sm">
     <div class="flex justify-between items-start mb-8">

@@ -464,6 +464,11 @@
                     <span>Preferences</span>
                 </a>
                 
+                <a href="{{ route('wallet.index') }}" class="nav-item {{ request()->routeIs('wallet.*') ? 'active' : '' }}">
+                    <i class="fas fa-coins"></i>
+                    <span>Wallet</span>
+                </a>
+                
                 <a href="{{ route('settings.billing') }}" class="nav-item {{ request()->routeIs('settings.billing') ? 'active' : '' }}">
                     <i class="fas fa-credit-card"></i>
                     <span>Billing</span>

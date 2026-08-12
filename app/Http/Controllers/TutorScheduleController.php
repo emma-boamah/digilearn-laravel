@@ -160,21 +160,103 @@ class TutorScheduleController extends Controller
     /**
      * JSON endpoint for fetching available time slots for a given tutor (used by booking checkout UI).
      */
-    public function apiSlots($tutorId)
+    public function apiSlots($tutorId, Request $request)
     {
-        $recurringAvailabilities = TutorAvailability::where('tutor_id', $tutorId)
+        $dateStr = $request->input('date', now()->toDateString());
+        $durationHours = max(1, (int) $request->input('duration_hours', 1));
+
+        try {
+            $date = \Carbon\Carbon::parse($dateStr);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Invalid date format'], 400);
+        }
+
+        // 1. Check if specific date is blocked
+        $isBlocked = TutorAvailability::where('tutor_id', $tutorId)
+            ->where('is_blocked', true)
+            ->whereDate('specific_date', $date->toDateString())
+            ->exists();
+
+        if ($isBlocked) {
+            return response()->json([
+                'date' => $date->toDateString(),
+                'day_name' => $date->format('l'),
+                'is_available' => false,
+                'reason' => 'Tutor has blocked this date.',
+                'slots' => [],
+            ]);
+        }
+
+        // 2. Fetch recurring availability for day of week (0 = Sun, 1 = Mon, ..., 6 = Sat)
+        $dayOfWeek = $date->dayOfWeek;
+        $availabilities = TutorAvailability::where('tutor_id', $tutorId)
             ->where('is_recurring', true)
+            ->where('day_of_week', $dayOfWeek)
             ->get();
 
-        $blockedDates = TutorAvailability::where('tutor_id', $tutorId)
-            ->where('is_blocked', true)
-            ->pluck('specific_date')
-            ->map(fn ($d) => $d ? $d->format('Y-m-d') : null)
-            ->toArray();
+        if ($availabilities->isEmpty()) {
+            return response()->json([
+                'date' => $date->toDateString(),
+                'day_name' => $date->format('l'),
+                'is_available' => false,
+                'reason' => "Tutor is not available on {$date->format('l')}s.",
+                'slots' => [],
+            ]);
+        }
+
+        // 3. Fetch existing active bookings on this date for collision checking
+        $existingBookings = Booking::where('tutor_id', $tutorId)
+            ->whereIn('status', ['scheduled', 'confirmed', 'pending_scheduling'])
+            ->whereDate('start_time', $date->toDateString())
+            ->get();
+
+        $slots = [];
+        $now = now();
+
+        foreach ($availabilities as $avail) {
+            $slotIntervalMinutes = $avail->slot_duration_minutes > 0 ? $avail->slot_duration_minutes : 60;
+            
+            $periodStart = \Carbon\Carbon::parse($date->toDateString() . ' ' . $avail->start_time);
+            $periodEnd = \Carbon\Carbon::parse($date->toDateString() . ' ' . $avail->end_time);
+
+            $current = $periodStart->copy();
+
+            while ($current->copy()->addHours($durationHours)->lte($periodEnd)) {
+                $slotStart = $current->copy();
+                $slotEnd = $slotStart->copy()->addHours($durationHours);
+
+                // Skip past slots if booking for today
+                $isPast = $slotStart->lt($now);
+
+                // Collision check against existing bookings
+                $isBooked = $existingBookings->contains(function ($booking) use ($slotStart, $slotEnd) {
+                    if (!$booking->start_time || !$booking->end_time) {
+                        return false;
+                    }
+                    return $booking->start_time->lt($slotEnd) && $booking->end_time->gt($slotStart);
+                });
+
+                $isAvailable = !$isPast && !$isBooked;
+
+                $slots[] = [
+                    'time' => $slotStart->format('H:i'),
+                    'start_time_iso' => $slotStart->toIso8601String(),
+                    'label' => $slotStart->format('g:i A') . ' - ' . $slotEnd->format('g:i A'),
+                    'available' => $isAvailable,
+                    'is_booked' => $isBooked,
+                    'is_past' => $isPast,
+                ];
+
+                $current->addMinutes($slotIntervalMinutes);
+            }
+        }
 
         return response()->json([
-            'recurring' => $recurringAvailabilities,
-            'blocked_dates' => array_filter($blockedDates),
+            'date' => $date->toDateString(),
+            'day_name' => $date->format('l'),
+            'is_available' => count(array_filter($slots, fn($s) => $s['available'])) > 0,
+            'slots' => $slots,
         ]);
     }
 }
+
