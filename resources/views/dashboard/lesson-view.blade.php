@@ -4693,9 +4693,9 @@
             preview.appendChild(iframe);
         } else if (videoSource === 'vimeo' && vimeoId) {
             iframe = document.createElement('iframe');
-            // Removed autoplay=1
-            iframe.src = `https://player.vimeo.com/video/${vimeoId}?dnt=1`;
-            iframe.allow = 'fullscreen';
+            // Include parameters to hide logo (badge=0), title, byline, portrait while respecting Vimeo account embed presets
+            iframe.src = `https://player.vimeo.com/video/${vimeoId}?dnt=1&title=0&byline=0&portrait=0&badge=0`;
+            iframe.allow = 'autoplay; fullscreen; picture-in-picture';
             iframe.allowFullscreen = true;
             iframe.frameBorder = '0';
             iframe.style.cssText = 'width:100%;height:100%;position:absolute;top:0;left:0;z-index:4;';

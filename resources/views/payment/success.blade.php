@@ -13,6 +13,7 @@
 .btn-primary:hover { background-color: #1d4ed8; }
 .btn-secondary { display: block; width: 100%; background-color: #e5e7eb; color: #1f2937; padding: 0.5rem 1rem; border-radius: 0.375rem; text-decoration: none; transition: background-color 0.2s; }
 .btn-secondary:hover { background-color: #d1d5db; }
+.topup-amount { font-size: 2rem; font-weight: 800; color: #2563eb; margin: 0.5rem 0; }
 </style>
 <div class="payment-container">
     <div class="payment-card">
@@ -21,8 +22,21 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
         </div>
-        <h1 class="payment-title">Payment Successful!</h1>
-        @if(auth()->check() && auth()->user()->school && auth()->user()->school->status === 'active')
+
+        @if(session('topup_success'))
+            <h1 class="payment-title">Wallet Topped Up!</h1>
+            <div class="topup-amount">GHS {{ number_format(session('topup_amount', 0), 2) }}</div>
+            <p class="payment-text">Credits have been added to your wallet. You can now book tutor sessions.</p>
+            <div class="button-container">
+                <a href="{{ route('tutors.index') }}" class="btn-primary">
+                    Browse Tutors
+                </a>
+                <a href="{{ route('wallet.index') }}" class="btn-secondary">
+                    View Wallet
+                </a>
+            </div>
+        @elseif(auth()->check() && auth()->user()->school && auth()->user()->school->status === 'active')
+            <h1 class="payment-title">Payment Successful!</h1>
             <p class="payment-text">Your school profile has been activated! Your dedicated portal is now live.</p>
             <div class="button-container">
                 @php
@@ -41,6 +55,7 @@
                 </a>
             </div>
         @else
+            <h1 class="payment-title">Payment Successful!</h1>
             <p class="payment-text">Your payment has been processed successfully. You now have access to your selected plan.</p>
             <div class="button-container">
                 <a href="{{ route('dashboard.main') }}" class="btn-primary">

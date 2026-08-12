@@ -403,6 +403,49 @@
             background: var(--primary-blue-hover);
             transform: translateY(-2px);
         }
+
+        .slots-grid-box {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 0.5rem;
+            margin-top: 0.35rem;
+            max-height: 180px;
+            overflow-y: auto;
+            padding: 0.25rem;
+        }
+
+        .slot-btn {
+            padding: 0.5rem 0.35rem;
+            border: 1.5px solid var(--border-color);
+            background: var(--bg-surface);
+            color: var(--text-main);
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            font-family: inherit;
+        }
+
+        .slot-btn:hover:not(:disabled) {
+            border-color: var(--primary-blue);
+            background: rgba(38, 119, 184, 0.08);
+        }
+
+        .slot-btn.selected {
+            border-color: var(--primary-blue);
+            background: var(--primary-blue);
+            color: white !important;
+            box-shadow: 0 4px 10px rgba(38, 119, 184, 0.3);
+        }
+
+        .slot-btn:disabled, .slot-btn.unavailable {
+            opacity: 0.45;
+            cursor: not-allowed;
+            background: var(--bg-main);
+            text-decoration: line-through;
+        }
     </style>
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
@@ -561,6 +604,14 @@
                     <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.35rem;">Book a 1-on-1 Session</h2>
                     <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">Schedule a live private session with {{ explode(' ', $tutor->name)[0] }}.</p>
 
+                    @if(session('error'))
+                        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 0.75rem; padding: 0.875rem 1rem; margin-bottom: 1.25rem; font-size: 0.85rem; color: #991b1b; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span style="flex: 1;">{{ session('error') }}</span>
+                            <a href="{{ route('wallet.index') }}" style="color: #2563eb; font-weight: 700; text-decoration: underline; white-space: nowrap;">Top Up Now →</a>
+                        </div>
+                    @endif
+
                     <form action="{{ route('bookings.checkout') }}" method="POST">
                         @csrf
                         <input type="hidden" name="tutor_id" value="{{ $tutor->id }}">
@@ -579,12 +630,25 @@
 
                         <div class="form-group">
                             <label for="duration_hours" class="form-label">Lesson Duration</label>
-                            <select name="duration_hours" id="duration_hours" class="form-select" required onchange="updateCalculatedPrice()">
+                            <select name="duration_hours" id="duration_hours" class="form-select" required onchange="onBookingDateOrDurationChange()">
                                 <option value="1" selected>1 Hour</option>
                                 <option value="2">2 Hours</option>
                                 <option value="3">3 Hours</option>
                                 <option value="4">4 Hours</option>
                             </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="booking_date" class="form-label">Select Date</label>
+                            <input type="date" name="booking_date" id="booking_date" class="form-select" min="{{ date('Y-m-d') }}" max="{{ date('Y-m-d', strtotime('+30 days')) }}" required onchange="onBookingDateOrDurationChange()">
+                        </div>
+
+                        <div class="form-group" id="time_slots_group">
+                            <label class="form-label">Available Time Slots</label>
+                            <input type="hidden" name="start_time" id="selected_start_time" required>
+                            <div id="slots_container" class="slots-grid-box">
+                                <div style="font-size: 0.8rem; color: var(--text-muted); grid-column: 1 / -1;">Select a date above to view available time slots.</div>
+                            </div>
                         </div>
 
                         <!-- Price Calculation Display Box -->
@@ -598,13 +662,16 @@
                                 @auth
                                     <span style="display: block; margin-top: 0.25rem;">
                                         Your Balance: <strong style="color: {{ auth()->user()->credit_balance > 0 ? '#10b981' : '#ef4444' }};">{{ number_format(auth()->user()->credit_balance, 2) }} Credits</strong>
+                                        @if(auth()->user()->credit_balance < 10)
+                                            <a href="{{ route('wallet.index') }}" style="display:inline-block; margin-left:0.5rem; font-size:0.78rem; color:#2677B8; font-weight:600; text-decoration:underline;">+ Top Up</a>
+                                        @endif
                                     </span>
                                 @endauth
                             </div>
                         </div>
 
                         <button type="submit" class="submit-booking-btn">
-                            <i class="fas fa-calendar-check"></i> Proceed to Checkout
+                            <i class="fas fa-calendar-check"></i> Confirm & Book Session
                         </button>
 
                         <p style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 1rem;">
@@ -650,7 +717,12 @@
             }
         });
 
-        // Price calculation script
+        // Price calculation & slot fetching scripts
+        function onBookingDateOrDurationChange() {
+            updateCalculatedPrice();
+            fetchAvailableSlots();
+        }
+
         function updateCalculatedPrice() {
             const subjectSelect = document.getElementById('subject_id');
             const durationSelect = document.getElementById('duration_hours');
@@ -666,6 +738,58 @@
             } else {
                 priceDisplay.textContent = '0.00 Credits';
             }
+        }
+
+        function fetchAvailableSlots() {
+            const dateInput = document.getElementById('booking_date');
+            const durationSelect = document.getElementById('duration_hours');
+            const slotsContainer = document.getElementById('slots_container');
+            const startTimeInput = document.getElementById('selected_start_time');
+
+            startTimeInput.value = '';
+
+            if (!dateInput.value) {
+                slotsContainer.innerHTML = '<div style="font-size: 0.8rem; color: var(--text-muted); grid-column: 1 / -1;">Select a date above to view available time slots.</div>';
+                return;
+            }
+
+            slotsContainer.innerHTML = '<div style="font-size: 0.8rem; color: var(--text-muted); grid-column: 1 / -1;"><i class="fas fa-spinner fa-spin"></i> Loading available time slots...</div>';
+
+            const tutorId = "{{ $tutor->id }}";
+            const url = `/tutors/schedule/api/slots/${tutorId}?date=${dateInput.value}&duration_hours=${durationSelect.value}`;
+
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.is_available || !data.slots || data.slots.length === 0) {
+                        const reason = data.reason || 'No available time slots on this date.';
+                        slotsContainer.innerHTML = `<div style="font-size: 0.8rem; color: #ef4444; grid-column: 1 / -1;"><i class="fas fa-exclamation-circle"></i> ${reason}</div>`;
+                        return;
+                    }
+
+                    slotsContainer.innerHTML = '';
+                    data.slots.forEach(slot => {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'slot-btn' + (slot.available ? '' : ' unavailable');
+                        btn.disabled = !slot.available;
+                        btn.innerHTML = `<span>${slot.label}</span>`;
+
+                        if (slot.available) {
+                            btn.onclick = function() {
+                                document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+                                btn.classList.add('selected');
+                                startTimeInput.value = slot.time;
+                            };
+                        }
+
+                        slotsContainer.appendChild(btn);
+                    });
+                })
+                .catch(err => {
+                    console.error('Failed to load slots:', err);
+                    slotsContainer.innerHTML = '<div style="font-size: 0.8rem; color: #ef4444; grid-column: 1 / -1;">Unable to load time slots. Please try again.</div>';
+                });
         }
     </script>
 </body>

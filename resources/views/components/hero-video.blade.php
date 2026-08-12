@@ -23,7 +23,7 @@
             <div class="hero-video-wrapper">
                 <div class="hero-video-card">
                     <video autoplay muted loop playsinline class="hero-video-element">
-                        <source src="{{ secure_asset($video) }}" type="video/mp4">
+                        <source src="{{ secure_asset($video) }}?v=2" type="video/mp4">
                     </video>
                 </div>
             </div>
@@ -31,7 +31,7 @@
     </div>
 </div>
 
-<style>
+<style nonce="{{ request()->attributes->get('csp_nonce') }}">
     .hero-container-outer {
         width: 100%;
         padding: 0.85rem 1.5rem 0.35rem;

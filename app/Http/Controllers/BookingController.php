@@ -28,15 +28,45 @@ class BookingController extends Controller
             'tutor_id' => 'required|exists:users,id',
             'subject_id' => 'required|exists:subjects,id',
             'duration_hours' => 'required|numeric|min:1|max:5',
+            'booking_date' => 'nullable|date|after_or_equal:today',
+            'start_time' => 'nullable|string',
         ]);
 
         $student = Auth::user();
         $tutorId = (int) $request->tutor_id;
         $subjectId = (int) $request->subject_id;
         $duration = (int) $request->duration_hours;
+        $bookingDate = $request->input('booking_date');
+        $startTimeStr = $request->input('start_time');
 
         if ($student->id == $tutorId) {
-            return back()->with('error', 'You cannot book a session with yourself.');
+            return redirect()->route('tutors.show', ['tutorId' => $tutorId])->with('error', 'You cannot book a session with yourself.');
+        }
+
+        $startDateTime = null;
+        $endDateTime = null;
+
+        if ($bookingDate && $startTimeStr) {
+            try {
+                $startDateTime = \Carbon\Carbon::parse("{$bookingDate} {$startTimeStr}");
+                $endDateTime = $startDateTime->copy()->addHours($duration);
+            } catch (\Exception $e) {
+                return redirect()->route('tutors.show', ['tutorId' => $tutorId])->with('error', 'Invalid date or time slot selected.');
+            }
+
+            // Check if slot is already booked (collision check)
+            $hasCollision = Booking::where('tutor_id', $tutorId)
+                ->whereIn('status', ['scheduled', 'confirmed', 'pending_scheduling'])
+                ->where(function ($q) use ($startDateTime, $endDateTime) {
+                    $q->where('start_time', '<', $endDateTime)
+                      ->where('end_time', '>', $startDateTime);
+                })
+                ->exists();
+
+            if ($hasCollision) {
+                return redirect()->route('tutors.show', ['tutorId' => $tutorId])
+                    ->with('error', 'The selected time slot has already been booked. Please pick another slot.');
+            }
         }
 
         $hasDiscount = $student->hasExtraTuitionPlan() || $student->hasAdvancedLevelAccess();
@@ -44,7 +74,8 @@ class BookingController extends Controller
         $totalCreditsRequired = $costDetails['total_credits'];
 
         if ($student->credit_balance < $totalCreditsRequired) {
-            return back()->with('error', "Insufficient credits. You need {$totalCreditsRequired} credits but only have {$student->credit_balance}. Please top up your wallet.");
+            return redirect()->route('tutors.show', ['tutorId' => $tutorId])
+                ->with('error', "Insufficient credits. You need {$totalCreditsRequired} credits but only have {$student->credit_balance}. Please top up your wallet.");
         }
 
         DB::beginTransaction();
@@ -55,27 +86,43 @@ class BookingController extends Controller
             // Calculate platform commission split via TutorRateService
             $split = $this->rateService->calculateCommissionSplit($totalCreditsRequired);
 
+            $tutor = User::with('tutorProfile')->find($tutorId);
+            $status = $startDateTime ? 'scheduled' : 'pending_scheduling';
+
+            // Generate virtual classroom room link or fallback to tutor's scheduling link
+            $roomId = 'room-' . \Illuminate\Support\Str::random(10);
+            $meetingLink = route('dashboard.classroom.show', ['roomId' => $roomId]);
+
+            if (!$startDateTime && $tutor->tutorProfile && $tutor->tutorProfile->scheduling_link) {
+                $meetingLink = $tutor->tutorProfile->scheduling_link;
+            }
+
             $booking = Booking::create([
                 'student_id' => $student->id,
                 'tutor_id' => $tutorId,
                 'subject_id' => $subjectId,
                 'credits_paid' => $totalCreditsRequired,
                 'commission_amount' => $split['platform_fee'],
-                'status' => 'pending_scheduling',
+                'start_time' => $startDateTime,
+                'end_time' => $endDateTime,
+                'status' => $status,
+                'meeting_link' => $meetingLink,
             ]);
 
             DB::commit();
 
-            // Redirect to tutor's scheduling link (Calendly)
-            $tutor = User::with('tutorProfile')->find($tutorId);
-            $schedulingLink = $tutor->tutorProfile->scheduling_link ?? '#';
+            if ($startDateTime) {
+                return redirect()->route('dashboard.main')
+                    ->with('success', 'Booking confirmed for ' . $startDateTime->format('M d, Y \a\t g:i A') . '! Credits held in escrow.');
+            }
 
-            return redirect()->away($schedulingLink)
+            return redirect()->away($meetingLink)
                 ->with('success', 'Booking paid successfully. Please select your time slot.');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'An error occurred during checkout. Please try again.');
+            return redirect()->route('tutors.show', ['tutorId' => $tutorId])
+                ->with('error', 'An error occurred during checkout. Please try again.');
         }
     }
 
