@@ -2559,7 +2559,7 @@
 
         <!-- Main Content -->
         <main class="main-content">
-            <x-hero-video title="Explore & Learn" subtitle="at your own pace." />
+           <x-hero-video title="Explore & Learn" subtitle="at your own pace." />
 
             <!-- Content Section with Lessons/Courses Grid -->
             <div class="content-section">
