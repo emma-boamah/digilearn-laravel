@@ -1788,132 +1788,147 @@
                     </div>
 
                     <!-- Video Source Selection -->
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Video Source</label>
-                        <div class="grid grid-cols-2 gap-3">
-                            <label class="relative">
+                    <div class="mb-5">
+                        <label class="block text-sm font-bold text-gray-800 mb-2.5">Video Source</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
+                            <!-- Local Upload -->
+                            <label class="relative cursor-pointer group">
                                 <input type="radio" name="video_source" value="local" class="sr-only peer" checked>
-                                <div
-                                    class="p-4 border-2 border-gray-200 rounded-lg cursor-pointer peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:border-gray-300 transition-colors">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-server text-2xl text-gray-600 mr-3"></i>
-                                        <div>
-                                            <div class="font-medium text-gray-900">Local Upload</div>
-                                            <div class="text-sm text-gray-500">Upload MP4, MOV, AVI files</div>
-                                        </div>
+                                <div class="p-3 border-2 border-gray-200 rounded-2xl peer-checked:border-blue-600 peer-checked:bg-blue-50/70 peer-checked:shadow-sm hover:border-gray-300 transition-all flex flex-col items-center text-center h-full bg-white">
+                                    <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 border border-blue-100/80 flex items-center justify-center mb-2 shadow-2xs group-hover:scale-105 transition-transform">
+                                        <i class="fas fa-server text-lg"></i>
                                     </div>
+                                    <div class="font-bold text-xs text-gray-900">Local Upload</div>
+                                    <div class="text-[10px] text-gray-500 mt-0.5 leading-tight">MP4, MOV, AVI</div>
                                 </div>
                             </label>
-                            <label class="relative">
+
+                            <!-- YouTube -->
+                            <label class="relative cursor-pointer group">
                                 <input type="radio" name="video_source" value="youtube" class="sr-only peer">
-                                <div
-                                    class="p-4 border-2 border-gray-200 rounded-lg cursor-pointer peer-checked:border-red-500 peer-checked:bg-red-50 hover:border-gray-300 transition-colors">
-                                    <div class="flex items-center">
-                                        <i class="fab fa-youtube text-2xl text-red-600 mr-3"></i>
-                                        <div>
-                                            <div class="font-medium text-gray-900">YouTube</div>
-                                            <div class="text-sm text-gray-500">Paste YouTube video URL</div>
-                                        </div>
+                                <div class="p-3 border-2 border-gray-200 rounded-2xl peer-checked:border-[#FF0000] peer-checked:bg-red-50/70 peer-checked:shadow-sm hover:border-gray-300 transition-all flex flex-col items-center text-center h-full bg-white">
+                                    <div class="w-11 h-11 rounded-xl bg-red-50 text-[#FF0000] border border-red-100/80 flex items-center justify-center mb-2 shadow-2xs group-hover:scale-105 transition-transform">
+                                        <i class="fab fa-youtube text-2xl"></i>
                                     </div>
+                                    <div class="font-bold text-xs text-gray-900">YouTube</div>
+                                    <div class="text-[10px] text-gray-500 mt-0.5 leading-tight">Video URL</div>
                                 </div>
                             </label>
-                            <label class="relative">
+
+                            <!-- Vimeo -->
+                            <label class="relative cursor-pointer group">
                                 <input type="radio" name="video_source" value="vimeo" class="sr-only peer">
-                                <div
-                                    class="p-4 border-2 border-gray-200 rounded-lg cursor-pointer peer-checked:border-blue-600 peer-checked:bg-blue-50 hover:border-gray-300 transition-colors">
-                                    <div class="flex items-center">
-                                        <i class="fab fa-vimeo text-2xl text-blue-600 mr-3"></i>
-                                        <div>
-                                            <div class="font-medium text-gray-900">Vimeo</div>
-                                            <div class="text-sm text-gray-500">Upload file or paste Vimeo URL</div>
-                                        </div>
+                                <div class="p-3 border-2 border-gray-200 rounded-2xl peer-checked:border-[#1AB7EA] peer-checked:bg-sky-50/70 peer-checked:shadow-sm hover:border-gray-300 transition-all flex flex-col items-center text-center h-full bg-white">
+                                    <div class="w-11 h-11 rounded-xl bg-sky-50 text-[#1AB7EA] border border-sky-100/80 flex items-center justify-center mb-2 shadow-2xs group-hover:scale-105 transition-transform">
+                                        <i class="fab fa-vimeo-v text-xl"></i>
                                     </div>
+                                    <div class="font-bold text-xs text-gray-900">Vimeo</div>
+                                    <div class="text-[10px] text-gray-500 mt-0.5 leading-tight">URL or Direct API</div>
                                 </div>
                             </label>
-                            <label class="relative">
+
+                            <!-- Mux (Official Logo Mark) -->
+                            <label class="relative cursor-pointer group">
                                 <input type="radio" name="video_source" value="mux" class="sr-only peer">
-                                <div
-                                    class="p-4 border-2 border-gray-200 rounded-lg cursor-pointer peer-checked:border-purple-500 peer-checked:bg-purple-50 hover:border-gray-300 transition-colors">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-video text-2xl text-purple-600 mr-3"></i>
-                                        <div>
-                                            <div class="font-medium text-gray-900">Mux</div>
-                                            <div class="text-sm text-gray-500">Paste Mux stream URL</div>
-                                        </div>
+                                <div class="p-3 border-2 border-gray-200 rounded-2xl peer-checked:border-slate-900 peer-checked:bg-slate-50 peer-checked:shadow-sm hover:border-gray-300 transition-all flex flex-col items-center text-center h-full bg-white">
+                                    <div class="w-11 h-11 rounded-xl bg-slate-900 text-white border border-slate-800 flex items-center justify-center mb-2 shadow-2xs group-hover:scale-105 transition-transform p-1.5">
+                                        <!-- Official MUX Logo Mark -->
+                                        <svg class="w-8 h-4 text-white" viewBox="0 0 100 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M8.5 33.5C6.01472 33.5 4 31.4853 4 29V13C4 10.5147 6.01472 8.5 8.5 8.5C10.9853 8.5 13 10.5147 13 13V21.5L20.8 11.2C21.8 9.9 23.6 9.3 25.1 10C26.5 10.7 27.3 12.2 27.1 13.8L27 14.5V13C27 10.5147 29.0147 8.5 31.5 8.5C33.9853 8.5 36 10.5147 36 13V29C36 31.4853 33.9853 33.5 31.5 33.5C29.0147 33.5 27 31.4853 27 29V20.5L19.2 30.8C18.2 32.1 16.4 32.7 14.9 32C13.5 31.3 12.7 29.8 12.9 28.2L13 27.5V29C13 31.4853 10.9853 33.5 8.5 33.5Z" fill="currentColor"/>
+                                            <circle cx="8.5" cy="13" r="2.2" fill="#0F172A"/>
+                                            <circle cx="31.5" cy="13" r="2.2" fill="#0F172A"/>
+                                            <circle cx="19.5" cy="29" r="2.2" fill="#0F172A"/>
+                                            <path d="M44.5 8.5C46.9853 8.5 49 10.5147 49 13V24C49 26.2091 50.7909 28 53 28C55.2091 28 57 26.2091 57 24V13C57 10.5147 59.0147 8.5 61.5 8.5C63.9853 8.5 66 10.5147 66 13V24C66 31.1797 60.1797 37 53 37C45.8203 37 40 31.1797 40 24V13C40 10.5147 42.0147 8.5 44.5 8.5Z" fill="currentColor"/>
+                                            <circle cx="61.5" cy="13" r="2.2" fill="#0F172A"/>
+                                            <path d="M72.2 10.2C73.8 8.4 76.5 8.2 78.3 9.8L84 14.8L89.7 9.8C91.5 8.2 94.2 8.4 95.8 10.2C97.4 12 97.2 14.7 95.4 16.3L89.7 21.3L95.4 26.3C97.2 27.9 97.4 30.6 95.8 32.4C94.2 34.2 91.5 34.4 89.7 32.8L84 27.8L78.3 32.8C76.5 34.4 73.8 34.2 72.2 32.4C70.6 30.6 70.8 27.9 72.6 26.3L78.3 21.3L72.6 16.3C70.8 14.7 70.6 12 72.2 10.2Z" fill="currentColor"/>
+                                            <circle cx="89.5" cy="31.5" r="2.2" fill="#0F172A"/>
+                                        </svg>
                                     </div>
+                                    <div class="font-bold text-xs text-gray-900">Mux</div>
+                                    <div class="text-[10px] text-gray-500 mt-0.5 leading-tight">Stream URL</div>
                                 </div>
                             </label>
-                            <label class="relative">
+
+                            <!-- No Video -->
+                            <label class="relative cursor-pointer group">
                                 <input type="radio" name="video_source" value="none" class="sr-only peer">
-                                <div
-                                    class="p-4 border-2 border-gray-200 rounded-lg cursor-pointer peer-checked:border-emerald-500 peer-checked:bg-emerald-50 hover:border-gray-300 transition-colors">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-file-alt text-2xl text-emerald-600 mr-3"></i>
-                                        <div>
-                                            <div class="font-medium text-gray-900">No Video</div>
-                                            <div class="text-sm text-gray-500">Quiz / Documents only</div>
-                                        </div>
+                                <div class="p-3 border-2 border-gray-200 rounded-2xl peer-checked:border-emerald-600 peer-checked:bg-emerald-50/70 peer-checked:shadow-sm hover:border-gray-300 transition-all flex flex-col items-center text-center h-full bg-white">
+                                    <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100/80 flex items-center justify-center mb-2 shadow-2xs group-hover:scale-105 transition-transform">
+                                        <i class="fas fa-file-alt text-lg"></i>
                                     </div>
+                                    <div class="font-bold text-xs text-gray-900">No Video</div>
+                                    <div class="text-[10px] text-gray-500 mt-0.5 leading-tight">Quiz/Docs only</div>
                                 </div>
                             </label>
                         </div>
                     </div>
 
-                    <!-- Upload Destination (for Local Upload) -->
-                    <div class="mb-4 hidden" id="uploadDestinationSection">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Upload Destination</label>
-                        <select id="upload_destination"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="local">Store Locally</option>
-                            <option value="vimeo">Upload to Vimeo</option>
-                            <option value="mux">Upload to Mux</option>
-                        </select>
-                        <p class="text-sm text-gray-500 mt-1">Choose where to upload your video file</p>
-                    </div>
-
-                    <!-- Vimeo Upload Options -->
-                    <div class="mb-4 hidden" id="vimeoUploadOptions">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Vimeo Upload Method</label>
-                        <div class="space-y-3">
-                            <label class="flex items-center">
-                                <input type="radio" name="vimeo_method" value="file" class="mr-2">
-                                <span class="text-sm">Upload video file to Vimeo</span>
+                    <!-- Vimeo Upload Options (Segmented Tab Bar) -->
+                    <div class="mb-5 hidden" id="vimeoUploadOptions">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-gray-600">Vimeo Integration Method</label>
+                            <span class="text-[11px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-semibold border border-blue-100">
+                                <i class="fab fa-vimeo mr-1"></i>Vimeo Pro/API
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 p-1.5 bg-slate-100/90 rounded-xl border border-slate-200 text-xs font-bold shadow-inner max-w-md">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="vimeo_method" value="url" class="sr-only peer" checked>
+                                <div class="py-2 px-3 rounded-lg text-center text-gray-600 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm peer-checked:border peer-checked:border-slate-200/80 transition-all flex items-center justify-center gap-1.5">
+                                    <i class="fas fa-link text-blue-500"></i>
+                                    <span>Paste Vimeo URL</span>
+                                </div>
                             </label>
-                            <label class="flex items-center">
-                                <input type="radio" name="vimeo_method" value="url" class="mr-2" checked>
-                                <span class="text-sm">Use existing Vimeo URL</span>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="vimeo_method" value="file" class="sr-only peer">
+                                <div class="py-2 px-3 rounded-lg text-center text-gray-600 peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm peer-checked:border peer-checked:border-slate-200/80 transition-all flex items-center justify-center gap-1.5">
+                                    <i class="fas fa-cloud-upload-alt text-indigo-500"></i>
+                                    <span>Upload File to Vimeo</span>
+                                </div>
                             </label>
                         </div>
                     </div>
 
-                    <!-- Local File Upload Area -->
-                    <div class="mb-4" id="localUploadSection">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Video File</label>
-                        <div id="fileUploadArea" class="file-upload-area">
-                            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
-                            <p class="text-gray-600">Click to upload or drag and drop</p>
-                            <p class="text-sm text-gray-500">MP4, MOV, AVI up to 30GB</p>
+                    <!-- Local / Vimeo File Upload Area -->
+                    <div class="mb-5" id="localUploadSection">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-sm font-bold text-gray-800">Video File</label>
+                            <span id="localDropzoneBadge" class="hidden text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
+                                <i class="fab fa-vimeo mr-1"></i>Direct Upload to Vimeo
+                            </span>
+                        </div>
+                        <div id="fileUploadArea" class="file-upload-area rounded-2xl border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50/40 p-6 text-center transition-all cursor-pointer">
+                            <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-2 shadow-2xs">
+                                <i class="fas fa-cloud-upload-alt text-xl"></i>
+                            </div>
+                            <p class="text-sm font-bold text-gray-800">Click to upload or drag & drop video file</p>
+                            <p class="text-xs text-gray-500 mt-1">MP4, MOV, AVI, MKV up to 30GB</p>
                         </div>
                         <input type="file" id="fileInput" class="hidden"
                             accept=".mp4,.mov,.avi,.mkv,.webm,.3gp,.mpeg,.ogg,.flv,.wmv">
                         <!-- Video Validation Error Message (Format & Size) -->
-                        <div id="videoValidationError" class="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg hidden">
-                            <p class="text-sm text-red-700">
-                                <i class="fas fa-exclamation-circle mr-2"></i>
+                        <div id="videoValidationError" class="mt-2 p-3 bg-red-50 border border-red-200 rounded-xl hidden">
+                            <p class="text-xs font-semibold text-red-700">
+                                <i class="fas fa-exclamation-circle mr-1.5"></i>
                                 <span id="videoValidationErrorMessage">Video file exceeds maximum size of 30GB</span>
                             </p>
                         </div>
                     </div>
 
                     <!-- External URL Input -->
-                    <div class="mb-4 hidden" id="externalUrlSection">
-                        <label for="external_video_url" class="block text-sm font-medium text-gray-700 mb-2">Video
-                            URL</label>
-                        <input type="url" id="external_video_url"
-                            placeholder="https://vimeo.com/123456789 or https://youtube.com/watch?v=..."
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <p class="text-sm text-gray-500 mt-1">Paste the full URL of your video from the selected platform
-                        </p>
+                    <div class="mb-5 hidden" id="externalUrlSection">
+                        <label for="external_video_url" class="block text-sm font-bold text-gray-800 mb-2" id="externalUrlLabel">
+                            <span id="externalUrlPlatformName">Video</span> URL
+                        </label>
+                        <div class="relative rounded-xl shadow-xs">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400" id="externalUrlIcon">
+                                <i class="fas fa-link text-base"></i>
+                            </div>
+                            <input type="url" id="external_video_url"
+                                placeholder="https://..."
+                                class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium transition-all">
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1.5" id="externalUrlHelper">Paste the full URL of your video from the selected platform.</p>
                     </div>
 
                     <!-- Title -->
@@ -5173,19 +5188,21 @@
             function toggleVideoSourceSections(source) {
                 const localSection = document.getElementById('localUploadSection');
                 const externalSection = document.getElementById('externalUrlSection');
-                const uploadDestinationSection = document.getElementById('uploadDestinationSection');
                 const vimeoUploadOptions = document.getElementById('vimeoUploadOptions');
                 const externalVideoUrl = document.getElementById('external_video_url');
+                const externalUrlPlatformName = document.getElementById('externalUrlPlatformName');
+                const externalUrlIcon = document.getElementById('externalUrlIcon');
+                const externalUrlHelper = document.getElementById('externalUrlHelper');
                 const fileInput = document.getElementById('fileInput');
                 const videoPreviewContainer = document.getElementById('videoPreviewContainer');
                 const videoPreviewWrapper = document.getElementById('videoPreviewWrapper');
-                const videoSourceLabel = document.querySelector('label[for="video_source_label"]');
+                const localDropzoneBadge = document.getElementById('localDropzoneBadge');
 
                 // Hide all sections first
                 if (localSection) localSection.classList.add('hidden');
                 if (externalSection) externalSection.classList.add('hidden');
-                if (uploadDestinationSection) uploadDestinationSection.classList.add('hidden');
                 if (vimeoUploadOptions) vimeoUploadOptions.classList.add('hidden');
+                if (localDropzoneBadge) localDropzoneBadge.classList.add('hidden');
 
                 // Show/hide video preview wrapper based on source
                 if (source === 'none') {
@@ -5195,9 +5212,8 @@
                 }
 
                 if (source === 'local') {
+                    uploadData.upload_destination = 'local';
                     if (localSection) localSection.classList.remove('hidden');
-                    if (uploadDestinationSection) uploadDestinationSection.classList.remove('hidden');
-                    // Clear external URL
                     if (externalVideoUrl) externalVideoUrl.value = '';
                     uploadData.external_video_url = '';
                 } else if (source === 'vimeo') {
@@ -5205,15 +5221,28 @@
                     if (vimeoUploadOptions) vimeoUploadOptions.classList.remove('hidden');
                     // Initialize Vimeo method handling
                     handleVimeoMethodSelection();
-                } else if (source === 'youtube' || source === 'mux') {
+                } else if (source === 'youtube') {
+                    uploadData.upload_destination = 'youtube';
                     if (externalSection) externalSection.classList.remove('hidden');
-                    // Clear local file
+                    if (externalUrlPlatformName) externalUrlPlatformName.textContent = 'YouTube Video';
+                    if (externalVideoUrl) externalVideoUrl.placeholder = 'https://www.youtube.com/watch?v=... or https://youtu.be/...';
+                    if (externalUrlIcon) externalUrlIcon.innerHTML = '<i class="fab fa-youtube text-red-600 text-lg"></i>';
+                    if (externalUrlHelper) externalUrlHelper.textContent = 'Paste a public or unlisted YouTube video URL.';
                     if (fileInput) fileInput.value = '';
                     uploadData.video = null;
-                    // Hide video preview
+                    if (videoPreviewContainer) videoPreviewContainer.classList.add('hidden');
+                } else if (source === 'mux') {
+                    uploadData.upload_destination = 'mux';
+                    if (externalSection) externalSection.classList.remove('hidden');
+                    if (externalUrlPlatformName) externalUrlPlatformName.textContent = 'Mux Stream';
+                    if (externalVideoUrl) externalVideoUrl.placeholder = 'https://stream.mux.com/{PLAYBACK_ID}.m3u8 or Playback ID';
+                    if (externalUrlIcon) externalUrlIcon.innerHTML = `<svg class="w-6 h-3 text-slate-800" viewBox="0 0 100 42" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.5 33.5C6.01472 33.5 4 31.4853 4 29V13C4 10.5147 6.01472 8.5 8.5 8.5C10.9853 8.5 13 10.5147 13 13V21.5L20.8 11.2C21.8 9.9 23.6 9.3 25.1 10C26.5 10.7 27.3 12.2 27.1 13.8L27 14.5V13C27 10.5147 29.0147 8.5 31.5 8.5C33.9853 8.5 36 10.5147 36 13V29C36 31.4853 33.9853 33.5 31.5 33.5C29.0147 33.5 27 31.4853 27 29V20.5L19.2 30.8C18.2 32.1 16.4 32.7 14.9 32C13.5 31.3 12.7 29.8 12.9 28.2L13 27.5V29C13 31.4853 10.9853 33.5 8.5 33.5Z" fill="currentColor"/><circle cx="8.5" cy="13" r="2.2" fill="#FFFFFF"/><circle cx="31.5" cy="13" r="2.2" fill="#FFFFFF"/><circle cx="19.5" cy="29" r="2.2" fill="#FFFFFF"/><path d="M44.5 8.5C46.9853 8.5 49 10.5147 49 13V24C49 26.2091 50.7909 28 53 28C55.2091 28 57 26.2091 57 24V13C57 10.5147 59.0147 8.5 61.5 8.5C63.9853 8.5 66 10.5147 66 13V24C66 31.1797 60.1797 37 53 37C45.8203 37 40 31.1797 40 24V13C40 10.5147 42.0147 8.5 44.5 8.5Z" fill="currentColor"/><circle cx="61.5" cy="13" r="2.2" fill="#FFFFFF"/><path d="M72.2 10.2C73.8 8.4 76.5 8.2 78.3 9.8L84 14.8L89.7 9.8C91.5 8.2 94.2 8.4 95.8 10.2C97.4 12 97.2 14.7 95.4 16.3L89.7 21.3L95.4 26.3C97.2 27.9 97.4 30.6 95.8 32.4C94.2 34.2 91.5 34.4 89.7 32.8L84 27.8L78.3 32.8C76.5 34.4 73.8 34.2 72.2 32.4C70.6 30.6 70.8 27.9 72.6 26.3L78.3 21.3L72.6 16.3C70.8 14.7 70.6 12 72.2 10.2Z" fill="currentColor"/><circle cx="89.5" cy="31.5" r="2.2" fill="#FFFFFF"/></svg>`;
+                    if (externalUrlHelper) externalUrlHelper.textContent = 'Paste your Mux HLS stream URL or Playback ID.';
+                    if (fileInput) fileInput.value = '';
+                    uploadData.video = null;
                     if (videoPreviewContainer) videoPreviewContainer.classList.add('hidden');
                 } else if (source === 'none') {
-                    // No video - hide all video-related upload sections
+                    uploadData.upload_destination = 'none';
                     if (fileInput) fileInput.value = '';
                     if (externalVideoUrl) externalVideoUrl.value = '';
                     uploadData.video = null;
@@ -5227,28 +5256,37 @@
                 const localSection = document.getElementById('localUploadSection');
                 const externalSection = document.getElementById('externalUrlSection');
                 const externalVideoUrl = document.getElementById('external_video_url');
+                const externalUrlPlatformName = document.getElementById('externalUrlPlatformName');
+                const externalUrlIcon = document.getElementById('externalUrlIcon');
+                const externalUrlHelper = document.getElementById('externalUrlHelper');
                 const fileInput = document.getElementById('fileInput');
                 const videoPreviewContainer = document.getElementById('videoPreviewContainer');
+                const localDropzoneBadge = document.getElementById('localDropzoneBadge');
 
                 function updateVimeoSections() {
-                    const selectedMethod = document.querySelector('input[name="vimeo_method"]:checked').value;
+                    const checkedRadio = document.querySelector('input[name="vimeo_method"]:checked');
+                    const selectedMethod = checkedRadio ? checkedRadio.value : 'url';
 
                     // Hide both sections first
                     if (localSection) localSection.classList.add('hidden');
                     if (externalSection) externalSection.classList.add('hidden');
+                    if (localDropzoneBadge) localDropzoneBadge.classList.add('hidden');
 
                     if (selectedMethod === 'file') {
                         if (localSection) localSection.classList.remove('hidden');
-                        // Clear external URL
+                        if (localDropzoneBadge) localDropzoneBadge.classList.remove('hidden');
                         if (externalVideoUrl) externalVideoUrl.value = '';
                         uploadData.external_video_url = '';
-                        uploadData.upload_destination = 'vimeo'; // Set destination to Vimeo
+                        uploadData.upload_destination = 'vimeo';
                     } else if (selectedMethod === 'url') {
                         if (externalSection) externalSection.classList.remove('hidden');
-                        // Clear local file
+                        if (externalUrlPlatformName) externalUrlPlatformName.textContent = 'Vimeo Video';
+                        if (externalVideoUrl) externalVideoUrl.placeholder = 'https://vimeo.com/123456789 or player.vimeo.com/video/...';
+                        if (externalUrlIcon) externalUrlIcon.innerHTML = '<i class="fab fa-vimeo text-blue-600 text-lg"></i>';
+                        if (externalUrlHelper) externalUrlHelper.textContent = 'Paste your existing Vimeo video link or embed URL.';
                         if (fileInput) fileInput.value = '';
                         uploadData.video = null;
-                        // Hide video preview
+                        uploadData.upload_destination = 'vimeo';
                         if (videoPreviewContainer) videoPreviewContainer.classList.add('hidden');
                     }
                 }
@@ -5258,6 +5296,7 @@
 
                 // Add event listeners
                 vimeoMethodRadios.forEach(radio => {
+                    radio.removeEventListener('change', updateVimeoSections);
                     radio.addEventListener('change', updateVimeoSections);
                 });
             }
