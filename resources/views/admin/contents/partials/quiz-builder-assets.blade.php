@@ -517,6 +517,21 @@
         }
     }
 
+    function getQuestionsData() {
+        if (document.activeElement && document.activeElement.tagName && document.activeElement.tagName.toLowerCase() === 'math-field') {
+            document.activeElement.blur();
+        }
+        if (typeof updateQuestionModelFromEditor === 'function') {
+            document.querySelectorAll('.rich-text-editor').forEach(editor => {
+                try { updateQuestionModelFromEditor(editor); } catch(e) {}
+            });
+        }
+        if (typeof uploadData !== 'undefined' && uploadData.quiz && Array.isArray(uploadData.quiz.questions)) {
+            return uploadData.quiz.questions;
+        }
+        return [];
+    }
+
     function addQuestion(type, existingData = null) {
         const questionsList = document.getElementById('questionsList');
         if (!questionsList) {

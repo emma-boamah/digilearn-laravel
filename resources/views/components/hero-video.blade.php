@@ -5,34 +5,9 @@
 
 @php
     $banners = \App\Models\HeroBanner::active()->ordered()->get();
-
-    // Fallback if database table is empty
-    if ($banners->isEmpty()) {
-        $banners = collect([
-            (object)[
-                'id' => 1,
-                'title' => $title ?? 'Explore & Learn',
-                'subtitle' => $subtitle ?? 'at your own pace with interactive lessons.',
-                'media_type' => 'video',
-                'media_url' => asset('videos/hero-video.mp4'),
-                'badge_text' => 'FEATURED',
-                'cta_text' => 'Watch Now',
-                'cta_url' => route('dashboard.digilearn'),
-            ],
-            (object)[
-                'id' => 2,
-                'title' => 'Afrimarker Showcase',
-                'subtitle' => 'Enhancing learning through innovative digital tools.',
-                'media_type' => 'image',
-                'media_url' => asset('storage/hero_banners/afrimarker_add.jpeg'),
-                'badge_text' => 'STAFF PICK',
-                'cta_text' => 'Learn More',
-                'cta_url' => route('dashboard.main'),
-            ]
-        ]);
-    }
 @endphp
 
+@if($banners->isNotEmpty())
 <!-- Vimeo-Style Hero Carousel Outer Container -->
 <div class="hero-container-outer">
     <div class="hero-carousel-card" id="heroCarouselCard">
@@ -402,3 +377,4 @@
         startAutoPlay();
     });
 </script>
+@endif

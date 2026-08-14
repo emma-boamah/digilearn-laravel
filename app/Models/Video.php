@@ -102,7 +102,7 @@ class Video extends Model
     // Get single quiz for a video
     public function quiz()
     {
-        return $this->hasOne(Quiz::class);
+        return $this->belongsTo(Quiz::class, 'quiz_id');
     }
 
     /**

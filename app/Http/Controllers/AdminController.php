@@ -4572,7 +4572,7 @@ class AdminController extends Controller
         $contentType = null;
 
         // Try Video first
-        $content = Video::with(['subject', 'documents', 'quizzes'])->find($contentId);
+        $content = Video::with(['subject', 'documents', 'quiz', 'quizzes'])->find($contentId);
         if ($content) {
             $contentType = 'video';
         } else {
@@ -4600,7 +4600,9 @@ class AdminController extends Controller
             $categories = ContentCategory::orderBy('name')->get();
 
             if ($contentType === 'video') {
-                $availableQuizzes = Quiz::whereNull('video_id')->orWhere('video_id', $contentId)->get();
+                $availableQuizzes = Quiz::with('subject')->where(function($q) use ($contentId) {
+                    $q->whereNull('video_id')->orWhere('video_id', $contentId);
+                })->latest()->get();
                 $availableDocuments = Document::whereNull('video_id')->orWhere('video_id', $contentId)->get();
             } else {
                 $availableQuizzes = collect();
@@ -4673,6 +4675,10 @@ class AdminController extends Controller
                     'quiz_id' => $request->quiz_id,
                 ]);
 
+                if ($request->quiz_id) {
+                    Quiz::where('id', $request->quiz_id)->update(['video_id' => $content->id]);
+                }
+
                 // Update document associations
                 if ($request->has('document_ids')) {
                     Document::where('video_id', $content->id)->update(['video_id' => null]);
@@ -4681,9 +4687,30 @@ class AdminController extends Controller
                     Document::where('video_id', $content->id)->update(['video_id' => null]);
                 }
 
-                // If quiz_data is provided, update the *associated* quiz content
-                if ($request->filled('quiz_data') && $content->quiz_id) {
-                    $quiz = Quiz::find($content->quiz_id);
+                // If quiz_data is provided, update or create the associated quiz content
+                if ($request->filled('quiz_data')) {
+                    $quiz = null;
+                    if ($content->quiz_id) {
+                        $quiz = Quiz::find($content->quiz_id);
+                    }
+
+                    // If quiz_data was submitted but no quiz exists yet, create a new Quiz record
+                    if (!$quiz) {
+                        $quiz = Quiz::create([
+                            'title' => $request->filled('quiz_title') ? $request->quiz_title : $request->title,
+                            'subject_id' => $request->subject_id,
+                            'grade_level' => $request->grade_level,
+                            'video_id' => $content->id,
+                            'uploaded_by' => Auth::id(),
+                            'status' => $newStatus ?? 'published',
+                            'difficulty_level' => $request->quiz_difficulty ?? 'medium',
+                            'time_limit_minutes' => $request->quiz_time_limit ?? 30,
+                            'shuffle_questions' => $request->boolean('shuffle_questions'),
+                            'quiz_data' => json_encode(['questions' => []]),
+                        ]);
+                        $content->update(['quiz_id' => $quiz->id]);
+                    }
+
                     if ($quiz) {
                         $quizData = json_decode($request->quiz_data, true);
                         $quizData = $this->processQuizImages($quizData, $request);
