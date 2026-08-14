@@ -536,7 +536,7 @@
             border-bottom-color: #2563eb;
         }
 
-        /* Upload Modal Styles */
+        /* Upload Modal Styles (Canva-inspired UI) */
         .upload-modal {
             display: none;
             position: fixed;
@@ -544,24 +544,87 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(8px);
             z-index: 1000;
             align-items: center;
             justify-content: center;
+            padding: 1.5rem;
         }
 
         .upload-modal.show {
             display: flex;
         }
 
+        .upload-modal-container {
+            position: relative;
+            width: 100%;
+            max-width: 850px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* External Floating Close Button (Canva Style) */
+        .canva-close-btn {
+            position: absolute;
+            top: 0;
+            right: -56px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #ffffff;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1050;
+            font-size: 1.125rem;
+        }
+
+        .canva-close-btn:hover {
+            background: #ffffff;
+            color: #ef4444;
+            transform: scale(1.1);
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.4);
+        }
+
+        @media (max-width: 960px) {
+            .canva-close-btn {
+                top: -52px;
+                right: 0;
+            }
+        }
+
         .upload-form {
             background: white;
-            border-radius: 12px;
-            padding: 24px;
-            width: 90%;
-            max-width: 800px;
+            border-radius: 20px;
+            padding: 0;
+            width: 100%;
             max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border: 1px solid #e2e8f0;
+        }
+
+        .upload-modal-header {
+            background: white;
+            padding: 24px 28px 16px 28px;
+            border-bottom: 1px solid #f1f5f9;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .upload-modal-body {
+            padding: 24px 28px;
             overflow-y: auto;
+            flex: 1;
         }
 
         .file-upload-area {
@@ -1647,29 +1710,35 @@
 
     <!-- Multi-Step Upload Wizard -->
     <div id="uploadModal" class="upload-modal">
-        <div class="upload-form">
-            <!-- Modal Header with Prominent Brand Mode Switcher -->
-            <div class="border-b pb-5 mb-6">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h2 class="text-2xl font-black text-gray-900 tracking-tight">Upload Content</h2>
-                        <p class="text-xs text-gray-500 mt-0.5">Select your preferred upload mode below</p>
+        <div class="upload-modal-container">
+            <!-- External Floating Close Button (Canva Style) -->
+            <button id="closeModal" class="canva-close-btn" aria-label="Close modal" title="Close modal">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <div class="upload-form">
+                <!-- Fixed Header with Mode Switcher -->
+                <div class="upload-modal-header">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <h2 class="text-2xl font-black text-gray-900 tracking-tight">Upload Content</h2>
+                            <p class="text-xs text-gray-500 mt-0.5">Select your preferred upload mode below</p>
+                        </div>
                     </div>
-                    <button id="closeModal" class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-colors">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
+
+                    <!-- Prominent Brand-Colored Mode Switcher Tab Bar -->
+                    <div class="grid grid-cols-2 p-1.5 bg-blue-50/80 border border-blue-100 rounded-xl text-sm font-bold shadow-inner max-w-md mx-auto">
+                        <button type="button" id="modeSingleBtn" class="py-2.5 px-4 rounded-lg text-white bg-blue-600 shadow-md border border-blue-700 transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-box-open text-base"></i> Single Package Wizard
+                        </button>
+                        <button type="button" id="modeBatchBtn" class="py-2.5 px-4 rounded-lg text-blue-800 hover:bg-white/80 transition-all flex items-center justify-center gap-2 font-bold">
+                            <i class="fas fa-layer-group text-base text-blue-600"></i> Multi-Content Batch <span class="bg-red-600 text-white text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-black shadow-sm">New</span>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Prominent Brand-Colored Mode Switcher Tab Bar -->
-                <div class="grid grid-cols-2 p-1.5 bg-blue-50/80 border border-blue-100 rounded-xl text-sm font-bold shadow-inner max-w-md mx-auto">
-                    <button type="button" id="modeSingleBtn" class="py-2.5 px-4 rounded-lg text-white bg-blue-600 shadow-md border border-blue-700 transition-all flex items-center justify-center gap-2">
-                        <i class="fas fa-box-open text-base"></i> Single Package Wizard
-                    </button>
-                    <button type="button" id="modeBatchBtn" class="py-2.5 px-4 rounded-lg text-blue-800 hover:bg-white/80 transition-all flex items-center justify-center gap-2 font-bold">
-                        <i class="fas fa-layer-group text-base text-blue-600"></i> Multi-Content Batch <span class="bg-red-600 text-white text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-black shadow-sm">New</span>
-                    </button>
-                </div>
-            </div>
+                <!-- Scrollable Modal Body -->
+                <div class="upload-modal-body">
 
             <!-- Single Package Wizard Container -->
             <div id="singlePackageWizard">
@@ -2280,6 +2349,7 @@
             </div>
         </div>
     </div>
+</div>
 
     <!-- Video Preview Modal -->
     <div id="videoPreviewModal" class="upload-modal">
@@ -2342,102 +2412,146 @@
 
     <!-- Upload Progress Modal -->
     <div id="uploadProgressModal" class="upload-modal">
-        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
-            <div class="flex justify-between items-center p-4 border-b">
-                <h3 class="text-lg font-semibold text-gray-900">Uploading Content</h3>
-                <button id="closeProgressModal" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            <div class="p-6">
-                <div class="space-y-6">
-                    <!-- Video Upload Progress -->
-                    <div id="videoProgressSection" class="hidden">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="font-medium text-gray-900">Video Upload</span>
-                            <span id="videoProgressText" class="text-sm text-gray-600">0%</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div id="videoProgressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                                style="width: 0%"></div>
-                        </div>
-                        <p id="videoProgressStatus" class="text-sm text-gray-600 mt-1">Preparing upload...</p>
-                        <div class="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-500">
-                            <div><span class="font-medium">Uploaded:</span> <span id="videoUploadedBytes">0 B</span> / <span
-                                    id="videoTotalBytes">0 B</span></div>
-                            <div><span class="font-medium">Speed:</span> <span id="videoSpeed">0 MB/s</span></div>
-                            <div id="videoChunkInfo" class="hidden"><span class="font-medium">Chunks:</span> <span
-                                    id="videoChunkStatus">0/0</span></div>
-                            <div><span class="font-medium">Remaining:</span> <span id="videoTimeRemaining">--</span></div>
-                        </div>
-                    </div>
+        <div class="upload-modal-container max-w-3xl">
+            <!-- External Floating Close Button (Canva Style) -->
+            <button id="closeProgressModal" class="canva-close-btn" aria-label="Close modal" title="Close modal">
+                <i class="fas fa-times"></i>
+            </button>
 
-                    <!-- Document Upload Progress -->
-                    <div id="documentProgressSection" class="hidden">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="font-medium text-gray-900">Document Upload</span>
-                            <span id="documentProgressText" class="text-sm text-gray-600">0%</span>
+            <div class="upload-form">
+                <!-- Modal Header -->
+                <div class="upload-modal-header border-b border-gray-100 pb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 font-black">
+                            <i class="fas fa-cloud-upload-alt text-lg"></i>
                         </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div id="documentProgressBar" class="bg-green-600 h-2 rounded-full transition-all duration-300"
-                                style="width: 0%"></div>
-                        </div>
-                        <p id="documentProgressStatus" class="text-sm text-gray-600 mt-1">Preparing documents...</p>
-                        <div class="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-500">
-                            <div><span class="font-medium">Uploaded:</span> <span id="documentUploadedBytes">0 B</span> /
-                                <span id="documentTotalBytes">0 B</span></div>
-                            <div><span class="font-medium">Speed:</span> <span id="documentSpeed">0 MB/s</span></div>
-                        </div>
-                    </div>
-
-                    <!-- Quiz Upload Progress -->
-                    <div id="quizProgressSection" class="hidden">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="font-medium text-gray-900">Quiz Upload</span>
-                            <span id="quizProgressText" class="text-sm text-gray-600">0%</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div id="quizProgressBar" class="bg-purple-600 h-2 rounded-full transition-all duration-300"
-                                style="width: 0%"></div>
-                        </div>
-                        <p id="quizProgressStatus" class="text-sm text-gray-600 mt-1">Preparing quiz...</p>
-                        <div class="grid grid-cols-2 gap-2 mt-2 text-xs text-gray-500">
-                            <div><span class="font-medium">Speed:</span> <span id="quizSpeed">0 MB/s</span></div>
-                        </div>
-                    </div>
-
-                    <!-- Overall Progress -->
-                    <div class="border-t pt-4">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="font-medium text-gray-900">Overall Progress</span>
-                            <span id="overallProgressText" class="text-sm text-gray-600">0%</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-3">
-                            <div id="overallProgressBar" class="bg-indigo-600 h-3 rounded-full transition-all duration-300"
-                                style="width: 0%"></div>
-                        </div>
-                        <p id="overallProgressStatus" class="text-sm text-gray-600 mt-1">Starting upload process...</p>
-                    </div>
-
-                    <!-- Error Messages -->
-                    <div id="uploadErrors" class="hidden">
-                        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                            <div class="flex items-center mb-2">
-                                <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
-                                <span class="font-medium text-red-900">Upload Errors</span>
-                            </div>
-                            <ul id="errorList" class="text-sm text-red-700 space-y-1"></ul>
+                        <div>
+                            <h3 class="text-xl font-black text-gray-900 tracking-tight">Uploading Content</h3>
+                            <p class="text-xs text-gray-500 mt-0.5">Please stay on this page while your package is being processed</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex justify-end mt-6">
-                    <button id="cancelUploadBtn" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 mr-2">
-                        Cancel
+                <div class="upload-modal-body p-6 space-y-6">
+                    <!-- Video Upload Progress -->
+                    <div id="videoProgressSection" class="hidden p-4 rounded-xl bg-slate-50 border border-slate-100">
+                        <div class="flex items-center justify-between mb-2.5">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-video text-blue-600"></i>
+                                <span class="font-bold text-gray-900 text-sm">Video Upload</span>
+                            </div>
+                            <span id="videoProgressText" class="px-2.5 py-0.5 bg-blue-100/80 text-blue-800 font-black text-xs rounded-full border border-blue-200">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200/70 rounded-full h-3.5 p-0.5 overflow-hidden">
+                            <div id="videoProgressBar" class="bg-gradient-to-r from-blue-500 to-indigo-600 h-full rounded-full transition-all duration-300 shadow-sm" style="width: 0%"></div>
+                        </div>
+                        <div class="flex items-center justify-between mt-2 text-xs">
+                            <p id="videoProgressStatus" class="font-medium text-gray-600">Preparing upload...</p>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 pt-3 border-t border-slate-200/60 text-xs text-gray-600">
+                            <div class="bg-white p-2.5 rounded-lg border border-slate-100 shadow-2xs">
+                                <span class="text-[10px] text-gray-400 font-semibold block uppercase">Uploaded</span>
+                                <span class="font-bold text-gray-800"><span id="videoUploadedBytes">0 B</span> / <span id="videoTotalBytes">0 B</span></span>
+                            </div>
+                            <div class="bg-white p-2.5 rounded-lg border border-slate-100 shadow-2xs">
+                                <span class="text-[10px] text-gray-400 font-semibold block uppercase">Speed</span>
+                                <span id="videoSpeed" class="font-bold text-gray-800">0 MB/s</span>
+                            </div>
+                            <div id="videoChunkInfo" class="hidden bg-white p-2.5 rounded-lg border border-slate-100 shadow-2xs">
+                                <span class="text-[10px] text-gray-400 font-semibold block uppercase">Chunks</span>
+                                <span id="videoChunkStatus" class="font-bold text-gray-800">0/0</span>
+                            </div>
+                            <div class="bg-white p-2.5 rounded-lg border border-slate-100 shadow-2xs">
+                                <span class="text-[10px] text-gray-400 font-semibold block uppercase">Remaining</span>
+                                <span id="videoTimeRemaining" class="font-bold text-gray-800">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Document Upload Progress -->
+                    <div id="documentProgressSection" class="hidden p-4 rounded-xl bg-emerald-50/50 border border-emerald-100">
+                        <div class="flex items-center justify-between mb-2.5">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-file-pdf text-emerald-600"></i>
+                                <span class="font-bold text-gray-900 text-sm">Document Upload</span>
+                            </div>
+                            <span id="documentProgressText" class="px-2.5 py-0.5 bg-emerald-100/80 text-emerald-800 font-black text-xs rounded-full border border-emerald-200">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200/70 rounded-full h-3.5 p-0.5 overflow-hidden">
+                            <div id="documentProgressBar" class="bg-gradient-to-r from-emerald-500 to-teal-600 h-full rounded-full transition-all duration-300 shadow-sm" style="width: 0%"></div>
+                        </div>
+                        <div class="flex items-center justify-between mt-2 text-xs">
+                            <p id="documentProgressStatus" class="font-medium text-gray-600">Preparing documents...</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-emerald-200/50 text-xs text-gray-600">
+                            <div class="bg-white p-2.5 rounded-lg border border-emerald-100 shadow-2xs">
+                                <span class="text-[10px] text-gray-400 font-semibold block uppercase">Uploaded</span>
+                                <span class="font-bold text-gray-800"><span id="documentUploadedBytes">0 B</span> / <span id="documentTotalBytes">0 B</span></span>
+                            </div>
+                            <div class="bg-white p-2.5 rounded-lg border border-emerald-100 shadow-2xs">
+                                <span class="text-[10px] text-gray-400 font-semibold block uppercase">Speed</span>
+                                <span id="documentSpeed" class="font-bold text-gray-800">0 MB/s</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quiz Upload Progress -->
+                    <div id="quizProgressSection" class="hidden p-4 rounded-xl bg-purple-50/50 border border-purple-100">
+                        <div class="flex items-center justify-between mb-2.5">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-question-circle text-purple-600"></i>
+                                <span class="font-bold text-gray-900 text-sm">Quiz Upload</span>
+                            </div>
+                            <span id="quizProgressText" class="px-2.5 py-0.5 bg-purple-100/80 text-purple-800 font-black text-xs rounded-full border border-purple-200">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200/70 rounded-full h-3.5 p-0.5 overflow-hidden">
+                            <div id="quizProgressBar" class="bg-gradient-to-r from-purple-500 to-indigo-600 h-full rounded-full transition-all duration-300 shadow-sm" style="width: 0%"></div>
+                        </div>
+                        <div class="flex items-center justify-between mt-2 text-xs">
+                            <p id="quizProgressStatus" class="font-medium text-gray-600">Preparing quiz...</p>
+                        </div>
+                        <div class="grid grid-cols-1 gap-3 mt-3 pt-3 border-t border-purple-200/50 text-xs text-gray-600">
+                            <div class="bg-white p-2.5 rounded-lg border border-purple-100 shadow-2xs">
+                                <span class="text-[10px] text-gray-400 font-semibold block uppercase">Status Speed</span>
+                                <span id="quizSpeed" class="font-bold text-gray-800">0 MB/s</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Overall Progress Section -->
+                    <div class="p-5 rounded-2xl bg-indigo-50/60 border border-indigo-100/80 shadow-xs">
+                        <div class="flex items-center justify-between mb-2.5">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-tasks text-indigo-600"></i>
+                                <span class="font-black text-gray-900 text-base">Overall Progress</span>
+                            </div>
+                            <span id="overallProgressText" class="px-3 py-1 bg-indigo-600 text-white font-black text-xs rounded-full shadow-sm">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200/80 rounded-full h-4 p-0.5 overflow-hidden shadow-inner">
+                            <div id="overallProgressBar" class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 h-full rounded-full transition-all duration-300 shadow-sm" style="width: 0%"></div>
+                        </div>
+                        <p id="overallProgressStatus" class="text-xs font-semibold text-indigo-900 mt-2.5">Starting upload process...</p>
+                    </div>
+
+                    <!-- Error Messages Box -->
+                    <div id="uploadErrors" class="hidden">
+                        <div class="bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-exclamation-triangle text-red-500 text-lg mr-2"></i>
+                                <span class="font-bold text-red-900">Upload Errors</span>
+                            </div>
+                            <ul id="errorList" class="text-xs text-red-700 font-medium space-y-1 pl-6 list-disc"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Buttons -->
+                <div class="p-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
+                    <button id="cancelUploadBtn" class="px-5 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 text-xs transition-colors">
+                        Cancel Upload
                     </button>
-                    <button id="closeUploadBtn"
-                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 hidden">
-                        Close
+                    <button id="closeUploadBtn" class="px-5 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-md text-xs transition-colors hidden">
+                        Done & Close
                     </button>
                 </div>
             </div>
@@ -5426,14 +5540,15 @@
                 const progressText = document.getElementById(`${type}ProgressText`);
                 const progressStatus = document.getElementById(`${type}ProgressStatus`);
 
+                const roundedPct = Math.min(100, Math.max(0, Math.round(Number(percentage) || 0)));
+
                 if (progressBar) {
-                    progressBar.style.width = `${percentage}%`;
+                    progressBar.style.width = `${roundedPct}%`;
                     if (isError) {
-                        progressBar.classList.remove('bg-blue-600', 'bg-green-600', 'bg-purple-600');
-                        progressBar.classList.add('bg-red-600');
+                        progressBar.className = 'bg-gradient-to-r from-red-500 to-rose-600 h-full rounded-full transition-all duration-300 shadow-sm';
                     }
                 }
-                if (progressText) progressText.textContent = `${percentage}%`;
+                if (progressText) progressText.textContent = `${roundedPct}%`;
                 if (progressStatus) progressStatus.textContent = status;
 
                 // Update metrics if provided
@@ -5978,8 +6093,10 @@
                 const progressText = document.getElementById('overallProgressText');
                 const progressStatus = document.getElementById('overallProgressStatus');
 
-                if (progressBar) progressBar.style.width = `${percentage}%`;
-                if (progressText) progressText.textContent = `${percentage}%`;
+                const roundedPct = Math.min(100, Math.max(0, Math.round(Number(percentage) || 0)));
+
+                if (progressBar) progressBar.style.width = `${roundedPct}%`;
+                if (progressText) progressText.textContent = `${roundedPct}%`;
                 if (progressStatus) progressStatus.textContent = status;
             }
 
