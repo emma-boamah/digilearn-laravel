@@ -1271,7 +1271,7 @@ class QuizController extends Controller
             $result = Cache::remember($cacheKey, $cacheDuration, function () use ($numericId) {
                 Log::info('getQuizById cache miss, querying database', ['quiz_id' => $numericId]);
 
-                $quiz = Quiz::published()->with('uploader')->find($numericId);
+                $quiz = Quiz::with('uploader')->find($numericId);
                 Log::info('getQuizById database result', ['quiz_found' => $quiz ? true : false]);
 
                 if (!$quiz) {
@@ -1279,8 +1279,8 @@ class QuizController extends Controller
                     return null;
                 }
 
-                // Parse quiz_data JSON
-                $quizData = json_decode($quiz->quiz_data, true);
+                // Parse quiz_data JSON safely (string or array)
+                $quizData = is_string($quiz->quiz_data) ? json_decode($quiz->quiz_data, true) : (is_array($quiz->quiz_data) ? $quiz->quiz_data : []);
                 Log::info('getQuizById quiz_data parsed', [
                     'quiz_data_type' => gettype($quizData),
                     'has_questions' => $quizData && isset($quizData['questions']) ? 'yes' : 'no',

@@ -160,6 +160,22 @@ secure_asset('images/shoutoutgh-logo.png')
         max-width: 370px;
     }
 
+    /* Two cards layout - neatly centered */
+    .pricing-cards.two-cards,
+    .pricing-cards:has(.pricing-card:nth-child(2):last-child) {
+        max-width: 780px;
+        grid-template-columns: repeat(2, 1fr);
+        justify-content: center;
+    }
+
+    @media (max-width: 40rem) {
+        .pricing-cards.two-cards,
+        .pricing-cards:has(.pricing-card:nth-child(2):last-child) {
+            grid-template-columns: 1fr;
+            max-width: 400px;
+        }
+    }
+
     .pricing-card {
         background-color: transparent;
         border: none;
@@ -380,7 +396,7 @@ secure_asset('images/shoutoutgh-logo.png')
             </p>
         </div>
 
-        <div class="pricing-cards {{ count($pricingPlans) === 1 ? 'single-card' : '' }}">
+        <div class="pricing-cards {{ count($pricingPlans) === 1 ? 'single-card' : (count($pricingPlans) === 2 ? 'two-cards' : '') }}">
             @forelse($pricingPlans as $plan)
             <div class="pricing-card {{ $plan->is_featured ? 'featured' : '' }}">
                 <div class="pricing-card-bg"></div>

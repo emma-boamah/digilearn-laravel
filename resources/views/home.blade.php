@@ -1123,17 +1123,27 @@ $jsonLd = [
         gap: 2rem;
         max-width: 1200px;
         margin: 0 auto;
+        justify-content: center;
     }
 
     /* Center single pricing card when only one plan is active */
     .pricing-grid.single-card {
         display: flex;
         justify-content: center;
+        max-width: 400px;
     }
 
     .pricing-grid.single-card .pricing-card {
         max-width: 370px;
         width: 100%;
+    }
+
+    /* Center two pricing cards when exactly two plans are active */
+    .pricing-grid.two-cards,
+    .pricing-grid:has(.pricing-card:nth-child(2):last-child) {
+        max-width: 780px;
+        grid-template-columns: repeat(2, 1fr);
+        justify-content: center;
     }
 
     .feature-disabled {
@@ -1143,15 +1153,28 @@ $jsonLd = [
     }
 
     @media (min-width: 48rem) {
-
-        /* Reset centering on larger screens with multiple cards */
-        .pricing-grid:not(:has(.pricing-card:only-child)) {
-            justify-items: start;
+        .pricing-grid {
+            grid-template-columns: repeat(3, 1fr);
         }
 
-        .pricing-grid:has(.pricing-card:only-child) .pricing-card {
-            max-width: none;
-            width: auto;
+        .pricing-grid.single-card {
+            display: flex;
+            justify-content: center;
+            max-width: 400px;
+        }
+
+        .pricing-grid.two-cards,
+        .pricing-grid:has(.pricing-card:nth-child(2):last-child) {
+            grid-template-columns: repeat(2, 1fr);
+            max-width: 780px;
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .pricing-grid.two-cards,
+        .pricing-grid:has(.pricing-card:nth-child(2):last-child) {
+            grid-template-columns: 1fr;
+            max-width: 400px;
         }
     }
 
@@ -2020,11 +2043,32 @@ $jsonLd = [
         margin: 0 auto;
         padding-top: 20px;
         /* Add padding to accommodate floating badges */
+        justify-content: center;
     }
 
     @media (min-width: 48rem) {
         .pricing-grid {
             grid-template-columns: repeat(3, 1fr);
+        }
+
+        .pricing-grid.single-card {
+            display: flex;
+            justify-content: center;
+            max-width: 400px;
+        }
+
+        .pricing-grid.two-cards,
+        .pricing-grid:has(.pricing-card:nth-child(2):last-child) {
+            grid-template-columns: repeat(2, 1fr);
+            max-width: 780px;
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .pricing-grid.two-cards,
+        .pricing-grid:has(.pricing-card:nth-child(2):last-child) {
+            grid-template-columns: 1fr;
+            max-width: 400px;
         }
     }
 
@@ -2037,9 +2081,12 @@ $jsonLd = [
         position: relative;
         border: none;
         margin-top: 20px;
-	text-align: center;
+        text-align: center;
         /* Add margin to accommodate floating badge */
         z-index: 1;
+        width: 100%;
+        max-width: 370px;
+        justify-self: center;
     }
 
     .pricing-header {
@@ -2635,7 +2682,7 @@ $jsonLd = [
             </header>
 
             <!-- Pricing Cards -->
-            <div class="pricing-grid {{ $pricingPlans->count() === 1 ? 'single-card' : '' }}" @if($pricingPlans->count()
+            <div class="pricing-grid {{ $pricingPlans->count() === 1 ? 'single-card' : ($pricingPlans->count() === 2 ? 'two-cards' : '') }}" @if($pricingPlans->count()
                 > 0) role="list" aria-label="Available pricing plans" @endif>
                 @forelse($pricingPlans as $plan)
                 <article class="pricing-card" role="listitem">
