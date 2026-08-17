@@ -181,9 +181,7 @@
             align-items: center;
             justify-content: space-between;
             padding: var(--safe-area-inset-top) calc(2rem + var(--safe-area-inset-right)) 0 calc(2rem + var(--safe-area-inset-left));
-            position: sticky;
-            top: 0;
-            z-index: 40;
+            position: static;
         }
 
         .breadcrumb {

@@ -5,121 +5,241 @@
 
 @push('styles')
 <style nonce="{{ request()->attributes->get('csp_nonce') }}">
-    /* Profile Specific Styles */
-    .avatar-upload {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1rem;
-        margin-bottom: 2rem;
-        padding: 1.5rem;
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: 1rem;
+    /* Profile Page Layout */
+    .profile-container {
+        width: 100%;
+        max-width: 1140px;
+        margin: 0 auto;
     }
 
-    .avatar-large {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--primary-color), var(--secondary-blue, #2677B8));
+    .content-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.75rem;
+        flex-wrap: wrap;
+    }
+
+    .content-header-text {
+        flex: 1;
+        min-width: 250px;
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .page-title {
+        font-size: 1.625rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 0.25rem;
+        letter-spacing: -0.02em;
+    }
+
+    .page-subtitle {
+        font-size: 0.875rem;
+        color: #64748b;
+    }
+
+    /* 2-Column Grid Layout */
+    .profile-layout-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        align-items: start;
+    }
+
+    .profile-col {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    /* Card Styling */
+    .profile-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.875rem;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+
+    .card-title {
+        font-size: 1.0625rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 1.25rem;
+        letter-spacing: -0.01em;
+    }
+
+    /* Avatar Card */
+    .avatar-card {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+    }
+
+    .avatar-box {
+        width: 72px;
+        height: 72px;
+        border-radius: 0.75rem;
+        background: #e0edfc;
+        color: #1e56a0;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
-        font-size: 3rem;
+        font-size: 1.75rem;
         font-weight: 700;
         overflow: hidden;
-        border: 4px solid white;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        flex-shrink: 0;
+        border: 1px solid #bfdbfe;
     }
 
-    .avatar-image.large {
+    .avatar-box img {
         width: 100%;
         height: 100%;
         object-fit: cover;
     }
 
-    .edit-avatar-btn {
-        background: white;
-        border: 1px solid var(--border-color);
-        padding: 0.5rem 1rem;
-        border-radius: 2rem;
-        font-size: 0.875rem;
-        font-weight: 600;
-        cursor: pointer;
+    .avatar-actions {
         display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        transition: all 0.2s;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        flex-direction: column;
+        gap: 0.375rem;
     }
 
-    .edit-avatar-btn:hover {
-        background: var(--bg-body);
-        border-color: var(--primary-color);
-        color: var(--primary-color);
+    .btn-change-avatar {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 0.5rem;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: #334155;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        width: fit-content;
+    }
+
+    .btn-change-avatar:hover {
+        border-color: #2563eb;
+        color: #2563eb;
+        background: #f8fafc;
+    }
+
+    .avatar-hint {
+        font-size: 0.75rem;
+        color: #94a3b8;
     }
 
     .avatar-upload-input {
         display: none;
     }
 
-    .form-section {
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: 1rem;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .section-title {
-        font-size: 1.125rem;
-        font-weight: 700;
-        color: var(--text-main);
-        margin-bottom: 1.5rem;
-        padding-bottom: 0.75rem;
-        border-bottom: 1px solid var(--border-color);
-    }
-
-    .form-grid {
+    /* Form Grids & Inputs */
+    .form-grid-2 {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1.25rem;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
     }
 
-    .form-group.full-width {
-        grid-column: span 2;
+    .form-group {
+        display: flex;
+        flex-direction: column;
     }
 
     .form-label {
-        display: block;
-        font-size: 0.875rem;
+        font-size: 0.8125rem;
         font-weight: 600;
-        color: var(--text-secondary);
-        margin-bottom: 0.5rem;
+        color: #334155;
+        margin-bottom: 0.4rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
     }
 
     .form-input {
         width: 100%;
-        padding: 0.75rem 1rem;
-        border: 1px solid var(--border-color);
+        padding: 0.625rem 0.875rem;
+        border: 1px solid #cbd5e1;
         border-radius: 0.5rem;
         font-size: 0.875rem;
-        transition: all 0.2s;
-        background-color: var(--bg-body);
+        color: #0f172a;
+        background-color: #ffffff;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        box-sizing: border-box;
     }
 
     .form-input:focus {
         outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(38, 119, 184, 0.1);
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     }
 
-    .optional-indicator {
-        font-weight: 400;
-        color: var(--text-muted);
+    .form-input::placeholder {
+        color: #94a3b8;
+    }
+
+    .form-textarea {
+        resize: vertical;
+        min-height: 90px;
+        line-height: 1.5;
+    }
+
+    /* Select Dropdown Styling */
+    .form-select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.75rem center;
+        background-repeat: no-repeat;
+        background-size: 1.25em 1.25em;
+        padding-right: 2.25rem;
+        cursor: pointer;
+    }
+
+    /* Phone Input with Action Button */
+    .phone-input-wrapper {
+        display: flex;
+        align-items: center;
+        position: relative;
+    }
+
+    .phone-input-wrapper .phone-input {
+        padding-right: 5.75rem;
+    }
+
+    .phone-input-wrapper .btn-phone-action {
+        position: absolute;
+        right: 5px;
+        padding: 0.35rem 0.75rem;
+        background-color: #1e56a0;
+        color: white;
+        border: none;
+        border-radius: 0.375rem;
         font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        white-space: nowrap;
+    }
+
+    .phone-input-wrapper .btn-phone-action:hover {
+        background-color: #16437e;
+    }
+
+    .phone-input-wrapper .btn-phone-verify {
+        background-color: #10b981;
+    }
+
+    .phone-input-wrapper .btn-phone-verify:hover {
+        background-color: #059669;
     }
 
     .verified-badge {
@@ -134,107 +254,196 @@
         font-weight: 600;
     }
 
-    .phone-input-container {
-        display: flex;
-        gap: 0.5rem;
-    }
-
-    .country-code-selector {
-        position: relative;
-    }
-
-    .country-code-btn {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem;
-        border: 1px solid var(--border-color);
-        border-radius: 0.5rem;
-        background: var(--bg-body);
-        cursor: pointer;
-        min-width: 100px;
-    }
-
-    .phone-actions {
+    /* Subject Chips */
+    .subject-chips-container {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.75rem;
-        margin-top: 0.75rem;
+        gap: 0.5rem;
+        margin-top: 0.25rem;
     }
 
-    .btn {
-        padding: 0.625rem 1.25rem;
-        border-radius: 0.5rem;
-        font-weight: 600;
-        font-size: 0.875rem;
+    .chip-item {
+        position: relative;
         cursor: pointer;
-        transition: all 0.2s;
+        user-select: none;
+        display: inline-flex;
+    }
+
+    .chip-item input[type="checkbox"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+    }
+
+    .chip-label {
         display: inline-flex;
         align-items: center;
+        padding: 0.4rem 0.95rem;
+        border-radius: 9999px;
+        border: 1px solid #cbd5e1;
+        background-color: #ffffff;
+        color: #475569;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .chip-item:hover .chip-label {
+        border-color: #3b82f6;
+        color: #1d4ed8;
+        background-color: #f8fafc;
+    }
+
+    .chip-item input[type="checkbox"]:checked + .chip-label {
+        border-color: #2563eb;
+        background-color: #eff6ff;
+        color: #1d4ed8;
+        font-weight: 600;
+        box-shadow: 0 0 0 1px #2563eb;
+    }
+
+    /* Subscription Card */
+    .subscription-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .subscription-plan-header {
+        display: flex;
+        align-items: center;
         gap: 0.5rem;
-        border: none;
+        margin-bottom: 0.25rem;
     }
 
-    .btn-sm {
-        padding: 0.4rem 0.75rem;
-        font-size: 0.75rem;
+    .subscription-icon {
+        color: #2563eb;
+        font-size: 1.125rem;
     }
 
-    .btn-primary {
-        background-color: var(--primary-color);
-        color: white;
+    .subscription-plan-name {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #0f172a;
     }
 
-    .btn-primary:hover {
-        opacity: 0.9;
+    .subscription-description {
+        font-size: 0.8125rem;
+        color: #64748b;
+        margin: 0;
     }
 
-    .btn-secondary {
-        background-color: var(--bg-body);
-        border: 1px solid var(--border-color);
-        color: var(--text-main);
+    .btn-subscription {
+        padding: 0.6rem 1.25rem;
+        background: #1e56a0;
+        color: #ffffff;
+        border-radius: 0.5rem;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        white-space: nowrap;
+        transition: background-color 0.2s ease;
     }
 
-    .btn-outline {
-        background: transparent;
-        border: 1px solid var(--border-color);
-        color: var(--text-secondary);
+    .btn-subscription:hover {
+        background: #16437e;
+        color: #ffffff;
     }
 
-    .btn-danger {
-        background-color: #fee2e2;
+    /* Security & Account Card */
+    .security-actions-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .btn-security {
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-change-pw {
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        color: #334155;
+    }
+
+    .btn-change-pw:hover {
+        background: #f8fafc;
+        border-color: #94a3b8;
+    }
+
+    .btn-delete-acc {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #dc2626;
+    }
+
+    .btn-delete-acc:hover {
+        background: #fee2e2;
         color: #b91c1c;
     }
 
-    .btn-danger:hover {
-        background-color: #fecaca;
-    }
-
-    .header-actions {
+    /* Form Actions Footer */
+    .form-actions-bar {
         display: flex;
         justify-content: flex-end;
-        gap: 1rem;
+        align-items: center;
+        gap: 0.75rem;
         margin-top: 1.5rem;
-        padding-top: 1.5rem;
-        border-top: 1px solid var(--border-color);
+        padding-top: 1.25rem;
+        border-top: 1px solid #e2e8f0;
     }
 
-    .current-plan-details {
+    .btn-action-reset {
+        padding: 0.6rem 1.25rem;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 0.5rem;
+        color: #334155;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-action-reset:hover {
         background: #f8fafc;
-        border-radius: 0.75rem;
-        padding: 1.5rem;
+        border-color: #94a3b8;
     }
 
-    .current-plan-details h4 {
-        margin-bottom: 0.5rem;
-        color: var(--text-main);
+    .btn-action-save {
+        padding: 0.6rem 1.5rem;
+        background: #1e56a0;
+        border: none;
+        border-radius: 0.5rem;
+        color: #ffffff;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
     }
 
+    .btn-action-save:hover {
+        background: #16437e;
+    }
+
+    /* Status Badges */
     .status-badge {
         display: inline-flex;
-        padding: 0.25rem 0.625rem;
+        padding: 0.2rem 0.55rem;
         border-radius: 2rem;
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         font-weight: 600;
     }
 
@@ -242,11 +451,11 @@
     .status-trial { background: #eff6ff; color: #1d4ed8; }
     .status-expired { background: #fee2e2; color: #b91c1c; }
 
-    /* Modal Styles */
+    /* Modals */
     .modal-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(0,0,0,0.5);
+        background: rgba(15, 23, 42, 0.6);
         display: none;
         align-items: center;
         justify-content: center;
@@ -262,17 +471,25 @@
         background: white;
         border-radius: 1rem;
         width: 100%;
-        max-width: 500px;
-        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        max-width: 480px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
         overflow: hidden;
+        margin: 1rem;
     }
 
     .modal-header {
-        padding: 1.25rem;
-        border-bottom: 1px solid var(--border-color);
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #e2e8f0;
         display: flex;
         justify-content: space-between;
         align-items: center;
+    }
+
+    .modal-header h3 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
     }
 
     .modal-body {
@@ -280,76 +497,80 @@
     }
 
     .modal-footer {
-        padding: 1.25rem;
-        border-top: 1px solid var(--border-color);
+        padding: 1.25rem 1.5rem;
+        border-top: 1px solid #e2e8f0;
         display: flex;
         justify-content: flex-end;
         gap: 0.75rem;
+        background: #f8fafc;
     }
 
     .modal-close {
         background: none;
         border: none;
         font-size: 1.5rem;
-        color: var(--text-secondary);
+        color: #64748b;
         cursor: pointer;
-        padding: 0.5rem;
+        padding: 0.25rem;
         line-height: 1;
         transition: color 0.2s;
     }
 
     .modal-close:hover {
-        color: var(--primary-color);
+        color: #0f172a;
     }
 
-    @media (max-width: 768px) {
-        .form-grid {
+    /* Responsive Adjustments */
+    @media (max-width: 900px) {
+        .profile-layout-grid {
             grid-template-columns: 1fr;
         }
-        .form-group.full-width {
-            grid-column: span 1;
+
+        .form-grid-2 {
+            grid-template-columns: 1fr;
+        }
+
+        .subscription-content {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .btn-subscription {
+            width: 100%;
+            justify-content: center;
         }
     }
-    .subjects-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 0.75rem;
-        margin-top: 0.5rem;
-    }
-    .subject-checkbox {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 0.75rem;
-        background: var(--bg-body);
-        border: 1px solid var(--border-color);
-        border-radius: 0.5rem;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    .subject-checkbox:hover {
-        border-color: var(--main-color);
-        background: rgba(var(--main-color-rgb), 0.05);
-    }
-    .subject-checkbox input {
-        accent-color: var(--main-color);
-    }
-    .subject-checkbox span {
-        font-size: 0.875rem;
+
+    @media (max-width: 640px) {
+        .content-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .header-actions {
+            width: 100%;
+            justify-content: flex-end;
+        }
     }
 </style>
 @endpush
 
 @section('content')
 <div class="profile-container">
-    <div class="content-header mb-6">
-        <h1 class="text-2xl font-bold text-main">Profile Settings</h1>
-        <p class="text-secondary">Manage your personal information, security, and subscription.</p>
+    <div class="content-header">
+        <div class="content-header-text">
+            <h1 class="page-title">Profile Settings</h1>
+            <p class="page-subtitle">Manage your personal information, security, and subscription.</p>
+        </div>
+        <div class="header-actions">
+            <button type="reset" form="profileForm" class="btn-action-reset">Reset Changes</button>
+            <button type="submit" form="profileForm" class="btn-action-save">Save Changes</button>
+        </div>
     </div>
 
     @if ($errors->any())
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-            <strong class="font-bold">Oops!</strong>
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-5" role="alert">
+            <strong class="font-bold">Please check the form for errors:</strong>
             <ul class="mt-2 text-sm list-disc list-inside">
                 @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
@@ -362,211 +583,290 @@
         @csrf
         @method('PUT')
         
-        <!-- Avatar Section -->
-        <div class="avatar-upload">
-            <div class="avatar-large" id="avatarPreview">
-                @if($user->avatar_url)
-                    <img src="{{ $user->avatar_url }}" alt="Profile" class="avatar-image large" id="avatarImage">
-                @else
-                    {{ substr($user->name ?? 'U', 0, 1) }}
-                @endif
-            </div>
-            <button type="button" class="edit-avatar-btn" id="editAvatarBtn">
-                <i class="fas fa-camera"></i>
-                Change Avatar
-            </button>
-            <input type="file" id="avatarInput" name="avatar" class="avatar-upload-input" accept="image/*">
-        </div>
-
-        <!-- Personal Info -->
-        <div class="form-section">
-            <h2 class="section-title">Personal Information</h2>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="first_name" class="form-label">First Name</label>
-                    <input type="text" id="first_name" name="first_name" class="form-input" value="{{ $firstName }}" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="last_name" class="form-label">Last Name</label>
-                    <input type="text" id="last_name" name="last_name" class="form-input" value="{{ $lastName }}" required>
-                </div>
-                
-                <div class="form-group full-width">
-                    <label for="email" class="form-label">Email Address</label>
-                    <input type="email" id="email" name="email" class="form-input" value="{{ $user->email }}" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="phone" class="form-label">
-                        Phone Number 
-                        <span class="optional-indicator">(Optional)</span>
-                        @if($user->phone_verified_at)
-                            <span class="verified-badge">✓ Verified</span>
-                        @elseif($user->phone)
-                            <span class="unverified-badge">⚠ Unverified</span>
-                        @endif
-                    </label>
-                    
-                    <div class="phone-input-container">
-                        <input type="tel" id="display_phone" class="form-input" value="{{ $maskedPhone ?? 'Not provided' }}" readonly>
-                    </div>
-                    
-                    <div class="phone-actions">
-                        @if($user->phone)
-                            @if(!$user->phone_verified_at)
-                                <button type="button" class="btn btn-primary btn-sm" id="verifyPhoneBtn">Verify</button>
-                            @endif
-                            <button type="button" class="btn btn-secondary btn-sm" id="updatePhoneBtn">Change</button>
+        <div class="profile-layout-grid">
+            <!-- Left Column: Avatar, Personal Info, Bio -->
+            <div class="profile-col">
+                <!-- Avatar Card -->
+                <div class="profile-card avatar-card">
+                    <div class="avatar-box" id="avatarPreview">
+                        @if($user->avatar_url)
+                            <img src="{{ $user->avatar_url }}" alt="Profile" class="avatar-image" id="avatarImage">
                         @else
-                            <button type="button" class="btn btn-primary btn-sm" id="addPhoneBtn">Add Phone</button>
+                            <span>{{ substr($user->name ?? 'U', 0, 1) }}</span>
                         @endif
                     </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="date_of_birth" class="form-label">Date of Birth</label>
-                    <input type="date" id="date_of_birth" name="date_of_birth" class="form-input" value="{{ $user->date_of_birth }}">
-                </div>
-            </div>
-        </div>
-
-        <!-- Location & Education -->
-        <div class="form-section">
-            <h2 class="section-title">Location & Education</h2>
-            <div class="form-grid">
-                @php
-                    $defaultCountries = ['Ghana', 'Nigeria', 'Kenya', 'South Africa', 'United Kingdom', 'United States'];
-                    if ($user->country && !in_array($user->country, $defaultCountries)) {
-                        $defaultCountries[] = $user->country;
-                    }
-                    sort($defaultCountries);
-                @endphp
-                <div class="form-group">
-                    <label for="country" class="form-label">Country</label>
-                    <select id="country" name="country" class="form-input">
-                        @foreach($defaultCountries as $c)
-                            <option value="{{ $c }}" {{ $user->country === $c ? 'selected' : '' }}>{{ $c }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="city" class="form-label">City
-                        @if($user->city)
-                            <span class="text-xs text-green-600 font-normal ml-2">(Auto-saved)</span>
-                        @endif
-                    </label>
-                    <input type="text" id="city" name="city" class="form-input {{ $user->city ? 'bg-gray-100 cursor-not-allowed' : '' }}" 
-                           value="{{ $user->city }}" 
-                           {{ $user->city ? 'readonly' : '' }}
-                           placeholder="Enter your city">
-                </div>
-                
-                <div class="form-group">
-                    <label for="education_level" class="form-label">Education Level</label>
-                    <select id="education_level" name="education_level" class="form-input">
-                        <option value="primary" {{ $user->education_level == 'primary' ? 'selected' : '' }}>Primary</option>
-                        <option value="jhs" {{ $user->education_level == 'jhs' ? 'selected' : '' }}>JHS</option>
-                        <option value="shs" {{ $user->education_level == 'shs' ? 'selected' : '' }}>SHS</option>
-                        <option value="university" {{ $user->education_level == 'university' ? 'selected' : '' }}>University</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="grade" class="form-label">Grade</label>
-                    <select id="grade" name="grade" class="form-input">
-                        @foreach($allGradeLevels as $grade)
-                            <option value="{{ $grade }}" {{ $user->grade == $grade ? 'selected' : '' }}>Grade {{ $grade }}</option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <!-- Learning Preferences -->
-        <div class="form-section">
-            <h2 class="section-title">Learning Preferences</h2>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="preferred_language" class="form-label">Preferred Language</label>
-                    <select id="preferred_language" name="preferred_language" class="form-input" required>
-                        <option value="en" {{ $user->preferred_language == 'en' ? 'selected' : '' }}>English</option>
-                        <option value="tw" {{ $user->preferred_language == 'tw' ? 'selected' : '' }}>Twi</option>
-                        <option value="ga" {{ $user->preferred_language == 'ga' ? 'selected' : '' }}>Ga</option>
-                        <option value="ee" {{ $user->preferred_language == 'ee' ? 'selected' : '' }}>Ewe</option>
-                        <option value="fr" {{ $user->preferred_language == 'fr' ? 'selected' : '' }}>French</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="learning_style" class="form-label">Learning Style</label>
-                    <select id="learning_style" name="learning_style" class="form-input">
-                        <option value="visual" {{ $user->learning_style == 'visual' ? 'selected' : '' }}>Visual</option>
-                        <option value="auditory" {{ $user->learning_style == 'auditory' ? 'selected' : '' }}>Auditory</option>
-                        <option value="kinesthetic" {{ $user->learning_style == 'kinesthetic' ? 'selected' : '' }}>Kinesthetic</option>
-                        <option value="mixed" {{ $user->learning_style == 'mixed' ? 'selected' : '' }}>Mixed</option>
-                    </select>
+                    <div class="avatar-actions">
+                        <button type="button" class="btn-change-avatar" id="editAvatarBtn">
+                            <i class="fas fa-camera"></i>
+                            <span>Change Avatar</span>
+                        </button>
+                        <span class="avatar-hint">JPG, GIF or PNG. Max size of 800K</span>
+                        <input type="file" id="avatarInput" name="avatar" class="avatar-upload-input" accept="image/*">
+                    </div>
                 </div>
 
-                <div class="form-group full-width">
-                    <label class="form-label">Interests & Subjects</label>
-                    <div class="subjects-grid">
-                        @foreach(['mathematics', 'science', 'programming', 'english', 'history', 'geography'] as $subject)
-                            <label class="subject-checkbox">
-                                <input type="checkbox" name="subjects[]" value="{{ $subject }}" 
-                                    {{ in_array($subject, $userSubjectPreferences ?? []) ? 'checked' : '' }}>
-                                <span>{{ ucfirst($subject) }}</span>
+                <!-- Personal Information Card -->
+                <div class="profile-card">
+                    <h2 class="card-title">Personal Information</h2>
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="first_name" class="form-label">First Name</label>
+                            <input type="text" id="first_name" name="first_name" class="form-input" value="{{ $firstName }}" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="last_name" class="form-label">Last Name</label>
+                            <input type="text" id="last_name" name="last_name" class="form-input" value="{{ $lastName }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group mt-4">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" id="email" name="email" class="form-input" value="{{ $user->email }}" required>
+                    </div>
+                    
+                    <div class="form-grid-2 mt-4">
+                        <div class="form-group">
+                            <label for="display_phone" class="form-label">
+                                <span>Phone Number <span class="text-muted font-normal text-xs">(Optional)</span></span>
+                                @if($user->phone_verified_at)
+                                    <span class="verified-badge">✓ Verified</span>
+                                @elseif($user->phone)
+                                    <span class="unverified-badge">⚠ Unverified</span>
+                                @endif
                             </label>
-                        @endforeach
+                            
+                            <div class="phone-input-wrapper">
+                                <input type="tel" id="display_phone" class="form-input phone-input" value="{{ $maskedPhone ?? 'Not provided' }}" readonly>
+                                @if($user->phone)
+                                    @if(!$user->phone_verified_at)
+                                        <button type="button" class="btn-phone-action btn-phone-verify" id="verifyPhoneBtn">Verify</button>
+                                    @endif
+                                    <button type="button" class="btn-phone-action" id="updatePhoneBtn">Change</button>
+                                @else
+                                    <button type="button" class="btn-phone-action" id="addPhoneBtn">Add Phone</button>
+                                @endif
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="date_of_birth" class="form-label">Date of Birth</label>
+                            <input type="date" id="date_of_birth" name="date_of_birth" class="form-input" value="{{ $user->date_of_birth }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bio Card -->
+                <div class="profile-card">
+                    <h2 class="card-title">Bio</h2>
+                    <div class="form-group">
+                        <textarea id="bio" name="bio" class="form-input form-textarea" rows="4" placeholder="Tell us about yourself...">{{ $user->bio }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Location & Education, Preferences, Subscription, Security -->
+            <div class="profile-col">
+                <!-- Location & Education Card -->
+                <div class="profile-card">
+                    <h2 class="card-title">Location &amp; Education</h2>
+                    <div class="form-grid-2">
+                        @php
+                            $defaultCountries = ['Ghana', 'Nigeria', 'Kenya', 'South Africa', 'United Kingdom', 'United States'];
+                            if ($user->country && !in_array($user->country, $defaultCountries)) {
+                                $defaultCountries[] = $user->country;
+                            }
+                            sort($defaultCountries);
+                        @endphp
+                        <div class="form-group">
+                            <label for="country" class="form-label">Country</label>
+                            <select id="country" name="country" class="form-input form-select">
+                                @foreach($defaultCountries as $c)
+                                    <option value="{{ $c }}" {{ $user->country === $c ? 'selected' : '' }}>{{ $c }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="city" class="form-label">
+                                <span>City</span>
+                                @if($user->city)
+                                    <span class="text-xs text-green-600 font-normal">(Auto-saved)</span>
+                                @endif
+                            </label>
+                            <input type="text" id="city" name="city" class="form-input {{ $user->city ? 'bg-gray-50 cursor-not-allowed' : '' }}" 
+                                   value="{{ $user->city }}" 
+                                   {{ $user->city ? 'readonly' : '' }}
+                                   placeholder="Enter your city">
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2 mt-4">
+                        <div class="form-group">
+                            <label for="education_level" class="form-label">Education Level</label>
+                            <select id="education_level" name="education_level" class="form-input form-select">
+                                <option value="primary" {{ $user->education_level == 'primary' ? 'selected' : '' }}>Primary</option>
+                                <option value="jhs" {{ $user->education_level == 'jhs' ? 'selected' : '' }}>JHS</option>
+                                <option value="shs" {{ $user->education_level == 'shs' ? 'selected' : '' }}>SHS</option>
+                                <option value="university" {{ $user->education_level == 'university' ? 'selected' : '' }}>University</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="grade" class="form-label">Grade</label>
+                            <select id="grade" name="grade" class="form-input form-select">
+                                @foreach($allGradeLevels as $grade)
+                                    <option value="{{ $grade }}" {{ $user->grade == $grade ? 'selected' : '' }}>Grade {{ $grade }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Learning Preferences Card -->
+                <div class="profile-card">
+                    <h2 class="card-title">Learning Preferences</h2>
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="preferred_language" class="form-label">Preferred Language</label>
+                            <select id="preferred_language" name="preferred_language" class="form-input form-select" required>
+                                <option value="en" {{ $user->preferred_language == 'en' ? 'selected' : '' }}>English</option>
+                                <option value="tw" {{ $user->preferred_language == 'tw' ? 'selected' : '' }}>Twi</option>
+                                <option value="ga" {{ $user->preferred_language == 'ga' ? 'selected' : '' }}>Ga</option>
+                                <option value="ee" {{ $user->preferred_language == 'ee' ? 'selected' : '' }}>Ewe</option>
+                                <option value="fr" {{ $user->preferred_language == 'fr' ? 'selected' : '' }}>French</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="learning_style" class="form-label">Learning Style</label>
+                            <select id="learning_style" name="learning_style" class="form-input form-select">
+                                <option value="visual" {{ $user->learning_style == 'visual' ? 'selected' : '' }}>Visual</option>
+                                <option value="auditory" {{ $user->learning_style == 'auditory' ? 'selected' : '' }}>Auditory</option>
+                                <option value="kinesthetic" {{ $user->learning_style == 'kinesthetic' ? 'selected' : '' }}>Kinesthetic</option>
+                                <option value="mixed" {{ $user->learning_style == 'mixed' ? 'selected' : '' }}>Mixed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-4">
+                        <label class="form-label">Interests &amp; Subjects</label>
+                        <div class="subject-chips-container">
+                            @foreach(['mathematics' => 'Mathematics', 'science' => 'Science', 'programming' => 'Programming', 'english' => 'English', 'history' => 'History', 'geography' => 'Geography'] as $subjectVal => $subjectLabel)
+                                <label class="chip-item">
+                                    <input type="checkbox" name="subjects[]" value="{{ $subjectVal }}" 
+                                        {{ in_array($subjectVal, $userSubjectPreferences ?? []) ? 'checked' : '' }}>
+                                    <span class="chip-label">{{ $subjectLabel }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subscription Card -->
+                <div class="profile-card">
+                    <h2 class="card-title">Subscription</h2>
+                    <div class="subscription-content">
+                        <div class="subscription-details">
+                            @if($subscriptionInfo)
+                                <div class="subscription-plan-header">
+                                    <i class="fas fa-check-circle subscription-icon"></i>
+                                    <span class="subscription-plan-name">{{ $subscriptionInfo['plan_name'] }}</span>
+                                    <span class="status-badge status-{{ strtolower($subscriptionInfo['status']) }}">{{ ucfirst($subscriptionInfo['status']) }}</span>
+                                </div>
+                                <p class="subscription-description">
+                                    {{ $subscriptionInfo['days_remaining'] ? $subscriptionInfo['days_remaining'] . ' days remaining' : 'Active subscription plan' }}
+                                </p>
+                            @else
+                                <div class="subscription-plan-header">
+                                    <i class="far fa-star subscription-icon"></i>
+                                    <span class="subscription-plan-name">Free Plan</span>
+                                </div>
+                                <p class="subscription-description">Unlock premium content and advanced features!</p>
+                            @endif
+                        </div>
+                        <div class="subscription-cta">
+                            @if($subscriptionInfo)
+                                <a href="{{ route('settings.billing') }}" class="btn-subscription" id="manageSubBtn">Manage Plan</a>
+                            @else
+                                <a href="{{ route('pricing') }}" class="btn-subscription">Upgrade Now <i class="fas fa-arrow-right ml-1"></i></a>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security & Account Card -->
+                <div class="profile-card">
+                    <h2 class="card-title">Security &amp; Account</h2>
+                    <div class="security-actions-row">
+                        <button type="button" class="btn-security btn-change-pw" id="changePassBtn">Change Password</button>
+                        <button type="button" class="btn-security btn-delete-acc" id="deleteAccountBtn">Delete Account</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="form-section">
-            <h2 class="section-title">Bio</h2>
-            <textarea id="bio" name="bio" class="form-input" rows="4">{{ $user->bio }}</textarea>
-        </div>
-
-        <!-- Subscription -->
-        <div class="form-section">
-            <h2 class="section-title">Subscription</h2>
-            @if($subscriptionInfo)
-                <div class="current-plan-details">
-                    <h4>{{ $subscriptionInfo['plan_name'] }}</h4>
-                    <p class="text-secondary text-sm mb-4">
-                        Status: <span class="status-badge status-{{ strtolower($subscriptionInfo['status']) }}">{{ ucfirst($subscriptionInfo['status']) }}</span>
-                    </p>
-                    <p class="text-sm">Days remaining: {{ $subscriptionInfo['days_remaining'] ?? 'N/A' }}</p>
-                    <button type="button" class="btn btn-secondary mt-4" id="manageSubBtn">Manage Subscription</button>
-                </div>
-            @else
-                <div class="current-plan-details">
-                    <h4>Free Plan</h4>
-                    <p class="text-secondary text-sm">Upgrade for more features!</p>
-                    <a href="{{ route('pricing') }}" class="btn btn-primary mt-4">Upgrade Now</a>
-                </div>
-            @endif
-        </div>
-
-        <!-- Account Security -->
-        <div class="form-section">
-            <h2 class="section-title">Security & Account</h2>
-            <div class="flex gap-4">
-                <button type="button" class="btn btn-secondary" id="changePassBtn">Change Password</button>
-                <button type="button" class="btn btn-danger" id="deleteAccountBtn">Delete Account</button>
-            </div>
-        </div>
-
-        <div class="header-actions">
-            <button type="reset" class="btn btn-secondary">Reset Changes</button>
-            <button type="submit" class="btn btn-primary">Save Changes</button>
+        <!-- Action Footer -->
+        <div class="form-actions-bar">
+            <button type="reset" class="btn-action-reset">Reset Changes</button>
+            <button type="submit" class="btn-action-save">Save Changes</button>
         </div>
     </form>
 </div>
 
-<!-- Modals -->
+<!-- Phone Update Modal -->
+<div id="phoneModal" class="modal-overlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3>Update Phone Number</h3>
+            <button type="button" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="phoneForm">
+                <div class="form-group">
+                    <label class="form-label" for="new_phone">New Phone Number</label>
+                    <input type="tel" id="new_phone" class="form-input" placeholder="+233..." required>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-action-reset close-modal">Cancel</button>
+            <button type="button" class="btn-action-save" id="savePhoneBtn">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Password Change Modal -->
+<div id="passwordModal" class="modal-overlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3>Change Password</h3>
+            <button type="button" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="passwordForm">
+                <div class="form-group mb-4">
+                    <label class="form-label" for="current_password">Current Password</label>
+                    <input type="password" id="current_password" class="form-input" required autocomplete="current-password">
+                </div>
+                <div class="form-group mb-4">
+                    <label class="form-label" for="new_password">New Password</label>
+                    <input type="password" id="new_password" class="form-input" required autocomplete="new-password">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="new_password_confirmation">Confirm New Password</label>
+                    <input type="password" id="new_password_confirmation" class="form-input" required autocomplete="new-password">
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-action-reset close-modal">Cancel</button>
+            <button type="button" class="btn-action-save" id="savePasswordBtn">Update Password</button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Account Modal -->
 <div id="deleteAccountModal" class="modal-overlay">
     <div class="modal-container">
         <div class="modal-header">
@@ -617,58 +917,8 @@
             </form>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary close-modal">Cancel</button>
-            <button type="submit" form="deleteAccountForm" class="btn btn-danger opacity-50 cursor-not-allowed" id="confirmDeleteBtn" disabled>Permanently Delete Account</button>
-        </div>
-    </div>
-</div>
-
-<div id="phoneModal" class="modal-overlay">
-    <div class="modal-container">
-        <div class="modal-header">
-            <h3>Update Phone Number</h3>
-            <button type="button" class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-            <form id="phoneForm">
-                <div class="form-group">
-                    <label class="form-label">New Phone Number</label>
-                    <input type="tel" id="new_phone" class="form-input" required>
-                </div>
-            </form>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary close-modal">Cancel</button>
-            <button type="button" class="btn btn-primary" id="savePhoneBtn">Save</button>
-        </div>
-    </div>
-</div>
-
-<div id="passwordModal" class="modal-overlay">
-    <div class="modal-container">
-        <div class="modal-header">
-            <h3>Change Password</h3>
-            <button type="button" class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-            <form id="passwordForm">
-                <div class="form-group mb-4">
-                    <label class="form-label">Current Password</label>
-                    <input type="password" id="current_password" class="form-input" required>
-                </div>
-                <div class="form-group mb-4">
-                    <label class="form-label">New Password</label>
-                    <input type="password" id="new_password" class="form-input" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Confirm New Password</label>
-                    <input type="password" id="new_password_confirmation" class="form-input" required>
-                </div>
-            </form>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary close-modal">Cancel</button>
-            <button type="button" class="btn btn-primary" id="savePasswordBtn">Update Password</button>
+            <button type="button" class="btn-action-reset close-modal">Cancel</button>
+            <button type="submit" form="deleteAccountForm" class="btn-security btn-delete-acc opacity-50 cursor-not-allowed" id="confirmDeleteBtn" disabled>Permanently Delete Account</button>
         </div>
     </div>
 </div>
@@ -681,30 +931,41 @@
         const editAvatarBtn = document.getElementById('editAvatarBtn');
         const avatarPreview = document.getElementById('avatarImage');
 
-        editAvatarBtn.addEventListener('click', () => avatarInput.click());
+        if (editAvatarBtn && avatarInput) {
+            editAvatarBtn.addEventListener('click', () => avatarInput.click());
 
-        avatarInput.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    if (avatarPreview) {
-                        avatarPreview.src = e.target.result;
-                    } else {
-                        document.getElementById('avatarPreview').innerHTML = `<img src="${e.target.result}" class="avatar-image large">`;
-                    }
-                };
-                reader.readAsDataURL(this.files[0]);
-            }
-        });
+            avatarInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        if (avatarPreview) {
+                            avatarPreview.src = e.target.result;
+                        } else {
+                            const previewContainer = document.getElementById('avatarPreview');
+                            if (previewContainer) {
+                                previewContainer.innerHTML = `<img src="${e.target.result}" class="avatar-image" id="avatarImage">`;
+                            }
+                        }
+                    };
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+        }
 
-        // Simple modal implementation
+        // Modals management
         const modals = {
             phone: document.getElementById('phoneModal'),
-            password: document.getElementById('passwordModal')
+            password: document.getElementById('passwordModal'),
+            delete: document.getElementById('deleteAccountModal')
         };
 
-        const openModal = (id) => modals[id].classList.add('active');
-        const closeModal = (id) => modals[id].classList.remove('active');
+        const openModal = (id) => {
+            if (modals[id]) modals[id].classList.add('active');
+        };
+
+        const closeModal = (id) => {
+            if (modals[id]) modals[id].classList.remove('active');
+        };
 
         document.getElementById('addPhoneBtn')?.addEventListener('click', () => openModal('phone'));
         document.getElementById('updatePhoneBtn')?.addEventListener('click', () => openModal('phone'));
@@ -716,7 +977,7 @@
             });
         });
 
-        // Add phone verification logic
+        // Phone AJAX update logic
         document.getElementById('savePhoneBtn')?.addEventListener('click', async function() {
             const phone = document.getElementById('new_phone').value;
             const saveBtn = this;
@@ -727,7 +988,6 @@
                 return;
             }
 
-            // Disable button and show loading state
             saveBtn.disabled = true;
             saveBtn.innerText = 'Updating...';
 
@@ -745,27 +1005,19 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    // Update masked phone display if it exists
                     const displayPhone = document.getElementById('display_phone');
                     if (displayPhone) {
                         displayPhone.value = data.masked_phone || data.phone;
                     }
 
-                    // Update badges (remove verified badge if present)
                     const verifiedBadge = document.querySelector('.verified-badge');
                     if (verifiedBadge) {
                         verifiedBadge.remove();
                     }
                     
-                    // Show success message
                     alert(data.message);
                     closeModal('phone');
-                    
-                    // Optionally reload to update all indicators if needed, 
-                    // but dynamic update is smoother.
-                    // window.location.reload(); 
                 } else {
-                    // Handle validation errors
                     if (data.errors && data.errors.phone) {
                         alert(data.errors.phone[0]);
                     } else {
@@ -781,10 +1033,63 @@
             }
         });
 
+        // Password AJAX update logic
         document.getElementById('savePasswordBtn')?.addEventListener('click', async function() {
-            // AJAX call to update password
-            alert('Password update logic would go here.');
-            closeModal('password');
+            const currentPassword = document.getElementById('current_password').value;
+            const newPassword = document.getElementById('new_password').value;
+            const newPasswordConfirmation = document.getElementById('new_password_confirmation').value;
+            const saveBtn = this;
+            const originalText = saveBtn.innerText;
+
+            if (!currentPassword || !newPassword || !newPasswordConfirmation) {
+                alert('Please fill in all password fields.');
+                return;
+            }
+
+            if (newPassword !== newPasswordConfirmation) {
+                alert('The new password and confirmation do not match.');
+                return;
+            }
+
+            saveBtn.disabled = true;
+            saveBtn.innerText = 'Updating...';
+
+            try {
+                const response = await fetch('{{ route("profile.password.update") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        password: newPassword,
+                        password_confirmation: newPasswordConfirmation
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    alert(data.message || 'Password updated successfully!');
+                    closeModal('password');
+                    document.getElementById('passwordForm').reset();
+                } else {
+                    if (data.errors) {
+                        const firstError = Object.values(data.errors)[0];
+                        alert(Array.isArray(firstError) ? firstError[0] : firstError);
+                    } else {
+                        alert(data.message || 'Failed to update password.');
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating password:', error);
+                alert('An error occurred while updating the password.');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerText = originalText;
+            }
         });
         
         // Delete Account Logic
@@ -797,20 +1102,24 @@
         if (deleteAccountBtn && deleteAccountModal) {
             deleteAccountBtn.addEventListener('click', () => {
                 deleteAccountModal.classList.add('active');
-                deleteConfirmationText.value = '';
-                deletePasswordConfirm.value = '';
-                confirmDeleteBtn.disabled = true;
-                confirmDeleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                if (deleteConfirmationText) deleteConfirmationText.value = '';
+                if (deletePasswordConfirm) deletePasswordConfirm.value = '';
+                if (confirmDeleteBtn) {
+                    confirmDeleteBtn.disabled = true;
+                    confirmDeleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
             });
         }
 
         function validateDeleteForm() {
-            if (deleteConfirmationText.value === 'DELETE' && deletePasswordConfirm.value.length >= 8) {
-                confirmDeleteBtn.disabled = false;
-                confirmDeleteBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            } else {
-                confirmDeleteBtn.disabled = true;
-                confirmDeleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            if (deleteConfirmationText && deletePasswordConfirm && confirmDeleteBtn) {
+                if (deleteConfirmationText.value.trim() === 'DELETE' && deletePasswordConfirm.value.length >= 6) {
+                    confirmDeleteBtn.disabled = false;
+                    confirmDeleteBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    confirmDeleteBtn.disabled = true;
+                    confirmDeleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
             }
         }
 
