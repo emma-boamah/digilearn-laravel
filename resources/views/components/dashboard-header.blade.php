@@ -692,12 +692,19 @@
         transition: opacity 0.3s ease;
     }
 
-    .youtube-sidebar.collapsed .sidebar-section-title {
-        opacity: 0;
-        height: 0;
-        padding: 0;
-        margin: 0;
-        overflow: hidden;
+    .youtube-sidebar.collapsed .sidebar-section {
+        position: relative;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+
+    .youtube-sidebar.collapsed .sidebar-section:not(:last-child)::after {
+        content: '';
+        display: block;
+        width: 36px;
+        height: 1px;
+        background-color: var(--gray-200, #e5e7eb);
+        margin: 0.5rem auto 0.25rem auto;
     }
 
     .sidebar-menu-item {
@@ -714,12 +721,15 @@
     }
 
     .youtube-sidebar.collapsed .sidebar-menu-item {
-        padding: 0.75rem;
+        padding: 0.65rem 0.25rem 0.5rem 0.25rem;
+        flex-direction: column;
         justify-content: center;
-        gap: 0;
-        margin: 0.25rem 0.5rem;
+        align-items: center;
+        gap: 0.3rem;
+        margin: 0.25rem 0.375rem;
         border-radius: 0.5rem;
         border-left: none;
+        text-align: center;
     }
 
     .sidebar-menu-item:hover {
@@ -730,6 +740,7 @@
 
     .youtube-sidebar.collapsed .sidebar-menu-item:hover {
         border-left-color: transparent;
+        background-color: var(--gray-100, #f3f4f6);
     }
 
     .sidebar-menu-item.active {
@@ -751,6 +762,12 @@
         flex-shrink: 0;
     }
 
+    .youtube-sidebar.collapsed .sidebar-menu-icon {
+        width: 20px;
+        height: 20px;
+        margin: 0 auto;
+    }
+
     .sidebar-menu-text {
         font-size: 0.875rem;
         font-weight: 500;
@@ -758,10 +775,36 @@
         transition: opacity 0.3s ease;
     }
 
+    .sidebar-menu-text .short-label {
+        display: none;
+    }
+
+    .sidebar-menu-text .full-label {
+        display: inline;
+    }
+
     .youtube-sidebar.collapsed .sidebar-menu-text {
-        opacity: 0;
-        width: 0;
+        opacity: 1 !important;
+        width: 100% !important;
+        max-width: 100%;
         overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: normal;
+        font-size: 0.6875rem; /* 11px */
+        font-weight: 500;
+        line-height: 1.15;
+        text-align: center;
+        color: inherit;
+        display: block !important;
+    }
+
+    .youtube-sidebar.collapsed .sidebar-menu-text .full-label {
+        display: none;
+    }
+
+    .youtube-sidebar.collapsed .sidebar-menu-text .short-label {
+        display: block;
+        word-break: break-word;
     }
 
     /* Tooltip for collapsed state */

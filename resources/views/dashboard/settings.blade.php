@@ -25,7 +25,7 @@
             --gray-800: #1f2937;
             --gray-900: #111827;
             --sidebar-width-expanded: 240px;
-            --sidebar-width-collapsed: 72px;
+            --sidebar-width-collapsed: 80px;
             --safe-area-inset-top: env(safe-area-inset-top);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
