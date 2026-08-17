@@ -355,6 +355,7 @@ class VideoFacadeManager {
         iframe.loading = 'lazy';
         iframe.frameBorder = '0';
         iframe.className = 'csp-facade-player';
+        iframe.style.pointerEvents = 'none'; // CRITICAL: Prevent iframe from stealing clicks from the card
         iframe.classList.add('no-pointer-events'); // CRITICAL: Prevent iframe from stealing clicks from the card
 
         preview.appendChild(iframe);
@@ -447,6 +448,7 @@ class VideoFacadeManager {
         video.playsInline = true;
         video.preload = 'none'; // Don't preload video data until needed
         video.className = 'csp-facade-video-cover';
+        video.style.pointerEvents = 'none'; // CRITICAL: Prevent video from stealing clicks from the card
 
         preview.appendChild(video);
 
@@ -481,6 +483,7 @@ class VideoFacadeManager {
         iframe.loading = 'lazy';
         iframe.frameBorder = '0';
         iframe.className = 'csp-facade-player';
+        iframe.style.pointerEvents = 'none';
 
         preview.appendChild(iframe);
 
@@ -521,6 +524,7 @@ class VideoFacadeManager {
         iframe.loading = 'lazy';
         iframe.frameBorder = '0';
         iframe.className = 'csp-facade-player';
+        iframe.style.pointerEvents = 'none';
 
         preview.appendChild(iframe);
 
@@ -550,6 +554,7 @@ class VideoFacadeManager {
         video.playsInline = true;
         video.preload = 'none';
         video.className = 'csp-facade-video-cover';
+        video.style.pointerEvents = 'none';
 
         preview.appendChild(video);
 

@@ -1519,9 +1519,11 @@
     }
 
     .video-thumbnail {
-        width: 168px;
-        height: 94px;
-        border-radius: 0.5rem;
+        width: 180px;
+        height: 104px;
+        min-width: 180px;
+        aspect-ratio: 16 / 9;
+        border-radius: 0.625rem;
         object-fit: cover;
         flex-shrink: 0;
         background-color: var(--gray-200);
@@ -1534,6 +1536,20 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
+        pointer-events: none;
+    }
+
+    .video-preview {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none !important;
+    }
+
+    .video-preview iframe,
+    .video-preview video {
+        pointer-events: none !important;
     }
 
     .video-info {
@@ -1576,7 +1592,7 @@
         background-color: rgba(0, 0, 0, 0.4);
         opacity: 0;
         transition: opacity 0.2s ease;
-        pointer-events: none;
+        pointer-events: none !important;
         /* Prevents interferance with other elements */
     }
 
@@ -1592,6 +1608,7 @@
         color: var(--white);
         filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
         transition: transform 0.2s ease;
+        pointer-events: none;
     }
 
     .video-item:hover .play-icon,
@@ -1606,6 +1623,7 @@
         inset: 0;
         background-color: rgba(0, 0, 0, 0.5);
         z-index: 2;
+        pointer-events: none;
     }
 
     .premium-lock-overlay {
@@ -1619,6 +1637,7 @@
         color: white;
         opacity: 1;
         transition: all 0.2s ease;
+        pointer-events: none !important;
     }
 
     .lock-icon-circle {
@@ -1631,6 +1650,7 @@
         justify-content: center;
         margin-bottom: 0.25rem;
         border: 1px solid rgba(255, 255, 255, 0.2);
+        pointer-events: none;
     }
 
     .premium-badge {
@@ -1647,6 +1667,7 @@
         letter-spacing: 0.05em;
         z-index: 4;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        pointer-events: none !important;
     }
 
     .category-badges-container {
@@ -1657,6 +1678,7 @@
         flex-direction: column;
         gap: 0.25rem;
         z-index: 10;
+        pointer-events: none !important;
     }
 
     .category-badge {
@@ -1670,6 +1692,7 @@
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         text-align: center;
         min-width: 50px;
+        pointer-events: none !important;
     }
 
     .bece-badge {
@@ -3525,6 +3548,7 @@
         position: absolute;
         top: 0;
         left: 0;
+        pointer-events: none !important;
     }
 
     .csp-facade-video-cover {
@@ -3534,6 +3558,7 @@
         top: 0;
         left: 0;
         object-fit: cover;
+        pointer-events: none !important;
     }
 
     /* Pure Black Dark Mode Refinements for Lesson View */
@@ -4372,7 +4397,7 @@
                 'video_source' => 'vimeo',
                 'vimeo_id' => '76979871',
                 'level_display' => 'Grade 4',
-                'thumbnail' => '/placeholder.svg?height=78&width=140',
+                'thumbnail' => '/placeholder.svg?height=104&width=180',
                 'access_info' => ['level' => 'full']
                 ];
                 @endphp
@@ -4763,18 +4788,7 @@
         document.querySelectorAll('.hover-video-card').forEach(card => {
             const videoPreview = card.querySelector('.video-preview');
 
-            if (isMobile) {
-                // Mobile: use click instead of hover
-                card.addEventListener('click', function (e) {
-                    // Don't trigger if clicking on action buttons
-                    if (e.target.closest('.lesson-action-btn')) return;
-
-                    e.preventDefault();
-                    if (card.dataset.loaded === 'false') {
-                        activatePreview(card);
-                    }
-                });
-            } else {
+            if (!isMobile) {
                 // Desktop: hover with debounce
                 card.addEventListener('mouseenter', () => {
                     hoverTimer = setTimeout(() => {
@@ -4826,6 +4840,7 @@
                 iframe.style.position = 'absolute';
                 iframe.style.top = '0';
                 iframe.style.left = '0';
+                iframe.style.pointerEvents = 'none';
 
                 preview.appendChild(iframe);
 
@@ -4841,6 +4856,7 @@
                 iframe.style.position = 'absolute';
                 iframe.style.top = '0';
                 iframe.style.left = '0';
+                iframe.style.pointerEvents = 'none';
 
                 preview.appendChild(iframe);
 
