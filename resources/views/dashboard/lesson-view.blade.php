@@ -1539,7 +1539,7 @@
         pointer-events: none;
     }
 
-    .video-preview {
+    .related-video-item .video-preview {
         position: absolute;
         inset: 0;
         width: 100%;
@@ -1550,15 +1550,25 @@
         transition: opacity 0.3s ease;
     }
 
-    .hover-video-card.playing .video-preview,
-    .video-preview:not(:empty) {
+    .related-video-item.playing .video-preview,
+    .related-video-item .video-preview:not(:empty) {
         opacity: 1;
         background-color: #000;
     }
 
-    .video-preview iframe,
-    .video-preview video {
+    .related-video-item .video-preview iframe,
+    .related-video-item .video-preview video {
         pointer-events: none !important;
+    }
+
+    /* Main Lesson Video Player must allow full user interaction */
+    .lesson-main-video,
+    .lesson-main-video .video-preview,
+    .lesson-main-video .video-preview iframe,
+    .lesson-main-video .video-preview video,
+    .lesson-main-video .csp-facade-player,
+    .lesson-main-video .csp-facade-video-cover {
+        pointer-events: auto !important;
     }
 
     .video-info {
@@ -3557,7 +3567,6 @@
         position: absolute;
         top: 0;
         left: 0;
-        pointer-events: none !important;
     }
 
     .csp-facade-video-cover {
@@ -3567,7 +3576,6 @@
         top: 0;
         left: 0;
         object-fit: cover;
-        pointer-events: none !important;
     }
 
     /* Pure Black Dark Mode Refinements for Lesson View */
@@ -4030,21 +4038,24 @@
 
                         <!-- Video Thumbnail (Poster) -->
                         <div class="video-facade-thumbnail csp-video-thumb">
-                            @if(is_object($lesson) && $lesson->video_source === 'youtube')
-                            <img src="https://img.youtube.com/vi/{{ $lesson->external_video_id ?? '' }}/maxresdefault.jpg"
-                                alt="{{ $lesson->title ?? 'Video' }}" class="csp-img-cover"
-                                data-fallback="https://img.youtube.com/vi/{{ $lesson->external_video_id ?? '' }}/hqdefault.jpg">
-                            @elseif(is_object($lesson) && $lesson->video_source === 'vimeo')
-                            <img src="https://vumbnail.com/{{ $lesson->vimeo_id ?? '' }}.jpg" alt="{{ $lesson->title ?? 'Video' }}"
-                                class="csp-img-cover" data-fallback="/placeholder.svg?height=315&width=560">
-                            @elseif(is_object($lesson) && $lesson->video_source === 'mux')
-                            <img src="https://image.mux.com/{{ $lesson->mux_playback_id ?? '' }}/thumbnail.jpg"
+                            @php
+                                $mainLessonThumb = null;
+                                if (is_object($lesson) && method_exists($lesson, 'getThumbnailUrl')) {
+                                    $mainLessonThumb = $lesson->getThumbnailUrl();
+                                }
+                                if (empty($mainLessonThumb) || str_contains($mainLessonThumb, 'video-placeholder')) {
+                                    if ($lesson->video_source === 'youtube' && !empty($lesson->external_video_id)) {
+                                        $mainLessonThumb = "https://img.youtube.com/vi/{$lesson->external_video_id}/maxresdefault.jpg";
+                                    } elseif ($lesson->video_source === 'vimeo' && !empty($lesson->vimeo_id)) {
+                                        $mainLessonThumb = "https://vumbnail.com/{$lesson->vimeo_id}.jpg";
+                                    } elseif ($lesson->video_source === 'mux' && !empty($lesson->mux_playback_id)) {
+                                        $mainLessonThumb = "https://image.mux.com/{$lesson->mux_playback_id}/thumbnail.jpg";
+                                    }
+                                }
+                            @endphp
+                            <img src="{{ $mainLessonThumb ?: secure_asset('images/video-placeholder.jpg') }}" 
                                 alt="{{ $lesson->title ?? 'Video' }}" class="csp-img-cover"
                                 data-fallback="/placeholder.svg?height=315&width=560">
-                            @elseif(is_object($lesson))
-                            <img src="{{ secure_asset($lesson->getThumbnailUrl()) }}" alt="{{ $lesson->title ?? 'Video' }}"
-                                class="csp-img-cover" data-fallback="/placeholder.svg?height=315&width=560">
-                            @endif
                         </div>
 
                         <!-- Video Preview Container (for hover-to-play) -->
