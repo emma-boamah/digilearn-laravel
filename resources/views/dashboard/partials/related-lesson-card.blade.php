@@ -48,7 +48,7 @@
      data-access-level="{{ $accessLevel }}"
      @if($isPreview) data-upgrade-prompt="{{ json_encode($lesson['access_info']['upgrade_prompt'] ?? null) }}" @endif>
      
-    <div class="video-thumbnail">
+    <div class="video-thumbnail" style="cursor: pointer;">
         <img src="{{ secure_asset($lesson['thumbnail'] ?? '') }}" alt="{{ $lesson['title'] ?? 'Lesson' }}"
              data-fallback="/placeholder.svg?height=78&width=140"
              loading="lazy">

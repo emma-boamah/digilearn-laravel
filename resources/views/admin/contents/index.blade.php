@@ -2189,7 +2189,7 @@
                                 class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
                                 <i class="fas fa-plus mr-2"></i>Add Essay
                             </button>
-                            <button type="button" id="addAiBtn"
+                            <button type="button" id="addAiBtn" onclick="window.openAiModal && window.openAiModal()"
                                 class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-sm border border-purple-500">
                                 <i class="fas fa-magic mr-2"></i>AI Generate
                             </button>
@@ -3580,13 +3580,20 @@
                 // Close modal
                 closeModal.addEventListener('click', () => {
                     uploadModal.classList.remove('show');
+                    if (typeof closeAiModal === 'function') closeAiModal();
                     resetWizard();
                 });
 
                 // Close modal when clicking outside
                 uploadModal.addEventListener('click', (e) => {
+                    // If AI modal is open, do not close the upload modal
+                    const aiModal = document.getElementById('aiGenerateModal');
+                    if (aiModal && !aiModal.classList.contains('hidden')) {
+                        return;
+                    }
                     if (e.target === uploadModal) {
                         uploadModal.classList.remove('show');
+                        if (typeof closeAiModal === 'function') closeAiModal();
                         resetWizard();
                     }
                 });
@@ -6226,21 +6233,15 @@
                 if (aiGrade && mainGrade) aiGrade.value = mainGrade;
 
                 document.getElementById('aiGenerateModal').classList.remove('hidden');
-
-                // Auto-close the main modal wizard to reduce visual clutter
-                const uploadModal = document.getElementById('uploadModal');
-                if (uploadModal) {
-                    uploadModal.classList.remove('show');
-                }
             }
 
-            window.closeAiModal = function () {
-                document.getElementById('aiGenerateModal').classList.add('hidden');
-
-                // Re-open the main modal wizard so they can see the generated questions
-                const uploadModal = document.getElementById('uploadModal');
-                if (uploadModal) {
-                    uploadModal.classList.add('show');
+            window.closeAiModal = function (e) {
+                if (e && typeof e.stopPropagation === 'function') {
+                    e.stopPropagation();
+                }
+                const aiModal = document.getElementById('aiGenerateModal');
+                if (aiModal) {
+                    aiModal.classList.add('hidden');
                 }
             }
 
@@ -6361,6 +6362,12 @@
                             if (q.sub_questions) {
                                 q.sub_questions = q.sub_questions.map(sq => {
                                     sq.id = Date.now() + Math.floor(Math.random() * 10000);
+                                    if (sq.has_sub_parts && sq.sub_parts) {
+                                        sq.sub_parts = sq.sub_parts.map(sp => {
+                                            sp.id = Date.now() + Math.floor(Math.random() * 10000);
+                                            return sp;
+                                        });
+                                    }
                                     return sq;
                                 });
                             }
@@ -6369,45 +6376,54 @@
 
                         // Append to existing questions
                         uploadData.quiz.questions = [...uploadData.quiz.questions, ...processedQuestions];
-
-                        // Render UI
+                        
+                        // Render each new question into the DOM
                         const questionsList = document.getElementById('questionsList');
                         if (questionsList) {
-                            processedQuestions.forEach(question => {
-                                const questionElement = createQuestionElement(question);
-                                questionsList.appendChild(questionElement);
+                            processedQuestions.forEach(q => {
+                                const el = createQuestionElement(q);
+                                questionsList.appendChild(el);
                             });
+                            // Scroll to the first newly added question
+                            const firstNewEl = questionsList.querySelector(`[data-question-id="${processedQuestions[0].id}"]`);
+                            if (firstNewEl) {
+                                firstNewEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
                         }
-
-                        window.closeAiModal();
+                        
+                        closeAiModal();
                         document.getElementById('aiTopic').value = ''; // Reset
-
-                        // Navigate wizard to the Quiz step (step 3) so the admin sees the questions
-                        navigateStep(3);
-
-                        // Prompt auto-save as draft to prevent data loss
-                        const shouldSaveDraft = confirm(
-                            `✅ ${processedQuestions.length} question(s) generated successfully!\n\n` +
-                            `Would you like to save this as a draft now?\n` +
-                            `(Recommended to avoid losing your work)`
-                        );
-
-                        if (shouldSaveDraft) {
-                            await submitWizard('draft');
-                        }
                     } else {
                         alert(data.message || 'Failed to generate questions. Please try again.');
                     }
                 } catch (error) {
                     console.error('AI Generation Error:', error);
-                    alert('An error occurred during generation. Please try again.');
+                    alert('An error occurred during generation: ' + error.message + '\n\nPlease check the browser console for more details.');
                 } finally {
-                    if (progressInterval) clearInterval(progressInterval);
+                    clearInterval(progressInterval);
                     btn.innerHTML = originalText;
                     btn.disabled = false;
                 }
             }
 
+            // Global Quiz Sync Listener for external modals/drawers
+            window.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'QUIZ_UPDATED') {
+                    if (event.data.quizData && event.data.quizData.questions) {
+                        uploadData.quiz.questions = event.data.quizData.questions;
+                        // Re-render all questions in the DOM
+                        const questionsList = document.getElementById('questionsList');
+                        if (questionsList) {
+                            questionsList.innerHTML = '';
+                            uploadData.quiz.questions.forEach(q => {
+                                const el = createQuestionElement(q);
+                                questionsList.appendChild(el);
+                            });
+                        }
+                    }
+                }
+            });
+            
             const addAiBtn = document.getElementById('addAiBtn');
             if (addAiBtn) {
                 addAiBtn.addEventListener('click', window.openAiModal);
@@ -6491,25 +6507,23 @@
         }
     </script>
 
-    <!-- AI Generation Slide-over Drawer -->
-    <div id="aiGenerateModal" class="hidden fixed inset-0 z-[60]">
-        <!-- Invisible Backdrop to capture clicks -->
-        <div class="fixed inset-0 bg-transparent" onclick="closeAiModal()"></div>
+    <!-- AI Generation Slide-over Drawer (Layered above all modal dialogs at z-[2100]) -->
+    <div id="aiGenerateModal" class="hidden fixed inset-0 z-[2100]">
+        <!-- Clickable Dark Backdrop to safely close AI drawer without affecting upload modal -->
+        <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-[2100] transition-opacity" onclick="closeAiModal(event)"></div>
 
         <!-- Drawer Panel -->
-        <div
-            class="fixed inset-y-0 right-0 z-[60] w-full max-w-md bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out sm:rounded-l-2xl border-l border-gray-200">
-
+        <div class="fixed inset-y-0 right-0 z-[2110] w-full max-w-md bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out sm:rounded-l-2xl border-l border-gray-200">
+            
             <!-- Drawer Header -->
-            <div
-                class="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-white flex justify-between items-center sm:rounded-tl-2xl">
+            <div class="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-white flex justify-between items-center sm:rounded-tl-2xl">
                 <h3 class="text-xl font-bold text-gray-900 flex items-center tracking-tight">
                     <div class="bg-white shadow-sm p-2 rounded-xl mr-3 text-purple-600 border border-purple-100">
                         <i class="fas fa-magic"></i>
                     </div>
                     Generate with AI
                 </h3>
-                <button onclick="closeAiModal()"
+                <button type="button" onclick="closeAiModal(event)"
                     class="text-gray-400 hover:text-gray-700 transition-colors bg-white rounded-full p-2 hover:bg-gray-100 shadow-sm border border-transparent hover:border-gray-200">
                     <i class="fas fa-times"></i>
                 </button>
@@ -6518,7 +6532,7 @@
             <!-- Drawer Body -->
             <div class="p-6 flex-1 overflow-y-auto space-y-5 custom-scrollbar">
                 
-                <!-- NEW: Integrated Lesson Details -->
+                <!-- Integrated Lesson Details -->
                 <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4 space-y-4">
                     <h4 class="text-sm font-semibold text-gray-700 flex items-center">
                         <i class="fas fa-book-open mr-2 text-purple-500"></i> Lesson Details
@@ -6545,13 +6559,15 @@
                             <label class="block text-xs font-medium text-gray-700 mb-1">Grade Level <span class="text-red-500">*</span></label>
                             <select id="ai_grade_level" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-purple-500 focus:border-purple-500">
                                 <option value="">Select Grade</option>
-                                @foreach($levelGroups as $group)
-                                    <optgroup label="{{ strtoupper($group->name) }}">
-                                        @foreach($group->levels as $level)
-                                            <option value="{{ $level->title }}">{{ $level->title }}</option>
-                                        @endforeach
-                                    </optgroup>
-                                @endforeach
+                                @if(isset($levelGroups))
+                                    @foreach($levelGroups as $group)
+                                        <optgroup label="{{ strtoupper($group->name) }}">
+                                            @foreach($group->levels as $level)
+                                                <option value="{{ $level->title }}">{{ $level->title }}</option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endforeach
+                                @endif
                             </select>
                         </div>
                     </div>
@@ -6597,8 +6613,7 @@
                             <option value="{{ $y }}">{{ $y }}</option>
                         @endfor
                     </select>
-                    <p class="text-xs text-purple-600 mt-1">Select a year to retrieve a full paper from that specific exam
-                        session.</p>
+                    <p class="text-xs text-purple-600 mt-1">Select a year to retrieve a full paper from that specific exam session.</p>
                 </div>
 
                 <div class="mt-4">
@@ -6610,6 +6625,7 @@
                     <p class="text-xs text-gray-500 mt-1">If provided, the AI will ONLY format the questions pasted above and will NOT generate new ones.</p>
                 </div>
             </div>
+
             <!-- Drawer Footer -->
             <div class="p-6 border-t border-gray-100 bg-gray-50 flex flex-col gap-4 sm:rounded-bl-2xl shrink-0">
                 <div>
@@ -6621,7 +6637,7 @@
                     </select>
                 </div>
                 <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
-                    <button type="button" onclick="closeAiModal()"
+                    <button type="button" onclick="closeAiModal(event)"
                         class="w-full sm:w-auto px-5 py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl transition-all shadow-sm font-medium">
                         Cancel
                     </button>

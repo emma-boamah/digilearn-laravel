@@ -1586,29 +1586,37 @@
                 examTypeSelect.dispatchEvent(new Event('change')); // Triggers the year dropdown visibility
             }
 
-            document.getElementById('aiGenerateModal').classList.remove('hidden');
+            const aiModal = document.getElementById('aiGenerateModal');
+            if (aiModal) {
+                aiModal.classList.remove('hidden');
+            }
         }
 
-        function closeAiModal() {
-            const uploadModal = document.getElementById('uploadModal');
-            if (uploadModal) uploadModal.classList.remove('hidden');
-            document.getElementById('aiGenerateModal').classList.add('hidden');
+        function closeAiModal(e) {
+            if (e && typeof e.stopPropagation === 'function') {
+                e.stopPropagation();
+            }
+            const aiModal = document.getElementById('aiGenerateModal');
+            if (aiModal) {
+                aiModal.classList.add('hidden');
+            }
         }
 
         async function handleAiGeneration() {
             // Get data from the main form/page
-            const title = document.getElementById('title')?.value || '';
-            const subjectSelect = document.getElementById('subject_id');
+            const title = document.getElementById('title')?.value || document.getElementById('ai_title')?.value || '';
+            const subjectSelect = document.getElementById('subject_id') || document.getElementById('ai_subject_id');
             const subjectName = subjectSelect && subjectSelect.options[subjectSelect.selectedIndex] ? subjectSelect.options[subjectSelect.selectedIndex].text : '';
-            const gradeLevel = document.getElementById('grade_level')?.value || '';
+            const gradeLevel = document.getElementById('grade_level')?.value || document.getElementById('ai_grade_level')?.value || '';
 
             // Get data from the AI modal
-            const additionalContext = document.getElementById('aiTopic').value;
-            const quizType = document.getElementById('aiQuizType').value;
-            const count = document.getElementById('aiCount').value;
-            const examType = document.getElementById('aiExamType').value;
-            const examYear = document.getElementById('aiExamYear').value;
+            const additionalContext = document.getElementById('aiTopic')?.value || '';
+            const quizType = document.getElementById('aiQuizType')?.value || 'mcq';
+            const count = document.getElementById('aiCount')?.value || 5;
+            const examType = document.getElementById('aiExamType')?.value || 'normal';
+            const examYear = document.getElementById('aiExamYear')?.value || '';
             const sourceMaterial = document.getElementById('aiSourceMaterial')?.value || '';
+            const aiModel = document.getElementById('aiModelSelect')?.value || 'gemini';
 
             if (!title && !subjectName) {
                 alert('Please fill out the Lesson Title and Subject in the main form first.');
@@ -1618,87 +1626,77 @@
             // Auto-assemble the prompt topic
             let assembledTopic = '';
             if (examType === 'bece') {
-                assembledTopic = `Set BECE past questions for the subject "${subjectName}"`;
-                if (examYear) assembledTopic += ` for the year ${examYear}`;
+                assembledTopic = `BECE Past Questions for ${subjectName} (${gradeLevel}). Topic Context: ${title}. ${additionalContext}`;
+                if (examYear) assembledTopic += ` Exam Year: ${examYear}.`;
             } else if (examType === 'wassce') {
-                assembledTopic = `Set WASSCE past questions for the subject "${subjectName}"`;
-                if (examYear) assembledTopic += ` for the year ${examYear}`;
+                assembledTopic = `WASSCE Past Questions for ${subjectName} (${gradeLevel}). Topic Context: ${title}. ${additionalContext}`;
+                if (examYear) assembledTopic += ` Exam Year: ${examYear}.`;
             } else {
-                assembledTopic = `Set questions on the topic "${title}" for subject "${subjectName}" at the ${gradeLevel} level.`;
+                assembledTopic = `Subject: ${subjectName}, Grade Level: ${gradeLevel}, Lesson Topic: ${title}. ${additionalContext}`;
             }
 
-            if (additionalContext) {
-                assembledTopic += ` Additional instructions: ${additionalContext}`;
+            const submitBtn = document.getElementById('aiGenerateSubmitBtn');
+            const originalBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Generating...';
             }
-
-            const useKuulchat = (examType === 'bece' || examType === 'wassce');
-
-            const btn = document.getElementById('aiGenerateSubmitBtn');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
-            btn.disabled = true;
 
             try {
-                const response = await fetch('{{ route("admin.contents.generate-ai-questions") }}', {
+                const response = await fetch('{{ route("admin.quizzes.generate-ai") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     },
                     body: JSON.stringify({
                         topic: assembledTopic,
-                        grade_level: gradeLevel || 'General',
-                        quiz_type: quizType,
-                        count: parseInt(count),
-                        use_kuulchat: useKuulchat,
-                        use_kuulchat_year: useKuulchat ? (examYear || null) : null,
-                        source_material: sourceMaterial
+                        grade_level: gradeLevel,
+                        question_type: quizType,
+                        num_questions: count,
+                        source_material: sourceMaterial,
+                        model_engine: aiModel
                     })
                 });
 
                 const data = await response.json();
 
-                if (data.success && data.questions && data.questions.length > 0) {
-                    // Replace random IDs with actual unique IDs
-                    const processedQuestions = data.questions.map(q => {
-                        q.id = Date.now() + Math.floor(Math.random() * 10000);
-                        if (q.sub_questions) {
-                            q.sub_questions = q.sub_questions.map(sq => {
-                                sq.id = Date.now() + Math.floor(Math.random() * 10000);
-                                if (sq.has_sub_parts && sq.sub_parts) {
-                                    sq.sub_parts = sq.sub_parts.map(sp => {
-                                        sp.id = Date.now() + Math.floor(Math.random() * 10000);
-                                        return sp;
-                                    });
-                                }
-                                return sq;
-                            });
+                if (data.success && data.questions) {
+                    // Process questions and add to quiz
+                    let processedQuestions = data.questions;
+                    if (typeof processedQuestions === 'string') {
+                        try {
+                            processedQuestions = JSON.parse(processedQuestions);
+                        } catch (e) {
+                            console.error('Failed to parse questions string:', e);
                         }
-                        return q;
+                    }
+
+                    if (!Array.isArray(processedQuestions)) {
+                        if (processedQuestions.questions && Array.isArray(processedQuestions.questions)) {
+                            processedQuestions = processedQuestions.questions;
+                        } else {
+                            throw new Error('Invalid questions format returned by AI');
+                        }
+                    }
+
+                    processedQuestions.forEach(q => {
+                        addQuestion(q.type || quizType, q);
                     });
 
-                    // Append to existing questions
-                    uploadData.quiz.questions = [...uploadData.quiz.questions, ...processedQuestions];
-                    
-                    // Render UI
-                    renderQuestionNavigation();
-                    
-                    // Go to the first newly added question
-                    const newIndex = uploadData.quiz.questions.length - processedQuestions.length;
-                    showQuestion(newIndex);
-                    
                     closeAiModal();
-                    document.getElementById('aiTopic').value = ''; // Reset
                 } else {
                     alert(data.message || 'Failed to generate questions. Please try again.');
                 }
-            } catch (error) {
-                console.error('AI Generation Error:', error);
-                alert('An error occurred during generation: ' + error.message + '\n\nPlease check the browser console for more details.');
+            } catch (err) {
+                console.error('AI Generation Error:', err);
+                alert('An error occurred while generating questions: ' + err.message);
             } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnHtml;
+                }
             }
         }
 
@@ -1724,13 +1722,13 @@
         });
 </script>
 
-<!-- AI Generation Slide-over Drawer -->
-<div id="aiGenerateModal" class="hidden fixed inset-0 z-[60]">
-    <!-- Invisible Backdrop to capture clicks -->
-    <div class="fixed inset-0 bg-transparent" onclick="closeAiModal()"></div>
+<!-- AI Generation Slide-over Drawer (Layered above all modal dialogs at z-[2100]) -->
+<div id="aiGenerateModal" class="hidden fixed inset-0 z-[2100]">
+    <!-- Clickable Dark Backdrop to safely close AI drawer -->
+    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-[2100] transition-opacity" onclick="closeAiModal(event)"></div>
 
     <!-- Drawer Panel -->
-    <div class="fixed inset-y-0 right-0 z-[60] w-full max-w-md bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out sm:rounded-l-2xl border-l border-gray-200">
+    <div class="fixed inset-y-0 right-0 z-[2110] w-full max-w-md bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out sm:rounded-l-2xl border-l border-gray-200">
         
         <!-- Drawer Header -->
         <div class="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-white flex justify-between items-center sm:rounded-tl-2xl">
@@ -1740,7 +1738,7 @@
                 </div>
                 Generate with AI
             </h3>
-            <button onclick="closeAiModal()" class="text-gray-400 hover:text-gray-700 transition-colors bg-white rounded-full p-2 hover:bg-gray-100 shadow-sm border border-transparent hover:border-gray-200">
+            <button type="button" onclick="closeAiModal(event)" class="text-gray-400 hover:text-gray-700 transition-colors bg-white rounded-full p-2 hover:bg-gray-100 shadow-sm border border-transparent hover:border-gray-200">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -1782,7 +1780,7 @@
                     <label class="block text-sm font-medium text-purple-900 mb-1">Exam Year (Optional)</label>
                     <select id="aiExamYear" class="w-full px-3 py-2 border border-purple-200 rounded-md bg-white focus:ring-purple-500 focus:border-purple-500">
                         <option value="">Any Year</option>
-                        @for($y = 2024; $y >= 2010; $y--)
+                        @for($y = 2026; $y >= 2000; $y--)
                             <option value="{{ $y }}">{{ $y }}</option>
                         @endfor
                     </select>
@@ -1810,13 +1808,23 @@
         </div>
 
         <!-- Drawer Footer -->
-        <div class="p-6 border-t border-gray-100 bg-gray-50 flex flex-col-reverse sm:flex-row justify-end gap-3 sm:rounded-bl-2xl shrink-0">
-            <button type="button" onclick="closeAiModal()" class="w-full sm:w-auto px-5 py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl transition-all shadow-sm font-medium">
-                Cancel
-            </button>
-            <button type="button" id="aiGenerateSubmitBtn" onclick="handleAiGeneration()" class="w-full sm:w-auto px-5 py-2.5 bg-purple-600 text-white hover:bg-purple-700 hover:shadow-md hover:-translate-y-0.5 transform rounded-xl transition-all flex items-center justify-center font-medium shadow-sm">
-                <i class="fas fa-magic mr-2"></i> Generate Questions
-            </button>
+        <div class="p-6 border-t border-gray-100 bg-gray-50 flex flex-col gap-4 sm:rounded-bl-2xl shrink-0">
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">AI Model Engine <span class="text-gray-500 font-normal ml-1">(Used for Generation)</span></label>
+                <select id="aiModelSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 bg-white text-sm">
+                    <option value="gemini" selected>Google Gemini (Standard)</option>
+                    <option value="gpt-4o-mini">OpenAI GPT-4o-mini (Fast & Reliable)</option>
+                    <option value="gpt-4o">OpenAI GPT-4o (High Precision)</option>
+                </select>
+            </div>
+            <div class="flex flex-col-reverse sm:flex-row justify-end gap-3">
+                <button type="button" onclick="closeAiModal(event)" class="w-full sm:w-auto px-5 py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl transition-all shadow-sm font-medium">
+                    Cancel
+                </button>
+                <button type="button" id="aiGenerateSubmitBtn" onclick="handleAiGeneration()" class="w-full sm:w-auto px-5 py-2.5 bg-purple-600 text-white hover:bg-purple-700 hover:shadow-md hover:-translate-y-0.5 transform rounded-xl transition-all flex items-center justify-center font-medium shadow-sm">
+                    <i class="fas fa-magic mr-2"></i> Generate Questions
+                </button>
+            </div>
         </div>
     </div>
 </div>
