@@ -214,7 +214,7 @@
     }
 
     .youtube-sidebar.collapsed~.main-content .filter-bar {
-        padding-left: calc(var(--sidebar-width-collapsed, 72px) + 0.75rem);
+        padding-left: calc(var(--sidebar-width-collapsed, 80px) + 0.75rem);
     }
 
     .filter-row {
@@ -403,7 +403,7 @@
     }
 
     .youtube-sidebar.collapsed~.main-content .subjects-filter-container {
-        padding-left: calc(var(--sidebar-width-collapsed, 72px) + 0.75rem);
+        padding-left: calc(var(--sidebar-width-collapsed, 80px) + 0.75rem);
     }
 
     .subjects-filter {

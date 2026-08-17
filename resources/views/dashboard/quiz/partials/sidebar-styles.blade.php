@@ -21,7 +21,7 @@
         --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
         --sidebar-width-expanded: 280px;
-        --sidebar-width-collapsed: 72px;
+        --sidebar-width-collapsed: 80px;
     }
 
     * {
@@ -147,6 +147,21 @@
         overflow: hidden;
     }
 
+    .youtube-sidebar.collapsed .sidebar-section {
+        position: relative;
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+
+    .youtube-sidebar.collapsed .sidebar-section:not(:last-child)::after {
+        content: '';
+        display: block;
+        width: 36px;
+        height: 1px;
+        background-color: var(--gray-200);
+        margin: 0.5rem auto 0.25rem auto;
+    }
+
     .sidebar-menu-item {
         display: flex;
         align-items: center;
@@ -161,12 +176,15 @@
     }
 
     .youtube-sidebar.collapsed .sidebar-menu-item {
-        padding: 0.75rem;
+        padding: 0.65rem 0.25rem 0.5rem 0.25rem;
+        flex-direction: column;
         justify-content: center;
-        gap: 0;
-        margin: 0.25rem 0.5rem;
+        align-items: center;
+        gap: 0.3rem;
+        margin: 0.25rem 0.375rem;
         border-radius: 0.5rem;
         border-left: none;
+        text-align: center;
     }
 
     .sidebar-menu-item:hover {
@@ -177,6 +195,7 @@
 
     .youtube-sidebar.collapsed .sidebar-menu-item:hover {
         border-left-color: transparent;
+        background-color: var(--gray-100);
     }
 
     .sidebar-menu-item.active {
@@ -188,14 +207,20 @@
 
     .youtube-sidebar.collapsed .sidebar-menu-item.active {
         border-left-color: transparent;
-        background-color: var(--primary-red);
-        color: var(--white);
+        background-color: rgba(225, 30, 45, 0.1);
+        color: var(--primary-red);
     }
 
     .sidebar-menu-icon {
         width: 20px;
         height: 20px;
         flex-shrink: 0;
+    }
+
+    .youtube-sidebar.collapsed .sidebar-menu-icon {
+        width: 20px;
+        height: 20px;
+        margin: 0 auto;
     }
 
     .sidebar-menu-text {
@@ -205,10 +230,36 @@
         transition: opacity 0.3s ease;
     }
 
+    .sidebar-menu-text .short-label {
+        display: none;
+    }
+
+    .sidebar-menu-text .full-label {
+        display: inline;
+    }
+
     .youtube-sidebar.collapsed .sidebar-menu-text {
-        opacity: 0;
-        width: 0;
+        opacity: 1 !important;
+        width: 100% !important;
+        max-width: 100%;
         overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: normal;
+        font-size: 0.6875rem; /* 11px */
+        font-weight: 500;
+        line-height: 1.15;
+        text-align: center;
+        color: inherit;
+        display: block !important;
+    }
+
+    .youtube-sidebar.collapsed .sidebar-menu-text .full-label {
+        display: none;
+    }
+
+    .youtube-sidebar.collapsed .sidebar-menu-text .short-label {
+        display: block;
+        word-break: break-word;
     }
 
     /* Tooltip for collapsed state */
