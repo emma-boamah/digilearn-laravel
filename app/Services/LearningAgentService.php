@@ -1796,20 +1796,11 @@ PROMPT;
                     throw new Exception("Invalid model preference: {$modelPreference}");
                 }
                 
-                // Clean up markdown formatting if the model wraps the JSON
-                $text = preg_replace('/^```json\s*/i', '', $text);
-                $text = preg_replace('/^```\s*/i', '', $text);
-                $text = preg_replace('/```$/i', '', $text);
-                $text = trim($text);
-                
-                // Sanitize: replace literal control characters (like unescaped newlines/tabs inside strings) with spaces to prevent JSON_ERROR_CTRL_CHAR
-                $text = preg_replace('/[\x00-\x1F\x7F]/u', ' ', $text);
+                $decoded = $this->cleanAndDecodeLlmJson($text);
 
-                $decoded = json_decode($text, true);
-                $jsonErrorMsg = json_last_error_msg();
-
-                if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
-                    $provider = !empty($this->openAiApiKey) ? 'OpenAI' : 'Gemini';
+                if ($decoded === null) {
+                    $jsonErrorMsg = json_last_error_msg();
+                    $provider = ($modelPreference === 'gemini') ? 'Gemini' : 'OpenAI';
                     Log::error("{$provider} JSON Parse Error in batch {$batchNumber}", [
                         'error' => $jsonErrorMsg,
                         'raw_text' => $text
@@ -1822,11 +1813,11 @@ PROMPT;
                 }
 
             } catch (Exception $e) {
-                $provider = !empty($this->openAiApiKey) ? 'OpenAI' : 'Gemini';
+                $provider = ($modelPreference === 'gemini') ? 'Gemini' : 'OpenAI';
                 Log::error("{$provider} API Error (Admin Quiz Generation Batch {$batchNumber})", ['error' => $e->getMessage()]);
                 
                 // If we already generated some questions and hit an error on a subsequent batch, 
-                // it might be better to return what we have rather than failing the entire request.
+                // return what we have rather than failing the entire request.
                 if (count($allQuestions) > 0) {
                     break;
                 }
@@ -1838,6 +1829,54 @@ PROMPT;
         }
 
         return ['questions' => $allQuestions];
+    }
+
+    /**
+     * Robustly decode JSON returned by LLMs, fixing invalid LaTeX escape sequences,
+     * markdown wrappers, non-printable control characters, and trailing commas.
+     */
+    protected function cleanAndDecodeLlmJson(string $rawText): ?array
+    {
+        // 1. Strip markdown fences (e.g. ```json ... ```)
+        $text = preg_replace('/^```(?:json)?\s*/i', '', trim($rawText));
+        $text = preg_replace('/```$/i', '', $text);
+        $text = trim($text);
+
+        // 2. Extract outermost JSON object { ... }
+        if (preg_match('/\{[\s\S]*\}/', $text, $matches)) {
+            $text = $matches[0];
+        }
+
+        // 3. Fast path: try standard json_decode first
+        $decoded = json_decode($text, true);
+        if ($decoded !== null && json_last_error() === JSON_ERROR_NONE) {
+            return $decoded;
+        }
+
+        // 4. Fix invalid escape sequences (LaTeX \dfrac, \omega, \mathrm, \alpha, \text, \times, etc.)
+        // In valid JSON, a backslash can only escape: " \ / b f n r t or uXXXX
+        // Any other backslash must be doubled (\\) so it decodes as a literal backslash
+        $fixed = preg_replace('/\\\\(?![\\\\\"\/bfnrt]|u[0-9a-fA-F]{4})/', '\\\\\\\\', $text);
+        $decoded = json_decode($fixed, true);
+        if ($decoded !== null && json_last_error() === JSON_ERROR_NONE) {
+            return $decoded;
+        }
+
+        // 5. Replace non-printable ASCII control characters (keeping \n, \r, \t)
+        $clean = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', ' ', $fixed);
+        $decoded = json_decode($clean, true);
+        if ($decoded !== null && json_last_error() === JSON_ERROR_NONE) {
+            return $decoded;
+        }
+
+        // 6. Remove trailing commas before closing braces/brackets (e.g. [1, 2, ])
+        $cleanCommas = preg_replace('/,\s*([\}\]])/', '$1', $clean);
+        $decoded = json_decode($cleanCommas, true);
+        if ($decoded !== null && json_last_error() === JSON_ERROR_NONE) {
+            return $decoded;
+        }
+
+        return null;
     }
 
     /**
