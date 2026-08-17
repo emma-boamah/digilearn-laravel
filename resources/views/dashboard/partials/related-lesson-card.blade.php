@@ -21,18 +21,28 @@
     $thumbnailUrl = null;
     $fallbackUrl = '/placeholder.svg?height=104&width=180';
 
-    if ($videoSource === 'youtube' && !empty($externalVideoId)) {
-        $thumbnailUrl = "https://img.youtube.com/vi/{$externalVideoId}/maxresdefault.jpg";
-        $fallbackUrl = "https://img.youtube.com/vi/{$externalVideoId}/hqdefault.jpg";
-    } elseif ($videoSource === 'vimeo' && !empty($vimeoId)) {
-        $thumbnailUrl = "https://vumbnail.com/{$vimeoId}.jpg";
-    } elseif ($videoSource === 'mux' && !empty($muxPlaybackId)) {
-        $thumbnailUrl = "https://image.mux.com/{$muxPlaybackId}/thumbnail.jpg";
-    } elseif (!empty($rawThumbnail)) {
+    if (!empty($rawThumbnail) && !str_contains($rawThumbnail, 'video-placeholder')) {
         if (\Illuminate\Support\Str::startsWith($rawThumbnail, ['http://', 'https://', '//'])) {
             $thumbnailUrl = $rawThumbnail;
         } else {
             $thumbnailUrl = secure_asset(ltrim($rawThumbnail, '/'));
+        }
+    }
+
+    if (empty($thumbnailUrl)) {
+        if ($videoSource === 'youtube' && !empty($externalVideoId)) {
+            $thumbnailUrl = "https://img.youtube.com/vi/{$externalVideoId}/maxresdefault.jpg";
+            $fallbackUrl = "https://img.youtube.com/vi/{$externalVideoId}/hqdefault.jpg";
+        } elseif ($videoSource === 'vimeo' && !empty($vimeoId)) {
+            $thumbnailUrl = "https://vumbnail.com/{$vimeoId}.jpg";
+        } elseif ($videoSource === 'mux' && !empty($muxPlaybackId)) {
+            $thumbnailUrl = "https://image.mux.com/{$muxPlaybackId}/thumbnail.jpg";
+        } elseif (!empty($rawThumbnail)) {
+            if (\Illuminate\Support\Str::startsWith($rawThumbnail, ['http://', 'https://', '//'])) {
+                $thumbnailUrl = $rawThumbnail;
+            } else {
+                $thumbnailUrl = secure_asset(ltrim($rawThumbnail, '/'));
+            }
         }
     }
 
