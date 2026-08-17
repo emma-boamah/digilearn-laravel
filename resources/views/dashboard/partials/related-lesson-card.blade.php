@@ -5,10 +5,57 @@
 
 @pushonce('styles')
 <style nonce="{{ request()->attributes->get('csp_nonce') }}">
+    .related-video-item {
+        display: flex;
+        gap: 1rem;
+        padding: 0.875rem;
+        border-radius: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        color: inherit;
+        align-items: flex-start;
+    }
+    .related-video-item:hover {
+        background-color: var(--gray-50);
+    }
+    .related-video-item .video-thumbnail {
+        width: 180px;
+        height: 104px;
+        min-width: 180px;
+        aspect-ratio: 16 / 9;
+        border-radius: 0.625rem;
+        position: relative;
+        overflow: hidden;
+        background-color: var(--gray-200);
+        flex-shrink: 0;
+        cursor: pointer;
+    }
+    .related-video-item .video-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        pointer-events: none;
+    }
+    .related-video-item .video-preview {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none !important;
+        background-color: #000;
+        overflow: hidden;
+    }
+    .related-video-item .video-preview iframe,
+    .related-video-item .video-preview video {
+        pointer-events: none !important;
+    }
     .related-video-details {
         display: flex;
         flex-direction: column;
         flex-grow: 1;
+        min-width: 0;
+        min-height: 104px;
     }
     .related-lesson-actions {
         margin-top: auto;
@@ -30,6 +77,14 @@
         font-size: 0.75rem;
         font-weight: 500;
         z-index: 10;
+        pointer-events: none;
+    }
+    .category-badges-container,
+    .category-badge,
+    .premium-badge,
+    .premium-lock-overlay,
+    .play-overlay {
+        pointer-events: none !important;
     }
 </style>
 @endpushonce
@@ -50,13 +105,9 @@
      
     <div class="video-thumbnail" style="cursor: pointer;">
         <img src="{{ secure_asset($lesson['thumbnail'] ?? '') }}" alt="{{ $lesson['title'] ?? 'Lesson' }}"
-             data-fallback="/placeholder.svg?height=78&width=140"
+             data-fallback="/placeholder.svg?height=104&width=180"
              loading="lazy">
         <div class="video-preview"></div>
-        
-        @if(!empty($lesson['level_display']))
-            <div class="lesson-level-badge">{{ $lesson['level_display'] }}</div>
-        @endif
 
         <!-- Category Badges -->
         @if(!empty($lesson['categories']))
