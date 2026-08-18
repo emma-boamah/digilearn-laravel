@@ -12,13 +12,23 @@ class LevelGroup extends Model
         'slug',
         'description',
         'has_illustration',
-        'display_order'
+        'display_order',
+        'is_active'
     ];
 
     /** @var array */
     protected $casts = [
         'has_illustration' => 'boolean',
+        'is_active' => 'boolean',
     ];
+
+    /**
+     * Scope to only include active level groups.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
 
     /**
      * Get the levels for this group.

@@ -808,6 +808,12 @@
                     <i class="fas fa-dollar-sign"></i>
                     <span class="sidebar-link-text">Pricing Plans</span>
                 </a>
+
+                <a href="{{ route('admin.level-groups.index') }}"
+                    class="nav-link {{ request()->routeIs('admin.level-groups*') ? 'active' : '' }}">
+                    <i class="fas fa-layer-group"></i>
+                    <span class="sidebar-link-text">Level Groups</span>
+                </a>
                 @endrole
 
                 <!-- Simplified Contents Section -->

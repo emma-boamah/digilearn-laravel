@@ -214,6 +214,12 @@ class DashboardController extends Controller
                 ->withErrors(['group' => 'Invalid level group selected.']);
         }
 
+        $groupRecord = LevelGroup::where('slug', $groupId)->where('is_active', true)->first();
+        if (!$groupRecord) {
+            return redirect()->route('dashboard.level-selection')
+                ->withErrors(['group' => 'This level group is currently unavailable.']);
+        }
+
         $user = Auth::user();
         if (!$this->hasAccessToLevelGroup($user, $groupId)) {
             return redirect()->route('pricing')
@@ -347,7 +353,7 @@ class DashboardController extends Controller
     public function digilearn(Request $request)
     {
         $user = Auth::user();
-        $levelGroups = LevelGroup::with('levels')->orderBy('display_order')->get();
+        $levelGroups = LevelGroup::active()->with('levels')->orderBy('display_order')->get();
         $context = $request->query('context', 'all');
         $selectedLevelGroup = $request->query('level_group', $user->current_level_group);
 
@@ -359,14 +365,19 @@ class DashboardController extends Controller
             }
         }
 
+        // --- Grade Unification & Locked Logic ---
+        $group = LevelGroup::where('slug', $selectedLevelGroup)->where('is_active', true)->with('levels')->first();
+        if (!$group) {
+            session()->forget('selected_level_group');
+            return redirect()->route('dashboard.level-selection')->withErrors(['group' => 'The selected level group is currently unavailable.']);
+        }
+
         if (!$this->hasAccessToLevelGroup($user, $selectedLevelGroup)) {
             session()->forget('selected_level_group');
             return redirect()->route('pricing')->with('warning', 'Please upgrade your subscription to access this content.');
         }
 
-        // --- Grade Unification & Locked Logic ---
-        $group = LevelGroup::where('slug', $selectedLevelGroup)->with('levels')->first();
-        $canonicalGrades = $group ? $group->levels->pluck('title')->toArray() : [];
+        $canonicalGrades = $group->levels->pluck('title')->toArray();
 
         // Make all grades within the group accessible
         $unlockedGrades = $canonicalGrades;
@@ -2728,7 +2739,8 @@ class DashboardController extends Controller
      */
     private function getAvailableLevels()
     {
-        return LevelGroup::orderBy('display_order')
+        return LevelGroup::active()
+            ->orderBy('display_order')
             ->get()
             ->map(function ($group) {
                 return [
@@ -2840,7 +2852,8 @@ class DashboardController extends Controller
      */
     public function getLevelGroups()
     {
-        return LevelGroup::with('levels')
+        return LevelGroup::active()
+            ->with('levels')
             ->orderBy('display_order')
             ->get()
             ->keyBy('slug')

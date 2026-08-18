@@ -6467,4 +6467,63 @@ class AdminController extends Controller
             'batch' => $batch,
         ]);
     }
+
+    /**
+     * Display all level groups for admin management.
+     */
+    public function levelGroups()
+    {
+        $levelGroups = LevelGroup::with('levels')
+            ->withCount('levels')
+            ->orderBy('display_order')
+            ->get();
+
+        Log::channel('security')->info('admin_level_groups_accessed', [
+            'admin_id' => Auth::id(),
+            'ip' => request()->ip(),
+            'timestamp' => now()->toISOString()
+        ]);
+
+        return view('admin.level-groups.index', compact('levelGroups'));
+    }
+
+    /**
+     * Toggle active state of a level group.
+     */
+    public function toggleLevelGroup(Request $request, $id)
+    {
+        try {
+            $group = LevelGroup::findOrFail($id);
+            $group->is_active = !$group->is_active;
+            $group->save();
+
+            Log::channel('security')->info('level_group_toggled', [
+                'admin_id' => Auth::id(),
+                'group_id' => $group->id,
+                'slug' => $group->slug,
+                'title' => $group->title,
+                'is_active' => $group->is_active,
+                'ip' => request()->ip(),
+                'timestamp' => now()->toISOString()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'is_active' => $group->is_active,
+                'message' => "Level group '{$group->title}' " . ($group->is_active ? 'activated' : 'deactivated') . ' successfully.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('level_group_toggle_error', [
+                'admin_id' => Auth::id(),
+                'group_id' => $id,
+                'error' => $e->getMessage(),
+                'ip' => request()->ip()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update level group status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
