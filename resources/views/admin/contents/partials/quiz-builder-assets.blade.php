@@ -558,7 +558,12 @@
             question.sub_questions = [];
         }
 
-        if (!existingData) {
+        if (!uploadData.quiz.questions) {
+            uploadData.quiz.questions = [];
+        }
+
+        const isAlreadyInArray = uploadData.quiz.questions.some(q => q === question || (q.id && q.id === question.id));
+        if (!isAlreadyInArray) {
             uploadData.quiz.questions.push(question);
         }
 
@@ -1643,7 +1648,7 @@
             }
 
             try {
-                const response = await fetch('{{ route("admin.quizzes.generate-ai") }}', {
+                const response = await fetch('{{ route("admin.contents.generate-ai-questions") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1653,10 +1658,12 @@
                     body: JSON.stringify({
                         topic: assembledTopic,
                         grade_level: gradeLevel,
-                        question_type: quizType,
-                        num_questions: count,
+                        quiz_type: quizType,
+                        count: parseInt(count, 10),
                         source_material: sourceMaterial,
-                        model_engine: aiModel
+                        ai_model: aiModel,
+                        use_kuulchat: (examType === 'bece' || examType === 'wassce'),
+                        use_kuulchat_year: examYear || null
                     })
                 });
 
@@ -1681,11 +1688,35 @@
                         }
                     }
 
-                    processedQuestions.forEach(q => {
+                    const newQuestions = processedQuestions.map(q => {
+                        q.id = Date.now() + Math.floor(Math.random() * 100000);
+                        if (q.sub_questions) {
+                            q.sub_questions = q.sub_questions.map(sq => {
+                                sq.id = Date.now() + Math.floor(Math.random() * 100000);
+                                if (sq.has_sub_parts && sq.sub_parts) {
+                                    sq.sub_parts = sq.sub_parts.map(sp => {
+                                        sp.id = Date.now() + Math.floor(Math.random() * 100000);
+                                        return sp;
+                                    });
+                                }
+                                return sq;
+                            });
+                        }
+                        return q;
+                    });
+
+                    const firstNewIndex = uploadData.quiz && uploadData.quiz.questions ? uploadData.quiz.questions.length : 0;
+
+                    newQuestions.forEach(q => {
                         addQuestion(q.type || quizType, q);
                     });
 
+                    renderQuestionNavigation();
+                    showQuestion(firstNewIndex < uploadData.quiz.questions.length ? firstNewIndex : 0);
+
                     closeAiModal();
+                    const aiTopicInput = document.getElementById('aiTopic');
+                    if (aiTopicInput) aiTopicInput.value = '';
                 } else {
                     alert(data.message || 'Failed to generate questions. Please try again.');
                 }

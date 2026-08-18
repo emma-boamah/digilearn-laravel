@@ -608,6 +608,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/contents/upload/quiz', [AdminController::class, 'uploadQuizComponent'])->name('contents.upload.quiz');
     Route::post('/contents/upload/image', [AdminController::class, 'uploadImage'])->name('contents.upload.image');
     Route::post('/contents/generate-ai-questions', [AdminController::class, 'generateAiQuestions'])->name('contents.generate-ai-questions');
+    Route::post('/quizzes/generate-ai', [AdminController::class, 'generateAiQuestions'])->name('quizzes.generate-ai');
     Route::post('/contents/batch-store', [AdminController::class, 'storeBatchContents'])->name('contents.batch-store');
     Route::get('/contents/batch/{batchId}/status', [AdminController::class, 'getBatchStatus'])->name('contents.batch-status');
 
@@ -670,6 +671,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
                 Route::delete('/{id}', [AdminHeroBannerController::class, 'destroy'])->name('destroy');
                 Route::post('/{id}/toggle', [AdminHeroBannerController::class, 'toggleActive'])->name('toggle');
             });
+
+            // Level Group Management
+            Route::get('/level-groups', [AdminController::class, 'levelGroups'])->name('level-groups.index');
+            Route::post('/level-groups/{id}/toggle', [AdminController::class, 'toggleLevelGroup'])->name('level-groups.toggle');
         }
     );
 
