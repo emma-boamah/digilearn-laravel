@@ -249,6 +249,8 @@
 </style>
 
 <div class="pricing-container">
+    @include('admin.partials.settings-nav', ['activeTab' => 'pricing'])
+
     <!-- Statistics Cards -->
     <div class="stats-grid">
         <div class="stat-card">

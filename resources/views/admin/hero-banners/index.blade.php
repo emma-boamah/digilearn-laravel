@@ -6,6 +6,7 @@
 
 @section('content')
 <div class="space-y-6">
+    @include('admin.partials.settings-nav', ['activeTab' => 'hero'])
     @if(session('success'))
         <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-3">
             <i class="fas fa-check-circle text-emerald-600 text-lg"></i>
