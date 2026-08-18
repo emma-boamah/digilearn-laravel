@@ -733,7 +733,7 @@
 
                 <!-- Tutor Operations Parent Menu -->
                 @php
-                    $isTutorHubActive = request()->routeIs('admin.tutors*') || request()->routeIs('admin.platform-settings*');
+                    $isTutorHubActive = request()->routeIs('admin.tutors*');
                     $pendingTutorsCount = \App\Models\TutorProfile::where('is_approved', false)->count();
                 @endphp
                 <div class="space-y-1 my-1">
@@ -763,18 +763,6 @@
                                 <span class="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1">{{ $pendingTutorsCount }}</span>
                             @endif
                         </a>
-
-                        <a href="{{ route('admin.platform-settings.index') }}"
-                            class="nav-link submenu-link flex items-center {{ request()->routeIs('admin.platform-settings*') ? 'active' : '' }}">
-                            <i class="fas fa-sliders-h"></i>
-                            <span class="sidebar-link-text">Commission & Payout Rules</span>
-                        </a>
-
-                        <a href="{{ route('admin.hero-banners.index') }}"
-                            class="nav-link submenu-link flex items-center {{ request()->routeIs('admin.hero-banners*') ? 'active' : '' }}">
-                            <i class="fas fa-images"></i>
-                            <span class="sidebar-link-text">Hero Banners</span>
-                        </a>
                     </div>
                 </div>
                 @endrole
@@ -801,18 +789,12 @@
                     <span class="sidebar-link-text">Notifications</span>
                 </a>
 
-                <!-- Pricing Plans -->
+                <!-- Platform Settings Hub -->
                 @role('super-admin')
-                <a href="{{ route('admin.pricing.index') }}"
-                    class="nav-link {{ request()->routeIs('admin.pricing*') ? 'active' : '' }}">
-                    <i class="fas fa-dollar-sign"></i>
-                    <span class="sidebar-link-text">Pricing Plans</span>
-                </a>
-
-                <a href="{{ route('admin.level-groups.index') }}"
-                    class="nav-link {{ request()->routeIs('admin.level-groups*') ? 'active' : '' }}">
-                    <i class="fas fa-layer-group"></i>
-                    <span class="sidebar-link-text">Level Groups</span>
+                <a href="{{ route('admin.platform-settings.index') }}"
+                    class="nav-link {{ request()->routeIs('admin.platform-settings*') || request()->routeIs('admin.hero-banners*') || request()->routeIs('admin.level-groups*') || request()->routeIs('admin.pricing*') ? 'active' : '' }}">
+                    <i class="fas fa-cogs"></i>
+                    <span class="sidebar-link-text">Platform Settings</span>
                 </a>
                 @endrole
 

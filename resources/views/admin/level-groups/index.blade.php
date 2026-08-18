@@ -229,6 +229,8 @@
 </style>
 
 <div class="groups-container">
+    @include('admin.partials.settings-nav', ['activeTab' => 'levels'])
+
     <!-- Statistics Cards -->
     <div class="stats-grid">
         <div class="stat-card">

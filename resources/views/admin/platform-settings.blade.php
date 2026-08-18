@@ -3,11 +3,8 @@
 @section('title', 'Tutor Commission & Payout Rules')
 
 @section('content')
-<div class="p-6 max-w-4xl mx-auto">
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Tutor Commission & Payout Rules</h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400">Configure global tutor commission rates, minimum payout thresholds, and settlement clearance parameters.</p>
-    </div>
+<div class="p-6 max-w-6xl mx-auto">
+    @include('admin.partials.settings-nav', ['activeTab' => 'payouts'])
 
     @if(session('success'))
         <div class="bg-emerald-100 border border-emerald-300 text-emerald-800 px-4 py-3 rounded-lg mb-6 flex items-center">
