@@ -512,7 +512,7 @@
             flex: 1;
             background-color: var(--gray-100);
             overflow-y: auto;
-            padding: 2rem;
+            padding: 2.5rem 1.5rem;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -523,7 +523,7 @@
             border-radius: 0.5rem;
             box-shadow: var(--shadow-lg);
             margin-bottom: 2rem;
-            max-width: 800px;
+            max-width: 950px;
             width: 100%;
             min-height: 600px;
             padding: 3rem;
@@ -533,9 +533,9 @@
         .pdf-page-card {
             background-color: var(--white);
             border-radius: 0.5rem;
-            box-shadow: var(--shadow-lg);
-            margin-bottom: 2rem;
-            max-width: 100%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2.5rem;
+            max-width: 1050px;
             width: fit-content;
             position: relative;
             display: flex;
@@ -543,11 +543,11 @@
             align-items: center;
             overflow: hidden;
             border: 1px solid var(--gray-200);
-            transition: box-shadow 0.2s ease;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
         }
 
         .pdf-page-card:hover {
-            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.12);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
         }
 
         .pdf-canvas-wrapper {
@@ -555,6 +555,7 @@
             justify-content: center;
             align-items: center;
             background-color: var(--white);
+            width: 100%;
         }
 
         .pdf-page-canvas {
@@ -1131,6 +1132,17 @@
                         if (pdfThumbnailsList) pdfThumbnailsList.innerHTML = '';
                         if (pdfPagesContainer) pdfPagesContainer.innerHTML = '';
 
+                        // Calculate optimal initial scale to match standard browser reading width (~950px - 1050px)
+                        try {
+                            const firstPage = await pdfDoc.getPage(1);
+                            const unscaledViewport = firstPage.getViewport({ scale: 1.0 });
+                            const containerWidth = contentArea.clientWidth || window.innerWidth;
+                            const targetWidth = Math.min(1050, Math.max(720, containerWidth - 96));
+                            currentScale = Math.min(2.0, Math.max(1.45, targetWidth / unscaledViewport.width));
+                        } catch(err) {
+                            currentScale = 1.6;
+                        }
+
                         // Build thumbnail list and main page elements
                         for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
                             // Sidebar thumbnail
@@ -1290,8 +1302,8 @@
 
                 if (zoomInBtn) {
                     zoomInBtn.addEventListener('click', () => {
-                        if (currentScale < 2.5) {
-                            currentScale += 0.2;
+                        if (currentScale < 3.5) {
+                            currentScale = Math.min(3.5, currentScale + 0.25);
                             reRenderAllPages();
                         }
                     });
@@ -1300,7 +1312,7 @@
                 if (zoomOutBtn) {
                     zoomOutBtn.addEventListener('click', () => {
                         if (currentScale > 0.6) {
-                            currentScale -= 0.2;
+                            currentScale = Math.max(0.6, currentScale - 0.25);
                             reRenderAllPages();
                         }
                     });
