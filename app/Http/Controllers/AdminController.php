@@ -4603,7 +4603,7 @@ class AdminController extends Controller
                 $availableQuizzes = Quiz::with('subject')->where(function($q) use ($contentId) {
                     $q->whereNull('video_id')->orWhere('video_id', $contentId);
                 })->latest()->get();
-                $availableDocuments = Document::whereNull('video_id')->orWhere('video_id', $contentId)->get();
+                $availableDocuments = Document::with('uploader')->latest()->get();
             } else {
                 $availableQuizzes = collect();
                 $availableDocuments = collect();
@@ -4635,6 +4635,8 @@ class AdminController extends Controller
             'quiz_id' => 'nullable|exists:quizzes,id', // For video associations
             'document_ids' => 'nullable|array',
             'document_ids.*' => 'exists:documents,id',
+            'new_documents' => 'nullable|array',
+            'new_documents.*' => 'file|mimes:pdf,ppt,pptx|max:51200',
             'is_featured' => 'boolean',
             'category_ids' => 'nullable|array',
             'category_ids.*' => 'exists:content_categories,id',
@@ -4679,12 +4681,40 @@ class AdminController extends Controller
                     Quiz::where('id', $request->quiz_id)->update(['video_id' => $content->id]);
                 }
 
-                // Update document associations
+                // Update existing document associations
                 if ($request->has('document_ids')) {
-                    Document::where('video_id', $content->id)->update(['video_id' => null]);
+                    Document::where('video_id', $content->id)->whereNotIn('id', $request->document_ids)->update(['video_id' => null]);
                     Document::whereIn('id', $request->document_ids)->update(['video_id' => $content->id]);
                 } else {
                     Document::where('video_id', $content->id)->update(['video_id' => null]);
+                }
+
+                // Handle new document file uploads
+                if ($request->hasFile('new_documents')) {
+                    foreach ($request->file('new_documents') as $docFile) {
+                        if ($docFile->isValid()) {
+                            $filename = time() . '_' . uniqid() . '.' . $docFile->getClientOriginalExtension();
+                            $path = $docFile->storeAs('documents', $filename, 'public');
+
+                            $newDoc = Document::create([
+                                'title' => pathinfo($docFile->getClientOriginalName(), PATHINFO_FILENAME),
+                                'file_path' => $path,
+                                'file_type' => $docFile->getClientOriginalExtension(),
+                                'file_size_bytes' => $docFile->getSize(),
+                                'description' => 'Related document for video: ' . $content->title,
+                                'uploaded_by' => Auth::id(),
+                                'video_id' => $content->id,
+                                'grade_level' => $content->grade_level,
+                                'school_id' => $content->school_id,
+                            ]);
+
+                            // Inherit categories from parent video
+                            $categoryIds = $content->categories()->pluck('content_categories.id')->toArray();
+                            if (!empty($categoryIds)) {
+                                $newDoc->categories()->sync($categoryIds);
+                            }
+                        }
+                    }
                 }
 
                 // If quiz_data is provided, update or create the associated quiz content
