@@ -1471,9 +1471,32 @@
                                                         <span class="video-duration">{{ $content->duration_formatted }}</span>
                                                     @endif
                                                 @elseif($content->content_type === 'document')
-                                                    <div class="video-thumbnail-placeholder placeholder-document">
-                                                        <i class="fas fa-file-alt"></i>
-                                                    </div>
+                                                    @php
+                                                        $docCover = null;
+                                                        if (!empty($content->thumbnail_url) && !str_contains($content->thumbnail_url, 'video-placeholder.jpg')) {
+                                                            $docCover = $content->thumbnail_url;
+                                                        } elseif (!empty($content->file_path)) {
+                                                            $docCover = \App\Services\PdfParser::getCoverThumbnailUrl($content->file_path);
+                                                        } elseif (!empty($content->document_path)) {
+                                                            $docCover = \App\Services\PdfParser::getCoverThumbnailUrl($content->document_path);
+                                                        } elseif (!empty($content->documents) && $content->documents->count() > 0) {
+                                                            $firstDoc = $content->documents->first();
+                                                            $docCover = $firstDoc ? \App\Services\PdfParser::getCoverThumbnailUrl($firstDoc->file_path) : null;
+                                                        }
+                                                    @endphp
+                                                    @if($docCover)
+                                                        <img src="{{ $docCover }}"
+                                                            alt="{{ $content->title }}"
+                                                            style="width: 100%; height: 100%; object-fit: cover; object-position: center top;"
+                                                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                        <div class="video-thumbnail-placeholder placeholder-document" style="display: none;">
+                                                            <i class="fas fa-file-alt"></i>
+                                                        </div>
+                                                    @else
+                                                        <div class="video-thumbnail-placeholder placeholder-document">
+                                                            <i class="fas fa-file-alt"></i>
+                                                        </div>
+                                                    @endif
                                                     <span class="content-type-badge-overlay">DOC</span>
                                                 @else
                                                     <div class="video-thumbnail-placeholder placeholder-quiz">
@@ -1547,7 +1570,7 @@
                                     <td class="stats-cell">{{ number_format($content->comments_count) }}</td>
                                     <td>
                                         @if($content->content_type === 'video')
-                                            @if($content->documents_count > 0 || $content->document_path)
+                                            @if(($content->documents_count ?? 0) > 0)
                                                 <span class="badge badge-available">
                                                     <i class="fas fa-check-circle"></i>
                                                 </span>
@@ -1560,11 +1583,13 @@
                                     </td>
                                     <td>
                                         @if($content->content_type === 'video')
-                                            @if($content->quizzes_count > 0 || $content->quiz_id)
+                                            @if(($content->quizzes_count ?? 0) > 0 || (!empty($content->quiz_id) && $content->quiz))
                                                 @php
                                                     $hasDraftQuiz = false;
-                                                    if ($content->quiz_id && $content->quiz) {
+                                                    if (!empty($content->quiz_id) && $content->quiz) {
                                                         $hasDraftQuiz = ($content->quiz->status ?? 'published') === 'draft';
+                                                    } elseif ($content->quizzes && $content->quizzes->count() > 0) {
+                                                        $hasDraftQuiz = $content->quizzes->contains(fn($q) => ($q->status ?? 'published') === 'draft');
                                                     }
                                                 @endphp
                                                 @if($hasDraftQuiz)
@@ -1584,13 +1609,13 @@
                                         @endif
                                     </td>
                                     <td>
-                                        @if($content->content_type === 'video' && ($content->quizzes_count > 0 || $content->quiz_id))
+                                        @if($content->content_type === 'video' && (($content->quizzes_count ?? 0) > 0 || (!empty($content->quiz_id) && $content->quiz)))
                                             @php
                                                 // Get quiz types from related quizzes
                                                 $quizzes = $content->quizzes ?? collect();
 
                                                 // Also check the single quiz if it exists
-                                                if ($content->quiz_id && $content->quiz) {
+                                                if (!empty($content->quiz_id) && $content->quiz) {
                                                     $quizzes = $quizzes->push($content->quiz);
                                                 }
 

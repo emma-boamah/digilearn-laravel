@@ -380,6 +380,9 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/dashboard/load-more-lessons', [DashboardController::class, 'loadMoreLessons'])->name('dashboard.load-more-lessons');
             Route::get('/dashboard/personalized', [DashboardController::class, 'personalized'])->name('dashboard.personalized');
             Route::get('/dashboard/shop', [DashboardController::class, 'shop'])->name('dashboard.shop');
+            Route::get('/dashboard/library', [DocumentController::class, 'index'])->name('dashboard.library');
+            Route::get('/dashboard/documents', [DocumentController::class, 'index'])->name('dashboard.documents');
+            Route::get('/dashboard/library/document/{docId}', [DocumentController::class, 'openLibraryDocument'])->name('dashboard.library.document');
 
             // Lessons
             Route::middleware(['decode.obfuscated'])->group(

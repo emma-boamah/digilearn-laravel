@@ -4,9 +4,295 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Document;
+use App\Models\LevelGroup;
+use App\Models\ContentCategory;
+use App\Models\Subject;
+use App\Services\SubscriptionAccessService;
+use App\Services\PdfParser;
+use App\Services\UrlObfuscator;
 
 class DocumentController extends Controller
 {
+    /**
+     * Show documents / library collection page
+     */
+    public function index(Request $request)
+    {
+        $user = Auth::user();
+        $selectedLevelGroup = $request->query('level_group', $user->current_level_group ?? session('selected_level_group', 'jhs'));
+        
+        if (!session('selected_level_group')) {
+            session(['selected_level_group' => $selectedLevelGroup]);
+        }
+
+        $levelGroups = LevelGroup::with('levels')->orderBy('display_order')->get();
+        $group = LevelGroup::where('slug', $selectedLevelGroup)->with('levels')->first();
+        $canonicalGrades = $group ? $group->levels->pluck('title')->toArray() : [];
+        $unlockedGrades = $canonicalGrades;
+
+        $selectedGrade = $request->query('grade');
+        $validSelectedGrade = null;
+        if ($selectedGrade && in_array($selectedGrade, $unlockedGrades)) {
+            $validSelectedGrade = $selectedGrade;
+        }
+
+        // Subscription check
+        $requiresSubscription = false;
+        $allowedGradeLevels = [];
+        if (!$user || !$user->is_superuser) {
+            $allowedGradeLevels = SubscriptionAccessService::getAllowedGradeLevels($user);
+            if (empty($allowedGradeLevels)) {
+                $requiresSubscription = true;
+            }
+        }
+
+        $context = $request->query('context', 'all');
+        $subjectId = $request->query('subject');
+        $formatFilter = strtolower($request->query('format', 'all'));
+        $search = $request->query('search');
+
+        // Target grade levels
+        $targetGrades = $validSelectedGrade ? [$validSelectedGrade] : $canonicalGrades;
+
+        // Fetch categories for filters
+        $categories = ContentCategory::orderBy('name')->get();
+
+        $schoolId = $user ? $user->school_id : null;
+
+        // Fetch ONLY subjects that actually have documents matching current grade level and school
+        $subjectIdsWithDocs = Document::where(function ($q) use ($schoolId) {
+                if ($schoolId) {
+                    $q->whereNull('school_id')->orWhere('school_id', $schoolId);
+                } else {
+                    $q->whereNull('school_id');
+                }
+            })
+            ->when(!empty($targetGrades), function ($q) use ($targetGrades) {
+                $q->where(function ($sub) use ($targetGrades) {
+                    $sub->whereIn('grade_level', $targetGrades)
+                        ->orWhereHas('video', function ($vq) use ($targetGrades) {
+                            $vq->whereIn('grade_level', $targetGrades);
+                        });
+                });
+            })
+            ->whereHas('video', function ($vq) {
+                $vq->whereNotNull('subject_id');
+            })
+            ->with('video:id,subject_id')
+            ->get()
+            ->pluck('video.subject_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $subjects = Subject::whereIn('id', $subjectIdsWithDocs)->orderBy('name')->get();
+
+        // Query Documents
+        $query = Document::with(['video.subject', 'uploader', 'categories'])
+            ->where(function ($q) use ($schoolId) {
+                if ($schoolId) {
+                    $q->whereNull('school_id')->orWhere('school_id', $schoolId);
+                } else {
+                    $q->whereNull('school_id');
+                }
+            });
+
+        // Filter by grade level (check document's direct grade_level OR associated video's grade_level)
+        if (!empty($targetGrades)) {
+            $query->where(function ($q) use ($targetGrades) {
+                $q->whereIn('grade_level', $targetGrades)
+                  ->orWhereHas('video', function ($vq) use ($targetGrades) {
+                      $vq->whereIn('grade_level', $targetGrades);
+                  });
+            });
+        }
+
+        // Filter by context / category
+        if ($context !== 'all') {
+            $query->where(function ($q) use ($context) {
+                $q->whereHas('categories', function ($cq) use ($context) {
+                    $cq->where('slug', $context)->orWhere('name', 'like', "%{$context}%");
+                })->orWhereHas('video.categories', function ($cq) use ($context) {
+                    $cq->where('slug', $context)->orWhere('name', 'like', "%{$context}%");
+                });
+            });
+        }
+
+        // Filter by Subject
+        if ($subjectId && $subjectId !== 'all') {
+            $query->whereHas('video', function ($vq) use ($subjectId) {
+                if (is_numeric($subjectId)) {
+                    $vq->where('subject_id', $subjectId);
+                } else {
+                    $vq->whereHas('subject', function($sq) use ($subjectId) {
+                        $sq->where('name', 'like', "%{$subjectId}%");
+                    });
+                }
+            });
+        }
+
+        // Filter by File Format
+        if ($formatFilter !== 'all') {
+            if ($formatFilter === 'pdf') {
+                $query->where(function($q) {
+                    $q->where('file_type', 'pdf')->orWhere('file_path', 'like', '%.pdf');
+                });
+            } elseif (in_array($formatFilter, ['ppt', 'pptx'])) {
+                $query->where(function($q) {
+                    $q->whereIn('file_type', ['ppt', 'pptx'])
+                      ->orWhere('file_path', 'like', '%.ppt')
+                      ->orWhere('file_path', 'like', '%.pptx');
+                });
+            } elseif (in_array($formatFilter, ['doc', 'docx'])) {
+                $query->where(function($q) {
+                    $q->whereIn('file_type', ['doc', 'docx'])
+                      ->orWhere('file_path', 'like', '%.doc')
+                      ->orWhere('file_path', 'like', '%.docx');
+                });
+            } elseif ($formatFilter === 'epub') {
+                $query->where(function($q) {
+                    $q->where('file_type', 'epub')->orWhere('file_path', 'like', '%.epub');
+                });
+            }
+        }
+
+        // Filter by Search Query
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhereHas('video', function ($vq) use ($search) {
+                      $vq->where('title', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $documents = $query->latest()->paginate(16)->withQueryString();
+
+        // Populate metadata (page counts, formats, subjects)
+        $documents->getCollection()->transform(function ($doc) {
+            $ext = strtolower(pathinfo($doc->file_path, PATHINFO_EXTENSION));
+            if (!$ext && $doc->file_type) $ext = strtolower($doc->file_type);
+            if (!$ext) $ext = 'pdf';
+            
+            $doc->resolved_format = strtoupper($ext);
+            $doc->resolved_grade = $doc->grade_level ?: ($doc->video->grade_level ?? 'General');
+            $doc->resolved_subject = $doc->video->subject->name ?? 'General Study';
+            
+            // Determine pages / slides count
+            if (in_array($ext, ['ppt', 'pptx'])) {
+                $doc->meta_count_label = 'Slides';
+                $doc->meta_count = 24;
+            } else {
+                $doc->meta_count_label = 'Pages';
+                $doc->meta_count = PdfParser::getPageCount($doc->file_path) ?: 1;
+            }
+
+            $doc->formatted_size = $doc->getFormattedFileSize();
+            $doc->file_url = asset('storage/' . $doc->file_path);
+
+            // Resolve cover image thumbnail
+            $videoThumbnail = null;
+            if ($doc->video) {
+                if (!empty($doc->video->thumbnail_path)) {
+                    $videoThumbnail = str_starts_with($doc->video->thumbnail_path, 'http') || str_starts_with($doc->video->thumbnail_path, 'images/') 
+                        ? asset($doc->video->thumbnail_path) 
+                        : asset('storage/' . $doc->video->thumbnail_path);
+                } elseif (!empty($doc->video->thumbnail)) {
+                    $videoThumbnail = asset($doc->video->thumbnail);
+                }
+            }
+
+            if ($ext === 'pdf') {
+                $doc->cover_image_url = PdfParser::getCoverThumbnailUrl($doc->file_path, $videoThumbnail);
+            } else {
+                $doc->cover_image_url = $videoThumbnail;
+            }
+
+            return $doc;
+        });
+
+        return view('dashboard.documents.index', compact(
+            'documents',
+            'levelGroups',
+            'canonicalGrades',
+            'unlockedGrades',
+            'selectedLevelGroup',
+            'validSelectedGrade',
+            'categories',
+            'subjects',
+            'context',
+            'subjectId',
+            'formatFilter',
+            'search',
+            'requiresSubscription'
+        ));
+    }
+
+    /**
+     * Open a document from the library
+     */
+    public function openLibraryDocument($docId)
+    {
+        $realId = $docId;
+        if (!is_numeric($docId)) {
+            $parsed = UrlObfuscator::parseSeoUrl($docId);
+            $decoded = $parsed['id'] ?? UrlObfuscator::decode($docId);
+            if ($decoded) {
+                $realId = $decoded;
+            }
+        }
+
+        $document = Document::with(['video.subject', 'uploader'])->findOrFail($realId);
+        
+        $ext = strtolower(pathinfo($document->file_path, PATHINFO_EXTENSION));
+        $type = in_array($ext, ['ppt', 'pptx']) ? 'ppt' : 'pdf';
+        
+        // If attached to a video lesson, redirect to document content viewer with obfuscated parameters
+        if ($document->video_id) {
+            return redirect()->route('dashboard.lesson.document.content', [
+                'lessonId' => UrlObfuscator::encode($document->video_id),
+                'type' => $type,
+                'docId' => UrlObfuscator::createSeoUrl($document->id, $document->title)
+            ]);
+        }
+
+        // For standalone document, prepare doc array and return document-content-viewer
+        $pageCount = ($type === 'pdf') ? (PdfParser::getPageCount($document->file_path) ?: 1) : 10;
+        
+        $docData = [
+            'id' => $document->id,
+            'title' => $document->title,
+            'file_url' => asset('storage/' . $document->file_path),
+            'file_path' => $document->file_path,
+            'file_size' => $document->getFormattedFileSize(),
+            'pages' => $pageCount,
+            'pages_count' => $pageCount,
+            'instructor' => $document->uploader->name ?? 'Admin',
+            'subject' => $document->video->subject->name ?? 'Document',
+            'year' => date('Y'),
+        ];
+
+        $lesson = [
+            'id' => 0,
+            'title' => $document->title,
+            'subject' => $document->video->subject->name ?? 'Document',
+            'instructor' => $document->uploader->name ?? 'Admin',
+            'year' => date('Y'),
+        ];
+
+        $user = Auth::user();
+        $selectedLevelGroup = $user->current_level_group ?? session('selected_level_group', 'jhs');
+
+        return view('dashboard.document-content-viewer', [
+            'lesson' => $lesson,
+            'document' => $docData,
+            'selectedLevelGroup' => $selectedLevelGroup,
+            'type' => $type,
+            'docId' => $document->id
+        ]);
+    }
     // First page - Document preview/selection
     public function viewDocument($lessonId, $type)
     {
@@ -273,6 +559,13 @@ class DocumentController extends Controller
 
         // Query database for document related to this video (lesson)
         $docId = request()->get('docId') ?? request()->get('doc_id');
+        if ($docId && !is_numeric($docId)) {
+            $parsed = UrlObfuscator::parseSeoUrl($docId);
+            $decoded = $parsed['id'] ?? UrlObfuscator::decode($docId);
+            if ($decoded) {
+                $docId = $decoded;
+            }
+        }
         $query = \App\Models\Document::where('video_id', $lessonId);
         if ($docId) {
             $query->where('id', $docId);

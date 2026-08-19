@@ -38,6 +38,64 @@ class PdfParser
     }
 
     /**
+     * Get or generate a cover thumbnail URL for a document.
+     */
+    public static function getCoverThumbnailUrl($filePath, $default = null): ?string
+    {
+        $realPath = self::resolveFilePath($filePath);
+        if (!$realPath || !file_exists($realPath)) {
+            return $default;
+        }
+
+        $hash = md5($realPath . '_' . filemtime($realPath));
+        $relativeCoverPath = 'documents/covers/' . $hash . '.jpg';
+        $fullCoverPath = storage_path('app/public/' . $relativeCoverPath);
+
+        if (file_exists($fullCoverPath)) {
+            return asset('storage/' . $relativeCoverPath);
+        }
+
+        // Try extracting page 1 using pdftoppm or imagick
+        try {
+            $coverDir = dirname($fullCoverPath);
+            if (!is_dir($coverDir)) {
+                @mkdir($coverDir, 0755, true);
+            }
+
+            // Method 1: pdftoppm (standard on linux)
+            if (function_exists('shell_exec')) {
+                $hasPdftoppm = shell_exec('which pdftoppm 2>/dev/null');
+                if (!empty($hasPdftoppm)) {
+                    $outBase = storage_path('app/public/documents/covers/' . $hash);
+                    shell_exec('pdftoppm -jpeg -f 1 -l 1 -scale-to 400 -singlefile ' . escapeshellarg($realPath) . ' ' . escapeshellarg($outBase) . ' 2>/dev/null');
+                    if (file_exists($fullCoverPath)) {
+                        return asset('storage/' . $relativeCoverPath);
+                    }
+                }
+            }
+
+            // Method 2: Imagick extension
+            if (class_exists('\Imagick')) {
+                $imagick = new \Imagick();
+                $imagick->setResolution(150, 150);
+                $imagick->readImage($realPath . '[0]');
+                $imagick->setImageFormat('jpg');
+                $imagick->setImageCompressionQuality(85);
+                $imagick->writeImage($fullCoverPath);
+                $imagick->clear();
+                $imagick->destroy();
+                if (file_exists($fullCoverPath)) {
+                    return asset('storage/' . $relativeCoverPath);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('PdfParser cover extraction failed', ['error' => $e->getMessage()]);
+        }
+
+        return $default;
+    }
+
+    /**
      * Get the exact page count of a PDF file.
      *
      * @param string $filePath Absolute path or relative path to the PDF file.
