@@ -15,6 +15,9 @@
     <!-- Reveal.js CSS for PPT -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.3.1/dist/reveal.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.3.1/dist/theme/white.css">
+    @elseif($type === 'pdf')
+    <!-- PDF.js for rendering uploaded PDFs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     @endif
 
     <style>
@@ -527,6 +530,61 @@
             position: relative;
         }
 
+        .pdf-page-card {
+            background-color: var(--white);
+            border-radius: 0.5rem;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 2rem;
+            max-width: 100%;
+            width: fit-content;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+            border: 1px solid var(--gray-200);
+            transition: box-shadow 0.2s ease;
+        }
+
+        .pdf-page-card:hover {
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.12);
+        }
+
+        .pdf-canvas-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--white);
+        }
+
+        .pdf-page-canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .page-thumb-canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .pdf-page-number-badge {
+            position: absolute;
+            bottom: 12px;
+            right: 16px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--gray-600);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(4px);
+            padding: 3px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--gray-200);
+            pointer-events: none;
+        }
+
         .pdf-page-header {
             text-align: center;
             margin-bottom: 2rem;
@@ -910,51 +968,47 @@
             </div>
         @else
             <!-- PDF Layout -->
-            <div class="sidebar">
-                <div class="sidebar-title">Pages ({{ count($document['pages']) }})</div>
-                @foreach($document['pages'] as $index => $page)
-                <div class="page-thumbnail {{ $index === 0 ? 'active' : '' }}" data-page="{{ $page['number'] }}">
-                    <div class="page-number">Page {{ $page['number'] }}</div>
-                    <div class="page-preview">
-                        <div class="page-preview-text">{{ Str::limit($page['content'], 100) }}</div>
+            <div class="sidebar" id="pdfSidebar">
+                <div class="sidebar-title">Pages (<span id="pdfPageCountHeader">{{ $document['pages_count'] ?? count($document['pages'] ?? []) }}</span>)</div>
+                <div id="pdfThumbnailsList">
+                    @foreach($document['pages'] ?? [] as $index => $page)
+                    <div class="page-thumbnail {{ $index === 0 ? 'active' : '' }}" data-page="{{ $page['number'] }}" id="thumb-page-{{ $page['number'] }}">
+                        <div class="page-number">Page {{ $page['number'] }}</div>
+                        <div class="page-preview" id="thumb-preview-{{ $page['number'] }}">
+                            <canvas id="thumb-canvas-{{ $page['number'] }}" class="page-thumb-canvas"></canvas>
+                        </div>
                     </div>
+                    @endforeach
                 </div>
-                @endforeach
             </div>
 
-            <div class="content-area">
-                @foreach($document['pages'] as $index => $page)
-                <div class="pdf-page {{ $index === 0 ? '' : 'hidden' }}" data-page="{{ $page['number'] }}">
-                    <div class="pdf-page-header">
-                        <div class="pdf-page-title">{{ $page['title'] }}</div>
-                    </div>
-                    
-                    <div class="pdf-page-content">
-                        {!! nl2br(e($page['content'])) !!}
-                    </div>
-                    
-                    <div class="pdf-page-number">{{ $page['number'] }}</div>
+            <div class="content-area" id="pdfContentArea">
+                <div id="pdfLoadingState" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem; color: var(--gray-600);">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--secondary-blue); margin-bottom: 1rem;"></i>
+                    <p style="font-weight: 500;">Loading PDF document...</p>
                 </div>
-                @endforeach
+                <div id="pdfPagesContainer" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+                    <!-- Dynamic PDF page canvases rendered by PDF.js -->
+                </div>
             </div>
         @endif
     </div>
 
     <!-- Bottom Toolbar -->
     <div class="bottom-toolbar">
-        <button class="toolbar-btn" title="Print Document">
+        <button class="toolbar-btn" id="printDocBtn" title="Print Document">
             <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/>
             </svg>
         </button>
-        <button class="toolbar-btn" title="Download Document">
+        <button class="toolbar-btn" id="downloadDocBtn" title="Download Document">
             <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                 <polyline points="14,2 14,8 20,8"/>
                 <path d="m12 18-4-4h3V9h2v5h3l-4 4z"/>
             </svg>
         </button>
-        <button class="toolbar-btn" title="Zoom In">
+        <button class="toolbar-btn" id="zoomInBtn" title="Zoom In">
             <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
                 <circle cx="11" cy="11" r="8"/>
                 <path d="m21 21-4.35-4.35"/>
@@ -962,7 +1016,7 @@
                 <line x1="11" y1="8" x2="11" y2="14"/>
             </svg>
         </button>
-        <button class="toolbar-btn" title="Zoom Out">
+        <button class="toolbar-btn" id="zoomOutBtn" title="Zoom Out">
             <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
                 <circle cx="11" cy="11" r="8"/>
                 <path d="m21 21-4.35-4.35"/>
@@ -1046,101 +1100,269 @@
     @else
         <script nonce="{{ request()->attributes->get('csp_nonce') }}">
             document.addEventListener('DOMContentLoaded', function() {
-                // Page navigation functionality
-                const pageThumbnails = document.querySelectorAll('.page-thumbnail');
-                const pdfPages = document.querySelectorAll('.pdf-page');
-                
-                pageThumbnails.forEach(thumbnail => {
-                    thumbnail.addEventListener('click', function() {
-                        const pageNumber = this.dataset.page;
-                        
-                        // Update active thumbnail
-                        pageThumbnails.forEach(t => t.classList.remove('active'));
-                        this.classList.add('active');
-                        
-                        // Show corresponding page
-                        pdfPages.forEach(page => {
-                            if (page.dataset.page === pageNumber) {
-                                page.classList.remove('hidden');
-                                page.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            } else {
-                                page.classList.add('hidden');
+                const pdfUrl = "{{ $document['file_url'] ?? asset('storage/' . ($document['file_path'] ?? '')) }}";
+                const pdfPagesContainer = document.getElementById('pdfPagesContainer');
+                const pdfLoadingState = document.getElementById('pdfLoadingState');
+                const pdfThumbnailsList = document.getElementById('pdfThumbnailsList');
+                const pdfPageCountHeader = document.getElementById('pdfPageCountHeader');
+                const contentArea = document.getElementById('pdfContentArea');
+
+                let pdfDoc = null;
+                let currentScale = 1.25;
+                const pageRenderTasks = {};
+
+                if (typeof pdfjsLib !== 'undefined') {
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    loadPdfDocument();
+                } else {
+                    if (pdfLoadingState) {
+                        pdfLoadingState.innerHTML = '<p style="color: var(--primary-red); font-weight: 500;">PDF viewer library could not be loaded.</p>';
+                    }
+                }
+
+                async function loadPdfDocument() {
+                    try {
+                        const loadingTask = pdfjsLib.getDocument(pdfUrl);
+                        pdfDoc = await loadingTask.promise;
+
+                        if (pdfLoadingState) pdfLoadingState.style.display = 'none';
+                        if (pdfPageCountHeader) pdfPageCountHeader.textContent = pdfDoc.numPages;
+
+                        if (pdfThumbnailsList) pdfThumbnailsList.innerHTML = '';
+                        if (pdfPagesContainer) pdfPagesContainer.innerHTML = '';
+
+                        // Build thumbnail list and main page elements
+                        for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+                            // Sidebar thumbnail
+                            const thumbItem = document.createElement('div');
+                            thumbItem.className = `page-thumbnail ${pageNum === 1 ? 'active' : ''}`;
+                            thumbItem.dataset.page = pageNum;
+                            thumbItem.id = `thumb-page-${pageNum}`;
+                            thumbItem.innerHTML = `
+                                <div class="page-number">Page ${pageNum}</div>
+                                <div class="page-preview" id="thumb-preview-${pageNum}">
+                                    <canvas id="thumb-canvas-${pageNum}" class="page-thumb-canvas"></canvas>
+                                </div>
+                            `;
+                            thumbItem.addEventListener('click', function() {
+                                const targetCard = document.getElementById(`pdf-page-card-${pageNum}`);
+                                if (targetCard) {
+                                    document.querySelectorAll('.page-thumbnail').forEach(t => t.classList.remove('active'));
+                                    thumbItem.classList.add('active');
+                                    targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }
+                            });
+                            pdfThumbnailsList.appendChild(thumbItem);
+
+                            // Main page card
+                            const pageCard = document.createElement('div');
+                            pageCard.className = 'pdf-page-card';
+                            pageCard.id = `pdf-page-card-${pageNum}`;
+                            pageCard.dataset.page = pageNum;
+                            pageCard.innerHTML = `
+                                <div class="pdf-canvas-wrapper" id="pdf-wrapper-${pageNum}">
+                                    <canvas id="page-canvas-${pageNum}" class="pdf-page-canvas"></canvas>
+                                </div>
+                                <div class="pdf-page-number-badge">${pageNum} / ${pdfDoc.numPages}</div>
+                            `;
+                            pdfPagesContainer.appendChild(pageCard);
+                        }
+
+                        // Render pages and thumbnails
+                        for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+                            renderPage(pageNum);
+                            renderThumbnail(pageNum);
+                        }
+
+                        setupIntersectionObserver();
+                    } catch (error) {
+                        console.error('Error loading PDF:', error);
+                        if (pdfLoadingState) {
+                            pdfLoadingState.innerHTML = `
+                                <div style="text-align: center; padding: 2rem;">
+                                    <i class="fas fa-exclamation-triangle" style="font-size: 2.5rem; color: var(--primary-red); margin-bottom: 1rem;"></i>
+                                    <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem;">Could not load document preview</h3>
+                                    <p style="color: var(--gray-600); margin-bottom: 1.5rem;">You can download or open the original document directly.</p>
+                                    <a href="${pdfUrl}" target="_blank" download class="toolbar-btn primary" style="display: inline-flex; text-decoration: none; align-items: center; justify-content: center; gap: 0.5rem;">
+                                        <i class="fas fa-download"></i> Download PDF
+                                    </a>
+                                </div>
+                            `;
+                        }
+                    }
+                }
+
+                async function renderPage(pageNum) {
+                    try {
+                        const page = await pdfDoc.getPage(pageNum);
+                        const canvas = document.getElementById(`page-canvas-${pageNum}`);
+                        if (!canvas) return;
+
+                        const dpr = window.devicePixelRatio || 1;
+                        const viewport = page.getViewport({ scale: currentScale * dpr });
+                        const context = canvas.getContext('2d');
+
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
+                        canvas.style.width = `${viewport.width / dpr}px`;
+                        canvas.style.height = `${viewport.height / dpr}px`;
+
+                        const renderContext = {
+                            canvasContext: context,
+                            viewport: viewport
+                        };
+
+                        if (pageRenderTasks[pageNum]) {
+                            pageRenderTasks[pageNum].cancel();
+                        }
+
+                        const renderTask = page.render(renderContext);
+                        pageRenderTasks[pageNum] = renderTask;
+                        await renderTask.promise;
+                    } catch (e) {
+                        if (e.name !== 'RenderingCancelledException') {
+                            console.error(`Error rendering page ${pageNum}:`, e);
+                        }
+                    }
+                }
+
+                async function renderThumbnail(pageNum) {
+                    try {
+                        const page = await pdfDoc.getPage(pageNum);
+                        const canvas = document.getElementById(`thumb-canvas-${pageNum}`);
+                        if (!canvas) return;
+
+                        const viewport = page.getViewport({ scale: 0.35 });
+                        const context = canvas.getContext('2d');
+
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
+
+                        const renderContext = {
+                            canvasContext: context,
+                            viewport: viewport
+                        };
+                        await page.render(renderContext).promise;
+                    } catch (e) {
+                        console.error(`Error rendering thumb ${pageNum}:`, e);
+                    }
+                }
+
+                function reRenderAllPages() {
+                    if (!pdfDoc) return;
+                    for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+                        renderPage(pageNum);
+                    }
+                }
+
+                function setupIntersectionObserver() {
+                    const pageCards = document.querySelectorAll('.pdf-page-card');
+                    const thumbnails = document.querySelectorAll('.page-thumbnail');
+
+                    const observerOptions = {
+                        root: contentArea,
+                        rootMargin: '-15% 0px -70% 0px',
+                        threshold: 0
+                    };
+
+                    const observer = new IntersectionObserver((entries) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                const pageNum = entry.target.dataset.page;
+                                thumbnails.forEach(t => {
+                                    if (t.dataset.page === pageNum) {
+                                        t.classList.add('active');
+                                        t.scrollIntoView({ behavior: 'nearest', block: 'only' });
+                                    } else {
+                                        t.classList.remove('active');
+                                    }
+                                });
                             }
                         });
+                    }, observerOptions);
+
+                    pageCards.forEach(card => observer.observe(card));
+                }
+
+                // Zoom controls
+                const zoomInBtn = document.getElementById('zoomInBtn');
+                const zoomOutBtn = document.getElementById('zoomOutBtn');
+
+                if (zoomInBtn) {
+                    zoomInBtn.addEventListener('click', () => {
+                        if (currentScale < 2.5) {
+                            currentScale += 0.2;
+                            reRenderAllPages();
+                        }
                     });
-                });
+                }
+
+                if (zoomOutBtn) {
+                    zoomOutBtn.addEventListener('click', () => {
+                        if (currentScale > 0.6) {
+                            currentScale -= 0.2;
+                            reRenderAllPages();
+                        }
+                    });
+                }
+
+                // Download functionality
+                const downloadBtn = document.getElementById('downloadDocBtn');
+                if (downloadBtn) {
+                    downloadBtn.addEventListener('click', () => {
+                        const link = document.createElement('a');
+                        link.href = pdfUrl;
+                        link.download = "{{ $document['title'] ?? 'document' }}.pdf";
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    });
+                }
+
+                // Print functionality
+                const printBtn = document.getElementById('printDocBtn');
+                if (printBtn) {
+                    printBtn.addEventListener('click', () => {
+                        const printIframe = document.createElement('iframe');
+                        printIframe.style.position = 'fixed';
+                        printIframe.style.right = '0';
+                        printIframe.style.bottom = '0';
+                        printIframe.style.width = '0';
+                        printIframe.style.height = '0';
+                        printIframe.style.border = '0';
+                        printIframe.src = pdfUrl;
+                        document.body.appendChild(printIframe);
+                        printIframe.onload = function() {
+                            try {
+                                printIframe.contentWindow.focus();
+                                printIframe.contentWindow.print();
+                            } catch(e) {
+                                window.print();
+                            }
+                        };
+                    });
+                }
 
                 // Keyboard navigation
                 document.addEventListener('keydown', function(e) {
                     if (e.key === 'Escape') {
                         history.back();
                     }
-                    
-                    // Arrow key navigation
-                    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                    if (e.key === 'ArrowDown' || e.key === 'PageDown') {
                         const activeThumbnail = document.querySelector('.page-thumbnail.active');
                         const nextThumbnail = activeThumbnail?.nextElementSibling;
-                        if (nextThumbnail) {
+                        if (nextThumbnail && nextThumbnail.classList.contains('page-thumbnail')) {
                             nextThumbnail.click();
                         }
                     }
-                    
-                    if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                    if (e.key === 'ArrowUp' || e.key === 'PageUp') {
                         const activeThumbnail = document.querySelector('.page-thumbnail.active');
                         const prevThumbnail = activeThumbnail?.previousElementSibling;
-                        if (prevThumbnail) {
+                        if (prevThumbnail && prevThumbnail.classList.contains('page-thumbnail')) {
                             prevThumbnail.click();
                         }
                     }
                 });
-
-                // Toolbar functionality
-                const printBtn = document.querySelector('[title="Print Document"]');
-                const downloadBtn = document.querySelector('[title="Download Document"]');
-                
-                if (printBtn) {
-                    printBtn.addEventListener('click', () => {
-                        window.print();
-                    });
-                }
-                
-                if (downloadBtn) {
-                    downloadBtn.addEventListener('click', () => {
-                        // This would typically trigger a download
-                        showNotification('Download functionality would be implemented here', 'info');
-                    });
-                }
-
-                function showNotification(message, type) {
-                    const notification = document.createElement('div');
-                    notification.style.cssText = `
-                        position: fixed;
-                        top: 20px;
-                        right: 20px;
-                        background: ${type === 'success' ? 'var(--secondary-blue)' : type === 'error' ? 'var(--primary-red)' : 'var(--gray-700)'};
-                        color: white;
-                        padding: 1rem 1.5rem;
-                        border-radius: 0.5rem;
-                        font-weight: 600;
-                        z-index: 10000;
-                        transform: translateX(100px);
-                        opacity: 0;
-                        transition: all 0.3s ease;
-                    `;
-                    notification.textContent = message;
-                    document.body.appendChild(notification);
-
-                    setTimeout(() => {
-                        notification.style.transform = 'translateX(0)';
-                        notification.style.opacity = '1';
-                    }, 100);
-
-                    setTimeout(() => {
-                        notification.style.transform = 'translateX(100px)';
-                        notification.style.opacity = '0';
-                        setTimeout(() => notification.remove(), 300);
-                    }, 3000);
-                }
             });
         </script>
     @endif
