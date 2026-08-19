@@ -62,7 +62,8 @@
                 <!-- Tabbed Workspace Navigation Header -->
                 <div class="bg-white rounded-t-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
                     <div class="flex border-b border-gray-200">
-                        <button type="button" id="mainTabBtnVideo" onclick="switchMainTab('video')" class="flex-1 py-4 px-6 text-left border-b-2 font-bold text-sm transition-all tab-btn-active flex items-center justify-between">
+                        <!-- Tab 1: Video Details -->
+                        <button type="button" id="mainTabBtnVideo" onclick="switchMainTab('video')" class="flex-1 py-4 px-5 text-left border-b-2 font-bold text-sm transition-all tab-btn-active flex items-center justify-between">
                             <div class="flex items-center space-x-3">
                                 <div class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
                                     <i class="fas fa-video text-base"></i>
@@ -73,8 +74,29 @@
                                 </div>
                             </div>
                         </button>
+
+                        <!-- Tab 2: Attached Documents -->
+                        <button type="button" id="mainTabBtnDocs" onclick="switchMainTab('documents')" class="flex-1 py-4 px-5 text-left border-b-2 font-bold text-sm transition-all tab-btn-inactive flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
+                                    <i class="fas fa-paperclip text-base"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="block text-gray-900 text-sm font-bold">Attached Documents</span>
+                                        <span id="docsTabBadge" class="px-2 py-0.5 text-xs font-semibold rounded-full {{ $content->documents->count() ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600' }}">
+                                            {{ $content->documents->count() ? $content->documents->count() . ' Linked' : 'No Docs' }}
+                                        </span>
+                                    </div>
+                                    <span class="block text-xs text-gray-500 font-normal mt-0.5" id="docsTabSubtitle">
+                                        {{ $content->documents->count() ? $content->documents->count() . ' documents attached' : 'Click to upload or attach documents' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </button>
                         
-                        <button type="button" id="mainTabBtnQuiz" onclick="switchMainTab('quiz')" class="flex-1 py-4 px-6 text-left border-b-2 font-bold text-sm transition-all tab-btn-inactive flex items-center justify-between">
+                        <!-- Tab 3: Associated Quiz -->
+                        <button type="button" id="mainTabBtnQuiz" onclick="switchMainTab('quiz')" class="flex-1 py-4 px-5 text-left border-b-2 font-bold text-sm transition-all tab-btn-inactive flex items-center justify-between">
                             <div class="flex items-center space-x-3">
                                 <div class="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">
                                     <i class="fas fa-tasks text-base"></i>
@@ -214,59 +236,169 @@
                             </div>
                         </div>
 
+                        <div class="mt-6 pt-4 border-t border-gray-100">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" name="is_featured" value="1" {{ $content->is_featured ? 'checked' : '' }}
+                                       class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                <span class="text-sm font-medium text-gray-700">Mark as Featured Content</span>
+                            </label>
+                        </div>
+
                         @if($contentType === 'video')
-                            <!-- Associated Documents & Featured Status -->
-                            <div class="mt-8 border-t pt-6">
-                                <h3 class="text-md font-semibold text-gray-800 mb-4 flex items-center">
-                                    <i class="fas fa-paperclip text-indigo-600 mr-2"></i> Documents & Options
-                                </h3>
-                                
-                                <div class="mb-6">
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Associated Documents</label>
-                                    <div class="max-h-40 overflow-y-auto p-3 border border-gray-200 rounded-lg bg-gray-50">
-                                        @foreach($availableDocuments as $document)
-                                            <label class="flex items-center mb-2 last:mb-0 cursor-pointer">
-                                                <input type="checkbox" name="document_ids[]" value="{{ $document->id }}"
-                                                       {{ $content->documents->contains($document->id) ? 'checked' : '' }}
-                                                       class="mr-2 rounded text-blue-600 focus:ring-blue-500">
-                                                <span class="text-sm text-gray-700">{{ $document->title }}</span>
-                                            </label>
-                                        @endforeach
+                            <!-- Quick Switcher Banners on Tab 1 -->
+                            <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- Documents Switcher Banner -->
+                                <div class="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-100 flex items-center justify-between">
+                                    <div class="flex items-center space-x-3 truncate">
+                                        <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                            <i class="fas fa-paperclip text-sm"></i>
+                                        </div>
+                                        <div class="truncate">
+                                            <span class="block text-xs font-bold uppercase tracking-wider text-emerald-900">Documents</span>
+                                            <span class="text-xs font-medium text-gray-700 truncate block">
+                                                {{ $content->documents->count() ? $content->documents->count() . ' documents attached' : 'No documents attached' }}
+                                            </span>
+                                        </div>
                                     </div>
+                                    <button type="button" onclick="switchMainTab('documents')" class="px-3 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg text-xs font-bold shadow-sm transition-all flex items-center gap-1 flex-shrink-0">
+                                        Manage Docs <i class="fas fa-arrow-right text-[10px]"></i>
+                                    </button>
                                 </div>
 
-                                <div class="mt-4">
-                                    <label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="is_featured" value="1" {{ $content->is_featured ? 'checked' : '' }}
-                                               class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                                        <span class="text-sm font-medium text-gray-700">Mark as Featured Content</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- Bottom Quick Quiz Switcher Banner on Tab 1 -->
-                            <div class="mt-8 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 flex items-center justify-between">
-                                <div class="flex items-center space-x-3">
-                                    <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">
-                                        <i class="fas fa-question text-sm"></i>
+                                <!-- Quiz Switcher Banner -->
+                                <div class="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 flex items-center justify-between">
+                                    <div class="flex items-center space-x-3 truncate">
+                                        <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                            <i class="fas fa-question text-sm"></i>
+                                        </div>
+                                        <div class="truncate">
+                                            <span class="block text-xs font-bold uppercase tracking-wider text-indigo-900">Quiz Status</span>
+                                            <span class="text-xs font-medium text-gray-700 truncate block">
+                                                {{ $content->quiz ? 'Linked: ' . $content->quiz->title : 'No quiz attached' }}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <span class="block text-xs font-bold uppercase tracking-wider text-indigo-900">Quiz Status</span>
-                                        <span class="text-sm font-medium text-gray-700">
-                                            {{ $content->quiz ? 'Linked: ' . $content->quiz->title : 'No quiz attached to this lesson' }}
-                                        </span>
-                                    </div>
+                                    <button type="button" onclick="switchMainTab('quiz')" class="px-3 py-1.5 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg text-xs font-bold shadow-sm transition-all flex items-center gap-1 flex-shrink-0">
+                                        Manage Quiz <i class="fas fa-arrow-right text-[10px]"></i>
+                                    </button>
                                 </div>
-                                <button type="button" onclick="switchMainTab('quiz')" class="px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg text-xs font-bold shadow-md transition-all flex items-center gap-1.5">
-                                    Manage Quiz Questions <i class="fas fa-arrow-right ml-1"></i>
-                                </button>
                             </div>
                         @endif
                     </div>
                 </div>
             </div>
 
-            <!-- TAB 2: ASSOCIATED QUIZ & QUESTION BUILDER -->
+            <!-- TAB 2: ATTACHED DOCUMENTS & UPLOAD WORKSPACE -->
+            @if($contentType === 'video')
+            <div id="mainTabContentDocs" class="space-y-6 hidden">
+                <div class="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                    <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                <i class="fas fa-paperclip text-emerald-600"></i> Video Lesson Documents
+                            </h3>
+                            <p class="text-xs text-gray-500 mt-1">Attach lecture slides, PDF notes, or supplementary materials for students.</p>
+                        </div>
+                        <span class="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full font-bold text-xs border border-emerald-200">
+                            {{ $content->documents->count() }} Attached
+                        </span>
+                    </div>
+
+                    <!-- Direct Drag & Drop Upload Zone -->
+                    <div class="mb-8">
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Upload New Document Files</label>
+                        <div id="documentDropzone" onclick="document.getElementById('new_documents_input').click()" class="border-2 border-dashed border-gray-300 hover:border-emerald-500 rounded-xl p-8 text-center cursor-pointer bg-gray-50/50 hover:bg-emerald-50/20 transition-all">
+                            <input type="file" id="new_documents_input" name="new_documents[]" multiple accept=".pdf,.ppt,.pptx" class="hidden" onchange="handleNewDocumentSelection(event)">
+                            <div class="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3 text-2xl shadow-sm">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <p class="text-sm font-bold text-gray-800">Click to browse or drag and drop document files</p>
+                            <p class="text-xs text-gray-500 mt-1">Supports PDF, PPT, and PPTX formats (Max 50MB per file)</p>
+                        </div>
+
+                        <!-- Staged Uploads List (Client-side selection) -->
+                        <div id="stagedDocumentsList" class="mt-4 space-y-2 hidden">
+                            <span class="block text-xs font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
+                                <i class="fas fa-check-circle text-emerald-600"></i> New Files Staged For Upload (Will be saved on form submit):
+                            </span>
+                            <div id="stagedDocumentsItems" class="space-y-2"></div>
+                        </div>
+                    </div>
+
+                    <!-- Currently Attached Documents List -->
+                    <div class="mb-8">
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">Attached Documents</label>
+                        <div id="attachedDocumentsContainer" class="space-y-3">
+                            @forelse($content->documents as $doc)
+                                <div class="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl shadow-sm hover:border-emerald-200 transition-all" id="attached_doc_row_{{ $doc->id }}">
+                                    <input type="checkbox" name="document_ids[]" value="{{ $doc->id }}" checked id="doc_check_{{ $doc->id }}" class="hidden">
+                                    <div class="flex items-center space-x-3.5 truncate">
+                                        <div class="w-10 h-10 rounded-lg {{ strtolower(pathinfo($doc->file_path, PATHINFO_EXTENSION)) === 'pdf' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600' }} flex items-center justify-center font-bold text-base flex-shrink-0 shadow-sm">
+                                            <i class="fas {{ strtolower(pathinfo($doc->file_path, PATHINFO_EXTENSION)) === 'pdf' ? 'fa-file-pdf' : 'fa-file-powerpoint' }}"></i>
+                                        </div>
+                                        <div class="truncate">
+                                            <span class="block text-sm font-bold text-gray-800 truncate">{{ $doc->title }}</span>
+                                            <span class="block text-xs text-gray-500 mt-0.5">
+                                                {{ strtoupper(pathinfo($doc->file_path, PATHINFO_EXTENSION) ?: 'DOC') }} • {{ $doc->getFormattedFileSize() }} • Uploaded by {{ $doc->uploader->name ?? 'Admin' }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-2 flex-shrink-0">
+                                        <a href="{{ asset('storage/' . $doc->file_path) }}" target="_blank" class="px-3 py-1.5 text-xs text-gray-700 hover:text-emerald-700 bg-gray-50 hover:bg-emerald-50 border border-gray-200 rounded-lg font-medium transition-colors flex items-center gap-1.5">
+                                            <i class="fas fa-external-link-alt text-[10px]"></i> View
+                                        </a>
+                                        <button type="button" onclick="detachDocument({{ $doc->id }})" class="px-3 py-1.5 text-xs text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg font-medium transition-colors flex items-center gap-1.5">
+                                            <i class="fas fa-unlink text-[10px]"></i> Detach
+                                        </button>
+                                    </div>
+                                </div>
+                            @empty
+                                <div id="noAttachedDocsNotice" class="text-center py-6 px-4 bg-gray-50 rounded-xl border border-dashed border-gray-300 text-xs text-gray-500">
+                                    <i class="fas fa-file-upload text-gray-400 text-2xl mb-2 block"></i>
+                                    No documents currently attached to this video lesson. Upload a file above or pick from the library below.
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+
+                    <!-- Attach from Platform Library (Collapsible) -->
+                    <div class="pt-4 border-t border-gray-100">
+                        <div class="flex items-center justify-between">
+                            <button type="button" onclick="toggleLibraryDocuments()" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5 focus:outline-none">
+                                <i class="fas fa-folder-open"></i> Link from Document Library
+                                <i id="libraryToggleIcon" class="fas fa-chevron-down text-[10px] ml-1 transition-transform"></i>
+                            </button>
+                            <span class="text-xs text-gray-400">({{ $availableDocuments->count() }} available in library)</span>
+                        </div>
+
+                        <div id="libraryDocumentsContainer" class="hidden mt-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                            <div class="mb-3">
+                                <input type="text" id="libraryDocSearchInput" onkeyup="filterLibraryDocuments()" placeholder="Search library documents by title..." class="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div class="max-h-56 overflow-y-auto space-y-1.5 pr-1" id="libraryDocsList">
+                                @forelse($availableDocuments as $doc)
+                                    <label class="flex items-center justify-between p-2.5 rounded-lg hover:bg-white cursor-pointer transition-colors border border-transparent hover:border-gray-200 library-doc-item" data-title="{{ strtolower($doc->title) }}">
+                                        <div class="flex items-center space-x-2.5 truncate">
+                                            <input type="checkbox" name="document_ids[]" value="{{ $doc->id }}"
+                                                   {{ $content->documents->contains($doc->id) ? 'checked' : '' }}
+                                                   class="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4 border-gray-300">
+                                            <span class="text-xs font-semibold text-gray-800 truncate">{{ $doc->title }}</span>
+                                        </div>
+                                        <span class="text-[10px] text-gray-500 uppercase flex-shrink-0 ml-2 font-semibold">
+                                            {{ strtoupper(pathinfo($doc->file_path, PATHINFO_EXTENSION) ?: 'PDF') }} • {{ $doc->getFormattedFileSize() }}
+                                        </span>
+                                    </label>
+                                @empty
+                                    <p class="text-xs text-gray-500 text-center py-3">No documents found in library.</p>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            <!-- TAB 3: ASSOCIATED QUIZ & QUESTION BUILDER -->
             @if($contentType === 'video')
             <div id="mainTabContentQuiz" class="space-y-6 hidden">
                 
@@ -565,26 +697,33 @@
 <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://unpkg.com/quill-magic-url"></script>
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-    // Main Tab Switching Logic (Video Details vs Associated Quiz)
+    // Main Tab Switching Logic (Video Details vs Attached Documents vs Associated Quiz)
     window.switchMainTab = function(tab) {
-        const videoBtn = document.getElementById('mainTabBtnVideo');
-        const quizBtn = document.getElementById('mainTabBtnQuiz');
-        const videoContent = document.getElementById('mainTabContentVideo');
-        const quizContent = document.getElementById('mainTabContentQuiz');
+        const tabs = ['video', 'documents', 'quiz'];
+        const btnMap = {
+            'video': document.getElementById('mainTabBtnVideo'),
+            'documents': document.getElementById('mainTabBtnDocs'),
+            'quiz': document.getElementById('mainTabBtnQuiz')
+        };
+        const contentMap = {
+            'video': document.getElementById('mainTabContentVideo'),
+            'documents': document.getElementById('mainTabContentDocs'),
+            'quiz': document.getElementById('mainTabContentQuiz')
+        };
 
-        if (!videoBtn || !quizBtn || !videoContent || !quizContent) return;
+        tabs.forEach(t => {
+            const btn = btnMap[t];
+            const content = contentMap[t];
+            if (!btn || !content) return;
 
-        if (tab === 'video') {
-            videoBtn.className = 'flex-1 py-4 px-6 text-left border-b-2 font-bold text-sm transition-all tab-btn-active flex items-center justify-between';
-            quizBtn.className = 'flex-1 py-4 px-6 text-left border-b-2 font-bold text-sm transition-all tab-btn-inactive flex items-center justify-between';
-            videoContent.classList.remove('hidden');
-            quizContent.classList.add('hidden');
-        } else {
-            quizBtn.className = 'flex-1 py-4 px-6 text-left border-b-2 font-bold text-sm transition-all tab-btn-active flex items-center justify-between';
-            videoBtn.className = 'flex-1 py-4 px-6 text-left border-b-2 font-bold text-sm transition-all tab-btn-inactive flex items-center justify-between';
-            quizContent.classList.remove('hidden');
-            videoContent.classList.add('hidden');
-        }
+            if (t === tab) {
+                btn.className = 'flex-1 py-4 px-5 text-left border-b-2 font-bold text-sm transition-all tab-btn-active flex items-center justify-between';
+                content.classList.remove('hidden');
+            } else {
+                btn.className = 'flex-1 py-4 px-5 text-left border-b-2 font-bold text-sm transition-all tab-btn-inactive flex items-center justify-between';
+                content.classList.add('hidden');
+            }
+        });
     };
 
     // Form submission handling — wire up status buttons
@@ -844,5 +983,129 @@
             btn.innerHTML = originalHtml;
         }
     };
+
+    // --- Document Management Functions ---
+    window.detachDocument = function(docId) {
+        if (!confirm('Are you sure you want to detach this document from this video?')) return;
+        const row = document.getElementById(`attached_doc_row_${docId}`);
+        const checkbox = document.getElementById(`doc_check_${docId}`);
+        if (checkbox) checkbox.checked = false;
+        if (row) {
+            row.style.opacity = '0.4';
+            row.style.pointerEvents = 'none';
+            row.classList.add('bg-red-50');
+            setTimeout(() => {
+                row.remove();
+                const container = document.getElementById('attachedDocumentsContainer');
+                if (container && container.querySelectorAll('[id^="attached_doc_row_"]').length === 0) {
+                    container.innerHTML = `
+                        <div id="noAttachedDocsNotice" class="text-center py-4 px-4 bg-gray-50 rounded-lg border border-dashed border-gray-300 text-xs text-gray-500">
+                            <i class="fas fa-file-upload text-gray-400 text-lg mb-1 block"></i>
+                            No documents currently attached to this video lesson.
+                        </div>
+                    `;
+                }
+            }, 300);
+        }
+    };
+
+    window.toggleLibraryDocuments = function() {
+        const container = document.getElementById('libraryDocumentsContainer');
+        const icon = document.getElementById('libraryToggleIcon');
+        if (!container) return;
+        const isHidden = container.classList.contains('hidden');
+        if (isHidden) {
+            container.classList.remove('hidden');
+            if (icon) icon.style.transform = 'rotate(180deg)';
+        } else {
+            container.classList.add('hidden');
+            if (icon) icon.style.transform = 'rotate(0deg)';
+        }
+    };
+
+    window.filterLibraryDocuments = function() {
+        const query = (document.getElementById('libraryDocSearchInput')?.value || '').toLowerCase();
+        const items = document.querySelectorAll('.library-doc-item');
+        items.forEach(item => {
+            const title = item.dataset.title || '';
+            if (title.includes(query)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    };
+
+    window.handleNewDocumentSelection = function(event) {
+        const input = event.target;
+        const files = input.files;
+        const listWrapper = document.getElementById('stagedDocumentsList');
+        const itemsContainer = document.getElementById('stagedDocumentsItems');
+
+        if (!listWrapper || !itemsContainer) return;
+
+        if (!files || files.length === 0) {
+            listWrapper.classList.add('hidden');
+            itemsContainer.innerHTML = '';
+            return;
+        }
+
+        listWrapper.classList.remove('hidden');
+        itemsContainer.innerHTML = '';
+
+        Array.from(files).forEach((file, index) => {
+            const ext = file.name.split('.').pop().toLowerCase();
+            const isPdf = ext === 'pdf';
+            const sizeFormatted = file.size >= 1048576 
+                ? (file.size / 1048576).toFixed(2) + ' MB'
+                : (file.size / 1024).toFixed(1) + ' KB';
+
+            const itemEl = document.createElement('div');
+            itemEl.className = 'flex items-center justify-between p-2.5 bg-indigo-50/60 border border-indigo-200 rounded-lg text-xs';
+            itemEl.innerHTML = `
+                <div class="flex items-center space-x-2.5 truncate">
+                    <div class="w-7 h-7 rounded ${isPdf ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'} flex items-center justify-center font-bold text-xs flex-shrink-0">
+                        <i class="fas ${isPdf ? 'fa-file-pdf' : 'fa-file-powerpoint'}"></i>
+                    </div>
+                    <div class="truncate">
+                        <span class="font-bold text-gray-800 truncate block">${file.name}</span>
+                        <span class="text-[10px] text-gray-500">${sizeFormatted} • Staged for upload</span>
+                    </div>
+                </div>
+                <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 text-[10px] font-bold uppercase flex-shrink-0">New</span>
+            `;
+            itemsContainer.appendChild(itemEl);
+        });
+    };
+
+    // Drag and Drop listeners for document dropzone
+    const dropzone = document.getElementById('documentDropzone');
+    if (dropzone) {
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.add('border-indigo-600', 'bg-indigo-50');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove('border-indigo-600', 'bg-indigo-50');
+            }, false);
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            const input = document.getElementById('new_documents_input');
+            if (input && files.length > 0) {
+                input.files = files;
+                handleNewDocumentSelection({ target: input });
+            }
+        }, false);
+    }
 </script>
 @endpush
