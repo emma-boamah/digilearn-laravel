@@ -3988,8 +3988,11 @@ class AdminController extends Controller
                 if ($item->video_source === 'none' || !$hasVideoMedia) {
                     if ($item->quizzes_count > 0 || !empty($item->quiz_id)) {
                         $item->content_type = 'quiz';
+                        $item->thumbnail_url = null;
                     } elseif ($item->documents_count > 0 || !empty($item->document_path)) {
                         $item->content_type = 'document';
+                        $docFilePath = $item->documents->first()->file_path ?? $item->document_path;
+                        $item->thumbnail_url = $docFilePath ? \App\Services\PdfParser::getCoverThumbnailUrl($docFilePath) : null;
                     }
                 }
 
@@ -4023,6 +4026,7 @@ class AdminController extends Controller
                 'title',
                 'description',
                 'file_path',
+                'file_type',
                 'views',
                 'created_at',
                 'uploaded_by',
@@ -4038,8 +4042,9 @@ class AdminController extends Controller
                 $item->published_date = $item->created_at->format('M d, Y');
                 $item->uploader_name = $item->uploader->name ?? 'Unknown';
                 $item->uploader_email = $item->uploader->email ?? '';
-                $item->thumbnail_path = null; // Documents don't have thumbnails
-                $item->status = 'approved'; // Documents are auto-approved
+                $item->thumbnail_url = $item->file_path ? \App\Services\PdfParser::getCoverThumbnailUrl($item->file_path) : null;
+                $item->thumbnail_path = null;
+                $item->status = 'approved';
                 $item->duration_formatted = 'N/A';
                 return $item;
             }));
@@ -4674,19 +4679,23 @@ class AdminController extends Controller
                     'subject_id' => $request->subject_id,
                     'grade_level' => $request->grade_level,
                     'is_featured' => $request->has('is_featured'),
-                    'quiz_id' => $request->quiz_id,
+                    'quiz_id' => $request->filled('quiz_id') ? $request->quiz_id : null,
                 ]);
 
-                if ($request->quiz_id) {
+                if ($request->filled('quiz_id')) {
                     Quiz::where('id', $request->quiz_id)->update(['video_id' => $content->id]);
+                    Quiz::where('video_id', $content->id)->where('id', '!=', $request->quiz_id)->update(['video_id' => null]);
+                } else {
+                    Quiz::where('video_id', $content->id)->update(['video_id' => null]);
                 }
 
                 // Update existing document associations
-                if ($request->has('document_ids')) {
+                if ($request->has('document_ids') && is_array($request->document_ids) && count($request->document_ids) > 0) {
                     Document::where('video_id', $content->id)->whereNotIn('id', $request->document_ids)->update(['video_id' => null]);
                     Document::whereIn('id', $request->document_ids)->update(['video_id' => $content->id]);
                 } else {
                     Document::where('video_id', $content->id)->update(['video_id' => null]);
+                    $content->update(['document_path' => null]);
                 }
 
                 // Handle new document file uploads
