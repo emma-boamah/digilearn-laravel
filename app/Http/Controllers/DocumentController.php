@@ -205,44 +205,57 @@ class DocumentController extends Controller
     private function getDocumentForLesson($lessonId, $type)
     {
         // Query database for documents related to this video (lesson)
-        $document = \App\Models\Document::where('video_id', $lessonId)->first();
+        $documents = \App\Models\Document::where('video_id', $lessonId)->get();
 
-        if (!$document) {
+        if ($documents->isEmpty()) {
             return null;
         }
 
-        // Determine file type based on file extension
-        $fileExtension = strtolower(pathinfo($document->file_path, PATHINFO_EXTENSION));
-        $documentType = $fileExtension === 'pdf' ? 'pdf' : 'ppt';
+        $result = [];
+        foreach ($documents as $document) {
+            $fileExtension = strtolower(pathinfo($document->file_path, PATHINFO_EXTENSION));
+            $documentType = in_array($fileExtension, ['pdf']) ? 'pdf' : (in_array($fileExtension, ['ppt', 'pptx']) ? 'ppt' : ($document->file_type === 'pdf' ? 'pdf' : 'ppt'));
 
-        // Only return document if it matches the requested type
-        if ($documentType !== $type) {
+            // Only process document if it matches the requested type
+            if ($documentType !== $type) {
+                continue;
+            }
+
+            $fullPath = storage_path('app/public/' . $document->file_path);
+
+            if ($type === 'pdf') {
+                $pageCount = \App\Services\PdfParser::getPageCount($fullPath);
+                $result[] = [
+                    'id' => $document->id,
+                    'title' => $document->title,
+                    'file_path' => $document->file_path,
+                    'file_url' => asset('storage/' . $document->file_path),
+                    'file_size' => $this->formatFileSize($document->file_path),
+                    'pages' => $pageCount,
+                    'file_type' => 'PDF',
+                    'attached_by' => $document->uploader->name ?? 'Instructor',
+                ];
+            } elseif ($type === 'ppt') {
+                $slides = \App\Services\PptxParser::parse($fullPath);
+                $slideCount = !empty($slides) ? count($slides) : 1;
+                $result[] = [
+                    'id' => $document->id,
+                    'title' => $document->title,
+                    'file_path' => $document->file_path,
+                    'file_url' => asset('storage/' . $document->file_path),
+                    'file_size' => $this->formatFileSize($document->file_path),
+                    'slides' => $slideCount,
+                    'file_type' => 'PPT',
+                    'attached_by' => $document->uploader->name ?? 'Instructor',
+                ];
+            }
+        }
+
+        if (empty($result)) {
             return null;
         }
 
-        // Return basic document info for preview
-        if ($type === 'pdf') {
-            return [
-                'id' => $document->id,
-                'title' => $document->title,
-                'file_path' => $document->file_path,
-                'file_size' => $this->formatFileSize($document->file_path),
-                'pages' => 1 // Placeholder, could be calculated from actual file
-            ];
-        }
-
-        // For PPT documents
-        if ($type === 'ppt') {
-            return [
-                'id' => $document->id,
-                'title' => $document->title,
-                'file_path' => $document->file_path,
-                'file_size' => $this->formatFileSize($document->file_path),
-                'slides' => 1 // Placeholder, could be calculated from actual file
-            ];
-        }
-
-        return null;
+        return count($result) === 1 ? $result[0] : $result;
     }
 
     // Full document content for content viewer page
@@ -258,8 +271,18 @@ class DocumentController extends Controller
             }
         }
 
-        // Query database for documents related to this video (lesson)
-        $document = \App\Models\Document::where('video_id', $lessonId)->first();
+        // Query database for document related to this video (lesson)
+        $docId = request()->get('docId') ?? request()->get('doc_id');
+        $query = \App\Models\Document::where('video_id', $lessonId);
+        if ($docId) {
+            $query->where('id', $docId);
+        }
+        $document = $query->first();
+
+        // Fallback to first document for lesson if not found by specific docId
+        if (!$document && $docId) {
+            $document = \App\Models\Document::where('video_id', $lessonId)->first();
+        }
 
         if (!$document) {
             return [];
@@ -267,33 +290,40 @@ class DocumentController extends Controller
 
         // Determine file type based on file extension
         $fileExtension = strtolower(pathinfo($document->file_path, PATHINFO_EXTENSION));
-        $documentType = $fileExtension === 'pdf' ? 'pdf' : 'ppt';
+        $documentType = in_array($fileExtension, ['pdf']) ? 'pdf' : (in_array($fileExtension, ['ppt', 'pptx']) ? 'ppt' : ($document->file_type === 'pdf' ? 'pdf' : 'ppt'));
 
         // Only return document if it matches the requested type
         if ($documentType !== $type) {
             return [];
         }
 
-        // For PDF documents, return structured content
+        $fullPath = storage_path('app/public/' . $document->file_path);
+
+        // For PDF documents, return structured content with real page count and storage URL
         if ($type === 'pdf') {
+            $pageCount = \App\Services\PdfParser::getPageCount($fullPath);
+            $pages = [];
+            for ($i = 1; $i <= max(1, $pageCount); $i++) {
+                $pages[] = [
+                    'number' => $i,
+                    'title' => 'Page ' . $i,
+                    'content' => ''
+                ];
+            }
+
             return [
                 'id' => $document->id,
                 'title' => $document->title,
                 'file_path' => $document->file_path,
+                'file_url' => asset('storage/' . $document->file_path),
                 'file_size' => $this->formatFileSize($document->file_path),
-                'pages' => [
-                    [
-                        'number' => 1,
-                        'title' => 'Document Content',
-                        'content' => $document->description ?: 'Document content not available for preview.'
-                    ]
-                ]
+                'pages_count' => $pageCount,
+                'pages' => $pages
             ];
         }
 
         // For PPT documents, return slide structure
         if ($type === 'ppt') {
-            $fullPath = storage_path('app/public/' . $document->file_path);
             $slides = \App\Services\PptxParser::parse($fullPath);
 
             // Fallback to mock representation if parsing returned no slides
@@ -324,6 +354,7 @@ class DocumentController extends Controller
                 'id' => $document->id,
                 'title' => $document->title,
                 'file_path' => $document->file_path,
+                'file_url' => asset('storage/' . $document->file_path),
                 'file_size' => $this->formatFileSize($document->file_path),
                 'subject' => $document->video->subject->name ?? 'General',
                 'slides' => $slides

@@ -11,6 +11,11 @@
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    @if($type === 'pdf')
+    <!-- PDF.js for exact metadata and page count verification -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    @endif
+    
     <style>
         :root {
             --primary-red: #E11E2D;
@@ -661,7 +666,7 @@
                 <div class="file-stats">
                     @if($type === 'pdf' && isset($singleDoc['pages']))
                         <div class="file-stat">
-                            <div class="file-stat-value">{{ $singleDoc['pages'] }}</div>
+                            <div class="file-stat-value" id="singleDocPageCount">{{ $singleDoc['pages'] }}</div>
                             <div class="file-stat-label">Pages</div>
                         </div>
                     @elseif($type === 'ppt' && isset($singleDoc['slides']))
@@ -702,7 +707,7 @@
 
                         <div class="document-meta-small">
                             <span>{{ $doc['file_size'] ?? 'N/A' }}</span>
-                            <span>
+                            <span id="multiDocPageCount-{{ $doc['id'] ?? $index }}">
                                 @if($type === 'pdf' && isset($doc['pages']))
                                     {{ $doc['pages'] }} pages
                                 @elseif($type === 'ppt' && isset($doc['slides']))
@@ -730,6 +735,34 @@
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         document.addEventListener('DOMContentLoaded', function() {
+            @if($type === 'pdf')
+                if (typeof pdfjsLib !== 'undefined') {
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    @if($documentCount === 1 && isset($singleDoc['file_url']))
+                        const pdfUrl = "{{ $singleDoc['file_url'] }}";
+                        pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
+                            const pageStatEl = document.getElementById('singleDocPageCount');
+                            if (pageStatEl && pdf.numPages) {
+                                pageStatEl.textContent = pdf.numPages;
+                            }
+                        }).catch(function(e) {
+                            console.log('PDF.js metadata check:', e);
+                        });
+                    @elseif($documentCount > 1)
+                        @foreach($documents as $index => $doc)
+                            @if(isset($doc['file_url']))
+                                pdfjsLib.getDocument("{{ $doc['file_url'] }}").promise.then(function(pdf) {
+                                    const el = document.getElementById('multiDocPageCount-{{ $doc['id'] ?? $index }}');
+                                    if (el && pdf.numPages) {
+                                        el.textContent = `${pdf.numPages} pages`;
+                                    }
+                                }).catch(function(e) {});
+                            @endif
+                        @endforeach
+                    @endif
+                }
+            @endif
+
             // Add click handlers for action buttons
             const actionButtons = document.querySelectorAll('.action-button, .action-button-small');
             actionButtons.forEach(button => {
