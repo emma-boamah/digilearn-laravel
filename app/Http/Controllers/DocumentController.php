@@ -11,6 +11,7 @@ use App\Models\Subject;
 use App\Services\SubscriptionAccessService;
 use App\Services\PdfParser;
 use App\Services\UrlObfuscator;
+use App\Services\DocumentCognitiveService;
 
 class DocumentController extends Controller
 {
@@ -55,7 +56,7 @@ class DocumentController extends Controller
         // Target grade levels
         $targetGrades = $validSelectedGrade ? [$validSelectedGrade] : $canonicalGrades;
 
-        // Fetch categories for filters
+        // Fetch categories
         $categories = ContentCategory::orderBy('name')->get();
 
         $schoolId = $user ? $user->school_id : null;
@@ -293,6 +294,34 @@ class DocumentController extends Controller
             'docId' => $document->id
         ]);
     }
+
+    /**
+     * Synthesize structured cognitive framework from document contents using AI.
+     */
+    public function synthesizeCognitiveStructure(Request $request, $docId, DocumentCognitiveService $cognitiveService)
+    {
+        $document = Document::find($docId);
+        if (!$document) {
+            return response()->json(['success' => false, 'error' => 'Document not found'], 404);
+        }
+
+        $extractedText = $request->input('extracted_text');
+        $slides = $request->input('slides', []);
+
+        try {
+            $analysis = $cognitiveService->analyzeDocumentContent($document, $extractedText, $slides);
+            return response()->json([
+                'success' => true,
+                'data' => $analysis
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     // First page - Document preview/selection
     public function viewDocument($lessonId, $type)
     {
