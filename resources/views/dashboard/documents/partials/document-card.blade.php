@@ -6,7 +6,7 @@
     $coverImage = $doc->cover_image_url ?? null;
     $subjectName = $doc->resolved_subject ?? 'General Study';
     $gradeName = $doc->resolved_grade ?? '';
-    $docTargetUrl = route('dashboard.library.document', $doc->seo_url);
+    $docTargetUrl = route('dashboard.library.document', $doc->id);
 @endphp
 
 <div class="document-card">
@@ -75,7 +75,7 @@
 
         <!-- Action Button -->
         <a href="{{ $docTargetUrl }}" class="doc-action-btn">
-            <i class="fas fa-play text-xs"></i>
+            <i class="fas fa-play"></i>
             <span>{{ $actionLabel }}</span>
         </a>
     </div>
