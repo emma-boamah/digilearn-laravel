@@ -124,7 +124,13 @@ PROMPT;
         try {
             $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->geminiModel}:generateContent?key={$this->geminiApiKey}";
 
-            $response = Http::timeout(45)->post($url, [
+            $response = Http::timeout(45)
+		->withOptions([
+			'curl' => [
+				CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4 // Forces IPv4 to fix location block
+			]
+		])
+		->post($url, [
                 'contents' => [
                     [
                         'parts' => [
