@@ -139,7 +139,11 @@ PROMPT;
         foreach ($modelsToTry as $modelName) {
             $url = "https://generativelanguage.googleapis.com/v1beta/models/{$modelName}:generateContent?key={$this->geminiApiKey}";
             try {
-                $response = \Illuminate\Support\Facades\Http::timeout(90)->post($url, [
+                $response = \Illuminate\Support\Facades\Http::timeout(90)
+			->withOptions([
+				'curl' => [
+					CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4 // Force IPv4 to fix location block
+			->post($url, [
                     'systemInstruction' => [
                         'parts' => [['text' => $systemPrompt]]
                     ],
