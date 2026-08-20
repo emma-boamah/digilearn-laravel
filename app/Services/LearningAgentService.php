@@ -143,6 +143,8 @@ PROMPT;
 			->withOptions([
 				'curl' => [
 					CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4 // Force IPv4 to fix location block
+				]
+			])
 			->post($url, [
                     'systemInstruction' => [
                         'parts' => [['text' => $systemPrompt]]
