@@ -383,6 +383,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/dashboard/library', [DocumentController::class, 'index'])->name('dashboard.library');
             Route::get('/dashboard/documents', [DocumentController::class, 'index'])->name('dashboard.documents');
             Route::get('/dashboard/library/document/{docId}', [DocumentController::class, 'openLibraryDocument'])->name('dashboard.library.document');
+            Route::post('/dashboard/document/{docId}/synthesize', [DocumentController::class, 'synthesizeCognitiveStructure'])->name('dashboard.document.synthesize');
 
             // Lessons
             Route::middleware(['decode.obfuscated'])->group(

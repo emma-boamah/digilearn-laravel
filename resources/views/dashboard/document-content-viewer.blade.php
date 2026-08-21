@@ -2070,37 +2070,18 @@
                 let rawSections = [];
                 let fullText = '';
                 const docTitle = (window.docMeta && window.docMeta.title) ? window.docMeta.title : 'Document';
+                const docId = '{{ $document['id'] ?? '' }}';
 
-                // Case A: PPT / Presentation Document
+                // Extract Text from presentation or PDF
                 if (window.docType === 'ppt' && window.docMeta && Array.isArray(window.docMeta.slides) && window.docMeta.slides.length > 0) {
-                    rawSections = window.docMeta.slides.map((slide, i) => {
+                    window.docMeta.slides.forEach((slide, i) => {
                         let paras = [];
                         if (slide.subtitle) paras.push(slide.subtitle);
-                        if (Array.isArray(slide.bullets) && slide.bullets.length > 0) {
-                            paras.push(...slide.bullets);
-                        } else if (Array.isArray(slide.content)) {
-                            slide.content.forEach(c => { if (c.text) paras.push(c.text); });
-                        } else if (typeof slide.content === 'string' && slide.content.trim()) {
-                            paras.push(slide.content);
-                        }
-                        
-                        if (paras.length === 0) {
-                            paras.push(`Detailed theoretical concepts and breakdown for slide ${slide.number || (i + 1)}.`);
-                        }
-
+                        if (Array.isArray(slide.bullets)) paras.push(...slide.bullets);
                         const slideText = (slide.title || '') + ' ' + paras.join(' ');
-                        fullText += ' ' + slideText;
-
-                        return {
-                            id: `sec-${i + 1}`,
-                            title: `${i + 1}. ${slide.title || 'Module ' + (i + 1)}`,
-                            paragraphs: paras,
-                            rawText: slideText
-                        };
+                        fullText += slideText + '\n';
                     });
-                }
-                // Case B: PDF Document with PDF.js Text Layer
-                else if (window.docType === 'pdf' && window.loadedPdfDoc) {
+                } else if (window.docType === 'pdf' && window.loadedPdfDoc) {
                     try {
                         const pdf = window.loadedPdfDoc;
                         const maxPagesToScan = Math.min(pdf.numPages, 30);
@@ -2137,12 +2118,57 @@
                     }
                 }
 
-                // Clean fallback if no raw text extracted
+                // 1. Try Backend AI Synthesis (Gemini AI for deep comprehension)
+                if (docId) {
+                    try {
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                        const response = await fetch(`/dashboard/document/${docId}/synthesize`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                extracted_text: fullText,
+                                slides: (window.docType === 'ppt' && window.docMeta) ? window.docMeta.slides : []
+                            })
+                        });
+
+                        if (response.ok) {
+                            const resJson = await response.json();
+                            if (resJson.success && resJson.data && Array.isArray(resJson.data.sections) && resJson.data.sections.length > 0) {
+                                this.cachedData = {
+                                    docTitle: resJson.data.docTitle || docTitle,
+                                    vocabulary: resJson.data.vocabulary || [],
+                                    sections: resJson.data.sections.map((s, idx) => ({
+                                        id: s.id || `sec-${idx + 1}`,
+                                        title: this.formatMathText(s.title),
+                                        rawTitle: s.title,
+                                        prompt: s.inquiry_focus || this.generateInquiryPrompt(s.title),
+                                        paragraphs: (Array.isArray(s.paragraphs) ? s.paragraphs : [s.paragraphs]).map(p => this.formatMathText(p)),
+                                        has_checkpoint: s.has_checkpoint !== false,
+                                        checkpoint: s.checkpoint_prompt || this.generateCheckpointPrompt(s.title)
+                                    })),
+                                    techDocs: resJson.data.tech_rules || { formula: '', code: '', note: '' },
+                                    checklist: resJson.data.checklist || []
+                                };
+                                this.isAnalyzing = false;
+                                return this.cachedData;
+                            }
+                        }
+                    } catch (aiErr) {
+                        console.warn('AI Document synthesis notice (falling back to dynamic local parser):', aiErr);
+                    }
+                }
+
+                // 2. Client-Side Semantic Parser Fallback (No AI)
                 if (!rawSections || rawSections.length === 0) {
                     rawSections = [
                         {
                             id: 'sec-1',
                             title: `1. Foundational Overview of ${docTitle}`,
+                            rawTitle: `Foundational Overview of ${docTitle}`,
                             paragraphs: [
                                 `This module explores the core principles, governing axioms, and foundational concepts introduced in ${docTitle}.`,
                                 `Study the relationships between key elements to build an integrated conceptual understanding.`
@@ -2152,6 +2178,7 @@
                         {
                             id: 'sec-2',
                             title: `2. Methodologies & Analytical Frameworks`,
+                            rawTitle: `Methodologies & Analytical Frameworks`,
                             paragraphs: [
                                 `Here we analyze the operations, structural relationships, and applied methodologies presented across the document.`,
                                 `Examine the conditions, boundary variables, and transformation rules governing this system.`
@@ -2161,6 +2188,7 @@
                         {
                             id: 'sec-3',
                             title: `3. Practical Applications & Synthesis`,
+                            rawTitle: `Practical Applications & Synthesis`,
                             paragraphs: [
                                 `This section synthesizes the primary findings into concrete problem-solving strategies, case studies, and engineering implementations.`
                             ],
@@ -2172,10 +2200,11 @@
                 // Extract Vocabulary
                 const vocabulary = this.extractVocabulary(fullText, docTitle, rawSections);
 
-                // Enhance Sections with Inquiry & Checkpoints
-                const enhancedSections = rawSections.slice(0, 5).map((sec, idx) => {
+                // Enhance Sections Dynamically (No hardcoded 5-step limit)
+                const enhancedSections = rawSections.map((sec, idx) => {
                     const cleanTitle = sec.rawTitle || sec.title.replace(/^\d+[\.\s]+/, '');
                     const inquiryPrompt = this.generateInquiryPrompt(cleanTitle);
+                    const isIntro = /intro|overview|background|getting started/i.test(cleanTitle) && idx === 0;
                     const checkpoint = this.generateCheckpointPrompt(cleanTitle);
 
                     return {
@@ -2184,6 +2213,7 @@
                         rawTitle: cleanTitle,
                         prompt: inquiryPrompt,
                         paragraphs: sec.paragraphs.slice(0, 4),
+                        has_checkpoint: !isIntro,
                         checkpoint: checkpoint
                     };
                 });
@@ -2193,8 +2223,8 @@
 
                 // Generate Project Blueprint Checklist
                 const checklist = [
-                    `Deconstruct problem specifications and core axioms in ${enhancedSections[0]?.title.replace(/^\d+[\.\s]+/, '') || 'Module 1'}`,
-                    `Implement computational rules and key principles from ${enhancedSections[1]?.title.replace(/^\d+[\.\s]+/, '') || 'Module 2'}`,
+                    `Deconstruct problem specifications and core axioms in ${enhancedSections[0]?.rawTitle || 'Module 1'}`,
+                    `Implement computational rules and key principles from ${enhancedSections[1]?.rawTitle || 'Module 2'}`,
                     `Verify boundary constraints, limit behaviors, and validation cases`,
                     `Compile completed solution into the project blueprint specification`
                 ];
@@ -2322,28 +2352,25 @@
                 let secCounter = 1;
                 const headingRegex = /^(?:chapter|unit|section|lesson|part|\d+\.|\b[IVXLCDM]+\.)\s+/i;
                 const metaTitlesRegex = /^(?:contents|table of contents|index|appendix|references|bibliography|preface)\b/i;
+                const noiseHeadingRegex = /^(?:proof|q\.e\.d|theorem|lemma|corollary|definition|example|exercise|problems|then|therefore|note|remark|solution|case|where|let|and|so|figure|table)\b|^[a-zA-Z0-9,\.:;\-\s]{1,4}$/i;
 
                 for (let pIdx = 0; pIdx < pageTexts.length; pIdx++) {
                     const page = pageTexts[pIdx];
-                    // Check if this page is purely a Table of Contents
                     const isTOCPage = page.lines.some(l => metaTitlesRegex.test(l.trim())) && pIdx <= 1;
 
                     for (const line of page.lines) {
                         const trimmed = line.trim();
-                        if (!trimmed || trimmed.length < 3) continue;
+                        if (!trimmed || trimmed.length < 4) continue;
 
-                        // Skip meta titles
+                        // Skip meta titles and TOC index lines
                         if (metaTitlesRegex.test(trimmed)) continue;
+                        if (isTOCPage && (/\b\d+\.\s+.*?\s+\d+$/.test(trimmed) || /^\d+\s*$/.test(trimmed))) continue;
 
-                        // Skip lines that look like TOC dot leaders/page index on early pages
-                        if (isTOCPage && (/\b\d+\.\s+.*?\s+\d+$/.test(trimmed) || /^\d+\s*$/.test(trimmed))) {
-                            continue;
-                        }
-
-                        const isHeading = (
-                            (trimmed.length < 65 && headingRegex.test(trimmed) && !trimmed.endsWith(',')) ||
-                            (trimmed.length < 45 && /^[A-Z0-9\s:,\-\(\)\=\^\*\+]{4,45}$/.test(trimmed) && !trimmed.endsWith('.')) ||
-                            (trimmed.length < 50 && /^[A-Z][a-zA-Z0-9\s:,\-\(\)\=\^\*\+]{3,45}$/.test(trimmed) && !trimmed.endsWith('.'))
+                        const isNoise = noiseHeadingRegex.test(trimmed);
+                        const isHeading = !isNoise && (
+                            (trimmed.length > 7 && trimmed.length < 65 && headingRegex.test(trimmed) && !trimmed.endsWith(',')) ||
+                            (trimmed.length > 8 && trimmed.length < 50 && /^[A-Z][A-Z0-9\s:,\-\(\)\=\^\*\+]{6,50}$/.test(trimmed) && !trimmed.endsWith('.')) ||
+                            (trimmed.length > 8 && trimmed.length < 55 && /^[A-Z][a-zA-Z0-9\s:,\-\(\)\=\^\*\+]{6,50}$/.test(trimmed) && !trimmed.endsWith('.'))
                         );
 
                         if (isHeading && (!currentSection || currentSection.paragraphs.length >= 1)) {
@@ -2369,7 +2396,7 @@
                                     rawText: ''
                                 };
                             }
-                            if (trimmed.length > 30) {
+                            if (trimmed.length > 25) {
                                 const formattedPara = this.formatMathText(trimmed);
                                 currentSection.paragraphs.push(formattedPara);
                                 currentSection.rawText += ' ' + trimmed;
@@ -2382,23 +2409,23 @@
                     sections.push(currentSection);
                 }
 
-                // If no clean headings were split, divide pages into cohesive sections
-                if (sections.length < 2 && pageTexts.length > 0) {
-                    const numChunks = Math.min(4, Math.max(2, Math.ceil(pageTexts.length / 4)));
-                    const chunkSize = Math.ceil(pageTexts.length / numChunks);
-                    const chunkedSections = [];
+                // If fragmented into too many sections (> 7) or too few (< 2), intelligently merge into 4-6 balanced chapters
+                if (sections.length > 7 || sections.length < 2) {
+                    const targetCount = Math.min(6, Math.max(3, Math.ceil(pageTexts.length / 4)));
+                    const chunkSize = Math.ceil(pageTexts.length / targetCount);
+                    const balancedSections = [];
 
-                    for (let c = 0; c < numChunks; c++) {
+                    for (let c = 0; c < targetCount; c++) {
                         const chunkPages = pageTexts.slice(c * chunkSize, (c + 1) * chunkSize);
                         const chunkParas = [];
                         chunkPages.forEach(p => {
-                            p.lines.filter(l => l.length > 40).forEach(l => chunkParas.push(this.formatMathText(l)));
+                            p.lines.filter(l => l.length > 35 && !noiseHeadingRegex.test(l.trim())).forEach(l => chunkParas.push(this.formatMathText(l)));
                         });
 
-                        const firstLine = chunkPages[0]?.lines[0] || `Module Part ${c + 1}`;
-                        const titleText = (firstLine.length < 50 && firstLine.length > 4) ? this.formatMathText(firstLine) : `Module Part ${c + 1}: Foundational Concepts`;
+                        const firstValidHeading = sections[c]?.rawTitle || `Core Concepts - Part ${c + 1}`;
+                        const titleText = (firstValidHeading.length > 6 && !noiseHeadingRegex.test(firstValidHeading)) ? firstValidHeading : `${docTitle} Part ${c + 1}`;
 
-                        chunkedSections.push({
+                        balancedSections.push({
                             id: `sec-${c + 1}`,
                             title: `${c + 1}. ${titleText}`,
                             rawTitle: titleText,
@@ -2406,7 +2433,7 @@
                             rawText: chunkParas.join(' ')
                         });
                     }
-                    return chunkedSections;
+                    return balancedSections;
                 }
 
                 return sections;
@@ -2513,8 +2540,9 @@
 
                 if (sectionsContainer && data.sections) {
                     sectionsContainer.innerHTML = data.sections.map((sec, idx) => {
-                        const inquiryPrompt = DocumentCognitiveEngine.generateInquiryPrompt(sec.rawTitle || sec.title);
-                        const checkpoint = DocumentCognitiveEngine.generateCheckpointPrompt(sec.rawTitle || sec.title);
+                        const inquiryPrompt = sec.prompt || DocumentCognitiveEngine.generateInquiryPrompt(sec.rawTitle || sec.title);
+                        const showCheckpoint = sec.has_checkpoint !== false;
+                        const checkpointText = sec.checkpoint || DocumentCognitiveEngine.generateCheckpointPrompt(sec.rawTitle || sec.title);
 
                         return `
                             <div class="acquisition-section-card" id="${sec.id}">
@@ -2537,13 +2565,14 @@
                                     ${sec.paragraphs.map(p => `<p style="margin: 0;">${p}</p>`).join('')}
                                 </div>
 
+                                ${showCheckpoint ? `
                                 <!-- Retrieval Checkpoint Box (SQ3R Recite Step) -->
                                 <div class="retrieval-checkpoint-box">
                                     <div class="checkpoint-title">
                                         <i class="fas fa-brain"></i>
                                         <span>Active Recall Checkpoint</span>
                                     </div>
-                                    <p style="font-size: 0.8125rem; color: var(--gray-600); margin-bottom: 0.5rem;">${checkpoint}</p>
+                                    <p style="font-size: 0.8125rem; color: var(--gray-600); margin-bottom: 0.5rem;">${checkpointText}</p>
                                     <textarea class="checkpoint-input" id="recall-input-${idx}" placeholder="Type your self-explanation here to test your working memory..."></textarea>
                                     <button class="checkpoint-submit-btn" onclick="submitRecallCheck(${idx})">
                                         <i class="fas fa-check" style="margin-right: 0.25rem;"></i> Check Understanding
@@ -2552,6 +2581,7 @@
                                         <i class="fas fa-check-circle"></i> Great explanation! Concept verified and added to mastery score.
                                     </div>
                                 </div>
+                                ` : ''}
                             </div>
                         `;
                     }).join('');
