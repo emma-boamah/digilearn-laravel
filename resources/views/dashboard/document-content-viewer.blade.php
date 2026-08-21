@@ -11,12 +11,42 @@
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- MathLive for Mathematical Typography -->
+    <!-- KaTeX & MathLive for Mathematical Typography -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mathlive/mathlive-static.css" />
-    <script defer src="https://unpkg.com/mathlive" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
-    <script type="module" nonce="{{ request()->attributes->get('csp_nonce') }}">
-        import { renderMathInElement } from "https://unpkg.com/mathlive?module";
-        window.renderMathInElement = renderMathInElement;
+    <script src="https://unpkg.com/mathlive" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        window.renderMathInContainer = function(element) {
+            if (!element) return;
+            if (typeof renderMathInElement === 'function') {
+                try {
+                    renderMathInElement(element, {
+                        delimiters: [
+                            { left: '$$', right: '$$', display: true },
+                            { left: '\\[', right: '\\]', display: true },
+                            { left: '\\(', right: '\\)', display: false },
+                            { left: '$', right: '$', display: false }
+                        ],
+                        throwOnError: false
+                    });
+                } catch(e) { console.warn('KaTeX render error:', e); }
+            }
+        };
+    </script>
+    
+    <!-- Anti-FOUC Sensory & Dark Mode Initialization -->
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        (function () {
+            const savedTheme = localStorage.getItem('theme') || localStorage.getItem('user-theme');
+            const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
     </script>
     
     @if($type === 'ppt')
@@ -29,25 +59,58 @@
     @endif
 
     <style>
-        :root {
+        :root,
+        :root[data-theme="light"] {
             --primary-red: #E11E2D;
             --primary-red-hover: #c41e2a;
             --secondary-blue: #2677B8;
-            --white: #ffffff;
-            --gray-25: #fcfcfd;
-            --gray-50: #f9fafb;
-            --gray-100: #f3f4f6;
-            --gray-200: #e5e7eb;
-            --gray-300: #d1d5db;
-            --gray-400: #9ca3af;
-            --gray-500: #6b7280;
-            --gray-600: #4b5563;
-            --gray-700: #374151;
-            --gray-800: #1f2937;
-            --gray-900: #111827;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --bg-app: #FAF9F6; /* Autism-friendly soft cream canvas (avoiding pure #ffffff) */
+            --bg-surface: #FAF9F6;
+            --text-main: #22252A; /* Muted charcoal contrast layer */
+            --card-surface: #F0F4F8; /* Calming soft card surface */
+            --white: #FAF9F6; /* Sensory-safe soft off-white */
+            --gray-25: #F8F7F4;
+            --gray-50: #F4F3F0;
+            --gray-100: #EAE9E4;
+            --gray-200: #DDDCD6;
+            --gray-300: #C8C7C0;
+            --gray-400: #8C8F94;
+            --gray-500: #62666D;
+            --gray-600: #4B4E55;
+            --gray-700: #34373D;
+            --gray-800: #22252A;
+            --gray-900: #181A1E;
+            --border-color: #E2E1DA;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+        }
+
+        :root[data-theme="dark"] {
+            --primary-red: #EF4444;
+            --primary-red-hover: #DC2626;
+            --secondary-blue: #38BDF8;
+            --bg-app: #121212; /* Midnight theme backdrop */
+            --bg-surface: #1E1E1E;
+            --text-main: #F5F5F5; /* High visibility muted gray typography */
+            --card-surface: #1E1E1E; /* Dark card surface separation */
+            --white: #1E1E1E;
+            --gray-25: #161616;
+            --gray-50: #1A1A1A;
+            --gray-100: #121212;
+            --gray-200: #2A2A2A;
+            --gray-300: #3A3A3A;
+            --gray-400: #71767B;
+            --gray-500: #9CA3AF;
+            --gray-600: #D1D5DB;
+            --gray-700: #E5E7EB;
+            --gray-800: #F3F4F6;
+            --gray-900: #F5F5F5;
+            --border-color: #2F3336;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.6);
+            color-scheme: dark;
         }
 
         * {
@@ -58,11 +121,13 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background-color: var(--gray-100);
-            color: var(--gray-900);
+            background-color: var(--bg-app);
+            color: var(--text-main);
             line-height: 1.6;
             height: 100vh;
             overflow: hidden;
+            padding-top: 60px; /* Offset for fixed .top-header so .nav-bar is fully visible */
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         /* PPT-specific Gamma-style customizations */
@@ -234,6 +299,7 @@
             padding: 0 1.5rem;
             border-right: 1px solid var(--gray-200);
             height: 100%;
+            gap: 1rem;
         }
 
         .hamburger-menu {
@@ -246,25 +312,24 @@
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
-            margin-right: 1rem;
+            color: var(--gray-700);
         }
 
         .hamburger-menu:hover {
             background-color: var(--gray-100);
+            color: var(--gray-900);
         }
 
-        .logo {
+        .sidebar-logo {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            text-decoration: none;
         }
 
-        .logo-text {
-            font-size: 1.125rem;
-            font-weight: 700;
-            color: var(--primary-red);
-            letter-spacing: -0.025em;
+        .brand-logo-img {
+            height: 38px;
+            width: auto;
+            object-fit: contain;
+            display: block;
         }
 
         .header-right {
@@ -273,53 +338,64 @@
             align-items: center;
             justify-content: flex-end;
             padding: 0 1.5rem;
-            gap: 1rem;
+            gap: 0.75rem;
         }
 
-        .shoutout-logo {
+        .header-action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            justify-content: center;
+            color: var(--gray-600);
+            position: relative;
+            text-decoration: none;
+            transition: all 0.2s ease;
         }
 
-        .shoutout-text {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--secondary-blue);
+        .header-action-btn:hover {
+            background-color: var(--gray-100);
+            color: var(--gray-900);
         }
 
-        .shoutout-tagline {
-            font-size: 0.75rem;
-            color: var(--gray-500);
-            font-weight: 500;
+        .header-notification-badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background-color: var(--primary-red, #ef4444);
+            color: #ffffff;
+            border-radius: 9999px;
+            font-size: 0.625rem;
+            font-weight: 700;
+            min-width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            border: 2px solid var(--white);
         }
 
         .user-menu {
             display: flex;
             align-items: center;
-            gap: 1rem;
-        }
-
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary-red), var(--secondary-blue));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--white);
-            font-size: 0.875rem;
-            font-weight: 600;
-            cursor: pointer;
+            margin-left: 0.25rem;
+            text-decoration: none;
         }
 
         .nav-bar {
-            background-color: var(--gray-200);
-            padding: 1rem 1.5rem;
+            background-color: var(--card-surface);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem 1.5rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            position: relative;
+            z-index: 50;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .nav-left {
@@ -329,10 +405,12 @@
         }
 
         .back-button {
-            background: var(--white);
-            border: none;
+            background: var(--bg-surface);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
             cursor: pointer;
-            padding: 0.75rem;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -342,8 +420,9 @@
         }
 
         .back-button:hover {
-            background-color: var(--gray-50);
+            background-color: var(--gray-100);
             box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
         }
 
         .document-info {
@@ -354,20 +433,22 @@
 
         .document-title {
             font-size: 1rem;
-            font-weight: 600;
-            color: var(--gray-900);
+            font-weight: 700;
+            color: var(--text-main);
         }
 
         .view-only-badge {
-            background-color: var(--gray-100);
-            color: var(--gray-700);
-            padding: 0.25rem 0.75rem;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 0.2rem 0.65rem;
             border-radius: 1rem;
-            font-weight: 600;
-            font-size: 0.75rem;
-            display: flex;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            display: inline-flex;
             align-items: center;
-            gap: 0.375rem;
+            gap: 0.35rem;
+            letter-spacing: 0.04em;
         }
 
         .main-layout {
@@ -875,75 +956,198 @@
         }
 
         /* =============================================
-           THREE-MODE READING SWITCHER & WORKSPACES
+           THREE-MODE READING SWITCHER (SEGMENTED CONTROL)
            ============================================= */
         .mode-switcher-bar {
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            background: rgba(243, 244, 246, 0.85);
-            border: 1px solid var(--gray-200);
-            padding: 3px;
-            border-radius: 9999px;
-            gap: 2px;
+            background: #f1f5f9;
+            background: rgba(241, 245, 249, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 4px;
+            border-radius: 24px;
+            border: 1px solid rgba(203, 213, 225, 0.8);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04), inset 0 1px 2px rgba(255, 255, 255, 0.9);
             margin-left: auto;
-            backdrop-filter: blur(8px);
+            position: relative;
+            user-select: none;
+            gap: 3px;
+            z-index: 10;
         }
 
         .mode-tab-btn {
+            position: relative;
             display: inline-flex;
             align-items: center;
-            gap: 0.45rem;
-            padding: 0.4rem 0.95rem;
-            border-radius: 9999px;
+            gap: 0.5rem;
+            padding: 0.45rem 1rem;
+            border-radius: 20px;
             font-size: 0.8125rem;
             font-weight: 600;
-            color: var(--gray-600);
+            color: #64748b;
             background: transparent;
             border: none;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
             white-space: nowrap;
             text-decoration: none;
+            outline: none;
         }
 
         .mode-tab-btn:hover:not(.active) {
-            color: var(--gray-900);
-            background: rgba(255, 255, 255, 0.7);
+            color: #0f172a;
+            background: rgba(255, 255, 255, 0.6);
         }
 
-        .mode-tab-btn.active {
-            background: var(--white);
+        /* 1. Original Tab Active State (Calm Slate Blue) */
+        .mode-tab-btn.active.original-active,
+        .mode-tab-btn.active:not(.acquisition-active):not(.application-active) {
+            background: #ffffff;
             color: var(--secondary-blue, #2677B8);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 2px 8px rgba(38, 119, 184, 0.15), 0 1px 3px rgba(0, 0, 0, 0.04);
+            font-weight: 700;
         }
 
+        .mode-tab-btn.active.original-active i,
+        .mode-tab-btn.active:not(.acquisition-active):not(.application-active) i {
+            color: var(--secondary-blue, #2677B8);
+        }
+
+        /* 2. Acquisition Tab Active State (Glowing Warm Amber / Deep Orange) */
         .mode-tab-btn.active.acquisition-active {
-            color: var(--secondary-blue, #2677B8);
+            background: #ffffff;
+            color: #c2410c;
+            box-shadow: 0 3px 12px rgba(234, 88, 12, 0.18), 0 1px 3px rgba(0, 0, 0, 0.04);
+            font-weight: 700;
         }
 
+        .mode-tab-btn.active.acquisition-active i {
+            color: #ea580c;
+        }
+
+        /* 3. Application Tab Active State (Rewarding Emerald Green) */
         .mode-tab-btn.active.application-active {
+            background: #ffffff;
+            color: #047857;
+            box-shadow: 0 3px 12px rgba(5, 150, 105, 0.18), 0 1px 3px rgba(0, 0, 0, 0.04);
+            font-weight: 700;
+        }
+
+        .mode-tab-btn.active.application-active i {
             color: #059669;
         }
 
+        /* Micro-Copy Sub-Capsule Badges */
         .mode-sub-badge {
             font-size: 0.625rem;
-            padding: 0.12rem 0.45rem;
+            font-weight: 800;
+            padding: 0.18rem 0.5rem;
             border-radius: 9999px;
-            background: var(--gray-200);
-            color: var(--gray-700);
-            font-weight: 700;
+            background: #e2e8f0;
+            color: #64748b;
             text-transform: uppercase;
-            letter-spacing: 0.03em;
+            letter-spacing: 0.04em;
+            transition: all 0.25s ease;
+            line-height: 1;
+        }
+
+        .mode-tab-btn:not(.active) .mode-sub-badge {
+            background: #e2e8f0;
+            color: #64748b;
         }
 
         .mode-tab-btn.active.acquisition-active .mode-sub-badge {
-            background: #e0f2fe;
-            color: var(--secondary-blue, #2677B8);
+            background: #ffedd5;
+            color: #c2410c;
+            border: 1px solid #fed7aa;
         }
 
         .mode-tab-btn.active.application-active .mode-sub-badge {
             background: #d1fae5;
-            color: #059669;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+        }
+
+        /* Dark Mode Segmented Control */
+        [data-theme="dark"] .mode-switcher-bar {
+            background: rgba(30, 30, 30, 0.95);
+            border-color: rgba(60, 64, 70, 0.8);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.05);
+        }
+
+        [data-theme="dark"] .mode-tab-btn {
+            color: #9ca3af;
+        }
+
+        [data-theme="dark"] .mode-tab-btn:hover:not(.active) {
+            color: #f3f4f6;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        [data-theme="dark"] .mode-tab-btn.active.original-active,
+        [data-theme="dark"] .mode-tab-btn.active:not(.acquisition-active):not(.application-active) {
+            background: #262626;
+            color: #38bdf8;
+            box-shadow: 0 2px 10px rgba(56, 189, 248, 0.2);
+        }
+
+        [data-theme="dark"] .mode-tab-btn.active.acquisition-active {
+            background: #262626;
+            color: #fb923c;
+            box-shadow: 0 3px 12px rgba(251, 146, 60, 0.25);
+        }
+
+        [data-theme="dark"] .mode-tab-btn.active.application-active {
+            background: #262626;
+            color: #34d399;
+            box-shadow: 0 3px 12px rgba(52, 211, 153, 0.25);
+        }
+
+        [data-theme="dark"] .mode-sub-badge {
+            background: #374151;
+            color: #d1d5db;
+        }
+
+        [data-theme="dark"] .mode-tab-btn.active.acquisition-active .mode-sub-badge {
+            background: #431407;
+            color: #fdba74;
+            border: 1px solid #7c2d12;
+        }
+
+        [data-theme="dark"] .mode-tab-btn.active.application-active .mode-sub-badge {
+            background: #022c22;
+            color: #6ee7b7;
+            border: 1px solid #065f46;
+        }
+
+        /* Responsive Navbar & Segmented Control */
+        @media (max-width: 820px) {
+            .nav-bar {
+                flex-wrap: wrap;
+                gap: 0.75rem;
+                height: auto;
+                padding: 0.75rem 1rem;
+            }
+
+            .mode-switcher-bar {
+                width: 100%;
+                justify-content: space-between;
+                margin-left: 0;
+            }
+
+            .mode-tab-btn {
+                flex: 1;
+                justify-content: center;
+                padding: 0.4rem 0.5rem;
+                font-size: 0.75rem;
+                gap: 0.35rem;
+            }
+
+            .mode-sub-badge {
+                font-size: 0.5625rem;
+                padding: 0.12rem 0.35rem;
+            }
         }
 
         /* Workspaces Controller */
@@ -1244,29 +1448,89 @@
         }
 
         .app-left-pane {
-            border-right: 1px solid var(--gray-200);
+            border-right: 1px solid var(--border-color);
             height: 100%;
             overflow-y: auto;
             padding: 2rem;
-            background: var(--white);
+            background: var(--bg-surface);
         }
 
         .app-right-pane {
             height: 100%;
             overflow-y: auto;
             padding: 2rem;
-            background: var(--gray-50);
+            background: var(--bg-app);
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
         }
 
+        .app-doc-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 0.875rem;
+            padding: 1.35rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+        }
+
+        .app-card-title {
+            font-size: 0.9375rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .app-snippet-card {
+            background: #0b1120;
+            color: #e2e8f0;
+            border: 1px solid #1e293b;
+            border-radius: 0.625rem;
+            padding: 1.1rem;
+            position: relative;
+            font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+            font-size: 0.8125rem;
+            line-height: 1.65;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .app-copy-btn {
+            position: absolute;
+            top: 0.625rem;
+            right: 0.625rem;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+            padding: 0.25rem 0.6rem;
+            border-radius: 0.375rem;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .app-copy-btn:hover {
+            background: rgba(56, 189, 248, 0.3);
+            color: #38bdf8;
+        }
+
+        .app-doc-note {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-top: 1rem;
+        }
+
         .project-builder-panel {
-            background: var(--white);
-            border: 1px solid var(--gray-200);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
             border-radius: 1.25rem;
             padding: 1.75rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+            box-shadow: var(--shadow-sm);
         }
 
         .builder-heading {
@@ -1275,41 +1539,97 @@
             justify-content: space-between;
             font-size: 1.125rem;
             font-weight: 700;
-            color: #065f46;
+            color: #059669;
             margin-bottom: 1rem;
         }
 
+        .target-goal-input {
+            width: 100%;
+            background: var(--bg-surface);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 0.65rem 0.875rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        /* Actionable Implementation Steps Checklist */
         .checklist-item {
             display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid var(--gray-100);
-            font-size: 0.875rem;
-            color: var(--gray-800);
+            align-items: center;
+            gap: 0.875rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0.625rem;
+            border: 1px solid transparent;
+            margin-bottom: 0.4rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: transparent;
+        }
+
+        .checklist-item:hover {
+            background: var(--gray-100);
         }
 
         .checklist-item input[type="checkbox"] {
-            margin-top: 0.25rem;
             accent-color: #059669;
             width: 16px;
             height: 16px;
             cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .checklist-item span {
+            font-size: 0.875rem;
+            color: var(--text-main);
+            transition: all 0.2s ease;
+        }
+
+        /* Action Step Glow Border Completion Effect */
+        @keyframes border-glow-pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.4);
+                border-color: rgba(56, 189, 248, 0.8);
+            }
+            50% {
+                box-shadow: 0 0 12px 3px rgba(56, 189, 248, 0.25);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(56, 189, 248, 0);
+                border-color: rgba(63, 65, 71, 0.9);
+            }
+        }
+
+        .checklist-item.is-completed {
+            background: linear-gradient(90deg, rgba(56, 189, 248, 0.08) 0%, rgba(56, 189, 248, 0.02) 100%);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            animation: border-glow-pulse 0.8s ease-out forwards;
+        }
+
+        .checklist-item.is-completed span {
+            color: var(--text-muted);
+            text-decoration: line-through;
         }
 
         .builder-scratchpad {
             width: 100%;
             min-height: 240px;
-            border: 1px solid var(--gray-300);
+            border: 1px solid var(--border-color);
             border-radius: 0.75rem;
             padding: 1rem;
             font-family: inherit;
             font-size: 0.875rem;
             line-height: 1.6;
-            background: var(--white);
+            background: var(--bg-surface);
+            color: var(--text-main);
             box-sizing: border-box;
             resize: vertical;
             margin-top: 0.75rem;
+            outline: none;
+            transition: border-color 0.2s ease;
         }
 
         .export-blueprint-btn {
@@ -1331,6 +1651,280 @@
             background: #047857;
         }
 
+        /* Dark Mode High-Contrast & Depth Overrides */
+        [data-theme="dark"] .sidebar {
+            background: rgba(18, 18, 18, 0.75);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        [data-theme="dark"] .page-thumbnail,
+        [data-theme="dark"] .slide-thumbnail-vertical {
+            background: #1e1e1e;
+            border-color: #2f3336;
+        }
+
+        [data-theme="dark"] .page-thumbnail.active,
+        [data-theme="dark"] .slide-thumbnail-vertical.active {
+            border-color: #38bdf8;
+            background: rgba(56, 189, 248, 0.12);
+        }
+
+        [data-theme="dark"] .application-layout {
+            background-color: #121212;
+        }
+
+        [data-theme="dark"] .app-left-pane {
+            background: #121212;
+            border-right: 1px solid #2f3336;
+        }
+
+        [data-theme="dark"] .app-right-pane {
+            background: #121212;
+        }
+
+        [data-theme="dark"] .app-doc-card {
+            background: #1e1e1e;
+            border-color: #3f4147;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        [data-theme="dark"] .app-card-title {
+            color: #38bdf8; /* Desaturated high-visibility cyan */
+        }
+
+        [data-theme="dark"] .app-snippet-card {
+            background: #0b1120;
+            border-color: #273549;
+        }
+
+        [data-theme="dark"] .app-doc-note {
+            color: #e2e8f0;
+            opacity: 0.88;
+        }
+
+        [data-theme="dark"] .project-builder-panel {
+            background: #1e1e1e;
+            border-color: #3f4147;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+        }
+
+        [data-theme="dark"] .builder-heading {
+            color: #34d399;
+        }
+
+        [data-theme="dark"] .target-goal-input {
+            background: #16181c;
+            border-color: #3f4147;
+            color: #f1f5f9;
+        }
+
+        [data-theme="dark"] .target-goal-input:focus {
+            border-color: #38bdf8;
+        }
+
+        [data-theme="dark"] .checklist-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        [data-theme="dark"] .checklist-item span {
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] .checklist-item.is-completed span {
+            color: #94a3b8;
+        }
+
+        [data-theme="dark"] .builder-scratchpad {
+            background: #16181c;
+            border-color: #3f4147;
+            color: #f1f5f9;
+        }
+
+        [data-theme="dark"] .builder-scratchpad:focus {
+            border-color: #38bdf8;
+        }
+
+        /* Acquisition Dark Mode Overrides */
+        [data-theme="dark"] .acquisition-layout {
+            background-color: #121212;
+        }
+
+        [data-theme="dark"] .acquisition-sidebar {
+            background: #16181c;
+            border-color: #2f3336;
+        }
+
+        [data-theme="dark"] .acquisition-section-card {
+            background: #1e1e1e;
+            border-color: #3f4147;
+            color: #e2e8f0;
+        }
+
+        [data-theme="dark"] .acquisition-section-card h3 {
+            color: #38bdf8 !important;
+        }
+
+        [data-theme="dark"] .inquiry-focus-box {
+            background: rgba(14, 116, 144, 0.15);
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+
+        [data-theme="dark"] .inquiry-question {
+            color: #7dd3fc;
+        }
+
+        [data-theme="dark"] .glossary-matrix-section {
+            background: #1e1e1e;
+            border-color: #3f4147;
+        }
+
+        [data-theme="dark"] .glossary-card {
+            background: #16181c;
+            border-color: #2f3336;
+        }
+
+        [data-theme="dark"] .glossary-term {
+            color: #38bdf8;
+        }
+
+        [data-theme="dark"] .glossary-definition {
+            color: #cbd5e1;
+        }
+
+        [data-theme="dark"] .checkpoint-input {
+            background: #16181c;
+            border-color: #3f4147;
+            color: #f1f5f9;
+        }
+
+        /* Typography & Headers Support for Light/Dark Themes */
+        .app-pane-title {
+            font-size: 1.0625rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin: 0;
+        }
+
+        [data-theme="dark"] .app-pane-title {
+            color: #38bdf8;
+        }
+
+        .app-pane-subtitle {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+
+        [data-theme="dark"] .app-pane-subtitle {
+            color: #cbd5e1;
+        }
+
+        .blueprint-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0;
+        }
+
+        [data-theme="dark"] .blueprint-title {
+            color: #38bdf8;
+        }
+
+        .app-section-label {
+            display: block;
+            font-size: 0.6875rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.4rem;
+        }
+
+        [data-theme="dark"] .app-section-label {
+            color: #94a3b8;
+        }
+
+        .app-section-subtitle {
+            font-size: 0.8125rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        [data-theme="dark"] .app-section-subtitle {
+            color: #e2e8f0;
+        }
+
+        .app-progress-badge {
+            font-size: 0.6875rem;
+            font-weight: 700;
+            background: #e0f2fe;
+            color: #0284c7;
+            border: 1px solid #bae6fd;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        [data-theme="dark"] .app-progress-badge {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+
+        .jitl-badge {
+            background: #e0f2fe;
+            color: #0284c7;
+            font-size: 0.625rem;
+            font-weight: 800;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            letter-spacing: 0.05em;
+            border: 1px solid #bae6fd;
+            text-transform: uppercase;
+        }
+
+        [data-theme="dark"] .jitl-badge {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+
+        .export-blueprint-btn-styled {
+            background: #e0f2fe;
+            border: 1px solid #bae6fd;
+            color: #0284c7;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.4rem 0.85rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.2s ease;
+        }
+
+        .export-blueprint-btn-styled:hover {
+            background: #bae6fd;
+        }
+
+        [data-theme="dark"] .export-blueprint-btn-styled {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: rgba(56, 189, 248, 0.35);
+            color: #38bdf8;
+        }
+
+        [data-theme="dark"] .export-blueprint-btn-styled:hover {
+            background: rgba(56, 189, 248, 0.25);
+        }
+
         @media (max-width: 900px) {
             .application-layout {
                 grid-template-columns: 1fr;
@@ -1348,35 +1942,8 @@
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <div class="header">
-        <div class="header-content">
-            <div class="header-left">
-                <button class="hamburger-menu">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                    </svg>
-                </button>
-                
-                <a href="{{ route('dashboard.main') }}" class="logo">
-                    <span class="logo-text">DigiLearn</span>
-                </a>
-            </div>
-            
-            <div class="header-right">
-                <div class="shoutout-logo">
-                    <div>
-                        <div class="shoutout-text">ShoutOutGh</div>
-                        <div class="shoutout-tagline">Educating through Entertainment</div>
-                    </div>
-                </div>
-                
-                <div class="user-menu">
-                    <x-user-avatar :user="auth()->user()" :size="32" class="border-2 border-white" />
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Top Platform Header (Full working notifications, dark mode, and user dropdown) -->
+    @include('components.dashboard-header', ['logoRoute' => 'dashboard.digilearn'])
 
     <!-- Navigation Bar with 3-Mode Switcher -->
     <div class="nav-bar">
@@ -1398,7 +1965,7 @@
 
         <!-- Mode Switcher Tabs -->
         <div class="mode-switcher-bar" id="modeSwitcherBar">
-            <button class="mode-tab-btn active" data-mode="original" id="modeBtnOriginal" onclick="switchReadingMode('original')">
+            <button class="mode-tab-btn active original-active" data-mode="original" id="modeBtnOriginal" onclick="switchReadingMode('original')">
                 <i class="fas fa-file-alt"></i>
                 <span>Original</span>
             </button>
@@ -1525,10 +2092,10 @@
                     <!-- Survey Hero Banner (SQ3R Step 1) -->
                     <div class="cognitive-banner">
                         <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;">
-                            <h2 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; line-height: 1.3; margin: 0;">{{ $document['title'] ?? 'Document Guide' }}</h2>
-                            <span class="sq3r-badge" style="font-size: 0.65rem; font-weight: 800; background: #f1f5f9; color: #475569; padding: 0.2rem 0.6rem; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid #e2e8f0; white-space: nowrap;">SQ3R Cognitive Framework</span>
+                            <h2 style="font-size: 1.35rem; font-weight: 800; line-height: 1.3; margin: 0;">{{ $document['title'] ?? 'Document Guide' }}</h2>
+                            <span class="sq3r-badge" style="font-size: 0.65rem; font-weight: 800; background: var(--bg-surface); color: var(--text-muted); padding: 0.2rem 0.6rem; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid var(--border-color); white-space: nowrap;">SQ3R Cognitive Framework</span>
                         </div>
-                        <p style="font-size: 0.875rem; color: #475569; line-height: 1.6; margin-top: 0.6rem; margin-bottom: 1.25rem;">This active reading mode systematically guides your working memory through vocabulary pre-teaching, structured concept breakdowns, and real-time active recall checkpoints.</p>
+                        <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.6; margin-top: 0.6rem; margin-bottom: 1.25rem;">This active reading mode systematically guides your working memory through vocabulary pre-teaching, structured concept breakdowns, and real-time active recall checkpoints.</p>
                         <div class="sq3r-pills-row">
                             <span class="sq3r-pill"><i class="fas fa-search" style="font-size: 0.7rem; margin-right: 0.35rem;"></i> 1. Survey</span>
                             <span class="sq3r-pill"><i class="fas fa-clock" style="font-size: 0.7rem; margin-right: 0.35rem;"></i> 2. Question</span>
@@ -1542,9 +2109,9 @@
                     <div class="glossary-matrix-section">
                         <div class="section-header-title">
                             <span style="font-size: 1.125rem; font-weight: 900; color: var(--secondary-blue, #2677B8); margin-right: 0.25rem;">AZ</span>
-                            <span style="font-size: 1.0625rem; font-weight: 800; color: #0f172a;">Pre-Reading Vocabulary & Glossary Matrix</span>
+                            <span style="font-size: 1.0625rem; font-weight: 800; color: var(--text-main);">Pre-Reading Vocabulary & Glossary Matrix</span>
                         </div>
-                        <p style="font-size: 0.8125rem; color: var(--gray-500); margin-bottom: 1.25rem;">Mastering these core technical terms beforehand frees up cognitive working memory for deep concept synthesis.</p>
+                        <p style="font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 1.25rem;">Mastering these core technical terms beforehand frees up cognitive working memory for deep concept synthesis.</p>
                         <div class="glossary-grid" id="acquisitionGlossaryGrid">
                             <!-- Populated dynamically or fallback -->
                         </div>
@@ -1564,12 +2131,12 @@
         <div class="application-layout">
             <!-- Left Pane: Technical Documentation & Extracted Blocks -->
             <div class="app-left-pane">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--gray-200);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
                     <div>
-                        <h3 style="font-size: 1.0625rem; font-weight: 800; color: #0f172a;">Reference Documentation</h3>
-                        <p style="font-size: 0.8125rem; color: var(--gray-500); margin-top: 0.2rem;">Just-In-Time formulas, code blocks, and implementation guides.</p>
+                        <h3 class="app-pane-title">Reference Documentation</h3>
+                        <p class="app-pane-subtitle">Just-In-Time formulas, code blocks, and implementation guides.</p>
                     </div>
-                    <span style="background: #e0f2fe; color: #0284c7; font-size: 0.625rem; font-weight: 800; padding: 0.2rem 0.5rem; border-radius: 4px; letter-spacing: 0.05em; border: 1px solid #bae6fd; text-transform: uppercase;">JITL Framework</span>
+                    <span class="jitl-badge">JITL Framework</span>
                 </div>
                 <div id="applicationDocsContainer">
                     <!-- Dynamic code snippets, formulas, and rule blocks -->
@@ -1580,27 +2147,26 @@
             <div class="app-right-pane">
                 <!-- Project Goal & Specification -->
                 <div class="project-builder-panel">
-                    <div class="builder-heading" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
-                        <span style="font-size: 1.25rem; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 0.5rem;">
+                    <div class="builder-heading">
+                        <span class="blueprint-title">
                             <i class="fas fa-drafting-compass" style="color: var(--secondary-blue, #2677B8);"></i> Project Blueprint
                         </span>
-                        <button class="export-blueprint-btn" id="exportBlueprintBtn" onclick="exportProjectBlueprint()" style="background: #e0f2fe; border: 1px solid #bae6fd; color: #0284c7; font-size: 0.75rem; font-weight: 700; padding: 0.4rem 0.85rem; border-radius: 0.5rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                        <button class="export-blueprint-btn-styled" id="exportBlueprintBtn" onclick="exportProjectBlueprint()">
                             <i class="fas fa-download"></i> Export Blueprint (.md)
                         </button>
                     </div>
                     
                     <div style="margin-bottom: 1.25rem;">
-                        <label style="display: block; font-size: 0.6875rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem;">Target Project / Objective</label>
-                        <input type="text" id="projectGoalInput" placeholder="e.g. Building an interactive quiz app / Calculating physics simulation..." 
-                               style="width: 100%; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.625rem 0.875rem; font-size: 0.875rem; box-sizing: border-box; background: var(--white); color: var(--gray-800);"
+                        <label class="app-section-label">Target Project / Objective</label>
+                        <input type="text" id="projectGoalInput" class="target-goal-input" placeholder="e.g. Building an interactive quiz app / Calculating physics simulation..." 
                                value="Implementation Plan for {{ $document['title'] ?? 'Document' }}">
                     </div>
 
                     <!-- Implementation Checklist -->
                     <div style="margin-top: 1.25rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <span style="font-size: 0.8125rem; font-weight: 700; color: #334155;">Actionable Implementation Steps</span>
-                            <span id="checklistProgressText" style="font-size: 0.6875rem; font-weight: 700; background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 0.15rem 0.5rem; border-radius: 4px;">0/4 Done</span>
+                            <span class="app-section-subtitle">Actionable Implementation Steps</span>
+                            <span id="checklistProgressText" class="app-progress-badge">0/4 Done</span>
                         </div>
                         <div id="applicationChecklistContainer">
                             <!-- Populated with interactive checkboxes -->
@@ -1609,10 +2175,10 @@
 
                     <!-- Live Notes & Code Scratchpad -->
                     <div style="margin-top: 1.5rem;">
-                        <label style="display: block; font-size: 0.8125rem; font-weight: 700; color: #334155; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.35rem;">
-                            <i class="fas fa-edit" style="color: var(--secondary-blue, #2677B8);"></i> Project Notes & Solution Scratchpad <span style="font-weight: 400; color: var(--gray-500); font-size: 0.75rem;">(Auto-saved)</span>
+                        <label class="app-section-subtitle" style="margin-bottom: 0.4rem;">
+                            <i class="fas fa-edit" style="color: var(--secondary-blue, #2677B8);"></i> Project Notes & Solution Scratchpad <span style="font-weight: 400; color: var(--text-muted); font-size: 0.75rem;">(Auto-saved)</span>
                         </label>
-                        <textarea class="builder-scratchpad" id="projectScratchpad" placeholder="Draft your implementation notes, code snippets, database schemas, or solution design here..." style="width: 100%; min-height: 200px; border: 1px solid #cbd5e1; border-radius: 0.75rem; padding: 1rem; font-family: inherit; font-size: 0.875rem; line-height: 1.6; background: var(--white); box-sizing: border-box; resize: vertical;"></textarea>
+                        <textarea class="builder-scratchpad" id="projectScratchpad" placeholder="Draft your implementation notes, code snippets, database schemas, or solution design here..."></textarea>
                     </div>
                 </div>
             </div>
@@ -2025,9 +2591,10 @@
             const modeTabs = document.querySelectorAll('.mode-tab-btn');
             modeTabs.forEach(btn => {
                 const mode = btn.dataset.mode;
-                btn.classList.remove('active', 'acquisition-active', 'application-active');
+                btn.classList.remove('active', 'original-active', 'acquisition-active', 'application-active');
                 if (mode === targetMode) {
                     btn.classList.add('active');
+                    if (targetMode === 'original') btn.classList.add('original-active');
                     if (targetMode === 'acquisition') btn.classList.add('acquisition-active');
                     if (targetMode === 'application') btn.classList.add('application-active');
                 }
@@ -2138,20 +2705,44 @@
                         if (response.ok) {
                             const resJson = await response.json();
                             if (resJson.success && resJson.data && Array.isArray(resJson.data.sections) && resJson.data.sections.length > 0) {
+                                const enhancedSections = resJson.data.sections.map((s, idx) => ({
+                                    id: s.id || `sec-${idx + 1}`,
+                                    title: this.formatMathText(s.title),
+                                    rawTitle: s.title,
+                                    prompt: s.inquiry_focus || this.generateInquiryPrompt(s.title),
+                                    paragraphs: (Array.isArray(s.paragraphs) ? s.paragraphs : [s.paragraphs]).map(p => this.formatMathText(p)),
+                                    has_checkpoint: s.has_checkpoint !== false,
+                                    checkpoint: s.checkpoint_prompt || this.generateCheckpointPrompt(s.title)
+                                }));
+
+                                let techDocs = resJson.data.tech_rules;
+                                const localTech = this.extractTechnicalRules(fullText + ' ' + (techDocs?.formula || ''), docTitle, enhancedSections);
+                                techDocs = {
+                                    formulaRules: (techDocs && Array.isArray(techDocs.formulaRules) && techDocs.formulaRules.length > 0) 
+                                        ? techDocs.formulaRules 
+                                        : localTech.formulaRules,
+                                    formula: (techDocs && techDocs.formula && techDocs.formula.length > 10) 
+                                        ? techDocs.formula 
+                                        : localTech.formula,
+                                    code: (techDocs && techDocs.code && techDocs.code.length > 20) 
+                                        ? techDocs.code 
+                                        : localTech.code,
+                                    note: (techDocs && techDocs.note) 
+                                        ? techDocs.note 
+                                        : localTech.note
+                                };
+
                                 this.cachedData = {
                                     docTitle: resJson.data.docTitle || docTitle,
-                                    vocabulary: resJson.data.vocabulary || [],
-                                    sections: resJson.data.sections.map((s, idx) => ({
-                                        id: s.id || `sec-${idx + 1}`,
-                                        title: this.formatMathText(s.title),
-                                        rawTitle: s.title,
-                                        prompt: s.inquiry_focus || this.generateInquiryPrompt(s.title),
-                                        paragraphs: (Array.isArray(s.paragraphs) ? s.paragraphs : [s.paragraphs]).map(p => this.formatMathText(p)),
-                                        has_checkpoint: s.has_checkpoint !== false,
-                                        checkpoint: s.checkpoint_prompt || this.generateCheckpointPrompt(s.title)
-                                    })),
-                                    techDocs: resJson.data.tech_rules || { formula: '', code: '', note: '' },
-                                    checklist: resJson.data.checklist || []
+                                    vocabulary: (resJson.data.vocabulary && resJson.data.vocabulary.length > 0) ? resJson.data.vocabulary : this.extractVocabulary(fullText, docTitle, enhancedSections),
+                                    sections: enhancedSections,
+                                    techDocs: techDocs,
+                                    checklist: (resJson.data.checklist && resJson.data.checklist.length > 0) ? resJson.data.checklist : [
+                                        `Deconstruct core axioms and problem specifications in ${enhancedSections[0]?.rawTitle || 'Module 1'}`,
+                                        `Implement mathematical and computational rules from ${enhancedSections[1]?.rawTitle || 'Module 2'}`,
+                                        `Verify boundary constraints, limit behaviors, and validation test cases`,
+                                        `Compile completed solution into the project blueprint specification`
+                                    ]
                                 };
                                 this.isAnalyzing = false;
                                 return this.cachedData;
@@ -2222,12 +2813,30 @@
                 const techDocs = this.extractTechnicalRules(fullText, docTitle, enhancedSections);
 
                 // Generate Project Blueprint Checklist
-                const checklist = [
-                    `Deconstruct problem specifications and core axioms in ${enhancedSections[0]?.rawTitle || 'Module 1'}`,
-                    `Implement computational rules and key principles from ${enhancedSections[1]?.rawTitle || 'Module 2'}`,
-                    `Verify boundary constraints, limit behaviors, and validation cases`,
-                    `Compile completed solution into the project blueprint specification`
-                ];
+                const lowerCheckText = (fullText + ' ' + docTitle).toLowerCase();
+                let checklist = [];
+                if (/set\s*theory|subset|powerset|cardinality|venn|relation|function|ashlock/i.test(lowerCheckText) || /set/i.test(docTitle)) {
+                    checklist = [
+                        `Implement Set membership and subset validation algorithms`,
+                        `Build union, intersection, and relative complement utilities`,
+                        `Generate the power set P(S) with O(2^n) exponential time checks`,
+                        `Apply De Morgan's laws for relational database / query logic`
+                    ];
+                } else if (/indice|power|exponent/i.test(lowerCheckText) || /indice|power/i.test(docTitle)) {
+                    checklist = [
+                        `Master the basic notation of base and index in expressions like a^n`,
+                        `Apply the multiplication law to combine powers with identical bases`,
+                        `Utilize the division law and subtraction principle for fractional index terms`,
+                        `Evaluate zero, negative, and fractional indices accurately in problem-solving`
+                    ];
+                } else {
+                    checklist = [
+                        `Deconstruct problem specifications and core axioms in ${enhancedSections[0]?.rawTitle || 'Module 1'}`,
+                        `Implement computational rules and key principles from ${enhancedSections[1]?.rawTitle || 'Module 2'}`,
+                        `Verify boundary constraints, limit behaviors, and validation cases`,
+                        `Compile completed solution into the project blueprint specification`
+                    ];
+                }
 
                 this.cachedData = {
                     docTitle: docTitle,
@@ -2247,6 +2856,14 @@
 
                 // 1. Domain-Specific Curated Glossary Database
                 const domainKnowledgeBase = {
+                    sets: [
+                        { term: 'Set Definition', def: 'A well-defined mathematical collection of distinct objects or elements (e.g. \\( S = \\{x \\mid x > 0\\} \\)).' },
+                        { term: 'Subset Relation', def: 'A set A is a subset of B (\\( A \\subseteq B \\)) if and only if every element of A is also in B.' },
+                        { term: 'Power Set', def: 'The set of all subsets of S (\\( \\mathcal{P}(S) \\)), having cardinality \\( |\\mathcal{P}(S)| = 2^{|S|} \\).' },
+                        { term: 'Union & Intersection', def: 'Union (\\( A \\cup B \\)) pools elements together; Intersection (\\( A \\cap B \\)) contains common elements only.' },
+                        { term: "De Morgan's Laws", def: 'The complement of a union is the intersection of complements: \\( (A \\cup B)^c = A^c \\cap B^c \\).' },
+                        { term: 'Russell’s Paradox', def: 'The contradiction arising from naive set theory when defining the set of all sets that do not contain themselves.' }
+                    ],
                     indices: [
                         { term: 'Base Number', def: 'The core number or variable that is repeatedly multiplied by itself according to the index or exponent.' },
                         { term: 'Index / Exponent', def: 'The superscript power showing how many times the base number is multiplied by itself.' },
@@ -2277,7 +2894,9 @@
 
                 // Check domain matches
                 let matchedDomainTerms = null;
-                if (/indice|power|exponent|algebra|logarithm|calculus|polynomial|matrix|equation/i.test(lowerText)) {
+                if (/set\s*theory|subset|powerset|cardinality|venn|relation|function|injection|surjection|bijection|ashlock/i.test(lowerText) || /set/i.test(docTitle)) {
+                    matchedDomainTerms = domainKnowledgeBase.sets;
+                } else if (/indice|power|exponent|algebra|logarithm|calculus|polynomial|matrix|equation/i.test(lowerText)) {
                     matchedDomainTerms = domainKnowledgeBase.indices;
                 } else if (/physics|feynman|atom|mechanic|quantum|energy|gravity|velocity|force|thermo/i.test(lowerText)) {
                     matchedDomainTerms = domainKnowledgeBase.physics;
@@ -2471,39 +3090,166 @@
             },
 
             extractTechnicalRules(fullText, docTitle, sections) {
-                const mathMatches = fullText.match(/[a-zA-Z0-9_\(\)\s]+\s*=\s*[a-zA-Z0-9_\+\-\*\/\^\(\)\s\.\,\\]{3,40}/g) || [];
-                
+                const lowerText = (fullText + ' ' + docTitle).toLowerCase();
+                let formulaRules = [];
                 let formulaBlock = '';
-                if (mathMatches.length > 0) {
-                    formulaBlock = mathMatches.slice(0, 3).map((m, i) => `// Rule ${i + 1}: Equation\n${m.trim()};`).join('\n\n');
-                } else {
-                    const sec1 = sections[0]?.rawTitle || 'Primary Baseline';
-                    const sec2 = sections[1]?.rawTitle || 'Transformation Model';
-                    formulaBlock = `// Key Structural Rules for ${docTitle}\n` +
-                                   `1. ${sec1}: Constant baseline verification\n` +
-                                   `2. ${sec2}: Parameter bounds & constraints\n` +
-                                   `3. System Rule: Equilibrium & functional invariance`;
-                }
-
                 let codeBlock = '';
-                const codeMatches = fullText.match(/(?:function|def|class|SELECT|for|while)\s+[a-zA-Z0-9_]+\s*\([^\)]*\)\s*\{[^}]*\}/g);
-                if (codeMatches && codeMatches.length > 0) {
-                    codeBlock = codeMatches[0];
-                } else {
-                    const funcName = docTitle.toLowerCase().replace(/[^a-z0-9]+/g, '_').substring(0, 20) || 'execute';
-                    codeBlock = `function process_${funcName}(inputs, config = {}) {\n` +
-                                `    // Validate boundary constraints\n` +
-                                `    if (!inputs || inputs.length === 0) return null;\n` +
-                                `    \n` +
-                                `    // Execute core transformation\n` +
-                                `    return inputs.map(item => item * (config.factor || 1.0));\n` +
+                let note = '';
+
+                if (/set\s*theory|subset|powerset|cardinality|venn|relation|function|injection|surjection|bijection|ashlock/i.test(lowerText) || /set/i.test(docTitle)) {
+                    formulaRules = [
+                        { name: 'Intersection Rule', latex: 'S \\cap T = \\{x : (x \\in S) \\land (x \\in T)\\}', code: 'S \\cap T = \\{x : (x \\in S) \\land (x \\in T)\\}' },
+                        { name: 'Union Rule', latex: 'S \\cup T = \\{x : (x \\in S) \\lor (x \\in T)\\}', code: 'S \\cup T = \\{x : (x \\in S) \\lor (x \\in T)\\}' },
+                        { name: 'Complement Rule', latex: 'S^c = \\{x : (x \\in U) \\land (x \\notin S)\\}', code: 'S^c = \\{x : (x \\in U) \\land (x \\notin S)\\}' },
+                        { name: 'Set Difference', latex: 'S \\setminus T = \\{x : x \\in S \\land x \\notin T\\}', code: 'S \\setminus T = \\{x : x \\in S \\land x \\notin T\\}' },
+                        { name: 'Symmetric Difference', latex: 'S \\mathbin{\\Delta} T = (S \\setminus T) \\cup (T \\setminus S)', code: 'S \\Delta T = (S \\setminus T) \\cup (T \\setminus S)' },
+                        { name: 'Subset Criterion', latex: 'A \\subseteq B \\iff (\\forall x, x \\in A \\implies x \\in B)', code: 'A \\subseteq B \\iff (\\forall x, x \\in A \\implies x \\in B)' },
+                        { name: 'Power Set Cardinality', latex: '|\\mathcal{P}(S)| = 2^{|S|}', code: '|\\mathcal{P}(S)| = 2^{|S|}' },
+                        { name: "De Morgan's Laws", latex: '(S \\cup T)^c = S^c \\cap T^c \\quad \\text{and} \\quad (S \\cap T)^c = S^c \\cup T^c', code: '(S \\cup T)^c = S^c \\cap T^c and (S \\cap T)^c = S^c \\cup T^c' }
+                    ];
+                    formulaBlock = formulaRules.map((r, i) => `${i + 1}. ${r.name}: ${r.code};`).join('\n');
+                    codeBlock = `class SetOperations {\n` +
+                                `    // Union: S ∪ T\n` +
+                                `    static union(setS, setT) {\n` +
+                                `        return new Set([...setS, ...setT]);\n` +
+                                `    }\n\n` +
+                                `    // Intersection: S ∩ T\n` +
+                                `    static intersection(setS, setT) {\n` +
+                                `        return new Set([...setS].filter(x => setT.has(x)));\n` +
+                                `    }\n\n` +
+                                `    // Difference (Relative Complement): S \\ T\n` +
+                                `    static difference(setS, setT) {\n` +
+                                `        return new Set([...setS].filter(x => !setT.has(x)));\n` +
+                                `    }\n\n` +
+                                `    // Symmetric Difference: S Δ T\n` +
+                                `    static symmetricDifference(setS, setT) {\n` +
+                                `        const d1 = new Set([...setS].filter(x => !setT.has(x)));\n` +
+                                `        const d2 = new Set([...setT].filter(x => !setS.has(x)));\n` +
+                                `        return new Set([...d1, ...d2]);\n` +
+                                `    }\n\n` +
+                                `    // Subset Check: S ⊆ T\n` +
+                                `    static isSubset(setS, setT) {\n` +
+                                `        return [...setS].every(x => setT.has(x));\n` +
+                                `    }\n\n` +
+                                `    // Power Set: P(S) with |P(S)| = 2^|S|\n` +
+                                `    static powerSet(setS) {\n` +
+                                `        const arr = [...setS];\n` +
+                                `        return arr.reduce((subsets, val) => \n` +
+                                `            subsets.concat(subsets.map(s => [...s, val])), [[]]\n` +
+                                `        );\n` +
+                                `    }\n` +
                                 `}`;
+                    note = `Always explicitly declare or understand the universal set U before evaluating complements or determining well-defined elements.`;
+                } else if (/physics|feynman|six.easy|mechanic|gravity|gravitation|quantum|energy|kinetic|potential|velocity|force|thermo|particle/i.test(lowerText)) {
+                    formulaRules = [
+                        { name: 'Inverse Square Law of Gravitation', latex: 'F = G \\frac{m_1 m_2}{r^2}', code: 'F = G * (m_1 * m_2) / (r^2)' },
+                        { name: 'Conservation of Total Energy', latex: 'E_{\\text{total}} = KE + PE = \\text{constant}', code: 'E_{total} = KE + PE = constant' },
+                        { name: 'Kinetic Energy Formula', latex: 'KE = \\frac{1}{2} m v^2', code: 'KE = 0.5 * m * v^2' },
+                        { name: 'Gravitational Potential Energy', latex: 'PE = m g h', code: 'PE = m * g * h' },
+                        { name: "Newton's Second Law", latex: 'F = m a = \\frac{dp}{dt}', code: 'F = m * a' },
+                        { name: 'Linear Momentum Conservation', latex: 'p = m v \\implies \\sum p_i = \\sum p_f', code: 'p = m * v' }
+                    ];
+                    formulaBlock = formulaRules.map((r, i) => `${i + 1}. ${r.name}: ${r.code};`).join('\n');
+                    codeBlock = `class PhysicsMechanics {\n` +
+                                `    // Gravitational Force: F = G * (m1 * m2) / r^2\n` +
+                                `    static gravitationalForce(m1, m2, r, G = 6.67430e-11) {\n` +
+                                `        if (r <= 0) throw new Error('Distance r must be positive');\n` +
+                                `        return G * (m1 * m2) / Math.pow(r, 2);\n` +
+                                `    }\n\n` +
+                                `    // Kinetic Energy: KE = 0.5 * m * v^2\n` +
+                                `    static kineticEnergy(mass, velocity) {\n` +
+                                `        return 0.5 * mass * Math.pow(velocity, 2);\n` +
+                                `    }\n\n` +
+                                `    // Potential Energy: PE = m * g * h\n` +
+                                `    static potentialEnergy(mass, height, g = 9.80665) {\n` +
+                                `        return mass * g * height;\n` +
+                                `    }\n\n` +
+                                `    // Total Mechanical Energy: E = KE + PE\n` +
+                                `    static totalEnergy(mass, velocity, height, g = 9.80665) {\n` +
+                                `        return this.kineticEnergy(mass, velocity) + this.potentialEnergy(mass, height, g);\n` +
+                                `    }\n\n` +
+                                `    // Linear Momentum: p = m * v\n` +
+                                `    static linearMomentum(mass, velocity) {\n` +
+                                `        return mass * velocity;\n` +
+                                `    }\n` +
+                                `}`;
+                    note = `Always ensure dimensional consistency and proper unit scaling when applying classical gravitational formulas across cosmic scales.`;
+                } else if (/indice|power|exponent|algebra|root|logarithm/i.test(lowerText) || /indice|power/i.test(docTitle)) {
+                    formulaRules = [
+                        { name: 'Multiplication Rule', latex: 'a^m \\times a^n = a^{m+n}', code: 'a^m * a^n = a^(m+n)' },
+                        { name: 'Division Rule', latex: '\\frac{a^m}{a^n} = a^{m-n}', code: 'a^m / a^n = a^(m-n)' },
+                        { name: 'Power of a Power Rule', latex: '(a^m)^n = a^{m \\cdot n}', code: '(a^m)^n = a^(m*n)' },
+                        { name: 'Zero Exponent Rule', latex: 'a^0 = 1 \\quad (a \\neq 0)', code: 'a^0 = 1' },
+                        { name: 'Negative Exponent Rule', latex: 'a^{-m} = \\frac{1}{a^m}', code: 'a^(-m) = 1 / a^m' },
+                        { name: 'Fractional Exponent Rule', latex: 'a^{1/n} = \\sqrt[n]{a}', code: 'a^(1/n) = \\sqrt[n]{a}' },
+                        { name: 'Composite Fractional Rule', latex: 'a^{m/n} = (\\sqrt[n]{a})^m = \\sqrt[n]{a^m}', code: 'a^(m/n) = (nth_root(a))^m' }
+                    ];
+                    formulaBlock = formulaRules.map((r, i) => `${i + 1}. ${r.name}: ${r.code};`).join('\n');
+                    codeBlock = `class IndexAlgebra {\n` +
+                                `    // Multiplication: a^m * a^n = a^(m+n)\n` +
+                                `    static multiply(base, m, n) {\n` +
+                                `        return Math.pow(base, m + n);\n` +
+                                `    }\n\n` +
+                                `    // Division: a^m / a^n = a^(m-n)\n` +
+                                `    static divide(base, m, n) {\n` +
+                                `        if (base === 0) throw new Error('Base cannot be zero in division');\n` +
+                                `        return Math.pow(base, m - n);\n` +
+                                `    }\n\n` +
+                                `    // Power of a Power: (a^m)^n = a^(m*n)\n` +
+                                `    static powerOfPower(base, m, n) {\n` +
+                                `        return Math.pow(base, m * n);\n` +
+                                `    }\n\n` +
+                                `    // Negative Exponent: a^(-n) = 1 / a^n\n` +
+                                `    static negativePower(base, n) {\n` +
+                                `        if (base === 0) throw new Error('Base cannot be zero with negative exponent');\n` +
+                                `        return 1 / Math.pow(base, n);\n` +
+                                `    }\n\n` +
+                                `    // Fractional Root: a^(1/n) = nth_root(a)\n` +
+                                `    static nthRoot(base, n) {\n` +
+                                `        if (n === 0) throw new Error('Root index n cannot be zero');\n` +
+                                `        return Math.pow(base, 1 / n);\n` +
+                                `    }\n` +
+                                `}`;
+                    note = `Ensure that the base 'a' is not equal to zero when dealing with negative indices or denominators in division to avoid division by zero errors.`;
+                } else {
+                    const mathMatches = fullText.match(/[a-zA-Z0-9_\(\)\s]+\s*=\s*[a-zA-Z0-9_\+\-\*\/\^\(\)\s\.\,\\]{3,40}/g) || [];
+                    if (mathMatches.length > 0) {
+                        formulaRules = mathMatches.slice(0, 4).map((m, i) => ({
+                            name: `Rule ${i + 1}`,
+                            latex: m.trim(),
+                            code: m.trim()
+                        }));
+                        formulaBlock = formulaRules.map((r, i) => `// ${r.name}\n${r.code};`).join('\n\n');
+                    } else {
+                        const sec1 = sections[0]?.rawTitle || 'Primary Baseline';
+                        const sec2 = sections[1]?.rawTitle || 'Transformation Model';
+                        formulaBlock = `// Key Structural Rules for ${docTitle}\n` +
+                                       `1. ${sec1}: Constant baseline verification\n` +
+                                       `2. ${sec2}: Parameter bounds & constraints\n` +
+                                       `3. System Rule: Equilibrium & functional invariance`;
+                    }
+
+                    const codeMatches = fullText.match(/(?:function|def|class|SELECT|for|while)\s+[a-zA-Z0-9_]+\s*\([^\)]*\)\s*\{[^}]*\}/g);
+                    if (codeMatches && codeMatches.length > 0) {
+                        codeBlock = codeMatches[0];
+                    } else {
+                        const funcName = docTitle.toLowerCase().replace(/[^a-z0-9]+/g, '_').substring(0, 20) || 'execute';
+                        codeBlock = `function process_${funcName}(inputs, config = {}) {\n` +
+                                    `    // Validate boundary constraints\n` +
+                                    `    if (!inputs || inputs.length === 0) return null;\n` +
+                                    `    \n` +
+                                    `    // Execute core transformation\n` +
+                                    `    return inputs.map(item => item * (config.factor || 1.0));\n` +
+                                    `}`;
+                    }
+                    note = `When implementing these rules in a computational context, it's crucial to handle edge cases, particularly when dealing with boundary parameters for ${docTitle}.`;
                 }
 
                 return {
+                    formulaRules: formulaRules,
                     formula: formulaBlock,
                     code: codeBlock,
-                    note: `When implementing these rules in a computational context, it's crucial to handle edge cases, particularly when dealing with boundary parameters for ${docTitle}.`
+                    note: note
                 };
             }
         };
@@ -2531,7 +3277,7 @@
 
                 if (outlineList && data.sections) {
                     outlineList.innerHTML = data.sections.map((sec, idx) => `
-                        <a href="#${sec.id}" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; text-decoration: none; color: var(--gray-700); font-size: 0.8125rem; font-weight: 500; background: var(--gray-50); border: 1px solid var(--gray-200); transition: all 0.2s;">
+                        <a href="#${sec.id}" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; text-decoration: none; color: var(--text-main); font-size: 0.8125rem; font-weight: 500; background: var(--bg-surface); border: 1px solid var(--border-color); transition: all 0.2s;">
                             <i class="fas fa-check-circle" style="color: var(--secondary-blue, #2677B8); font-size: 0.75rem;"></i>
                             <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${sec.title}</span>
                         </a>
@@ -2547,8 +3293,8 @@
                         return `
                             <div class="acquisition-section-card" id="${sec.id}">
                                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem;">
-                                    <h3 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">${sec.title}</h3>
-                                    <span style="font-size: 0.6875rem; font-weight: 700; color: var(--secondary-blue, #2677B8); background: #eff6ff; border: 1px solid #bfdbfe; padding: 0.2rem 0.6rem; border-radius: 9999px;">Step ${idx + 1} of ${data.sections.length}</span>
+                                    <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin: 0;">${sec.title}</h3>
+                                    <span style="font-size: 0.6875rem; font-weight: 700; color: var(--secondary-blue, #2677B8); background: var(--bg-app); border: 1px solid var(--border-color); padding: 0.2rem 0.6rem; border-radius: 9999px;">Step ${idx + 1} of ${data.sections.length}</span>
                                 </div>
                                 
                                 <div class="inquiry-focus-box">
@@ -2561,7 +3307,7 @@
                                     </div>
                                 </div>
 
-                                <div style="display: flex; flex-direction: column; gap: 1rem; color: #334155; line-height: 1.8; font-size: 0.9375rem;">
+                                <div style="display: flex; flex-direction: column; gap: 1rem; color: var(--text-main); line-height: 1.8; font-size: 0.9375rem;">
                                     ${sec.paragraphs.map(p => `<p style="margin: 0;">${p}</p>`).join('')}
                                 </div>
 
@@ -2572,12 +3318,12 @@
                                         <i class="fas fa-brain"></i>
                                         <span>Active Recall Checkpoint</span>
                                     </div>
-                                    <p style="font-size: 0.8125rem; color: var(--gray-600); margin-bottom: 0.5rem;">${checkpointText}</p>
+                                    <p style="font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 0.5rem;">${checkpointText}</p>
                                     <textarea class="checkpoint-input" id="recall-input-${idx}" placeholder="Type your self-explanation here to test your working memory..."></textarea>
                                     <button class="checkpoint-submit-btn" onclick="submitRecallCheck(${idx})">
                                         <i class="fas fa-check" style="margin-right: 0.25rem;"></i> Check Understanding
                                     </button>
-                                    <div id="recall-feedback-${idx}" style="display: none; margin-top: 0.75rem; font-size: 0.8125rem; color: #047857; font-weight: 600;">
+                                    <div id="recall-feedback-${idx}" style="display: none; margin-top: 0.75rem; font-size: 0.8125rem; color: #059669; font-weight: 600;">
                                         <i class="fas fa-check-circle"></i> Great explanation! Concept verified and added to mastery score.
                                     </div>
                                 </div>
@@ -2597,31 +3343,43 @@
 
                 if (projectGoalInput && !projectGoalInput.dataset.modified) {
                     projectGoalInput.value = `Implementation Plan for ${data.docTitle}`;
+                    projectGoalInput.className = 'target-goal-input';
                 }
 
                 if (docsContainer && data.techDocs) {
+                    const hasFormulaCards = data.techDocs.formulaRules && data.techDocs.formulaRules.length > 0;
                     docsContainer.innerHTML = `
-                        <div style="background: var(--white); border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-                            <h4 style="font-size: 0.9375rem; font-weight: 700; color: #0f172a; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="fas fa-th" style="color: var(--secondary-blue, #2677B8);"></i> Core Formula / Rule Matrix
+                        <div class="app-doc-card">
+                            <h4 class="app-card-title">
+                                <i class="fas fa-square-root-alt" style="color: var(--secondary-blue, #38BDF8);"></i> Core Formula / Rule Matrix
                             </h4>
-                            <div class="app-snippet-card" style="background: #0f172a; color: #e2e8f0; border-radius: 0.5rem; padding: 1.1rem; position: relative; font-family: monospace; font-size: 0.8125rem; line-height: 1.6;">
-                                <button class="app-copy-btn" style="position: absolute; top: 0.5rem; right: 0.5rem; background: rgba(255,255,255,0.15); border: none; color: white; padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-size: 0.6875rem; cursor: pointer;" onclick="copySnippet(this, ${JSON.stringify(data.techDocs.formula)})">Copy</button>
+                            ${hasFormulaCards ? `
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
+                                ${data.techDocs.formulaRules.map(r => `
+                                    <div style="background: var(--bg-app); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 0.75rem 0.95rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                                        <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.35rem;">${r.name}</div>
+                                        <div style="font-size: 1.05rem; font-weight: 600; color: var(--text-main); line-height: 1.5;">\\( ${r.latex} \\)</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            ` : ''}
+                            <div class="app-snippet-card">
+                                <button class="app-copy-btn" onclick="copySnippet(this)">Copy Code</button>
                                 <pre style="margin: 0; white-space: pre-wrap; font-family: inherit;">${data.techDocs.formula}</pre>
                             </div>
                         </div>
 
-                        <div style="background: var(--white); border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-                            <h4 style="font-size: 0.9375rem; font-weight: 700; color: #0f172a; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="fas fa-code" style="color: var(--secondary-blue, #2677B8);"></i> Code Implementation Reference (JS/PHP)
+                        <div class="app-doc-card">
+                            <h4 class="app-card-title">
+                                <i class="fas fa-code" style="color: var(--secondary-blue, #38BDF8);"></i> Code Implementation Reference (JS/PHP)
                             </h4>
-                            <div class="app-snippet-card" style="background: #0f172a; color: #e2e8f0; border-radius: 0.5rem; padding: 1.1rem; position: relative; font-family: monospace; font-size: 0.8125rem; line-height: 1.6;">
-                                <button class="app-copy-btn" style="position: absolute; top: 0.5rem; right: 0.5rem; background: rgba(255,255,255,0.15); border: none; color: white; padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-size: 0.6875rem; cursor: pointer;" onclick="copySnippet(this, ${JSON.stringify(data.techDocs.code)})">Copy</button>
+                            <div class="app-snippet-card">
+                                <button class="app-copy-btn" onclick="copySnippet(this)">Copy Code</button>
                                 <pre style="margin: 0; white-space: pre-wrap; font-family: inherit;">${data.techDocs.code}</pre>
                             </div>
                         </div>
 
-                        <p style="font-size: 0.875rem; color: #475569; line-height: 1.6; margin-top: 1rem;">
+                        <p class="app-doc-note">
                             ${data.techDocs.note}
                         </p>
                     `;
@@ -2632,9 +3390,9 @@
                     checklistContainer.innerHTML = data.checklist.map((item, idx) => {
                         const isChecked = savedChecklist.includes(idx);
                         return `
-                            <label class="checklist-item" style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.65rem 0; border-bottom: 1px solid #f1f5f9; cursor: pointer;">
-                                <input type="checkbox" onchange="updateChecklistProgress()" data-idx="${idx}" ${isChecked ? 'checked' : ''} style="margin-top: 0.25rem; accent-color: var(--secondary-blue, #2677B8); width: 16px; height: 16px; cursor: pointer;">
-                                <span style="font-size: 0.875rem; color: ${isChecked ? '#64748b' : '#334155'}; font-weight: ${isChecked ? '500' : '600'}; ${isChecked ? 'text-decoration: line-through;' : ''}">${item}</span>
+                            <label class="checklist-item ${isChecked ? 'is-completed' : ''}" id="checklist-row-${idx}">
+                                <input type="checkbox" onchange="updateChecklistProgress()" data-idx="${idx}" ${isChecked ? 'checked' : ''}>
+                                <span>${item}</span>
                             </label>
                         `;
                     }).join('');
@@ -2651,15 +3409,15 @@
                 }
             }
 
-            // MathLive Render Call
-            if (typeof window.renderMathInElement === 'function') {
-                setTimeout(() => {
-                    const mainPane = document.getElementById('acquisitionMainPane');
-                    if (mainPane) window.renderMathInElement(mainPane);
-                    const appPane = document.getElementById('applicationDocsContainer');
-                    if (appPane) window.renderMathInElement(appPane);
-                }, 80);
-            }
+            // Math Rendering Call via KaTeX / MathLive
+            setTimeout(() => {
+                const mainPane = document.getElementById('acquisitionMainPane');
+                const appPane = document.getElementById('applicationDocsContainer');
+                if (window.renderMathInContainer) {
+                    if (mainPane) window.renderMathInContainer(mainPane);
+                    if (appPane) window.renderMathInContainer(appPane);
+                }
+            }, 60);
         }
 
         // Global trigger called after PDF or document loads
@@ -2697,22 +3455,20 @@
                 progressText.innerText = `${checked.length}/${checkboxes.length} Done`;
             }
             checkboxes.forEach(cb => {
-                const labelText = cb.nextElementSibling;
-                if (labelText) {
-                    if (cb.checked) {
-                        labelText.style.textDecoration = 'line-through';
-                        labelText.style.color = '#64748b';
-                    } else {
-                        labelText.style.textDecoration = 'none';
-                        labelText.style.color = '#334155';
-                    }
+                const parentRow = cb.closest('.checklist-item');
+                if (parentRow) {
+                    parentRow.classList.toggle('is-completed', cb.checked);
                 }
             });
             const checkedIndices = Array.from(checked).map(cb => parseInt(cb.dataset.idx));
             localStorage.setItem('digilearn_app_checklist_{{ $document['id'] ?? 'doc' }}', JSON.stringify(checkedIndices));
         }
 
-        function copySnippet(btn, code) {
+        function copySnippet(btn) {
+            const card = btn.closest('.app-snippet-card');
+            const pre = card ? card.querySelector('pre') : null;
+            const code = pre ? pre.innerText : '';
+            if (!code) return;
             navigator.clipboard.writeText(code).then(() => {
                 const originalText = btn.innerText;
                 btn.innerText = 'Copied!';
@@ -2746,6 +3502,14 @@
             link.click();
             document.body.removeChild(link);
         }
+
+        window.toggleViewerSidebar = function() {
+            const sidebar = document.querySelector('.sidebar') || document.querySelector('.acquisition-sidebar') || document.getElementById('acquisitionSidebar');
+            if (sidebar) {
+                const isHidden = window.getComputedStyle(sidebar).display === 'none';
+                sidebar.style.display = isHidden ? 'flex' : 'none';
+            }
+        };
 
         // Initialize mode on page load from URL or localStorage
         document.addEventListener('DOMContentLoaded', function() {

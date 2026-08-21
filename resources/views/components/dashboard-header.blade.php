@@ -919,7 +919,7 @@
             </svg>
         </button>
         <div class="sidebar-logo">
-            <a href="{{ route('home', ['show_home' => 'true']) }}">
+            <a href="{{ isset($logoRoute) ? (Route::has($logoRoute) ? route($logoRoute) : $logoRoute) : (request()->routeIs('dashboard.lesson.document.*', 'dashboard.document.*') ? route('dashboard.digilearn') : route('home', ['show_home' => 'true'])) }}">
                 <img src="{{ secure_asset('images/shoutoutgh-logo.png') }}" alt="ShoutOutGh">
             </a>
         </div>
