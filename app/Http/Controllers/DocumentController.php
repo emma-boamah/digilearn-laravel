@@ -12,6 +12,7 @@ use App\Services\SubscriptionAccessService;
 use App\Services\PdfParser;
 use App\Services\UrlObfuscator;
 use App\Services\DocumentCognitiveService;
+use App\Services\GeminiSq3rService;
 
 class DocumentController extends Controller
 {
@@ -296,29 +297,30 @@ class DocumentController extends Controller
     }
 
     /**
-     * Synthesize structured cognitive framework from document contents using AI.
+     * Synthesize structured cognitive framework from document contents using full 5-stage SQ3R AI pipeline.
      */
-    public function synthesizeCognitiveStructure(Request $request, $docId, DocumentCognitiveService $cognitiveService)
+    public function synthesizeCognitiveStructure(Request $request, $docId, GeminiSq3rService $sq3rService, DocumentCognitiveService $cognitiveService)
     {
         $document = Document::find($docId);
         if (!$document) {
             return response()->json(['success' => false, 'error' => 'Document not found'], 404);
         }
 
-        $extractedText = $request->input('extracted_text');
-        $slides = $request->input('slides', []);
-
         try {
+            $analysis = $sq3rService->processDocument($document);
+            return response()->json([
+                'success' => true,
+                'data' => $analysis
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('SQ3R pipeline fallback invoked: ' . $e->getMessage());
+            $extractedText = $request->input('extracted_text');
+            $slides = $request->input('slides', []);
             $analysis = $cognitiveService->analyzeDocumentContent($document, $extractedText, $slides);
             return response()->json([
                 'success' => true,
                 'data' => $analysis
             ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage()
-            ], 500);
         }
     }
 

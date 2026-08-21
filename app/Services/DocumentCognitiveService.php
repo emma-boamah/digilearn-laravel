@@ -21,10 +21,11 @@ class DocumentCognitiveService
 
     /**
      * Synthesize structured cognitive framework from document contents using Gemini AI.
+     * Uses hierarchical batch grasping for lengthy documents (10+ pages).
      */
     public function analyzeDocumentContent(Document $document, ?string $extractedText = null, array $slides = []): array
     {
-        $cacheKey = "doc_cognitive_v2_{$document->id}";
+        $cacheKey = "doc_cognitive_v3_{$document->id}";
 
         // Return cached analysis if available
         if (Cache::has($cacheKey)) {
@@ -34,7 +35,7 @@ class DocumentCognitiveService
             }
         }
 
-        // Build source text
+        // Build full source text
         $sourceText = $this->resolveSourceText($document, $extractedText, $slides);
 
         if (empty(trim($sourceText))) {
@@ -42,7 +43,13 @@ class DocumentCognitiveService
         }
 
         try {
-            $aiStructure = $this->callGeminiForSynthesis($document->title, $sourceText);
+            // Check if document is long (> 12,000 characters)
+            if (mb_strlen($sourceText) > 12000) {
+                $aiStructure = $this->batchGraspAndSynthesize($document->title, $sourceText);
+            } else {
+                $aiStructure = $this->callGeminiForSynthesis($document->title, $sourceText);
+            }
+
             if (!empty($aiStructure) && !empty($aiStructure['sections'])) {
                 // Cache for 7 days
                 Cache::put($cacheKey, $aiStructure, 60 * 60 * 24 * 7);
@@ -59,11 +66,11 @@ class DocumentCognitiveService
     }
 
     /**
-     * Resolve document text from client payload, PDF parsing, or slide content.
+     * Resolve document text with layout-aware PDF extraction.
      */
     private function resolveSourceText(Document $document, ?string $extractedText, array $slides): string
     {
-        if (!empty($extractedText) && strlen(trim($extractedText)) > 50) {
+        if (!empty($extractedText) && strlen(trim($extractedText)) > 80) {
             return $extractedText;
         }
 
@@ -72,19 +79,20 @@ class DocumentCognitiveService
             foreach ($slides as $idx => $s) {
                 $title = $s['title'] ?? ('Slide ' . ($idx + 1));
                 $content = is_array($s['bullets'] ?? null) ? implode("\n", $s['bullets']) : ($s['content'] ?? '');
-                $slideTexts[] = "### {$title}\n{$content}";
+                $slideTexts[] = "### Slide " . ($idx + 1) . ": {$title}\n{$content}";
             }
             return implode("\n\n", $slideTexts);
         }
 
-        // Try extracting text from storage if PDF
+        // Try extracting text from storage with layout-aware pdftotext
         $fullPath = storage_path('app/public/' . $document->file_path);
         if (file_exists($fullPath)) {
             if (function_exists('exec')) {
                 $output = [];
                 $returnVar = 0;
                 $escapedPath = escapeshellarg($fullPath);
-                @exec("pdftotext {$escapedPath} -", $output, $returnVar);
+                // -layout preserves multi-column format in academic papers
+                @exec("pdftotext -layout {$escapedPath} -", $output, $returnVar);
                 if ($returnVar === 0 && !empty($output)) {
                     return implode("\n", $output);
                 }
@@ -95,40 +103,90 @@ class DocumentCognitiveService
     }
 
     /**
-     * Call Gemini API with multiple model fallbacks.
+     * Hierarchical Multi-Stage Batch Grasping for Lengthy Documents (Map-Reduce).
      */
-    private function callGeminiForSynthesis(string $title, string $sourceText): array
+    private function batchGraspAndSynthesize(string $title, string $fullText): array
+    {
+        // 1. Split full text into logical chunks of ~10,000 characters
+        $chunkSize = 10000;
+        $chunks = [];
+        $length = mb_strlen($fullText);
+        
+        for ($i = 0; $i < $length && count($chunks) < 5; $i += $chunkSize) {
+            $chunks[] = mb_substr($fullText, $i, $chunkSize);
+        }
+
+        // 2. Stage 1: Grasp core topics and concepts from each batch
+        $batchSummaries = [];
+        foreach ($chunks as $idx => $chunk) {
+            $batchNum = $idx + 1;
+            $batchPrompt = <<<PROMPT
+You are an academic text extractor. Analyze Batch {$batchNum} of document "{$title}".
+Extract the core topics, definitions, theorems/rules, and key explanation paragraphs from this section.
+
+Source Text:
+---
+{$chunk}
+---
+
+Return concise notes summarizing:
+- Main Topics in this section
+- Key definitions and mathematical rules
+- Important explanations
+PROMPT;
+
+            try {
+                $summary = $this->callGeminiText($batchPrompt);
+                if (!empty($summary)) {
+                    $batchSummaries[] = "=== BATCH {$batchNum} SUMMARY ===\n" . $summary;
+                }
+            } catch (\Throwable $e) {
+                Log::warning("Batch {$batchNum} grasping failed: " . $e->getMessage());
+            }
+        }
+
+        // 3. Stage 2: Global Synthesis across all batch summaries
+        $aggregatedNotes = implode("\n\n", $batchSummaries);
+        if (empty(trim($aggregatedNotes))) {
+            $aggregatedNotes = mb_substr($fullText, 0, 18000);
+        }
+
+        return $this->callGeminiForSynthesis($title, $aggregatedNotes, true);
+    }
+
+    /**
+     * Call Gemini API to produce structured cognitive JSON.
+     */
+    private function callGeminiForSynthesis(string $title, string $sourceContent, bool $isAggregated = false): array
     {
         if (empty($this->geminiApiKey)) {
             throw new Exception('Gemini API key is not configured.');
         }
 
-        $truncatedText = mb_substr($sourceText, 0, 15000);
-
         $systemPrompt = <<<PROMPT
-You are a senior cognitive education scientist and curriculum expert.
-Your job is to read the source material from an academic document and transform it into a structured, pedagogically sound cognitive reading breakdown (SQ3R + Just-In-Time Learning).
+You are a senior cognitive learning scientist and curriculum educator.
+Your task is to analyze the source material from an academic document and produce a structured, high-yield cognitive reading breakdown (SQ3R + Just-In-Time Learning).
 
-Key Rules:
+Critical Rules:
 1. True Semantic Chapters:
-   - Identify the real, logically ordered chapters/sections (e.g. 3 to 7 sections based on the actual material).
-   - NEVER create fake chapters from introductory sentences or examples (e.g. "So, suppose we have", "Key Point", "Example 1").
-   - NEVER truncate titles or formulas (e.g. use "Rule 5: Negative Powers (a⁻ⁿ = 1/aⁿ)", NOT "The fifth rule: a - 1 =").
+   - Deduce the actual high-level topics (create between 4 and 8 cohesive chapters spanning the entire document).
+   - NEVER create fake chapters from sentence fragments, proof labels, or exercise tags (e.g. NEVER make "Chapter", "Then:", "Proof:", "Problems", "A B", "Key Point", "So, suppose we have" into chapter titles).
+   - Chapter titles MUST be informative, professional, and fully written (e.g. "1. Introduction & Foundations of Sets", "2. Set Operations: Union, Intersection & Complement", "3. Venn Diagrams & Subset Relations", "4. The Well-Ordering Principle & Mathematical Induction").
 2. Selective Active Recall Checkpoints:
-   - "has_checkpoint": Set to true ONLY if this section contains a core testable rule, theorem, or mechanism. Set to false for introductory overviews or summary notes.
+   - "has_checkpoint": Set to true ONLY on sections containing core testable rules, definitions, or mechanisms. Set to false for introductory overviews and background notes.
    - "checkpoint_prompt": If has_checkpoint is true, craft a targeted question testing the specific concept of that section. If false, set to null.
 3. Math Formatting:
-   - Use standard LaTeX notation (e.g. \\( a^m \\times a^n = a^{m+n} \\), \\( \\frac{a^m}{a^n} = a^{m-n} \\), \\( a^0 = 1 \\)).
+   - Format all mathematical expressions in standard LaTeX (e.g. \\( A \\cup B \\), \\( A \\cap B \\), \\( a^m \\times a^n = a^{m+n} \\)).
 4. Pure JSON Output:
-   - Output MUST be valid JSON only. Do not include markdown code block ticks (` ```json `).
+   - Output MUST be valid JSON only without markdown formatting ticks.
 PROMPT;
 
         $userPrompt = <<<PROMPT
 Document Title: {$title}
 
-Source Content:
+Source Material:
 ---
-{$truncatedText}
+{$sourceContent}
 ---
 
 Generate the JSON conforming exactly to this structure:
@@ -189,25 +247,25 @@ PROMPT;
         foreach ($modelsToTry as $modelName) {
             $url = "https://generativelanguage.googleapis.com/v1beta/models/{$modelName}:generateContent?key={$this->geminiApiKey}";
             try {
-                $response = Http::timeout(45)
-			->withOptions([
-				'curl' => [
-					CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4 // Force IPv4 to fix location block
-				]
-			])
-			->post($url, [
-                    'systemInstruction' => [
-                        'parts' => [['text' => $systemPrompt]]
-                    ],
-                    'contents' => [
-                        ['role' => 'user', 'parts' => [['text' => $userPrompt]]]
-                    ],
-                    'generationConfig' => [
-                        'temperature' => 0.2,
-                        'maxOutputTokens' => 4096,
-                        'responseMimeType' => 'application/json'
-                    ],
-                ]);
+                $response = Http::timeout(60)
+                    ->withOptions([
+                        'curl' => [
+                            CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4
+                        ]
+                    ])
+                    ->post($url, [
+                        'systemInstruction' => [
+                            'parts' => [['text' => $systemPrompt]]
+                        ],
+                        'contents' => [
+                            ['role' => 'user', 'parts' => [['text' => $userPrompt]]]
+                        ],
+                        'generationConfig' => [
+                            'temperature' => 0.2,
+                            'maxOutputTokens' => 4096,
+                            'responseMimeType' => 'application/json'
+                        ],
+                    ]);
 
                 if ($response->successful()) {
                     $json = $response->json();
@@ -220,11 +278,41 @@ PROMPT;
                     }
                 }
             } catch (\Throwable $ex) {
-                Log::warning("Gemini model {$modelName} failed during cognitive synthesis: " . $ex->getMessage());
+                Log::warning("Gemini model {$modelName} failed: " . $ex->getMessage());
             }
         }
 
         throw new Exception('All Gemini models failed to produce structured cognitive output.');
+    }
+
+    /**
+     * Helper to call Gemini for raw text extraction.
+     */
+    private function callGeminiText(string $prompt): string
+    {
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={$this->geminiApiKey}";
+        $response = Http::timeout(40)
+            ->withOptions([
+                'curl' => [
+                    CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4
+                ]
+            ])
+            ->post($url, [
+                'contents' => [
+                    ['role' => 'user', 'parts' => [['text' => $prompt]]]
+                ],
+                'generationConfig' => [
+                    'temperature' => 0.2,
+                    'maxOutputTokens' => 1500,
+                ],
+            ]);
+
+        if ($response->successful()) {
+            $json = $response->json();
+            return $json['candidates'][0]['content']['parts'][0]['text'] ?? '';
+        }
+
+        return '';
     }
 
     /**
