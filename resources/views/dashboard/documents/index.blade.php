@@ -88,5 +88,65 @@
 
     @include('dashboard.quiz.partials.scripts')
     @include('components.search-autocomplete')
+
+    <!-- Library Smart Hover & Background Pre-fetching Script -->
+    <script>
+        (function() {
+            const prefetchedDocs = new Set();
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            function prefetchDoc(docId) {
+                if (!docId || prefetchedDocs.has(docId)) return;
+                prefetchedDocs.add(docId);
+
+                // If already in browser local storage, no network needed
+                if (localStorage.getItem('digilearn_doc_cognitive_' + docId)) return;
+
+                // Fire background pre-fetch to warm DB and local cache
+                fetch('/dashboard/document/' + docId + '/synthesize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(res => res.json())
+                .then(resJson => {
+                    if (resJson.success && resJson.data) {
+                        try {
+                            localStorage.setItem('digilearn_doc_cognitive_' + docId, JSON.stringify(resJson.data));
+                        } catch(e) {}
+                    }
+                })
+                .catch(() => {});
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                const cards = document.querySelectorAll('.document-card[data-doc-id]');
+                
+                cards.forEach(card => {
+                    const docId = card.getAttribute('data-doc-id');
+                    if (!docId) return;
+
+                    // Prefetch on mouse hover
+                    card.addEventListener('mouseenter', () => prefetchDoc(docId), { passive: true });
+                    // Prefetch on mobile touchstart
+                    card.addEventListener('touchstart', () => prefetchDoc(docId), { passive: true });
+                    // Prefetch on link focus
+                    card.addEventListener('focusin', () => prefetchDoc(docId), { passive: true });
+                });
+
+                // Pre-warm the first 2 featured cards immediately in the background
+                if (cards.length > 0) {
+                    setTimeout(() => {
+                        const firstId = cards[0]?.getAttribute('data-doc-id');
+                        if (firstId) prefetchDoc(firstId);
+                    }, 1200);
+                }
+            });
+        })();
+    </script>
 </body>
 </html>

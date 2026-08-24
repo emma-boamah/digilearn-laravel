@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Document;
+use App\Models\Sq3rAnalysis;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -21,18 +22,31 @@ class DocumentCognitiveService
 
     /**
      * Synthesize structured cognitive framework from document contents using Gemini AI.
-     * Uses hierarchical batch grasping for lengthy documents (10+ pages).
+     * Uses hierarchical batch grasping for lengthy documents (10+ pages) and persists to DB.
      */
     public function analyzeDocumentContent(Document $document, ?string $extractedText = null, array $slides = []): array
     {
         $cacheKey = "doc_cognitive_v3_{$document->id}";
 
-        // Return cached analysis if available
+        // 1. Return in-memory cached analysis if available (<1ms)
         if (Cache::has($cacheKey)) {
             $cached = Cache::get($cacheKey);
             if (!empty($cached) && !empty($cached['sections'])) {
                 return $cached;
             }
+        }
+
+        // 2. Return database persisted analysis if available (0 Gemini calls)
+        try {
+            $dbAnalysis = Sq3rAnalysis::where('document_id', $document->id)
+                ->where('status', 'completed')
+                ->first();
+            if ($dbAnalysis && !empty($dbAnalysis->structured_payload) && !empty($dbAnalysis->structured_payload['sections'])) {
+                Cache::put($cacheKey, $dbAnalysis->structured_payload, 60 * 60 * 24 * 7);
+                return $dbAnalysis->structured_payload;
+            }
+        } catch (\Throwable $dbEx) {
+            Log::warning('DocumentCognitiveService: Sq3rAnalysis query notice: ' . $dbEx->getMessage());
         }
 
         // Build full source text
@@ -51,6 +65,20 @@ class DocumentCognitiveService
             }
 
             if (!empty($aiStructure) && !empty($aiStructure['sections'])) {
+                // 3. Persist to Database table sq3r_analyses
+                try {
+                    Sq3rAnalysis::updateOrCreate(
+                        ['document_id' => $document->id],
+                        [
+                            'file_path' => $document->file_path,
+                            'status' => 'completed',
+                            'structured_payload' => $aiStructure,
+                        ]
+                    );
+                } catch (\Throwable $saveEx) {
+                    Log::warning('DocumentCognitiveService: Sq3rAnalysis save notice: ' . $saveEx->getMessage());
+                }
+
                 // Cache for 7 days
                 Cache::put($cacheKey, $aiStructure, 60 * 60 * 24 * 7);
                 return $aiStructure;
@@ -62,7 +90,22 @@ class DocumentCognitiveService
             ]);
         }
 
-        return $this->generateFallbackStructure($document, $sourceText);
+        $fallback = $this->generateFallbackStructure($document, $sourceText);
+        
+        // Save fallback to DB so repeated queries do not re-trigger failures
+        try {
+            Sq3rAnalysis::updateOrCreate(
+                ['document_id' => $document->id],
+                [
+                    'file_path' => $document->file_path,
+                    'status' => 'completed',
+                    'structured_payload' => $fallback,
+                ]
+            );
+        } catch (\Throwable $ex) {}
+
+        Cache::put($cacheKey, $fallback, 60 * 60 * 24 * 7);
+        return $fallback;
     }
 
     /**

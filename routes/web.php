@@ -384,6 +384,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/dashboard/documents', [DocumentController::class, 'index'])->name('dashboard.documents');
             Route::get('/dashboard/library/document/{docId}', [DocumentController::class, 'openLibraryDocument'])->name('dashboard.library.document');
             Route::post('/dashboard/document/{docId}/synthesize', [DocumentController::class, 'synthesizeCognitiveStructure'])->name('dashboard.document.synthesize');
+            Route::post('/dashboard/document/evaluate-recall', [DocumentController::class, 'evaluateRecallCheck'])->name('dashboard.document.evaluate-recall');
 
             // Lessons
             Route::middleware(['decode.obfuscated'])->group(

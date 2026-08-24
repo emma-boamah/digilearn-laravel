@@ -211,6 +211,8 @@ class TutorContentController extends Controller
             'tutor_id' => $user->id,
         ]);
 
+        \App\Jobs\ProcessDocumentSq3rJob::dispatch($document->id);
+
         return back()->with('success', "Document \"{$document->title}\" uploaded successfully.");
     }
 
