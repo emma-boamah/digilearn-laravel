@@ -175,9 +175,19 @@ PROMPT;
             return $payload;
 
         } catch (Exception $e) {
-            Log::error('GeminiSq3rService failed: ' . $e->getMessage(), [
+            Log::warning('GeminiSq3rService multi-stage pipeline notice: ' . $e->getMessage() . ' - invoking Batch Grasping Cognitive Service.', [
                 'doc_id' => $document->id
             ]);
+
+            try {
+                $cognitiveService = app(DocumentCognitiveService::class);
+                $batchResult = $cognitiveService->analyzeDocumentContent($document, $extractedText);
+                if (!empty($batchResult) && !empty($batchResult['sections'])) {
+                    return $batchResult;
+                }
+            } catch (\Throwable $cogEx) {
+                Log::warning('DocumentCognitiveService secondary fallback notice: ' . $cogEx->getMessage());
+            }
 
             $analysis->status = 'failed';
             $analysis->error_message = $e->getMessage();

@@ -2634,10 +2634,28 @@
                 if (this.cachedData) return this.cachedData;
                 this.isAnalyzing = true;
 
-                let rawSections = [];
-                let fullText = '';
                 const docTitle = (window.docMeta && window.docMeta.title) ? window.docMeta.title : 'Document';
                 const docId = '{{ $document['id'] ?? '' }}';
+
+                // 1. Instant local storage cache check (<1ms)
+                if (docId) {
+                    try {
+                        const localCache = localStorage.getItem('digilearn_doc_cognitive_' + docId);
+                        if (localCache) {
+                            const parsed = JSON.parse(localCache);
+                            if (parsed && Array.isArray(parsed.sections) && parsed.sections.length > 0) {
+                                this.cachedData = parsed;
+                                this.isAnalyzing = false;
+                                return this.cachedData;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Local storage cognitive cache read notice:', e);
+                    }
+                }
+
+                let rawSections = [];
+                let fullText = '';
 
                 // Extract Text from presentation or PDF
                 if (window.docType === 'ppt' && window.docMeta && Array.isArray(window.docMeta.slides) && window.docMeta.slides.length > 0) {
@@ -2685,7 +2703,7 @@
                     }
                 }
 
-                // 1. Try Backend AI Synthesis (Gemini AI for deep comprehension)
+                // 2. Try Backend AI Synthesis (Gemini AI for deep comprehension / DB cached)
                 if (docId) {
                     try {
                         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -2744,6 +2762,12 @@
                                         `Compile completed solution into the project blueprint specification`
                                     ]
                                 };
+
+                                // Save to localStorage for instant future loads
+                                try {
+                                    localStorage.setItem('digilearn_doc_cognitive_' + docId, JSON.stringify(this.cachedData));
+                                } catch(lsEx) {}
+
                                 this.isAnalyzing = false;
                                 return this.cachedData;
                             }
@@ -3313,19 +3337,17 @@
 
                                 ${showCheckpoint ? `
                                 <!-- Retrieval Checkpoint Box (SQ3R Recite Step) -->
-                                <div class="retrieval-checkpoint-box">
+                                <div class="retrieval-checkpoint-box" data-question="${checkpointText.replace(/"/g, '&quot;')}" data-section="${(sec.rawTitle || sec.title).replace(/"/g, '&quot;')}">
                                     <div class="checkpoint-title">
                                         <i class="fas fa-brain"></i>
                                         <span>Active Recall Checkpoint</span>
                                     </div>
                                     <p style="font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 0.5rem;">${checkpointText}</p>
                                     <textarea class="checkpoint-input" id="recall-input-${idx}" placeholder="Type your self-explanation here to test your working memory..."></textarea>
-                                    <button class="checkpoint-submit-btn" onclick="submitRecallCheck(${idx})">
+                                    <button class="checkpoint-submit-btn" id="recall-btn-${idx}" onclick="submitRecallCheck(${idx})">
                                         <i class="fas fa-check" style="margin-right: 0.25rem;"></i> Check Understanding
                                     </button>
-                                    <div id="recall-feedback-${idx}" style="display: none; margin-top: 0.75rem; font-size: 0.8125rem; color: #059669; font-weight: 600;">
-                                        <i class="fas fa-check-circle"></i> Great explanation! Concept verified and added to mastery score.
-                                    </div>
+                                    <div id="recall-feedback-${idx}" style="display: none; margin-top: 0.75rem;"></div>
                                 </div>
                                 ` : ''}
                             </div>
@@ -3428,22 +3450,170 @@
             }
         };
 
-        // Active Recall submission score counter
+        // Active Recall — freeCodeCamp-style progressive hint system
         let answeredRecallChecks = 0;
-        function submitRecallCheck(index) {
+        const recallAttempts = {};  // Track attempts per checkpoint index
+        const totalCheckpoints = () => document.querySelectorAll('.retrieval-checkpoint-box').length || 3;
+
+        async function submitRecallCheck(index) {
             const input = document.getElementById(`recall-input-${index}`);
             const feedback = document.getElementById(`recall-feedback-${index}`);
-            if (input && input.value.trim().length > 3) {
-                if (feedback) feedback.style.display = 'block';
-                input.disabled = true;
-                answeredRecallChecks = Math.min(3, answeredRecallChecks + 1);
-                const score = Math.round((answeredRecallChecks / 3) * 100);
-                const progressBar = document.getElementById('acquisitionProgressBar');
-                const progressScore = document.getElementById('acquisitionProgressScore');
-                if (progressBar) progressBar.style.width = `${score}%`;
-                if (progressScore) progressScore.innerText = `${score}%`;
-            } else {
+            const btn = document.getElementById(`recall-btn-${index}`);
+            const box = input ? input.closest('.retrieval-checkpoint-box') : null;
+
+            if (!input || input.value.trim().length < 4) {
                 alert('Please type a brief explanation or summary before submitting.');
+                return;
+            }
+
+            // Track attempt count for this specific checkpoint
+            if (!recallAttempts[index]) recallAttempts[index] = 0;
+            recallAttempts[index]++;
+            const attempt = recallAttempts[index];
+
+            const answer = input.value.trim();
+            const question = box ? (box.dataset.question || '') : '';
+            const sectionTitle = box ? (box.dataset.section || '') : '';
+            const docTitle = document.querySelector('.document-title')?.innerText || document.title || '';
+
+            // Show loading state
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:0.25rem;"></i> Checking...';
+            }
+            input.disabled = true;
+
+            if (feedback) {
+                feedback.style.display = 'block';
+                feedback.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:0.5rem;padding:0.6rem 0.75rem;border-radius:0.5rem;background:var(--bg-surface);border:1px solid var(--border-color);">
+                        <i class="fas fa-spinner fa-spin" style="color:var(--secondary-blue,#38BDF8);font-size:0.8rem;"></i>
+                        <span style="font-size:0.8rem;color:var(--text-muted);">Checking your understanding...</span>
+                    </div>`;
+            }
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const response = await fetch('/dashboard/document/evaluate-recall', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        question: question,
+                        answer: answer,
+                        attempt: attempt,
+                        doc_title: docTitle,
+                        section_title: sectionTitle
+                    })
+                });
+
+                const resJson = await response.json();
+
+                if (resJson.success && resJson.data) {
+                    const d = resJson.data;
+                    const isCorrect = d.is_correct;
+                    const message = d.message || '';
+
+                    if (isCorrect) {
+                        // ✅ CORRECT — show encouragement, lock the checkpoint
+                        if (feedback) {
+                            feedback.innerHTML = `
+                                <div style="display:flex;align-items:flex-start;gap:0.6rem;padding:0.75rem;border-radius:0.5rem;background:rgba(5,150,105,0.08);border:1px solid rgba(5,150,105,0.2);">
+                                    <i class="fas fa-check-circle" style="color:#059669;font-size:1.1rem;margin-top:0.1rem;flex-shrink:0;"></i>
+                                    <div>
+                                        <div style="font-weight:700;font-size:0.8125rem;color:#059669;margin-bottom:0.2rem;">You got it!</div>
+                                        <p style="font-size:0.8rem;color:var(--text-main);line-height:1.55;margin:0;">${message}</p>
+                                    </div>
+                                </div>`;
+                        }
+                        if (btn) {
+                            btn.innerHTML = '<i class="fas fa-check" style="margin-right:0.25rem;"></i> Completed';
+                            btn.disabled = true;
+                            btn.style.opacity = '0.6';
+                        }
+                        input.disabled = true;
+
+                        // Update mastery progress
+                        answeredRecallChecks = Math.min(totalCheckpoints(), answeredRecallChecks + 1);
+                        const mastery = Math.round((answeredRecallChecks / totalCheckpoints()) * 100);
+                        const progressBar = document.getElementById('acquisitionProgressBar');
+                        const progressScore = document.getElementById('acquisitionProgressScore');
+                        if (progressBar) progressBar.style.width = `${Math.min(mastery, 100)}%`;
+                        if (progressScore) progressScore.innerText = `${Math.min(mastery, 100)}%`;
+
+                    } else {
+                        // ❌ INCORRECT — show progressive hint
+                        let icon, iconColor, headerText, bgColor, borderColor;
+
+                        if (attempt <= 1) {
+                            icon = 'fa-lightbulb'; iconColor = '#D97706'; headerText = 'Not quite — here\'s a hint';
+                            bgColor = 'rgba(217,119,6,0.06)'; borderColor = 'rgba(217,119,6,0.2)';
+                        } else if (attempt === 2) {
+                            icon = 'fa-search'; iconColor = '#2677B8'; headerText = 'Getting closer — think about this';
+                            bgColor = 'rgba(38,119,184,0.06)'; borderColor = 'rgba(38,119,184,0.2)';
+                        } else {
+                            icon = 'fa-book-open'; iconColor = '#7C3AED'; headerText = 'Here\'s how it works';
+                            bgColor = 'rgba(124,58,237,0.06)'; borderColor = 'rgba(124,58,237,0.2)';
+                        }
+
+                        if (feedback) {
+                            feedback.innerHTML = `
+                                <div style="display:flex;align-items:flex-start;gap:0.6rem;padding:0.75rem;border-radius:0.5rem;background:${bgColor};border:1px solid ${borderColor};">
+                                    <i class="fas ${icon}" style="color:${iconColor};font-size:1.1rem;margin-top:0.1rem;flex-shrink:0;"></i>
+                                    <div>
+                                        <div style="font-weight:700;font-size:0.8125rem;color:${iconColor};margin-bottom:0.2rem;">${headerText}</div>
+                                        <p style="font-size:0.8rem;color:var(--text-main);line-height:1.55;margin:0;">${message}</p>
+                                    </div>
+                                </div>`;
+                        }
+
+                        // Re-enable for retry
+                        input.disabled = false;
+                        input.focus();
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-redo" style="margin-right:0.25rem;"></i> Try Again';
+                        }
+
+                        // After 3+ failed attempts, also count it as progressed (they saw the explanation)
+                        if (attempt >= 3) {
+                            answeredRecallChecks = Math.min(totalCheckpoints(), answeredRecallChecks + 1);
+                            const mastery = Math.round((answeredRecallChecks / totalCheckpoints()) * 100);
+                            const progressBar = document.getElementById('acquisitionProgressBar');
+                            const progressScore = document.getElementById('acquisitionProgressScore');
+                            if (progressBar) progressBar.style.width = `${Math.min(mastery, 100)}%`;
+                            if (progressScore) progressScore.innerText = `${Math.min(mastery, 100)}%`;
+
+                            // Let them move on but keep trying if they want
+                            if (btn) {
+                                btn.innerHTML = '<i class="fas fa-redo" style="margin-right:0.25rem;"></i> Try Again';
+                            }
+                        }
+                    }
+                } else {
+                    throw new Error(resJson.error || 'Evaluation failed');
+                }
+
+            } catch (err) {
+                console.warn('Recall evaluation error:', err);
+                if (feedback) {
+                    feedback.innerHTML = `
+                        <div style="display:flex;align-items:flex-start;gap:0.6rem;padding:0.75rem;border-radius:0.5rem;background:var(--bg-surface);border:1px solid var(--border-color);">
+                            <i class="fas fa-info-circle" style="color:#D97706;font-size:1rem;margin-top:0.1rem;flex-shrink:0;"></i>
+                            <div>
+                                <p style="font-size:0.8rem;color:var(--text-main);margin:0 0 0.25rem 0;">Couldn't reach the AI tutor right now.</p>
+                                <p style="font-size:0.775rem;color:var(--text-muted);margin:0;">Review the section above and compare with your answer to self-check.</p>
+                            </div>
+                        </div>`;
+                }
+                input.disabled = false;
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-redo" style="margin-right:0.25rem;"></i> Retry';
+                }
             }
         }
 

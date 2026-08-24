@@ -1,7 +1,6 @@
 @php
     $formatClass = strtolower($doc->resolved_format ?? 'pdf');
     $isPpt = in_array($formatClass, ['ppt', 'pptx']);
-    $actionLabel = $isPpt ? 'View Slides' : 'Open Document';
     $icon = $isPpt ? 'fa-chart-bar' : 'fa-clock';
     $coverImage = $doc->cover_image_url ?? null;
     $subjectName = $doc->resolved_subject ?? 'General Study';
@@ -9,9 +8,9 @@
     $docTargetUrl = route('dashboard.library.document', $doc->id);
 @endphp
 
-<div class="document-card">
+<a href="{{ $docTargetUrl }}" class="document-card" data-doc-id="{{ $doc->id }}" aria-label="{{ $doc->title }}">
     <!-- Left Column: Document Cover Thumbnail Frame -->
-    <a href="{{ $docTargetUrl }}" class="document-cover-frame" aria-label="{{ $doc->title }}">
+    <div class="document-cover-frame">
         @if(!empty($coverImage))
             <img src="{{ $coverImage }}" 
                  alt="{{ $doc->title }}" 
@@ -30,26 +29,29 @@
                 <span class="cover-fallback-title">{{ Str::limit($doc->title, 35) }}</span>
             </div>
         @endif
-    </a>
+    </div>
 
-    <!-- Right Column: Text Content & Actions -->
+    <!-- Right Column: Text Content & Metadata -->
     <div class="document-card-body">
         <div>
-            <!-- Top Meta Row (Format pill + File size) -->
+            <!-- Top Meta Row (Format pill + File size + Subtle arrow) -->
             <div class="document-card-top">
-                <span class="doc-format-pill {{ $formatClass }}">
-                    {{ $doc->resolved_format ?? 'PDF' }}
-                </span>
-                <span class="doc-file-size">
-                    {{ $doc->formatted_size ?? 'N/A' }}
-                </span>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="doc-format-pill {{ $formatClass }}">
+                        {{ $doc->resolved_format ?? 'PDF' }}
+                    </span>
+                    <span class="doc-file-size">
+                        {{ $doc->formatted_size ?? 'N/A' }}
+                    </span>
+                </div>
+                <div class="doc-card-arrow">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
             </div>
 
             <!-- Document Title -->
             <h3 class="document-card-title" title="{{ $doc->title }}">
-                <a href="{{ $docTargetUrl }}">
-                    {{ $doc->title }}
-                </a>
+                {{ $doc->title }}
             </h3>
 
             <!-- Tags Row (Grade / Subject) -->
@@ -65,18 +67,12 @@
                     </span>
                 @endif
             </div>
-
-            <!-- Meta Row (Pages / Slides) -->
-            <div class="document-meta-row">
-                <i class="fas {{ $icon }}"></i>
-                <span>{{ $doc->meta_count }} {{ $doc->meta_count_label }}</span>
-            </div>
         </div>
 
-        <!-- Action Button -->
-        <a href="{{ $docTargetUrl }}" class="doc-action-btn">
-            <i class="fas fa-play"></i>
-            <span>{{ $actionLabel }}</span>
-        </a>
+        <!-- Bottom Meta Row (Pages / Slides) -->
+        <div class="document-meta-row" style="margin-bottom: 0;">
+            <i class="fas {{ $icon }}"></i>
+            <span>{{ $doc->meta_count }} {{ $doc->meta_count_label }}</span>
+        </div>
     </div>
-</div>
+</a>

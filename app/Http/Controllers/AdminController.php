@@ -3193,7 +3193,7 @@ class AdminController extends Controller
 
         $filePath = $request->file('document_file')->store('documents', 'public');
 
-        Document::create([
+        $document = Document::create([
             'title' => $request->title,
             'file_path' => $filePath,
             'grade_level' => $request->grade_level,
@@ -3201,6 +3201,8 @@ class AdminController extends Controller
             'uploaded_by' => Auth::id(),
             'is_featured' => $request->has('is_featured'),
         ]);
+
+        \App\Jobs\ProcessDocumentSq3rJob::dispatch($document->id);
 
         $this->notificationService->notifyNewDocument($document);
 
