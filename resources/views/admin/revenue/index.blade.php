@@ -986,103 +986,104 @@
                 </div>
             </div>
         </div>
+        @endif
     </div>
 </div>
 
 <!-- Transaction Details Modal -->
-<div id="paymentDetailsModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closePaymentModal()"></div>
-        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-        <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-100">
-            <div class="bg-gradient-to-r from-gray-50 to-white px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg shadow-sm">
-                        <i class="fas fa-receipt"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-base font-bold text-gray-900">Transaction Details</h3>
-                        <p class="text-xs text-gray-500 font-mono" id="modalRefText">PAY-xxxx</p>
-                    </div>
+<div id="paymentDetailsModal" class="fixed inset-0 z-50 overflow-y-auto hidden items-center justify-center p-4" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <!-- Backdrop: Translucent so revenue page remains clearly visible -->
+    <div class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity" onclick="closePaymentModal()"></div>
+    
+    <!-- Modal Card -->
+    <div class="relative bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all w-full max-w-lg border border-gray-100 z-10 my-8">
+        <div class="bg-gradient-to-r from-gray-50 to-white px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg shadow-sm">
+                    <i class="fas fa-receipt"></i>
                 </div>
-                <button type="button" onclick="closePaymentModal()" class="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-                    <i class="fas fa-times text-base"></i>
-                </button>
+                <div>
+                    <h3 class="text-base font-bold text-gray-900">Transaction Details</h3>
+                    <p class="text-xs text-gray-500 font-mono" id="modalRefText">PAY-xxxx</p>
+                </div>
             </div>
-            
-            <div class="p-6 space-y-4">
-                <!-- Status & Gateway Response Banner -->
-                <div id="modalStatusBanner" class="p-4 rounded-xl border flex items-start space-x-3">
-                    <div id="modalStatusIcon" class="mt-0.5 text-lg"></div>
-                    <div class="flex-1">
-                        <div class="flex items-center justify-between">
-                            <span id="modalStatusBadge" class="font-bold text-sm"></span>
-                            <span id="modalSyncBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800"><i class="fas fa-check-double mr-1"></i>Synced via Paystack</span>
-                        </div>
-                        <p id="modalGatewayResponse" class="text-xs mt-1 font-medium"></p>
-                    </div>
-                </div>
-
-                <!-- Customer Details -->
-                <div class="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-2">
-                    <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Customer</div>
+            <button type="button" onclick="closePaymentModal()" class="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                <i class="fas fa-times text-base"></i>
+            </button>
+        </div>
+        
+        <div class="p-6 space-y-4">
+            <!-- Status & Gateway Response Banner -->
+            <div id="modalStatusBanner" class="p-4 rounded-xl border flex items-start space-x-3">
+                <div id="modalStatusIcon" class="mt-0.5 text-lg"></div>
+                <div class="flex-1">
                     <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-bold text-gray-900" id="modalUserName"></p>
-                            <p class="text-xs text-gray-500" id="modalUserEmail"></p>
-                            <p class="text-xs text-gray-500" id="modalUserPhone"></p>
-                        </div>
-                        <a id="modalUserLink" href="#" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100 transition-colors">
-                            <i class="fas fa-user mr-1.5"></i> Profile
-                        </a>
+                        <span id="modalStatusBadge" class="font-bold text-sm"></span>
+                        <span id="modalSyncBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800"><i class="fas fa-check-double mr-1"></i>Synced via Paystack</span>
                     </div>
-                </div>
-
-                <!-- Payment Info Grid -->
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                        <span class="text-xs text-gray-500 font-medium">Plan & Duration</span>
-                        <p class="text-sm font-bold text-gray-900 mt-0.5" id="modalPlanName"></p>
-                        <span class="text-xs text-gray-500 font-medium" id="modalDuration"></span>
-                    </div>
-                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                        <span class="text-xs text-gray-500 font-medium">Amount & Provider</span>
-                        <p class="text-sm font-bold text-gray-900 mt-0.5" id="modalAmount"></p>
-                        <span class="text-xs text-gray-500 font-medium" id="modalProvider"></span>
-                    </div>
-                </div>
-
-                <!-- Technical Audit Details -->
-                <div class="p-3.5 bg-gray-50 rounded-xl border border-gray-100 space-y-2 text-xs">
-                    <div class="flex justify-between">
-                        <span class="text-gray-500">Paystack Transaction ID:</span>
-                        <span class="font-mono font-semibold text-gray-800" id="modalTransactionId"></span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-500">Attempted Date:</span>
-                        <span class="text-gray-800 font-medium" id="modalCreatedAt"></span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-500">Paid/Completed Date:</span>
-                        <span class="text-gray-800 font-medium" id="modalPaidAt"></span>
-                    </div>
+                    <p id="modalGatewayResponse" class="text-xs mt-1 font-medium"></p>
                 </div>
             </div>
 
-            <!-- Modal Footer -->
-            <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex items-center justify-between">
-                <button type="button" onclick="closePaymentModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
-                    Close
-                </button>
-                <div id="modalVerifyAction">
-                    <form id="modalVerifyForm" method="POST" action="" class="inline">
-                        @csrf
-                        <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 shadow-sm flex items-center space-x-1.5 transition-colors">
-                            <i class="fas fa-sync-alt"></i>
-                            <span>Re-Verify with Paystack</span>
-                        </button>
-                    </form>
+            <!-- Customer Details -->
+            <div class="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-2">
+                <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Customer</div>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-bold text-gray-900" id="modalUserName"></p>
+                        <p class="text-xs text-gray-500" id="modalUserEmail"></p>
+                        <p class="text-xs text-gray-500" id="modalUserPhone"></p>
+                    </div>
+                    <a id="modalUserLink" href="#" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100 transition-colors">
+                        <i class="fas fa-user mr-1.5"></i> Profile
+                    </a>
                 </div>
+            </div>
+
+            <!-- Payment Info Grid -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <span class="text-xs text-gray-500 font-medium">Plan & Duration</span>
+                    <p class="text-sm font-bold text-gray-900 mt-0.5" id="modalPlanName"></p>
+                    <span class="text-xs text-gray-500 font-medium" id="modalDuration"></span>
+                </div>
+                <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                    <span class="text-xs text-gray-500 font-medium">Amount & Provider</span>
+                    <p class="text-sm font-bold text-gray-900 mt-0.5" id="modalAmount"></p>
+                    <span class="text-xs text-gray-500 font-medium" id="modalProvider"></span>
+                </div>
+            </div>
+
+            <!-- Technical Audit Details -->
+            <div class="p-3.5 bg-gray-50 rounded-xl border border-gray-100 space-y-2 text-xs">
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Paystack Transaction ID:</span>
+                    <span class="font-mono font-semibold text-gray-800" id="modalTransactionId"></span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Attempted Date:</span>
+                    <span class="text-gray-800 font-medium" id="modalCreatedAt"></span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Paid/Completed Date:</span>
+                    <span class="text-gray-800 font-medium" id="modalPaidAt"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+            <button type="button" onclick="closePaymentModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                Close
+            </button>
+            <div id="modalVerifyAction">
+                <form id="modalVerifyForm" method="POST" action="" class="inline">
+                    @csrf
+                    <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 shadow-sm flex items-center space-x-1.5 transition-colors">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Re-Verify with Paystack</span>
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -1817,12 +1818,16 @@
             verifyForm.action = `/admin/payments/${payment.id}/verify`;
         }
         
-        document.getElementById('paymentDetailsModal').classList.remove('hidden');
+        const modal = document.getElementById('paymentDetailsModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
         document.body.style.overflow = 'hidden';
     }
 
     function closePaymentModal() {
-        document.getElementById('paymentDetailsModal').classList.add('hidden');
+        const modal = document.getElementById('paymentDetailsModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
         document.body.style.overflow = 'auto';
     }
 
