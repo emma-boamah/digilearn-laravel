@@ -73,6 +73,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
 
+        // Exclude webhooks from CSRF verification
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/*',
+            'webhooks/paystack',
+            'webhooks/mux',
+        ]);
+
         // Rate limiting configuration
         $middleware->throttleApi();
         $middleware->throttleWithRedis();
@@ -96,5 +103,6 @@ return Application::configure(basePath: dirname(__DIR__))
         ClearEmailVerificationCache::class,
         \App\Console\Commands\UpdateLessonCompletions::class,
         \App\Console\Commands\ActivityLogCleanup::class,
+        \App\Console\Commands\SyncPendingPayments::class,
     ])
     ->create();

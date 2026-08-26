@@ -621,7 +621,7 @@
                             <p class="text-sm text-gray-600">Latest payment transactions</p>
                         </div>
                     </div>
-                    <div class="flex space-x-3">
+                    <div class="flex items-center space-x-3">
                         <div class="relative">
                             <select id="statusFilter" class="appearance-none bg-white border border-gray-200 rounded-lg px-4 py-2 pr-8 text-sm font-medium text-gray-700 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                 <option value="">All Status</option>
@@ -633,6 +633,13 @@
                                 <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
                             </div>
                         </div>
+                        <form method="POST" action="{{ route('admin.payments.sync-all-pending') }}" class="inline" onsubmit="return confirm('This will check all pending payments against Paystack and activate valid subscriptions. Proceed?')">
+                            @csrf
+                            <button type="submit" class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 text-sm font-medium rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 flex items-center space-x-2">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Sync Pending</span>
+                            </button>
+                        </form>
                         <button onclick="exportPaymentsData()" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 text-sm font-medium rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center space-x-2">
                             <i class="fas fa-download"></i>
                             <span>Export</span>
@@ -650,6 +657,7 @@
                             <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Duration</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-50">
@@ -681,14 +689,26 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
                                     @if($payment['status'] === 'success') bg-green-100 text-green-800
-                                    @elseif($payment['status'] === 'pending') bg-yellow-100 text-yellow-800
-                                    @else bg-red-100 text-red-800 @endif">
+                                     @elseif($payment['status'] === 'pending') bg-yellow-100 text-yellow-800
+                                     @else bg-red-100 text-red-800 @endif">
                                     <i class="fas @if($payment['status'] === 'success') fa-check-circle @elseif($payment['status'] === 'pending') fa-clock @else fa-times-circle @endif mr-1"></i>
                                     {{ ucfirst($payment['status']) }}
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $payment['duration'] }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $payment['created_at'] }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                @if($payment['status'] === 'pending')
+                                <form method="POST" action="{{ route('admin.payments.verify', $payment['id']) }}" class="inline">
+                                    @csrf
+                                    <button type="submit" class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-sm" title="Verify with Paystack">
+                                        <i class="fas fa-sync-alt mr-1"></i> Verify
+                                    </button>
+                                </form>
+                                @else
+                                <span class="text-xs text-gray-400">—</span>
+                                @endif
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>
