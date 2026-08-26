@@ -3365,23 +3365,30 @@ class AdminController extends Controller
     public function revenue(Request $request)
     {
         $activeTab = $request->get('tab', 'revenue'); // Default to revenue tab
+        $selectedYear = $request->get('year', (string) now()->year); // Default to current year e.g. 2026, or 'all', or 'rolling_12'
 
-        // Get revenue data
-        $revenueData = $this->getRevenueData();
+        // Determine available years from payments history
+        $oldestPayment = Payment::min('paid_at') ?? Payment::min('created_at');
+        $startYear = $oldestPayment ? (int) \Carbon\Carbon::parse($oldestPayment)->year : (int) now()->year;
+        $currentYear = (int) now()->year;
+        $availableYears = range($currentYear, min($startYear, $currentYear));
+
+        // Get revenue data for selected timeframe
+        $revenueData = $this->getRevenueData($selectedYear);
 
         // Get subscription analytics
-        $subscriptionAnalytics = $this->getSubscriptionAnalytics();
+        $subscriptionAnalytics = $this->getSubscriptionAnalytics($selectedYear);
 
         // Get revenue trends
-        $revenueTrends = $this->getRevenueTrends();
+        $revenueTrends = $this->getRevenueTrends($selectedYear, $availableYears);
 
         // Get top performing plans
-        $topPlans = $this->getTopPerformingPlans();
+        $topPlans = $this->getTopPerformingPlans($selectedYear);
 
         // Get payment analytics if payments tab is active
         $paymentAnalytics = null;
         if ($activeTab === 'payments') {
-            $paymentAnalytics = $this->getPaymentAnalytics($request);
+            $paymentAnalytics = $this->getPaymentAnalytics($request, $selectedYear, $availableYears);
         }
 
         // Get summary reports and charts data if that tab is active
@@ -3401,7 +3408,8 @@ class AdminController extends Controller
             'ip' => get_client_ip(),
             'user_agent' => request()->header('User-Agent'),
             'timestamp' => now()->toISOString(),
-            'active_tab' => $activeTab
+            'active_tab' => $activeTab,
+            'selected_year' => $selectedYear,
         ]);
 
         return view('admin.revenue.index', compact(
@@ -3412,51 +3420,81 @@ class AdminController extends Controller
             'paymentAnalytics',
             'summaryReports',
             'summaryCharts',
-            'activeTab'
+            'activeTab',
+            'selectedYear',
+            'availableYears'
         ));
     }
 
     /**
      * Get revenue data for analytics
      */
-    private function getRevenueData()
+    private function getRevenueData(string $selectedYear = 'all')
     {
-        // Get total revenue from successful payments
-        $totalRevenue = Payment::where('status', 'success')->sum('amount');
+        // Lifetime gross totals
+        $lifetimeRevenue = Payment::where('status', 'success')->sum('amount');
+        $lifetimeTransactions = Payment::where('status', 'success')->count();
+        $lifetimeAllPayments = Payment::count();
+        $lifetimeSuccessRate = $lifetimeAllPayments > 0 ? round(($lifetimeTransactions / $lifetimeAllPayments) * 100, 1) : 0;
 
-        // Get current month revenue
+        // Base query filtered by selected timeframe
+        $revenueQuery = Payment::where('status', 'success');
+        $isSpecificYear = is_numeric($selectedYear);
+
+        if ($isSpecificYear) {
+            $yearInt = (int) $selectedYear;
+            $periodRevenue = (clone $revenueQuery)->whereYear('paid_at', $yearInt)->sum('amount');
+            $periodTransactions = (clone $revenueQuery)->whereYear('paid_at', $yearInt)->count();
+
+            // Previous year comparison for YoY Growth
+            $prevYearRevenue = Payment::where('status', 'success')->whereYear('paid_at', $yearInt - 1)->sum('amount');
+            $yoyGrowth = $prevYearRevenue > 0
+                ? round((($periodRevenue - $prevYearRevenue) / $prevYearRevenue) * 100, 1)
+                : ($periodRevenue > 0 ? 100.0 : 0.0);
+            $growthLabel = 'vs ' . ($yearInt - 1);
+        } elseif ($selectedYear === 'rolling_12') {
+            $periodRevenue = (clone $revenueQuery)->where('paid_at', '>=', now()->subMonths(12))->sum('amount');
+            $periodTransactions = (clone $revenueQuery)->where('paid_at', '>=', now()->subMonths(12))->count();
+            $prevPeriodRevenue = Payment::where('status', 'success')
+                ->whereBetween('paid_at', [now()->subMonths(24), now()->subMonths(12)])
+                ->sum('amount');
+            $yoyGrowth = $prevPeriodRevenue > 0
+                ? round((($periodRevenue - $prevPeriodRevenue) / $prevPeriodRevenue) * 100, 1)
+                : ($periodRevenue > 0 ? 100.0 : 0.0);
+            $growthLabel = 'vs Prev 12M';
+        } else {
+            // Lifetime / All Time
+            $periodRevenue = $lifetimeRevenue;
+            $periodTransactions = $lifetimeTransactions;
+            $prevYearRevenue = Payment::where('status', 'success')->whereYear('paid_at', now()->year - 1)->sum('amount');
+            $currYearRevenue = Payment::where('status', 'success')->whereYear('paid_at', now()->year)->sum('amount');
+            $yoyGrowth = $prevYearRevenue > 0
+                ? round((($currYearRevenue - $prevYearRevenue) / $prevYearRevenue) * 100, 1)
+                : 0;
+            $growthLabel = 'Current Year YoY';
+        }
+
+        // Current month revenue
         $monthlyRevenue = Payment::where('status', 'success')
             ->whereYear('paid_at', now()->year)
             ->whereMonth('paid_at', now()->month)
             ->sum('amount');
 
-        // Get current week revenue
+        // Current week revenue
         $weeklyRevenue = Payment::where('status', 'success')
             ->whereBetween('paid_at', [now()->startOfWeek(), now()->endOfWeek()])
             ->sum('amount');
 
-        // Get today's revenue
+        // Today's revenue
         $dailyRevenue = Payment::where('status', 'success')
             ->whereDate('paid_at', today())
             ->sum('amount');
 
-        // Calculate revenue growth (current month vs previous month)
-        $previousMonthRevenue = Payment::where('status', 'success')
-            ->whereYear('paid_at', now()->subMonth()->year)
-            ->whereMonth('paid_at', now()->subMonth()->month)
-            ->sum('amount');
-
-        $revenueGrowth = $previousMonthRevenue > 0
-            ? (($monthlyRevenue - $previousMonthRevenue) / $previousMonthRevenue) * 100
-            : 0;
-
-        // Get active subscriptions count
+        // Active subscriptions
         $activeSubscriptions = UserSubscription::active()->count();
-
-        // Get new subscriptions today
         $newSubscriptionsToday = UserSubscription::whereDate('created_at', today())->count();
 
-        // Calculate churn rate (simplified: expired subscriptions in last 30 days / total active subscriptions)
+        // Churn rate
         $expiredSubscriptionsLastMonth = UserSubscription::where('status', 'expired')
             ->where('expires_at', '>=', now()->subMonth())
             ->where('expires_at', '<=', now())
@@ -3466,30 +3504,43 @@ class AdminController extends Controller
             ? ($expiredSubscriptionsLastMonth / ($activeSubscriptions + $expiredSubscriptionsLastMonth)) * 100
             : 0;
 
-        // Calculate average revenue per user (total revenue / users who made payments)
+        // Average revenue per user
         $usersWithPayments = Payment::where('status', 'success')->distinct('user_id')->count('user_id');
-        $averageRevenuePerUser = $usersWithPayments > 0 ? $totalRevenue / $usersWithPayments : 0;
+        $averageRevenuePerUser = $usersWithPayments > 0 ? $lifetimeRevenue / $usersWithPayments : 0;
 
         return [
-            'total_revenue' => (float) $totalRevenue,
+            'total_revenue' => (float) $periodRevenue,
+            'lifetime_revenue' => (float) $lifetimeRevenue,
+            'lifetime_transactions' => $lifetimeTransactions,
+            'lifetime_success_rate' => $lifetimeSuccessRate,
+            'period_transactions' => $periodTransactions,
             'monthly_revenue' => (float) $monthlyRevenue,
             'weekly_revenue' => (float) $weeklyRevenue,
             'daily_revenue' => (float) $dailyRevenue,
-            'revenue_growth' => round($revenueGrowth, 1),
+            'revenue_growth' => $yoyGrowth,
+            'growth_label' => $growthLabel,
             'active_subscriptions' => $activeSubscriptions,
             'new_subscriptions_today' => $newSubscriptionsToday,
             'churn_rate' => round($churnRate, 1),
-            'average_revenue_per_user' => round($averageRevenuePerUser, 2)
+            'average_revenue_per_user' => round($averageRevenuePerUser, 2),
+            'selected_year' => $selectedYear,
         ];
     }
 
     /**
      * Get subscription analytics
      */
-    private function getSubscriptionAnalytics()
+    private function getSubscriptionAnalytics(string $selectedYear = 'all')
     {
         $plans = PricingPlan::active()->ordered()->get();
-        $totalRevenue = Payment::where('status', 'success')->sum('amount');
+        $totalRevenue = Payment::where('status', 'success')
+            ->when(is_numeric($selectedYear), function ($q) use ($selectedYear) {
+                $q->whereYear('paid_at', (int) $selectedYear);
+            })
+            ->when($selectedYear === 'rolling_12', function ($q) {
+                $q->where('paid_at', '>=', now()->subMonths(12));
+            })
+            ->sum('amount');
 
         $analytics = [];
         foreach ($plans as $plan) {
@@ -3524,33 +3575,86 @@ class AdminController extends Controller
     }
 
     /**
-     * Get revenue trends for charts
+     * Get revenue trends for charts (Lifetime, Specific Year, or Rolling 12M)
      */
-    private function getRevenueTrends()
+    private function getRevenueTrends(string $selectedYear = 'all', array $availableYears = [])
     {
-        $trends = RevenueSummary::monthly()
-            ->orderBy('period_date', 'desc')
-            ->limit(12)
-            ->get();
+        $trends = [];
 
-        if ($trends->isEmpty()) {
-            // Fallback for empty table
-            return [];
+        if (is_numeric($selectedYear)) {
+            $yearInt = (int) $selectedYear;
+            // 12 calendar months for that specific year (Jan to Dec)
+            for ($m = 1; $m <= 12; $m++) {
+                $date = \Carbon\Carbon::createFromDate($yearInt, $m, 1);
+                $revenue = Payment::where('status', 'success')
+                    ->whereYear('paid_at', $yearInt)
+                    ->whereMonth('paid_at', $m)
+                    ->sum('amount');
+                $count = Payment::where('status', 'success')
+                    ->whereYear('paid_at', $yearInt)
+                    ->whereMonth('paid_at', $m)
+                    ->count();
+
+                $trends[] = [
+                    'month' => $date->format('M'),
+                    'full_label' => $date->format('M Y'),
+                    'revenue' => (float) $revenue,
+                    'amount' => (float) $revenue,
+                    'subscriptions' => $count,
+                    'count' => $count,
+                ];
+            }
+        } elseif ($selectedYear === 'rolling_12') {
+            // Trailing 12 months
+            for ($i = 11; $i >= 0; $i--) {
+                $date = now()->subMonths($i);
+                $revenue = Payment::where('status', 'success')
+                    ->whereYear('paid_at', $date->year)
+                    ->whereMonth('paid_at', $date->month)
+                    ->sum('amount');
+                $count = Payment::where('status', 'success')
+                    ->whereYear('paid_at', $date->year)
+                    ->whereMonth('paid_at', $date->month)
+                    ->count();
+
+                $trends[] = [
+                    'month' => $date->format('M y'),
+                    'full_label' => $date->format('M Y'),
+                    'revenue' => (float) $revenue,
+                    'amount' => (float) $revenue,
+                    'subscriptions' => $count,
+                    'count' => $count,
+                ];
+            }
+        } else {
+            // All-Time / Lifetime: Year-by-Year breakdown
+            $yearsToLoop = !empty($availableYears) ? array_reverse($availableYears) : [now()->year];
+            foreach ($yearsToLoop as $yr) {
+                $revenue = Payment::where('status', 'success')
+                    ->whereYear('paid_at', $yr)
+                    ->sum('amount');
+                $count = Payment::where('status', 'success')
+                    ->whereYear('paid_at', $yr)
+                    ->count();
+
+                $trends[] = [
+                    'month' => (string) $yr,
+                    'full_label' => 'Year ' . $yr,
+                    'revenue' => (float) $revenue,
+                    'amount' => (float) $revenue,
+                    'subscriptions' => $count,
+                    'count' => $count,
+                ];
+            }
         }
 
-        return $trends->reverse()->map(function ($item) {
-            return [
-                'month' => $item->period_date->format('M Y'),
-                'revenue' => (float) $item->revenue,
-                'subscriptions' => $item->subscriptions_count
-            ];
-        })->values()->toArray();
+        return $trends;
     }
 
     /**
      * Get top performing plans
      */
-    private function getTopPerformingPlans()
+    private function getTopPerformingPlans(string $selectedYear = 'all')
     {
         $plans = PricingPlan::active()->with([
             'subscriptions' => function ($query) {
@@ -3598,10 +3702,18 @@ class AdminController extends Controller
     /**
      * Get payment analytics data
      */
-    private function getPaymentAnalytics(Request $request)
+    private function getPaymentAnalytics(Request $request, string $selectedYear = 'all', array $availableYears = [])
     {
-        // Payment status distribution
-        $statusDistribution = Payment::selectRaw('status, COUNT(*) as count')
+        $query = Payment::query();
+        if (is_numeric($selectedYear)) {
+            $query->whereYear('created_at', (int) $selectedYear);
+        } elseif ($selectedYear === 'rolling_12') {
+            $query->where('created_at', '>=', now()->subMonths(12));
+        }
+
+        // Payment status distribution for the timeframe
+        $statusDistribution = (clone $query)
+            ->selectRaw('status, COUNT(*) as count')
             ->groupBy('status')
             ->pluck('count', 'status')
             ->toArray();
@@ -3611,32 +3723,23 @@ class AdminController extends Controller
         $successRate = $totalPayments > 0 ? round(($successfulPayments / $totalPayments) * 100, 1) : 0;
 
         // Average payment amount
-        $averageAmount = Payment::where('status', 'success')->avg('amount') ?? 0;
+        $averageAmount = (clone $query)->where('status', 'success')->avg('amount') ?? 0;
+        $totalValue = (clone $query)->where('status', 'success')->sum('amount') ?? 0;
 
-        // Payment trends (last 12 months)
-        $paymentTrends = [];
-        for ($i = 11; $i >= 0; $i--) {
-            $date = now()->subMonths($i);
-            $amount = Payment::where('status', 'success')
-                ->whereYear('paid_at', $date->year)
-                ->whereMonth('paid_at', $date->month)
-                ->sum('amount');
-
-            $paymentTrends[] = [
-                'month' => $date->format('M Y'),
-                'amount' => (float) $amount,
-                'count' => Payment::where('status', 'success')
-                    ->whereYear('paid_at', $date->year)
-                    ->whereMonth('paid_at', $date->month)
-                    ->count()
-            ];
-        }
+        // Payment trends for the selected timeframe
+        $paymentTrends = $this->getRevenueTrends($selectedYear, $availableYears);
 
         // Payment metadata analytics
         $metadataAnalytics = $this->getPaymentMetadataAnalytics();
 
         // Recent payments with pagination
         $recentPayments = Payment::with(['user:id,name,email,avatar,google_avatar,phone', 'pricingPlan:id,name'])
+            ->when(is_numeric($selectedYear), function ($q) use ($selectedYear) {
+                $q->whereYear('created_at', (int) $selectedYear);
+            })
+            ->when($selectedYear === 'rolling_12', function ($q) {
+                $q->where('created_at', '>=', now()->subMonths(12));
+            })
             ->orderBy('created_at', 'desc')
             ->paginate(20)
             ->through(function ($payment) {
@@ -3668,6 +3771,12 @@ class AdminController extends Controller
 
         // Top paying users
         $topPayingUsers = Payment::where('status', 'success')
+            ->when(is_numeric($selectedYear), function ($q) use ($selectedYear) {
+                $q->whereYear('paid_at', (int) $selectedYear);
+            })
+            ->when($selectedYear === 'rolling_12', function ($q) {
+                $q->where('paid_at', '>=', now()->subMonths(12));
+            })
             ->with('user:id,name,email,avatar,google_avatar')
             ->selectRaw('user_id, COUNT(*) as payment_count, SUM(amount) as total_amount')
             ->groupBy('user_id')
@@ -3691,7 +3800,7 @@ class AdminController extends Controller
             'successful_payments' => $successfulPayments,
             'success_rate' => $successRate,
             'average_amount' => round($averageAmount, 2),
-            'total_value' => Payment::where('status', 'success')->sum('amount'),
+            'total_value' => $totalValue,
             'trends' => $paymentTrends,
             'metadata' => $metadataAnalytics,
             'recent_payments' => $recentPayments,
