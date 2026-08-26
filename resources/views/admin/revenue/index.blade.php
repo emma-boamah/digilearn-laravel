@@ -12,27 +12,47 @@
                     <h1 class="text-3xl font-bold text-gray-900">Revenue & Payments Analytics</h1>
                     <p class="text-gray-600">Track subscription revenue and payment transactions</p>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <div class="text-sm text-gray-500">
-                        Last updated: {{ now()->format('M d, Y H:i') }}
-                    </div>
-                    @if($activeTab === 'revenue')
-                        <div class="flex items-center space-x-3">
-                            <a href="{{ route('admin.revenue.export-trends') }}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors inline-flex items-center shadow-sm">
-                                <i class="fas fa-download mr-2"></i>Export Trends
-                            </a>
-                            <div class="flex items-center px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg text-blue-700 text-xs font-semibold shadow-sm">
-                                <i class="fas fa-info-circle mr-2"></i>
-                                Up to 12-month trends
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Period / Year Filter Selector -->
+                    <form method="GET" action="{{ route('admin.revenue') }}" id="periodFilterForm" class="flex items-center space-x-2">
+                        <input type="hidden" name="tab" value="{{ $activeTab }}">
+                        <label for="yearSelector" class="text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:inline">Period:</label>
+                        <div class="relative">
+                            <select id="yearSelector" name="year" onchange="this.form.submit()" class="appearance-none bg-white border border-gray-200 text-gray-800 text-xs font-semibold rounded-lg pl-3 pr-8 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm cursor-pointer hover:border-gray-300 transition-colors">
+                                <option value="{{ now()->year }}" {{ $selectedYear == now()->year ? 'selected' : '' }}>
+                                    Year {{ now()->year }} (Current)
+                                </option>
+                                @foreach($availableYears as $yr)
+                                    @if($yr != now()->year)
+                                        <option value="{{ $yr }}" {{ $selectedYear == (string)$yr ? 'selected' : '' }}>
+                                            Year {{ $yr }}
+                                        </option>
+                                    @endif
+                                @endforeach
+                                <option value="rolling_12" {{ $selectedYear === 'rolling_12' ? 'selected' : '' }}>
+                                    Rolling 12 Months
+                                </option>
+                                <option value="all" {{ $selectedYear === 'all' ? 'selected' : '' }}>
+                                    All-Time (Lifetime)
+                                </option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                                <i class="fas fa-chevron-down text-[10px]"></i>
                             </div>
                         </div>
+                    </form>
+
+                    @if($activeTab === 'revenue')
+                        <a href="{{ route('admin.revenue.export-trends') }}" class="bg-blue-600 text-white px-3.5 py-2 text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center shadow-sm">
+                            <i class="fas fa-download mr-1.5"></i> Export Trends
+                        </a>
                     @elseif($activeTab === 'payments')
-                        <a href="{{ route('admin.revenue.export-payments', ['format' => 'csv']) }}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors inline-flex items-center shadow-sm">
-                            <i class="fas fa-download mr-2"></i>Export All Payments
+                        <a href="{{ route('admin.revenue.export-payments', ['format' => 'csv']) }}" class="bg-blue-600 text-white px-3.5 py-2 text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center shadow-sm">
+                            <i class="fas fa-download mr-1.5"></i> Export Payments
                         </a>
                     @endif
-                    <button onclick="location.reload()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
-                        <i class="fas fa-sync-alt mr-2"></i>Refresh
+                    <button onclick="location.reload()" class="bg-gray-100 text-gray-700 hover:bg-gray-200 px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors shadow-sm inline-flex items-center">
+                        <i class="fas fa-sync-alt mr-1.5"></i> Refresh
                     </button>
                 </div>
             </div>
@@ -44,7 +64,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="border-b border-gray-200">
                 <nav class="-mb-px flex space-x-2">
-                    <a href="{{ route('admin.revenue', ['tab' => 'revenue']) }}"
+                    <a href="{{ route('admin.revenue', ['tab' => 'revenue', 'year' => $selectedYear]) }}"
                        class="group relative py-4 px-6 font-semibold text-sm rounded-t-lg transition-all duration-200 ease-in-out cursor-pointer
                        {{ $activeTab === 'revenue'
                            ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-500 shadow-sm'
@@ -57,7 +77,7 @@
                             <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 to-blue-600 rounded-t"></div>
                         @endif
                     </a>
-                    <a href="{{ route('admin.revenue', ['tab' => 'payments']) }}"
+                    <a href="{{ route('admin.revenue', ['tab' => 'payments', 'year' => $selectedYear]) }}"
                        class="group relative py-4 px-6 font-semibold text-sm rounded-t-lg transition-all duration-200 ease-in-out cursor-pointer
                        {{ $activeTab === 'payments'
                            ? 'bg-green-50 text-green-700 border-b-2 border-green-500 shadow-sm'
@@ -70,7 +90,7 @@
                             <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-green-500 to-green-600 rounded-t"></div>
                         @endif
                     </a>
-                    <a href="{{ route('admin.revenue', ['tab' => 'summary']) }}"
+                    <a href="{{ route('admin.revenue', ['tab' => 'summary', 'year' => $selectedYear]) }}"
                        class="group relative py-4 px-6 font-semibold text-sm rounded-t-lg transition-all duration-200 ease-in-out cursor-pointer
                        {{ $activeTab === 'summary'
                            ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-500 shadow-sm'
@@ -90,72 +110,73 @@
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         @if($activeTab === 'revenue')
-        <!-- Revenue Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <!-- Total Revenue -->
+        <!-- Revenue Stats Grid (3 Clean Cards) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- 1. Revenue Overview -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
-                <div class="flex items-center justify-between">
+                <div class="flex items-start justify-between">
                     <div class="flex-1">
-                        <p class="text-gray-600 text-sm font-medium uppercase tracking-wide">Total Revenue</p>
+                        <p class="text-gray-500 text-xs font-semibold uppercase tracking-wider">
+                            {{ is_numeric($selectedYear) ? 'Year ' . $selectedYear . ' Revenue' : ($selectedYear === 'rolling_12' ? 'Rolling 12M Revenue' : 'Gross Revenue') }}
+                        </p>
                         <p class="text-3xl font-bold text-gray-900 mt-2">GH₵{{ number_format($revenueData['total_revenue'], 2) }}</p>
-                        <div class="flex items-center mt-3">
-                            <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                            <p class="text-gray-500 text-sm">+{{ $revenueData['revenue_growth'] }}% this month</p>
+                        <div class="flex items-center flex-wrap gap-2 mt-3">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold {{ $revenueData['revenue_growth'] >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700' }}">
+                                <i class="fas {{ $revenueData['revenue_growth'] >= 0 ? 'fa-arrow-up' : 'fa-arrow-down' }} mr-1 text-[10px]"></i>
+                                {{ $revenueData['revenue_growth'] >= 0 ? '+' : '' }}{{ $revenueData['revenue_growth'] }}%
+                            </span>
+                            <span class="text-gray-400 text-xs">•</span>
+                            <span class="text-gray-500 text-xs font-medium">{{ $revenueData['growth_label'] }}</span>
+                            <span class="text-gray-400 text-xs">•</span>
+                            <span class="text-gray-500 text-xs font-medium">{{ number_format($revenueData['lifetime_transactions']) }} paid orders</span>
                         </div>
                     </div>
-                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl">
-                        <i class="fas fa-chart-line text-blue-600 text-xl"></i>
+                    <div class="bg-blue-50 p-3.5 rounded-xl text-blue-600 shadow-sm ml-3">
+                        <i class="fas fa-coins text-xl"></i>
                     </div>
                 </div>
             </div>
 
-            <!-- Monthly Revenue -->
+            <!-- 2. Active Subscriptions -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
-                <div class="flex items-center justify-between">
+                <div class="flex items-start justify-between">
                     <div class="flex-1">
-                        <p class="text-gray-600 text-sm font-medium uppercase tracking-wide">Monthly Revenue</p>
-                        <p class="text-3xl font-bold text-gray-900 mt-2">GH₵{{ number_format($revenueData['monthly_revenue'], 2) }}</p>
-                        <div class="flex items-center mt-3">
-                            <div class="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                            <p class="text-gray-500 text-sm">{{ $revenueData['active_subscriptions'] }} active subs</p>
+                        <p class="text-gray-500 text-xs font-semibold uppercase tracking-wider">Active Subscriptions</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-2">{{ number_format($revenueData['active_subscriptions']) }}</p>
+                        <div class="flex items-center flex-wrap gap-2 mt-3">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-blue-50 text-blue-700">
+                                <i class="fas fa-user-plus mr-1 text-[10px]"></i>
+                                +{{ $revenueData['new_subscriptions_today'] }} today
+                            </span>
+                            <span class="text-gray-400 text-xs">•</span>
+                            <span class="text-gray-500 text-xs font-medium">{{ count($subscriptionAnalytics) }} active tiers</span>
+                            <span class="text-gray-400 text-xs">•</span>
+                            <span class="text-gray-500 text-xs font-medium">Monthly recurring</span>
                         </div>
                     </div>
-                    <div class="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl">
-                        <i class="fas fa-calendar-alt text-green-600 text-xl"></i>
+                    <div class="bg-blue-50 p-3.5 rounded-xl text-blue-600 shadow-sm ml-3">
+                        <i class="fas fa-users text-xl"></i>
                     </div>
                 </div>
             </div>
 
-            <!-- Average Revenue Per User -->
+            <!-- 3. Customer Economics (ARPU & Churn) -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
-                <div class="flex items-center justify-between">
+                <div class="flex items-start justify-between">
                     <div class="flex-1">
-                        <p class="text-gray-600 text-sm font-medium uppercase tracking-wide">Avg Per User</p>
+                        <p class="text-gray-500 text-xs font-semibold uppercase tracking-wider">Avg Per Paying User (ARPU)</p>
                         <p class="text-3xl font-bold text-gray-900 mt-2">GH₵{{ number_format($revenueData['average_revenue_per_user'], 2) }}</p>
-                        <div class="flex items-center mt-3">
-                            <div class="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
-                            <p class="text-gray-500 text-sm">Per active subscriber</p>
+                        <div class="flex items-center flex-wrap gap-2 mt-3">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-gray-100 text-gray-700">
+                                <i class="fas fa-shield-alt mr-1 text-[10px] text-blue-600"></i>
+                                {{ $revenueData['churn_rate'] }}% churn
+                            </span>
+                            <span class="text-gray-400 text-xs">•</span>
+                            <span class="text-gray-500 text-xs font-medium">{{ $revenueData['lifetime_success_rate'] }}% checkout success</span>
                         </div>
                     </div>
-                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl">
-                        <i class="fas fa-user-dollar text-purple-600 text-xl"></i>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Churn Rate -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
-                <div class="flex items-center justify-between">
-                    <div class="flex-1">
-                        <p class="text-gray-600 text-sm font-medium uppercase tracking-wide">Churn Rate</p>
-                        <p class="text-3xl font-bold text-gray-900 mt-2">{{ $revenueData['churn_rate'] }}%</p>
-                        <div class="flex items-center mt-3">
-                            <div class="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
-                            <p class="text-gray-500 text-sm">+{{ $revenueData['new_subscriptions_today'] }} new today</p>
-                        </div>
-                    </div>
-                    <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl">
-                        <i class="fas fa-chart-pie text-orange-600 text-xl"></i>
+                    <div class="bg-blue-50 p-3.5 rounded-xl text-blue-600 shadow-sm ml-3">
+                        <i class="fas fa-user-check text-xl"></i>
                     </div>
                 </div>
             </div>
@@ -164,22 +185,42 @@
         <!-- Revenue Trend Chart (Full Width) -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200 mb-8">
             <div class="p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                        <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-sm">
                             <i class="fas fa-chart-area text-white text-lg"></i>
                         </div>
                         <div>
-                            <h2 class="text-xl font-semibold text-gray-900">Revenue Trend</h2>
-                            <p class="text-sm text-gray-600">Monthly revenue over time</p>
+                            <h2 class="text-xl font-bold text-gray-900">
+                                Revenue Trend
+                                <span class="text-sm font-semibold text-blue-600 ml-1">
+                                    ({{ is_numeric($selectedYear) ? 'Year ' . $selectedYear : ($selectedYear === 'rolling_12' ? 'Rolling 12M' : 'Lifetime') }})
+                                </span>
+                            </h2>
+                            <p class="text-xs text-gray-500">Earnings and active subscriptions trajectory</p>
                         </div>
                     </div>
-                    <div class="flex space-x-2">
-                        <button onclick="updateChart('revenue', '7d')" class="px-4 py-2 text-sm font-medium bg-white text-gray-700 rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors">7D</button>
-                        <button onclick="updateChart('revenue', '30d')" class="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg border border-blue-600 hover:bg-blue-700 transition-colors">30D</button>
-                        <button onclick="updateChart('revenue', '90d')" class="px-4 py-2 text-sm font-medium bg-white text-gray-700 rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors">90D</button>
-                        <button onclick="updateChart('revenue', 'ytd')" class="px-4 py-2 text-sm font-medium bg-white text-gray-700 rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors">YTD</button>
-                        <button onclick="updateChart('revenue', 'all')" class="px-4 py-2 text-sm font-medium bg-white text-gray-700 rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors">ALL</button>
+                    <div class="flex flex-wrap items-center gap-1.5 bg-gray-100 p-1 rounded-xl border border-gray-200">
+                        <a href="{{ route('admin.revenue', ['tab' => 'revenue', 'year' => now()->year]) }}"
+                           class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all {{ $selectedYear == now()->year ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+                            {{ now()->year }}
+                        </a>
+                        @foreach($availableYears as $yr)
+                            @if($yr != now()->year)
+                                <a href="{{ route('admin.revenue', ['tab' => 'revenue', 'year' => $yr]) }}"
+                                   class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all {{ $selectedYear == (string)$yr ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+                                    {{ $yr }}
+                                </a>
+                            @endif
+                        @endforeach
+                        <a href="{{ route('admin.revenue', ['tab' => 'revenue', 'year' => 'rolling_12']) }}"
+                           class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all {{ $selectedYear === 'rolling_12' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+                            Rolling 12M
+                        </a>
+                        <a href="{{ route('admin.revenue', ['tab' => 'revenue', 'year' => 'all']) }}"
+                           class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all {{ $selectedYear === 'all' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+                            Lifetime
+                        </a>
                     </div>
                 </div>
             </div>
@@ -551,13 +592,32 @@
             <!-- Payment Trends -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
                 <div class="p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-xl font-semibold text-gray-900">Payment Trends</h2>
-                        <div class="flex space-x-2">
-                            <button onclick="updatePaymentChart('7d')" class="px-4 py-2 text-sm font-medium bg-white text-gray-700 rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors">7D</button>
-                            <button onclick="updatePaymentChart('30d')" class="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg border border-blue-600 hover:bg-blue-700 transition-colors">30D</button>
-                            <button onclick="updatePaymentChart('90d')" class="px-4 py-2 text-sm font-medium bg-white text-gray-700 rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors">90D</button>
-                            <button onclick="updatePaymentChart('ytd')" class="px-4 py-2 text-sm font-medium bg-white text-gray-700 rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-colors">YTD</button>
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-900">Payment Volume Trends</h2>
+                            <p class="text-xs text-gray-500">Monthly transaction and revenue progression</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-1.5 bg-gray-100 p-1 rounded-xl border border-gray-200">
+                            <a href="{{ route('admin.revenue', ['tab' => 'payments', 'year' => now()->year]) }}"
+                               class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all {{ $selectedYear == now()->year ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+                                {{ now()->year }}
+                            </a>
+                            @foreach($availableYears as $yr)
+                                @if($yr != now()->year)
+                                    <a href="{{ route('admin.revenue', ['tab' => 'payments', 'year' => $yr]) }}"
+                                       class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all {{ $selectedYear == (string)$yr ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+                                        {{ $yr }}
+                                    </a>
+                                @endif
+                            @endforeach
+                            <a href="{{ route('admin.revenue', ['tab' => 'payments', 'year' => 'rolling_12']) }}"
+                               class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all {{ $selectedYear === 'rolling_12' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+                                12M
+                            </a>
+                            <a href="{{ route('admin.revenue', ['tab' => 'payments', 'year' => 'all']) }}"
+                               class="px-2.5 py-1 text-xs font-bold rounded-lg transition-all {{ $selectedYear === 'all' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+                                Lifetime
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -1113,11 +1173,11 @@
                 top: 10,
                 left: 0,
                 blur: 3,
-                color: '#4f46e5',
+                color: '#2563eb',
                 opacity: 0.1
             }
         },
-        colors: ['#4f46e5'],
+        colors: ['#2563eb'],
         fill: {
             type: 'gradient',
             gradient: {
