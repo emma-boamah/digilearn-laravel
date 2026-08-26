@@ -41,6 +41,7 @@ use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use App\Models\User;
 
@@ -211,7 +212,7 @@ Route::get('/payment/callback', [PaymentController::class, 'callback'])
 
 // Paystack webhook (no CSRF, no auth)
 Route::post('/webhooks/paystack', [PaymentController::class, 'webhook'])
-    ->withoutMiddleware([VerifyCsrfToken::class])
+    ->withoutMiddleware([ValidateCsrfToken::class, VerifyCsrfToken::class])
     ->name('webhooks.paystack');
 
 /*
@@ -773,8 +774,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         }
     );
 
-    // Payment Analytics Export
+    // Payment Analytics & Management
     Route::get('/payments/export', [AdminController::class, 'exportPayments'])->name('payments.export');
+    Route::post('/payments/{payment}/verify', [AdminController::class, 'verifyPayment'])->name('payments.verify');
+    Route::post('/payments/sync-all-pending', [AdminController::class, 'syncPendingPayments'])->name('payments.sync-all-pending');
 
     // Storage Monitoring
     Route::middleware(['role:super-admin'])->prefix('storage')->name('storage.')->group(
@@ -859,7 +862,7 @@ Route::post('/csp-reports', function (Request $request) {
  |--------------------------------------------------------------------------
  */
 Route::post('/webhooks/mux', [App\Http\Controllers\MuxWebhookController::class, 'handleWebhook'])
-    ->withoutMiddleware([VerifyCsrfToken::class])
+    ->withoutMiddleware([ValidateCsrfToken::class, VerifyCsrfToken::class])
     ->name('webhooks.mux');
 
 /*

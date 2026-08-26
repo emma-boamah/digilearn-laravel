@@ -305,9 +305,61 @@ class PaymentController extends Controller
     }
 
     /**
+     * Manually / Programmatically verify and sync a payment status with Paystack
+     */
+    public function verifyAndSyncPayment(Payment $payment): array
+    {
+        if ($payment->status === 'success') {
+            return [
+                'success' => true,
+                'status' => 'already_success',
+                'message' => 'Payment is already marked as successful.',
+            ];
+        }
+
+        try {
+            $paystackResponse = $this->paystack->verifyPayment($payment->reference);
+
+            if (($paystackResponse['data']['status'] ?? null) === 'success') {
+                $this->handleSuccessfulPayment($payment, $paystackResponse['data']);
+
+                return [
+                    'success' => true,
+                    'status' => 'success',
+                    'message' => 'Payment successfully verified and subscription activated.',
+                    'data' => $paystackResponse['data'],
+                ];
+            } else {
+                $status = $paystackResponse['data']['status'] ?? 'unknown';
+                if (in_array($status, ['failed', 'abandoned'])) {
+                    $payment->update(['status' => 'failed']);
+                }
+
+                return [
+                    'success' => false,
+                    'status' => $status,
+                    'message' => "Payment status on Paystack is '{$status}'.",
+                ];
+            }
+        } catch (\Exception $e) {
+            Log::error('Payment sync verification failed', [
+                'payment_id' => $payment->id,
+                'reference' => $payment->reference,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'status' => 'error',
+                'message' => 'Failed to communicate with Paystack: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Handle successful payment
      */
-    private function handleSuccessfulPayment(Payment $payment, array $paystackData)
+    public function handleSuccessfulPayment(Payment $payment, array $paystackData)
     {
         // Validate that the paid amount matches the expected amount
         $paidAmount = $paystackData['amount'] / 100; // Convert from kobo to GHS
@@ -471,8 +523,8 @@ class PaymentController extends Controller
      */
     private function amountsMatch(float $expected, float $paid): bool
     {
-        $tolerance = 0.01; // 1 pesewa tolerance
-        return abs($expected - $paid) < $tolerance;
+        $tolerance = 0.05; // 5 pesewas tolerance for floating point / rounding
+        return abs($expected - $paid) <= $tolerance;
     }
 
     /**

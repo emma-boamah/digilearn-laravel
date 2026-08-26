@@ -3806,6 +3806,68 @@ class AdminController extends Controller
     }
 
     /**
+     * Verify a single payment with Paystack
+     */
+    public function verifyPayment(Request $request, Payment $payment)
+    {
+        $paymentController = app(PaymentController::class);
+        $result = $paymentController->verifyAndSyncPayment($payment);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json($result);
+        }
+
+        if ($result['success']) {
+            return back()->with('success', $result['message']);
+        }
+
+        return back()->with('error', $result['message']);
+    }
+
+    /**
+     * Batch verify all pending payments
+     */
+    public function syncPendingPayments(Request $request)
+    {
+        $paymentController = app(PaymentController::class);
+        $pendingPayments = Payment::where('status', 'pending')
+            ->where('created_at', '>=', now()->subDays(30))
+            ->get();
+
+        $successCount = 0;
+        $failedCount = 0;
+        $stillPendingCount = 0;
+
+        foreach ($pendingPayments as $payment) {
+            $result = $paymentController->verifyAndSyncPayment($payment);
+            if ($result['success'] && ($result['status'] ?? '') === 'success') {
+                $successCount++;
+            } elseif (($result['status'] ?? '') === 'failed' || ($result['status'] ?? '') === 'abandoned') {
+                $failedCount++;
+            } else {
+                $stillPendingCount++;
+            }
+        }
+
+        $message = "Sync complete. {$successCount} payment(s) marked successful and activated, {$failedCount} marked failed, {$stillPendingCount} still pending.";
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'stats' => [
+                    'activated' => $successCount,
+                    'failed' => $failedCount,
+                    'still_pending' => $stillPendingCount,
+                    'total_checked' => $pendingPayments->count(),
+                ],
+            ]);
+        }
+
+        return back()->with('success', $message);
+    }
+
+    /**
      * Show unified contents management page (YouTube-style dashboard)
      */
     public function contents(Request $request)
