@@ -3636,22 +3636,28 @@ class AdminController extends Controller
         $metadataAnalytics = $this->getPaymentMetadataAnalytics();
 
         // Recent payments with pagination
-        $recentPayments = Payment::with(['user:id,name,email,avatar,google_avatar', 'pricingPlan:id,name'])
+        $recentPayments = Payment::with(['user:id,name,email,avatar,google_avatar,phone', 'pricingPlan:id,name'])
             ->orderBy('created_at', 'desc')
             ->paginate(20)
             ->through(function ($payment) {
                 return [
                     'id' => $payment->id,
+                    'user_id' => $payment->user_id,
                     'user_name' => $payment->user->name ?? 'Unknown',
                     'user_email' => $payment->user->email ?? '',
+                    'user_phone' => $payment->user->phone ?? ($payment->metadata['customer_phone'] ?? 'N/A'),
                     'user_avatar_url' => $payment->user ? $payment->user->avatar_url : null,
                     'user_initials' => $payment->user ? $payment->user->initials : 'U',
-                    'plan_name' => $payment->pricingPlan->name ?? 'Unknown',
+                    'plan_name' => $payment->pricingPlan->name ?? ($payment->metadata['plan_name'] ?? 'Unknown'),
                     'amount' => (float) $payment->amount,
                     'currency' => $payment->currency,
                     'status' => $payment->status,
                     'duration' => $this->getReadableDuration($payment->metadata['duration'] ?? 'N/A'),
                     'reference' => $payment->reference,
+                    'transaction_id' => $payment->transaction_id ?? 'N/A',
+                    'payment_provider' => $payment->payment_provider ?? ($payment->metadata['channel'] ?? 'Paystack'),
+                    'gateway_response' => $payment->metadata['gateway_response'] ?? ($payment->status === 'success' ? 'Successful' : ($payment->status === 'pending' ? 'Pending customer authorization' : 'Transaction failed')),
+                    'verified_via_sync' => !empty($payment->metadata['verified_via_sync']),
                     'created_at' => $payment->created_at->format('M d, Y H:i'),
                     'paid_at' => $payment->paid_at ? $payment->paid_at->format('M d, Y H:i') : null,
                 ];

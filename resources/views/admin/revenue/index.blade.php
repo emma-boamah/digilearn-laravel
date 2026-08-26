@@ -635,7 +635,7 @@
                         </div>
                         <form method="POST" action="{{ route('admin.payments.sync-all-pending') }}" class="inline" onsubmit="return confirm('This will check all pending payments against Paystack and activate valid subscriptions. Proceed?')">
                             @csrf
-                            <button type="submit" class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 text-sm font-medium rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 flex items-center space-x-2">
+                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 shadow-sm">
                                 <i class="fas fa-sync-alt"></i>
                                 <span>Sync Pending</span>
                             </button>
@@ -687,27 +687,37 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">GH₵{{ number_format($payment['amount'], 2) }}</td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
-                                    @if($payment['status'] === 'success') bg-green-100 text-green-800
-                                     @elseif($payment['status'] === 'pending') bg-yellow-100 text-yellow-800
-                                     @else bg-red-100 text-red-800 @endif">
-                                    <i class="fas @if($payment['status'] === 'success') fa-check-circle @elseif($payment['status'] === 'pending') fa-clock @else fa-times-circle @endif mr-1"></i>
-                                    {{ ucfirst($payment['status']) }}
-                                </span>
+                                <div class="flex items-center">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
+                                        @if($payment['status'] === 'success') bg-green-100 text-green-800
+                                         @elseif($payment['status'] === 'pending') bg-yellow-100 text-yellow-800
+                                         @else bg-red-100 text-red-800 @endif">
+                                        <i class="fas @if($payment['status'] === 'success') fa-check-circle @elseif($payment['status'] === 'pending') fa-clock @else fa-times-circle @endif mr-1"></i>
+                                        {{ ucfirst($payment['status']) }}
+                                    </span>
+                                    @if(!empty($payment['verified_via_sync']))
+                                        <span class="ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 inline-flex items-center" title="Verified via Paystack Sync">
+                                            <i class="fas fa-check-double mr-0.5"></i> Synced
+                                        </span>
+                                    @endif
+                                </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $payment['duration'] }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $payment['created_at'] }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                @if($payment['status'] === 'pending')
-                                <form method="POST" action="{{ route('admin.payments.verify', $payment['id']) }}" class="inline">
-                                    @csrf
-                                    <button type="submit" class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-sm" title="Verify with Paystack">
-                                        <i class="fas fa-sync-alt mr-1"></i> Verify
+                                <div class="flex items-center space-x-2">
+                                    <button type="button" onclick='openPaymentModal(@json($payment))' class="inline-flex items-center px-2.5 py-1.5 border border-gray-200 text-xs font-semibold rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-sm" title="View Transaction Details">
+                                        <i class="fas fa-info-circle mr-1 text-gray-500"></i> Details
                                     </button>
-                                </form>
-                                @else
-                                <span class="text-xs text-gray-400">—</span>
-                                @endif
+                                    @if($payment['status'] === 'pending')
+                                    <form method="POST" action="{{ route('admin.payments.verify', $payment['id']) }}" class="inline">
+                                        @csrf
+                                        <button type="submit" class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-semibold rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none shadow-sm transition-colors" title="Verify with Paystack">
+                                            <i class="fas fa-sync-alt mr-1"></i> Verify
+                                        </button>
+                                    </form>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                         @endforeach
@@ -976,7 +986,105 @@
                 </div>
             </div>
         </div>
-        @endif
+    </div>
+</div>
+
+<!-- Transaction Details Modal -->
+<div id="paymentDetailsModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closePaymentModal()"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-100">
+            <div class="bg-gradient-to-r from-gray-50 to-white px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg shadow-sm">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-gray-900">Transaction Details</h3>
+                        <p class="text-xs text-gray-500 font-mono" id="modalRefText">PAY-xxxx</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closePaymentModal()" class="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                    <i class="fas fa-times text-base"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-4">
+                <!-- Status & Gateway Response Banner -->
+                <div id="modalStatusBanner" class="p-4 rounded-xl border flex items-start space-x-3">
+                    <div id="modalStatusIcon" class="mt-0.5 text-lg"></div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between">
+                            <span id="modalStatusBadge" class="font-bold text-sm"></span>
+                            <span id="modalSyncBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800"><i class="fas fa-check-double mr-1"></i>Synced via Paystack</span>
+                        </div>
+                        <p id="modalGatewayResponse" class="text-xs mt-1 font-medium"></p>
+                    </div>
+                </div>
+
+                <!-- Customer Details -->
+                <div class="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-2">
+                    <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Customer</div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-bold text-gray-900" id="modalUserName"></p>
+                            <p class="text-xs text-gray-500" id="modalUserEmail"></p>
+                            <p class="text-xs text-gray-500" id="modalUserPhone"></p>
+                        </div>
+                        <a id="modalUserLink" href="#" class="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100 transition-colors">
+                            <i class="fas fa-user mr-1.5"></i> Profile
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Payment Info Grid -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                        <span class="text-xs text-gray-500 font-medium">Plan & Duration</span>
+                        <p class="text-sm font-bold text-gray-900 mt-0.5" id="modalPlanName"></p>
+                        <span class="text-xs text-gray-500 font-medium" id="modalDuration"></span>
+                    </div>
+                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                        <span class="text-xs text-gray-500 font-medium">Amount & Provider</span>
+                        <p class="text-sm font-bold text-gray-900 mt-0.5" id="modalAmount"></p>
+                        <span class="text-xs text-gray-500 font-medium" id="modalProvider"></span>
+                    </div>
+                </div>
+
+                <!-- Technical Audit Details -->
+                <div class="p-3.5 bg-gray-50 rounded-xl border border-gray-100 space-y-2 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Paystack Transaction ID:</span>
+                        <span class="font-mono font-semibold text-gray-800" id="modalTransactionId"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Attempted Date:</span>
+                        <span class="text-gray-800 font-medium" id="modalCreatedAt"></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Paid/Completed Date:</span>
+                        <span class="text-gray-800 font-medium" id="modalPaidAt"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+                <button type="button" onclick="closePaymentModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                    Close
+                </button>
+                <div id="modalVerifyAction">
+                    <form id="modalVerifyForm" method="POST" action="" class="inline">
+                        @csrf
+                        <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 shadow-sm flex items-center space-x-1.5 transition-colors">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>Re-Verify with Paystack</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1641,6 +1749,81 @@
 
     function exportPaymentsData() {
         window.location.href = "{{ route('admin.revenue.export-payments') }}";
+    }
+
+    function openPaymentModal(payment) {
+        if (!payment) return;
+        
+        document.getElementById('modalRefText').textContent = payment.reference || 'N/A';
+        document.getElementById('modalUserName').textContent = payment.user_name || 'Unknown';
+        document.getElementById('modalUserEmail').textContent = payment.user_email || 'No email';
+        document.getElementById('modalUserPhone').textContent = payment.user_phone && payment.user_phone !== 'N/A' ? payment.user_phone : '';
+        
+        const userLink = document.getElementById('modalUserLink');
+        if (payment.user_id) {
+            userLink.href = `/admin/users/${payment.user_id}`;
+            userLink.classList.remove('hidden');
+        } else {
+            userLink.classList.add('hidden');
+        }
+        
+        document.getElementById('modalPlanName').textContent = payment.plan_name || 'N/A';
+        document.getElementById('modalDuration').textContent = payment.duration || 'Monthly';
+        document.getElementById('modalAmount').textContent = `GH₵${parseFloat(payment.amount || 0).toFixed(2)}`;
+        document.getElementById('modalProvider').textContent = payment.payment_provider || 'Paystack';
+        document.getElementById('modalTransactionId').textContent = payment.transaction_id || 'N/A';
+        document.getElementById('modalCreatedAt').textContent = payment.created_at || 'N/A';
+        document.getElementById('modalPaidAt').textContent = payment.paid_at || 'Not completed yet';
+        
+        const banner = document.getElementById('modalStatusBanner');
+        const icon = document.getElementById('modalStatusIcon');
+        const badge = document.getElementById('modalStatusBadge');
+        const responseText = document.getElementById('modalGatewayResponse');
+        const syncBadge = document.getElementById('modalSyncBadge');
+        const verifyAction = document.getElementById('modalVerifyAction');
+        const verifyForm = document.getElementById('modalVerifyForm');
+        
+        if (payment.verified_via_sync) {
+            syncBadge.classList.remove('hidden');
+        } else {
+            syncBadge.classList.add('hidden');
+        }
+        
+        if (payment.status === 'success') {
+            banner.className = 'p-4 rounded-xl border flex items-start space-x-3 bg-green-50 border-green-200 text-green-900';
+            icon.innerHTML = '<i class="fas fa-check-circle text-green-600"></i>';
+            badge.textContent = 'Payment Successful';
+            badge.className = 'font-bold text-sm text-green-800';
+            responseText.textContent = payment.gateway_response || 'Transaction approved and subscription active.';
+            responseText.className = 'text-xs mt-1 text-green-700';
+            verifyAction.classList.add('hidden');
+        } else if (payment.status === 'pending') {
+            banner.className = 'p-4 rounded-xl border flex items-start space-x-3 bg-yellow-50 border-yellow-200 text-yellow-900';
+            icon.innerHTML = '<i class="fas fa-clock text-yellow-600"></i>';
+            badge.textContent = 'Payment Pending';
+            badge.className = 'font-bold text-sm text-yellow-800';
+            responseText.textContent = payment.gateway_response || 'Waiting for customer authorization / USSD approval.';
+            responseText.className = 'text-xs mt-1 text-yellow-700';
+            verifyAction.classList.remove('hidden');
+            verifyForm.action = `/admin/payments/${payment.id}/verify`;
+        } else {
+            banner.className = 'p-4 rounded-xl border flex items-start space-x-3 bg-red-50 border-red-200 text-red-900';
+            icon.innerHTML = '<i class="fas fa-times-circle text-red-600"></i>';
+            badge.textContent = 'Payment Failed / Abandoned';
+            badge.className = 'font-bold text-sm text-red-800';
+            responseText.textContent = payment.gateway_response || 'Payment was declined or cancelled by the user.';
+            responseText.className = 'text-xs mt-1 text-red-700';
+            verifyAction.classList.remove('hidden');
+            verifyForm.action = `/admin/payments/${payment.id}/verify`;
+        }
+        
+        document.getElementById('paymentDetailsModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closePaymentModal() {
+        document.getElementById('paymentDetailsModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
     }
 
     // Filter payments table
