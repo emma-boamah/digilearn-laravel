@@ -3911,7 +3911,7 @@ class AdminController extends Controller
 
         // Get videos and content packages
         if (in_array($type, ['all', 'videos', 'quizzes', 'documents', 'pending', 'agent'])) {
-            $videoQuery = Video::with(['uploader:id,name,email', 'subject:id,name', 'documents', 'quizzes', 'categories'])
+            $videoQuery = Video::with(['uploader:id,name,email,avatar,google_avatar', 'subject:id,name', 'documents', 'quizzes', 'categories'])
                 ->when($query, function ($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
                         ->orWhere('description', 'like', "%{$query}%");
@@ -4004,7 +4004,7 @@ class AdminController extends Controller
 
         // Get standalone documents (when specifically filtering for documents OR when 'all' is selected)
         if ($type === 'all' || $type === 'documents') {
-            $documentsQuery = Document::with(['uploader:id,name,email'])
+            $documentsQuery = Document::with(['uploader:id,name,email,avatar,google_avatar'])
                 ->whereNull('video_id') // Only standalone in view to avoid duplicates
                 ->when($query, function ($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
@@ -4054,7 +4054,7 @@ class AdminController extends Controller
 
         // Get quizzes (when specifically filtering for quizzes OR when 'all' is selected)
         if ($type === 'all' || $type === 'quizzes') {
-            $quizzesQuery = Quiz::with(['uploader:id,name,email', 'ratings', 'subject:id,name'])
+            $quizzesQuery = Quiz::with(['uploader:id,name,email,avatar,google_avatar', 'ratings', 'subject:id,name'])
                 ->whereNull('video_id') // Only standalone in view to avoid duplicates
                 ->when($type !== 'agent', function ($q) {
                     $q->where(function ($sub) {
@@ -4567,6 +4567,69 @@ class AdminController extends Controller
         }
 
         return redirect()->back()->with('error', 'Failed to progress user.');
+    }
+
+    /**
+     * Show detailed inspection of content
+     */
+    public function showContent($contentId)
+    {
+        $content = null;
+        $contentType = null;
+
+        // Try Video first
+        $content = Video::with([
+            'uploader:id,name,email,avatar,google_avatar',
+            'subject',
+            'documents.uploader',
+            'quiz.uploader',
+            'quizzes',
+            'categories'
+        ])->find($contentId);
+
+        if ($content) {
+            $contentType = 'video';
+        } else {
+            // Try Document
+            $content = Document::with(['uploader:id,name,email,avatar,google_avatar', 'categories'])->find($contentId);
+            if ($content) {
+                $contentType = 'document';
+            } else {
+                // Try Quiz
+                $content = Quiz::with(['uploader:id,name,email,avatar,google_avatar', 'subject', 'categories', 'ratings'])->find($contentId);
+                if ($content) {
+                    $contentType = 'quiz';
+                }
+            }
+        }
+
+        if (!$content) {
+            return redirect()->route('admin.contents.index')->withErrors(['content' => 'Content not found.']);
+        }
+
+        // Resolve Level Group hierarchy
+        $levelGroup = null;
+        if (!empty($content->grade_level)) {
+            $level = Level::where('title', $content->grade_level)->with('levelGroup')->first();
+            $levelGroup = $level ? $level->levelGroup : null;
+        }
+
+        // Resolve Quiz info & parsed questions
+        $quizModel = null;
+        $quizData = null;
+        if ($contentType === 'quiz') {
+            $quizModel = $content;
+        } elseif (!empty($content->quiz_id) && $content->quiz) {
+            $quizModel = $content->quiz;
+        } elseif ($content->quizzes && $content->quizzes->count() > 0) {
+            $quizModel = $content->quizzes->first();
+        }
+
+        if ($quizModel && !empty($quizModel->quiz_data)) {
+            $quizData = is_string($quizModel->quiz_data) ? json_decode($quizModel->quiz_data, true) : $quizModel->quiz_data;
+        }
+
+        return view('admin.contents.show', compact('content', 'contentType', 'levelGroup', 'quizModel', 'quizData'));
     }
 
     /**

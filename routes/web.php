@@ -603,6 +603,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/contents/bulk-action', [AdminController::class, 'bulkAction'])->name('contents.bulk-action');
     Route::post('/fix-vimeo-privacy', [AdminController::class, 'fixVimeoPrivacy'])->name('fix-vimeo-privacy');
     Route::delete('/contents/youtube/{contentId}', [AdminController::class, 'destroyYouTubeContent'])->name('contents.youtube.destroy');
+    Route::get('/contents/{contentId}', [AdminController::class, 'showContent'])->name('contents.show');
     Route::get('/contents/{contentId}/edit', [AdminController::class, 'editContent'])->name('contents.edit');
     Route::put('/contents/{contentId}', [AdminController::class, 'updateContent'])->name('contents.update');
     Route::delete('/contents/{contentId}', [AdminController::class, 'destroyContent'])->name('contents.destroy');
