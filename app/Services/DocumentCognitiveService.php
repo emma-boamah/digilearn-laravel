@@ -262,9 +262,31 @@ Generate the JSON conforming exactly to this structure:
     }
   ],
   "tech_rules": {
-    "formula": "// Core Formula Matrix\\n1. Rule 1: Equation;\\n2. Rule 2: Equation;",
-    "code": "function executeRule(x) {\\n    return x;\\n}",
-    "note": "Important edge case consideration when applying these principles."
+    "concept_brief": "A 2-3 paragraph clear conceptual essay explaining the core ideas, intuition, and real-world significance of this document in plain, accessible language (like freeCodeCamp / Brilliant).",
+    "formula_rules": [
+      {
+        "name": "Rule or Theorem Name",
+        "latex": "LaTeX formula or formal rule",
+        "description": "Clear 1-sentence plain-English explanation of how and when to apply this rule."
+      }
+    ],
+    "worked_example": {
+      "title": "Worked Problem / Case Walkthrough",
+      "problem": "A concrete example or scenario demonstrating how to apply these rules.",
+      "steps": [
+        "Step 1: Identify the given components and applicable rule.",
+        "Step 2: Execute the transformation or calculation step.",
+        "Step 3: Simplify and verify the outcome."
+      ],
+      "solution": "Final result or key conclusion."
+    },
+    "practical_tips": [
+      "Key insight or boundary condition to remember.",
+      "Common misconception or trap to avoid."
+    ],
+    "formula": "// Formula & Rule Summary\\nRule 1: ...\\nRule 2: ...",
+    "code": "// Practical Implementation / Method Walkthrough\\nfunction applyRule(input) {\\n    return input;\\n}",
+    "note": "Critical operational note or edge case."
   },
   "checklist": [
     "Milestone 1 description",
