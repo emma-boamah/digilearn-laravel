@@ -487,32 +487,41 @@
                     <div class="p-5">
                         <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Subscription Plan
                         </h3>
-                        @if($user->currentSubscription)
+                        @if($user->currentSubscription || $user->school)
                         @php $subscription = $user->currentSubscription @endphp
                         <div class="flex items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
                             <div
                                 class="w-11 h-11 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                <i class="fas fa-crown text-blue-600"></i>
+                                <i class="fas {{ $user->school ? 'fa-school text-blue-600' : 'fa-crown text-blue-600' }}"></i>
                             </div>
                             <div class="ml-3 flex-1 min-w-0">
-                                <p class="text-sm font-bold text-gray-900">{{ $subscription->pricingPlan->name ??
-                                    'Unknown Plan' }}</p>
-                                <p class="text-xs text-gray-400">
-                                    @if($subscription->status === 'active')
-                                    Active since {{ $subscription->created_at->format('M d, Y') }}
-                                    @elseif($subscription->status === 'trial')
-                                    Trial • {{ $subscription->trial_days_remaining ?? 0 }} days left
+                                <p class="text-sm font-bold text-gray-900">
+                                    @if($user->school)
+                                        {{ $user->school->name }} (School Plan)
                                     @else
-                                    {{ ucfirst($subscription->status) }}
+                                        {{ $subscription->pricingPlan->name ?? 'Unknown Plan' }}
+                                    @endif
+                                </p>
+                                <p class="text-xs text-gray-500">
+                                    @if($user->school)
+                                        <span class="inline-flex items-center text-blue-600 font-medium">
+                                            <i class="fas fa-building mr-1"></i> B2B Tier: {{ ucfirst($user->school->plan_tier ?? 'School') }}
+                                        </span>
+                                    @elseif($subscription && $subscription->status === 'active')
+                                        Active since {{ $subscription->created_at->format('M d, Y') }} • {{ $subscription->billing_cycle }}
+                                    @elseif($subscription && $subscription->status === 'trial')
+                                        Trial • {{ $subscription->trial_days_remaining ?? 0 }} days left
+                                    @elseif($subscription)
+                                        {{ ucfirst($subscription->status) }}
                                     @endif
                                 </p>
                             </div>
-                            @if($subscription->status === 'active')
+                            @if($user->school || ($subscription && $subscription->status === 'active'))
                             <div
                                 class="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
                                 <i class="fas fa-check text-green-600 text-xs"></i>
                             </div>
-                            @elseif($subscription->status === 'trial')
+                            @elseif($subscription && $subscription->status === 'trial')
                             <div
                                 class="w-7 h-7 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
                                 <i class="fas fa-clock text-yellow-600 text-xs"></i>
@@ -524,11 +533,15 @@
                             @endif
                         </div>
 
-                        @if($subscription->expires_at)
+                        @if($subscription && $subscription->expires_at)
                         <div class="mt-3 flex items-center justify-between px-1">
                             <span class="text-xs text-gray-400">Expires</span>
-                            <span class="text-xs font-semibold text-gray-600">{{ $subscription->expires_at->format('M d,
-                                Y') }} ({{ $subscription->expires_at->diffForHumans() }})</span>
+                            <span class="text-xs font-semibold text-gray-600">{{ $subscription->expires_at->format('M d, Y') }} ({{ $subscription->expires_at->diffForHumans() }})</span>
+                        </div>
+                        @elseif($user->school && $user->school->subscription_expires_at)
+                        <div class="mt-3 flex items-center justify-between px-1">
+                            <span class="text-xs text-gray-400">School Expiry</span>
+                            <span class="text-xs font-semibold text-gray-600">{{ $user->school->subscription_expires_at->format('M d, Y') }} ({{ $user->school->subscription_expires_at->diffForHumans() }})</span>
                         </div>
                         @endif
                         @else

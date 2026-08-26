@@ -321,6 +321,14 @@ class PaymentController extends Controller
             $paystackResponse = $this->paystack->verifyPayment($payment->reference);
 
             if (($paystackResponse['data']['status'] ?? null) === 'success') {
+                $meta = $payment->metadata ?? [];
+                $meta['verified_via_sync'] = true;
+                $meta['sync_verified_at'] = now()->toISOString();
+                $meta['gateway_response'] = $paystackResponse['data']['gateway_response'] ?? 'Successful';
+                $meta['channel'] = $paystackResponse['data']['channel'] ?? null;
+                $payment->metadata = $meta;
+                $payment->save();
+
                 $this->handleSuccessfulPayment($payment, $paystackResponse['data']);
 
                 return [
@@ -331,14 +339,20 @@ class PaymentController extends Controller
                 ];
             } else {
                 $status = $paystackResponse['data']['status'] ?? 'unknown';
+                $meta = $payment->metadata ?? [];
+                $meta['gateway_response'] = $paystackResponse['data']['gateway_response'] ?? ucfirst($status);
+                $meta['channel'] = $paystackResponse['data']['channel'] ?? null;
+                $meta['last_sync_checked_at'] = now()->toISOString();
+                $payment->metadata = $meta;
                 if (in_array($status, ['failed', 'abandoned'])) {
-                    $payment->update(['status' => 'failed']);
+                    $payment->status = 'failed';
                 }
+                $payment->save();
 
                 return [
                     'success' => false,
                     'status' => $status,
-                    'message' => "Payment status on Paystack is '{$status}'.",
+                    'message' => "Payment status on Paystack is '{$status}'. " . ($paystackResponse['data']['gateway_response'] ?? ''),
                 ];
             }
         } catch (\Exception $e) {
@@ -376,8 +390,20 @@ class PaymentController extends Controller
                 'paid_amount' => $paidAmountFloat,
             ]);
 
-            $payment->update(['status' => 'failed']);
+            $meta = $payment->metadata ?? [];
+            $meta['gateway_response'] = 'Amount mismatch error: Expected GH₵' . $expectedAmount . ', Paid GH₵' . $paidAmountFloat;
+            $payment->update([
+                'status' => 'failed',
+                'metadata' => $meta,
+            ]);
             return;
+        }
+
+        $meta = $payment->metadata ?? [];
+        $meta['gateway_response'] = $paystackData['gateway_response'] ?? 'Successful';
+        $meta['channel'] = $paystackData['channel'] ?? null;
+        if (!empty($paystackData['customer']['phone'])) {
+            $meta['customer_phone'] = $paystackData['customer']['phone'];
         }
 
         $payment->update([
@@ -385,6 +411,7 @@ class PaymentController extends Controller
             'transaction_id' => $paystackData['id'],
             'payment_provider' => $this->extractPaymentProvider($paystackData),
             'paid_at' => now(),
+            'metadata' => $meta,
         ]);
 
         // Credit wallet top-up: add credits and return early

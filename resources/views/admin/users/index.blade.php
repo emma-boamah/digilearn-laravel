@@ -279,12 +279,26 @@
                                     {{ $user->grade ? ucwords(str_replace('-', ' ', $user->grade)) : 'Not Set' }}
                                 </span>
                             </td>
-                            <!-- Add this new cell for Subscription information -->
+                            <!-- Subscription information -->
                             <td class="px-6 py-4 whitespace-nowrap">
-                                @if($user->currentSubscription)
-                                    <span class="text-sm text-gray-900">{{ ucfirst($user->currentSubscription->status) }}</span>
+                                @if($user->school)
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-800 border border-gray-200" title="School: {{ $user->school->name }}">
+                                        <i class="fas fa-school mr-1 text-[10px] text-blue-600"></i> {{ Str::limit($user->school->name, 12) }}
+                                    </span>
+                                @elseif($user->currentSubscription)
+                                    @if($user->currentSubscription->isInTrial())
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                            <i class="fas fa-clock mr-1 text-[10px] text-blue-500"></i> Trial ({{ $user->currentSubscription->pricingPlan->name ?? 'Plan' }})
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-600 text-white shadow-sm">
+                                            <i class="fas fa-crown mr-1 text-[10px] text-blue-200"></i> {{ $user->currentSubscription->pricingPlan->name ?? 'Active' }}
+                                        </span>
+                                    @endif
                                 @else
-                                    <span class="text-sm text-gray-500">Free</span>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                                        Free
+                                    </span>
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
