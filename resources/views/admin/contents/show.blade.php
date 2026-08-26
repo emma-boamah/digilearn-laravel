@@ -4,6 +4,56 @@
 @section('page-title', 'Content Inspection & Details')
 @section('page-description', 'Detailed telemetry, storage destinations, attached resources, and academic metadata')
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mathlive/mathlive-static.css" />
+<style>
+    /* MathLive read-only rendering for inspection view */
+    math-field {
+        display: inline-block;
+        font-size: 1rem;
+        border: none;
+        padding: 2px 4px;
+        background: transparent;
+        pointer-events: none;
+        vertical-align: middle;
+    }
+    math-field::part(virtual-keyboard-toggle),
+    math-field::part(menu-toggle) {
+        display: none !important;
+    }
+    .math-wrapper {
+        display: inline-block;
+        vertical-align: middle;
+    }
+    /* Ensure question text with math renders inline properly */
+    .quiz-question-text math-field,
+    .quiz-option-text math-field {
+        font-size: inherit;
+    }
+</style>
+@endpush
+
+@push('scripts')
+<script defer src="https://unpkg.com/mathlive" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+<script type="module" nonce="{{ request()->attributes->get('csp_nonce') }}">
+    import { renderMathInElement } from "https://unpkg.com/mathlive?module";
+    window.renderMathInElement = renderMathInElement;
+    // Auto-render any LaTeX or math-field elements once MathLive is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.quiz-question-text, .quiz-option-text').forEach(el => {
+            if (window.renderMathInElement) {
+                renderMathInElement(el);
+            }
+        });
+        // Set all math-fields to read-only
+        document.querySelectorAll('math-field').forEach(mf => {
+            mf.setAttribute('read-only', '');
+            mf.setAttribute('math-virtual-keyboard-policy', 'none');
+        });
+    });
+</script>
+@endpush
+
 @section('content')
 <div class="min-h-screen bg-slate-50/60 dark:bg-gray-900 py-6 px-4 sm:px-6 lg:px-8">
 
@@ -344,8 +394,8 @@
                                         <span class="text-[11px] font-bold text-slate-500">{{ $q['points'] }} pt(s)</span>
                                     @endif
                                 </div>
-                                <h4 class="text-xs font-bold text-slate-900 dark:text-white mb-3">
-                                    {{ $q['question_text'] ?? $q['question'] ?? 'Question text not found' }}
+                                <h4 class="text-xs font-bold text-slate-900 dark:text-white mb-3 quiz-question-text">
+                                    {!! $q['question_text'] ?? $q['question'] ?? 'Question text not found' !!}
                                 </h4>
 
                                 @if($qType === 'mcq' && is_array($options) && count($options) > 0)
@@ -360,7 +410,7 @@
                                                 <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold {{ $isCorrect ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600' }}">
                                                     {{ chr(65 + $optIdx) }}
                                                 </span>
-                                                <span class="truncate flex-1">{{ $optText }}</span>
+                                                <span class="truncate flex-1 quiz-option-text">{!! $optText !!}</span>
                                                 @if($isCorrect)
                                                     <i class="fas fa-check-circle text-emerald-600 text-xs ml-auto"></i>
                                                 @endif
