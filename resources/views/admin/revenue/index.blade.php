@@ -458,72 +458,71 @@
         @endif
 
         @if($activeTab === 'payments' && $paymentAnalytics)
-        <!-- Payment Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <!-- Total Payments -->
+        <!-- Payment Stats Grid (3 Clean Cards) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- 1. Processed Payment Volume -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
-                <div class="flex items-center justify-between">
+                <div class="flex items-start justify-between">
                     <div class="flex-1">
-                        <p class="text-gray-600 text-sm font-medium uppercase tracking-wide">Total Payments</p>
-                        <p class="text-3xl font-bold text-gray-900 mt-2">{{ number_format($paymentAnalytics['total_payments']) }}</p>
-                        <div class="flex items-center mt-3">
-                            <div class="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                            <p class="text-gray-500 text-sm">{{ $paymentAnalytics['successful_payments'] }} successful</p>
-                        </div>
-                    </div>
-                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl">
-                        <i class="fas fa-credit-card text-blue-600 text-xl"></i>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Success Rate -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
-                <div class="flex items-center justify-between">
-                    <div class="flex-1">
-                        <p class="text-gray-600 text-sm font-medium uppercase tracking-wide">Success Rate</p>
-                        <p class="text-3xl font-bold text-gray-900 mt-2">{{ $paymentAnalytics['success_rate'] }}%</p>
-                        <div class="flex items-center mt-3">
-                            <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                            <p class="text-gray-500 text-sm">{{ $paymentAnalytics['status_distribution']['failed'] ?? 0 }} failed</p>
-                        </div>
-                    </div>
-                    <div class="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl">
-                        <i class="fas fa-check-circle text-green-600 text-xl"></i>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Average Payment Amount -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
-                <div class="flex items-center justify-between">
-                    <div class="flex-1">
-                        <p class="text-gray-600 text-sm font-medium uppercase tracking-wide">Avg Amount</p>
-                        <p class="text-3xl font-bold text-gray-900 mt-2">GH₵{{ number_format($paymentAnalytics['average_amount'], 2) }}</p>
-                        <div class="flex items-center mt-3">
-                            <div class="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
-                            <p class="text-gray-500 text-sm">Per successful payment</p>
-                        </div>
-                    </div>
-                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl">
-                        <i class="fas fa-chart-line text-purple-600 text-xl"></i>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Total Value -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
-                <div class="flex items-center justify-between">
-                    <div class="flex-1">
-                        <p class="text-gray-600 text-sm font-medium uppercase tracking-wide">Total Value</p>
+                        <p class="text-gray-500 text-xs font-semibold uppercase tracking-wider">
+                            {{ is_numeric($selectedYear) ? 'Year ' . $selectedYear . ' Volume' : ($selectedYear === 'rolling_12' ? 'Rolling 12M Volume' : 'Total Processed Volume') }}
+                        </p>
                         <p class="text-3xl font-bold text-gray-900 mt-2">GH₵{{ number_format($paymentAnalytics['total_value'], 2) }}</p>
-                        <div class="flex items-center mt-3">
-                            <div class="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
-                            <p class="text-gray-500 text-sm">All successful payments</p>
+                        <div class="flex items-center flex-wrap gap-2 mt-3">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-blue-50 text-blue-700">
+                                <i class="fas fa-check-double mr-1 text-[10px]"></i>
+                                {{ number_format($paymentAnalytics['successful_payments']) }} completed
+                            </span>
+                            <span class="text-gray-400 text-xs">•</span>
+                            <span class="text-gray-500 text-xs font-medium">{{ number_format($paymentAnalytics['total_payments']) }} total attempts</span>
                         </div>
                     </div>
-                    <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl">
-                        <i class="fas fa-dollar-sign text-orange-600 text-xl"></i>
+                    <div class="bg-blue-50 p-3.5 rounded-xl text-blue-600 shadow-sm ml-3">
+                        <i class="fas fa-coins text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Gateway Success Rate -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <p class="text-gray-500 text-xs font-semibold uppercase tracking-wider">Transaction Success Rate</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-2">{{ $paymentAnalytics['success_rate'] }}%</p>
+                        <div class="flex items-center flex-wrap gap-2 mt-3">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold {{ $paymentAnalytics['success_rate'] >= 80 ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700' }}">
+                                <i class="fas {{ $paymentAnalytics['success_rate'] >= 80 ? 'fa-check-circle' : 'fa-exclamation-triangle' }} mr-1 text-[10px]"></i>
+                                {{ $paymentAnalytics['successful_payments'] }} passed
+                            </span>
+                            <span class="text-gray-400 text-xs">•</span>
+                            <span class="text-gray-500 text-xs font-medium">{{ $paymentAnalytics['status_distribution']['failed'] ?? 0 }} failed</span>
+                            <span class="text-gray-400 text-xs">•</span>
+                            <span class="text-gray-500 text-xs font-medium">{{ $paymentAnalytics['status_distribution']['pending'] ?? 0 }} pending</span>
+                        </div>
+                    </div>
+                    <div class="bg-blue-50 p-3.5 rounded-xl text-blue-600 shadow-sm ml-3">
+                        <i class="fas fa-shield-alt text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Average Ticket Size -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <p class="text-gray-500 text-xs font-semibold uppercase tracking-wider">Average Order Amount</p>
+                        <p class="text-3xl font-bold text-gray-900 mt-2">GH₵{{ number_format($paymentAnalytics['average_amount'], 2) }}</p>
+                        <div class="flex items-center flex-wrap gap-2 mt-3">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-gray-100 text-gray-700">
+                                <i class="fas fa-credit-card mr-1 text-[10px] text-blue-600"></i>
+                                Per successful order
+                            </span>
+                            <span class="text-gray-400 text-xs">•</span>
+                            <span class="text-gray-500 text-xs font-medium">Paystack Gateway</span>
+                        </div>
+                    </div>
+                    <div class="bg-blue-50 p-3.5 rounded-xl text-blue-600 shadow-sm ml-3">
+                        <i class="fas fa-receipt text-xl"></i>
                     </div>
                 </div>
             </div>
