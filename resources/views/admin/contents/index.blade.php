@@ -1345,12 +1345,19 @@
         <div class="filter-tabs">
             <a href="{{ route('admin.contents.index', ['q' => $query, 'sort' => $sort]) }}"
                 class="filter-tab {{ $type === 'all' ? 'active' : '' }}">All</a>
+            <a href="{{ route('admin.contents.index', ['q' => $query, 'type' => 'drafts', 'sort' => $sort]) }}"
+                class="filter-tab {{ $type === 'drafts' || $type === 'draft' ? 'active' : '' }}">
+                Drafts
+                @if(($stats['total_drafts'] ?? 0) > 0)
+                    <span class="ml-2 bg-slate-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">{{ $stats['total_drafts'] }}</span>
+                @endif
+            </a>
             <a href="{{ route('admin.contents.index', ['q' => $query, 'type' => 'pending', 'sort' => $sort]) }}"
                 class="filter-tab {{ $type === 'pending' ? 'active' : '' }}">
                 Pending Review
                 @if($stats['pending_reviews'] > 0)
                     <span
-                        class="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">{{ $stats['pending_reviews'] }}</span>
+                        class="ml-2 bg-red-600 text-white text-xs px-2 py-1 rounded-full font-bold">{{ $stats['pending_reviews'] }}</span>
                 @endif
             </a>
             <a href="{{ route('admin.contents.index', ['q' => $query, 'type' => 'videos', 'sort' => $sort]) }}"
@@ -1413,11 +1420,9 @@
                                 <th>Content</th>
                                 <th>Subject</th>
                                 <th>Grade Level</th>
+                                <th>Status</th>
                                 <th>Date</th>
                                 <th class="stats-cell">Views</th>
-                                <th class="stats-cell">Comments</th>
-                                <th>Documents</th>
-                                <th>Quiz</th>
                                 <th>Uploader</th>
                                 <th class="actions-cell"></th>
                             </tr>
@@ -1503,7 +1508,7 @@
                                             </div>
                                             <div class="video-info">
                                                 <div class="video-title">
-                                                    <a href="{{ route('admin.contents.show', $content->id) }}" class="hover:text-blue-600 transition-colors">
+                                                    <a href="{{ route('admin.contents.show', ['contentId' => $content->id, 'type' => $content->content_type]) }}" class="hover:text-blue-600 transition-colors">
                                                         {{ $content->title }}
                                                     </a>
                                                     @if(isset($content->is_agent_generated) && $content->is_agent_generated)
@@ -1518,6 +1523,20 @@
                                                         </span>
                                                     @endif
                                                 </div>
+                                                @if($content->content_type === 'video' && (($content->documents_count ?? 0) > 0 || !empty($content->document_path) || ($content->quizzes_count ?? 0) > 0 || !empty($content->quiz_id)))
+                                                    <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                                                        @if(($content->documents_count ?? 0) > 0 || !empty($content->document_path))
+                                                            <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-300" title="{{ ($content->documents_count ?? 1) }} Attached Document(s)">
+                                                                <i class="fas fa-paperclip text-[9px] text-slate-500"></i> {{ ($content->documents_count ?? 1) }} Doc{{ ($content->documents_count ?? 1) > 1 ? 's' : '' }}
+                                                            </span>
+                                                        @endif
+                                                        @if(($content->quizzes_count ?? 0) > 0 || !empty($content->quiz_id))
+                                                            <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200" title="Attached Quiz">
+                                                                <i class="fas fa-clipboard-check text-[9px] text-blue-500"></i> Quiz
+                                                            </span>
+                                                        @endif
+                                                    </div>
+                                                @endif
                                                 @if($content->description)
                                                     <div class="video-description">{!! $content->description !!}</div>
                                                 @endif
@@ -1538,52 +1557,33 @@
                                             <span class="text-gray-500">—</span>
                                         @endif
                                     </td>
+                                    <td class="status-cell">
+                                        @if(($content->status ?? '') === 'published' || ($content->status ?? '') === 'approved')
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                                <i class="fas fa-check-circle text-[10px] text-blue-600"></i> Published
+                                            </span>
+                                        @elseif(($content->status ?? '') === 'draft')
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-300">
+                                                <i class="fas fa-pencil-alt text-[10px] text-slate-500"></i> Draft
+                                            </span>
+                                        @elseif(($content->status ?? '') === 'pending')
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-300">
+                                                <i class="fas fa-clock text-[10px] text-blue-600"></i> Pending
+                                            </span>
+                                        @elseif(($content->status ?? '') === 'rejected')
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
+                                                <i class="fas fa-times-circle text-[10px] text-red-600"></i> Rejected
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-300">
+                                                {{ ucfirst($content->status ?? 'Draft') }}
+                                            </span>
+                                        @endif
+                                    </td>
                                     <td class="date-cell">
                                         <div class="date-primary">{{ $content->published_date }}</div>
-                                        <div class="date-secondary">{{ $content->status }}</div>
                                     </td>
                                     <td class="stats-cell">{{ number_format($content->views) }}</td>
-                                    <td class="stats-cell">{{ number_format($content->comments_count) }}</td>
-                                    <td>
-                                        @if($content->content_type === 'video')
-                                            @if(($content->documents_count ?? 0) > 0)
-                                                <span class="badge badge-available">
-                                                    <i class="fas fa-check-circle"></i>
-                                                </span>
-                                            @else
-                                                <span class="badge badge-none">—</span>
-                                            @endif
-                                        @else
-                                            <span class="badge badge-none">—</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if($content->content_type === 'video')
-                                            @if(($content->quizzes_count ?? 0) > 0 || (!empty($content->quiz_id) && $content->quiz))
-                                                @php
-                                                    $hasDraftQuiz = false;
-                                                    if (!empty($content->quiz_id) && $content->quiz) {
-                                                        $hasDraftQuiz = ($content->quiz->status ?? 'published') === 'draft';
-                                                    } elseif ($content->quizzes && $content->quizzes->count() > 0) {
-                                                        $hasDraftQuiz = $content->quizzes->contains(fn($q) => ($q->status ?? 'published') === 'draft');
-                                                    }
-                                                @endphp
-                                                @if($hasDraftQuiz)
-                                                    <span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold">
-                                                        <i class="fas fa-pencil-alt mr-1"></i>Draft
-                                                    </span>
-                                                @else
-                                                    <span class="badge badge-available">
-                                                        <i class="fas fa-check-circle"></i>
-                                                    </span>
-                                                @endif
-                                            @else
-                                                <span class="badge badge-none">—</span>
-                                            @endif
-                                        @else
-                                            <span class="badge badge-none">—</span>
-                                        @endif
-                                    </td>
                                     <td class="uploader-cell">
                                         @if($content->uploader)
                                             <div class="flex items-center gap-2">
@@ -1604,7 +1604,7 @@
                                         @endif
                                     </td>
                                     <td class="actions-cell">
-                                        <a href="{{ route('admin.contents.show', $content->id) }}" class="action-btn" title="View Details" style="color: #64748b;">
+                                        <a href="{{ route('admin.contents.show', ['contentId' => $content->id, 'type' => $content->content_type]) }}" class="action-btn" title="View Details" style="color: #64748b;">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         @if($type === 'pending' && $content->content_type === 'video')
@@ -2831,8 +2831,13 @@
                 if (editBtn) {
                     e.preventDefault();
                     const contentId = editBtn.getAttribute('data-content-id');
+                    const contentType = editBtn.getAttribute('data-content-type');
                     if (contentId) {
-                        window.location.href = `{{ route("admin.contents.edit", ":contentId") }}`.replace(':contentId', contentId);
+                        let editUrl = `{{ route("admin.contents.edit", ":contentId") }}`.replace(':contentId', contentId);
+                        if (contentType) {
+                            editUrl += (editUrl.includes('?') ? '&' : '?') + 'type=' + encodeURIComponent(contentType);
+                        }
+                        window.location.href = editUrl;
                     }
                     return;
                 }
@@ -2912,7 +2917,7 @@
 
             async function deleteContent(contentId, contentType, videoSource, deleteRelated = true) {
                 try {
-                    // Use unified delete endpoint
+                    // Use unified delete endpoint with explicit content type
                     const response = await fetch(`{{ route("admin.contents.destroy", ":contentId") }}`.replace(':contentId', contentId), {
                         method: 'DELETE',
                         headers: {
@@ -2920,7 +2925,7 @@
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
                         },
-                        body: JSON.stringify({ delete_related: deleteRelated })
+                        body: JSON.stringify({ delete_related: deleteRelated, type: contentType })
                     });
 
                     const result = await response.json();
