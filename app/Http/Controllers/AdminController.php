@@ -4249,7 +4249,9 @@ class AdminController extends Controller
         // Get quizzes (when specifically filtering for quizzes OR when 'all' / 'drafts' is selected)
         if ($type === 'all' || $type === 'quizzes' || $type === 'drafts' || $type === 'draft') {
             $quizzesQuery = Quiz::with(['uploader:id,name,email,avatar,google_avatar', 'ratings', 'subject:id,name'])
-                ->whereNull('video_id') // Only standalone in view to avoid duplicates
+                ->when($type !== 'drafts' && $type !== 'draft', function ($q) {
+                    $q->whereNull('video_id'); // Only standalone in view to avoid duplicates when viewing All or Quizzes
+                })
                 ->when($type === 'drafts' || $type === 'draft', function ($q) {
                     $q->where('status', 'draft');
                 })
@@ -4324,6 +4326,10 @@ class AdminController extends Controller
             $targetType = $typeMap[$type];
             $contents = $contents->filter(function ($item) use ($targetType) {
                 return ($item->content_type ?? 'video') === $targetType;
+            });
+        } elseif ($type === 'drafts' || $type === 'draft') {
+            $contents = $contents->filter(function ($item) {
+                return ($item->status ?? '') === 'draft';
             });
         }
 
