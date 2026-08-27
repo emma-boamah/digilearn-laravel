@@ -102,15 +102,19 @@
                     @endif
 
                     @if(($content->status ?? 'approved') === 'approved' || ($content->status ?? '') === 'published')
-                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
                             Published
                         </span>
                     @elseif(($content->status ?? '') === 'pending')
-                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">
                             Pending Review
                         </span>
+                    @elseif(($content->status ?? '') === 'rejected')
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200">
+                            Rejected
+                        </span>
                     @else
-                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300">
                             {{ ucfirst($content->status ?? 'Draft') }}
                         </span>
                     @endif
@@ -123,7 +127,7 @@
 
         <!-- Quick Action Buttons -->
         <div class="flex items-center gap-2.5 flex-wrap">
-            <a href="{{ route('admin.contents.edit', $content->id) }}" 
+            <a href="{{ route('admin.contents.edit', ['contentId' => $content->id, 'type' => $contentType]) }}" 
                class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-xs transition-colors">
                 <i class="fas fa-edit"></i>
                 Edit Content

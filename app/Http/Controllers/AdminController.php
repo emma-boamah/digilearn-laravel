@@ -2404,7 +2404,7 @@ class AdminController extends Controller
             );
         }
 
-        return redirect()->route('admin.content.videos.index')->with('success', 'Video uploaded successfully and is pending review!');
+        return redirect()->route('admin.contents.index')->with('success', 'Video uploaded successfully and is pending review!');
     }
 
     public function editVideo(Video $video)
@@ -2490,7 +2490,7 @@ class AdminController extends Controller
             Document::where('video_id', $video->id)->delete();
         }
 
-        return redirect()->route('admin.content.videos.index')->with('success', 'Video updated successfully!');
+        return redirect()->route('admin.contents.index')->with('success', 'Video updated successfully!');
     }
 
     public function destroyVideo(Video $video, $deleteRelated = true)
@@ -2556,7 +2556,7 @@ class AdminController extends Controller
             $video->save();
         }
 
-        return redirect()->route('admin.content.videos.index')->with('success', 'Video deleted successfully!');
+        return redirect()->route('admin.contents.index')->with('success', 'Video deleted successfully!');
     }
 
     public function toggleVideoFeature(Video $video)
@@ -3028,7 +3028,7 @@ class AdminController extends Controller
             'shuffle_questions' => $request->boolean('shuffle_questions'),
         ]);
 
-        return redirect()->route('admin.content.quizzes.index')->with('success', 'Quiz uploaded successfully!');
+        return redirect()->route('admin.contents.index')->with('success', 'Quiz uploaded successfully!');
     }
 
     public function editQuiz(Quiz $quiz)
@@ -3069,13 +3069,16 @@ class AdminController extends Controller
             'shuffle_questions' => $request->boolean('shuffle_questions'),
         ]);
 
-        return redirect()->route('admin.content.quizzes.index')->with('success', 'Quiz updated successfully!');
+        return redirect()->route('admin.contents.index')->with('success', 'Quiz updated successfully!');
     }
 
     public function destroyQuiz(Quiz $quiz)
     {
         $quiz->delete();
-        return redirect()->route('admin.content.quizzes.index')->with('success', 'Quiz deleted successfully!');
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Quiz deleted successfully!']);
+        }
+        return redirect()->route('admin.contents.index')->with('success', 'Quiz deleted successfully!');
     }
 
     public function toggleQuizFeature(Quiz $quiz)
@@ -3206,30 +3209,37 @@ class AdminController extends Controller
 
         $this->notificationService->notifyNewDocument($document);
 
-        return redirect()->route('admin.content.documents.index')->with('success', 'Document uploaded successfully!');
+        return redirect()->route('admin.contents.index')->with('success', 'Document uploaded successfully!');
     }
 
     public function editDocument(Document $document)
     {
         $gradeLevels = Level::orderBy('id')->pluck('title')->toArray();
-        return response()->json($document); // Return JSON for modal
+        return view('admin.content.documents.edit', compact('document', 'gradeLevels'));
     }
 
     public function updateDocument(Request $request, Document $document)
     {
         $request->validate([
             'title' => 'required|string|max:255',
-            'document_file' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx|max:20480',
             'grade_level' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'is_featured' => 'boolean',
+            'document_file' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,txt|max:10240',
         ]);
 
         if ($request->hasFile('document_file')) {
+            // Delete old file
             if ($document->file_path) {
                 Storage::disk('public')->delete($document->file_path);
             }
-            $document->file_path = $request->file('document_file')->store('documents', 'public');
+
+            $file = $request->file('document_file');
+            $path = $file->store('documents', 'public');
+
+            $document->file_path = $path;
+            $document->file_type = $file->getClientOriginalExtension();
+            $document->file_size_bytes = $file->getSize();
         }
 
         $document->update([
@@ -3239,7 +3249,7 @@ class AdminController extends Controller
             'is_featured' => $request->has('is_featured'),
         ]);
 
-        return redirect()->route('admin.content.documents.index')->with('success', 'Document updated successfully!');
+        return redirect()->route('admin.contents.index')->with('success', 'Document updated successfully!');
     }
 
     public function destroyDocument(Document $document)
@@ -3249,7 +3259,11 @@ class AdminController extends Controller
         }
         $document->delete();
 
-        return redirect()->route('admin.content.documents.index')->with('success', 'Document deleted successfully!');
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Document deleted successfully!']);
+        }
+
+        return redirect()->route('admin.contents.index')->with('success', 'Document deleted successfully!');
     }
 
     public function toggleDocumentFeature(Document $document)
@@ -4015,6 +4029,7 @@ class AdminController extends Controller
             'total_quizzes' => Quiz::count(),
             'total_views' => Video::sum('views') + Document::sum('views') + Quiz::sum('attempts_count'),
             'pending_reviews' => Video::pending()->count(),
+            'total_drafts' => Video::where('status', 'draft')->count() + Quiz::where('status', 'draft')->count(),
         ];
 
         // Get level groups for filters
@@ -4087,7 +4102,7 @@ class AdminController extends Controller
         $contents = collect();
 
         // Get videos and content packages
-        if (in_array($type, ['all', 'videos', 'quizzes', 'documents', 'pending', 'agent'])) {
+        if (in_array($type, ['all', 'videos', 'quizzes', 'documents', 'pending', 'drafts', 'draft', 'agent'])) {
             $videoQuery = Video::with(['uploader:id,name,email,avatar,google_avatar', 'subject:id,name', 'documents', 'quizzes', 'categories'])
                 ->when($query, function ($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
@@ -4097,6 +4112,8 @@ class AdminController extends Controller
             // Filter for pending videos if type is 'pending'
             if ($type === 'pending') {
                 $videoQuery->where('status', 'pending');
+            } elseif ($type === 'drafts' || $type === 'draft') {
+                $videoQuery->where('status', 'draft');
             }
 
             // Filter for agent-generated videos if type is 'agent'
@@ -4223,16 +4240,19 @@ class AdminController extends Controller
                 $item->uploader_email = $item->uploader->email ?? '';
                 $item->thumbnail_url = $item->file_path ? \App\Services\PdfParser::getCoverThumbnailUrl($item->file_path) : null;
                 $item->thumbnail_path = null;
-                $item->status = 'approved';
+                $item->status = 'published';
                 $item->duration_formatted = 'N/A';
                 return $item;
             }));
         }
 
-        // Get quizzes (when specifically filtering for quizzes OR when 'all' is selected)
-        if ($type === 'all' || $type === 'quizzes') {
+        // Get quizzes (when specifically filtering for quizzes OR when 'all' / 'drafts' is selected)
+        if ($type === 'all' || $type === 'quizzes' || $type === 'drafts' || $type === 'draft') {
             $quizzesQuery = Quiz::with(['uploader:id,name,email,avatar,google_avatar', 'ratings', 'subject:id,name'])
                 ->whereNull('video_id') // Only standalone in view to avoid duplicates
+                ->when($type === 'drafts' || $type === 'draft', function ($q) {
+                    $q->where('status', 'draft');
+                })
                 ->when($type !== 'agent', function ($q) {
                     $q->where(function ($sub) {
                         $sub->whereNull('is_agent_generated')->orWhere('is_agent_generated', false);
@@ -4266,6 +4286,7 @@ class AdminController extends Controller
                 'is_featured',
                 'subject_id',
                 'video_id',
+                'status',
                 DB::raw("'quiz' as content_type"),
                 DB::raw('attempts_count as views'), // Use attempts_count for sorting by views
                 DB::raw('0 as likes'),
@@ -4279,7 +4300,7 @@ class AdminController extends Controller
                 $item->uploader_name = $item->uploader->name ?? 'Unknown';
                 $item->uploader_email = $item->uploader->email ?? '';
                 $item->thumbnail_path = null;
-                $item->status = 'approved'; // Quizzes are auto-approved
+                $item->status = $item->status ?: 'published';
                 $item->duration_formatted = 'N/A';
                 $item->description = $item->subject->name ?? 'No Subject';
                 $item->subject_name = $item->subject->name ?? null;
@@ -4749,34 +4770,42 @@ class AdminController extends Controller
     /**
      * Show detailed inspection of content
      */
-    public function showContent($contentId)
+    public function showContent(Request $request, $contentId)
     {
         $content = null;
-        $contentType = null;
+        $contentType = $request->query('type');
 
-        // Try Video first
-        $content = Video::with([
-            'uploader:id,name,email,avatar,google_avatar',
-            'subject',
-            'documents.uploader',
-            'quiz.uploader',
-            'quizzes',
-            'categories'
-        ])->find($contentId);
-
-        if ($content) {
-            $contentType = 'video';
-        } else {
-            // Try Document
+        // Look up by explicitly requested type first
+        if ($contentType === 'quiz') {
+            $content = Quiz::with(['uploader:id,name,email,avatar,google_avatar', 'subject', 'categories', 'ratings'])->find($contentId);
+        } elseif ($contentType === 'document') {
             $content = Document::with(['uploader:id,name,email,avatar,google_avatar', 'categories'])->find($contentId);
-            if ($content) {
+        } elseif ($contentType === 'video') {
+            $content = Video::with([
+                'uploader:id,name,email,avatar,google_avatar',
+                'subject',
+                'documents.uploader',
+                'quiz.uploader',
+                'quizzes',
+                'categories'
+            ])->find($contentId);
+        }
+
+        // Fallback: if type was not supplied or not found under requested type, search across models
+        if (!$content) {
+            if ($content = Quiz::with(['uploader:id,name,email,avatar,google_avatar', 'subject', 'categories', 'ratings'])->find($contentId)) {
+                $contentType = 'quiz';
+            } elseif ($content = Document::with(['uploader:id,name,email,avatar,google_avatar', 'categories'])->find($contentId)) {
                 $contentType = 'document';
-            } else {
-                // Try Quiz
-                $content = Quiz::with(['uploader:id,name,email,avatar,google_avatar', 'subject', 'categories', 'ratings'])->find($contentId);
-                if ($content) {
-                    $contentType = 'quiz';
-                }
+            } elseif ($content = Video::with([
+                'uploader:id,name,email,avatar,google_avatar',
+                'subject',
+                'documents.uploader',
+                'quiz.uploader',
+                'quizzes',
+                'categories'
+            ])->find($contentId)) {
+                $contentType = 'video';
             }
         }
 
@@ -4812,27 +4841,26 @@ class AdminController extends Controller
     /**
      * Edit content from unified contents page
      */
-    public function editContent($contentId)
+    public function editContent(Request $request, $contentId)
     {
-        // Find the content by checking different models
         $content = null;
-        $contentType = null;
+        $contentType = $request->query('type') ?: $request->input('type');
 
-        // Try Video first
-        $content = Video::with(['subject', 'documents', 'quiz', 'quizzes'])->find($contentId);
-        if ($content) {
-            $contentType = 'video';
-        } else {
-            // Try Document
-            $content = Document::find($contentId);
-            if ($content) {
+        if ($contentType === 'quiz') {
+            $content = Quiz::with(['subject', 'categories', 'uploader'])->find($contentId);
+        } elseif ($contentType === 'document') {
+            $content = Document::with(['categories', 'uploader'])->find($contentId);
+        } elseif ($contentType === 'video') {
+            $content = Video::with(['subject', 'documents', 'quiz', 'quizzes', 'categories'])->find($contentId);
+        }
+
+        if (!$content) {
+            if ($content = Quiz::with(['subject', 'categories', 'uploader'])->find($contentId)) {
+                $contentType = 'quiz';
+            } elseif ($content = Document::with(['categories', 'uploader'])->find($contentId)) {
                 $contentType = 'document';
-            } else {
-                // Try Quiz
-                $content = Quiz::find($contentId);
-                if ($content) {
-                    $contentType = 'quiz';
-                }
+            } elseif ($content = Video::with(['subject', 'documents', 'quiz', 'quizzes', 'categories'])->find($contentId)) {
+                $contentType = 'video';
             }
         }
 
@@ -4840,32 +4868,21 @@ class AdminController extends Controller
             return redirect()->route('admin.contents.index')->withErrors(['content' => 'Content not found.']);
         }
 
-        // For videos and quizzes, show the unified edit form
-        if ($contentType === 'video' || $contentType === 'quiz') {
-            $subjects = Subject::orderBy('name')->get();
-            $levelGroups = LevelGroup::with('levels')->orderBy('display_order')->get();
-            $categories = ContentCategory::orderBy('name')->get();
+        $subjects = Subject::orderBy('name')->get();
+        $levelGroups = LevelGroup::with('levels')->orderBy('display_order')->get();
+        $categories = ContentCategory::orderBy('name')->get();
 
-            if ($contentType === 'video') {
-                $availableQuizzes = Quiz::with('subject')->where(function($q) use ($contentId) {
-                    $q->whereNull('video_id')->orWhere('video_id', $contentId);
-                })->latest()->get();
-                $availableDocuments = Document::with('uploader')->latest()->get();
-            } else {
-                $availableQuizzes = collect();
-                $availableDocuments = collect();
-            }
-
-            return view('admin.contents.edit', compact('content', 'contentType', 'subjects', 'availableQuizzes', 'availableDocuments', 'levelGroups', 'categories'));
+        if ($contentType === 'video') {
+            $availableQuizzes = Quiz::with('subject')->where(function($q) use ($contentId) {
+                $q->whereNull('video_id')->orWhere('video_id', $contentId);
+            })->latest()->get();
+            $availableDocuments = Document::with('uploader')->latest()->get();
+        } else {
+            $availableQuizzes = collect();
+            $availableDocuments = collect();
         }
 
-        // For other content types, redirect to their specific edit pages
-        switch ($contentType) {
-            case 'document':
-                return redirect()->route('admin.content.documents.edit', $content);
-            default:
-                return redirect()->route('admin.contents.index')->withErrors(['content' => 'Unknown content type.']);
-        }
+        return view('admin.contents.edit', compact('content', 'contentType', 'subjects', 'availableQuizzes', 'availableDocuments', 'levelGroups', 'categories'));
     }
 
     /**
@@ -4897,13 +4914,26 @@ class AdminController extends Controller
         // Resolve the target status from the form (empty = keep current)
         $newStatus = $request->filled('status') ? $request->input('status') : null;
 
-        // Find the content
-        $content = Video::find($contentId);
-        $contentType = 'video';
+        // Find the content with explicit type priority
+        $contentType = $request->input('content_type') ?: $request->input('type') ?: $request->query('type');
+        $content = null;
+
+        if ($contentType === 'quiz') {
+            $content = Quiz::find($contentId);
+        } elseif ($contentType === 'document') {
+            $content = Document::find($contentId);
+        } elseif ($contentType === 'video') {
+            $content = Video::find($contentId);
+        }
 
         if (!$content) {
-            $content = Quiz::find($contentId);
-            $contentType = 'quiz';
+            if ($content = Quiz::find($contentId)) {
+                $contentType = 'quiz';
+            } elseif ($content = Document::find($contentId)) {
+                $contentType = 'document';
+            } elseif ($content = Video::find($contentId)) {
+                $contentType = 'video';
+            }
         }
 
         if (!$content) {
@@ -5048,7 +5078,7 @@ class AdminController extends Controller
                         }
                     }
                 }
-            } else {
+            } elseif ($contentType === 'quiz') {
                 // Update standalone quiz info
                 $quizData = [];
                 if ($request->filled('quiz_data')) {
@@ -5096,9 +5126,17 @@ class AdminController extends Controller
                         'description' => $request->description
                     ]);
                 }
+            } elseif ($contentType === 'document') {
+                // Update standalone document info
+                $content->update([
+                    'title' => $request->title,
+                    'description' => $request->description,
+                    'grade_level' => $request->grade_level,
+                    'is_featured' => $request->has('is_featured'),
+                ]);
             }
 
-            // Sync categories (common for both)
+            // Sync categories (common for all content types)
             if ($request->has('category_ids')) {
                 $content->categories()->sync($request->category_ids);
             } else {
@@ -5134,25 +5172,27 @@ class AdminController extends Controller
      */
     public function destroyContent(Request $request, $contentId)
     {
-        // Find the content by checking different models
+        $requestedType = $request->input('type') ?: $request->query('type');
         $content = null;
-        $contentType = null;
+        $contentType = $requestedType;
 
-        // Try Video first
-        $content = Video::find($contentId);
-        if ($content) {
-            $contentType = 'video';
-        } else {
-            // Try Document
+        // Look up by explicitly requested type first
+        if ($contentType === 'quiz') {
+            $content = Quiz::find($contentId);
+        } elseif ($contentType === 'document') {
             $content = Document::find($contentId);
-            if ($content) {
+        } elseif ($contentType === 'video') {
+            $content = Video::find($contentId);
+        }
+
+        // Fallback: search models if type was not provided
+        if (!$content) {
+            if ($content = Quiz::find($contentId)) {
+                $contentType = 'quiz';
+            } elseif ($content = Document::find($contentId)) {
                 $contentType = 'document';
-            } else {
-                // Try Quiz
-                $content = Quiz::find($contentId);
-                if ($content) {
-                    $contentType = 'quiz';
-                }
+            } elseif ($content = Video::find($contentId)) {
+                $contentType = 'video';
             }
         }
 
@@ -5222,10 +5262,13 @@ class AdminController extends Controller
                     $this->destroyVideo($content, $deleteRelated);
                     break;
                 case 'document':
-                    $this->destroyDocument($content);
+                    if ($content->file_path && Storage::disk('public')->exists($content->file_path)) {
+                        Storage::disk('public')->delete($content->file_path);
+                    }
+                    $content->delete();
                     break;
                 case 'quiz':
-                    $this->destroyQuiz($content);
+                    $content->delete();
                     break;
                 default:
                     return response()->json(['success' => false, 'message' => 'Unknown content type.'], 400);
