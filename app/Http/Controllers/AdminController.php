@@ -4022,14 +4022,16 @@ class AdminController extends Controller
         );
         $contents->appends($request->all());
 
-        // Get content statistics
+        // Get content statistics from unified collection (accounts for reclassified content types)
+        $allUnified = $this->getUnifiedContents('', 'all', 'newest', '', '');
+        $draftUnified = $this->getUnifiedContents('', 'drafts', 'newest', '', '');
         $stats = [
-            'total_videos' => Video::count(),
-            'total_documents' => Document::count(),
-            'total_quizzes' => Quiz::count(),
-            'total_views' => Video::sum('views') + Document::sum('views') + Quiz::sum('attempts_count'),
-            'pending_reviews' => Video::pending()->count(),
-            'total_drafts' => Video::where('status', 'draft')->count() + Quiz::where('status', 'draft')->count(),
+            'total_videos' => $allUnified->where('content_type', 'video')->count(),
+            'total_documents' => $allUnified->where('content_type', 'document')->count(),
+            'total_quizzes' => $allUnified->where('content_type', 'quiz')->count(),
+            'total_views' => $allUnified->sum('views'),
+            'pending_reviews' => $allUnified->where('status', 'pending')->count(),
+            'total_drafts' => $draftUnified->count(),
         ];
 
         // Get level groups for filters

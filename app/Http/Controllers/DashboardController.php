@@ -911,7 +911,6 @@ class DashboardController extends Controller
                     // Dynamic cross-level category fetching logic
                     if ($categorySlug) {
                         $isShs = str_contains(strtoupper($dbLevel), 'SHS');
-                        $isJhs = str_contains(strtoupper($dbLevel), 'JHS');
 
                         // If WASSCE category is selected, SHS students can see JHS content tagged WASSCE
                         if (($categorySlug === 'wassce' || $categorySlug === 'all') && $isShs) {
@@ -924,16 +923,7 @@ class DashboardController extends Controller
                             });
                         }
 
-                        // If BECE category is selected, SHS students can see JHS content tagged BECE
-                        if (($categorySlug === 'bece' || $categorySlug === 'all') && $isShs) {
-                            $q->orWhere(function ($subQ) {
-                                $subQ->whereIn('grade_level', ['JHS 1', 'JHS 2', 'JHS 3'])
-                                    ->whereHas('categories', function ($catQ) {
-                                        $catQ->where('slug', 'bece')
-                                            ->orWhere('name', 'LIKE', '%BECE%');
-                                    });
-                            });
-                        }
+
                     }
                 });
 
