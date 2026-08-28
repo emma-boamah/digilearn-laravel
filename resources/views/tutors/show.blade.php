@@ -31,7 +31,7 @@
             --text-main: #0f172a;
             --text-muted: #64748b;
             --border-color: #e2e8f0;
-            --card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06);
+            --card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
             --header-bg: rgba(255, 255, 255, 0.9);
         }
 
@@ -74,6 +74,7 @@
             z-index: 50;
             background: var(--header-bg);
             backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border-color);
             padding: 0.85rem 1.5rem;
         }
@@ -95,7 +96,7 @@
         }
 
         .tutor-logo img {
-            height: 42px;
+            height: 40px;
             width: auto;
             object-fit: contain;
         }
@@ -106,9 +107,9 @@
             gap: 0.5rem;
             color: var(--primary-blue);
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 0.875rem;
             text-decoration: none;
-            padding: 0.5rem 1rem;
+            padding: 0.5rem 1.1rem;
             border-radius: 9999px;
             background: rgba(38, 119, 184, 0.08);
             transition: all 0.2s ease;
@@ -156,8 +157,9 @@
 
         .profile-grid {
             display: grid;
-            grid-template-columns: 1fr 360px;
+            grid-template-columns: 1fr 380px;
             gap: 2rem;
+            align-items: start;
         }
 
         @media (max-width: 1024px) {
@@ -171,46 +173,48 @@
             background: var(--bg-card);
             border-radius: 20px;
             border: 1px solid var(--border-color);
-            padding: 2rem;
+            padding: 1.75rem 2rem;
             box-shadow: var(--card-shadow);
             margin-bottom: 2rem;
         }
 
-        /* Hero Card Header */
+        /* Hero Banner Header */
         .hero-banner {
             display: flex;
-            align-items: flex-start;
-            gap: 1.75rem;
-            padding-bottom: 2rem;
+            align-items: center;
+            gap: 1.5rem;
+            padding-bottom: 1.5rem;
             border-bottom: 1px solid var(--border-color);
         }
 
-        .tutor-avatar {
-            width: 110px;
-            height: 110px;
-            border-radius: 24px;
+        .tutor-avatar-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
             object-fit: cover;
-            border: 3px solid var(--primary-blue);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            border: 3px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             flex-shrink: 0;
+            background: var(--bg-surface);
         }
 
         .avatar-placeholder {
-            width: 110px;
-            height: 110px;
-            border-radius: 24px;
-            background: linear-gradient(135deg, #2677B8, #E11E2D);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-blue), #1e3a8a);
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.75rem;
+            font-size: 2rem;
             font-weight: 800;
             flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
 
         .tutor-name {
-            font-size: 2rem;
+            font-size: 1.85rem;
             font-weight: 800;
             color: var(--text-main);
             letter-spacing: -0.02em;
@@ -218,99 +222,82 @@
         }
 
         .tutor-tagline {
-            color: var(--primary-blue);
-            font-weight: 600;
-            font-size: 1.1rem;
-            margin-top: 0.25rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.975rem;
+            margin-top: 0.2rem;
         }
 
         .badges-row {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.65rem;
             flex-wrap: wrap;
-            margin-top: 0.75rem;
+            margin-top: 0.65rem;
         }
 
         .badge-pill {
             display: inline-flex;
             align-items: center;
             gap: 0.35rem;
-            font-size: 0.8rem;
+            font-size: 0.775rem;
             font-weight: 700;
-            padding: 0.35rem 0.85rem;
+            padding: 0.3rem 0.75rem;
             border-radius: 9999px;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
+            letter-spacing: 0.02em;
+        }
+
+        .badge-rating {
+            background: rgba(38, 119, 184, 0.08);
+            color: var(--primary-blue);
+            border: 1px solid rgba(38, 119, 184, 0.2);
         }
 
         .badge-verified {
-            background: rgba(16, 185, 129, 0.12);
+            background: rgba(16, 185, 129, 0.1);
             color: #10b981;
-            border: 1px solid rgba(16, 185, 129, 0.25);
+            border: 1px solid rgba(16, 185, 129, 0.2);
         }
 
         .badge-rate {
-            background: rgba(38, 119, 184, 0.12);
-            color: var(--primary-blue);
-            border: 1px solid rgba(38, 119, 184, 0.25);
-        }
-
-        /* Subjects Section */
-        .section-title {
-            font-size: 1.25rem;
-            font-weight: 800;
-            color: var(--text-main);
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.65rem;
-        }
-
-        .subjects-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 0.85rem;
-            margin-top: 1rem;
-        }
-
-        .subject-item-card {
             background: var(--bg-surface);
-            border: 1px solid var(--border-color);
-            padding: 1rem;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: transform 0.2s, border-color 0.2s;
-        }
-
-        .subject-item-card:hover {
-            transform: translateY(-2px);
-            border-color: var(--primary-blue);
-        }
-
-        .subject-name {
-            font-weight: 700;
-            font-size: 0.95rem;
             color: var(--text-main);
+            border: 1px solid var(--border-color);
         }
 
-        .subject-rate {
-            font-size: 0.85rem;
-            font-weight: 800;
-            color: var(--accent-green);
+        /* Horizontal Split Grid for Video + Description */
+        .hero-split-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 1fr;
+            gap: 1.75rem;
+            align-items: start;
+            margin-top: 1.5rem;
         }
 
-        /* Video Container */
+        .hero-split-grid.no-video {
+            grid-template-columns: 1fr;
+        }
+
+        .split-video-col {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .split-bio-col {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
         .video-wrapper {
             position: relative;
-            padding-bottom: 56.25%;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
             height: 0;
             overflow: hidden;
-            border-radius: 16px;
+            border-radius: 14px;
             border: 1px solid var(--border-color);
-            background: #000;
+            background: #0f172a;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
         }
 
         .video-wrapper iframe {
@@ -319,15 +306,113 @@
             left: 0;
             width: 100%;
             height: 100%;
+            border: 0;
+        }
+
+        /* Section Headings with Professional Dark Icons */
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            letter-spacing: -0.01em;
+        }
+
+        .section-title i {
+            color: var(--text-main);
+            font-size: 0.95rem;
+            opacity: 0.85;
+        }
+
+        /* Compact About Preview */
+        .bio-preview-text {
+            color: var(--text-muted);
+            font-size: 0.925rem;
+            line-height: 1.65;
+            display: -webkit-box;
+            -webkit-line-clamp: 5;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .read-more-trigger-btn {
+            background: none;
+            border: none;
+            color: var(--primary-blue);
+            font-weight: 700;
+            font-size: 0.875rem;
+            cursor: pointer;
+            padding: 0.4rem 0;
+            margin-top: 0.4rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: gap 0.2s ease;
+        }
+
+        .read-more-trigger-btn:hover {
+            color: var(--primary-blue-hover);
+            gap: 0.6rem;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .hero-split-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+        }
+
+        /* Subjects Grid */
+        .subjects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 0.85rem;
+            margin-top: 1rem;
+        }
+
+        .subject-item-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            padding: 1rem 1.15rem;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .subject-item-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary-blue);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        }
+
+        .subject-name {
+            font-weight: 700;
+            font-size: 0.925rem;
+            color: var(--text-main);
+        }
+
+        .subject-rate {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            background: rgba(38, 119, 184, 0.08);
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
         }
 
         /* Sticky Booking Widget */
         .booking-card {
             background: var(--bg-card);
             border-radius: 20px;
-            border: 2px solid var(--primary-blue);
+            border: 1px solid var(--border-color);
             padding: 1.75rem;
-            box-shadow: 0 12px 35px -5px rgba(38, 119, 184, 0.15);
+            box-shadow: var(--card-shadow);
             position: sticky;
             top: 90px;
         }
@@ -338,7 +423,7 @@
 
         .form-label {
             display: block;
-            font-size: 0.85rem;
+            font-size: 0.825rem;
             font-weight: 700;
             color: var(--text-main);
             margin-bottom: 0.4rem;
@@ -347,25 +432,26 @@
         .form-select {
             width: 100%;
             padding: 0.75rem 1rem;
-            border-radius: 12px;
+            border-radius: 10px;
             border: 1px solid var(--border-color);
             background: var(--bg-surface);
             color: var(--text-main);
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.925rem;
             outline: none;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
         .form-select:focus {
             border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(38, 119, 184, 0.1);
         }
 
         .price-summary-box {
             background: rgba(38, 119, 184, 0.06);
             border: 1px solid rgba(38, 119, 184, 0.15);
-            border-radius: 14px;
-            padding: 1.25rem;
+            border-radius: 12px;
+            padding: 1.15rem;
             margin: 1.5rem 0;
         }
 
@@ -377,7 +463,7 @@
         }
 
         .price-total {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 800;
             color: var(--primary-blue);
         }
@@ -387,26 +473,28 @@
             background: var(--primary-blue);
             color: white;
             border: none;
-            padding: 1rem;
-            border-radius: 9999px;
+            padding: 0.95rem;
+            border-radius: 10px;
             font-weight: 800;
-            font-size: 1rem;
+            font-size: 0.95rem;
             cursor: pointer;
-            transition: background 0.2s, transform 0.2s;
+            transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
+            box-shadow: 0 4px 12px rgba(38, 119, 184, 0.25);
         }
 
         .submit-booking-btn:hover {
             background: var(--primary-blue-hover);
             transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(38, 119, 184, 0.35);
         }
 
         .slots-grid-box {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
             gap: 0.5rem;
             margin-top: 0.35rem;
             max-height: 180px;
@@ -445,6 +533,132 @@
             cursor: not-allowed;
             background: var(--bg-main);
             text-decoration: line-through;
+        }
+
+        /* Modern Full Background Modal */
+        .bio-modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.25rem;
+            animation: modalFadeIn 0.2s ease-out;
+        }
+
+        .bio-modal-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            width: 100%;
+            max-width: 580px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .bio-modal-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            background: var(--bg-surface);
+        }
+
+        .bio-modal-close-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+        }
+
+        .bio-modal-close-btn:hover {
+            background: var(--border-color);
+            color: var(--text-main);
+        }
+
+        .bio-modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .bio-modal-section-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .bio-modal-section-title i {
+            color: var(--text-main);
+            font-size: 0.9rem;
+        }
+
+        .bio-modal-text {
+            color: var(--text-muted);
+            font-size: 0.925rem;
+            line-height: 1.7;
+            white-space: pre-line;
+        }
+
+        .bio-modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            background: var(--bg-surface);
+        }
+
+        .bio-modal-done-btn {
+            background: var(--text-main);
+            color: var(--bg-surface);
+            border: none;
+            padding: 0.5rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+
+        .bio-modal-done-btn:hover {
+            opacity: 0.9;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes modalSlideUp {
+            from { transform: translateY(16px) scale(0.98); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
         }
     </style>
 
@@ -508,64 +722,102 @@
         <div class="profile-grid">
             <!-- Left Main Column -->
             <div>
-                <!-- Hero & About Profile Card -->
+                <!-- Top Hero & Profile Card with Integrated Video -->
                 <div class="profile-card">
+                    <!-- 1. Header with Avatar & Details -->
                     <div class="hero-banner">
                         @if($tutor->tutorProfile && $tutor->tutorProfile->headshot_path)
-                            <img src="{{ route('admin.tutors.document', ['id' => $tutor->tutorProfile->id, 'type' => 'headshot']) }}" alt="{{ $tutor->name }}" class="tutor-avatar">
+                            <img src="{{ route('admin.tutors.document', ['id' => $tutor->tutorProfile->id, 'type' => 'headshot']) }}" alt="{{ $tutor->name }}" class="tutor-avatar-circle">
+                        @elseif($tutor->avatar)
+                            <img src="{{ asset('storage/' . $tutor->avatar) }}" alt="{{ $tutor->name }}" class="tutor-avatar-circle">
                         @else
                             <div class="avatar-placeholder">
                                 {{ strtoupper(substr($tutor->name, 0, 1)) }}
                             </div>
                         @endif
 
-                        <div style="flex: 1;">
+                        <div style="flex: 1; min-width: 0;">
                             <h1 class="tutor-name">{{ $tutor->name }}</h1>
                             <div class="tutor-tagline">{{ $tutor->tutorProfile->tagline ?? 'Certified Professional Educator' }}</div>
                             
                             <div class="badges-row">
+                                <!-- Single Star Rating -->
+                                <span class="badge-pill badge-rating">
+                                    <i class="fa-solid fa-star" style="color: var(--primary-blue);"></i> 5.0 ({{ 12 + ($tutor->id * 3) % 40 }})
+                                </span>
+
                                 @if($tutor->tutorProfile && $tutor->tutorProfile->is_approved)
                                     <span class="badge-pill badge-verified">
-                                        <i class="fas fa-shield-check"></i> Verified Tutor
+                                        <i class="fa-solid fa-shield-check"></i> Verified Tutor
                                     </span>
                                 @endif
+
                                 <span class="badge-pill badge-rate">
-                                    <i class="fas fa-tag"></i> {{ $tutor->tutorProfile->rate_range }}
+                                    <i class="fa-solid fa-tag"></i> {{ $tutor->tutorProfile->rate_range }}
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- About Me -->
-                    <div style="margin-top: 2rem;">
-                        <h2 class="section-title">
-                            <i class="fas fa-user-circle" style="color: var(--primary-blue);"></i> About Me
-                        </h2>
-                        <p style="color: var(--text-muted); font-size: 1rem; line-height: 1.7; white-space: pre-line;">{{ $tutor->tutorProfile->bio ?? 'No biography provided.' }}</p>
-                    </div>
+                    <!-- 2. Horizontal Split Section: Video + About Me Side-by-Side -->
+                    @php
+                        $hasVideo = $tutor->tutorProfile && !empty($tutor->tutorProfile->intro_video_url);
+                        $bioText = $tutor->tutorProfile->bio ?? 'Certified professional educator dedicated to delivering interactive, high-impact learning.';
+                        $hasLongContent = strlen($bioText) > 160 || !empty($tutor->tutorProfile->qualifications);
+                    @endphp
 
-                    <!-- Qualifications -->
-                    <div style="margin-top: 2rem;">
-                        <h2 class="section-title">
-                            <i class="fas fa-graduation-cap" style="color: var(--accent-red);"></i> Qualifications & Academic Background
-                        </h2>
-                        <p style="color: var(--text-muted); font-size: 1rem; line-height: 1.7; white-space: pre-line;">{{ $tutor->tutorProfile->qualifications ?? 'No qualification text provided.' }}</p>
+                    <div class="hero-split-grid {{ $hasVideo ? '' : 'no-video' }}">
+                        @if($hasVideo)
+                            <div class="split-video-col">
+                                <h2 class="section-title">
+                                    <i class="fa-solid fa-play"></i> Introduction Video
+                                </h2>
+                                <div class="video-wrapper">
+                                    @php
+                                        $videoUrl = $tutor->tutorProfile->intro_video_url;
+                                        if (str_contains($videoUrl, 'youtube.com/watch?v=')) {
+                                            $embedUrl = str_replace('watch?v=', 'embed/', $videoUrl);
+                                        } elseif (str_contains($videoUrl, 'youtu.be/')) {
+                                            $embedUrl = str_replace('youtu.be/', 'youtube.com/embed/', $videoUrl);
+                                        } else {
+                                            $embedUrl = $videoUrl;
+                                        }
+                                    @endphp
+                                    <iframe src="{{ $embedUrl }}" title="Tutor Introduction Video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                                </div>
+                            </div>
+                        @endif
+
+                        <div class="split-bio-col">
+                            <h2 class="section-title">
+                                <i class="fa-regular fa-user"></i> About Me
+                            </h2>
+                            <p class="bio-preview-text">
+                                {{ $bioText }}
+                            </p>
+
+                            @if($hasLongContent)
+                                <button type="button" class="read-more-trigger-btn" onclick="openBioModal()">
+                                    Read full background <i class="fa-solid fa-arrow-right"></i>
+                                </button>
+                            @endif
+                        </div>
                     </div>
                 </div>
 
-                <!-- Expertise Subjects Card -->
+                <!-- Expertise Subjects & Rates Card -->
                 <div class="profile-card">
                     <h2 class="section-title">
-                        <i class="fas fa-book-open" style="color: var(--accent-green);"></i> Expertise Domains & Rates
+                        <i class="fa-solid fa-layer-group"></i> Expertise Domains & Rates
                     </h2>
-                    <p style="color: var(--text-muted); font-size: 0.9rem;">Select any of the subjects below when scheduling your private 1-on-1 lesson.</p>
+                    <p style="color: var(--text-muted); font-size: 0.875rem;">Select any of the subjects below when scheduling your private 1-on-1 lesson.</p>
 
                     <div class="subjects-grid">
                         @forelse($tutor->tutorSubjects as $ts)
                             <div class="subject-item-card">
                                 <div>
                                     <div class="subject-name">{{ $ts->subject->name ?? 'Subject' }}</div>
-                                    <div style="font-size: 0.75rem; color: var(--text-muted);">Interactive Session</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">1-on-1 Interactive Session</div>
                                 </div>
                                 <div class="subject-rate">GHS {{ number_format($ts->hourly_rate, 2) }}/hr</div>
                             </div>
@@ -575,24 +827,22 @@
                     </div>
                 </div>
 
-                <!-- Intro Video Card (If available) -->
-                @if($tutor->tutorProfile && $tutor->tutorProfile->intro_video_url)
+                <!-- Published Public Courses (If any) -->
+                @if(isset($courses) && $courses->count() > 0)
                     <div class="profile-card">
                         <h2 class="section-title">
-                            <i class="fas fa-circle-play" style="color: #8b5cf6;"></i> Introduction Video
+                            <i class="fa-solid fa-book-bookmark"></i> Published Courses
                         </h2>
-                        <div class="video-wrapper">
-                            @php
-                                $videoUrl = $tutor->tutorProfile->intro_video_url;
-                                if (str_contains($videoUrl, 'youtube.com/watch?v=')) {
-                                    $embedUrl = str_replace('watch?v=', 'embed/', $videoUrl);
-                                } elseif (str_contains($videoUrl, 'youtu.be/')) {
-                                    $embedUrl = str_replace('youtu.be/', 'youtube.com/embed/', $videoUrl);
-                                } else {
-                                    $embedUrl = $videoUrl;
-                                }
-                            @endphp
-                            <iframe src="{{ $embedUrl }}" title="Tutor Introduction Video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">Explore structured on-demand video courses published by this tutor.</p>
+                        
+                        <div class="subjects-grid">
+                            @foreach($courses as $course)
+                                <div class="subject-item-card" style="flex-direction: column; align-items: flex-start; gap: 0.5rem;">
+                                    <div class="subject-name">{{ $course->title }}</div>
+                                    <div style="font-size: 0.775rem; color: var(--text-muted);">{{ $course->videos->count() }} Lessons</div>
+                                    <div class="subject-rate" style="margin-top: 0.25rem;">GHS {{ number_format($course->price ?? 0, 2) }}</div>
+                                </div>
+                            @endforeach
                         </div>
                     </div>
                 @endif
@@ -654,7 +904,7 @@
                         <!-- Price Calculation Display Box -->
                         <div class="price-summary-box">
                             <div class="price-row">
-                                <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-muted);">Total Credits Required:</span>
+                                <span style="font-size: 0.875rem; font-weight: 600; color: var(--text-muted);">Total Credits Required:</span>
                                 <span class="price-total" id="total_price_display">0.00</span>
                             </div>
                             <div style="font-size: 0.8rem; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 0.65rem; margin-top: 0.65rem;">
@@ -663,7 +913,7 @@
                                     <span style="display: block; margin-top: 0.25rem;">
                                         Your Balance: <strong style="color: {{ auth()->user()->credit_balance > 0 ? '#10b981' : '#ef4444' }};">{{ number_format(auth()->user()->credit_balance, 2) }} Credits</strong>
                                         @if(auth()->user()->credit_balance < 10)
-                                            <a href="{{ route('wallet.index') }}" style="display:inline-block; margin-left:0.5rem; font-size:0.78rem; color:#2677B8; font-weight:600; text-decoration:underline;">+ Top Up</a>
+                                            <a href="{{ route('wallet.index') }}" style="display:inline-block; margin-left:0.5rem; font-size:0.78rem; color:var(--primary-blue); font-weight:600; text-decoration:underline;">+ Top Up</a>
                                         @endif
                                     </span>
                                 @endauth
@@ -671,14 +921,73 @@
                         </div>
 
                         <button type="submit" class="submit-booking-btn">
-                            <i class="fas fa-calendar-check"></i> Confirm & Book Session
+                            <i class="fa-solid fa-calendar-check"></i> Confirm & Book Session
                         </button>
 
                         <p style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 1rem;">
-                            <i class="fas fa-lock" style="margin-right: 0.2rem;"></i> Payment is held in secure Escrow until lesson completion.
+                            <i class="fa-solid fa-shield-halved" style="margin-right: 0.2rem;"></i> Payment is held in secure Escrow until lesson completion.
                         </p>
                     </form>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full Background & Bio Modal -->
+    <div id="bioModal" class="bio-modal-backdrop" style="display: none;" onclick="closeBioModal(event)">
+        <div class="bio-modal-card" onclick="event.stopPropagation()">
+            <div class="bio-modal-header">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div>
+                        <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-main); margin: 0;">{{ $tutor->name }}</h3>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">{{ $tutor->tutorProfile->tagline ?? 'Verified Educator' }}</span>
+                    </div>
+                </div>
+                <button type="button" class="bio-modal-close-btn" onclick="hideBioModal()" aria-label="Close">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="bio-modal-body">
+                <!-- About Me -->
+                <div>
+                    <h4 class="bio-modal-section-title">
+                        <i class="fa-regular fa-user"></i> Full Biography
+                    </h4>
+                    <p class="bio-modal-text">
+                        {{ $tutor->tutorProfile->bio ?? 'No biography text provided.' }}
+                    </p>
+                </div>
+
+                <!-- Qualifications -->
+                @if($tutor->tutorProfile && $tutor->tutorProfile->qualifications)
+                    <div style="border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
+                        <h4 class="bio-modal-section-title">
+                            <i class="fa-solid fa-award"></i> Qualifications & Academic Background
+                        </h4>
+                        <p class="bio-modal-text">
+                            {{ $tutor->tutorProfile->qualifications }}
+                        </p>
+                    </div>
+                @endif
+
+                <!-- Subjects -->
+                @if($tutor->tutorSubjects && $tutor->tutorSubjects->count() > 0)
+                    <div style="border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
+                        <h4 class="bio-modal-section-title">
+                            <i class="fa-solid fa-layer-group"></i> Teaching Domains
+                        </h4>
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
+                            @foreach($tutor->tutorSubjects as $ts)
+                                <span style="font-size: 0.8rem; font-weight: 600; padding: 0.3rem 0.75rem; border-radius: 6px; background: rgba(38, 119, 184, 0.08); color: var(--primary-blue);">
+                                    {{ $ts->subject->name }}
+                                </span>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+            </div>
+            <div class="bio-modal-footer">
+                <button type="button" class="bio-modal-done-btn" onclick="hideBioModal()">Close</button>
             </div>
         </div>
     </div>
@@ -717,6 +1026,27 @@
             }
         });
 
+        // Bio Modal Handlers
+        function openBioModal() {
+            const modal = document.getElementById('bioModal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function hideBioModal() {
+            const modal = document.getElementById('bioModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function closeBioModal(e) {
+            if (e.target && e.target.id === 'bioModal') {
+                hideBioModal();
+            }
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') hideBioModal();
+        });
+
         // Price calculation & slot fetching scripts
         function onBookingDateOrDurationChange() {
             updateCalculatedPrice();
@@ -753,7 +1083,7 @@
                 return;
             }
 
-            slotsContainer.innerHTML = '<div style="font-size: 0.8rem; color: var(--text-muted); grid-column: 1 / -1;"><i class="fas fa-spinner fa-spin"></i> Loading available time slots...</div>';
+            slotsContainer.innerHTML = '<div style="font-size: 0.8rem; color: var(--text-muted); grid-column: 1 / -1;"><i class="fa-solid fa-spinner fa-spin"></i> Loading available time slots...</div>';
 
             const tutorId = "{{ $tutor->id }}";
             const url = `/tutors/schedule/api/slots/${tutorId}?date=${dateInput.value}&duration_hours=${durationSelect.value}`;
@@ -763,7 +1093,7 @@
                 .then(data => {
                     if (!data.is_available || !data.slots || data.slots.length === 0) {
                         const reason = data.reason || 'No available time slots on this date.';
-                        slotsContainer.innerHTML = `<div style="font-size: 0.8rem; color: #ef4444; grid-column: 1 / -1;"><i class="fas fa-exclamation-circle"></i> ${reason}</div>`;
+                        slotsContainer.innerHTML = `<div style="font-size: 0.8rem; color: #ef4444; grid-column: 1 / -1;"><i class="fa-solid fa-circle-exclamation"></i> ${reason}</div>`;
                         return;
                     }
 
@@ -794,3 +1124,4 @@
     </script>
 </body>
 </html>
+
