@@ -62,7 +62,7 @@ class LearningAgentService
         return $defaultType;
     }
 
-    public function chatWithTutor(array $messages, User $user, ?int $contextId = null, string $defaultType = 'lesson'): array
+    public function chatWithTutor(array $messages, User $user, ?int $contextId = null, string $defaultType = 'lesson', ?array $attachment = null): array
     {
         $startTime = microtime(true);
         $gradeLevel = $user->grade ?? 'Primary 1';
@@ -71,13 +71,13 @@ class LearningAgentService
         $latestUserMessage = '';
         foreach (array_reverse($messages) as $msg) {
             if ($msg['role'] === 'user') {
-                $latestUserMessage = $msg['text'];
+                $latestUserMessage = $msg['text'] ?? '';
                 break;
             }
         }
         
-        if (empty($latestUserMessage)) {
-            return ['success' => false, 'message' => 'No message provided.'];
+        if (empty($latestUserMessage) && empty($attachment)) {
+            return ['success' => false, 'message' => 'No message or attachment provided.'];
         }
 
         // Check if rate limited
@@ -88,20 +88,84 @@ class LearningAgentService
             ];
         }
 
-        // Format for Gemini
+        // Prepare multimodal attachment data if available
+        $attachmentPart = null;
+        $attachmentTextContext = '';
+
+        if (!empty($attachment) && !empty($attachment['path']) && file_exists($attachment['path'])) {
+            $mimeType = $attachment['mime_type'] ?? '';
+            $originalName = $attachment['original_name'] ?? 'file';
+
+            if (in_array($mimeType, ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'])) {
+                $fileBytes = file_get_contents($attachment['path']);
+                if ($fileBytes !== false) {
+                    $attachmentPart = [
+                        'inlineData' => [
+                            'mimeType' => $mimeType,
+                            'data' => base64_encode($fileBytes)
+                        ]
+                    ];
+                }
+            } elseif (in_array($mimeType, ['text/plain', 'text/csv', 'text/markdown', 'application/json']) || str_ends_with(strtolower($originalName), '.txt') || str_ends_with(strtolower($originalName), '.csv')) {
+                $textContent = file_get_contents($attachment['path']);
+                if ($textContent !== false) {
+                    $attachmentTextContext = "\n\n[Attached Document ({$originalName})]:\n" . substr($textContent, 0, 30000);
+                }
+            } elseif (str_ends_with(strtolower($originalName), '.docx') || $mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                $docxText = $this->extractTextFromDocx($attachment['path']);
+                if ($docxText) {
+                    $attachmentTextContext = "\n\n[Attached Word Document ({$originalName})]:\n" . substr($docxText, 0, 30000);
+                }
+            }
+        }
+
+        // Format conversation history for Gemini
         $contents = [];
-        foreach ($messages as $msg) {
+        $lastUserIndex = -1;
+
+        foreach ($messages as $index => $msg) {
+            $role = ($msg['role'] === 'model') ? 'model' : 'user';
             $contents[] = [
-                'role' => $msg['role'] === 'model' ? 'model' : 'user',
-                'parts' => [['text' => $msg['text']]]
+                'role' => $role,
+                'parts' => [['text' => $msg['text'] ?? '']]
             ];
+            if ($role === 'user') {
+                $lastUserIndex = count($contents) - 1;
+            }
+        }
+
+        // Ensure at least one user message exists
+        if (empty($contents)) {
+            $contents[] = [
+                'role' => 'user',
+                'parts' => [['text' => !empty($latestUserMessage) ? $latestUserMessage : 'Please review this attached file and help me understand it.']]
+            ];
+            $lastUserIndex = 0;
+        }
+
+        // Attach image/PDF or text context to the latest user message
+        if ($lastUserIndex >= 0) {
+            if ($attachmentPart) {
+                // Prepend the image/PDF part so Gemini views it with the text prompt
+                array_unshift($contents[$lastUserIndex]['parts'], $attachmentPart);
+            }
+            if (!empty($attachmentTextContext)) {
+                $existingText = $contents[$lastUserIndex]['parts'][count($contents[$lastUserIndex]['parts']) - 1]['text'] ?? '';
+                $contents[$lastUserIndex]['parts'][count($contents[$lastUserIndex]['parts']) - 1]['text'] = $existingText . $attachmentTextContext;
+            }
         }
 
         $systemPrompt = <<<PROMPT
-You are Digilearn AI, an expert, friendly educational tutor for the Ghana Education Service (GES).
-You are currently chatting with a {$gradeLevel} student.
-Your goal is to be conversational, encouraging, and helpful. 
-Answer their questions directly and naturally in a conversational format.
+You are Digilearn AI, an expert, encouraging, and friendly educational tutor aligned with the Ghana Education Service (GES) curriculum.
+You are currently tutoring a {$gradeLevel} student.
+Your goal is to be conversational, motivating, and clear.
+
+MULTIMODAL & ATTACHMENT CAPABILITIES:
+- You have full visual and document interpretation capabilities.
+- When the student attaches an image (e.g. photos of handwritten homework, textbook questions, geometry diagrams, science charts, past BECE/WASSCE exam papers), inspect every detail carefully.
+- When an attached document (PDF, DOCX, TXT) is provided, read and analyze its content to solve the student's questions.
+- Break down solutions step-by-step with clear explanations suitable for {$gradeLevel}.
+- For mathematical expressions and scientific formulas, always use standard LaTeX syntax (e.g., \$x^2 + 5x = 0\$ for inline, or \$\$\\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}\$\$ for block formulas) so they render beautifully for the student.
 
 CRITICAL INSTRUCTION:
 If the student specifically asks for a full lesson, a quiz, or a study roadmap, OR if you determine that generating a structured interactive widget is the best way to teach the current concept, you MUST append a special JSON command at the VERY END of your response.
@@ -122,9 +186,9 @@ PROMPT;
 
         // Ordered list of models to try — verified against the API key's available models.
         $modelsToTry = [
-            'gemini-flash-latest',       // Primary (may be overloaded)
-            'gemini-flash-lite-latest',  // Fallback 1: Lighter variant, less likely to be overloaded
-            'gemini-2.0-flash',          // Fallback 2: Stable version
+            'gemini-flash-latest',       // Primary (fast multimodal)
+            'gemini-2.0-flash',          // Fallback 1: Stable multimodal
+            'gemini-flash-lite-latest',  // Fallback 2: Lighter variant
             'gemini-2.5-flash',          // Fallback 3: Latest stable
         ];
 
@@ -1938,5 +2002,36 @@ PROMPT;
         } catch (Exception $e) {
             Log::error('Failed to log agent query to search analytics', ['error' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * Extract plain text content from a DOCX file without external dependencies.
+     */
+    private function extractTextFromDocx(string $filePath): ?string
+    {
+        if (!class_exists('ZipArchive') || !file_exists($filePath)) {
+            return null;
+        }
+
+        $zip = new \ZipArchive();
+        if ($zip->open($filePath) === true) {
+            if (($index = $zip->locateName('word/document.xml')) !== false) {
+                $xmlData = $zip->getFromIndex($index);
+                $zip->close();
+                if ($xmlData !== false) {
+                    // Replace paragraph and break tags with newlines/tabs before stripping XML tags
+                    $formatted = str_replace(
+                        ['<w:p>', '</w:p>', '<w:br/>', '<w:tab/>', '<w:cr/>'],
+                        ["\n", "\n", "\n", "\t", "\n"],
+                        $xmlData
+                    );
+                    $text = strip_tags($formatted);
+                    return trim(preg_replace("/\n{3,}/", "\n\n", $text));
+                }
+            }
+            $zip->close();
+        }
+
+        return null;
     }
 }

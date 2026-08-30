@@ -46,17 +46,27 @@ class AgentController extends Controller
     }
 
     /**
-     * Handle an AI lesson request.
+     * Handle an AI lesson request with multimodal support.
      */
     public function ask(Request $request)
     {
+        // Decode JSON messages if provided as string in FormData
+        if ($request->has('messages') && is_string($request->input('messages'))) {
+            $decoded = json_decode($request->input('messages'), true);
+            if (is_array($decoded)) {
+                $request->merge(['messages' => $decoded]);
+            }
+        }
+
         $request->validate([
-            'query' => 'sometimes|string|min:2|max:1000',
+            'query' => 'sometimes|nullable|string|max:2000',
             'messages' => 'sometimes|array',
             'messages.*.role' => 'required_with:messages|string|in:user,model',
-            'messages.*.text' => 'required_with:messages|string',
+            'messages.*.text' => 'sometimes|nullable|string',
             'type' => 'sometimes|string|in:lesson,roadmap,quiz',
             'context_id' => 'sometimes|nullable|integer',
+            'session_id' => 'sometimes|nullable|integer',
+            'attachment' => 'sometimes|nullable|file|mimes:jpeg,png,jpg,webp,gif,pdf,txt,csv,docx|max:10240',
         ]);
 
         $user = Auth::user();
@@ -66,10 +76,33 @@ class AgentController extends Controller
         $contextId = $request->input('context_id');
         $sessionId = $request->input('session_id');
 
-        // Backward compatibility: if only query is sent
-        if (empty($messages) && !empty($query)) {
+        // Handle uploaded attachment safely
+        $attachmentData = null;
+        if ($request->hasFile('attachment') && $request->file('attachment')->isValid()) {
+            $file = $request->file('attachment');
+            $originalName = $file->getClientOriginalName();
+            $mimeType = $file->getClientMimeType() ?: $file->getMimeType();
+            $size = $file->getSize();
+
+            // Store securely in storage/app/public/agent_attachments/{user_id}/
+            $storedPath = $file->store('agent_attachments/' . $user->id, 'public');
+            $fullPath = storage_path('app/public/' . $storedPath);
+            $publicUrl = asset('storage/' . $storedPath);
+
+            $attachmentData = [
+                'path' => $fullPath,
+                'url' => $publicUrl,
+                'original_name' => $originalName,
+                'mime_type' => $mimeType,
+                'size' => $size,
+                'is_image' => str_starts_with($mimeType, 'image/'),
+            ];
+        }
+
+        // Backward compatibility: if only query or attachment is sent
+        if (empty($messages) && (!empty($query) || $attachmentData)) {
             $messages = [
-                ['role' => 'user', 'text' => $query]
+                ['role' => 'user', 'text' => $query ?: 'Please analyze this attached file.']
             ];
         }
         
@@ -81,7 +114,10 @@ class AgentController extends Controller
                 $chatSession->touch();
             }
         } else {
-            $title = !empty($query) ? \Illuminate\Support\Str::limit($query, 30) : 'Chat ' . now()->format('Y-m-d H:i');
+            $title = !empty($query) 
+                ? \Illuminate\Support\Str::limit($query, 30) 
+                : ($attachmentData ? 'File: ' . \Illuminate\Support\Str::limit($attachmentData['original_name'], 20) : 'Chat ' . now()->format('Y-m-d H:i'));
+            
             $chatSession = AgentChatSession::create([
                 'user_id' => $user->id,
                 'title' => $title
@@ -89,11 +125,25 @@ class AgentController extends Controller
         }
         
         // Save the user's latest message to DB
-        if (!empty($query) && $chatSession) {
+        if ((!empty($query) || $attachmentData) && $chatSession) {
+            $userMetadata = null;
+            if ($attachmentData) {
+                $userMetadata = [
+                    'attachment' => [
+                        'url' => $attachmentData['url'],
+                        'name' => $attachmentData['original_name'],
+                        'mime_type' => $attachmentData['mime_type'],
+                        'size' => $attachmentData['size'],
+                        'is_image' => $attachmentData['is_image'],
+                    ]
+                ];
+            }
+
             AgentChatMessage::create([
                 'agent_chat_session_id' => $chatSession->id,
                 'role' => 'user',
-                'text' => $query
+                'text' => $query ?: 'Attached: ' . ($attachmentData['original_name'] ?? 'file'),
+                'metadata' => $userMetadata
             ]);
         }
 
@@ -103,11 +153,12 @@ class AgentController extends Controller
             'type' => $type,
             'grade' => $user->grade,
             'level_group' => $user->current_level_group,
-            'session_id' => $chatSession ? $chatSession->id : null
+            'session_id' => $chatSession ? $chatSession->id : null,
+            'has_attachment' => !empty($attachmentData),
         ]);
 
         // Chat with tutor
-        $result = $this->agentService->chatWithTutor($messages, $user, $contextId, $type);
+        $result = $this->agentService->chatWithTutor($messages, $user, $contextId, $type, $attachmentData);
         
         // Save the AI's response to DB
         if ($result['success'] && !empty($result['message']) && $chatSession) {
@@ -138,6 +189,15 @@ class AgentController extends Controller
         
         if ($chatSession) {
             $result['session_id'] = $chatSession->id;
+        }
+
+        if ($attachmentData) {
+            $result['attachment'] = [
+                'url' => $attachmentData['url'],
+                'name' => $attachmentData['original_name'],
+                'mime_type' => $attachmentData['mime_type'],
+                'is_image' => $attachmentData['is_image'],
+            ];
         }
 
         return response()->json($result);
