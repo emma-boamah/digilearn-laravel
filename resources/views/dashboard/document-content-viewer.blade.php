@@ -2971,6 +2971,7 @@
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         window.docMeta = @json($document ?? []);
         window.docType = '{{ $type ?? "pdf" }}';
+        window.preloadedCognitiveData = @json($preloadedCognitiveData ?? null);
 
         // 1. Reading Mode Switcher Function
         let currentActiveMode = 'original';
@@ -3029,7 +3030,41 @@
                 const docTitle = (window.docMeta && window.docMeta.title) ? window.docMeta.title : 'Document';
                 const docId = '{{ $document['id'] ?? '' }}';
 
-                // 1. Instant local storage cache check (<1ms)
+                // 1. Instant pre-computed database payload check (0ms latency, synthesized by background job!)
+                if (window.preloadedCognitiveData && Array.isArray(window.preloadedCognitiveData.sections) && window.preloadedCognitiveData.sections.length > 0) {
+                    const parsed = window.preloadedCognitiveData;
+                    let techDocs = parsed.techDocs || parsed.tech_rules || null;
+                    const localTech = this.extractTechnicalRules(parsed.docTitle || docTitle, parsed.docTitle || docTitle, parsed.sections || []);
+                    parsed.techDocs = {
+                        conceptBrief: parsed.techDocs?.conceptBrief || parsed.techDocs?.concept_brief || localTech.conceptBrief,
+                        formulaRules: (techDocs && Array.isArray(techDocs.formulaRules) && techDocs.formulaRules.length > 0) 
+                            ? techDocs.formulaRules 
+                            : (techDocs?.formula_rules || localTech.formulaRules),
+                        workedExample: parsed.techDocs?.workedExample || parsed.techDocs?.worked_example || localTech.workedExample,
+                        practicalTips: (techDocs && Array.isArray(techDocs.practicalTips) && techDocs.practicalTips.length > 0) 
+                            ? techDocs.practicalTips 
+                            : (techDocs?.practical_tips || localTech.practicalTips),
+                        formula: (techDocs && techDocs.formula && techDocs.formula.length > 10) 
+                            ? techDocs.formula 
+                            : localTech.formula,
+                        code: (techDocs && techDocs.code && techDocs.code.length > 20) 
+                            ? techDocs.code 
+                            : localTech.code,
+                        note: (techDocs && techDocs.note) 
+                            ? techDocs.note 
+                            : localTech.note
+                    };
+                    if (docId) {
+                        try {
+                            localStorage.setItem('digilearn_doc_cognitive_' + docId, JSON.stringify(parsed));
+                        } catch (e) {}
+                    }
+                    this.cachedData = parsed;
+                    this.isAnalyzing = false;
+                    return this.cachedData;
+                }
+
+                // 2. Instant local storage cache check (<1ms)
                 if (docId) {
                     try {
                         const localCache = localStorage.getItem('digilearn_doc_cognitive_' + docId);
@@ -3040,9 +3075,14 @@
                                 let techDocs = parsed.techDocs || parsed.tech_rules || null;
                                 const localTech = this.extractTechnicalRules(parsed.docTitle || docTitle, parsed.docTitle || docTitle, parsed.sections || []);
                                 parsed.techDocs = {
+                                    conceptBrief: parsed.techDocs?.conceptBrief || parsed.techDocs?.concept_brief || localTech.conceptBrief,
                                     formulaRules: (techDocs && Array.isArray(techDocs.formulaRules) && techDocs.formulaRules.length > 0) 
                                         ? techDocs.formulaRules 
-                                        : localTech.formulaRules,
+                                        : (techDocs?.formula_rules || localTech.formulaRules),
+                                    workedExample: parsed.techDocs?.workedExample || parsed.techDocs?.worked_example || localTech.workedExample,
+                                    practicalTips: (techDocs && Array.isArray(techDocs.practicalTips) && techDocs.practicalTips.length > 0) 
+                                        ? techDocs.practicalTips 
+                                        : (techDocs?.practical_tips || localTech.practicalTips),
                                     formula: (techDocs && techDocs.formula && techDocs.formula.length > 10) 
                                         ? techDocs.formula 
                                         : localTech.formula,
