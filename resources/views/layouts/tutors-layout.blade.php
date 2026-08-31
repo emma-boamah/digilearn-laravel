@@ -343,14 +343,16 @@
             color: var(--primary-red);
         }
 
-        /* AI Tutor Premium Sidebar Effect */
+        /* AI Tutor Premium Sidebar — Rotating Border Animation */
         .sidebar-menu-item.ai-tutor-premium {
+            position: relative;
             overflow: hidden;
             z-index: 1;
             margin: 0.25rem 0.75rem;
             border-radius: 0.5rem;
             border-left: none !important;
             padding: 0.75rem 1.25rem;
+            background: transparent !important;
         }
 
         .sidebar-menu-item.ai-tutor-premium::before {
@@ -361,11 +363,13 @@
             left: -150%;
             width: 400%;
             height: 400%;
-            background: conic-gradient(transparent,
-                    var(--secondary-blue),
-                    transparent 30%,
-                    #1a508b,
-                    transparent 50%);
+            background: conic-gradient(
+                transparent,
+                #2677B8,
+                transparent 30%,
+                #1a508b,
+                transparent 50%
+            );
             animation: rotate-border 4s linear infinite;
         }
 
@@ -384,12 +388,17 @@
         }
 
         .sidebar-menu-item.ai-tutor-premium.active {
-            background-color: transparent;
+            background-color: transparent !important;
             color: #2677B8;
+            font-weight: 600;
         }
 
         .sidebar-menu-item.ai-tutor-premium.active::after {
-            background: rgba(38, 119, 184, 0.08);
+            background: #f0f7fc;
+        }
+
+        [data-theme="dark"] .sidebar-menu-item.ai-tutor-premium.active::after {
+            background: #152433;
         }
 
         @keyframes rotate-border {

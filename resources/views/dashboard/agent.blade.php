@@ -1397,12 +1397,26 @@
         }
 
         .send-btn:disabled {
-            opacity: 0.7;
+            opacity: 0.85;
             cursor: not-allowed;
         }
 
+        .send-btn.loading::before,
         .send-btn:disabled::before {
-            animation-play-state: paused;
+            animation: rotate-border 1.6s linear infinite;
+        }
+
+        .send-btn.loading svg {
+            animation: spin 1.2s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .send-btn svg {
@@ -2281,6 +2295,7 @@
             var sendBtn = document.getElementById('sendBtn');
             var input = document.getElementById('agentInput');
             sendBtn.disabled = loading;
+            sendBtn.classList.toggle('loading', loading);
             input.disabled = loading;
 
             var btnText = currentMode === 'roadmap' ? 'Designing Roadmap...' : (currentMode === 'quiz' ? 'Generating Quiz...' : 'Searching...');
