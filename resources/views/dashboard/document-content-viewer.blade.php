@@ -822,36 +822,69 @@
             font-size: 1.5rem;
         }
 
+        /* Chrome-Style Floating Document Navigation & Zoom Toolbar */
         .bottom-toolbar {
             position: fixed;
-            bottom: 2rem;
+            bottom: 1.5rem;
             left: 50%;
             transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.8);
-            border-radius: 2rem;
-            padding: 0.75rem 1.5rem;
+            background: rgba(15, 23, 42, 0.88);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 9999px;
+            padding: 0.35rem 0.75rem;
             display: flex;
             align-items: center;
-            gap: 1rem;
-            backdrop-filter: blur(10px);
+            gap: 0.35rem;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
             z-index: 1000;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .bottom-toolbar:hover {
+            background: rgba(15, 23, 42, 0.95);
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.45);
+            border-color: rgba(255, 255, 255, 0.22);
+        }
+
+        .toolbar-section {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .toolbar-separator {
+            width: 1px;
+            height: 18px;
+            background: rgba(255, 255, 255, 0.18);
+            margin: 0 0.3rem;
         }
 
         .toolbar-btn {
-            background: none;
+            background: transparent;
             border: none;
-            color: var(--white);
+            color: #e2e8f0;
             cursor: pointer;
-            padding: 0.5rem;
-            border-radius: 0.375rem;
-            transition: all 0.2s ease;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 0.8125rem;
+            transition: all 0.15s ease;
+            padding: 0;
         }
 
         .toolbar-btn:hover {
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+        }
+
+        .toolbar-btn:active {
+            transform: scale(0.92);
         }
 
         .toolbar-btn.primary {
@@ -865,6 +898,73 @@
 
         .toolbar-btn.primary:hover {
             background-color: #1e5a8a;
+        }
+
+        .page-input-container {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 0.375rem;
+            padding: 0.15rem 0.45rem;
+            color: #f1f5f9;
+            font-size: 0.8125rem;
+            font-weight: 600;
+        }
+
+        .page-number-input {
+            width: 2.2rem;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.8125rem;
+            text-align: center;
+            font-family: inherit;
+            padding: 0;
+            margin: 0;
+            -moz-appearance: textfield;
+        }
+
+        .page-number-input::-webkit-outer-spin-button,
+        .page-number-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .page-number-input:focus {
+            background: rgba(56, 189, 248, 0.25);
+            border-radius: 0.25rem;
+            color: #38bdf8;
+        }
+
+        .page-divider {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.75rem;
+        }
+
+        .total-pages-display {
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 0.8125rem;
+        }
+
+        .zoom-level-badge {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 0.75rem;
+            font-weight: 600;
+            min-width: 2.75rem;
+            text-align: center;
+        }
+
+        @media (max-width: 640px) {
+            .toolbar-separator, .toolbar-section:nth-child(3), .toolbar-section:nth-child(5) {
+                display: none;
+            }
+            .bottom-toolbar {
+                bottom: 1rem;
+            }
         }
 
         .hidden {
@@ -2346,35 +2446,50 @@
         </div>
     </div>
 
-    <!-- Bottom Toolbar (Only for Original Mode) -->
+    <!-- Bottom Toolbar (Only for Original Mode - Chrome Style Page Navigation & Controls) -->
     <div class="bottom-toolbar" id="originalModeBottomToolbar">
-        <button class="toolbar-btn" id="printDocBtn" title="Print Document">
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/>
-            </svg>
-        </button>
-        <button class="toolbar-btn" id="downloadDocBtn" title="Download Document">
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14,2 14,8 20,8"/>
-                <path d="m12 18-4-4h3V9h2v5h3l-4 4z"/>
-            </svg>
-        </button>
-        <button class="toolbar-btn" id="zoomInBtn" title="Zoom In">
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="8"/>
-                <path d="m21 21-4.35-4.35"/>
-                <line x1="8" y1="11" x2="14" y2="11"/>
-                <line x1="11" y1="8" x2="11" y2="14"/>
-            </svg>
-        </button>
-        <button class="toolbar-btn" id="zoomOutBtn" title="Zoom Out">
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="8"/>
-                <path d="m21 21-4.35-4.35"/>
-                <line x1="8" y1="11" x2="14" y2="11"/>
-            </svg>
-        </button>
+        <!-- Page Navigation with Direct Input -->
+        <div class="toolbar-section">
+            <button class="toolbar-btn" id="prevPageBtn" title="Previous Page (Up / Left Arrow)" aria-label="Previous Page">
+                <i class="fas fa-chevron-up"></i>
+            </button>
+            <div class="page-input-container">
+                <input type="text" inputmode="numeric" pattern="[0-9]*" class="page-number-input" id="pageNumberInput" value="1" title="Type page number and press Enter" aria-label="Current Page">
+                <span class="page-divider">/</span>
+                <span class="total-pages-display" id="totalPagesDisplay">{{ $document['pages_count'] ?? count($document['pages'] ?? $document['slides'] ?? []) ?: '1' }}</span>
+            </div>
+            <button class="toolbar-btn" id="nextPageBtn" title="Next Page (Down / Right Arrow)" aria-label="Next Page">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+
+        <div class="toolbar-separator"></div>
+
+        <!-- Zoom Controls -->
+        <div class="toolbar-section">
+            <button class="toolbar-btn" id="zoomOutBtn" title="Zoom Out" aria-label="Zoom Out">
+                <i class="fas fa-minus"></i>
+            </button>
+            <span class="zoom-level-badge" id="zoomLevelDisplay" title="Current Zoom Level">100%</span>
+            <button class="toolbar-btn" id="zoomInBtn" title="Zoom In" aria-label="Zoom In">
+                <i class="fas fa-plus"></i>
+            </button>
+            <button class="toolbar-btn" id="fitWidthBtn" title="Fit to Width" aria-label="Fit to Width">
+                <i class="fas fa-arrows-alt-h"></i>
+            </button>
+        </div>
+
+        <div class="toolbar-separator"></div>
+
+        <!-- Actions -->
+        <div class="toolbar-section">
+            <button class="toolbar-btn" id="printDocBtn" title="Print Document" aria-label="Print">
+                <i class="fas fa-print"></i>
+            </button>
+            <button class="toolbar-btn" id="downloadDocBtn" title="Download Document" aria-label="Download">
+                <i class="fas fa-download"></i>
+            </button>
+        </div>
     </div>
 
     <!-- Scripts -->
@@ -2384,22 +2499,61 @@
                 const slideThumbnails = document.querySelectorAll('.slide-thumbnail-vertical');
                 const slideCards = document.querySelectorAll('.ppt-slide-card');
                 const contentArea = document.getElementById('pptContentArea');
+                const pageNumberInput = document.getElementById('pageNumberInput');
+                const totalPagesDisplay = document.getElementById('totalPagesDisplay');
+                const prevPageBtn = document.getElementById('prevPageBtn');
+                const nextPageBtn = document.getElementById('nextPageBtn');
+                const totalSlides = slideCards.length || {{ count($document['slides'] ?? []) }};
                 
+                if (totalPagesDisplay) totalPagesDisplay.textContent = totalSlides;
+                if (pageNumberInput) pageNumberInput.value = '1';
+
+                function goToSlide(slideNum) {
+                    const validNum = Math.max(1, Math.min(totalSlides, parseInt(slideNum, 10) || 1));
+                    const targetCard = document.getElementById(`slide-${validNum}`);
+                    if (targetCard) {
+                        slideThumbnails.forEach(t => t.classList.remove('active'));
+                        const matchingThumb = document.querySelector(`.slide-thumbnail-vertical[data-slide="${validNum}"]`);
+                        if (matchingThumb) matchingThumb.classList.add('active');
+                        targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                    if (pageNumberInput) pageNumberInput.value = validNum;
+                }
+
                 slideThumbnails.forEach(thumbnail => {
                     thumbnail.addEventListener('click', function() {
                         const slideNumber = this.dataset.slide;
-                        const targetCard = document.getElementById(`slide-${slideNumber}`);
-                        if (targetCard) {
-                            // Update active thumbnail
-                            slideThumbnails.forEach(t => t.classList.remove('active'));
-                            this.classList.add('active');
-                            
-                            targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }
+                        goToSlide(slideNumber);
                     });
                 });
 
-                // Intersection Observer to highlight current slide in sidebar on scroll
+                if (pageNumberInput) {
+                    pageNumberInput.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') {
+                            goToSlide(this.value);
+                            this.blur();
+                        }
+                    });
+                    pageNumberInput.addEventListener('blur', function() {
+                        goToSlide(this.value);
+                    });
+                }
+
+                if (prevPageBtn) {
+                    prevPageBtn.addEventListener('click', () => {
+                        const curr = parseInt(pageNumberInput?.value, 10) || 1;
+                        goToSlide(curr - 1);
+                    });
+                }
+
+                if (nextPageBtn) {
+                    nextPageBtn.addEventListener('click', () => {
+                        const curr = parseInt(pageNumberInput?.value, 10) || 1;
+                        goToSlide(curr + 1);
+                    });
+                }
+
+                // Intersection Observer to highlight current slide and update page input on scroll
                 const observerOptions = {
                     root: contentArea,
                     rootMargin: '-10% 0px -80% 0px',
@@ -2410,6 +2564,9 @@
                     entries.forEach(entry => {
                         if (entry.isIntersecting) {
                             const slideNumber = entry.target.dataset.slide;
+                            if (pageNumberInput && document.activeElement !== pageNumberInput) {
+                                pageNumberInput.value = slideNumber;
+                            }
                             slideThumbnails.forEach(t => {
                                 if (t.dataset.slide === slideNumber) {
                                     t.classList.add('active');
@@ -2429,22 +2586,17 @@
                     if (e.key === 'Escape') {
                         history.back();
                     }
+                    if (document.activeElement === pageNumberInput) return;
                     
                     // Arrow key navigation
-                    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
-                        const activeThumbnail = document.querySelector('.slide-thumbnail-vertical.active');
-                        const nextThumbnail = activeThumbnail?.nextElementSibling;
-                        if (nextThumbnail && nextThumbnail.classList.contains('slide-thumbnail-vertical')) {
-                            nextThumbnail.click();
-                        }
+                    if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'PageDown') {
+                        const curr = parseInt(pageNumberInput?.value, 10) || 1;
+                        goToSlide(curr + 1);
                     }
                     
-                    if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
-                        const activeThumbnail = document.querySelector('.slide-thumbnail-vertical.active');
-                        const prevThumbnail = activeThumbnail?.previousElementSibling;
-                        if (prevThumbnail && prevThumbnail.classList.contains('slide-thumbnail-vertical')) {
-                            prevThumbnail.click();
-                        }
+                    if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                        const curr = parseInt(pageNumberInput?.value, 10) || 1;
+                        goToSlide(curr - 1);
                     }
                 });
             });
@@ -2458,10 +2610,42 @@
                 const pdfThumbnailsList = document.getElementById('pdfThumbnailsList');
                 const pdfPageCountHeader = document.getElementById('pdfPageCountHeader');
                 const contentArea = document.getElementById('pdfContentArea');
+                const pageNumberInput = document.getElementById('pageNumberInput');
+                const totalPagesDisplay = document.getElementById('totalPagesDisplay');
+                const prevPageBtn = document.getElementById('prevPageBtn');
+                const nextPageBtn = document.getElementById('nextPageBtn');
+                const zoomInBtn = document.getElementById('zoomInBtn');
+                const zoomOutBtn = document.getElementById('zoomOutBtn');
+                const fitWidthBtn = document.getElementById('fitWidthBtn');
+                const zoomLevelDisplay = document.getElementById('zoomLevelDisplay');
 
                 let pdfDoc = null;
                 let currentScale = 1.25;
+                let baseScale = 1.25;
                 const pageRenderTasks = {};
+
+                function updateZoomBadge() {
+                    if (zoomLevelDisplay) {
+                        const percent = Math.round((currentScale / baseScale) * 100);
+                        zoomLevelDisplay.textContent = `${percent}%`;
+                    }
+                }
+
+                function goToPage(pageNum) {
+                    if (!pdfDoc) return;
+                    const validNum = Math.max(1, Math.min(pdfDoc.numPages, parseInt(pageNum, 10) || 1));
+                    const targetCard = document.getElementById(`pdf-page-card-${validNum}`);
+                    if (targetCard) {
+                        document.querySelectorAll('.page-thumbnail').forEach(t => t.classList.remove('active'));
+                        const matchingThumb = document.getElementById(`thumb-page-${validNum}`);
+                        if (matchingThumb) {
+                            matchingThumb.classList.add('active');
+                            matchingThumb.scrollIntoView({ behavior: 'nearest', block: 'only' });
+                        }
+                        targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                    if (pageNumberInput) pageNumberInput.value = validNum;
+                }
 
                 if (typeof pdfjsLib !== 'undefined') {
                     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -2485,6 +2669,11 @@
 
                         if (pdfLoadingState) pdfLoadingState.style.display = 'none';
                         if (pdfPageCountHeader) pdfPageCountHeader.textContent = pdfDoc.numPages;
+                        if (totalPagesDisplay) totalPagesDisplay.textContent = pdfDoc.numPages;
+                        if (pageNumberInput) {
+                            pageNumberInput.value = '1';
+                            pageNumberInput.setAttribute('max', pdfDoc.numPages);
+                        }
 
                         if (pdfThumbnailsList) pdfThumbnailsList.innerHTML = '';
                         if (pdfPagesContainer) pdfPagesContainer.innerHTML = '';
@@ -2496,9 +2685,12 @@
                             const containerWidth = contentArea.clientWidth || window.innerWidth;
                             const targetWidth = Math.min(1050, Math.max(720, containerWidth - 96));
                             currentScale = Math.min(2.0, Math.max(1.45, targetWidth / unscaledViewport.width));
+                            baseScale = currentScale;
                         } catch(err) {
                             currentScale = 1.6;
+                            baseScale = 1.6;
                         }
+                        updateZoomBadge();
 
                         // Build thumbnail list and main page elements
                         for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
@@ -2514,12 +2706,7 @@
                                 </div>
                             `;
                             thumbItem.addEventListener('click', function() {
-                                const targetCard = document.getElementById(`pdf-page-card-${pageNum}`);
-                                if (targetCard) {
-                                    document.querySelectorAll('.page-thumbnail').forEach(t => t.classList.remove('active'));
-                                    thumbItem.classList.add('active');
-                                    targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                }
+                                goToPage(pageNum);
                             });
                             pdfThumbnailsList.appendChild(thumbItem);
 
@@ -2638,6 +2825,9 @@
                         entries.forEach(entry => {
                             if (entry.isIntersecting) {
                                 const pageNum = entry.target.dataset.page;
+                                if (pageNumberInput && document.activeElement !== pageNumberInput) {
+                                    pageNumberInput.value = pageNum;
+                                }
                                 thumbnails.forEach(t => {
                                     if (t.dataset.page === pageNum) {
                                         t.classList.add('active');
@@ -2653,15 +2843,41 @@
                     pageCards.forEach(card => observer.observe(card));
                 }
 
-                // Zoom controls
-                const zoomInBtn = document.getElementById('zoomInBtn');
-                const zoomOutBtn = document.getElementById('zoomOutBtn');
+                // Page Number Input Event Listeners
+                if (pageNumberInput) {
+                    pageNumberInput.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') {
+                            goToPage(this.value);
+                            this.blur();
+                        }
+                    });
+                    pageNumberInput.addEventListener('blur', function() {
+                        goToPage(this.value);
+                    });
+                }
 
+                // Previous and Next Page Buttons
+                if (prevPageBtn) {
+                    prevPageBtn.addEventListener('click', () => {
+                        const curr = parseInt(pageNumberInput?.value, 10) || 1;
+                        goToPage(curr - 1);
+                    });
+                }
+
+                if (nextPageBtn) {
+                    nextPageBtn.addEventListener('click', () => {
+                        const curr = parseInt(pageNumberInput?.value, 10) || 1;
+                        goToPage(curr + 1);
+                    });
+                }
+
+                // Zoom controls
                 if (zoomInBtn) {
                     zoomInBtn.addEventListener('click', () => {
                         if (currentScale < 3.5) {
                             currentScale = Math.min(3.5, currentScale + 0.25);
                             reRenderAllPages();
+                            updateZoomBadge();
                         }
                     });
                 }
@@ -2671,6 +2887,25 @@
                         if (currentScale > 0.6) {
                             currentScale = Math.max(0.6, currentScale - 0.25);
                             reRenderAllPages();
+                            updateZoomBadge();
+                        }
+                    });
+                }
+
+                // Fit to Width control
+                if (fitWidthBtn) {
+                    fitWidthBtn.addEventListener('click', async () => {
+                        if (!pdfDoc) return;
+                        try {
+                            const firstPage = await pdfDoc.getPage(1);
+                            const unscaledViewport = firstPage.getViewport({ scale: 1.0 });
+                            const containerWidth = contentArea.clientWidth || window.innerWidth;
+                            const targetWidth = Math.max(600, containerWidth - 96);
+                            currentScale = Math.min(2.5, Math.max(0.8, targetWidth / unscaledViewport.width));
+                            reRenderAllPages();
+                            updateZoomBadge();
+                        } catch(e) {
+                            console.error('Fit to width error:', e);
                         }
                     });
                 }
@@ -2717,19 +2952,15 @@
                     if (e.key === 'Escape') {
                         history.back();
                     }
-                    if (e.key === 'ArrowDown' || e.key === 'PageDown') {
-                        const activeThumbnail = document.querySelector('.page-thumbnail.active');
-                        const nextThumbnail = activeThumbnail?.nextElementSibling;
-                        if (nextThumbnail && nextThumbnail.classList.contains('page-thumbnail')) {
-                            nextThumbnail.click();
-                        }
+                    if (document.activeElement === pageNumberInput) return;
+
+                    if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'PageDown') {
+                        const curr = parseInt(pageNumberInput?.value, 10) || 1;
+                        goToPage(curr + 1);
                     }
-                    if (e.key === 'ArrowUp' || e.key === 'PageUp') {
-                        const activeThumbnail = document.querySelector('.page-thumbnail.active');
-                        const prevThumbnail = activeThumbnail?.previousElementSibling;
-                        if (prevThumbnail && prevThumbnail.classList.contains('page-thumbnail')) {
-                            prevThumbnail.click();
-                        }
+                    if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                        const curr = parseInt(pageNumberInput?.value, 10) || 1;
+                        goToPage(curr - 1);
                     }
                 });
             });
