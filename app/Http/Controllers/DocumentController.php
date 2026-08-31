@@ -289,12 +289,28 @@ class DocumentController extends Controller
         $user = Auth::user();
         $selectedLevelGroup = $user->current_level_group ?? session('selected_level_group', 'jhs');
 
+        // Fetch pre-computed background SQ3R cognitive analysis from database
+        $sq3rAnalysis = $document->sq3rAnalysis;
+        $preloadedCognitiveData = null;
+
+        if ($sq3rAnalysis && $sq3rAnalysis->status === 'completed' && !empty($sq3rAnalysis->structured_payload)) {
+            $preloadedCognitiveData = $sq3rAnalysis->structured_payload;
+        } elseif (!$sq3rAnalysis || $sq3rAnalysis->status === 'failed') {
+            // Proactively queue background processing so it is synthesized in background
+            try {
+                \App\Jobs\ProcessDocumentSq3rJob::dispatch($document->id);
+            } catch (\Throwable $dispatchEx) {
+                \Illuminate\Support\Facades\Log::info("ProcessDocumentSq3rJob proactive dispatch notice: " . $dispatchEx->getMessage());
+            }
+        }
+
         return view('dashboard.document-content-viewer', [
             'lesson' => $lesson,
             'document' => $docData,
             'selectedLevelGroup' => $selectedLevelGroup,
             'type' => $type,
-            'docId' => $document->id
+            'docId' => $document->id,
+            'preloadedCognitiveData' => $preloadedCognitiveData
         ]);
     }
 

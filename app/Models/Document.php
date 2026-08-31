@@ -25,6 +25,31 @@ class Document extends Model
     ];
 
     /**
+     * The "booted" method of the model.
+     * Automatically dispatches background SQ3R AI analysis job whenever a document is created or updated.
+     */
+    protected static function booted()
+    {
+        static::created(function ($document) {
+            try {
+                \App\Jobs\ProcessDocumentSq3rJob::dispatch($document->id);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::info("ProcessDocumentSq3rJob auto-dispatch on created notice: " . $e->getMessage());
+            }
+        });
+
+        static::updated(function ($document) {
+            if ($document->isDirty('file_path')) {
+                try {
+                    \App\Jobs\ProcessDocumentSq3rJob::dispatch($document->id);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::info("ProcessDocumentSq3rJob auto-dispatch on file_path updated notice: " . $e->getMessage());
+                }
+            }
+        });
+    }
+
+    /**
      * Get the user who uploaded the document.
      */
     public function uploader()
@@ -118,5 +143,13 @@ class Document extends Model
     public function school()
     {
         return $this->belongsTo(School::class);
+    }
+
+    /**
+     * Get the pre-computed SQ3R cognitive analysis for the document.
+     */
+    public function sq3rAnalysis()
+    {
+        return $this->hasOne(Sq3rAnalysis::class, 'document_id');
     }
 }
