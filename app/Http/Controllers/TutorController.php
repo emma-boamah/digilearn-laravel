@@ -76,7 +76,25 @@ class TutorController extends Controller
             ->latest()
             ->get();
 
-        return view('tutors.show', compact('tutor', 'courses'));
+        // Fetch tutor's available recurring days of week (0 = Sun, 1 = Mon, ..., 6 = Sat)
+        $availableDays = TutorAvailability::where('tutor_id', $tutor->id)
+            ->where('is_recurring', true)
+            ->pluck('day_of_week')
+            ->unique()
+            ->values()
+            ->toArray();
+
+        // Fetch specifically blocked dates from today onwards
+        $blockedDates = TutorAvailability::where('tutor_id', $tutor->id)
+            ->where('is_blocked', true)
+            ->where('specific_date', '>=', now()->toDateString())
+            ->pluck('specific_date')
+            ->map(function ($date) {
+                return \Carbon\Carbon::parse($date)->format('Y-m-d');
+            })
+            ->toArray();
+
+        return view('tutors.show', compact('tutor', 'courses', 'availableDays', 'blockedDates'));
     }
 
     /**

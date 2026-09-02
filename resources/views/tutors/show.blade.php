@@ -447,6 +447,241 @@
             box-shadow: 0 0 0 3px rgba(38, 119, 184, 0.1);
         }
 
+        /* Enhanced Inline Calendar & Date Strip (italki style) */
+        .inline-datepicker-wrap {
+            background: #f8fafc; /* Soothing glare-free off-white */
+            border: 1.5px solid var(--border-color);
+            border-radius: 14px;
+            padding: 0.9rem;
+            margin-top: 0.35rem;
+        }
+
+        [data-theme="dark"] .inline-datepicker-wrap {
+            background: #0f172a;
+        }
+
+        .cal-header-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .cal-month-title {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .cal-nav-group {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .cal-nav-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 7px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-surface);
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .cal-nav-btn:hover:not(:disabled) {
+            border-color: var(--primary-blue);
+            color: var(--primary-blue);
+            background: rgba(38, 119, 184, 0.08);
+        }
+
+        .cal-nav-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .cal-view-toggle {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .cal-view-toggle:hover {
+            background: rgba(38, 119, 184, 0.08);
+        }
+
+        /* 7-Day Horizontal Strip View */
+        .week-strip-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.35rem;
+        }
+
+        .day-chip-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0.6rem 0.2rem 0.45rem 0.2rem;
+            border-radius: 10px;
+            border: 1.5px solid var(--border-color);
+            background: var(--bg-surface);
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            user-select: none;
+            outline: none;
+        }
+
+        .day-chip-btn:hover:not(:disabled) {
+            border-color: rgba(38, 119, 184, 0.6);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .day-chip-btn.is-selected {
+            background: var(--primary-blue) !important;
+            color: #ffffff !important;
+            border-color: var(--primary-blue) !important;
+            box-shadow: 0 4px 12px rgba(38, 119, 184, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .day-chip-btn.is-selected .day-chip-name {
+            color: rgba(255, 255, 255, 0.85) !important;
+        }
+
+        .day-chip-btn.is-selected .day-chip-num {
+            color: #ffffff !important;
+        }
+
+        .day-chip-btn.is-selected .avail-dot {
+            background: #ffffff !important;
+        }
+
+        .day-chip-btn:disabled, .day-chip-btn.is-disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            background: transparent;
+            border-color: transparent;
+        }
+
+        .day-chip-name {
+            font-size: 0.625rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+            line-height: 1;
+            margin-bottom: 0.3rem;
+        }
+
+        .day-chip-num {
+            font-size: 0.95rem;
+            font-weight: 800;
+            line-height: 1;
+            color: var(--text-main);
+        }
+
+        .day-chip-indicator {
+            height: 4px;
+            margin-top: 0.35rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .avail-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--primary-blue);
+        }
+
+        .today-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--accent-red);
+        }
+
+        /* Month Grid View */
+        .month-cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.3rem;
+            margin-top: 0.4rem;
+        }
+
+        .month-cal-header-day {
+            text-align: center;
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            padding: 0.2rem 0;
+        }
+
+        .month-cal-cell {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-surface);
+            color: var(--text-main);
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            position: relative;
+        }
+
+        .month-cal-cell:hover:not(:disabled) {
+            border-color: var(--primary-blue);
+            background: rgba(38, 119, 184, 0.08);
+        }
+
+        .month-cal-cell.is-selected {
+            background: var(--primary-blue) !important;
+            color: #ffffff !important;
+            font-weight: 800;
+            border-color: var(--primary-blue) !important;
+        }
+
+        .month-cal-cell:disabled, .month-cal-cell.is-disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            background: transparent;
+            border-color: transparent;
+        }
+
+        .month-cal-cell.is-today {
+            border-color: rgba(225, 30, 45, 0.4);
+        }
+
         .price-summary-box {
             background: rgba(38, 119, 184, 0.06);
             border: 1px solid rgba(38, 119, 184, 0.15);
@@ -889,8 +1124,53 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="booking_date" class="form-label">Select Date</label>
-                            <input type="date" name="booking_date" id="booking_date" class="form-select" min="{{ date('Y-m-d') }}" max="{{ date('Y-m-d', strtotime('+30 days')) }}" required onchange="onBookingDateOrDurationChange()">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                                <label class="form-label" style="margin-bottom: 0;">Select Date</label>
+                                <button type="button" class="cal-view-toggle" id="cal_toggle_view_btn" onclick="toggleCalendarView()">
+                                    <i class="fa-regular fa-calendar-days"></i> <span id="toggle_view_text">Month View</span>
+                                </button>
+                            </div>
+                            <input type="hidden" name="booking_date" id="booking_date" value="" required>
+
+                            <div class="inline-datepicker-wrap">
+                                <!-- Calendar Nav Header -->
+                                <div class="cal-header-bar">
+                                    <div class="cal-month-title" id="cal_month_title">
+                                        <i class="fa-regular fa-calendar" style="color: var(--primary-blue);"></i>
+                                        <span id="cal_month_text">September 2026</span>
+                                    </div>
+                                    <div class="cal-nav-group">
+                                        <button type="button" class="cal-nav-btn" id="cal_prev_btn" onclick="navigateCalendar(-1)" title="Previous">
+                                            <i class="fa-solid fa-chevron-left"></i>
+                                        </button>
+                                        <button type="button" class="cal-nav-btn" id="cal_next_btn" onclick="navigateCalendar(1)" title="Next">
+                                            <i class="fa-solid fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 7-Day Horizontal Strip (Default like italki) -->
+                                <div id="week_strip_view" class="week-strip-grid">
+                                    <!-- Populated via JavaScript -->
+                                </div>
+
+                                <!-- Month Grid View (Toggleable) -->
+                                <div id="month_grid_view" style="display: none;">
+                                    <div class="month-cal-grid" id="month_grid_cells">
+                                        <!-- Populated via JavaScript -->
+                                    </div>
+                                </div>
+
+                                <!-- Tutor Availability Legend -->
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.65rem; padding-top: 0.5rem; border-top: 1px dashed var(--border-color); font-size: 0.72rem; color: var(--text-muted);">
+                                    <div style="display: flex; align-items: center; gap: 0.35rem;">
+                                        <span class="avail-dot" style="display: inline-block;"></span> Available
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.35rem;">
+                                        <span class="today-dot" style="display: inline-block;"></span> Today
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="form-group" id="time_slots_group">
@@ -1047,6 +1327,234 @@
             if (e.key === 'Escape') hideBioModal();
         });
 
+        // Inline Datepicker & Availability Schedule Engine (italki style)
+        const tutorId = "{{ $tutor->id }}";
+        const availableDaysOfWeek = {!! json_encode($availableDays ?? [0, 1, 2, 3, 4, 5, 6]) !!};
+        const blockedDatesList = {!! json_encode($blockedDates ?? []) !!};
+
+        let selectedDateStr = '';
+        let weekOffset = 0; // 0 = current week (today onwards)
+        let monthViewDate = new Date();
+        let isMonthViewActive = false;
+
+        function padZero(num) {
+            return num < 10 ? '0' + num : '' + num;
+        }
+
+        function toIsoDateString(d) {
+            const year = d.getFullYear();
+            const month = padZero(d.getMonth() + 1);
+            const day = padZero(d.getDate());
+            return `${year}-${month}-${day}`;
+        }
+
+        function isDayAvailable(dateObj) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const target = new Date(dateObj);
+            target.setHours(0, 0, 0, 0);
+
+            // Past dates are not available
+            if (target < today) return false;
+
+            // Maximum 30 days ahead
+            const maxDate = new Date(today);
+            maxDate.setDate(maxDate.getDate() + 30);
+            if (target > maxDate) return false;
+
+            const iso = toIsoDateString(target);
+            if (blockedDatesList.includes(iso)) return false;
+
+            const dayOfWeek = target.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+            return availableDaysOfWeek.includes(dayOfWeek);
+        }
+
+        function isTodayDate(dateObj) {
+            const today = new Date();
+            return dateObj.getFullYear() === today.getFullYear() &&
+                   dateObj.getMonth() === today.getMonth() &&
+                   dateObj.getDate() === today.getDate();
+        }
+
+        function renderCalendar() {
+            const monthText = document.getElementById('cal_month_text');
+            const prevBtn = document.getElementById('cal_prev_btn');
+            const nextBtn = document.getElementById('cal_next_btn');
+
+            if (isMonthViewActive) {
+                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                monthText.textContent = `${monthNames[monthViewDate.getMonth()]} ${monthViewDate.getFullYear()}`;
+                
+                const today = new Date();
+                prevBtn.disabled = (monthViewDate.getFullYear() === today.getFullYear() && monthViewDate.getMonth() <= today.getMonth());
+                
+                const maxMonth = new Date(today);
+                maxMonth.setDate(maxMonth.getDate() + 30);
+                nextBtn.disabled = (monthViewDate.getFullYear() > maxMonth.getFullYear() || 
+                                   (monthViewDate.getFullYear() === maxMonth.getFullYear() && monthViewDate.getMonth() >= maxMonth.getMonth()));
+
+                renderMonthGrid();
+            } else {
+                // Week Strip View
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() + (weekOffset * 7));
+                
+                const endDate = new Date(startDate);
+                endDate.setDate(endDate.getDate() + 6);
+
+                const monthNamesShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                if (startDate.getMonth() === endDate.getMonth()) {
+                    monthText.textContent = `${monthNamesShort[startDate.getMonth()]} ${startDate.getFullYear()}`;
+                } else {
+                    monthText.textContent = `${monthNamesShort[startDate.getMonth()]} - ${monthNamesShort[endDate.getMonth()]} ${endDate.getFullYear()}`;
+                }
+
+                prevBtn.disabled = (weekOffset <= 0);
+                nextBtn.disabled = (weekOffset >= 3); // max 4 weeks / 28-30 days
+
+                renderWeekStrip();
+            }
+        }
+
+        function renderWeekStrip() {
+            const container = document.getElementById('week_strip_view');
+            container.innerHTML = '';
+
+            const dayNamesShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            for (let i = 0; i < 7; i++) {
+                const dayDate = new Date();
+                dayDate.setDate(dayDate.getDate() + (weekOffset * 7) + i);
+                dayDate.setHours(0, 0, 0, 0);
+
+                const iso = toIsoDateString(dayDate);
+                const isAvail = isDayAvailable(dayDate);
+                const isToday = isTodayDate(dayDate);
+                const isSelected = (iso === selectedDateStr);
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `day-chip-btn ${isSelected ? 'is-selected' : ''} ${!isAvail ? 'is-disabled' : ''}`;
+                btn.disabled = !isAvail;
+                btn.setAttribute('aria-label', `${dayNamesShort[dayDate.getDay()]}, ${dayDate.toLocaleDateString()}`);
+
+                let indicatorHtml = '<div class="day-chip-indicator">';
+                if (isToday) {
+                    indicatorHtml += '<span class="today-dot" title="Today"></span>';
+                } else if (isAvail) {
+                    indicatorHtml += '<span class="avail-dot" title="Available"></span>';
+                }
+                indicatorHtml += '</div>';
+
+                btn.innerHTML = `
+                    <span class="day-chip-name">${dayNamesShort[dayDate.getDay()]}</span>
+                    <span class="day-chip-num">${dayDate.getDate()}</span>
+                    ${indicatorHtml}
+                `;
+
+                if (isAvail) {
+                    btn.onclick = () => selectDate(iso);
+                }
+
+                container.appendChild(btn);
+            }
+        }
+
+        function renderMonthGrid() {
+            const container = document.getElementById('month_grid_cells');
+            container.innerHTML = '';
+
+            const dayHeaders = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+            dayHeaders.forEach(dh => {
+                const headerEl = document.createElement('div');
+                headerEl.className = 'month-cal-header-day';
+                headerEl.textContent = dh;
+                container.appendChild(headerEl);
+            });
+
+            const year = monthViewDate.getFullYear();
+            const month = monthViewDate.getMonth();
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
+
+            // Leading empty padding cells
+            for (let p = 0; p < firstDayIndex; p++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'month-cal-cell is-disabled';
+                emptyCell.style.visibility = 'hidden';
+                container.appendChild(emptyCell);
+            }
+
+            for (let d = 1; d <= totalDaysInMonth; d++) {
+                const dayDate = new Date(year, month, d);
+                const iso = toIsoDateString(dayDate);
+                const isAvail = isDayAvailable(dayDate);
+                const isToday = isTodayDate(dayDate);
+                const isSelected = (iso === selectedDateStr);
+
+                const cell = document.createElement('button');
+                cell.type = 'button';
+                cell.className = `month-cal-cell ${isSelected ? 'is-selected' : ''} ${!isAvail ? 'is-disabled' : ''} ${isToday ? 'is-today' : ''}`;
+                cell.disabled = !isAvail;
+                cell.innerHTML = `<span>${d}</span>`;
+
+                if (isAvail && !isSelected) {
+                    const dot = document.createElement('span');
+                    dot.className = isToday ? 'today-dot' : 'avail-dot';
+                    dot.style.marginTop = '2px';
+                    cell.appendChild(dot);
+                }
+
+                if (isAvail) {
+                    cell.onclick = () => selectDate(iso);
+                }
+
+                container.appendChild(cell);
+            }
+        }
+
+        function selectDate(isoDate) {
+            selectedDateStr = isoDate;
+            const hiddenDateInput = document.getElementById('booking_date');
+            if (hiddenDateInput) {
+                hiddenDateInput.value = isoDate;
+            }
+
+            renderCalendar();
+            fetchAvailableSlots();
+        }
+
+        function navigateCalendar(direction) {
+            if (isMonthViewActive) {
+                monthViewDate.setMonth(monthViewDate.getMonth() + direction);
+            } else {
+                weekOffset = Math.max(0, Math.min(3, weekOffset + direction));
+            }
+            renderCalendar();
+        }
+
+        function toggleCalendarView() {
+            isMonthViewActive = !isMonthViewActive;
+            const weekView = document.getElementById('week_strip_view');
+            const monthView = document.getElementById('month_grid_view');
+            const toggleText = document.getElementById('toggle_view_text');
+
+            if (isMonthViewActive) {
+                weekView.style.display = 'none';
+                monthView.style.display = 'block';
+                toggleText.textContent = 'Week View';
+            } else {
+                weekView.style.display = 'grid';
+                monthView.style.display = 'none';
+                toggleText.textContent = 'Month View';
+            }
+
+            renderCalendar();
+        }
+
         // Price calculation & slot fetching scripts
         function onBookingDateOrDurationChange() {
             updateCalculatedPrice();
@@ -1058,35 +1566,38 @@
             const durationSelect = document.getElementById('duration_hours');
             const priceDisplay = document.getElementById('total_price_display');
             
-            if (subjectSelect.selectedIndex > 0) {
+            if (subjectSelect && subjectSelect.selectedIndex > 0) {
                 const selectedOption = subjectSelect.options[subjectSelect.selectedIndex];
                 const rate = parseFloat(selectedOption.getAttribute('data-rate')) || 0;
                 const hours = parseFloat(durationSelect.value) || 1;
                 
                 let total = rate * hours;
                 priceDisplay.textContent = total.toFixed(2) + ' Credits';
-            } else {
+            } else if (priceDisplay) {
                 priceDisplay.textContent = '0.00 Credits';
             }
         }
 
         function fetchAvailableSlots() {
-            const dateInput = document.getElementById('booking_date');
+            const dateValue = selectedDateStr || document.getElementById('booking_date').value;
             const durationSelect = document.getElementById('duration_hours');
             const slotsContainer = document.getElementById('slots_container');
             const startTimeInput = document.getElementById('selected_start_time');
 
-            startTimeInput.value = '';
+            if (startTimeInput) startTimeInput.value = '';
 
-            if (!dateInput.value) {
-                slotsContainer.innerHTML = '<div style="font-size: 0.8rem; color: var(--text-muted); grid-column: 1 / -1;">Select a date above to view available time slots.</div>';
+            if (!dateValue) {
+                if (slotsContainer) {
+                    slotsContainer.innerHTML = '<div style="font-size: 0.8rem; color: var(--text-muted); grid-column: 1 / -1;">Select a date above to view available time slots.</div>';
+                }
                 return;
             }
 
-            slotsContainer.innerHTML = '<div style="font-size: 0.8rem; color: var(--text-muted); grid-column: 1 / -1;"><i class="fa-solid fa-spinner fa-spin"></i> Loading available time slots...</div>';
+            if (slotsContainer) {
+                slotsContainer.innerHTML = '<div style="font-size: 0.8rem; color: var(--text-muted); grid-column: 1 / -1;"><i class="fa-solid fa-spinner fa-spin" style="color: var(--primary-blue);"></i> Loading available time slots...</div>';
+            }
 
-            const tutorId = "{{ $tutor->id }}";
-            const url = `/tutors/schedule/api/slots/${tutorId}?date=${dateInput.value}&duration_hours=${durationSelect.value}`;
+            const url = `/tutors/schedule/api/slots/${tutorId}?date=${dateValue}&duration_hours=${durationSelect.value}`;
 
             fetch(url)
                 .then(res => res.json())
@@ -1109,7 +1620,7 @@
                             btn.onclick = function() {
                                 document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
                                 btn.classList.add('selected');
-                                startTimeInput.value = slot.time;
+                                if (startTimeInput) startTimeInput.value = slot.time;
                             };
                         }
 
@@ -1118,9 +1629,40 @@
                 })
                 .catch(err => {
                     console.error('Failed to load slots:', err);
-                    slotsContainer.innerHTML = '<div style="font-size: 0.8rem; color: #ef4444; grid-column: 1 / -1;">Unable to load time slots. Please try again.</div>';
+                    if (slotsContainer) {
+                        slotsContainer.innerHTML = '<div style="font-size: 0.8rem; color: #ef4444; grid-column: 1 / -1;">Unable to load time slots. Please try again.</div>';
+                    }
                 });
         }
+
+        // Initialize inline datepicker on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            // Find first available date starting from today
+            const checkDate = new Date();
+            let firstFoundIso = '';
+            for (let i = 0; i < 30; i++) {
+                if (isDayAvailable(checkDate)) {
+                    firstFoundIso = toIsoDateString(checkDate);
+                    break;
+                }
+                checkDate.setDate(checkDate.getDate() + 1);
+            }
+
+            if (firstFoundIso) {
+                selectedDateStr = firstFoundIso;
+                const hiddenDateInput = document.getElementById('booking_date');
+                if (hiddenDateInput) hiddenDateInput.value = firstFoundIso;
+            } else {
+                const today = new Date();
+                selectedDateStr = toIsoDateString(today);
+            }
+
+            renderCalendar();
+            updateCalculatedPrice();
+            if (selectedDateStr) {
+                fetchAvailableSlots();
+            }
+        });
     </script>
 </body>
 </html>
