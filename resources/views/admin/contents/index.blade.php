@@ -2525,7 +2525,7 @@
         </div>
     </div>
 
-    <!-- Floating Background Upload Manager Drawer -->
+    <!-- High-Speed Upload Engine & Floating Background Upload Manager Drawer -->
     @include('admin.contents.partials.upload_manager_drawer')
     <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="{{ asset('js/admin/upload-engine.js') }}"></script>
 
@@ -5375,6 +5375,9 @@
 
                         // 2. Hand off package payload to the upload engine
                         window.uploadEngine.startPackageUpload(finalData, uploadData);
+                        if (typeof window.showUploadDrawer === 'function') {
+                            window.showUploadDrawer();
+                        }
 
                         // 3. Clear draft and reset the wizard form for the next upload
                         localStorage.removeItem('digilearn_upload_draft');

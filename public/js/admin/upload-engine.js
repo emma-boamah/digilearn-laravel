@@ -1,19 +1,19 @@
 /**
- * Digilearn High-Speed Concurrent Upload Engine
- * Supports:
- * - Parallel chunked uploads (concurrency: 3)
- * - Non-blocking background uploads (modal can be closed immediately)
- * - Auto-retry on network dropouts with exponential backoff
- * - Multi-task queueing (upload multiple packages simultaneously)
- * - Real-time speed (MB/s), ETA, and server-side background job polling
+ * Digilearn High-Speed Concurrent Upload Engine & Drawer Controller
+ * - Concurrency: 3 parallel chunks
+ * - Built-in UI drawer controller (CSP-compliant, zero inline scripts required)
+ * - Auto-retry on network disconnects
+ * - Background queue tracking & multi-upload support
  */
 class UploadEngine {
     constructor(options = {}) {
         this.chunkSize = options.chunkSize || 5 * 1024 * 1024; // 5MB per chunk
-        this.concurrency = options.concurrency || 3; // 3 chunks simultaneously
+        this.concurrency = options.concurrency || 3; // 3 parallel chunk uploads
         this.maxRetries = options.maxRetries || 3;
         this.tasks = new Map();
         this.listeners = new Map();
+        this.isExpanded = true;
+        this.uiInitialized = false;
 
         this.csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         this.routes = {
@@ -25,12 +25,19 @@ class UploadEngine {
             cancelTask: '/admin/contents/upload-tasks/'
         };
 
-        // Add beforeunload guard only when binary uploads are actively transmitting
+        // Initialize UI bindings when ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.initUI());
+        } else {
+            this.initUI();
+        }
+
+        // Add beforeunload confirmation only during active binary file uploads
         window.addEventListener('beforeunload', (e) => {
-            const hasActiveNetworkTransfers = Array.from(this.tasks.values()).some(
+            const hasActiveUploads = Array.from(this.tasks.values()).some(
                 t => t.status === 'uploading' && t.uploadProgress < 100
             );
-            if (hasActiveNetworkTransfers) {
+            if (hasActiveUploads) {
                 e.preventDefault();
                 e.returnValue = 'You have uploads in progress. Leaving this page will cancel active file transfers.';
                 return e.returnValue;
@@ -58,17 +65,285 @@ class UploadEngine {
     }
 
     /**
-     * Start a complete package upload (Video + Documents + Quiz)
+     * Bind UI DOM elements for floating drawer
      */
-    async startPackageUpload(finalData, uploadState) {
+    initUI() {
+        if (this.uiInitialized) return;
+
+        this.dom = {
+            container: document.getElementById('uploadManagerDrawerContainer'),
+            pill: document.getElementById('uploadManagerPill'),
+            drawer: document.getElementById('uploadManagerDrawer'),
+            taskList: document.getElementById('uploadTaskList'),
+            pillStatusText: document.getElementById('pillStatusText'),
+            pillPercent: document.getElementById('pillPercent'),
+            pillBadgeCount: document.getElementById('pillBadgeCount'),
+            drawerActiveBadge: document.getElementById('drawerActiveBadge'),
+            pillIcon: document.getElementById('pillIcon'),
+            expandBtn: document.getElementById('expandDrawerBtn'),
+            minimizeBtn: document.getElementById('minimizeDrawerBtn'),
+            clearBtn: document.getElementById('clearCompletedUploadsBtn'),
+            openNewBtn: document.getElementById('openNewUploadFromDrawer'),
+            toastContainer: document.getElementById('uploadToastContainer')
+        };
+
+        if (!this.dom.container) {
+            // Container not in DOM yet, retry shortly
+            setTimeout(() => this.initUI(), 150);
+            return;
+        }
+
+        // CRITICAL: Move the drawer and toast containers to document.body
+        // so they are never trapped inside a hidden modal parent (e.g. .upload-modal with display:none)
+        document.body.appendChild(this.dom.container);
+        if (this.dom.toastContainer) {
+            document.body.appendChild(this.dom.toastContainer);
+        }
+
+        this.uiInitialized = true;
+
+        // Pill click -> expand
+        if (this.dom.pill) {
+            this.dom.pill.addEventListener('click', () => {
+                this.isExpanded = true;
+                this.renderUI();
+            });
+        }
+
+        if (this.dom.expandBtn) {
+            this.dom.expandBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.isExpanded = true;
+                this.renderUI();
+            });
+        }
+
+        if (this.dom.minimizeBtn) {
+            this.dom.minimizeBtn.addEventListener('click', () => {
+                this.isExpanded = false;
+                this.renderUI();
+            });
+        }
+
+        if (this.dom.clearBtn) {
+            this.dom.clearBtn.addEventListener('click', () => {
+                this.clearCompleted();
+            });
+        }
+
+        if (this.dom.openNewBtn) {
+            this.dom.openNewBtn.addEventListener('click', () => {
+                const uploadBtn = document.getElementById('uploadBtn') || document.querySelector('[data-upload-trigger]');
+                if (uploadBtn) {
+                    uploadBtn.click();
+                } else if (typeof window.openUploadModal === 'function') {
+                    window.openUploadModal();
+                }
+            });
+        }
+
+        // Cancel button delegation
+        if (this.dom.taskList) {
+            this.dom.taskList.addEventListener('click', (e) => {
+                const cancelBtn = e.target.closest('[data-cancel-task]');
+                if (cancelBtn) {
+                    const taskId = cancelBtn.getAttribute('data-cancel-task');
+                    this.cancelTask(taskId);
+                }
+            });
+        }
+
+        // Listen to engine lifecycle events to update drawer
+        this.on('taskAdded', () => {
+            this.isExpanded = true;
+            this.renderUI();
+        });
+
+        this.on('taskProgress', () => {
+            this.renderUI();
+        });
+
+        this.on('taskCompleted', (task) => {
+            this.renderUI();
+            this.showToast('Upload Complete!', `"${task.title}" was processed successfully.`, true);
+            if (typeof window.fetchContentsData === 'function') {
+                window.fetchContentsData();
+            }
+        });
+
+        this.on('taskFailed', (task) => {
+            this.renderUI();
+            this.showToast('Upload Failed', `"${task.title}": ${task.error || 'Failed'}`, false);
+        });
+
+        this.on('taskCancelled', () => this.renderUI());
+        this.on('tasksCleared', () => this.renderUI());
+
+        // Check for active tasks on server
+        this.fetchActiveServerTasks();
+    }
+
+    showDrawer() {
+        if (!this.uiInitialized) this.initUI();
+        this.isExpanded = true;
+        this.renderUI();
+    }
+
+    /**
+     * Render the floating drawer & pill cards
+     */
+    renderUI() {
+        if (!this.uiInitialized || !this.dom.container) return;
+
+        const tasks = Array.from(this.tasks.values());
+        if (tasks.length === 0) {
+            this.dom.container.style.display = 'none';
+            return;
+        }
+
+        this.dom.container.style.display = 'block';
+
+        if (this.isExpanded) {
+            if (this.dom.pill) this.dom.pill.style.display = 'none';
+            if (this.dom.drawer) this.dom.drawer.style.display = 'block';
+        } else {
+            if (this.dom.pill) this.dom.pill.style.display = 'flex';
+            if (this.dom.drawer) this.dom.drawer.style.display = 'none';
+        }
+
+        const activeTasks = tasks.filter(t => ['uploading', 'queued', 'processing'].includes(t.status));
+        const completedTasks = tasks.filter(t => t.status === 'completed');
+
+        // Update Pill Info
+        if (this.dom.pillBadgeCount) this.dom.pillBadgeCount.innerText = activeTasks.length || tasks.length;
+        if (this.dom.drawerActiveBadge) this.dom.drawerActiveBadge.innerText = `${activeTasks.length} Active`;
+
+        if (activeTasks.length > 0) {
+            const firstActive = activeTasks[0];
+            if (this.dom.pillStatusText) this.dom.pillStatusText.innerText = `${firstActive.title.substring(0, 18)}...`;
+            if (this.dom.pillPercent) this.dom.pillPercent.innerText = `${firstActive.overallProgress || firstActive.uploadProgress}%`;
+            if (this.dom.pillIcon) this.dom.pillIcon.className = 'fas fa-cloud-upload-alt text-blue-400 text-base animate-pulse';
+        } else if (completedTasks.length > 0) {
+            if (this.dom.pillStatusText) this.dom.pillStatusText.innerText = 'All uploads complete!';
+            if (this.dom.pillPercent) this.dom.pillPercent.innerText = '100%';
+            if (this.dom.pillIcon) this.dom.pillIcon.className = 'fas fa-check-circle text-emerald-400 text-base';
+        }
+
+        // Render Cards in Task List
+        if (this.dom.taskList) {
+            this.dom.taskList.innerHTML = tasks.map(task => {
+                const isCompleted = task.status === 'completed';
+                const isFailed = task.status === 'failed';
+                const isProcessing = task.status === 'processing' || task.status === 'queued';
+                const isCancelled = task.status === 'cancelled';
+
+                let statusBadge = '';
+                if (isCompleted) {
+                    statusBadge = '<span style="font-size: 10px; font-weight: 700; color: #047857; background-color: #ecfdf5; padding: 2px 6px; border-radius: 4px; border: 1px solid #a7f3d0;">Completed</span>';
+                } else if (isFailed) {
+                    statusBadge = '<span style="font-size: 10px; font-weight: 700; color: #b91c1c; background-color: #fef2f2; padding: 2px 6px; border-radius: 4px; border: 1px solid #fecaca;">Failed</span>';
+                } else if (isProcessing) {
+                    statusBadge = '<span style="font-size: 10px; font-weight: 700; color: #b45309; background-color: #fffbeb; padding: 2px 6px; border-radius: 4px; border: 1px solid #fde68a;">Processing</span>';
+                } else if (isCancelled) {
+                    statusBadge = '<span style="font-size: 10px; font-weight: 700; color: #64748b; background-color: #f1f5f9; padding: 2px 6px; border-radius: 4px; border: 1px solid #cbd5e1;">Cancelled</span>';
+                } else {
+                    statusBadge = `<span style="font-size: 10px; font-weight: 700; color: #1d4ed8; background-color: #eff6ff; padding: 2px 6px; border-radius: 4px; border: 1px solid #bfdbfe;">${task.speed ? task.speed + ' MB/s' : 'Uploading'}</span>`;
+                }
+
+                let barColor = 'linear-gradient(to right, #3b82f6, #4f46e5)';
+                if (isCompleted) barColor = 'linear-gradient(to right, #10b981, #14b8a6)';
+                if (isFailed) barColor = 'linear-gradient(to right, #ef4444, #f43f5e)';
+                if (isProcessing) barColor = 'linear-gradient(to right, #f59e0b, #3b82f6)';
+
+                const percent = task.overallProgress || task.uploadProgress || 0;
+
+                return `
+                    <div style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">
+                        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 6px;">
+                            <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
+                                <i class="fas ${task.type === 'document' ? 'fa-file-pdf text-emerald-600' : 'fa-video text-blue-600'}" style="font-size: 12px;"></i>
+                                <span style="font-weight: 700; font-size: 12px; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 190px;" title="${task.title}">${task.title}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                                ${statusBadge}
+                                ${!isCompleted && !isFailed && !isCancelled ? `
+                                    <button type="button" data-cancel-task="${task.id}" style="background: none; border: none; color: #94a3b8; cursor: pointer; padding: 2px 4px; font-size: 12px;" title="Cancel upload">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div style="width: 100%; background-color: #f1f5f9; border-radius: 9999px; height: 8px; overflow: hidden; margin-bottom: 6px;">
+                            <div style="background: ${barColor}; height: 100%; border-radius: 9999px; width: ${percent}%; transition: width 0.3s ease;"></div>
+                        </div>
+
+                        <!-- Details subtext -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: #64748b; font-weight: 500;">
+                            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px;" title="${task.stepDescription}">${task.stepDescription}</span>
+                            <span style="font-weight: 700; color: #334155;">${percent}%</span>
+                        </div>
+
+                        ${isCompleted && task.videoId ? `
+                            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end;">
+                                <a href="/admin/contents/${task.videoId}?type=${task.type}" style="font-size: 11px; font-weight: 700; color: #2563eb; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                                    View Content <i class="fas fa-arrow-right" style="font-size: 9px;"></i>
+                                </a>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+
+    showToast(title, message, isSuccess = true) {
+        const toast = document.createElement('div');
+        toast.style.cssText = `pointer-events: auto; transform: translateY(8px); opacity: 0; transition: all 0.3s ease-out; display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); background-color: ${isSuccess ? '#0f172a' : '#7f1d1d'}; color: white; border: 1px solid ${isSuccess ? '#334155' : '#991b1b'}; min-width: 320px; max-width: 400px;`;
+
+        toast.innerHTML = `
+            <div style="width: 32px; height: 32px; border-radius: 9999px; background-color: ${isSuccess ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}; color: ${isSuccess ? '#34d399' : '#f87171'}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i class="fas ${isSuccess ? 'fa-check-circle' : 'fa-exclamation-triangle'}" style="font-size: 16px;"></i>
+            </div>
+            <div style="flex: 1; font-size: 12px;">
+                <div style="font-weight: 700; margin-bottom: 2px;">${title}</div>
+                <div style="color: #cbd5e1;">${message}</div>
+            </div>
+            <button type="button" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 14px;">&times;</button>
+        `;
+
+        toast.querySelector('button').onclick = () => toast.remove();
+
+        const container = document.getElementById('uploadToastContainer') || document.body;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.transform = 'translateY(0)';
+            toast.style.opacity = '1';
+        }, 50);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(8px)';
+            setTimeout(() => toast.remove(), 350);
+        }, 6000);
+    }
+
+    /**
+     * Start package upload pipeline
+     */
+    async startPackageUpload(finalData, uploadState = {}) {
+        if (!this.uiInitialized) this.initUI();
+
         const taskId = this.generateId();
-        const videoTitle = finalData.video.title || 'Untitled Content';
+        const videoTitle = (finalData && finalData.video && finalData.video.title) ? finalData.video.title : 'Untitled Content';
 
         const task = {
             id: taskId,
             title: videoTitle,
-            type: finalData.video.video_source === 'none' ? 'document' : 'video',
-            status: 'uploading', // uploading -> queued -> processing -> completed -> failed -> cancelled
+            type: (finalData && finalData.video && finalData.video.video_source === 'none') ? 'document' : 'video',
+            status: 'uploading',
             overallProgress: 0,
             uploadProgress: 0,
             serverProgress: 0,
@@ -84,16 +359,19 @@ class UploadEngine {
             createdAt: new Date().toISOString()
         };
 
-        // Calculate total payload bytes for accurate progress
+        // Calculate total payload size safely
         let totalBytes = 0;
-        if (finalData.video.file) totalBytes += finalData.video.file.size;
-        if (uploadState.thumbnail) totalBytes += uploadState.thumbnail.size;
-        if (finalData.documents && finalData.documents.length) {
+        if (finalData && finalData.video && finalData.video.file) totalBytes += finalData.video.file.size;
+        if (uploadState && uploadState.thumbnail && uploadState.thumbnail.size) totalBytes += uploadState.thumbnail.size;
+        if (finalData && finalData.documents && Array.isArray(finalData.documents)) {
             finalData.documents.forEach(d => { totalBytes += (d.size || 0); });
         }
         task.totalBytes = totalBytes;
 
         this.tasks.set(taskId, task);
+
+        // Instantly show floating drawer
+        this.showDrawer();
         this.emit('taskAdded', task);
 
         // Run upload pipeline asynchronously
@@ -158,9 +436,7 @@ class UploadEngine {
             await this.pollServerProcessing(task);
 
         } catch (err) {
-            if (task.status === 'cancelled') {
-                return;
-            }
+            if (task.status === 'cancelled') return;
             console.error(`Upload error for task ${task.id}:`, err);
             task.status = 'failed';
             task.error = err.message || 'Upload failed';
@@ -173,11 +449,11 @@ class UploadEngine {
      * Video Upload Step: Supports URL, Direct, and High-Speed Concurrent Chunks
      */
     async uploadVideoStep(task, finalData, uploadState) {
-        const videoFile = finalData.video.file;
-        const videoSource = finalData.video.video_source;
+        const videoFile = finalData.video ? finalData.video.file : null;
+        const videoSource = finalData.video ? finalData.video.video_source : 'none';
 
         const isUrlBased = ['youtube', 'mux'].includes(videoSource) ||
-            (videoSource === 'vimeo' && finalData.video.external_video_url && finalData.video.external_video_url.trim() !== '');
+            (videoSource === 'vimeo' && finalData.video && finalData.video.external_video_url && finalData.video.external_video_url.trim() !== '');
 
         if (isUrlBased || !videoFile) {
             // Direct URL registration
@@ -198,7 +474,7 @@ class UploadEngine {
             } else if (finalData.video.external_video_url) {
                 formData.append('external_video_url', finalData.video.external_video_url);
             }
-            if (uploadState.thumbnail) {
+            if (uploadState && uploadState.thumbnail) {
                 formData.append('thumbnail_file', uploadState.thumbnail);
             }
 
@@ -217,9 +493,9 @@ class UploadEngine {
             return { success: true, video_id: result.data.video_id };
         }
 
-        // File-based upload
+        // File-based upload: 10MB+ uses parallel chunks
         const fileSize = videoFile.size;
-        const largeFileThreshold = 10 * 1024 * 1024; // 10MB: use concurrent chunks for >= 10MB
+        const largeFileThreshold = 10 * 1024 * 1024;
 
         if (fileSize >= largeFileThreshold) {
             return await this.uploadVideoConcurrentChunks(task, finalData, uploadState);
@@ -241,10 +517,9 @@ class UploadEngine {
         let completedChunksCount = 0;
         const startTime = Date.now();
 
-        // Build list of chunks to upload
         const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
 
-        // Worker function that pulls next chunk index from pool
+        // Worker function pulls next chunk from pool
         const uploadWorker = async () => {
             while (chunkIndices.length > 0) {
                 if (task.status === 'cancelled') return;
@@ -275,20 +550,15 @@ class UploadEngine {
                             signal: task.abortController.signal
                         });
 
-                        if (!res.ok) {
-                            throw new Error(`HTTP ${res.status}`);
-                        }
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
                         const json = await res.json();
-                        if (!json.success) {
-                            throw new Error(json.message || 'Chunk error');
-                        }
+                        if (!json.success) throw new Error(json.message || 'Chunk error');
 
                         chunkSuccess = true;
                         uploadedBytesByChunk[chunkIndex] = chunkBytes;
                         completedChunksCount++;
 
-                        // Calculate throughput metrics
                         const currentUploaded = uploadedBytesByChunk.reduce((a, b) => a + b, 0);
                         const elapsedSeconds = (Date.now() - startTime) / 1000;
                         const speedBps = elapsedSeconds > 0 ? currentUploaded / elapsedSeconds : 0;
@@ -310,7 +580,6 @@ class UploadEngine {
                         if (attempt >= this.maxRetries) {
                             throw new Error(`Chunk ${chunkIndex + 1} failed after ${this.maxRetries} attempts: ${err.message}`);
                         }
-                        // Exponential backoff before retry (500ms, 1000ms, 2000ms)
                         await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 250));
                     }
                 }
@@ -345,7 +614,7 @@ class UploadEngine {
         if (finalData.video.category_ids && finalData.video.category_ids.length > 0) {
             finalData.video.category_ids.forEach(id => finalFormData.append('category_ids[]', id));
         }
-        if (uploadState.thumbnail) {
+        if (uploadState && uploadState.thumbnail) {
             finalFormData.append('thumbnail_file', uploadState.thumbnail);
         }
 
@@ -385,7 +654,7 @@ class UploadEngine {
             formData.append('video_file', file);
             formData.append('upload_destination', finalData.video.upload_destination || '');
         }
-        if (uploadState.thumbnail) {
+        if (uploadState && uploadState.thumbnail) {
             formData.append('thumbnail_file', uploadState.thumbnail);
         }
 
@@ -524,8 +793,8 @@ class UploadEngine {
      * Poll server for background queue job progress
      */
     async pollServerProcessing(task) {
-        const pollInterval = 3000; // Poll every 3 seconds
-        const maxPollAttempts = 120; // 6 minutes max polling
+        const pollInterval = 3000;
+        const maxPollAttempts = 120;
         let attempts = 0;
 
         while (attempts < maxPollAttempts) {
@@ -567,7 +836,6 @@ class UploadEngine {
             }
         }
 
-        // If polling times out, assume completed on server
         if (task.status !== 'completed' && task.status !== 'failed') {
             task.status = 'completed';
             task.overallProgress = 100;
@@ -613,7 +881,38 @@ class UploadEngine {
         }
         this.emit('tasksCleared');
     }
+
+    fetchActiveServerTasks() {
+        fetch('/admin/contents/upload-tasks/active')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.tasks && data.tasks.length > 0) {
+                    data.tasks.forEach(t => {
+                        if (['uploading', 'queued', 'processing'].includes(t.status)) {
+                            if (!this.tasks.has(t.id)) {
+                                const task = {
+                                    id: t.id,
+                                    title: t.title,
+                                    type: t.content_type,
+                                    status: t.status,
+                                    overallProgress: t.progress,
+                                    uploadProgress: 100,
+                                    stepDescription: t.step_description || 'Processing on server...',
+                                    videoId: t.related_video_id,
+                                    abortController: new AbortController()
+                                };
+                                this.tasks.set(t.id, task);
+                                this.pollServerProcessing(task);
+                            }
+                        }
+                    });
+                    this.renderUI();
+                }
+            })
+            .catch(err => console.warn('Could not load active upload tasks:', err));
+    }
 }
 
 // Global Singleton Instance
 window.uploadEngine = new UploadEngine();
+window.showUploadDrawer = () => window.uploadEngine.showDrawer();
