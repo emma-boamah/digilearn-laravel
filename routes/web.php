@@ -614,6 +614,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/contents/upload/documents', [AdminController::class, 'uploadDocumentsComponent'])->name('contents.upload.documents');
     Route::post('/contents/upload/quiz', [AdminController::class, 'uploadQuizComponent'])->name('contents.upload.quiz');
     Route::post('/contents/upload/image', [AdminController::class, 'uploadImage'])->name('contents.upload.image');
+    Route::get('/contents/upload-tasks/active', [AdminController::class, 'getActiveUploadTasks'])->name('contents.upload-tasks.active');
+    Route::get('/contents/upload-tasks/{taskId}', [AdminController::class, 'getUploadTaskStatus'])->name('contents.upload-tasks.status')->where('taskId', '[0-9a-fA-F\-]+');
+    Route::post('/contents/upload-tasks/{taskId}/cancel', [AdminController::class, 'cancelUploadTask'])->name('contents.upload-tasks.cancel')->where('taskId', '[0-9a-fA-F\-]+');
     Route::post('/contents/generate-ai-questions', [AdminController::class, 'generateAiQuestions'])->name('contents.generate-ai-questions');
     Route::post('/quizzes/generate-ai', [AdminController::class, 'generateAiQuestions'])->name('quizzes.generate-ai');
     Route::post('/contents/batch-store', [AdminController::class, 'storeBatchContents'])->name('contents.batch-store');

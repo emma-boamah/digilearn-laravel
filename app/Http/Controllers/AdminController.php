@@ -59,6 +59,9 @@ use App\Services\AiContentService;
 use App\Services\BulkContentActionService;
 use App\Http\Requests\Admin\AdminInviteRequest;
 use App\Notifications\AdminNotification;
+use App\Models\UploadTask;
+use App\Jobs\ProcessVideoUploadJob;
+use App\Jobs\ProcessDocumentBatchJob;
 
 class AdminController extends Controller
 {
@@ -5562,6 +5565,25 @@ class AdminController extends Controller
                 $this->notificationService->notifyNewVideo($video);
             }
 
+            // Create or update the background UploadTask
+            $taskId = $request->input('task_id') ?: (string) Str::uuid();
+            $uploadTask = UploadTask::updateOrCreate(
+                ['id' => $taskId],
+                [
+                    'user_id' => Auth::id(),
+                    'title' => $video->title,
+                    'content_type' => 'video',
+                    'related_video_id' => $video->id,
+                    'status' => 'queued',
+                    'progress' => 85,
+                    'step_description' => 'Queued for background processing...',
+                    'metadata' => [
+                        'video_source' => $video->video_source,
+                        'upload_destination' => $request->input('upload_destination'),
+                    ]
+                ]
+            );
+
             // Handle file upload - either chunked or direct
             if ($isChunkedUpload) {
                 // Handle chunked upload - file is already assembled in temp_videos
@@ -5576,36 +5598,20 @@ class AdminController extends Controller
                 }
 
                 $video->update(['temp_file_path' => $tempPath]);
-
                 if ($request->filled('upload_destination')) {
                     $video->update(['video_source' => $request->upload_destination]);
-
-                    if ($request->upload_destination === 'vimeo') {
-                        try {
-                            $vimeoService = new VimeoService();
-                            $result = $vimeoService->uploadVideo('storage/public/' . $tempPath, $video->title, $video->description, Auth::id(), 'video_' . $video->id);
-
-                            if ($result && is_array($result) && ($result['success'] ?? false)) {
-                                $video->update([
-                                    'vimeo_id' => $result['video_id'] ?? null,
-                                    'vimeo_embed_url' => $result['embed_url'] ?? null,
-                                    'status' => 'approved',
-                                    'temp_file_path' => null,
-                                    'temp_expires_at' => null
-                                ]);
-                                Storage::disk('public')->delete($tempPath);
-                                $this->notificationService->notifyNewVideo($video);
-                            } else {
-                                $video->update(['status' => 'rejected']);
-                                $errorMsg = is_array($result) ? ($result['error'] ?? 'Unknown error') : 'Vimeo service returned invalid response';
-                                throw new \Exception('Failed to upload to Vimeo: ' . $errorMsg);
-                            }
-                        } catch (\Exception $vimeoError) {
-                            $video->update(['status' => 'rejected']);
-                            throw $vimeoError;
-                        }
-                    }
                 }
+
+                // Dispatch background processing job:
+                // If on local and using database queue without active workers, dispatchAfterResponse sends the HTTP response immediately
+                // to close the client modal and then completes processing on server without waiting for queue worker!
+                // On production, it queues onto the 'uploads' background worker.
+                if (app()->environment('local') && config('queue.default') === 'database') {
+                    ProcessVideoUploadJob::dispatchAfterResponse($video->id, $uploadTask->id, $request->input('upload_destination'));
+                } else {
+                    ProcessVideoUploadJob::dispatch($video->id, $uploadTask->id, $request->input('upload_destination'));
+                }
+
             } elseif ($request->hasFile('video_file')) {
                 // Handle direct upload
                 $videoFile = $request->file('video_file');
@@ -5615,34 +5621,18 @@ class AdminController extends Controller
 
                 if ($request->filled('upload_destination')) {
                     $video->update(['video_source' => $request->upload_destination]);
-
-                    if ($request->upload_destination === 'vimeo') {
-                        try {
-                            $vimeoService = new VimeoService();
-                            $uploadId = 'video_' . $video->id . '_' . time();
-                            $result = $vimeoService->uploadVideo($tempPath, $video->title, $video->description, Auth::id(), $uploadId);
-
-                            if ($result && is_array($result) && ($result['success'] ?? false)) {
-                                $video->update([
-                                    'vimeo_id' => $result['video_id'] ?? null,
-                                    'vimeo_embed_url' => $result['embed_url'] ?? null,
-                                    'status' => 'approved',
-                                    'temp_file_path' => null,
-                                    'temp_expires_at' => null
-                                ]);
-                                Storage::disk('public')->delete($tempPath);
-                                $this->notificationService->notifyNewVideo($video);
-                            } else {
-                                $video->update(['status' => 'rejected']);
-                                $errorMsg = is_array($result) ? ($result['error'] ?? 'Unknown error') : 'Vimeo service returned invalid response';
-                                throw new \Exception('Failed to upload to Vimeo: ' . $errorMsg);
-                            }
-                        } catch (\Exception $vimeoError) {
-                            $video->update(['status' => 'rejected']);
-                            throw $vimeoError;
-                        }
-                    }
                 }
+
+                // Dispatch background processing job
+                if (app()->environment('local') && config('queue.default') === 'database') {
+                    ProcessVideoUploadJob::dispatchAfterResponse($video->id, $uploadTask->id, $request->input('upload_destination'));
+                } else {
+                    ProcessVideoUploadJob::dispatch($video->id, $uploadTask->id, $request->input('upload_destination'));
+                }
+
+            } else {
+                // URL-based video or no media
+                $uploadTask->markCompleted('Video saved successfully!');
             }
 
             // Handle thumbnail
@@ -5657,8 +5647,12 @@ class AdminController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Video uploaded successfully',
-                'data' => ['video_id' => $video->id]
+                'message' => 'Video uploaded and queued for background processing',
+                'data' => [
+                    'video_id' => $video->id,
+                    'task_id' => $uploadTask->id,
+                    'status' => $uploadTask->status,
+                ]
             ]);
 
         } catch (\Exception $e) {
@@ -5676,6 +5670,94 @@ class AdminController extends Controller
             ]);
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Get the live progress and status of a background upload task.
+     */
+    public function getUploadTaskStatus($taskId)
+    {
+        $task = UploadTask::where('id', $taskId)
+            ->where('user_id', Auth::id())
+            ->first();
+
+        if (!$task) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Upload task not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'task' => [
+                'id' => $task->id,
+                'title' => $task->title,
+                'content_type' => $task->content_type,
+                'status' => $task->status,
+                'progress' => $task->progress,
+                'step_description' => $task->step_description,
+                'error_message' => $task->error_message,
+                'related_video_id' => $task->related_video_id,
+                'updated_at' => $task->updated_at->toIso8601String(),
+            ]
+        ]);
+    }
+
+    /**
+     * Get all active and recent upload tasks for the current user.
+     */
+    public function getActiveUploadTasks()
+    {
+        $tasks = UploadTask::where('user_id', Auth::id())
+            ->where('created_at', '>=', now()->subHours(12))
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get()
+            ->map(function ($task) {
+                return [
+                    'id' => $task->id,
+                    'title' => $task->title,
+                    'content_type' => $task->content_type,
+                    'status' => $task->status,
+                    'progress' => $task->progress,
+                    'step_description' => $task->step_description,
+                    'error_message' => $task->error_message,
+                    'related_video_id' => $task->related_video_id,
+                    'created_at' => $task->created_at->toIso8601String(),
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'tasks' => $tasks
+        ]);
+    }
+
+    /**
+     * Cancel an active upload task and purge any leftover chunk files.
+     */
+    public function cancelUploadTask($taskId)
+    {
+        $task = UploadTask::where('id', $taskId)
+            ->where('user_id', Auth::id())
+            ->first();
+
+        if ($task) {
+            $task->markCancelled();
+
+            // Purge any temporary chunk directories matching this taskId
+            $chunkDir = storage_path('app/public/temp_chunks/' . $taskId);
+            if (file_exists($chunkDir)) {
+                array_map('unlink', glob("{$chunkDir}/*.*"));
+                @rmdir($chunkDir);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Upload task cancelled'
+        ]);
     }
 
     /**
@@ -5753,7 +5835,17 @@ class AdminController extends Controller
                 }
 
                 $documents[] = $document;
-                $this->notificationService->notifyNewDocument($document);
+            }
+
+            // Dispatch background SQ3R & AI processing job
+            if (!empty($documents)) {
+                $docIds = array_map(fn($d) => $d->id, $documents);
+                $taskId = $request->input('task_id');
+                if (app()->environment('local') && config('queue.default') === 'database') {
+                    ProcessDocumentBatchJob::dispatchAfterResponse($docIds, $taskId);
+                } else {
+                    ProcessDocumentBatchJob::dispatch($docIds, $taskId);
+                }
             }
 
             return response()->json([

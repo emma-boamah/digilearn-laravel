@@ -2525,6 +2525,10 @@
         </div>
     </div>
 
+    <!-- Floating Background Upload Manager Drawer -->
+    @include('admin.contents.partials.upload_manager_drawer')
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="{{ asset('js/admin/upload-engine.js') }}"></script>
+
     <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
     <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://unpkg.com/quill-magic-url"></script>
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
@@ -3530,6 +3534,7 @@
                     resetWizard();
                     setTimeout(checkAndRestoreDraft, 100);
                 };
+                window.openUploadModal = openModal;
                 if (uploadBtn) uploadBtn.addEventListener('click', openModal);
                 const uploadBtnToolbar = document.getElementById('uploadBtnToolbar');
                 if (uploadBtnToolbar) uploadBtnToolbar.addEventListener('click', openModal);
@@ -5362,9 +5367,23 @@
                         quiz: uploadData.quiz
                     };
 
-                    // Show progress modal and start upload process
-                    showUploadProgressModal();
-                    await performStepByStepUpload(finalData);
+                    // Start non-blocking background upload via high-speed uploadEngine
+                    if (window.uploadEngine) {
+                        // 1. Immediately close upload modal so user can continue working
+                        const uploadModalEl = document.getElementById('uploadModal');
+                        if (uploadModalEl) uploadModalEl.classList.remove('show');
+
+                        // 2. Hand off package payload to the upload engine
+                        window.uploadEngine.startPackageUpload(finalData, uploadData);
+
+                        // 3. Clear draft and reset the wizard form for the next upload
+                        localStorage.removeItem('digilearn_upload_draft');
+                        resetWizard();
+                    } else {
+                        // Fallback to progress modal if engine is not initialized
+                        showUploadProgressModal();
+                        await performStepByStepUpload(finalData);
+                    }
 
                 } catch (error) {
                     console.error('Upload error:', error);
