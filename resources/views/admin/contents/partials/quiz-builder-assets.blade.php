@@ -914,7 +914,13 @@
 
             // Setup rich text editor behaviors
             function setupEditorToolbar(container, editor) {
-               container.querySelectorAll('.toolbar-tool').forEach(tool => {
+                const wrapper = editor ? (editor.closest('.editor-wrapper') || container) : container;
+                const toolbar = wrapper.querySelector('.rich-editor-toolbar') || wrapper;
+
+                toolbar.querySelectorAll('.toolbar-tool').forEach(tool => {
+                    if (tool._boundEditor === editor) return;
+                    tool._boundEditor = editor;
+
                     // Prevent focus loss and handle standard formatting immediately on mousedown
                     tool.addEventListener('mousedown', (e) => {
                         e.preventDefault();
@@ -924,7 +930,7 @@
                             
                             handleCommand(tool, editor);
                             // Update toolbar state visually after a tiny delay to let the browser apply the formatting
-                            setTimeout(() => updateToolbarState(container), 10);
+                            setTimeout(() => updateToolbarState(wrapper), 10);
                         }
                     });
                     
@@ -1057,6 +1063,18 @@
             }
 
             function handleImageUpload(editor) {
+                if (!editor) return;
+
+                // Capture selection range if it currently resides inside this specific editor
+                let savedRange = null;
+                const sel = window.getSelection();
+                if (sel && sel.rangeCount > 0) {
+                    const r = sel.getRangeAt(0);
+                    if (editor.contains(r.commonAncestorContainer)) {
+                        savedRange = r.cloneRange();
+                    }
+                }
+
                 const input = document.createElement('input');
                 input.setAttribute('type', 'file');
                 input.setAttribute('accept', 'image/png,image/jpeg,image/jpg,image/webp');
@@ -1105,7 +1123,31 @@
                         if (result.success && result.url) {
                             editor.focus();
                             const imgHtml = `<img src="${result.url}" alt="Uploaded image" style="max-width: 100%; width: 100%; height: auto; border-radius: 8px; margin: 8px auto; display: block;" title="Click to resize image">`;
-                            document.execCommand('insertHTML', false, imgHtml);
+
+                            let inserted = false;
+                            const currentSel = window.getSelection();
+
+                            if (savedRange && editor.contains(savedRange.commonAncestorContainer)) {
+                                try {
+                                    currentSel.removeAllRanges();
+                                    currentSel.addRange(savedRange);
+                                    inserted = document.execCommand('insertHTML', false, imgHtml);
+                                } catch (e) {}
+                            }
+
+                            if (!inserted) {
+                                // Explicit DOM insertion into this exact editor element
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = imgHtml;
+                                const imgEl = tempDiv.firstElementChild;
+                                if (imgEl) {
+                                    editor.appendChild(imgEl);
+                                    const spacer = document.createElement('p');
+                                    spacer.innerHTML = '<br>';
+                                    editor.appendChild(spacer);
+                                }
+                            }
+
                             updateQuestionModelFromEditor(editor);
                         } else {
                             alert('Image upload failed: ' + (result.message || 'Unknown error'));
@@ -1351,9 +1393,12 @@
                     `;
 
                     // Initialize editors in sub-question
-                    subDiv.querySelectorAll('.rich-text-editor').forEach(editor => {
-                        editor.addEventListener('input', () => updateQuestionModelFromEditor(editor));
-                        setupEditorToolbar(subDiv, editor);
+                    subDiv.querySelectorAll('.editor-wrapper').forEach(wrapper => {
+                        const editor = wrapper.querySelector('.rich-text-editor');
+                        if (editor) {
+                            editor.addEventListener('input', () => updateQuestionModelFromEditor(editor));
+                            setupEditorToolbar(wrapper, editor);
+                        }
                     });
 
                     // Handle toggle sub-parts
@@ -1482,9 +1527,12 @@
                     `;
 
                     // Initialize editors
-                    spDiv.querySelectorAll('.rich-text-editor').forEach(editor => {
-                        editor.addEventListener('input', () => updateQuestionModelFromEditor(editor));
-                        setupEditorToolbar(spDiv, editor);
+                    spDiv.querySelectorAll('.editor-wrapper').forEach(wrapper => {
+                        const editor = wrapper.querySelector('.rich-text-editor');
+                        if (editor) {
+                            editor.addEventListener('input', () => updateQuestionModelFromEditor(editor));
+                            setupEditorToolbar(wrapper, editor);
+                        }
                     });
 
                     // Handle removal

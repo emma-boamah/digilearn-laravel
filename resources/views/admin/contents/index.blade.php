@@ -1409,6 +1409,7 @@
             </div>
 
             <!-- Table -->
+            <div id="contentsTableArea">
             @if($contents->count() > 0)
                 <div class="table-responsive-wrapper">
                     <table class="content-table">
@@ -1657,6 +1658,7 @@
                     {{ $contents->appends(request()->query())->links() }}
                 </div>
             @endif
+            </div><!-- /#contentsTableArea -->
         </div>
     </div>
 
@@ -4683,7 +4685,13 @@
 
                 // Setup rich text editor behaviors
                 function setupEditorToolbar(container, editor) {
-                    container.querySelectorAll('.toolbar-tool').forEach(tool => {
+                    const wrapper = editor ? (editor.closest('.editor-wrapper') || container) : container;
+                    const toolbar = wrapper.querySelector('.rich-editor-toolbar') || wrapper;
+
+                    toolbar.querySelectorAll('.toolbar-tool').forEach(tool => {
+                        if (tool._boundEditor === editor) return;
+                        tool._boundEditor = editor;
+
                         tool.addEventListener('mousedown', (e) => e.preventDefault());
 
                         if (tool.classList.contains('math-action')) {
@@ -4784,6 +4792,18 @@
                 }
 
                 function handleImageUpload(editor) {
+                    if (!editor) return;
+
+                    // Capture selection range if it currently resides inside this specific editor
+                    let savedRange = null;
+                    const sel = window.getSelection();
+                    if (sel && sel.rangeCount > 0) {
+                        const r = sel.getRangeAt(0);
+                        if (editor.contains(r.commonAncestorContainer)) {
+                            savedRange = r.cloneRange();
+                        }
+                    }
+
                     const input = document.createElement('input');
                     input.setAttribute('type', 'file');
                     input.setAttribute('accept', 'image/png,image/jpeg,image/jpg,image/webp');
@@ -4832,7 +4852,30 @@
                             if (result.success && result.url) {
                                 editor.focus();
                                 const imgHtml = `<img src="${result.url}" alt="Uploaded image" style="max-width: 100%; height: auto; border-radius: 8px; margin: 8px 0; display: block;">`;
-                                document.execCommand('insertHTML', false, imgHtml);
+
+                                let inserted = false;
+                                const currentSel = window.getSelection();
+
+                                if (savedRange && editor.contains(savedRange.commonAncestorContainer)) {
+                                    try {
+                                        currentSel.removeAllRanges();
+                                        currentSel.addRange(savedRange);
+                                        inserted = document.execCommand('insertHTML', false, imgHtml);
+                                    } catch (e) {}
+                                }
+
+                                if (!inserted) {
+                                    const tempDiv = document.createElement('div');
+                                    tempDiv.innerHTML = imgHtml;
+                                    const imgEl = tempDiv.firstElementChild;
+                                    if (imgEl) {
+                                        editor.appendChild(imgEl);
+                                        const spacer = document.createElement('p');
+                                        spacer.innerHTML = '<br>';
+                                        editor.appendChild(spacer);
+                                    }
+                                }
+
                                 updateQuestionModelFromEditor(editor);
                             } else {
                                 alert('Image upload failed: ' + (result.message || 'Unknown error'));
@@ -5065,9 +5108,12 @@
                         `;
 
                         // Handle input and toolbar for all editors in this sub-question
-                        subDiv.querySelectorAll('.rich-text-editor').forEach(editor => {
-                            editor.addEventListener('input', () => updateQuestionModelFromEditor(editor));
-                            setupEditorToolbar(subDiv, editor);
+                        subDiv.querySelectorAll('.editor-wrapper').forEach(wrapper => {
+                            const editor = wrapper.querySelector('.rich-text-editor');
+                            if (editor) {
+                                editor.addEventListener('input', () => updateQuestionModelFromEditor(editor));
+                                setupEditorToolbar(wrapper, editor);
+                            }
                         });
 
                         // Handle removal
@@ -6484,6 +6530,58 @@
         } else {
             initializeDigilearn();
         }
+    </script>
+
+    <!-- Auto-refresh contents table when background uploads complete -->
+    <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        window.fetchContentsData = function() {
+            const tableArea = document.getElementById('contentsTableArea');
+            if (!tableArea) return;
+
+            // Brief highlight to signal the table is refreshing
+            tableArea.style.opacity = '0.5';
+            tableArea.style.transition = 'opacity 0.3s ease';
+
+            fetch(window.location.href, {
+                headers: { 'Accept': 'text/html' }
+            })
+            .then(res => res.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newTableArea = doc.getElementById('contentsTableArea');
+
+                if (newTableArea) {
+                    tableArea.innerHTML = newTableArea.innerHTML;
+
+                    // Re-bind selectAll checkbox
+                    const selectAllNew = tableArea.querySelector('#selectAll');
+                    if (selectAllNew) {
+                        selectAllNew.addEventListener('change', function() {
+                            const checkboxes = tableArea.querySelectorAll('.content-checkbox');
+                            checkboxes.forEach(cb => { cb.checked = this.checked; });
+                        });
+                    }
+
+                    // Re-bind delete buttons
+                    tableArea.querySelectorAll('.delete-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const contentId = this.dataset.contentId;
+                            const contentType = this.dataset.contentType;
+                            if (contentId && typeof window.deleteContent === 'function') {
+                                window.deleteContent(contentId, contentType);
+                            }
+                        });
+                    });
+                }
+
+                tableArea.style.opacity = '1';
+            })
+            .catch(err => {
+                console.warn('Table refresh failed:', err);
+                tableArea.style.opacity = '1';
+            });
+        };
     </script>
 
     <!-- AI Generation Slide-over Drawer (Layered above all modal dialogs at z-[2100]) -->

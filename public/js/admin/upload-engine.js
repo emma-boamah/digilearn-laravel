@@ -169,11 +169,17 @@ class UploadEngine {
             if (typeof window.fetchContentsData === 'function') {
                 window.fetchContentsData();
             }
+            if (typeof window.fetchAdminNotifications === 'function') {
+                window.fetchAdminNotifications();
+            }
         });
 
         this.on('taskFailed', (task) => {
             this.renderUI();
             this.showToast('Upload Failed', `"${task.title}": ${task.error || 'Failed'}`, false);
+            if (typeof window.fetchAdminNotifications === 'function') {
+                window.fetchAdminNotifications();
+            }
         });
 
         this.on('taskCancelled', () => this.renderUI());
@@ -903,6 +909,22 @@ class UploadEngine {
                                 };
                                 this.tasks.set(t.id, task);
                                 this.pollServerProcessing(task);
+                            }
+                        } else if (['completed', 'failed'].includes(t.status)) {
+                            if (!this.tasks.has(t.id)) {
+                                const task = {
+                                    id: t.id,
+                                    title: t.title,
+                                    type: t.content_type,
+                                    status: t.status,
+                                    overallProgress: t.status === 'completed' ? 100 : t.progress,
+                                    uploadProgress: 100,
+                                    stepDescription: t.step_description || (t.status === 'completed' ? 'Completed' : 'Failed'),
+                                    videoId: t.related_video_id,
+                                    error: t.error_message,
+                                    abortController: new AbortController()
+                                };
+                                this.tasks.set(t.id, task);
                             }
                         }
                     });

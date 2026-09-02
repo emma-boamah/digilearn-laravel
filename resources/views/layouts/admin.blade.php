@@ -1481,6 +1481,9 @@
                 });
             }
 
+            // Expose globally for background job completions
+            window.fetchAdminNotifications = fetchAdminNotifications;
+
             // Initial load + interval polling every 6 seconds
             fetchAdminNotifications();
             setInterval(fetchAdminNotifications, 6000);
