@@ -2461,22 +2461,17 @@
             <x-level-indicator :selectedLevel="$selectedLevelGroup" />
 
             <div class="current-level-display">
+                <a href="{{ route('dashboard.digilearn', array_filter(['context' => $context !== 'all' ? $context : null])) }}"
+                    class="grade-tab {{ !$validSelectedGrade ? 'active' : '' }}">
+                    <span class="grade-full-name">All</span>
+                    <span class="grade-short-name">All</span>
+                </a>
                 @foreach($canonicalGrades as $grade)
                             @php
                                 $isUnlocked = in_array($grade, $unlockedGrades);
-                                $userLevel = \App\Models\Level::where('slug', auth()->user()->grade)
-                                    ->orWhere('title', auth()->user()->grade)
-                                    ->first();
-
-                                // Active tab is either the specifically selected grade OR the user's current grade (if none selected)
-                                $isActive = false;
-                                if ($validSelectedGrade) {
-                                    $isActive = ($validSelectedGrade === $grade);
-                                } elseif ($userLevel) {
-                                    $isActive = ($userLevel->title === $grade);
-                                }
+                                $isActive = ($validSelectedGrade === $grade);
                             @endphp
-                            <a href="{{ $isUnlocked ? route('dashboard.digilearn', ['grade' => $grade]) : '#' }}"
+                            <a href="{{ $isUnlocked ? route('dashboard.digilearn', array_filter(['grade' => $grade, 'context' => $context !== 'all' ? $context : null])) : '#' }}"
                                 class="grade-tab {{ $isUnlocked ? '' : 'locked' }} {{ $isActive ? 'active' : '' }}" {!! $isUnlocked
                     ? '' : 'title="Complete current lessons to unlock ' . $grade . '"' !!}>
                                 @if(!$isUnlocked)
@@ -2515,10 +2510,6 @@
                         </svg>
                     </button>
                 </div>
-            </div>
-
-            <div class="quiz-container">
-                <a href="{{ route('quiz.index') }}" class="filter-button quiz">Quiz</a>
             </div>
         </div>
 
@@ -2751,7 +2742,7 @@
 
             const url = new URL('{{ route('dashboard.load-more-lessons') }}', window.location.origin);
             url.searchParams.append('page', currentPage);
-            if (gradeTitle) url.searchParams.append('grade', gradeTitle);
+            if (gradeTitle && gradeTitle !== 'All') url.searchParams.append('grade', gradeTitle);
             if (subjectSlug !== 'all') url.searchParams.append('subject', subjectSlug);
 
             fetch(url)
