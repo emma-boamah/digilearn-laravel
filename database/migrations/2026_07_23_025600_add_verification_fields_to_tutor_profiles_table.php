@@ -13,8 +13,10 @@ return new class extends Migration
             $table->string('tagline')->nullable()->after('bio');
             
             $table->string('headshot_path')->nullable()->after('tagline');
-            $table->string('id_document_path')->nullable()->after('headshot_path');
-            $table->string('tax_document_path')->nullable()->after('id_document_path');
+            $table->string('id_type')->default('national_id')->after('headshot_path');
+            $table->string('id_document_path')->nullable()->after('id_type');
+            $table->string('id_document_back_path')->nullable()->after('id_document_path');
+            $table->string('tax_document_path')->nullable()->after('id_document_back_path');
             $table->string('certificates_path')->nullable()->after('tax_document_path');
             $table->string('test_video_path')->nullable()->after('certificates_path');
             
@@ -33,7 +35,9 @@ return new class extends Migration
                 'legal_name',
                 'tagline',
                 'headshot_path',
+                'id_type',
                 'id_document_path',
+                'id_document_back_path',
                 'tax_document_path',
                 'certificates_path',
                 'test_video_path',

@@ -32,6 +32,25 @@
 
 @section('content')
     <div class="calendar-page-container">
+        @if(count($availabilities) === 0)
+            <!-- Unconfigured Availability Prompt -->
+            <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 0.85rem 1.25rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0;">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div>
+                        <strong style="font-size: 0.88rem; color: #92400e; display: block;">Weekly availability hours not configured yet</strong>
+                        <span style="font-size: 0.78rem; color: #b45309;">Set your recurring working days and hours so students know your open slots.</span>
+                    </div>
+                </div>
+                <a href="{{ route('tutors.schedule.availability') }}" class="cal-action-btn cal-action-btn-primary" style="font-size: 0.8rem; padding: 0.4rem 0.85rem;">
+                    <i class="fa-solid fa-clock"></i>
+                    <span>Set Availability</span>
+                </a>
+            </div>
+        @endif
+
         <!-- Quick Stats / Helper Ribbon -->
         <div class="calendar-summary-ribbon">
             <div class="summary-stat-item">
@@ -39,24 +58,42 @@
                     <i class="fa-solid fa-calendar-check"></i>
                 </div>
                 <div>
-                    <span class="stat-label">Total Scheduled</span>
+                    <span class="stat-label">Booked Sessions</span>
                     <strong class="stat-value">{{ count($events) }} {{ Str::plural('Session', count($events)) }}</strong>
                 </div>
             </div>
             
             <div class="summary-stat-item">
                 <div class="stat-icon-wrap" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
-                    <i class="fa-solid fa-bolt"></i>
+                    <i class="fa-solid fa-clock"></i>
                 </div>
                 <div>
-                    <span class="stat-label">Availability Status</span>
-                    <strong class="stat-value" style="color: #10b981;">Active & Accepting</strong>
+                    <span class="stat-label">Weekly Working Days</span>
+                    <strong class="stat-value" style="color: #10b981;">
+                        {{ count($availabilities) > 0 ? count($availabilities) . ' Days Active' : 'All Open' }}
+                    </strong>
                 </div>
             </div>
 
-            <div class="summary-quick-tip">
-                <i class="fa-regular fa-lightbulb" style="color: #f59e0b;"></i>
-                <span>Click on any session block to view student details and instant classroom links.</span>
+            <!-- Legend Items -->
+            <div class="calendar-legend-wrap">
+                <span class="legend-badge legend-available">
+                    <span class="legend-dot" style="background: #ffffff; border: 2px solid #2677B8;"></span> Available Hours
+                </span>
+                <span class="legend-badge legend-booked">
+                    <span class="legend-dot" style="background: #2677B8;"></span> Booked Lesson
+                </span>
+                <span class="legend-badge legend-completed">
+                    <span class="legend-dot" style="background: #10b981;"></span> Completed
+                </span>
+                @if(count($blockedDates) > 0)
+                    <span class="legend-badge legend-blocked">
+                        <span class="legend-dot" style="background: #ef4444;"></span> Blocked Date
+                    </span>
+                @endif
+                <span class="legend-badge legend-offhours">
+                    <span class="legend-dot" style="background: #cbd5e1;"></span> Off-Hours
+                </span>
             </div>
         </div>
 
@@ -114,6 +151,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Floating Interactive Calendar Hover Tooltip -->
+    <div id="calendarHoverTooltip" class="cal-hover-tooltip" style="display: none;"></div>
 
     <!-- Scoped Calendar Styles for Modern Light Mode -->
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
@@ -209,17 +249,53 @@
             font-weight: 700;
         }
 
-        .summary-quick-tip {
+        /* Calendar Legend in Ribbon */
+        .calendar-legend-wrap {
             margin-left: auto;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            font-size: 0.8rem;
+            gap: 0.65rem;
+            flex-wrap: wrap;
+        }
+
+        .legend-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.75rem;
+            font-weight: 600;
             color: var(--text-muted);
-            background: var(--gray-50);
-            padding: 0.4rem 0.8rem;
-            border-radius: 8px;
-            border: 1px dashed var(--border-color);
+            background: var(--bg-main);
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        /* Off-hours subtle diagonal stripe pattern */
+        .fc-theme-standard .fc-timegrid-col.fc-day-disabled,
+        .fc-theme-standard .fc-non-business {
+            background-color: #f8fafc !important;
+            background-image: repeating-linear-gradient(
+                -45deg,
+                rgba(226, 232, 240, 0.45),
+                rgba(226, 232, 240, 0.45) 8px,
+                rgba(248, 250, 252, 0.9) 8px,
+                rgba(248, 250, 252, 0.9) 16px
+            ) !important;
+        }
+
+        /* Blocked dates background in calendar */
+        .fc-bg-event.cal-blocked-date-event {
+            background: rgba(239, 68, 68, 0.12) !important;
+            border: 1px dashed rgba(239, 68, 68, 0.35) !important;
         }
 
         /* Main Calendar Card */
@@ -745,6 +821,58 @@
             to { transform: translateY(0) scale(1); opacity: 1; }
         }
 
+        /* Floating Interactive Calendar Hover Tooltip */
+        .cal-hover-tooltip {
+            position: fixed;
+            z-index: 99999;
+            pointer-events: none;
+            background: #0f172a;
+            color: #ffffff;
+            padding: 0.5rem 0.85rem;
+            border-radius: 9px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.35), 0 6px 12px -4px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            max-width: 320px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            transition: opacity 0.12s cubic-bezier(0.16, 1, 0.3, 1), transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+            opacity: 0;
+            transform: translateY(4px);
+        }
+
+        .cal-hover-tooltip.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .cal-hover-tooltip.tooltip-available {
+            border-left: 3.5px solid #10b981;
+            background: #064e3b;
+            border-color: rgba(16, 185, 129, 0.35);
+        }
+
+        .cal-hover-tooltip.tooltip-booked {
+            border-left: 3.5px solid #2677B8;
+            background: #0f172a;
+            border-color: rgba(38, 119, 184, 0.35);
+        }
+
+        .cal-hover-tooltip.tooltip-offhours {
+            border-left: 3.5px solid #94a3b8;
+            background: #1e293b;
+            border-color: rgba(148, 163, 184, 0.25);
+        }
+
+        .cal-hover-tooltip.tooltip-blocked {
+            border-left: 3.5px solid #ef4444;
+            background: #450a0a;
+            border-color: rgba(239, 68, 68, 0.35);
+        }
+
         @media (max-width: 768px) {
             .calendar-page-container {
                 padding: 1rem 0.75rem;
@@ -760,6 +888,9 @@
             .fc .fc-toolbar-title {
                 text-align: center;
             }
+            .cal-hover-tooltip {
+                display: none !important;
+            }
         }
     </style>
 
@@ -768,7 +899,8 @@
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
         document.addEventListener('DOMContentLoaded', function () {
             const calendarEl = document.getElementById('fullCalendar');
-            const events = @json($events);
+            const events = {!! json_encode($allEvents ?? $events) !!};
+            const businessHours = {!! json_encode($businessHours ?? []) !!};
 
             const calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'timeGridWeek',
@@ -778,6 +910,8 @@
                 allDaySlot: false,
                 expandRows: true,
                 nowIndicator: true,
+                businessHours: businessHours.length > 0 ? businessHours : false,
+                selectConstraint: 'businessHours',
                 headerToolbar: {
                     left: 'prev,next today',
                     center: 'title',
@@ -806,6 +940,10 @@
                 },
                 events: events,
                 eventContent: function(arg) {
+                    if (arg.event.display === 'background') {
+                        return;
+                    }
+
                     const eventObj = arg.event;
                     const props = eventObj.extendedProps || {};
                     const status = (props.status || 'scheduled').toLowerCase();
@@ -834,13 +972,142 @@
                     `;
                     return { domNodes: [card] };
                 },
+                eventDidMount: function(info) {
+                    if (info.event.display === 'background') {
+                        info.el.setAttribute('title', 'Blocked Date (Unavailable for bookings)');
+                        return;
+                    }
+                    const props = info.event.extendedProps || {};
+                    const student = props.student_name || 'Student';
+                    const subject = props.subject_name || 'Tuition Session';
+                    const status = (props.status || 'Scheduled').toUpperCase().replace('_', ' ');
+                    info.el.setAttribute('title', `${student} (${subject}) • Status: ${status}`);
+                },
                 eventClick: function(info) {
+                    if (info.event.display === 'background' || (info.event.extendedProps && info.event.extendedProps.isBlocked)) {
+                        return;
+                    }
                     info.jsEvent.preventDefault();
                     showEventModal(info.event);
                 }
             });
 
             calendar.render();
+
+            // Interactive Hover Tooltip Tracking
+            const tooltip = document.getElementById('calendarHoverTooltip');
+
+            function positionTooltip(e) {
+                const offset = 14;
+                let left = e.clientX + offset;
+                let top = e.clientY + offset;
+
+                tooltip.style.left = `${left}px`;
+                tooltip.style.top = `${top}px`;
+
+                // Boundary collision checking
+                const rect = tooltip.getBoundingClientRect();
+                if (left + rect.width > window.innerWidth - 12) {
+                    tooltip.style.left = `${e.clientX - rect.width - offset}px`;
+                }
+                if (top + rect.height > window.innerHeight - 12) {
+                    tooltip.style.top = `${e.clientY - rect.height - offset}px`;
+                }
+            }
+
+            function showTooltip(html, typeClass, e) {
+                tooltip.className = `cal-hover-tooltip visible ${typeClass}`;
+                tooltip.innerHTML = html;
+                tooltip.style.display = 'flex';
+                positionTooltip(e);
+            }
+
+            function hideTooltip() {
+                tooltip.className = 'cal-hover-tooltip';
+                tooltip.style.display = 'none';
+            }
+
+            calendarEl.addEventListener('mousemove', function(e) {
+                // 1. Check if hovering over booked event card
+                const eventEl = e.target.closest('.fc-event:not(.fc-bg-event)');
+                if (eventEl) {
+                    const student = eventEl.querySelector('.cal-event-student')?.textContent?.trim() || 'Booked Session';
+                    const subject = eventEl.querySelector('.cal-event-subject')?.textContent?.trim() || 'Tuition';
+                    const time = eventEl.querySelector('.cal-event-time span')?.textContent?.trim() || '';
+                    
+                    let statusBadge = 'Scheduled';
+                    let statusIcon = 'fa-solid fa-graduation-cap';
+                    let statusColor = '#60a5fa';
+
+                    if (eventEl.querySelector('.cal-event-status-completed')) {
+                        statusBadge = 'Completed';
+                        statusColor = '#34d399';
+                        statusIcon = 'fa-solid fa-circle-check';
+                    } else if (eventEl.querySelector('.cal-event-status-pending')) {
+                        statusBadge = 'Pending Scheduling';
+                        statusColor = '#fbbf24';
+                        statusIcon = 'fa-solid fa-hourglass-half';
+                    }
+                    
+                    const html = `
+                        <div style="font-size: 1.1rem; line-height: 1;"><i class="${statusIcon}" style="color: ${statusColor};"></i></div>
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-weight: 700; color: #ffffff; font-size: 0.8rem;">${student} (${subject})</span>
+                            <span style="font-size: 0.72rem; color: #94a3b8; margin-top: 2px;">
+                                <i class="fa-regular fa-clock" style="font-size: 0.65rem;"></i> ${time} • <strong style="color: ${statusColor};">${statusBadge}</strong>
+                            </span>
+                        </div>
+                    `;
+                    showTooltip(html, 'tooltip-booked', e);
+                    return;
+                }
+
+                // 2. Check if hovering over blocked date
+                const blockedEl = e.target.closest('.cal-blocked-date-event, .fc-bg-event');
+                if (blockedEl) {
+                    const html = `
+                        <i class="fa-solid fa-ban" style="color: #f87171; font-size: 0.95rem;"></i>
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-weight: 700; color: #fecaca; font-size: 0.8rem;">Blocked Date</span>
+                            <span style="font-size: 0.72rem; color: #fca5a5;">Marked as unavailable for student bookings</span>
+                        </div>
+                    `;
+                    showTooltip(html, 'tooltip-blocked', e);
+                    return;
+                }
+
+                // 3. Check if hovering over off-hours / non-business
+                const nonBusinessEl = e.target.closest('.fc-non-business, .fc-day-disabled');
+                if (nonBusinessEl) {
+                    const html = `
+                        <i class="fa-regular fa-moon" style="color: #94a3b8; font-size: 0.95rem;"></i>
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-weight: 700; color: #e2e8f0; font-size: 0.8rem;">Off-Hours</span>
+                            <span style="font-size: 0.72rem; color: #94a3b8;">Outside your set weekly availability schedule</span>
+                        </div>
+                    `;
+                    showTooltip(html, 'tooltip-offhours', e);
+                    return;
+                }
+
+                // 4. Check if hovering over active available working grid slots
+                const gridSlot = e.target.closest('.fc-timegrid-col-frame, .fc-daygrid-day-frame, .fc-timegrid-slot-lane');
+                if (gridSlot) {
+                    const html = `
+                        <i class="fa-solid fa-circle-check" style="color: #34d399; font-size: 0.95rem;"></i>
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-weight: 700; color: #d1fae5; font-size: 0.8rem;">Available Working Hours</span>
+                            <span style="font-size: 0.72rem; color: #a7f3d0;">Open slot for student bookings</span>
+                        </div>
+                    `;
+                    showTooltip(html, 'tooltip-available', e);
+                    return;
+                }
+
+                hideTooltip();
+            });
+
+            calendarEl.addEventListener('mouseleave', hideTooltip);
         });
 
         function showEventModal(eventObj) {

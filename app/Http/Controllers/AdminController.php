@@ -6610,6 +6610,7 @@ class AdminController extends Controller
         $path = match ($type) {
             'headshot' => $tutorProfile->headshot_path,
             'id_document' => $tutorProfile->id_document_path,
+            'id_document_back' => $tutorProfile->id_document_back_path,
             'tax_document' => $tutorProfile->tax_document_path,
             'certificates' => $tutorProfile->certificates_path,
             'test_video' => $tutorProfile->test_video_path,

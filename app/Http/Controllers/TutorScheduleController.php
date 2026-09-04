@@ -141,7 +141,7 @@ class TutorScheduleController extends Controller
             };
 
             return [
-                'id' => $booking->id,
+                'id' => 'booking_' . $booking->id,
                 'title' => $title,
                 'start' => $booking->start_time ? $booking->start_time->toIso8601String() : null,
                 'end' => $booking->end_time ? $booking->end_time->toIso8601String() : null,
@@ -151,10 +151,45 @@ class TutorScheduleController extends Controller
                 'student_name' => $booking->student->name ?? 'Student',
                 'subject_name' => $booking->subject->name ?? 'Session',
                 'meeting_link' => $booking->meeting_link,
+                'isBooking' => true,
             ];
-        })->filter(fn ($e) => !empty($e['start']));
+        })->filter(fn ($e) => !empty($e['start']))->values();
 
-        return view('tutors.calendar', compact('user', 'tutorProfile', 'events'));
+        // 1. Fetch recurring availability for businessHours
+        $availabilities = TutorAvailability::where('tutor_id', $user->id)
+            ->where('is_recurring', true)
+            ->get();
+
+        $businessHours = $availabilities->map(function ($avail) {
+            return [
+                'daysOfWeek' => [(int) $avail->day_of_week],
+                'startTime' => substr($avail->start_time, 0, 5),
+                'endTime' => substr($avail->end_time, 0, 5),
+            ];
+        })->values()->all();
+
+        // 2. Fetch blocked dates
+        $blockedDates = TutorAvailability::where('tutor_id', $user->id)
+            ->where('is_blocked', true)
+            ->get();
+
+        $blockedEvents = $blockedDates->map(function ($blocked) {
+            $dateStr = $blocked->specific_date ? $blocked->specific_date->format('Y-m-d') : null;
+            return [
+                'id' => 'blocked_' . $blocked->id,
+                'title' => 'Blocked Date',
+                'start' => $dateStr,
+                'allDay' => true,
+                'display' => 'background',
+                'backgroundColor' => 'rgba(239, 68, 68, 0.12)',
+                'isBlocked' => true,
+            ];
+        })->filter(fn ($e) => !empty($e['start']))->values();
+
+        // Combined events: Bookings + Blocked Dates
+        $allEvents = $events->concat($blockedEvents)->values()->all();
+
+        return view('tutors.calendar', compact('user', 'tutorProfile', 'events', 'allEvents', 'businessHours', 'availabilities', 'blockedDates'));
     }
 
     /**
