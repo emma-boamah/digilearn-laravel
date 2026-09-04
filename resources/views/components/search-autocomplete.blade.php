@@ -1,4 +1,4 @@
-<style>
+<style nonce="{{ request()->attributes->get('csp_nonce') }}">
 /* Search Autocomplete Styles */
 .search-autocomplete-dropdown {
     position: absolute;
@@ -46,7 +46,7 @@
 }
 </style>
 
-<script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
 document.addEventListener('DOMContentLoaded', function () {
     // Configuration
     const API_SUGGESTIONS_URL = '/api/search/suggestions';
