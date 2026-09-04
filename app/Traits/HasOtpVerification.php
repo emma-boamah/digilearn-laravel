@@ -55,14 +55,16 @@ trait HasOtpVerification
                 $displayError = 'Our email verification service is temporarily unavailable (Limit Exhausted). Please notify support if this persists.';
             }
 
-            // Always notify super admins on mail service failures
+            // Always notify admins on mail service failures
             try {
-                $superAdmins = \App\Models\User::where('is_superuser', true)->get();
-                if ($superAdmins->isNotEmpty()) {
-                    \Illuminate\Support\Facades\Notification::send($superAdmins, new \App\Notifications\ZeptoMailErrorNotification($errorMsg));
-                }
+                app(\App\Services\AuthSecurityAlertService::class)->handleMailFailure(
+                    source: 'Signup OTP',
+                    recipientEmail: $userEmail,
+                    errorMessage: $errorMsg,
+                    context: ['ip' => get_client_ip(), 'name' => $userName, 'type' => $type]
+                );
             } catch (\Exception $notifyEx) {
-                Log::warning('Could not notify superadmins of mail failure: ' . $notifyEx->getMessage());
+                Log::warning('Could not notify admins of mail failure: ' . $notifyEx->getMessage());
             }
             
             // 🔹 CRITICAL: Use direct redirect instead of back() to avoid OAuth history issues (looping back to Google)

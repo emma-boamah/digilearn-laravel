@@ -497,6 +497,12 @@ class AuthController extends Controller
                 'lockout_seconds' => $seconds
             ]);
 
+            try {
+                app(\App\Services\AuthSecurityAlertService::class)->handleSignupRateLimit($request, $seconds);
+            } catch (\Throwable $e) {
+                Log::warning('Failed to dispatch signup rate limit alert: ' . $e->getMessage());
+            }
+
             return back()->withErrors([
                 'auth_error' => "Too many signup attempts. Please try again in " . ceil($seconds / 60) . " minutes.",
             ])->withInput($request->except('password', 'password_confirmation'));
@@ -652,9 +658,56 @@ class AuthController extends Controller
             return redirect()->route('signup')->withErrors(['email' => 'Verification code expired. Please sign up again.']);
         }
 
+        $userEmail = $sessionData['data']['email'] ?? 'unknown';
+        $ip = get_client_ip();
+        $otpRateKey = "otp_attempt:{$userEmail}:{$ip}";
+
         if ($request->otp !== $sessionData['code']) {
-            return back()->withErrors(['otp' => 'Invalid verification code.']);
+            $attempts = RateLimiter::hit($otpRateKey, 900); // 15 minutes window
+
+            if ($attempts >= 5) {
+                // Terminate registration session and lock out
+                session()->forget('registration_otp');
+                session()->forget('otp_email');
+                RateLimiter::clear($otpRateKey);
+
+                try {
+                    app(\App\Services\AuthSecurityAlertService::class)->handleOtpBruteForce(
+                        email: $userEmail,
+                        ip: $ip,
+                        attempts: $attempts,
+                        lockedOut: true
+                    );
+                } catch (\Throwable $e) {
+                    Log::warning('Failed to dispatch OTP brute force alert: ' . $e->getMessage());
+                }
+
+                return redirect()->route('signup')->withErrors([
+                    'auth_error' => 'Too many invalid verification attempts. For security, your registration session has been terminated. Please sign up again.'
+                ]);
+            }
+
+            if ($attempts >= 3) {
+                try {
+                    app(\App\Services\AuthSecurityAlertService::class)->handleOtpBruteForce(
+                        email: $userEmail,
+                        ip: $ip,
+                        attempts: $attempts,
+                        lockedOut: false
+                    );
+                } catch (\Throwable $e) {
+                    Log::warning('Failed to dispatch OTP attempt warning: ' . $e->getMessage());
+                }
+            }
+
+            $remaining = 5 - $attempts;
+            return back()->withErrors([
+                'otp' => "Invalid verification code. {$remaining} attempt(s) remaining before session lockout."
+            ]);
         }
+
+        // On successful verification, clear rate limit key
+        RateLimiter::clear($otpRateKey);
 
         // OTP Valid - Create User
         $userData = $sessionData['data'];
@@ -822,12 +875,14 @@ class AuthController extends Controller
             ]);
             
             try {
-                $superAdmins = \App\Models\User::where('is_superuser', true)->get();
-                if ($superAdmins->isNotEmpty()) {
-                    \Illuminate\Support\Facades\Notification::send($superAdmins, new \App\Notifications\ZeptoMailErrorNotification($errorMsg));
-                }
-            } catch (\Exception $notifyEx) {
-                Log::warning('Could not notify superadmins of reset password mail failure: ' . $notifyEx->getMessage());
+                app(\App\Services\AuthSecurityAlertService::class)->handleMailFailure(
+                    source: 'Password Reset',
+                    recipientEmail: $email,
+                    errorMessage: $errorMsg,
+                    context: ['ip' => get_client_ip()]
+                );
+            } catch (\Throwable $notifyEx) {
+                Log::warning('Could not notify admins of reset password mail failure: ' . $notifyEx->getMessage());
             }
             
             return back()->withInput()->withErrors(['email' => 'Failed to send otp or reset link due to a temporary service issue. Please try again later.']);
@@ -894,10 +949,21 @@ class AuthController extends Controller
         try {
             Mail::to($user->email)->send(new PasswordChangedMail($user));
         } catch (\Exception $e) {
+            $errorMsg = $e->getMessage();
             Log::error('Failed to send password changed confirmation email', [
                 'email' => $user->email,
-                'error' => $e->getMessage()
+                'error' => $errorMsg
             ]);
+            try {
+                app(\App\Services\AuthSecurityAlertService::class)->handleMailFailure(
+                    source: 'Password Changed Confirmation',
+                    recipientEmail: $user->email,
+                    errorMessage: $errorMsg,
+                    context: ['user_id' => $user->id, 'ip' => get_client_ip()]
+                );
+            } catch (\Throwable $notifyEx) {
+                Log::warning('Could not notify admins of password changed mail failure: ' . $notifyEx->getMessage());
+            }
         }
 
         // Log
