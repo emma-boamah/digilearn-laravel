@@ -2751,8 +2751,8 @@
             const activeGrade = document.querySelector('.grade-tab.active');
             const gradeTitle = activeGrade ? activeGrade.querySelector('.grade-full-name').textContent.trim() : null;
 
-            const activeSubjectChip = document.querySelector('.subject-chip.active');
-            const subjectSlug = activeSubjectChip ? activeSubjectChip.getAttribute('data-subject') : 'all';
+            const activeSubjectChip = document.querySelector('.subjects-filter:not(.context-filter) .subject-chip.active');
+            const subjectSlug = (activeSubjectChip && activeSubjectChip.getAttribute('data-subject')) ? activeSubjectChip.getAttribute('data-subject') : 'all';
 
             const activeContextChip = document.querySelector('.context-filter .subject-chip.active');
             const contextSlug = activeContextChip ? activeContextChip.getAttribute('data-context') : '{{ $context ?? "all" }}';
@@ -2776,18 +2776,30 @@
                 .then(data => {
                     if (data.html) {
                         const contentGrid = document.querySelector('.content-grid');
-                        // Use insertAdjacentHTML instead of innerHTML += to preserve existing event listeners/elements
-                        contentGrid.insertAdjacentHTML('beforeend', data.html);
+                        
+                        // Parse incoming HTML to avoid inserting duplicates if already rendered
+                        const tempContainer = document.createElement('div');
+                        tempContainer.innerHTML = data.html;
+                        const incomingCards = Array.from(tempContainer.children);
 
-                        // If we are currently filtering client-side, we need to hide the new elements that don't match
-                        if (subjectSlug !== 'all') {
-                            const newElements = contentGrid.querySelectorAll('.content-grid > *:nth-last-child(-n+' + data.count + ')');
-                            newElements.forEach(el => {
-                                if (el.getAttribute('data-subject') !== subjectSlug) {
-                                    el.style.display = 'none';
+                        incomingCards.forEach(card => {
+                            const videoId = card.getAttribute('data-video-id');
+                            const lessonId = card.getAttribute('data-lesson-id');
+                            
+                            // Check if this card already exists in contentGrid
+                            const exists = (videoId && contentGrid.querySelector(`[data-video-id="${videoId}"]`)) ||
+                                           (lessonId && contentGrid.querySelector(`[data-lesson-id="${lessonId}"]`));
+                            
+                            if (!exists) {
+                                // If subject filter is active, check visibility
+                                if (subjectSlug && subjectSlug !== 'all') {
+                                    if (card.getAttribute('data-subject') !== subjectSlug) {
+                                        card.style.display = 'none';
+                                    }
                                 }
-                            });
-                        }
+                                contentGrid.appendChild(card);
+                            }
+                        });
 
                         // Re-initialize video facades for newly added cards
                         if (window.videoFacadeManager && typeof window.videoFacadeManager.initializeCards === 'function') {
@@ -3093,7 +3105,7 @@
                         const cardSubject = card.getAttribute('data-subject');
 
                         if (selectedSubject === 'all' || cardSubject === selectedSubject) {
-                            card.style.display = 'block';
+                            card.style.display = '';
                             // Add fade-in animation
                             card.style.opacity = '0';
                             setTimeout(() => {
