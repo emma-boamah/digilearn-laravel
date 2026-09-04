@@ -32,20 +32,16 @@
                 </div>
             </form>
 
-            <div class="currency-badge">
-                <span class="currency-code">GHS</span>
-            </div>
-
-            <!-- Action: Withdraw Earnings Modal Button -->
-            <button type="button" class="header-action-btn btn-primary" onclick="openWithdrawModal()">
-                <i class="fa-solid fa-paper-plane"></i>
-                <span>Withdraw</span>
-            </button>
-
             <!-- Action: View Settlements & Transactions Ledger -->
             <a href="{{ route('tutors.earnings.transactions') }}" class="header-action-btn btn-secondary">
                 <i class="fa-solid fa-receipt"></i>
-                <span>Settlements & Ledger</span>
+                <span>Transactions Ledger</span>
+            </a>
+
+            <!-- Action: View Settlement Policy -->
+            <a href="{{ route('tutors.earnings.policy') }}" class="header-action-btn btn-secondary">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>Policy</span>
             </a>
         </div>
     </div>
@@ -67,64 +63,51 @@
             </div>
         @endif
 
-        <!-- 4 Top Metric KPI Cards -->
-        <div class="kpi-grid">
-            <!-- Card 1: Revenue -->
-            <div class="kpi-card">
-                <div class="kpi-header">
-                    <span class="kpi-label">Revenue</span>
-                    <div class="kpi-icon-wrap" style="background: rgba(38, 119, 184, 0.1); color: var(--secondary-blue);">
-                        <i class="fa-solid fa-wallet"></i>
-                    </div>
+        <!-- Top Balance Spotlight Section -->
+        <div class="hero-balance-section">
+            <!-- Primary Available for Payout (Centered Hero) -->
+            <div class="hero-available-card">
+                <span class="hero-available-eyebrow">Available for Payout</span>
+                <div class="hero-available-value">
+                    <span class="cedi-symbol">₵</span>{{ number_format($availableBalance, 2) }}
                 </div>
-                <h3 class="kpi-value">GHS {{ number_format($periodRevenue, 2) }}</h3>
-                <div class="kpi-subtext">
-                    <span class="kpi-badge-info">{{ $completedCount }} completed {{ Str::plural('lesson', $completedCount) }}</span>
-                </div>
-            </div>
-
-            <!-- Card 2: Available Balance -->
-            <div class="kpi-card">
-                <div class="kpi-header">
-                    <span class="kpi-label">Available for Payout</span>
-                    <div class="kpi-icon-wrap" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
-                        <i class="fa-solid fa-money-bill-transfer"></i>
-                    </div>
-                </div>
-                <h3 class="kpi-value" style="color: #10b981;">GHS {{ number_format($availableBalance, 2) }}</h3>
-                <div class="kpi-subtext">
-                    <button type="button" class="quick-withdraw-link" onclick="openWithdrawModal()">
-                        Request withdrawal <i class="fa-solid fa-arrow-right"></i>
-                    </button>
+                <div class="hero-available-actions">
+                    @if($availableBalance >= $minPayoutAmount && $tutorProfile->payout_method)
+                        <button type="button" class="btn-hero-withdraw" onclick="openWithdrawModal()">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span>Withdraw Funds</span>
+                        </button>
+                    @elseif(!$tutorProfile->payout_method)
+                        <a href="{{ route('tutors.profile.settings') }}" class="btn-hero-setup">
+                            <i class="fa-solid fa-gear"></i>
+                            <span>Configure Payout Account</span>
+                        </a>
+                    @else
+                        <button type="button" class="btn-hero-withdraw btn-hero-disabled" disabled>
+                            <i class="fa-solid fa-lock"></i>
+                            <span>Min. Payout ₵{{ number_format($minPayoutAmount, 2) }}</span>
+                        </button>
+                    @endif
                 </div>
             </div>
 
-            <!-- Card 3: Pending Escrow -->
-            <div class="kpi-card">
-                <div class="kpi-header">
-                    <span class="kpi-label">Pending Settlements</span>
-                    <div class="kpi-icon-wrap" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;">
-                        <i class="fa-solid fa-clock-rotate-left"></i>
+            <!-- Secondary Companion: Pending Settlements Escrow -->
+            <div class="companion-pending-card">
+                <div class="companion-pending-header">
+                    <div class="companion-icon-box">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <span class="companion-eyebrow">Pending Escrow</span>
+                        <div class="companion-value">
+                            <span class="companion-cedi">₵</span>{{ number_format($pendingEscrow, 2) }}
+                        </div>
                     </div>
                 </div>
-                <h3 class="kpi-value" style="color: #f59e0b;">GHS {{ number_format($pendingEscrow, 2) }}</h3>
-                <div class="kpi-subtext">
-                    <span style="color: #64748b; font-size: 0.76rem;">Released upon lesson completion</span>
-                </div>
-            </div>
-
-            <!-- Card 4: Avg Transaction Value -->
-            <div class="kpi-card">
-                <div class="kpi-header">
-                    <span class="kpi-label">Avg. Transaction Value</span>
-                    <div class="kpi-icon-wrap" style="background: rgba(225, 30, 45, 0.08); color: var(--primary-red);">
-                        <i class="fa-solid fa-receipt"></i>
-                    </div>
-                </div>
-                <h3 class="kpi-value">GHS {{ number_format($avgTransactionValue, 2) }}</h3>
-                <div class="kpi-subtext">
-                    <span style="color: #64748b; font-size: 0.76rem;">Average net rate per session</span>
-                </div>
+                <p class="companion-hint">
+                    <i class="fa-solid fa-circle-check" style="color: #10b981;"></i>
+                    <span>Locked securely; released upon lesson completion</span>
+                </p>
             </div>
         </div>
 
@@ -137,7 +120,7 @@
                 </div>
                 <div class="chart-summary-tag">
                     <span>Total in Period:</span>
-                    <strong>GHS {{ number_format($periodRevenue, 2) }}</strong>
+                    <strong>₵{{ number_format($periodRevenue, 2) }}</strong>
                 </div>
             </div>
             
@@ -255,20 +238,36 @@
             <form action="{{ route('tutors.earnings.payout') }}" method="POST">
                 @csrf
                 <div class="modal-body">
-                    <!-- Balance Callout -->
-                    <div class="modal-balance-callout">
-                        <span class="balance-label">Available Balance:</span>
-                        <strong class="balance-amount">GHS {{ number_format($availableBalance, 2) }}</strong>
+                    <!-- Emotional Centered Hero Available Amount -->
+                    <div class="modal-hero-balance-wrap">
+                        <span class="hero-balance-eyebrow">Available for Payout</span>
+                        <div class="hero-balance-amount">
+                            <span class="cedi-sign">₵</span>{{ number_format($availableBalance, 2) }}
+                        </div>
+                        <span class="hero-balance-sub">
+                            @if($availableBalance >= $minPayoutAmount)
+                                Ready to transfer directly to your account
+                            @else
+                                Min. payout threshold is ₵{{ number_format($minPayoutAmount, 2) }}
+                            @endif
+                        </span>
                     </div>
 
                     <!-- Amount Input -->
                     <div style="margin-bottom: 1.15rem;">
-                        <label class="form-field-label">Withdrawal Amount (GHS)</label>
+                        <label class="form-field-label">Withdrawal Amount</label>
                         <div class="input-currency-wrapper">
-                            <span class="input-currency-prefix">GHS</span>
-                            <input type="number" step="0.01" min="{{ $minPayoutAmount }}" max="{{ $availableBalance }}" name="amount" value="{{ old('amount', min($availableBalance, $minPayoutAmount)) }}" required class="form-currency-input" placeholder="0.00">
+                            <span class="input-currency-prefix">₵</span>
+                            <input type="number" step="0.01" min="{{ $minPayoutAmount }}" max="{{ $availableBalance }}" name="amount" value="{{ old('amount', $availableBalance >= $minPayoutAmount ? $availableBalance : '') }}" required class="form-currency-input" placeholder="{{ number_format($minPayoutAmount, 2) }}">
                         </div>
-                        <span class="field-helper-text">Minimum withdrawal: <strong>GHS {{ number_format($minPayoutAmount, 2) }}</strong></span>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.35rem;">
+                            <span class="field-helper-text">Minimum: <strong>₵{{ number_format($minPayoutAmount, 2) }}</strong></span>
+                            @if($availableBalance >= $minPayoutAmount)
+                                <button type="button" style="background: none; border: none; color: var(--secondary-blue); font-size: 0.78rem; font-weight: 700; cursor: pointer; text-decoration: underline; padding: 0;" onclick="document.querySelector('input[name=amount]').value = '{{ $availableBalance }}'">
+                                    Use Max (₵{{ number_format($availableBalance, 2) }})
+                                </button>
+                            @endif
+                        </div>
                     </div>
 
                     <!-- Receiving Account Preview -->
@@ -453,95 +452,188 @@
             border: 1px solid #fecaca;
         }
 
-        /* 4 Top KPI Metric Cards */
-        .kpi-grid {
+        /* Top Balance Spotlight Section */
+        .hero-balance-section {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1.15rem;
-            margin-bottom: 1.5rem;
+            grid-template-columns: 1fr 340px;
+            gap: 1.25rem;
+            align-items: stretch;
+            margin-bottom: 1.75rem;
         }
 
-        .kpi-card {
+        .hero-available-card {
             background: #fafbfc;
             border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            padding: 1.25rem 1.35rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+            border-radius: 16px;
+            padding: 1.75rem 2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .kpi-card:hover {
-            border-color: #cbd5e1;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
-        }
-
-        .kpi-header {
-            display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero-available-eyebrow {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #64748b;
             margin-bottom: 0.4rem;
         }
 
-        .kpi-label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #64748b;
-            letter-spacing: 0.02em;
+        .hero-available-value {
+            font-size: 3.25rem;
+            font-weight: 900;
+            color: #10b981;
+            letter-spacing: -0.04em;
+            line-height: 1.05;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 0.25rem;
+            margin-bottom: 1.15rem;
         }
 
-        .kpi-icon-wrap {
-            width: 34px;
-            height: 34px;
-            border-radius: 8px;
+        .hero-available-value .cedi-symbol {
+            font-size: 2.35rem;
+            font-weight: 700;
+            color: #059669;
+            opacity: 0.9;
+        }
+
+        .hero-available-actions {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.95rem;
+            gap: 0.75rem;
         }
 
-        .kpi-value {
-            font-size: 1.75rem;
-            font-weight: 800;
-            color: #0f172a;
-            margin: 0.2rem 0 0.45rem 0;
-            letter-spacing: -0.02em;
-        }
-
-        .kpi-subtext {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-
-        .kpi-badge-info {
-            background: rgba(38, 119, 184, 0.08);
-            color: var(--secondary-blue);
-            padding: 0.15rem 0.55rem;
-            border-radius: 6px;
-            font-size: 0.74rem;
-            font-weight: 700;
-        }
-
-        .quick-withdraw-link {
-            background: none;
-            border: none;
-            color: #10b981;
-            font-size: 0.78rem;
-            font-weight: 700;
-            cursor: pointer;
-            padding: 0;
+        .btn-hero-withdraw {
             display: inline-flex;
             align-items: center;
-            gap: 0.3rem;
-            transition: color 0.15s ease;
+            gap: 0.5rem;
+            background: var(--secondary-blue);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            padding: 0.65rem 1.4rem;
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(38, 119, 184, 0.25);
+            transition: all 0.18s ease;
         }
 
-        .quick-withdraw-link:hover {
-            color: #059669;
-            text-decoration: underline;
+        .btn-hero-withdraw:hover:not(:disabled) {
+            background: var(--secondary-blue-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(38, 119, 184, 0.35);
+        }
+
+        .btn-hero-withdraw.btn-hero-disabled {
+            background: #cbd5e1;
+            color: #64748b;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .btn-hero-setup {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #f1f5f9;
+            color: var(--secondary-blue);
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 0.65rem 1.25rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.18s ease;
+        }
+
+        .btn-hero-setup:hover {
+            background: #e2e8f0;
+        }
+
+        /* Secondary Companion: Pending Escrow */
+        .companion-pending-card {
+            background: #fafbfc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 1.5rem 1.6rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .companion-pending-header {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+        }
+
+        .companion-icon-box {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .companion-eyebrow {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #64748b;
+            display: block;
+            margin-bottom: 0.2rem;
+        }
+
+        .companion-value {
+            font-size: 1.65rem;
+            font-weight: 800;
+            color: #d97706;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+            display: flex;
+            align-items: baseline;
+            gap: 0.15rem;
+        }
+
+        .companion-value .companion-cedi {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .companion-hint {
+            margin: 1rem 0 0 0;
+            font-size: 0.78rem;
+            color: #64748b;
+            line-height: 1.45;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.45rem;
+            background: #f8fafc;
+            border: 1px solid #edf2f7;
+            padding: 0.55rem 0.75rem;
+            border-radius: 8px;
+        }
+
+        @media (max-width: 900px) {
+            .hero-balance-section {
+                grid-template-columns: 1fr;
+            }
         }
 
         /* Generic Insight Cards */
@@ -820,27 +912,48 @@
             padding: 1.5rem;
         }
 
-        .modal-balance-callout {
-            background: #ecfdf5;
-            border: 1px solid #a7f3d0;
-            border-radius: 10px;
-            padding: 0.75rem 1rem;
+        .modal-hero-balance-wrap {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1.25rem;
+            justify-content: center;
+            text-align: center;
+            padding: 0.35rem 0 1rem;
         }
 
-        .balance-label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #065f46;
+        .hero-balance-eyebrow {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #64748b;
+            margin-bottom: 0.25rem;
         }
 
-        .balance-amount {
-            font-size: 1.15rem;
-            font-weight: 800;
-            color: #047857;
+        .hero-balance-amount {
+            font-size: 2.85rem;
+            font-weight: 900;
+            color: #10b981;
+            letter-spacing: -0.035em;
+            line-height: 1.1;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 0.2rem;
+        }
+
+        .hero-balance-amount .cedi-sign {
+            font-size: 2.1rem;
+            font-weight: 700;
+            color: #059669;
+            opacity: 0.9;
+        }
+
+        .hero-balance-sub {
+            font-size: 0.78rem;
+            color: #64748b;
+            margin-top: 0.35rem;
+            font-weight: 500;
         }
 
         .form-field-label {
@@ -1043,7 +1156,7 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Net Revenue (GHS)',
+                        label: 'Net Revenue (₵)',
                         data: data,
                         borderColor: '#2677B8',
                         backgroundColor: gradient,
@@ -1076,7 +1189,7 @@
                             bodyFont: { size: 14, weight: '700' },
                             callbacks: {
                                 label: function(context) {
-                                    return 'Net Volume: GHS ' + context.parsed.y.toFixed(2);
+                                    return 'Net Volume: ₵' + context.parsed.y.toFixed(2);
                                 }
                             }
                         }
@@ -1092,7 +1205,7 @@
                                 color: '#94a3b8',
                                 font: { size: 11, weight: '600' },
                                 callback: function(value) {
-                                    return 'GHS ' + value;
+                                    return '₵' + value;
                                 }
                             }
                         },

@@ -504,6 +504,7 @@ Route::middleware(['auth'])->group(function () {
                 // Wallet & Earnings
                 Route::get('/earnings', [TutorEarningsController::class, 'index'])->name('earnings.index');
                 Route::get('/earnings/transactions', [TutorEarningsController::class, 'transactions'])->name('earnings.transactions');
+                Route::get('/earnings/policy', [TutorEarningsController::class, 'policy'])->name('earnings.policy');
                 Route::post('/earnings/payout', [TutorEarningsController::class, 'requestPayout'])->name('earnings.payout');
                 // Schedule & Availability
                 Route::get('/schedule/availability', [TutorScheduleController::class, 'availability'])->name('schedule.availability');

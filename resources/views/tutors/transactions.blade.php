@@ -12,16 +12,30 @@
                 <span>Settlements & Transactions</span>
             </h2>
             <p class="transactions-header-sub">
-                Track completed lesson earnings, platform fee deductions, and withdrawal payout logs
+                Audit released lesson earnings, fee breakdowns, and withdrawal payout logs
             </p>
         </div>
 
         <div class="transactions-header-right">
+            <!-- Back to Insights -->
             <a href="{{ route('tutors.earnings.index') }}" class="header-action-btn btn-secondary">
                 <i class="fa-solid fa-arrow-left"></i>
                 <span>Back to Insights</span>
             </a>
 
+            <!-- Dedicated Policy Page Link -->
+            <a href="{{ route('tutors.earnings.policy') }}" class="header-action-btn btn-policy">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>Settlement Policy</span>
+            </a>
+
+            <!-- Available Balance Pill -->
+            <div class="balance-pill-badge">
+                <span class="pill-label">Available:</span>
+                <strong class="pill-value">GHS {{ number_format($availableBalance, 2) }}</strong>
+            </div>
+
+            <!-- Quick Payout Trigger Button -->
             <button type="button" class="header-action-btn btn-primary" onclick="openWithdrawModal()">
                 <i class="fa-solid fa-paper-plane"></i>
                 <span>Request Payout</span>
@@ -46,272 +60,213 @@
             </div>
         @endif
 
-        <!-- Summary & Action Row -->
-        <div class="summary-action-grid">
-            <!-- Balance & Fast Withdraw Card -->
-            <div class="card-surface balance-summary-card">
-                <div class="card-header-flex">
+        @php
+            $activeTab = request()->get('tab', request()->has('payouts_page') ? 'payouts' : 'earnings');
+            $totalCompletedCount = method_exists($completedBookings, 'total') ? $completedBookings->total() : count($completedBookings);
+            $totalPayoutsCount = method_exists($payouts, 'total') ? $payouts->total() : count($payouts);
+        @endphp
+
+        <!-- Segmented Tab Navigation -->
+        <div class="ledger-tab-nav">
+            <button type="button" class="tab-button {{ $activeTab === 'earnings' ? 'active' : '' }}" onclick="switchLedgerTab('earnings')">
+                <i class="fa-solid fa-graduation-cap"></i>
+                <span>Completed Session Earnings</span>
+                <span class="tab-badge">{{ $totalCompletedCount }}</span>
+            </button>
+
+            <button type="button" class="tab-button {{ $activeTab === 'payouts' ? 'active' : '' }}" onclick="switchLedgerTab('payouts')">
+                <i class="fa-solid fa-money-bill-transfer"></i>
+                <span>Withdrawal & Payout Logs</span>
+                <span class="tab-badge">{{ $totalPayoutsCount }}</span>
+            </button>
+        </div>
+
+        <!-- TAB 1: Completed Session Earnings -->
+        <div id="tabContentEarnings" class="tab-pane {{ $activeTab === 'earnings' ? 'active' : '' }}">
+            <div class="ledger-section-card">
+                <div class="ledger-header">
                     <div>
-                        <span class="card-eyebrow">Available for Payout</span>
-                        <h3 class="balance-hero-amount">GHS {{ number_format($availableBalance, 2) }}</h3>
+                        <h3 class="ledger-title">
+                            <i class="fa-solid fa-graduation-cap" style="color: var(--secondary-blue);"></i>
+                            <span>Completed Session Earnings</span>
+                        </h3>
+                        <p class="ledger-subtitle">Credits released into your balance from verified student tutoring sessions</p>
                     </div>
-                    <div class="balance-icon-circle">
-                        <i class="fa-solid fa-wallet"></i>
-                    </div>
+
+                    <a href="{{ route('tutors.earnings.policy') }}" class="policy-quick-link">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>How is the 10% platform fee calculated?</span>
+                    </a>
                 </div>
 
-                <div class="destination-account-box">
-                    <div class="account-row-label">
-                        <i class="fa-solid fa-building-columns"></i>
-                        <span>Payout Destination:</span>
-                    </div>
-                    @if($tutorProfile->payout_method && $tutorProfile->payout_account_number)
-                        <div class="account-details-val">
-                            <span class="payout-type-tag">{{ strtoupper($tutorProfile->payout_method) }}</span>
-                            <span class="payout-bank-name">{{ $tutorProfile->payout_bank_name ?? 'Bank Account' }}</span>
-                            <span class="payout-acc-num">({{ substr($tutorProfile->payout_account_number, 0, 3) }}•••{{ substr($tutorProfile->payout_account_number, -4) }})</span>
-                        </div>
-                    @else
-                        <div class="account-details-missing">
-                            <span>No payout account configured.</span>
-                            <a href="{{ route('tutors.profile') }}" class="setup-payout-link">Set up in Profile</a>
-                        </div>
-                    @endif
+                <div class="table-responsive-wrapper">
+                    <table class="modern-ledger-table">
+                        <thead>
+                            <tr>
+                                <th>Completed Date</th>
+                                <th>Student</th>
+                                <th>Subject</th>
+                                <th>Gross Booking</th>
+                                <th>Platform Fee (10%)</th>
+                                <th>Net Credited</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if(isset($completedBookings) && count($completedBookings) > 0)
+                                @foreach($completedBookings as $booking)
+                                    <tr>
+                                        <td>
+                                            <div class="table-date-cell">
+                                                <span class="date-main">{{ $booking->updated_at->format('M d, Y') }}</span>
+                                                <span class="date-sub">{{ $booking->updated_at->format('h:i A') }}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="student-profile-cell">
+                                                <div class="student-avatar-sub">
+                                                    {{ strtoupper(substr($booking->student->name ?? 'S', 0, 1)) }}
+                                                </div>
+                                                <div>
+                                                    <div class="student-name-text">{{ $booking->student->name ?? 'Student' }}</div>
+                                                    <div class="student-id-text">Booking #{{ $booking->id }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="subject-tag">{{ $booking->subject->name ?? 'General Lesson' }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="gross-fee-val">GHS {{ number_format($booking->credits_paid, 2) }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="commission-cut-val">-GHS {{ number_format($booking->commission_amount, 2) }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="net-credit-val">+GHS {{ number_format($booking->credits_paid - $booking->commission_amount, 2) }}</span>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            @else
+                                <tr>
+                                    <td colspan="6" class="empty-table-cell">
+                                        <div class="empty-state-inner">
+                                            <div class="empty-icon-circle">
+                                                <i class="fa-solid fa-graduation-cap"></i>
+                                            </div>
+                                            <p class="empty-text-main">No completed session earnings records yet</p>
+                                            <p class="empty-text-sub">When you complete lessons with students, your verified credits and fee deductions will be listed here.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endif
+                        </tbody>
+                    </table>
                 </div>
 
-                <div class="balance-actions-footer">
-                    @if($availableBalance >= $minPayoutAmount && $tutorProfile->payout_method)
-                        <button type="button" class="btn-full-withdraw" onclick="openWithdrawModal()">
-                            <i class="fa-solid fa-paper-plane"></i>
-                            <span>Withdraw Funds</span>
-                        </button>
-                    @else
-                        <button type="button" class="btn-full-withdraw btn-disabled" disabled>
-                            <i class="fa-solid fa-lock"></i>
-                            <span>Min. Payout GHS {{ number_format($minPayoutAmount, 2) }}</span>
-                        </button>
-                    @endif
-                </div>
-            </div>
-
-            <!-- Settlement & Fee Breakdown Card -->
-            <div class="card-surface fee-policy-card">
-                <div class="policy-header">
-                    <div class="policy-icon-circle">
-                        <i class="fa-solid fa-shield-halved"></i>
+                @if(method_exists($completedBookings, 'hasPages') && $completedBookings->hasPages())
+                    <div class="pagination-footer">
+                        {{ $completedBookings->appends(['tab' => 'earnings'])->links() }}
                     </div>
-                    <div>
-                        <h4 class="policy-title">Settlement Policy & Protection</h4>
-                        <p class="policy-subtitle">Transparent earnings release directly to your MoMo or Bank</p>
-                    </div>
-                </div>
-
-                <div class="policy-points-list">
-                    <div class="policy-point-item">
-                        <div class="point-bullet bullet-blue">
-                            <i class="fa-solid fa-percent"></i>
-                        </div>
-                        <div class="point-text">
-                            <strong>10% Platform Fee:</strong>
-                            <span>Deducted automatically upon completed lesson verification to cover escrow insurance and platform infrastructure.</span>
-                        </div>
-                    </div>
-
-                    <div class="policy-point-item">
-                        <div class="point-bullet bullet-green">
-                            <i class="fa-solid fa-clock-rotate-left"></i>
-                        </div>
-                        <div class="point-text">
-                            <strong>1-2 Business Days:</strong>
-                            <span>Withdrawals processed via Paystack are typically settled into your mobile wallet or bank account within 24–48 hours.</span>
-                        </div>
-                    </div>
-
-                    <div class="policy-point-item">
-                        <div class="point-bullet bullet-red">
-                            <i class="fa-solid fa-hand-holding-dollar"></i>
-                        </div>
-                        <div class="point-text">
-                            <strong>Minimum Threshold:</strong>
-                            <span>Minimum eligible balance to initiate a withdrawal request is <strong>GHS {{ number_format($minPayoutAmount, 2) }}</strong>.</span>
-                        </div>
-                    </div>
-                </div>
+                @endif
             </div>
         </div>
 
-        <!-- Section 1: Withdrawal / Payout Requests -->
-        <div class="ledger-section-card">
-            <div class="ledger-header">
-                <div>
-                    <h3 class="ledger-title">
-                        <i class="fa-solid fa-money-bill-transfer" style="color: var(--secondary-blue);"></i>
-                        <span>Withdrawal & Payout History</span>
-                    </h3>
-                    <p class="ledger-subtitle">History of all funds requested and transferred to your account</p>
-                </div>
-            </div>
+        <!-- TAB 2: Withdrawal / Payout Requests -->
+        <div id="tabContentPayouts" class="tab-pane {{ $activeTab === 'payouts' ? 'active' : '' }}">
+            <div class="ledger-section-card">
+                <div class="ledger-header">
+                    <div>
+                        <h3 class="ledger-title">
+                            <i class="fa-solid fa-money-bill-transfer" style="color: var(--secondary-blue);"></i>
+                            <span>Withdrawal & Payout Logs</span>
+                        </h3>
+                        <p class="ledger-subtitle">History of all funds transferred to your Mobile Money or Bank account</p>
+                    </div>
 
-            <div class="table-responsive-wrapper">
-                <table class="modern-ledger-table">
-                    <thead>
-                        <tr>
-                            <th>Reference ID</th>
-                            <th>Date & Time</th>
-                            <th>Payout Destination</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if(isset($payouts) && count($payouts) > 0)
-                            @foreach($payouts as $payout)
+                    <button type="button" class="btn-table-action" onclick="openWithdrawModal()">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>New Withdrawal</span>
+                    </button>
+                </div>
+
+                <div class="table-responsive-wrapper">
+                    <table class="modern-ledger-table">
+                        <thead>
+                            <tr>
+                                <th>Reference ID</th>
+                                <th>Date & Time</th>
+                                <th>Payout Destination</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if(isset($payouts) && count($payouts) > 0)
+                                @foreach($payouts as $payout)
+                                    <tr>
+                                        <td>
+                                            <code class="ref-code">{{ $payout->reference ?? 'PO-'.str_pad($payout->id, 6, '0', STR_PAD_LEFT) }}</code>
+                                        </td>
+                                        <td>
+                                            <div class="table-date-cell">
+                                                <span class="date-main">{{ $payout->created_at->format('M d, Y') }}</span>
+                                                <span class="date-sub">{{ $payout->created_at->format('h:i A') }}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="dest-cell">
+                                                <span class="payout-type-mini">{{ strtoupper($payout->payout_method ?? 'MOMO') }}</span>
+                                                <span class="dest-name">{{ $payout->bank_name ?? 'Mobile Money' }}</span>
+                                                <span class="dest-acc">({{ $payout->account_number ?? '••••' }})</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="payout-amount-val">GHS {{ number_format($payout->amount, 2) }}</span>
+                                        </td>
+                                        <td>
+                                            @if($payout->status === 'completed')
+                                                <span class="badge-status badge-success">
+                                                    <i class="fa-solid fa-circle-check"></i> Completed
+                                                </span>
+                                            @elseif($payout->status === 'processing')
+                                                <span class="badge-status badge-processing">
+                                                    <i class="fa-solid fa-arrows-rotate fa-spin"></i> Processing
+                                                </span>
+                                            @elseif($payout->status === 'failed')
+                                                <span class="badge-status badge-failed">
+                                                    <i class="fa-solid fa-circle-xmark"></i> Failed
+                                                </span>
+                                            @else
+                                                <span class="badge-status badge-pending">
+                                                    <i class="fa-regular fa-clock"></i> Pending
+                                                </span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            @else
                                 <tr>
-                                    <td>
-                                        <code class="ref-code">{{ $payout->reference ?? 'PO-'.str_pad($payout->id, 6, '0', STR_PAD_LEFT) }}</code>
-                                    </td>
-                                    <td>
-                                        <div class="table-date-cell">
-                                            <span class="date-main">{{ $payout->created_at->format('M d, Y') }}</span>
-                                            <span class="date-sub">{{ $payout->created_at->format('h:i A') }}</span>
+                                    <td colspan="5" class="empty-table-cell">
+                                        <div class="empty-state-inner">
+                                            <div class="empty-icon-circle">
+                                                <i class="fa-solid fa-money-bill-transfer"></i>
+                                            </div>
+                                            <p class="empty-text-main">No withdrawal requests found</p>
+                                            <p class="empty-text-sub">When you request a payout from your available balance, your transaction history will appear here.</p>
                                         </div>
-                                    </td>
-                                    <td>
-                                        <div class="dest-cell">
-                                            <span class="payout-type-mini">{{ strtoupper($payout->payout_method ?? 'MOMO') }}</span>
-                                            <span class="dest-name">{{ $payout->bank_name ?? 'Mobile Money' }}</span>
-                                            <span class="dest-acc">({{ $payout->account_number ?? '••••' }})</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="payout-amount-val">GHS {{ number_format($payout->amount, 2) }}</span>
-                                    </td>
-                                    <td>
-                                        @if($payout->status === 'completed')
-                                            <span class="badge-status badge-success">
-                                                <i class="fa-solid fa-circle-check"></i> Completed
-                                            </span>
-                                        @elseif($payout->status === 'processing')
-                                            <span class="badge-status badge-processing">
-                                                <i class="fa-solid fa-arrows-rotate fa-spin"></i> Processing
-                                            </span>
-                                        @elseif($payout->status === 'failed')
-                                            <span class="badge-status badge-failed">
-                                                <i class="fa-solid fa-circle-xmark"></i> Failed
-                                            </span>
-                                        @else
-                                            <span class="badge-status badge-pending">
-                                                <i class="fa-regular fa-clock"></i> Pending
-                                            </span>
-                                        @endif
                                     </td>
                                 </tr>
-                            @endforeach
-                        @else
-                            <tr>
-                                <td colspan="5" class="empty-table-cell">
-                                    <div class="empty-state-inner">
-                                        <div class="empty-icon-circle">
-                                            <i class="fa-solid fa-money-bill-transfer"></i>
-                                        </div>
-                                        <p class="empty-text-main">No withdrawal requests found</p>
-                                        <p class="empty-text-sub">When you request a payout from your available balance, it will appear here.</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endif
-                    </tbody>
-                </table>
-            </div>
-
-            @if(method_exists($payouts, 'hasPages') && $payouts->hasPages())
-                <div class="pagination-footer">
-                    {{ $payouts->appends(request()->except('payouts_page'))->links() }}
+                            @endif
+                        </tbody>
+                    </table>
                 </div>
-            @endif
-        </div>
 
-        <!-- Section 2: Completed Session Credits Ledger -->
-        <div class="ledger-section-card">
-            <div class="ledger-header">
-                <div>
-                    <h3 class="ledger-title">
-                        <i class="fa-solid fa-graduation-cap" style="color: var(--secondary-blue);"></i>
-                        <span>Completed Session Earnings</span>
-                    </h3>
-                    <p class="ledger-subtitle">Credits released into your balance from verified student tutoring sessions</p>
-                </div>
+                @if(method_exists($payouts, 'hasPages') && $payouts->hasPages())
+                    <div class="pagination-footer">
+                        {{ $payouts->appends(['tab' => 'payouts'])->links() }}
+                    </div>
+                @endif
             </div>
-
-            <div class="table-responsive-wrapper">
-                <table class="modern-ledger-table">
-                    <thead>
-                        <tr>
-                            <th>Completed Date</th>
-                            <th>Student</th>
-                            <th>Subject</th>
-                            <th>Gross Booking</th>
-                            <th>Platform Fee (10%)</th>
-                            <th>Net Credited</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if(isset($completedBookings) && count($completedBookings) > 0)
-                            @foreach($completedBookings as $booking)
-                                <tr>
-                                    <td>
-                                        <div class="table-date-cell">
-                                            <span class="date-main">{{ $booking->updated_at->format('M d, Y') }}</span>
-                                            <span class="date-sub">{{ $booking->updated_at->format('h:i A') }}</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="student-profile-cell">
-                                            <div class="student-avatar-sub">
-                                                {{ strtoupper(substr($booking->student->name ?? 'S', 0, 1)) }}
-                                            </div>
-                                            <div>
-                                                <div class="student-name-text">{{ $booking->student->name ?? 'Student' }}</div>
-                                                <div class="student-id-text">#{{ $booking->id }}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="subject-tag">{{ $booking->subject->name ?? 'General Lesson' }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="gross-fee-val">GHS {{ number_format($booking->credits_paid, 2) }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="commission-cut-val">-GHS {{ number_format($booking->commission_amount, 2) }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="net-credit-val">+GHS {{ number_format($booking->credits_paid - $booking->commission_amount, 2) }}</span>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        @else
-                            <tr>
-                                <td colspan="6" class="empty-table-cell">
-                                    <div class="empty-state-inner">
-                                        <div class="empty-icon-circle">
-                                            <i class="fa-solid fa-graduation-cap"></i>
-                                        </div>
-                                        <p class="empty-text-main">No completed lesson earnings yet</p>
-                                        <p class="empty-text-sub">Completed student tutoring sessions will be automatically logged here with exact fee breakdowns.</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endif
-                    </tbody>
-                </table>
-            </div>
-
-            @if(method_exists($completedBookings, 'hasPages') && $completedBookings->hasPages())
-                <div class="pagination-footer">
-                    {{ $completedBookings->appends(request()->except('earnings_page'))->links() }}
-                </div>
-            @endif
         </div>
     </div>
 
@@ -336,13 +291,19 @@
             <form action="{{ route('tutors.earnings.payout') }}" method="POST" class="modal-form">
                 @csrf
                 <div class="modal-body-content">
-                    <!-- Balance Callout -->
-                    <div class="modal-balance-banner">
-                        <div class="banner-balance-info">
-                            <span class="banner-balance-lbl">Available to Withdraw</span>
-                            <strong class="banner-balance-num">GHS {{ number_format($availableBalance, 2) }}</strong>
+                    <!-- Emotional Centered Hero Available Amount -->
+                    <div class="modal-hero-balance-wrap">
+                        <span class="hero-balance-eyebrow">Available for Payout</span>
+                        <div class="hero-balance-amount">
+                            <span class="cedi-sign">₵</span>{{ number_format($availableBalance, 2) }}
                         </div>
-                        <span class="banner-min-badge">Min. GHS {{ number_format($minPayoutAmount, 2) }}</span>
+                        <span class="hero-balance-sub">
+                            @if($availableBalance >= $minPayoutAmount)
+                                Ready to transfer directly to your account
+                            @else
+                                Min. payout threshold is ₵{{ number_format($minPayoutAmount, 2) }}
+                            @endif
+                        </span>
                     </div>
 
                     <!-- Payout Destination Info -->
@@ -359,7 +320,7 @@
                             <i class="fa-solid fa-triangle-exclamation" style="color: var(--primary-red);"></i>
                             <div class="modal-account-txt">
                                 <strong>No destination account set up:</strong>
-                                <a href="{{ route('tutors.profile') }}" style="color: var(--secondary-blue); text-decoration: underline;">Configure payout details</a>
+                                <a href="{{ route('tutors.profile.settings') }}" style="color: var(--secondary-blue); text-decoration: underline;">Configure payout details</a>
                             </div>
                         </div>
                     @endif
@@ -367,11 +328,11 @@
                     <!-- Amount Input -->
                     <div class="form-group-custom">
                         <label for="withdraw_amount" class="form-label-custom">
-                            <span>Withdrawal Amount (GHS)</span>
+                            <span>Withdrawal Amount</span>
                             <span class="req-star">*</span>
                         </label>
                         <div class="input-currency-wrapper">
-                            <span class="input-prefix">GHS</span>
+                            <span class="input-prefix">₵</span>
                             <input
                                 type="number"
                                 step="0.01"
@@ -386,10 +347,10 @@
                             >
                         </div>
                         <div class="input-hints-row">
-                            <span class="hint-txt">Minimum: GHS {{ number_format($minPayoutAmount, 2) }}</span>
+                            <span class="hint-txt">Minimum: ₵{{ number_format($minPayoutAmount, 2) }}</span>
                             @if($availableBalance >= $minPayoutAmount)
                                 <button type="button" class="btn-max-amount" onclick="document.getElementById('withdraw_amount').value = '{{ $availableBalance }}'">
-                                    Use Max (GHS {{ number_format($availableBalance, 2) }})
+                                    Use Max (₵{{ number_format($availableBalance, 2) }})
                                 </button>
                             @endif
                         </div>
@@ -416,7 +377,7 @@
     <!-- Scoped Modern Light Mode Styles (Anti-Glare & Neurodivergent-Friendly) -->
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
         .transactions-page-container {
-            padding: 1.5rem 2rem 3rem;
+            padding: 1.5rem 2rem 3.5rem;
             max-width: 1400px;
             margin: 0 auto;
             color: #0f172a;
@@ -454,6 +415,27 @@
             align-items: center;
             gap: 0.75rem;
             flex-wrap: wrap;
+        }
+
+        .balance-pill-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            padding: 0.45rem 0.85rem;
+            border-radius: 8px;
+            font-size: 0.82rem;
+        }
+
+        .pill-label {
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .pill-value {
+            color: #10b981;
+            font-weight: 800;
         }
 
         .header-action-btn {
@@ -495,6 +477,18 @@
             transform: translateY(-1px);
         }
 
+        .btn-policy {
+            background: #f8fafc;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-policy:hover {
+            background: #f1f5f9;
+            color: var(--secondary-blue);
+            border-color: #cbd5e1;
+        }
+
         /* Alerts */
         .alert-banner {
             display: flex;
@@ -519,235 +513,63 @@
             border: 1px solid #fecaca;
         }
 
-        /* Summary & Action Row */
-        .summary-action-grid {
-            display: grid;
-            grid-template-columns: 1fr 1.3fr;
-            gap: 1.25rem;
-            margin-bottom: 1.75rem;
-        }
-
-        .card-surface {
-            background: #fafbfc;
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
-            position: relative;
-        }
-
-        .card-header-flex {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 1rem;
-        }
-
-        .card-eyebrow {
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            color: #64748b;
-        }
-
-        .balance-hero-amount {
-            font-size: 1.85rem;
-            font-weight: 800;
-            color: #10b981;
-            margin: 0.25rem 0 0 0;
-            letter-spacing: -0.02em;
-        }
-
-        .balance-icon-circle {
-            width: 44px;
-            height: 44px;
-            border-radius: 10px;
-            background: rgba(16, 185, 129, 0.1);
-            color: #10b981;
-            display: flex;
+        /* Segmented Tab Navigation */
+        .ledger-tab-nav {
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-        }
-
-        .destination-account-box {
+            gap: 0.35rem;
             background: #f1f5f9;
-            border: 1px solid #e2e8f0;
+            padding: 0.35rem;
             border-radius: 10px;
-            padding: 0.85rem 1rem;
-            margin-bottom: 1.25rem;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 1.5rem;
         }
 
-        .account-row-label {
-            display: flex;
-            align-items: center;
-            gap: 0.45rem;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-            margin-bottom: 0.35rem;
-        }
-
-        .account-details-val {
-            display: flex;
+        .tab-button {
+            display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            flex-wrap: wrap;
-            font-size: 0.88rem;
-        }
-
-        .payout-type-tag {
-            background: var(--secondary-blue);
-            color: #ffffff;
-            font-size: 0.7rem;
-            font-weight: 800;
-            padding: 0.15rem 0.5rem;
-            border-radius: 4px;
-            letter-spacing: 0.04em;
-        }
-
-        .payout-bank-name {
-            font-weight: 700;
-            color: #0f172a;
-        }
-
-        .payout-acc-num {
-            color: #64748b;
-            font-family: monospace;
-            font-size: 0.85rem;
-        }
-
-        .account-details-missing {
-            font-size: 0.85rem;
-            color: var(--primary-red);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .setup-payout-link {
-            font-weight: 700;
-            color: var(--secondary-blue);
-            text-decoration: underline;
-        }
-
-        .btn-full-withdraw {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            background: var(--secondary-blue);
-            color: #ffffff;
+            background: transparent;
             border: none;
-            border-radius: 10px;
-            padding: 0.75rem 1.25rem;
-            font-size: 0.9rem;
+            border-radius: 8px;
+            padding: 0.55rem 1rem;
+            font-size: 0.85rem;
             font-weight: 700;
+            color: #64748b;
             cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 6px rgba(38, 119, 184, 0.25);
+            transition: all 0.18s ease;
         }
 
-        .btn-full-withdraw:hover:not(:disabled) {
-            background: var(--secondary-blue-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(38, 119, 184, 0.35);
-        }
-
-        .btn-full-withdraw.btn-disabled {
-            background: #cbd5e1;
-            color: #64748b;
-            box-shadow: none;
-            cursor: not-allowed;
-        }
-
-        /* Fee & Settlement Policy Card */
-        .fee-policy-card {
+        .tab-button.active {
             background: #fafbfc;
-            border: 1px solid #e2e8f0;
+            color: #0f172a;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
         }
 
-        .policy-header {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 1.2rem;
-        }
-
-        .policy-icon-circle {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            background: rgba(38, 119, 184, 0.1);
-            color: var(--secondary-blue);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.15rem;
-        }
-
-        .policy-title {
-            margin: 0;
-            font-size: 1rem;
-            font-weight: 700;
+        .tab-button:hover:not(.active) {
             color: #0f172a;
         }
 
-        .policy-subtitle {
-            margin: 0.15rem 0 0 0;
-            font-size: 0.78rem;
-            color: #64748b;
+        .tab-badge {
+            background: #e2e8f0;
+            color: #475569;
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 0.12rem 0.45rem;
+            border-radius: 9999px;
         }
 
-        .policy-points-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.85rem;
-        }
-
-        .policy-point-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            font-size: 0.82rem;
-            line-height: 1.45;
-            color: #334155;
-        }
-
-        .point-bullet {
-            width: 26px;
-            height: 26px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            font-size: 0.75rem;
-            margin-top: 0.1rem;
-        }
-
-        .bullet-blue {
-            background: rgba(38, 119, 184, 0.1);
+        .tab-button.active .tab-badge {
+            background: rgba(38, 119, 184, 0.15);
             color: var(--secondary-blue);
         }
 
-        .bullet-green {
-            background: rgba(16, 185, 129, 0.1);
-            color: #10b981;
+        .tab-pane {
+            display: none;
         }
 
-        .bullet-red {
-            background: rgba(225, 30, 45, 0.1);
-            color: var(--primary-red);
-        }
-
-        .point-text strong {
-            color: #0f172a;
-            font-weight: 700;
+        .tab-pane.active {
+            display: block;
         }
 
         /* Ledger Section Cards */
@@ -757,7 +579,6 @@
             border-radius: 14px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
             overflow: hidden;
-            margin-bottom: 1.75rem;
         }
 
         .ledger-header {
@@ -767,6 +588,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
         }
 
         .ledger-title {
@@ -783,6 +606,39 @@
             margin: 0.2rem 0 0 0;
             font-size: 0.8rem;
             color: #64748b;
+        }
+
+        .policy-quick-link {
+            font-size: 0.8rem;
+            color: var(--secondary-blue);
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .policy-quick-link:hover {
+            text-decoration: underline;
+        }
+
+        .btn-table-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            color: #0f172a;
+            padding: 0.45rem 0.85rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn-table-action:hover {
+            background: #e2e8f0;
         }
 
         .table-responsive-wrapper {
@@ -978,7 +834,7 @@
 
         /* Empty States */
         .empty-table-cell {
-            padding: 3rem 1.5rem;
+            padding: 3.5rem 1.5rem;
             text-align: center;
         }
 
@@ -986,7 +842,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            max-width: 360px;
+            max-width: 380px;
             margin: 0 auto;
         }
 
@@ -1132,41 +988,48 @@
             gap: 1.25rem;
         }
 
-        .modal-balance-banner {
-            background: #f1f5f9;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 0.85rem 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .banner-balance-info {
+        .modal-hero-balance-wrap {
             display: flex;
             flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 0.35rem 0 0.5rem;
         }
 
-        .banner-balance-lbl {
+        .hero-balance-eyebrow {
             font-size: 0.75rem;
-            font-weight: 600;
-            color: #64748b;
+            font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #64748b;
+            margin-bottom: 0.25rem;
         }
 
-        .banner-balance-num {
-            font-size: 1.25rem;
-            font-weight: 800;
+        .hero-balance-amount {
+            font-size: 2.85rem;
+            font-weight: 900;
             color: #10b981;
+            letter-spacing: -0.035em;
+            line-height: 1.1;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 0.2rem;
         }
 
-        .banner-min-badge {
-            font-size: 0.75rem;
-            background: #e2e8f0;
-            color: #475569;
-            padding: 0.25rem 0.55rem;
-            border-radius: 6px;
-            font-weight: 600;
+        .hero-balance-amount .cedi-sign {
+            font-size: 2.1rem;
+            font-weight: 700;
+            color: #059669;
+            opacity: 0.9;
+        }
+
+        .hero-balance-sub {
+            font-size: 0.78rem;
+            color: #64748b;
+            margin-top: 0.35rem;
+            font-weight: 500;
         }
 
         .modal-account-pill {
@@ -1330,13 +1193,7 @@
         }
 
         /* Responsive Breakpoints */
-        @media (max-width: 900px) {
-            .summary-action-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 640px) {
+        @media (max-width: 768px) {
             .transactions-page-container {
                 padding: 1rem 1rem 2.5rem;
             }
@@ -1350,10 +1207,42 @@
                 width: 100%;
                 justify-content: flex-start;
             }
+
+            .ledger-tab-nav {
+                width: 100%;
+                display: flex;
+            }
+
+            .tab-button {
+                flex: 1;
+                justify-content: center;
+            }
         }
     </style>
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        function switchLedgerTab(tabName) {
+            // Update Tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            // Update Tab panes
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+
+            if (tabName === 'earnings') {
+                const pane = document.getElementById('tabContentEarnings');
+                if (pane) pane.classList.add('active');
+                event.currentTarget.classList.add('active');
+            } else if (tabName === 'payouts') {
+                const pane = document.getElementById('tabContentPayouts');
+                if (pane) pane.classList.add('active');
+                event.currentTarget.classList.add('active');
+            }
+
+            // Sync URL parameter silently without reload
+            const url = new URL(window.location);
+            url.searchParams.set('tab', tabName);
+            window.history.replaceState({}, '', url);
+        }
+
         function openWithdrawModal() {
             const modal = document.getElementById('withdrawModal');
             if (modal) {
