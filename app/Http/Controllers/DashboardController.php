@@ -386,7 +386,7 @@ class DashboardController extends Controller
         $selectedGrade = $request->query('grade');
         $validSelectedGrade = null;
 
-        if ($selectedGrade) {
+        if ($selectedGrade && strtolower($selectedGrade) !== 'all') {
             // Allow any valid grade within the group
             if (in_array($selectedGrade, $unlockedGrades)) {
                 $validSelectedGrade = $selectedGrade;
@@ -498,7 +498,7 @@ class DashboardController extends Controller
         }
 
         // Fetch lessons based on grade if provided, else group
-        if ($selectedGrade) {
+        if ($selectedGrade && strtolower($selectedGrade) !== 'all') {
             $levelGroups = $this->getLevelGroups();
             $internalLevelKey = null;
             if (isset($levelGroups[$selectedLevelGroup]['levels'])) {
