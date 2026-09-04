@@ -4118,7 +4118,15 @@ class AdminController extends Controller
             if ($type === 'pending') {
                 $videoQuery->where('status', 'pending');
             } elseif ($type === 'drafts' || $type === 'draft') {
-                $videoQuery->where('status', 'draft');
+                $videoQuery->where(function ($q) {
+                    $q->where('status', 'draft')
+                        ->orWhere(function ($sub) {
+                            $sub->where('video_source', 'none')
+                                ->whereHas('quizzes', function ($quizQ) {
+                                    $quizQ->where('status', 'draft');
+                                });
+                        });
+                });
             }
 
             // Filter for agent-generated videos if type is 'agent'
@@ -4190,6 +4198,10 @@ class AdminController extends Controller
                     if ($item->quizzes_count > 0 || !empty($item->quiz_id)) {
                         $item->content_type = 'quiz';
                         $item->thumbnail_url = null;
+                        $attachedQuiz = $item->quizzes->first() ?? ($item->quiz_id ? Quiz::find($item->quiz_id) : null);
+                        if ($attachedQuiz && $attachedQuiz->status) {
+                            $item->status = $attachedQuiz->status;
+                        }
                     } elseif ($item->documents_count > 0 || !empty($item->document_path)) {
                         $item->content_type = 'document';
                         $docFilePath = $item->documents->first()->file_path ?? $item->document_path;
@@ -4254,9 +4266,7 @@ class AdminController extends Controller
         // Get quizzes (when specifically filtering for quizzes OR when 'all' / 'drafts' is selected)
         if ($type === 'all' || $type === 'quizzes' || $type === 'drafts' || $type === 'draft') {
             $quizzesQuery = Quiz::with(['uploader:id,name,email,avatar,google_avatar', 'ratings', 'subject:id,name'])
-                ->when($type !== 'drafts' && $type !== 'draft', function ($q) {
-                    $q->whereNull('video_id'); // Only standalone in view to avoid duplicates when viewing All or Quizzes
-                })
+                ->whereNull('video_id') // Only standalone in view to avoid duplicates across all tabs
                 ->when($type === 'drafts' || $type === 'draft', function ($q) {
                     $q->where('status', 'draft');
                 })
@@ -4386,9 +4396,10 @@ class AdminController extends Controller
                     'status' => 'pending' // Videos need approval by default
                 ];
 
-                // If no video content is actually provided, mark as approved and source 'none'
+                // If no video content is actually provided, mark source 'none' and align status
                 if (!$request->hasFile('video_file') && !$request->filled('external_video_url') && !$request->filled('vimeo_url')) {
-                    $videoData['status'] = 'approved';
+                    $targetStatus = $request->input('status', 'published');
+                    $videoData['status'] = $targetStatus === 'draft' ? 'draft' : 'approved';
                     $videoData['video_source'] = 'none';
                 }
 
@@ -4533,12 +4544,14 @@ class AdminController extends Controller
                     // Use the subject associated with the video
                     $subject = Subject::find($video->subject_id);
 
+                    $quizStatus = $request->input('status', 'published');
                     $quizDataToCreate = [
                         'title' => $request->filled('quiz_title') ? $request->quiz_title : $video->title,
                         'subject_id' => $subject->id,
                         'uploaded_by' => Auth::id(),
                         'grade_level' => $request->grade_level,
                         'video_id' => $video->id,
+                        'status' => $quizStatus,
                         'quiz_data' => json_encode($quizData),
                         'shuffle_questions' => $request->boolean('shuffle_questions'),
                         'is_featured' => false
@@ -4956,14 +4969,18 @@ class AdminController extends Controller
 
             if ($contentType === 'video') {
                 // Update video info
-                $content->update([
+                $videoUpdateData = [
                     'title' => $request->title,
                     'description' => $request->description,
                     'subject_id' => $request->subject_id,
                     'grade_level' => $request->grade_level,
                     'is_featured' => $request->has('is_featured'),
                     'quiz_id' => $request->filled('quiz_id') ? $request->quiz_id : null,
-                ]);
+                ];
+                if ($newStatus) {
+                    $videoUpdateData['status'] = $newStatus === 'published' ? 'approved' : 'draft';
+                }
+                $content->update($videoUpdateData);
 
                 if ($request->filled('quiz_id')) {
                     Quiz::where('id', $request->quiz_id)->update(['video_id' => $content->id]);
@@ -5089,6 +5106,9 @@ class AdminController extends Controller
                         }
                     }
                 }
+                if ($newStatus) {
+                    Quiz::where('video_id', $content->id)->update(['status' => $newStatus]);
+                }
             } elseif ($contentType === 'quiz') {
                 // Update standalone quiz info
                 $quizData = [];
@@ -5131,11 +5151,15 @@ class AdminController extends Controller
                     Cache::forget("quiz.{$contentId}");
                 }
 
-                // Update description in the associated video container if it exists
+                // Update description and status in the associated video container if it exists
                 if ($content->video_id) {
-                    Video::where('id', $content->video_id)->update([
-                        'description' => $request->description
-                    ]);
+                    $videoUpdateData = [
+                        'description' => $request->description,
+                    ];
+                    if ($newStatus) {
+                        $videoUpdateData['status'] = $newStatus === 'published' ? 'approved' : 'draft';
+                    }
+                    Video::where('id', $content->video_id)->update($videoUpdateData);
                 }
             } elseif ($contentType === 'document') {
                 // Update standalone document info

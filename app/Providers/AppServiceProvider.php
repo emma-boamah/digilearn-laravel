@@ -13,7 +13,6 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\Builder;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Mail;
-use ZohoMail\LaravelZeptoMail\Transport\ZeptoMailTransport;
 use Closure;
 use Illuminate\Support\Facades\Gate;
 
@@ -61,21 +60,6 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
-        // Configure ZeptoMail as the default mailer
-        Mail::extend('zeptomail', function () {
-            // Ensure you have 'token' in config/services.php
-            if (!config('services.zeptomail.token')) {
-                throw new \InvalidArgumentException('ZeptoMail token is not configured in config/services.php.');
-            }
-
-            $region = config('services.zeptomail.region', 'com');
-            $host = str_contains($region, 'zoho.') ? $region : "zoho.$region";
-
-            return new ZeptoMailTransport(
-                config('services.zeptomail.token'),
-                $host
-            );
-        });
 
         // Implicitly grant "super-admin" role all permissions
         // This works in the SPA context for Spatie Laravel Permission

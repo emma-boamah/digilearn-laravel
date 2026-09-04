@@ -821,11 +821,13 @@ class AuthController extends Controller
                 'error' => $errorMsg
             ]);
             
-            if (str_contains($errorMsg, '429') || str_contains(strtolower($errorMsg), 'credit') || str_contains(strtolower($errorMsg), 'exhausted') || str_contains($errorMsg, '402') || str_contains($errorMsg, 'TM_5001') || str_contains($errorMsg, 'LE_102')) {
+            try {
                 $superAdmins = \App\Models\User::where('is_superuser', true)->get();
                 if ($superAdmins->isNotEmpty()) {
                     \Illuminate\Support\Facades\Notification::send($superAdmins, new \App\Notifications\ZeptoMailErrorNotification($errorMsg));
                 }
+            } catch (\Exception $notifyEx) {
+                Log::warning('Could not notify superadmins of reset password mail failure: ' . $notifyEx->getMessage());
             }
             
             return back()->withInput()->withErrors(['email' => 'Failed to send otp or reset link due to a temporary service issue. Please try again later.']);

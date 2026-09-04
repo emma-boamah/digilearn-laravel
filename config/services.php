@@ -109,11 +109,6 @@ return [
         'base_url' => env('PAYSTACK_BASE_URL', 'https://api.paystack.co'),
     ],
 
-    'zeptomail' => [
-        'token' => env('ZEPTOMAIL_TOKEN'),
-        'region' => env('ZEPTOMAIL_REGION', 'com'), // e.g., com, eu, in, au
-    ],
-
     'google_analytics' => [
         'id' => env('GOOGLE_ANALYTICS_ID'),
     ],

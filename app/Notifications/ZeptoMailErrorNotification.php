@@ -16,7 +16,7 @@ class ZeptoMailErrorNotification extends Notification
     /**
      * Create a new notification instance.
      */
-    public function __construct($errorMessage = 'ZeptoMail API Credit Exhausted')
+    public function __construct($errorMessage = 'Email Service Failure')
     {
         $this->errorMessage = $errorMessage;
     }
@@ -38,16 +38,26 @@ class ZeptoMailErrorNotification extends Notification
      */
     public function toArray(object $notifiable): array
     {
-        $message = $this->errorMessage;
+        $raw = (string) $this->errorMessage;
+        $lower = strtolower($raw);
 
-        // Simplify ZeptoMail "Credit exhausted" message
-        if (str_contains($message, 'LE_102') || str_contains($message, 'Credit exhausted')) {
-            $message = 'ZeptoMail credits have been exhausted. No transactional emails can be sent until the account is topped up.';
+        $title = 'Email Delivery Failure';
+        $message = $raw;
+
+        if (str_contains($raw, 'LE_102') || str_contains($lower, 'credit') || str_contains($lower, 'exhausted') || str_contains($lower, 'quota') || str_contains($raw, '429') || str_contains($raw, '402') || str_contains($raw, 'TM_5001')) {
+            $title = 'Zoho / ZeptoMail Credits Exhausted';
+            $message = 'ZeptoMail credits or sending quota have been exhausted. Transactional emails (verification OTP, password resets) cannot be delivered until the account is topped up.';
+        } elseif (str_contains($raw, '535') || str_contains($lower, 'authentication failed') || str_contains($lower, 'invalid credentials')) {
+            $title = 'SMTP Authentication Failed';
+            $message = 'Failed to authenticate with Zoho/ZeptoMail SMTP server. Please verify MAIL_USERNAME and MAIL_PASSWORD in your .env configuration.';
+        } elseif (str_contains($lower, 'connection could not be established') || str_contains($lower, 'timed out') || str_contains($lower, 'connection refused')) {
+            $title = 'SMTP Connection Failed';
+            $message = 'Could not connect to SMTP host (' . config('mail.mailers.smtp.host', 'smtp.zeptomail.com') . ':' . config('mail.mailers.smtp.port', 587) . '). Please verify host reachability and port settings.';
         }
 
         return [
             'type' => 'system',
-            'title' => 'Email Delivery Failure',
+            'title' => $title,
             'message' => $message,
             'icon' => 'fas fa-exclamation-triangle',
             'color' => '#ef4444',
