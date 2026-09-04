@@ -204,6 +204,18 @@ class TutorEarningsController extends Controller
     }
 
     /**
+     * Display settlement and earnings policies page.
+     */
+    public function policy(Request $request)
+    {
+        $user = Auth::user();
+        $tutorProfile = $user->tutorProfile;
+        $minPayoutAmount = (float) PlatformSetting::getValue('min_payout_amount', 50.00);
+
+        return view('tutors.policy', compact('user', 'tutorProfile', 'minPayoutAmount'));
+    }
+
+    /**
      * Request a payout.
      */
     public function requestPayout(Request $request)
