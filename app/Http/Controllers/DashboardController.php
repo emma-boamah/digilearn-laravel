@@ -489,9 +489,10 @@ class DashboardController extends Controller
         $perPage = 12;
         $offset = ($page - 1) * $perPage;
 
-        $selectedLevelGroup = $user->current_level_group ?? session('selected_level_group');
+        $selectedLevelGroup = $request->get('level_group', $user->current_level_group ?? session('selected_level_group'));
         $selectedGrade = $request->get('grade');
         $subjectFilter = $request->get('subject');
+        $context = $request->get('context', 'all');
 
         if (!$selectedLevelGroup) {
             return response()->json(['html' => '', 'hasMore' => false]);
@@ -509,9 +510,9 @@ class DashboardController extends Controller
                     }
                 }
             }
-            $lessons = $internalLevelKey ? $this->getLessonsForLevel($internalLevelKey) : $this->getLessonsForLevelGroup($selectedLevelGroup);
+            $lessons = $internalLevelKey ? $this->getLessonsForLevel($internalLevelKey, $context) : $this->getLessonsForLevelGroup($selectedLevelGroup, $context);
         } else {
-            $lessons = $this->getLessonsForLevelGroup($selectedLevelGroup);
+            $lessons = $this->getLessonsForLevelGroup($selectedLevelGroup, $context);
         }
 
         // Apply subscription filters
@@ -968,6 +969,7 @@ class DashboardController extends Controller
                     'subject_id' => $video->subject_id,
                     'subject_slug' => Str::slug($subjectName),
                     'year' => $video->created_at->format('Y'),
+                    'created_at' => $video->created_at,
                     'level' => $level,
                     'level_display' => $this->getLevelDisplayName($level),
                     'grade_level' => $video->grade_level,
@@ -2804,8 +2806,13 @@ class DashboardController extends Controller
             $allLessons = array_merge($allLessons, $levelLessons);
         }
 
-        // Unique by ID to prevent duplicates from cross-level fetching logic
-        return collect($allLessons)->unique('id')->values()->all();
+        // Unique by ID to prevent duplicates from cross-level fetching logic,
+        // then sort by recency so "All" shows a unified feed across all grades in the group
+        return collect($allLessons)
+            ->unique('id')
+            ->sortByDesc(fn ($lesson) => $lesson['created_at'] ?? 0)
+            ->values()
+            ->all();
     }
 
     /**
