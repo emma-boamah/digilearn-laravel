@@ -127,11 +127,20 @@ class ContactController extends Controller
      */
     private function notifyAdminsOfMailFailure($user, $source, $content)
     {
-        $title = "Mail Service Failure: {$source}";
-        $message = "A mail submission from {$user->name} ({$user->email}) failed due to a service error (likely Zoho credits exhausted). Content: " . substr($content, 0, 100) . "...";
-
-        foreach ($this->getAdmins() as $admin) {
-            $admin->notify(new AdminNotification($title, $message));
+        try {
+            app(\App\Services\AuthSecurityAlertService::class)->handleMailFailure(
+                source: $source,
+                recipientEmail: 'contact@shoutoutgh.com',
+                errorMessage: 'Form submission mail delivery failure',
+                context: [
+                    'user_id' => $user->id,
+                    'user_email' => $user->email,
+                    'user_name' => $user->name,
+                    'excerpt' => substr($content, 0, 100),
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Could not notify admins of contact mail failure: ' . $e->getMessage());
         }
     }
 
