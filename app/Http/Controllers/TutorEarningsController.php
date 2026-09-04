@@ -24,7 +24,7 @@ class TutorEarningsController extends Controller
     /**
      * Display earnings overview and statistics.
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
         $tutorProfile = $user->tutorProfile;
@@ -33,56 +33,141 @@ class TutorEarningsController extends Controller
             return redirect()->route('tutors.dashboard')->with('error', 'Approved tutor profile required.');
         }
 
+        // Period filter (default: 30_days)
+        $period = $request->query('period', '30_days');
+        $startDate = match ($period) {
+            '7_days' => now()->subDays(7)->startOfDay(),
+            '30_days' => now()->subDays(30)->startOfDay(),
+            '90_days' => now()->subDays(90)->startOfDay(),
+            'this_year' => now()->startOfYear(),
+            'all_time' => null,
+            default => now()->subDays(30)->startOfDay(),
+        };
+
         // Available balance is the user's current credit balance
         $availableBalance = (float) $user->credit_balance;
 
         // Pending escrow balance: sum of (credits_paid - commission_amount) for active/scheduled bookings
-        $pendingEscrow = Booking::where('tutor_id', $user->id)
+        $pendingEscrow = (float) (Booking::where('tutor_id', $user->id)
             ->whereIn('status', ['pending_scheduling', 'scheduled', 'confirmed'])
             ->selectRaw('SUM(credits_paid - commission_amount) as total')
-            ->value('total') ?? 0.00;
+            ->value('total') ?? 0.00);
 
-        // Total lifetime earnings: sum of completed booking payouts
-        $lifetimeEarnings = Booking::where('tutor_id', $user->id)
+        // Period completed bookings query
+        $completedQuery = Booking::where('tutor_id', $user->id)
+            ->where('status', 'completed');
+        if ($startDate) {
+            $completedQuery->where('updated_at', '>=', $startDate);
+        }
+        $completedBookings = $completedQuery->get();
+
+        // Period net revenue
+        $periodRevenue = (float) $completedBookings->sum(fn ($b) => $b->credits_paid - $b->commission_amount);
+        $completedCount = $completedBookings->count();
+
+        // Period cancelled/disputed bookings
+        $cancelledQuery = Booking::where('tutor_id', $user->id)
+            ->whereIn('status', ['cancelled', 'disputed', 'refunded']);
+        if ($startDate) {
+            $cancelledQuery->where('updated_at', '>=', $startDate);
+        }
+        $cancelledCount = $cancelledQuery->count();
+
+        // Success & Cancellation Rates
+        $totalProcessed = $completedCount + $cancelledCount;
+        $successRate = $totalProcessed > 0 ? (int) round(($completedCount / $totalProcessed) * 100) : 100;
+        $cancellationRate = $totalProcessed > 0 ? (int) round(($cancelledCount / $totalProcessed) * 100) : 0;
+
+        // Average transaction value
+        $avgTransactionValue = $completedCount > 0 ? round($periodRevenue / $completedCount, 2) : 0.00;
+
+        // Total lifetime earnings
+        $lifetimeEarnings = (float) (Booking::where('tutor_id', $user->id)
             ->where('status', 'completed')
             ->selectRaw('SUM(credits_paid - commission_amount) as total')
-            ->value('total') ?? 0.00;
+            ->value('total') ?? 0.00);
 
-        // Recent completed session earnings
+        // Open disputes count
+        $openDisputesCount = Booking::where('tutor_id', $user->id)
+            ->where('status', 'disputed')
+            ->count();
+
+        // Chart Data Generation based on selected period
+        $chartLabels = [];
+        $chartData = [];
+
+        if (in_array($period, ['7_days', '30_days'])) {
+            $daysCount = $period === '7_days' ? 7 : 30;
+            $dailyEarnings = Booking::where('tutor_id', $user->id)
+                ->where('status', 'completed')
+                ->where('updated_at', '>=', now()->subDays($daysCount)->startOfDay())
+                ->selectRaw('DATE(updated_at) as day_key, SUM(credits_paid - commission_amount) as total')
+                ->groupBy('day_key')
+                ->pluck('total', 'day_key')
+                ->toArray();
+
+            for ($i = $daysCount - 1; $i >= 0; $i--) {
+                $d = now()->subDays($i);
+                $k = $d->format('Y-m-d');
+                $chartLabels[] = $d->format('M j');
+                $chartData[] = (float) ($dailyEarnings[$k] ?? 0);
+            }
+        } else {
+            // Monthly intervals for 90 days, this year, or all time
+            $monthsCount = $period === '90_days' ? 3 : ($period === 'this_year' ? (int) now()->format('n') : 6);
+            $monthlyEarnings = Booking::where('tutor_id', $user->id)
+                ->where('status', 'completed')
+                ->where('updated_at', '>=', now()->subMonths($monthsCount)->startOfMonth())
+                ->selectRaw('DATE_FORMAT(updated_at, "%Y-%m") as month_key, SUM(credits_paid - commission_amount) as total')
+                ->groupBy('month_key')
+                ->orderBy('month_key', 'asc')
+                ->pluck('total', 'month_key')
+                ->toArray();
+
+            for ($i = $monthsCount - 1; $i >= 0; $i--) {
+                $date = now()->subMonths($i);
+                $key = $date->format('Y-m');
+                $chartLabels[] = $date->format('M Y');
+                $chartData[] = (float) ($monthlyEarnings[$key] ?? 0);
+            }
+        }
+
+        // Payouts for right column table
+        $payouts = TutorPayout::where('tutor_id', $user->id)
+            ->latest()
+            ->take(6)
+            ->get();
+        $totalPayoutsCount = TutorPayout::where('tutor_id', $user->id)->count();
+        $mostRecentPayout = $payouts->first();
+
+        // Recent session earnings
         $recentEarnings = Booking::with(['student', 'subject'])
             ->where('tutor_id', $user->id)
             ->where('status', 'completed')
             ->latest('updated_at')
-            ->take(10)
+            ->take(8)
             ->get();
 
-        // Monthly earnings chart data for last 6 months
-        $monthlyEarnings = Booking::where('tutor_id', $user->id)
-            ->where('status', 'completed')
-            ->where('updated_at', '>=', now()->subMonths(6))
-            ->selectRaw('DATE_FORMAT(updated_at, "%Y-%m") as month_key, SUM(credits_paid - commission_amount) as total')
-            ->groupBy('month_key')
-            ->orderBy('month_key', 'asc')
-            ->pluck('total', 'month_key')
-            ->toArray();
-
-        $chartLabels = [];
-        $chartData = [];
-        for ($i = 5; $i >= 0; $i--) {
-            $date = now()->subMonths($i);
-            $key = $date->format('Y-m');
-            $chartLabels[] = $date->format('M Y');
-            $chartData[] = (float) ($monthlyEarnings[$key] ?? 0);
-        }
-
-        $minPayoutAmount = PlatformSetting::getValue('min_payout_amount', 50.00);
+        $minPayoutAmount = (float) PlatformSetting::getValue('min_payout_amount', 50.00);
 
         return view('tutors.earnings', compact(
             'user',
             'tutorProfile',
+            'period',
+            'periodRevenue',
             'availableBalance',
             'pendingEscrow',
             'lifetimeEarnings',
+            'completedCount',
+            'cancelledCount',
+            'totalProcessed',
+            'successRate',
+            'cancellationRate',
+            'avgTransactionValue',
+            'openDisputesCount',
+            'payouts',
+            'totalPayoutsCount',
+            'mostRecentPayout',
             'recentEarnings',
             'chartLabels',
             'chartData',
@@ -91,11 +176,19 @@ class TutorEarningsController extends Controller
     }
 
     /**
-     * Display detailed transaction history.
+     * Display detailed transaction and settlements history.
      */
     public function transactions(Request $request)
     {
         $user = Auth::user();
+        $tutorProfile = $user->tutorProfile;
+
+        if (!$tutorProfile || !$tutorProfile->is_approved) {
+            return redirect()->route('tutors.dashboard')->with('error', 'Approved tutor profile required.');
+        }
+
+        $availableBalance = (float) $user->credit_balance;
+        $minPayoutAmount = (float) PlatformSetting::getValue('min_payout_amount', 50.00);
 
         $completedBookings = Booking::with(['student', 'subject'])
             ->where('tutor_id', $user->id)
@@ -107,7 +200,7 @@ class TutorEarningsController extends Controller
             ->latest()
             ->paginate(15, ['*'], 'payouts_page');
 
-        return view('tutors.transactions', compact('user', 'completedBookings', 'payouts'));
+        return view('tutors.transactions', compact('user', 'tutorProfile', 'availableBalance', 'minPayoutAmount', 'completedBookings', 'payouts'));
     }
 
     /**
