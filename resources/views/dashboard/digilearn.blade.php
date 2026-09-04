@@ -2593,11 +2593,9 @@
 
                 {{-- Infinite Scroll Sentinel --}}
                 <div id="scroll-sentinel"
-                    style="height: 50px; display: flex; align-items: center; justify-content: center; margin-top: 2rem;">
-                    @if(($totalLessons ?? 0) > count($lessons ?? []))
-                        <div class="loading-spinner" id="infinite-loader"
-                            style="width: 30px; height: 30px; border-width: 2px;"></div>
-                    @endif
+                    style="height: 50px; display: flex; align-items: center; justify-content: center; margin-top: 2rem; {{ ($totalLessons ?? 0) <= count($lessons ?? []) ? 'display: none;' : '' }}">
+                    <div class="loading-spinner" id="infinite-loader"
+                        style="width: 30px; height: 30px; border-width: 2px; display: none;"></div>
                 </div>
             </div>
         </main>
@@ -2709,19 +2707,35 @@
 
         function initializeInfiniteScroll() {
             const sentinel = document.getElementById('scroll-sentinel');
-            const loader = document.getElementById('infinite-loader');
+            const mainContent = document.getElementById('mainContent') || document.querySelector('.main-content');
 
             if (!sentinel) return;
 
-            const observer = new IntersectionObserver((entries) => {
-                if (entries[0].isIntersecting && hasMore && !isLoading && !isSearching) {
-                    loadMoreLessons();
-                }
-            }, {
-                rootMargin: '200px'
-            });
+            // IntersectionObserver with mainContent container root
+            if ('IntersectionObserver' in window) {
+                const observer = new IntersectionObserver((entries) => {
+                    if (entries[0].isIntersecting && hasMore && !isLoading && !isSearching) {
+                        loadMoreLessons();
+                    }
+                }, {
+                    root: mainContent || null,
+                    rootMargin: '300px'
+                });
 
-            observer.observe(sentinel);
+                observer.observe(sentinel);
+            }
+
+            // Fallback: direct scroll listener on mainContent container
+            if (mainContent) {
+                mainContent.addEventListener('scroll', function () {
+                    if (isLoading || !hasMore || isSearching) return;
+
+                    const scrollRemaining = mainContent.scrollHeight - mainContent.scrollTop - mainContent.clientHeight;
+                    if (scrollRemaining < 400) {
+                        loadMoreLessons();
+                    }
+                }, { passive: true });
+            }
         }
 
         function loadMoreLessons() {
@@ -2740,10 +2754,22 @@
             const activeSubjectChip = document.querySelector('.subject-chip.active');
             const subjectSlug = activeSubjectChip ? activeSubjectChip.getAttribute('data-subject') : 'all';
 
+            const activeContextChip = document.querySelector('.context-filter .subject-chip.active');
+            const contextSlug = activeContextChip ? activeContextChip.getAttribute('data-context') : '{{ $context ?? "all" }}';
+
             const url = new URL('{{ route('dashboard.load-more-lessons') }}', window.location.origin);
             url.searchParams.append('page', currentPage);
-            if (gradeTitle && gradeTitle !== 'All') url.searchParams.append('grade', gradeTitle);
-            if (subjectSlug !== 'all') url.searchParams.append('subject', subjectSlug);
+            url.searchParams.append('level_group', '{{ $currentLevelGroup }}');
+
+            if (contextSlug && contextSlug !== 'all') {
+                url.searchParams.append('context', contextSlug);
+            }
+            if (gradeTitle && gradeTitle !== 'All') {
+                url.searchParams.append('grade', gradeTitle);
+            }
+            if (subjectSlug && subjectSlug !== 'all') {
+                url.searchParams.append('subject', subjectSlug);
+            }
 
             fetch(url)
                 .then(response => response.json())
@@ -2762,21 +2788,32 @@
                                 }
                             });
                         }
+
+                        // Re-initialize video facades for newly added cards
+                        if (window.videoFacadeManager && typeof window.videoFacadeManager.initializeCards === 'function') {
+                            window.videoFacadeManager.initializeCards();
+                        }
+
+                        // Re-check save status for new cards
+                        if (typeof initializeAllSaveButtons === 'function') {
+                            initializeAllSaveButtons();
+                        }
                     }
 
                     hasMore = data.hasMore;
                     if (!hasMore) {
-                        const loader = document.getElementById('infinite-loader');
                         if (loader) loader.style.display = 'none';
-                        // Also hide the sentinel container itself
                         const sentinel = document.getElementById('scroll-sentinel');
                         if (sentinel) sentinel.style.display = 'none';
+                    } else {
+                        if (loader) loader.style.display = 'none';
                     }
 
                     isLoading = false;
                 })
                 .catch(error => {
                     console.error('Error loading more lessons:', error);
+                    if (loader) loader.style.display = 'none';
                     isLoading = false;
                     currentPage--; // Reset page on error
                 });
