@@ -327,15 +327,23 @@
             opacity: 0.85;
         }
 
-        /* Compact About Preview */
+        /* Compact About Preview with Fade */
+        .bio-preview-wrapper {
+            position: relative;
+        }
+
+        .bio-preview-wrapper.has-fade {
+            max-height: 5.6rem;
+            overflow: hidden;
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 35%, rgba(0, 0, 0, 0) 100%);
+            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 35%, rgba(0, 0, 0, 0) 100%);
+        }
+
         .bio-preview-text {
             color: var(--text-muted);
             font-size: 0.925rem;
-            line-height: 1.65;
-            display: -webkit-box;
-            -webkit-line-clamp: 5;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
+            line-height: 1.6;
+            margin: 0;
         }
 
         .read-more-trigger-btn {
@@ -345,17 +353,14 @@
             font-weight: 700;
             font-size: 0.875rem;
             cursor: pointer;
-            padding: 0.4rem 0;
-            margin-top: 0.4rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            transition: gap 0.2s ease;
+            padding: 0.35rem 0;
+            margin-top: 0.25rem;
+            display: inline-block;
+            transition: color 0.15s ease;
         }
 
         .read-more-trigger-btn:hover {
             color: var(--primary-blue-hover);
-            gap: 0.6rem;
             text-decoration: underline;
         }
 
@@ -1027,13 +1032,15 @@
                             <h2 class="section-title">
                                 <i class="fa-regular fa-user"></i> About Me
                             </h2>
-                            <p class="bio-preview-text">
-                                {{ $bioText }}
-                            </p>
+                            <div class="bio-preview-wrapper {{ $hasLongContent ? 'has-fade' : '' }}">
+                                <p class="bio-preview-text">
+                                    {{ $bioText }}
+                                </p>
+                            </div>
 
                             @if($hasLongContent)
                                 <button type="button" class="read-more-trigger-btn" onclick="openBioModal()">
-                                    Read full background <i class="fa-solid fa-arrow-right"></i>
+                                    Read full background
                                 </button>
                             @endif
                         </div>
