@@ -60,6 +60,13 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
+        // Register native ZeptoMail HTTP REST API driver (bypasses cloud SMTP port blocks like DigitalOcean)
+        Mail::extend('zeptomail', function (array $config = []) {
+            $token = config('services.zeptomail.token') ?: env('ZEPTOMAIL_TOKEN') ?: env('MAIL_PASSWORD');
+            $region = config('services.zeptomail.region') ?: env('ZEPTOMAIL_REGION', 'com');
+
+            return new \App\Mail\Transports\ZeptoMailTransport($token, $region);
+        });
 
         // Implicitly grant "super-admin" role all permissions
         // This works in the SPA context for Spatie Laravel Permission
