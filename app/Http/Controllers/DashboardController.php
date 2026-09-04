@@ -2807,10 +2807,17 @@ class DashboardController extends Controller
         }
 
         // Unique by ID to prevent duplicates from cross-level fetching logic,
-        // then sort by recency so "All" shows a unified feed across all grades in the group
+        // then stably sort by recency and id so "All" shows a deterministic feed across all grades
         return collect($allLessons)
             ->unique('id')
-            ->sortByDesc(fn ($lesson) => $lesson['created_at'] ?? 0)
+            ->sort(function ($a, $b) {
+                $timeA = isset($a['created_at']) ? strtotime((string)$a['created_at']) : 0;
+                $timeB = isset($b['created_at']) ? strtotime((string)$b['created_at']) : 0;
+                if ($timeA === $timeB) {
+                    return ($b['id'] ?? 0) <=> ($a['id'] ?? 0);
+                }
+                return $timeB <=> $timeA;
+            })
             ->values()
             ->all();
     }
