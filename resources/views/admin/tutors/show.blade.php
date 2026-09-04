@@ -137,14 +137,30 @@
 
                     <!-- ID Document -->
                     <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                        <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Government ID Card</div>
-                        @if($tutorProfile->id_document_path)
-                            <button type="button" onclick="openDocModal('Government ID Card', '{{ route('admin.tutors.document', ['id' => $tutorProfile->id, 'type' => 'id_document']) }}', 'auto')" class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1.5 cursor-pointer">
-                                <i class="fas fa-file-pdf text-red-500 text-lg"></i> View Government ID Document
-                            </button>
-                        @else
-                            <span class="text-sm text-gray-400 italic">Not uploaded</span>
-                        @endif
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Government ID Verification</div>
+                            @if($tutorProfile->id_type)
+                                <span class="text-[11px] font-bold px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 uppercase">
+                                    {{ str_replace('_', ' ', $tutorProfile->id_type) }}
+                                </span>
+                            @endif
+                        </div>
+
+                        <div class="space-y-2">
+                            @if($tutorProfile->id_document_path)
+                                <button type="button" onclick="openDocModal('Government ID (Front / Primary)', '{{ route('admin.tutors.document', ['id' => $tutorProfile->id, 'type' => 'id_document']) }}', 'auto')" class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1.5 cursor-pointer">
+                                    <i class="fas fa-id-card text-blue-500 text-base"></i> View ID (Front / Main Page)
+                                </button>
+                            @else
+                                <span class="text-sm text-gray-400 italic">Front side not uploaded</span>
+                            @endif
+
+                            @if($tutorProfile->id_document_back_path)
+                                <button type="button" onclick="openDocModal('Government ID (Back Side)', '{{ route('admin.tutors.document', ['id' => $tutorProfile->id, 'type' => 'id_document_back']) }}', 'auto')" class="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1.5 cursor-pointer">
+                                    <i class="fas fa-id-card-clip text-indigo-500 text-base"></i> View ID (Back Side)
+                                </button>
+                            @endif
+                        </div>
                     </div>
 
                     <!-- Tax Document -->

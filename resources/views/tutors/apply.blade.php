@@ -10,6 +10,9 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
     
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <!-- Tailwind CSS (CDN for development/dynamic class loading) -->
     <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://cdn.tailwindcss.com?plugins=forms"></script>
     
@@ -151,20 +154,29 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Professional Headshot</label>
-                            <p class="text-xs text-gray-500 mb-2">A friendly, professional picture with good lighting. No selfies.</p>
-                            <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-blue-400 transition-colors bg-gray-50">
-                                <div class="space-y-1 text-center">
-                                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                                    </svg>
-                                    <div class="flex text-sm text-gray-600 justify-center">
-                                        <label for="headshot_file" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500 px-2 py-1">
-                                            <span>Upload a file</span>
-                                            <input id="headshot_file" name="headshot_file" type="file" class="sr-only" accept="image/*" required>
-                                        </label>
+                            <label class="block text-sm font-medium text-gray-700">Professional Headshot <span class="text-red-500">*</span></label>
+                            <p class="text-xs text-gray-500 mb-2">A friendly, professional portrait with good lighting and clear view of your face. No selfies or group photos.</p>
+                            <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl hover:border-blue-400 transition-colors bg-gray-50 cursor-pointer" id="headshot_dropzone" onclick="document.getElementById('headshot_file').click()">
+                                <div class="space-y-2 text-center" id="headshot_placeholder">
+                                    <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 mx-auto flex items-center justify-center text-xl">
+                                        <i class="fa-solid fa-camera"></i>
                                     </div>
-                                    <p class="text-xs text-gray-500" id="headshot_filename">PNG, JPG up to 5MB</p>
+                                    <div class="flex text-sm text-gray-600 justify-center">
+                                        <span class="font-semibold text-blue-600 hover:text-blue-500">
+                                            <span>Click to upload headshot</span>
+                                            <input id="headshot_file" name="headshot_file" type="file" class="sr-only" accept="image/*" required onchange="handleHeadshotPreview(this)">
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-gray-400">PNG, JPG up to 5MB</p>
+                                </div>
+
+                                <!-- Headshot Live Preview Box -->
+                                <div id="headshot_preview_box" class="hidden flex-col items-center justify-center">
+                                    <img id="headshot_preview_img" src="" alt="Headshot Preview" class="w-24 h-24 rounded-full object-cover mb-2 border-2 border-blue-500 shadow-md">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs font-semibold text-gray-700" id="headshot_filename"></span>
+                                        <button type="button" class="text-xs font-bold text-blue-600 hover:text-blue-800 bg-white px-2 py-0.5 rounded border border-gray-200 shadow-2xs" onclick="event.stopPropagation(); document.getElementById('headshot_file').click()">Change</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -173,40 +185,149 @@
 
                 <!-- STEP 2: Credentials & Verification -->
                 <div class="step-container" id="step-2">
-                    <div class="mb-8">
+                    <div class="mb-6">
                         <h2 class="text-2xl font-bold text-gray-900">Identity & Credentials</h2>
-                        <p class="text-sm text-gray-500 mt-1">We require identity verification to maintain platform safety and trust.</p>
+                        <p class="text-sm text-gray-500 mt-1">Verify your identity to build trust with students.</p>
                     </div>
 
-                    <div class="space-y-6">
+                    <div class="space-y-5">
+                        <!-- Legal Full Name -->
                         <div>
-                            <label for="legal_name" class="block text-sm font-medium text-gray-700">Legal Full Name</label>
-                            <p class="text-xs text-gray-500 mb-1">Must exactly match your government ID.</p>
-                            <input type="text" name="legal_name" id="legal_name" value="{{ old('legal_name') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required>
+                            <label for="legal_name" class="block text-sm font-semibold text-gray-800 mb-1">Legal Full Name <span class="text-red-500">*</span></label>
+                            <input type="text" name="legal_name" id="legal_name" value="{{ old('legal_name') }}" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required placeholder="As shown on your government ID">
                         </div>
 
+                        <!-- ID Type Selection -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Government-Issued ID</label>
-                            <p class="text-xs text-gray-500 mb-2">Passport, driver's license, or national ID card.</p>
-                            <input type="file" name="id_document_file" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-red-100" accept=".pdf,image/*" required>
-                        </div>
-                        
-                        <div>
-                            <label for="qualifications" class="block text-sm font-medium text-gray-700">Educational Qualifications</label>
-                            <p class="text-xs text-gray-500 mb-1">List your degrees, certifications, and relevant teaching experience.</p>
-                            <textarea name="qualifications" id="qualifications" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required>{{ old('qualifications') }}</textarea>
+                            <label class="block text-sm font-semibold text-gray-800 mb-2">Government ID Type <span class="text-red-500">*</span></label>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                <!-- National ID / Ghana Card -->
+                                <label class="id-type-card flex items-center gap-3 p-3.5 border-2 rounded-xl cursor-pointer transition bg-blue-50/40 border-blue-600 shadow-xs" id="id_type_label_national_id">
+                                    <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-sm flex-shrink-0">
+                                        <i class="fa-solid fa-id-card"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <span class="block text-sm font-bold text-gray-900 truncate">National ID Card</span>
+                                    </div>
+                                    <input type="radio" name="id_type" value="national_id" class="text-blue-600 focus:ring-blue-500" {{ old('id_type', 'national_id') === 'national_id' ? 'checked' : '' }} onchange="handleIdTypeChange('national_id')">
+                                </label>
+
+                                <!-- Driver's License -->
+                                <label class="id-type-card flex items-center gap-3 p-3.5 border border-gray-200 rounded-xl cursor-pointer transition hover:border-gray-300 bg-white" id="id_type_label_drivers_license">
+                                    <div class="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center text-sm flex-shrink-0">
+                                        <i class="fa-solid fa-id-badge"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <span class="block text-sm font-bold text-gray-900 truncate">Driver's License</span>
+                                    </div>
+                                    <input type="radio" name="id_type" value="drivers_license" class="text-blue-600 focus:ring-blue-500" {{ old('id_type') === 'drivers_license' ? 'checked' : '' }} onchange="handleIdTypeChange('drivers_license')">
+                                </label>
+
+                                <!-- Passport -->
+                                <label class="id-type-card flex items-center gap-3 p-3.5 border border-gray-200 rounded-xl cursor-pointer transition hover:border-gray-300 bg-white" id="id_type_label_passport">
+                                    <div class="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center text-sm flex-shrink-0">
+                                        <i class="fa-solid fa-passport"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <span class="block text-sm font-bold text-gray-900 truncate">Passport</span>
+                                    </div>
+                                    <input type="radio" name="id_type" value="passport" class="text-blue-600 focus:ring-blue-500" {{ old('id_type') === 'passport' ? 'checked' : '' }} onchange="handleIdTypeChange('passport')">
+                                </label>
+                            </div>
                         </div>
 
+                        <!-- ID Upload Zones (Front and Back) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+                            <!-- Front Side Upload -->
+                            <div class="flex flex-col">
+                                <label class="block text-xs font-semibold text-gray-700 mb-1.5" id="id_front_label">
+                                    Front Side (Photo & Bio) <span class="text-red-500">*</span>
+                                </label>
+                                
+                                <div class="relative flex-1 min-h-[135px] border-2 border-gray-200 border-dashed rounded-xl p-3 flex flex-col items-center justify-center text-center bg-gray-50/70 hover:bg-blue-50/30 hover:border-blue-400 transition cursor-pointer" id="id_front_dropzone" onclick="document.getElementById('id_document_file').click()">
+                                    <input id="id_document_file" name="id_document_file" type="file" class="sr-only" accept=".pdf,image/*" required onchange="handleIdPreview(this, 'front')">
+                                    
+                                    <div id="id_front_placeholder" class="space-y-1">
+                                        <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 mx-auto flex items-center justify-center text-sm mb-1.5">
+                                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                                        </div>
+                                        <div class="text-xs font-semibold text-blue-600">
+                                            <span>Upload Front Side</span>
+                                        </div>
+                                        <p class="text-[11px] text-gray-400">JPG, PNG, PDF (max 10MB)</p>
+                                    </div>
+
+                                    <!-- Preview Box -->
+                                    <div id="id_front_preview_box" class="hidden flex-col items-center justify-center w-full">
+                                        <img id="id_front_preview_img" src="" alt="Front ID Preview" class="max-h-20 max-w-full rounded-lg object-contain mb-1.5 shadow-2xs border border-gray-200">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-xs font-medium text-gray-700 truncate max-w-[160px]" id="id_front_filename"></span>
+                                            <button type="button" class="text-[11px] font-bold text-blue-600 hover:text-blue-800 bg-white px-2 py-0.5 rounded border border-gray-200" onclick="event.stopPropagation(); document.getElementById('id_document_file').click()">Change</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Back Side Upload -->
+                            <div class="flex flex-col" id="id_back_container">
+                                <label class="block text-xs font-semibold text-gray-700 mb-1.5" id="id_back_label">
+                                    Back Side <span class="text-red-500">*</span>
+                                </label>
+                                
+                                <div class="relative flex-1 min-h-[135px] border-2 border-gray-200 border-dashed rounded-xl p-3 flex flex-col items-center justify-center text-center bg-gray-50/70 hover:bg-blue-50/30 hover:border-blue-400 transition cursor-pointer" id="id_back_dropzone" onclick="document.getElementById('id_document_back_file').click()">
+                                    <input id="id_document_back_file" name="id_document_back_file" type="file" class="sr-only" accept=".pdf,image/*" required onchange="handleIdPreview(this, 'back')">
+                                    
+                                    <div id="id_back_placeholder" class="space-y-1">
+                                        <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 mx-auto flex items-center justify-center text-sm mb-1.5">
+                                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                                        </div>
+                                        <div class="text-xs font-semibold text-indigo-600">
+                                            <span>Upload Back Side</span>
+                                        </div>
+                                        <p class="text-[11px] text-gray-400">JPG, PNG, PDF (max 10MB)</p>
+                                    </div>
+
+                                    <!-- Preview Box -->
+                                    <div id="id_back_preview_box" class="hidden flex-col items-center justify-center w-full">
+                                        <img id="id_back_preview_img" src="" alt="Back ID Preview" class="max-h-20 max-w-full rounded-lg object-contain mb-1.5 shadow-2xs border border-gray-200">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-xs font-medium text-gray-700 truncate max-w-[160px]" id="id_back_filename"></span>
+                                            <button type="button" class="text-[11px] font-bold text-blue-600 hover:text-blue-800 bg-white px-2 py-0.5 rounded border border-gray-200" onclick="event.stopPropagation(); document.getElementById('id_document_back_file').click()">Change</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Passport Notice Container -->
+                            <div class="hidden flex-col justify-center p-4 bg-blue-50/50 border border-blue-200 rounded-xl" id="passport_notice_container">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 text-xs">
+                                        <i class="fa-solid fa-circle-info"></i>
+                                    </div>
+                                    <p class="text-xs text-blue-800 leading-relaxed">
+                                        For passports, only the primary photo/bio data page is required.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Educational Qualifications -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Teaching Certificates (Optional)</label>
-                            <p class="text-xs text-gray-500 mb-2">Upload degrees or accredited certificates (e.g. TEFL, CELTA).</p>
-                            <input type="file" name="certificates_file" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100" accept=".pdf,image/*">
+                            <label for="qualifications" class="block text-sm font-semibold text-gray-800 mb-1">Educational Qualifications <span class="text-red-500">*</span></label>
+                            <textarea name="qualifications" id="qualifications" rows="3" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required placeholder="e.g. BSc. Mathematics (KNUST), 5+ years teaching experience...">{{ old('qualifications') }}</textarea>
+                        </div>
+
+                        <!-- Teaching Certificates -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-800 mb-1">Teaching Certificates <span class="text-xs font-normal text-gray-500">(Optional)</span></label>
+                            <input type="file" name="certificates_file" class="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200" accept=".pdf,image/*">
                         </div>
                         
+                        <!-- Video Intro -->
                         <div>
-                            <label for="intro_video_url" class="block text-sm font-medium text-gray-700">Introduction Video URL (Highly Recommended)</label>
-                            <p class="text-xs text-gray-500 mb-1">A 1-to-3 minute YouTube/Vimeo link where you introduce yourself and your teaching style.</p>
-                            <input type="url" name="intro_video_url" id="intro_video_url" value="{{ old('intro_video_url') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="https://youtube.com/watch?v=...">
+                            <label for="intro_video_url" class="block text-sm font-semibold text-gray-800 mb-1">Intro Video URL <span class="text-xs font-normal text-gray-500">(Optional)</span></label>
+                            <input type="url" name="intro_video_url" id="intro_video_url" value="{{ old('intro_video_url') }}" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="https://youtube.com/watch?v=...">
                         </div>
                     </div>
                 </div>
@@ -446,9 +567,20 @@
                 let isValid = true;
                 
                 requiredInputs.forEach(input => {
+                    // Skip inputs that are currently hidden (e.g. passport back ID or hidden scheduling link)
+                    if (input.offsetParent === null || input.closest('.hidden')) {
+                        return;
+                    }
+
                     let fieldValid = true;
                     if (input.type === 'file') {
                         if (input.files.length === 0) {
+                            fieldValid = false;
+                        }
+                    } else if (input.type === 'radio') {
+                        const name = input.name;
+                        const anyChecked = container.querySelector(`input[name="${name}"]:checked`);
+                        if (!anyChecked) {
                             fieldValid = false;
                         }
                     } else {
@@ -460,8 +592,17 @@
                     if (!fieldValid) {
                         isValid = false;
                         input.classList.add('border-red-500', 'ring-red-500');
+                        // Also highlight parent dropzone if file input
+                        const dropzone = input.closest('#id_front_dropzone, #id_back_dropzone, #headshot_dropzone');
+                        if (dropzone) {
+                            dropzone.classList.add('border-red-500');
+                        }
                     } else {
                         input.classList.remove('border-red-500', 'ring-red-500');
+                        const dropzone = input.closest('#id_front_dropzone, #id_back_dropzone, #headshot_dropzone');
+                        if (dropzone) {
+                            dropzone.classList.remove('border-red-500');
+                        }
                     }
                 });
                 
@@ -482,7 +623,9 @@
                     updateUI();
                     window.scrollTo(0, 0);
                 } else {
-                    if (currentStep === 4) {
+                    if (currentStep === 2) {
+                        alert('Please complete all required fields and upload your government ID document(s).');
+                    } else if (currentStep === 4) {
                         alert('Please select at least one subject to teach.');
                     } else {
                         alert('Please fill out all required fields before proceeding.');
@@ -505,7 +648,9 @@
                             currentStep = s;
                             updateUI();
                             window.scrollTo(0, 0);
-                            if (s === 4) {
+                            if (s === 2) {
+                                alert('Please complete all required ID documents in Step 2 before submitting.');
+                            } else if (s === 4) {
                                 alert('Please select at least one subject to teach before submitting.');
                             } else {
                                 alert('Please complete all required fields in Step ' + s + ' before submitting.');
@@ -521,37 +666,156 @@
             const momoFields = document.getElementById('momo_fields');
             const bankFields = document.getElementById('bank_fields');
             
-            payoutMethod.addEventListener('change', (e) => {
-                if (e.target.value === 'momo') {
-                    momoFields.classList.remove('hidden');
-                    bankFields.classList.add('hidden');
-                    
-                    // Toggle required
-                    document.getElementById('payout_momo_network').required = true;
-                    document.getElementById('payout_momo_number').required = true;
-                    
-                    document.getElementById('payout_bank_name').required = false;
-                    document.getElementById('payout_bank_account_name').required = false;
-                    document.getElementById('payout_bank_account_number').required = false;
-                    document.getElementById('payout_bank_branch').required = false;
-                } else if (e.target.value === 'bank') {
-                    bankFields.classList.remove('hidden');
-                    momoFields.classList.add('hidden');
-                    
-                    // Toggle required
-                    document.getElementById('payout_bank_name').required = true;
-                    document.getElementById('payout_bank_account_name').required = true;
-                    document.getElementById('payout_bank_account_number').required = true;
-                    document.getElementById('payout_bank_branch').required = true;
-                    
-                    document.getElementById('payout_momo_network').required = false;
-                    document.getElementById('payout_momo_number').required = false;
-                }
-            });
+            if (payoutMethod) {
+                payoutMethod.addEventListener('change', (e) => {
+                    if (e.target.value === 'momo') {
+                        momoFields.classList.remove('hidden');
+                        bankFields.classList.add('hidden');
+                        
+                        // Toggle required
+                        document.getElementById('payout_momo_network').required = true;
+                        document.getElementById('payout_momo_number').required = true;
+                        
+                        document.getElementById('payout_bank_name').required = false;
+                        document.getElementById('payout_bank_account_name').required = false;
+                        document.getElementById('payout_bank_account_number').required = false;
+                        document.getElementById('payout_bank_branch').required = false;
+                    } else if (e.target.value === 'bank') {
+                        bankFields.classList.remove('hidden');
+                        momoFields.classList.add('hidden');
+                        
+                        // Toggle required
+                        document.getElementById('payout_bank_name').required = true;
+                        document.getElementById('payout_bank_account_name').required = true;
+                        document.getElementById('payout_bank_account_number').required = true;
+                        document.getElementById('payout_bank_branch').required = true;
+                        
+                        document.getElementById('payout_momo_network').required = false;
+                        document.getElementById('payout_momo_number').required = false;
+                    }
+                });
+            }
             
             // Initialize UI
             updateUI();
         });
+
+        // ID Type Change Handler
+        function handleIdTypeChange(type) {
+            const idTypes = ['national_id', 'drivers_license', 'passport'];
+            idTypes.forEach(t => {
+                const label = document.getElementById('id_type_label_' + t);
+                if (label) {
+                    const iconDiv = label.querySelector('.w-9');
+                    if (t === type) {
+                        label.classList.add('border-blue-600', 'bg-blue-50/40', 'border-2', 'shadow-sm');
+                        label.classList.remove('border-gray-200', 'hover:border-gray-300', 'bg-white');
+                        if (iconDiv) {
+                            iconDiv.classList.add('bg-blue-100', 'text-blue-600');
+                            iconDiv.classList.remove('bg-gray-100', 'text-gray-600');
+                        }
+                    } else {
+                        label.classList.remove('border-blue-600', 'bg-blue-50/40', 'border-2', 'shadow-sm');
+                        label.classList.add('border-gray-200', 'hover:border-gray-300', 'bg-white');
+                        if (iconDiv) {
+                            iconDiv.classList.remove('bg-blue-100', 'text-blue-600');
+                            iconDiv.classList.add('bg-gray-100', 'text-gray-600');
+                        }
+                    }
+                }
+            });
+
+            const backContainer = document.getElementById('id_back_container');
+            const backInput = document.getElementById('id_document_back_file');
+            const passportNotice = document.getElementById('passport_notice_container');
+            const frontLabel = document.getElementById('id_front_label');
+
+            if (type === 'passport') {
+                if (backContainer) backContainer.classList.add('hidden');
+                if (passportNotice) {
+                    passportNotice.classList.remove('hidden');
+                    passportNotice.classList.add('flex');
+                }
+                if (backInput) {
+                    backInput.required = false;
+                    backInput.classList.remove('border-red-500', 'ring-red-500');
+                }
+                if (frontLabel) frontLabel.innerHTML = 'Passport Photo / Bio Data Page <span class="text-red-500">*</span>';
+            } else {
+                if (backContainer) backContainer.classList.remove('hidden');
+                if (passportNotice) {
+                    passportNotice.classList.add('hidden');
+                    passportNotice.classList.remove('flex');
+                }
+                if (backInput) {
+                    backInput.required = true;
+                }
+                if (frontLabel) frontLabel.innerHTML = (type === 'drivers_license' ? "Driver's License (Front)" : "National ID Card (Front)") + ' <span class="text-red-500">*</span>';
+            }
+        }
+
+        // Live Image Preview for ID Documents
+        function handleIdPreview(input, side) {
+            const file = input.files[0];
+            const placeholder = document.getElementById(`id_${side}_placeholder`);
+            const previewBox = document.getElementById(`id_${side}_preview_box`);
+            const previewImg = document.getElementById(`id_${side}_preview_img`);
+            const filenameEl = document.getElementById(`id_${side}_filename`);
+            const dropzone = document.getElementById(`id_${side}_dropzone`);
+
+            if (!file) return;
+
+            filenameEl.textContent = file.name;
+
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewImg.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                    previewBox.classList.remove('hidden');
+                    previewBox.classList.add('flex');
+                    dropzone.classList.remove('border-red-500');
+                    dropzone.classList.add('border-blue-500', 'bg-blue-50/20');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                // PDF or other doc
+                previewImg.classList.add('hidden');
+                placeholder.classList.add('hidden');
+                previewBox.classList.remove('hidden');
+                previewBox.classList.add('flex');
+                dropzone.classList.remove('border-red-500');
+                dropzone.classList.add('border-blue-500', 'bg-blue-50/20');
+            }
+        }
+
+        // Live Image Preview for Headshot Portrait
+        function handleHeadshotPreview(input) {
+            const file = input.files[0];
+            const placeholder = document.getElementById('headshot_placeholder');
+            const previewBox = document.getElementById('headshot_preview_box');
+            const previewImg = document.getElementById('headshot_preview_img');
+            const filenameEl = document.getElementById('headshot_filename');
+            const dropzone = document.getElementById('headshot_dropzone');
+
+            if (!file) return;
+
+            filenameEl.textContent = file.name;
+
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    placeholder.classList.add('hidden');
+                    previewBox.classList.remove('hidden');
+                    previewBox.classList.add('flex');
+                    dropzone.classList.remove('border-red-500');
+                    dropzone.classList.add('border-blue-500', 'bg-blue-50/20');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
 
         function toggleSchedulingPreference(mode) {
             const container = document.getElementById('external_link_container');

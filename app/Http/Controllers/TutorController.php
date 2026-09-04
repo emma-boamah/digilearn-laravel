@@ -189,7 +189,9 @@ class TutorController extends Controller
             'tagline' => 'required|string|max:255',
             'bio' => 'required|string|max:1000',
             'headshot_file' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'id_type' => 'required|in:national_id,drivers_license,passport',
             'id_document_file' => 'required|mimes:pdf,jpeg,png,jpg|max:10240',
+            'id_document_back_file' => 'required_if:id_type,national_id,drivers_license|nullable|mimes:pdf,jpeg,png,jpg|max:10240',
             'qualifications' => 'required|string|max:1000',
             'certificates_file' => 'nullable|mimes:pdf,jpeg,png,jpg|max:10240',
             'intro_video_url' => 'nullable|url',
@@ -219,6 +221,11 @@ class TutorController extends Controller
         $headshotPath = $request->file('headshot_file')->store('tutors/headshots', 'public');
         $idDocumentPath = $request->file('id_document_file')->store('tutors/id_documents', 'local');
         
+        $idDocumentBackPath = null;
+        if ($request->hasFile('id_document_back_file')) {
+            $idDocumentBackPath = $request->file('id_document_back_file')->store('tutors/id_documents', 'local');
+        }
+
         $certificatesPath = null;
         if ($request->hasFile('certificates_file')) {
             $certificatesPath = $request->file('certificates_file')->store('tutors/certificates', 'local');
@@ -230,7 +237,9 @@ class TutorController extends Controller
             'tagline' => $request->tagline,
             'bio' => $request->bio,
             'headshot_path' => $headshotPath,
+            'id_type' => $request->id_type,
             'id_document_path' => $idDocumentPath,
+            'id_document_back_path' => $idDocumentBackPath,
             'certificates_path' => $certificatesPath,
             'qualifications' => $request->qualifications,
             'intro_video_url' => $request->intro_video_url,
