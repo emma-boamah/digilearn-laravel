@@ -95,6 +95,11 @@ return [
         ],
         'connect-src' => [
             "'self'",
+            'ws:',
+            'wss:',
+            'blob:',
+            'http:',
+            'https:',
             'https://api.' . parse_url(env('APP_URL'), PHP_URL_HOST),
             'https://' . parse_url(env('APP_URL'), PHP_URL_HOST),
             'https://accounts.google.com',

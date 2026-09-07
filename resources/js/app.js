@@ -4,13 +4,20 @@ import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 
 // Configure Laravel Echo with Soketi
+// The VITE_PUSHER_HOST env var resolves to the Docker service name ('soketi'),
+// which is unreachable from the browser. Use the page's hostname instead.
 window.Pusher = Pusher;
+
+const envHost = import.meta.env.VITE_PUSHER_HOST || '127.0.0.1';
+const wsHost = (envHost === 'soketi' || envHost === 'mysql' || envHost === 'redis')
+    ? window.location.hostname
+    : envHost;
 
 window.Echo = new Echo({
     broadcaster: 'pusher',
     key: import.meta.env.VITE_PUSHER_APP_KEY || 'local',
     cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER || 'mt1',
-    wsHost: import.meta.env.VITE_PUSHER_HOST || '127.0.0.1',
+    wsHost: wsHost,
     wsPort: import.meta.env.VITE_PUSHER_PORT || 6001,
     wssPort: import.meta.env.VITE_PUSHER_PORT || 6001,
     forceTLS: false,
@@ -22,8 +29,10 @@ window.Echo = new Echo({
 // Make Alpine available globally
 window.Alpine = Alpine
 
-// Start Alpine
-Alpine.start()
+// Defer Alpine.start() so that other Vite entry-point modules (e.g. classroom.js)
+// can register their Alpine.data() components before Alpine processes x-data in the DOM.
+// ES modules execute in document order, but Alpine.start() must wait for ALL of them.
+setTimeout(() => Alpine.start(), 0)
 
 // Import SCSS
 import "../scss/app.scss"

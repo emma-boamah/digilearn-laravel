@@ -1,0 +1,32 @@
+{
+  "resources/css/app.css": {
+    "file": "assets/app-DFCLIKv4.css",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/css/notifications.css": {
+    "file": "assets/notifications-C3gJyOdc.css",
+    "src": "resources/css/notifications.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-BF0hhLhm.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "css": [
+      "assets/app-BV5JGRCw.css"
+    ]
+  },
+  "resources/js/video-facade.js": {
+    "file": "assets/video-facade-RwA-a5oT.js",
+    "name": "video-facade",
+    "src": "resources/js/video-facade.js",
+    "isEntry": true
+  },
+  "resources/scss/app.scss": {
+    "file": "assets/app-BV5JGRCw.css",
+    "src": "resources/scss/app.scss",
+    "isEntry": true
+  }
+}

@@ -74,6 +74,15 @@
                         <span class="sidebar-menu-text"><span class="full-label">Schedule & Calendar</span><span class="short-label">Schedule</span></span>
                         <div class="tooltip">Schedule & Calendar</div>
                     </a>
+                    <a href="{{ route('dashboard.classroom.show', 'demo-room') }}"
+                        target="_blank"
+                        class="sidebar-menu-item {{ request()->routeIs('dashboard.classroom.*') ? 'active' : '' }}">
+                        <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        <span class="sidebar-menu-text"><span class="full-label">Live Classroom</span><span class="short-label">Live</span></span>
+                        <div class="tooltip">Live Classroom (Meeting Room)</div>
+                    </a>
                     <a href="{{ route('tutors.bookings.index') }}"
                         class="sidebar-menu-item {{ request()->routeIs('tutors.bookings.*') ? 'active' : '' }}">
                         <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">

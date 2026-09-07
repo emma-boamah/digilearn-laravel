@@ -690,19 +690,27 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        // Ensure the user is authenticated and potentially in this room
-        if (!$user->current_room_id || $user->current_room_id !== $roomId) {
-            // If user is trying to access a room they are not assigned to, redirect
-            return redirect()->route('dashboard.main')
-                ->with('error', 'You are not authorized to access this classroom or the class has ended.');
-        }
-
         $virtualClass = VirtualClass::where('room_id', $roomId)->first();
 
         if (!$virtualClass) {
-            return redirect()->route('dashboard.main')
-                ->with('error', 'Classroom not found.');
+            $virtualClass = VirtualClass::create([
+                'tutor_id' => $user->id,
+                'room_id' => $roomId,
+                'topic' => 'Live Interactive Session',
+                'grade_level' => $user->grade ?? 'General',
+                'is_active' => true,
+                'start_time' => Carbon::now(),
+                'end_time' => Carbon::now()->addHours(2),
+                'status' => 'active',
+            ]);
         }
+
+        // Set user to this room and online
+        $user->update([
+            'current_room_id' => $roomId,
+            'is_online' => true,
+            'last_activity_at' => Carbon::now(),
+        ]);
 
         Log::channel('security')->info('classroom_accessed', [
             'user_id' => Auth::id(),
@@ -713,22 +721,7 @@ class DashboardController extends Controller
             'timestamp' => Carbon::now()->toISOString()
         ]);
 
-        // Mark user as online (if not already)
-        if (!$user->is_online) {
-            $user->update(['is_online' => true]);
-        }
-
-        echo view('dashboard.classroom', compact('virtualClass', 'user'));
-        echo <<<EOT
-        <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-            setInterval(() => {
-                fetch('/api/ping')
-                    .then(response => response.json())
-                    .then(data => console.log('Status updated'));
-            }, 60000); // Ping every minute
-        </script>
-        EOT;
-
+        return view('dashboard.classroom', compact('virtualClass', 'user'));
     }
 
     /**

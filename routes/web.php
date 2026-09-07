@@ -33,6 +33,7 @@ use App\Http\Controllers\Admin\TaskController;
 use App\Http\Controllers\Admin\SubjectController;
 use App\Http\Controllers\Admin\QuizReviewController;
 use App\Http\Controllers\VideoStreamController;
+use App\Http\Controllers\VirtualClassroomController;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\CookieController;
@@ -489,6 +490,11 @@ Route::middleware(['auth'])->group(function () {
             // Virtual classroom
             Route::get('/dashboard/join-class', [DashboardController::class, 'joinClass'])->name('dashboard.join-class');
             Route::get('/dashboard/classroom/{roomId}', [DashboardController::class, 'showClassroom'])->name('dashboard.classroom.show');
+            Route::post('/api/classroom/{roomId}/signal', [VirtualClassroomController::class, 'signal'])->name('classroom.signal');
+            Route::post('/api/classroom/{roomId}/message', [VirtualClassroomController::class, 'sendMessage'])->name('classroom.message');
+            Route::post('/api/classroom/{roomId}/whiteboard', [VirtualClassroomController::class, 'syncWhiteboard'])->name('classroom.whiteboard');
+            Route::get('/api/classroom/{roomId}/ice-servers', [VirtualClassroomController::class, 'getIceServers'])->name('classroom.ice-servers');
+            Route::post('/api/classroom/{roomId}/upload-material', [VirtualClassroomController::class, 'uploadMaterial'])->name('classroom.upload-material');
 
             // Tutors and Bookings (Personalized Learning)
             Route::prefix('tutors')->name('tutors.')->group(function () {

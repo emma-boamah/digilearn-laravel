@@ -41,3 +41,17 @@ Broadcast::channel('upload-progress.{userId}', function ($user, $userId) {
     // Only allow users to listen to their own upload progress
     return (int) $user->id === (int) $userId;
 });
+
+// Virtual classroom presence channel for video signaling, presence, and chat
+Broadcast::channel('classroom.{roomId}', function ($user, $roomId) {
+    if (!$user) {
+        return false;
+    }
+    return [
+        'id' => $user->id,
+        'name' => $user->name,
+        'role' => $user->role ?? ($user->tutorProfile ? 'tutor' : 'student'),
+        'avatar_initial' => strtoupper(substr($user->name, 0, 1)),
+        'is_tutor' => (bool) $user->tutorProfile,
+    ];
+});
