@@ -830,7 +830,23 @@
 
                 <!-- STAGE C: Screen Share Stage -->
                 <div class="screen-share-stage" x-show="activeStage === 'screen-share'">
-                    <video id="screen-video-feed" autoplay playsinline></video>
+                    <!-- Active screen share feed -->
+                    <video id="screen-video-feed" autoplay playsinline x-show="isScreenSharing" style="max-width: 100%; max-height: 100%; object-fit: contain;"></video>
+
+                    <!-- Empty state: no one is sharing yet -->
+                    <div x-show="!isScreenSharing" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.25rem; text-align: center; padding: 2rem;">
+                        <div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(38, 119, 184, 0.12); display: flex; align-items: center; justify-content: center;">
+                            <i class="fa-solid fa-display" style="font-size: 2rem; color: var(--primary-blue);"></i>
+                        </div>
+                        <div>
+                            <p style="font-size: 1.1rem; font-weight: 700; color: var(--text-light-main); margin-bottom: 0.35rem;">No Screen Being Shared</p>
+                            <p style="font-size: 0.85rem; color: var(--text-light-muted); max-width: 340px;">Share your screen to present slides, demonstrate software, or show your browser to other participants.</p>
+                        </div>
+                        <button type="button" @click="toggleScreenShare()" style="background: var(--primary-blue); color: #fff; border: none; padding: 0.65rem 1.5rem; border-radius: 10px; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: background 0.15s ease;">
+                            <i class="fa-solid fa-arrow-up-from-bracket"></i>
+                            <span>Start Sharing Your Screen</span>
+                        </button>
+                    </div>
                 </div>
             </main>
 
