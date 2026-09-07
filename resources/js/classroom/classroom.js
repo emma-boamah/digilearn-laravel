@@ -262,6 +262,11 @@ export function virtualClassroom(config = {}) {
                 if (this.isScreenSharing) {
                     this.setStage('screen-share');
                 } else {
+                    // Clear the video element so it doesn't hold a stale frame
+                    const screenVideo = document.getElementById('screen-video-feed');
+                    if (screenVideo) {
+                        screenVideo.srcObject = null;
+                    }
                     this.setStage('whiteboard');
                 }
             }
