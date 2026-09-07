@@ -9,7 +9,8 @@ export default defineConfig({
         "resources/css/app.css",
         "resources/css/notifications.css",
         "resources/js/app.js",
-        "resources/js/video-facade.js"
+        "resources/js/video-facade.js",
+        "resources/js/classroom/classroom.js"
       ],
       refresh: true,
     }),
