@@ -1033,7 +1033,8 @@ class QuizController extends Controller
             }
         }
 
-        return view('dashboard.quiz.results', compact('score', 'total', 'percentage', 'quiz', 'duration', 'failedDueToViolation', 'questions', 'rank', 'streak', 'timeTaken', 'hasRated', 'grading', 'analysis'));
+        $attempt = $lastAttempt;
+        return view('dashboard.quiz.results', compact('score', 'total', 'percentage', 'quiz', 'duration', 'failedDueToViolation', 'questions', 'rank', 'streak', 'timeTaken', 'hasRated', 'grading', 'analysis', 'attempt'));
     }
 
     /**

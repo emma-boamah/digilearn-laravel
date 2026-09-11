@@ -1115,13 +1115,19 @@
                     if (items.length === 1 && items[0].sIdx === undefined) {
                         qContent = items[0].quill.root.innerHTML;
                     } else {
-                        // Sub-questions - sort by sIdx to ensure proper order
-                        items.sort((a, b) => a.sIdx - b.sIdx).forEach(item => {
+                        // Sub-questions - sort by sIdx and spIdx to ensure proper order
+                        items.sort((a, b) => {
+                            if (a.sIdx !== b.sIdx) return a.sIdx - b.sIdx;
+                            return (a.spIdx ?? -1) - (b.spIdx ?? -1);
+                        }).forEach(item => {
                             const subQ = questionData.sub_questions && questionData.sub_questions[item.sIdx] ? questionData.sub_questions[item.sIdx] : null;
-                            const label = subQ ? subQ.label : '?';
+                            let label = subQ ? subQ.label : '?';
+                            if (item.spIdx !== undefined && subQ && subQ.sub_parts && subQ.sub_parts[item.spIdx]) {
+                                label += `(${subQ.sub_parts[item.spIdx].label})`;
+                            }
                             qContent += `
                                 <div class="sub-answer-part" style="margin-bottom: 1.5rem;">
-                                    <h3 style="color: #4b5563; font-size: 1.1rem; margin-bottom: 0.5rem;">Part ${label})</h3>
+                                    <h3 style="color: #4b5563; font-size: 1.1rem; margin-bottom: 0.5rem;">Part ${label}</h3>
                                     <div style="padding-left: 1rem; border-left: 3px solid #e5e7eb;">
                                         ${item.quill.root.innerHTML}
                                     </div>
@@ -1149,7 +1155,12 @@
                 } else {
                     const subAnswers = {};
                     items.forEach(item => {
-                        subAnswers[item.sIdx] = item.quill.root.innerHTML;
+                        if (item.spIdx !== undefined) {
+                            if (!subAnswers[item.sIdx]) subAnswers[item.sIdx] = {};
+                            subAnswers[item.sIdx][item.spIdx] = item.quill.root.innerHTML;
+                        } else {
+                            subAnswers[item.sIdx] = item.quill.root.innerHTML;
+                        }
                     });
                     answersObj[i] = subAnswers;
                 }

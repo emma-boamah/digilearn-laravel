@@ -79,7 +79,14 @@ class QuizAutomatedGradingService
         if (!$quiz) return [];
 
         $quizData = json_decode($quiz->quiz_data, true);
-        $questions = $quizData['questions'] ?? [];
+        // Use questions from attempt if available to ensure indices match the user answers
+        // (especially for mixed MCQ/essay quizzes where essay questions are filtered and re-indexed 0, 1...)
+        $questions = $attempt->getParsedQuestions();
+        if (empty($questions)) {
+            $questions = collect($quizData['questions'] ?? [])->filter(function ($q) {
+                return ($q['type'] ?? 'mcq') === 'essay';
+            })->values()->all();
+        }
         $userAnswers = $attempt->getParsedAnswers();
 
         $results = [
@@ -132,12 +139,21 @@ class QuizAutomatedGradingService
                                     'weaknesses' => 'Question was left blank.'
                                 ];
                             } else {
+                                $partImages = $this->extractImagesFromContent([
+                                    $question['question'] ?? '',
+                                    $sub['text'] ?? '',
+                                    $sp['text'] ?? '',
+                                    $spResponse,
+                                    $sample
+                                ], $question['image'] ?? null);
+
                                 $partsToGrade[] = [
                                     'key' => $key,
                                     'question' => $fullQuestionText,
                                     'student_answer' => $this->cleanAndStripHtml($spResponse, true),
                                     'model_answer' => $this->cleanAndStripHtml($sample, true),
-                                    'max_points' => $points
+                                    'max_points' => $points,
+                                    'images' => $partImages
                                 ];
                             }
                         }
@@ -156,12 +172,20 @@ class QuizAutomatedGradingService
                                 'weaknesses' => 'Question was left blank.'
                             ];
                         } else {
+                            $partImages = $this->extractImagesFromContent([
+                                $question['question'] ?? '',
+                                $sub['text'] ?? '',
+                                $subResponse,
+                                $sample
+                            ], $question['image'] ?? null);
+
                             $partsToGrade[] = [
                                 'key' => $key,
                                 'question' => $fullQuestionText,
                                 'student_answer' => $this->cleanAndStripHtml($subResponse, true),
                                 'model_answer' => $this->cleanAndStripHtml($sample, true),
-                                'max_points' => $points
+                                'max_points' => $points,
+                                'images' => $partImages
                             ];
                         }
                     }
@@ -179,12 +203,19 @@ class QuizAutomatedGradingService
                         'weaknesses' => 'Question was left blank.'
                     ];
                 } else {
+                    $partImages = $this->extractImagesFromContent([
+                        $question['question'] ?? '',
+                        $userResponse,
+                        $sample
+                    ], $question['image'] ?? null);
+
                     $partsToGrade[] = [
                         'key' => $key,
                         'question' => $mainText,
                         'student_answer' => $this->cleanAndStripHtml($userResponse, true),
                         'model_answer' => $this->cleanAndStripHtml($sample, true),
-                        'max_points' => $points
+                        'max_points' => $points,
+                        'images' => $partImages
                     ];
                 }
             }
@@ -296,10 +327,55 @@ class QuizAutomatedGradingService
             $model = config('services.gemini.model', 'gemini-1.5-flash');
             $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
 
-            $partsJson = json_encode($partsToGrade, JSON_PRETTY_PRINT);
+            // Collect all unique images and attach them as inlineData parts
+            $geminiParts = [];
+            $allImages = [];
+
+            foreach ($partsToGrade as $idx => $part) {
+                if (!empty($part['images']) && is_array($part['images'])) {
+                    foreach ($part['images'] as $imgUrl) {
+                        if (!isset($allImages[$imgUrl])) {
+                            $imgData = $this->fetchImageAsBase64($imgUrl);
+                            if ($imgData) {
+                                $allImages[$imgUrl] = [
+                                    'ref' => "Image Reference #" . (count($allImages) + 1) . " (Question Key: {$part['key']})",
+                                    'inline' => [
+                                        'inlineData' => [
+                                            'mimeType' => $imgData['mime_type'],
+                                            'data' => $imgData['base64']
+                                        ]
+                                    ]
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Strip raw image URLs from parts before json encoding prompt to keep tokens compact
+            $cleanParts = array_map(function ($p) use ($allImages) {
+                $refImages = [];
+                if (!empty($p['images'])) {
+                    foreach ($p['images'] as $imgUrl) {
+                        if (isset($allImages[$imgUrl])) {
+                            $refImages[] = $allImages[$imgUrl]['ref'];
+                        }
+                    }
+                }
+                $p['associated_images'] = $refImages;
+                unset($p['images']);
+                return $p;
+            }, $partsToGrade);
+
+            $partsJson = json_encode($cleanParts, JSON_PRETTY_PRINT);
+
+            $imageGuidance = !empty($allImages)
+                ? "\nNOTE: Image(s) relevant to the questions/answers are attached below as visual references. Carefully inspect all diagram labels, graphs, calculations, or visual answers when evaluating.\n"
+                : "";
 
             $prompt = "You are a professional educational assessor. Grade each of the student responses provided below against their respective marking schemes.\n" .
-                      "IMPORTANT: Address the student directly using 2nd-person pronouns (e.g., 'You stated...', 'Your answer...'). Do NOT use 3rd-person pronouns like 'The student'.\n\n" .
+                      "IMPORTANT: Address the student directly using 2nd-person pronouns (e.g., 'You stated...', 'Your answer...'). Do NOT use 3rd-person pronouns like 'The student'.\n" .
+                      $imageGuidance . "\n" .
                       "Here is the list of questions, student responses, reference answers, and maximum points for each part:\n" .
                       "```json\n" . $partsJson . "\n```\n\n" .
                       "Provide your evaluation in JSON format with a single root key 'grades' which maps each key to its evaluation:\n" .
@@ -314,12 +390,19 @@ class QuizAutomatedGradingService
                       "  }\n" .
                       "}";
 
-            $response = Http::timeout(45)->post($url, [
+            // Add text prompt first
+            $geminiParts[] = ['text' => $prompt];
+
+            // Add image parts
+            foreach ($allImages as $item) {
+                $geminiParts[] = ['text' => "--- " . $item['ref'] . " ---"];
+                $geminiParts[] = $item['inline'];
+            }
+
+            $response = Http::timeout(60)->post($url, [
                 'contents' => [
                     [
-                        'parts' => [
-                            ['text' => $prompt]
-                        ]
+                        'parts' => $geminiParts
                     ]
                 ],
                 'generationConfig' => [
@@ -370,30 +453,65 @@ class QuizAutomatedGradingService
     protected function analyzeBatchWithAi(array $partsToGrade, $apiKey)
     {
         try {
-            $partsJson = json_encode($partsToGrade, JSON_PRETTY_PRINT);
+            $allImages = [];
+            foreach ($partsToGrade as $part) {
+                if (!empty($part['images']) && is_array($part['images'])) {
+                    foreach ($part['images'] as $imgUrl) {
+                        if (!isset($allImages[$imgUrl])) {
+                            $imgData = $this->fetchImageAsBase64($imgUrl);
+                            if ($imgData) {
+                                $allImages[$imgUrl] = "data:{$imgData['mime_type']};base64,{$imgData['base64']}";
+                            }
+                        }
+                    }
+                }
+            }
 
-            $response = Http::timeout(45)->withToken($apiKey)->post('https://api.openai.com/v1/chat/completions', [
+            $cleanParts = array_map(function ($p) {
+                unset($p['images']);
+                return $p;
+            }, $partsToGrade);
+
+            $partsJson = json_encode($cleanParts, JSON_PRETTY_PRINT);
+
+            $userContent = [
+                [
+                    'type' => 'text',
+                    'text' => "Here is the list of questions, student responses, reference answers, and maximum points:\n" .
+                              "```json\n" . $partsJson . "\n```\n\n" .
+                              "Provide your evaluation in JSON format with a single root key 'grades' mapping each key to its evaluation:\n" .
+                              "{\n" .
+                              "  \"grades\": {\n" .
+                              "    \"key_here\": {\n" .
+                              "      \"score\": float,\n" .
+                              "      \"feedback\": string,\n" .
+                              "      \"strengths\": string,\n" .
+                              "      \"weaknesses\": string\n" .
+                              "    }\n" .
+                              "  }\n" .
+                              "}"
+                ]
+            ];
+
+            foreach ($allImages as $dataUri) {
+                $userContent[] = [
+                    'type' => 'image_url',
+                    'image_url' => [
+                        'url' => $dataUri
+                    ]
+                ];
+            }
+
+            $response = Http::timeout(60)->withToken($apiKey)->post('https://api.openai.com/v1/chat/completions', [
                 'model' => 'gpt-4o',
                 'messages' => [
                     [
                         'role' => 'system', 
-                        'content' => 'You are a professional educational assessor. Grade the student responses against the respective marking schemes. Address the student directly using 2nd-person pronouns (e.g., "You stated...", "Your answer..."). Do NOT use 3rd-person pronouns like "The student". Return ONLY JSON matching the requested structure.'
+                        'content' => 'You are a professional educational assessor. Grade the student responses against the respective marking schemes. Address the student directly using 2nd-person pronouns (e.g., "You stated...", "Your answer..."). Do NOT use 3rd-person pronouns like "The student". If diagrams or images are provided, inspect them as part of the question/answer evaluation. Return ONLY JSON matching the requested structure.'
                     ],
                     [
                         'role' => 'user', 
-                        'content' => "Here is the list of questions, student responses, reference answers, and maximum points:\n" .
-                                     "```json\n" . $partsJson . "\n```\n\n" .
-                                     "Provide your evaluation in JSON format with a single root key 'grades' mapping each key to its evaluation:\n" .
-                                     "{\n" .
-                                     "  \"grades\": {\n" .
-                                     "    \"key_here\": {\n" .
-                                     "      \"score\": float,\n" .
-                                     "      \"feedback\": string,\n" .
-                                     "      \"strengths\": string,\n" .
-                                     "      \"weaknesses\": string\n" .
-                                     "    }\n" .
-                                     "  }\n" .
-                                     "}"
+                        'content' => $userContent
                     ]
                 ],
                 'response_format' => ['type' => 'json_object']
@@ -458,8 +576,8 @@ class QuizAutomatedGradingService
         if (empty($html)) return '';
         
         if ($retainStructure) {
-            // Retain basic structure for the AI so tables and lists make sense
-            return trim(strip_tags($html, '<table><tr><th><td><tbody><thead><tfoot><br><p><ul><ol><li><div><strong><em><b><i>'));
+            // Retain basic structure for the AI so tables, lists, and images make sense
+            return trim(strip_tags($html, '<table><tr><th><td><tbody><thead><tfoot><br><p><ul><ol><li><div><strong><em><b><i><img>'));
         }
 
         // Replace block tags and list items with spaces to prevent merging words
@@ -652,4 +770,99 @@ class QuizAutomatedGradingService
             Log::error("Failed to notify admins about {$provider} rate limit: " . $e->getMessage());
         }
     }
+
+    /**
+     * Extract image URLs from HTML content, question image fields, and student answers.
+     */
+    protected function extractImagesFromContent(array $htmlStrings, ?string $standaloneImage = null): array
+    {
+        $images = [];
+
+        if (!empty($standaloneImage)) {
+            $images[] = trim($standaloneImage);
+        }
+
+        foreach ($htmlStrings as $html) {
+            if (empty($html) || !is_string($html)) continue;
+
+            if (preg_match_all('/<img[^>]+src=["\']([^"\']+)["\']/i', $html, $matches)) {
+                foreach ($matches[1] as $src) {
+                    $src = trim($src);
+                    if (!empty($src)) {
+                        $images[] = $src;
+                    }
+                }
+            }
+        }
+
+        return array_values(array_unique($images));
+    }
+
+    /**
+     * Fetch an image and convert it to a base64 string with MIME type.
+     * Supports local storage files, asset URLs, and external URLs.
+     */
+    protected function fetchImageAsBase64(string $url): ?array
+    {
+        try {
+            // Check if it's already a data URI
+            if (str_starts_with($url, 'data:image/')) {
+                if (preg_match('/^data:([^;]+);base64,(.+)$/', $url, $matches)) {
+                    return [
+                        'mime_type' => $matches[1],
+                        'base64' => $matches[2]
+                    ];
+                }
+            }
+
+            // Check if it's a local public storage file
+            $storagePrefix = '/storage/';
+            $parsedUrl = parse_url($url, PHP_URL_PATH);
+            if ($parsedUrl && str_contains($parsedUrl, $storagePrefix)) {
+                $relativePath = substr($parsedUrl, strpos($parsedUrl, $storagePrefix) + strlen($storagePrefix));
+                if (\Illuminate\Support\Facades\Storage::disk('public')->exists($relativePath)) {
+                    $content = \Illuminate\Support\Facades\Storage::disk('public')->get($relativePath);
+                    $mimeType = \Illuminate\Support\Facades\Storage::disk('public')->mimeType($relativePath) ?: 'image/jpeg';
+                    return [
+                        'mime_type' => $mimeType,
+                        'base64' => base64_encode($content)
+                    ];
+                }
+            }
+
+            // Check if path exists in public_path directly
+            if ($parsedUrl) {
+                $publicFilePath = public_path(ltrim($parsedUrl, '/'));
+                if (file_exists($publicFilePath) && is_file($publicFilePath)) {
+                    $content = file_get_contents($publicFilePath);
+                    $mimeType = mime_content_type($publicFilePath) ?: 'image/jpeg';
+                    return [
+                        'mime_type' => $mimeType,
+                        'base64' => base64_encode($content)
+                    ];
+                }
+            }
+
+            // Fetch via HTTP if it's an absolute URL
+            if (filter_var($url, FILTER_VALIDATE_URL)) {
+                $response = Http::timeout(10)->get($url);
+                if ($response->successful()) {
+                    $mimeType = $response->header('Content-Type') ?: 'image/jpeg';
+                    // Strip charset if present in Content-Type header
+                    if (str_contains($mimeType, ';')) {
+                        $mimeType = trim(explode(';', $mimeType)[0]);
+                    }
+                    return [
+                        'mime_type' => $mimeType,
+                        'base64' => base64_encode($response->body())
+                    ];
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning("Failed to fetch image for AI grading: {$url}. Error: " . $e->getMessage());
+        }
+
+        return null;
+    }
 }
+

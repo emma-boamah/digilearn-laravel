@@ -786,6 +786,12 @@
       input.name = 'failed_due_to_violation';
       input.value = '1';
       form.appendChild(input);
+
+      const integrityInput = document.createElement('input');
+      integrityInput.type = 'hidden';
+      integrityInput.name = 'integrity_violation';
+      integrityInput.value = 'true';
+      form.appendChild(integrityInput);
     }
 
     window.isSubmitting = true;
