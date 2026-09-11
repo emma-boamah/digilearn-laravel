@@ -1177,7 +1177,8 @@
         }
 
         /* Answer Visibility Toggle - Localized to Question Card */
-        .question-card.answers-hidden .sample-answer-box {
+        .question-card.answers-hidden > .sample-answer-box,
+        .question-card.answers-hidden .essay-shared-content-box .sample-answer-box {
             display: none !important;
         }
 
@@ -1191,44 +1192,70 @@
         }
 
         .question-card.answers-hidden .option-item.correct.user-choice {
-            border-color: var(--success-green);
-            background: var(--success-green-light);
+            border-color: var(--primary-blue);
+            background: var(--primary-blue-light);
         }
 
         /* Local Reveal Toggle */
         .reveal-toggle {
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.4rem 0.8rem;
-            background: var(--gray-100);
-            border: 1px solid var(--gray-200);
+            padding: 0.35rem 0.75rem;
+            background: var(--white);
+            border: 1px solid var(--gray-300);
             border-radius: 8px;
             font-size: 0.75rem;
             font-weight: 600;
-            color: var(--gray-600);
+            color: var(--gray-700);
             cursor: pointer;
-            transition: all 0.25s ease;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
         }
 
         .reveal-toggle:hover {
-            background: var(--gray-200);
+            background: var(--gray-50);
+            border-color: var(--primary-blue);
             color: var(--primary-blue);
         }
 
         .reveal-toggle.active {
             background: var(--primary-blue-light);
             color: var(--primary-blue);
-            border-color: rgba(36, 128, 241, 0.3);
+            border-color: var(--primary-blue);
         }
 
         .reveal-toggle i {
-            font-size: 0.875rem;
+            font-size: 0.8rem;
         }
 
-        /* Sub-question specific hidden state */
-        .sub-review-item.answer-hidden .sample-answer-box {
+        /* Sub-question and sub-part specific hidden states */
+        .sub-review-item.answer-hidden > .sample-answer-box,
+        .sub-part-review-item.answer-hidden > .sample-answer-box {
             display: none !important;
+        }
+
+        /* Sample Answer Box Styling - Simple, Clean & Perfect */
+        .sample-answer-box {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-left: 4px solid var(--primary-blue) !important;
+            border-radius: 10px;
+            padding: 1.1rem 1.35rem;
+            margin-top: 0.85rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            animation: fadeInAnswer 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes fadeInAnswer {
+            from {
+                opacity: 0;
+                transform: translateY(-4px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .toggle-wrapper {
@@ -1895,7 +1922,7 @@
                                         @endif
 
                                         @if(($question['type'] ?? 'mcq') === 'mcq')
-                                            <button class="reveal-toggle" data-target-q="{{ $index }}" onclick="toggleLocalAnswer({{ $index }}, this)">
+                                            <button class="reveal-toggle" data-target-q="{{ $index }}">
                                                 <i class="far fa-eye"></i> <span>Reveal Answer</span>
                                             </button>
                                         @endif
@@ -1936,15 +1963,20 @@
                                             <div style="margin-top: 1.5rem; border-top: 1px dashed var(--primary-blue-border); padding-top: 1.5rem;">
                                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                                                     <span style="font-size: 0.875rem; font-weight: 600; color: var(--primary-blue);">{{ $hasSubQuestions ? 'SHARED CONTENT REFERENCE ANSWER' : 'REFERENCE ANSWER (SAMPLE)' }}</span>
-                                                    <button class="reveal-toggle" data-target-q="{{ $index }}" onclick="toggleLocalAnswer({{ $index }}, this)">
+                                                    <button class="reveal-toggle" data-target-q="{{ $index }}">
                                                         <i class="far fa-eye"></i> <span>Reveal Answer</span>
                                                     </button>
                                                 </div>
-                                                <div class="sample-answer-box" style="background: var(--white); border: 1px solid var(--gray-200); border-radius: 12px; padding: 1.25rem;">
-                                                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                                                        <i class="fas fa-check-circle"></i> Correct Answer / Model Response
+                                                <div class="sample-answer-box">
+                                                    <div class="sample-answer-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--gray-200);">
+                                                        <span style="font-size: 0.75rem; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; letter-spacing: 0.04em; display: inline-flex; align-items: center; gap: 0.45rem;">
+                                                            <i class="fas fa-check-circle" style="color: var(--primary-blue);"></i> Model Answer / Marking Scheme
+                                                        </span>
+                                                        <span style="font-size: 0.7rem; font-weight: 600; color: var(--gray-500); background: var(--white); border: 1px solid var(--gray-200); padding: 2px 8px; border-radius: 6px;">
+                                                            Instructor Reference
+                                                        </span>
                                                     </div>
-                                                    <div class="sample-content" style="font-size: 1.125rem; line-height: 1.7; color: var(--gray-900);">
+                                                    <div class="sample-content" style="font-size: 1.05rem; line-height: 1.7; color: var(--gray-800);">
                                                         {!! $sanitizeMath($question['correct_answer']) !!}
                                                     </div>
                                                 </div>
@@ -2010,7 +2042,7 @@
                                                                                     $subSample = $sp['sample_answer'] ?? null;
                                                                                 @endphp
                                                                                 @if(!empty($subSample))
-                                                                                    <button class="reveal-toggle" data-target-sub="{{ $index }}-{{ $sIdx }}-{{ $spIdx }}" onclick="toggleSubAnswer('{{ $index }}-{{ $sIdx }}-{{ $spIdx }}', this)">
+                                                                                    <button class="reveal-toggle" data-target-sub="{{ $index }}-{{ $sIdx }}-{{ $spIdx }}">
                                                                                         <i class="far fa-eye"></i> <span>Sample Answer</span>
                                                                                     </button>
                                                                                 @endif
@@ -2046,11 +2078,16 @@
                                                                             </div>
                                                                             
                                                                             @if(!empty($subSample))
-                                                                                <div class="sample-answer-box" style="background: var(--primary-blue-light); border: 1px solid var(--primary-blue-border); border-radius: 12px; padding: 1.25rem;">
-                                                                                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                                                                                        <i class="fas fa-check-circle"></i> Sample Answer
+                                                                                <div class="sample-answer-box">
+                                                                                    <div class="sample-answer-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--gray-200);">
+                                                                                        <span style="font-size: 0.75rem; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; letter-spacing: 0.04em; display: inline-flex; align-items: center; gap: 0.45rem;">
+                                                                                            <i class="fas fa-check-circle" style="color: var(--primary-blue);"></i> Model Answer / Marking Scheme
+                                                                                        </span>
+                                                                                        <span style="font-size: 0.7rem; font-weight: 600; color: var(--gray-500); background: var(--white); border: 1px solid var(--gray-200); padding: 2px 8px; border-radius: 6px;">
+                                                                                            Instructor Reference
+                                                                                        </span>
                                                                                     </div>
-                                                                                    <div class="sample-content" style="font-size: 1rem; line-height: 1.6; color: var(--gray-900);">
+                                                                                    <div class="sample-content" style="font-size: 0.975rem; line-height: 1.65; color: var(--gray-800);">
                                                                                         {!! $sanitizeMath($subSample) !!}
                                                                                     </div>
                                                                                 </div>
@@ -2075,7 +2112,7 @@
                                                                         $subSample = $sub['sample_answer'] ?? ($sub['correct_answer'] ?? null);
                                                                     @endphp
                                                                     @if(!empty($subSample))
-                                                                        <button class="reveal-toggle" data-target-sub="{{ $index }}-{{ $sIdx }}" onclick="toggleSubAnswer('{{ $index }}-{{ $sIdx }}', this)">
+                                                                        <button class="reveal-toggle" data-target-sub="{{ $index }}-{{ $sIdx }}">
                                                                             <i class="far fa-eye"></i> <span>Sample Answer</span>
                                                                         </button>
                                                                     @endif
@@ -2134,11 +2171,16 @@
     
                                                                 <!-- Sub-Question Sample Answer -->
                                                                 @if(!empty($subSample))
-                                                                    <div class="sample-answer-box" style="background: var(--primary-blue-light); border: 1px solid var(--primary-blue-border); border-radius: 12px; padding: 1.25rem;">
-                                                                        <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                                                                            <i class="fas fa-check-circle"></i> Sample Answer
+                                                                    <div class="sample-answer-box">
+                                                                        <div class="sample-answer-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--gray-200);">
+                                                                            <span style="font-size: 0.75rem; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; letter-spacing: 0.04em; display: inline-flex; align-items: center; gap: 0.45rem;">
+                                                                                <i class="fas fa-check-circle" style="color: var(--primary-blue);"></i> Model Answer / Marking Scheme
+                                                                            </span>
+                                                                            <span style="font-size: 0.7rem; font-weight: 600; color: var(--gray-500); background: var(--white); border: 1px solid var(--gray-200); padding: 2px 8px; border-radius: 6px;">
+                                                                                Instructor Reference
+                                                                            </span>
                                                                         </div>
-                                                                        <div class="sample-content" style="font-size: 1rem; line-height: 1.6; color: var(--gray-900);">
+                                                                        <div class="sample-content" style="font-size: 0.975rem; line-height: 1.65; color: var(--gray-800);">
                                                                             {!! $sanitizeMath($subSample) !!}
                                                                         </div>
                                                                     </div>
@@ -2438,6 +2480,20 @@
                 if (icon) icon.className = isHidden ? 'far fa-eye' : 'far fa-eye-slash';
                 if (span) span.textContent = isHidden ? 'Reveal Answer' : 'Hide Answer';
             }
+
+            if (!isHidden && window.renderMathInElement) {
+                const sampleBox = card.querySelector('.sample-answer-box');
+                if (sampleBox) {
+                    window.renderMathInElement(sampleBox, {
+                        delimiters: [
+                            {left: '$$', right: '$$', display: true},
+                            {left: '\\[', right: '\\]', display: true},
+                            {left: '$', right: '$', display: false},
+                            {left: '\\(', right: '\\)', display: false}
+                        ]
+                    });
+                }
+            }
         }
 
         function toggleSubAnswer(idStr, btn) {
@@ -2451,6 +2507,20 @@
                 btn.classList.toggle('active', !isHidden);
                 if (icon) icon.className = isHidden ? 'far fa-eye' : 'far fa-eye-slash';
                 if (span) span.textContent = isHidden ? 'Sample Answer' : 'Hide Answer';
+            }
+
+            if (!isHidden && window.renderMathInElement) {
+                const sampleBox = item.querySelector('.sample-answer-box');
+                if (sampleBox) {
+                    window.renderMathInElement(sampleBox, {
+                        delimiters: [
+                            {left: '$$', right: '$$', display: true},
+                            {left: '\\[', right: '\\]', display: true},
+                            {left: '$', right: '$', display: false},
+                            {left: '\\(', right: '\\)', display: false}
+                        ]
+                    });
+                }
             }
         }
 
