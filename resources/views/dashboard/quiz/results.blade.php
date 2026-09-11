@@ -1437,7 +1437,90 @@
                               User said "left side", implies desktop. On mobile, usually top or 
                               bottom. Let's keep it normal flow (top) or allow stickiness. 
                            */
-            }
+        /* Section Tabs for Mixed and Essay Quizzes */
+        .section-tabs-wrapper {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--gray-200);
+            padding-bottom: 0.5rem;
+            overflow-x: auto;
+        }
+
+        .section-tab-btn {
+            background: transparent;
+            border: none;
+            padding: 0.6rem 1.25rem;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--gray-500);
+            cursor: pointer;
+            border-radius: 9999px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-tab-btn:hover {
+            color: var(--primary-blue);
+            background: rgba(38, 119, 184, 0.08);
+        }
+
+        .section-tab-btn.active {
+            color: #ffffff;
+            background: var(--primary-blue);
+            box-shadow: 0 4px 10px rgba(38, 119, 184, 0.3);
+        }
+
+        .section-tab-badge {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(0, 0, 0, 0.08);
+        }
+
+        .section-tab-btn.active .section-tab-badge {
+            background: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+        }
+
+        .stat-card.assessment-driver-card {
+            border-left: 4px solid var(--primary-blue);
+        }
+
+        .marks-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 800;
+        }
+
+        .marks-pill.full {
+            background: #ecfdf5;
+            color: #059669;
+            border: 1px solid #a7f3d0;
+        }
+
+        .marks-pill.partial {
+            background: #fffbe6;
+            color: #d97706;
+            border: 1px solid #fde68a;
+        }
+
+        .marks-pill.zero {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .marks-pill.pending {
+            background: #f3f4f6;
+            color: #6b7280;
+            border: 1px solid #e5e7eb;
         }
     </style>
 </head>
@@ -1510,6 +1593,36 @@
             </div>
 
             <!-- Performance Cards -->
+            @php
+                $displayQuestions = collect($questions);
+                $hasMcq = $displayQuestions->contains('type', 'mcq');
+                $hasEssay = $displayQuestions->contains('type', 'essay');
+                $isMixed = $hasMcq && $hasEssay;
+
+                $mcqQuestions = $displayQuestions->filter(fn($q) => ($q['type'] ?? 'mcq') === 'mcq');
+                $essayQuestions = $displayQuestions->filter(fn($q) => ($q['type'] ?? 'mcq') === 'essay');
+
+                $skippedCount = $displayQuestions->filter(fn($q) => $q['user_answer'] === null)->count();
+                $correctCount = $displayQuestions->filter(fn($q) => $q['user_correct'] === true)->count();
+                $totalCount = $displayQuestions->count();
+
+                // Compute marks for essay
+                $marksArray = is_array($grading) && isset($grading['marks']) ? $grading['marks'] : [];
+                $totalMarksEarned = $grading['total_earned'] ?? 0;
+                $totalMarksPossible = $grading['total_possible'] ?? 0;
+
+                if ($totalMarksEarned == 0 && !empty($marksArray)) {
+                    foreach ($marksArray as $m) {
+                        $totalMarksEarned += (float) $m;
+                    }
+                }
+
+                $gradedBy = $attempt->graded_by ?? ($grading['grading_driver'] ?? null);
+                if ($gradedBy === 'gemini') $gradedBy = 'Gemini AI';
+                elseif ($gradedBy === 'openai') $gradedBy = 'OpenAI';
+                elseif ($gradedBy === 'local') $gradedBy = 'Keyword Match';
+            @endphp
+
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-circle">
@@ -1524,32 +1637,59 @@
                     <span class="stat-label">OVERALL SCORE</span>
                 </div>
 
-                @php
-                    $displayQuestions = collect($questions);
-                    $skippedCount = $displayQuestions->filter(fn($q) => $q['user_answer'] === null)->count();
-                    $correctCount = $displayQuestions->filter(fn($q) => $q['user_correct'] === true)->count();
-                    $totalCount = $displayQuestions->count();
-                @endphp
-                <div class="stat-card accuracy-card">
-                    <div class="stat-header">
-                        <span class="accuracy-title">Accuracy</span>
-                        <i class="far fa-check-circle accuracy-icon"></i>
-                    </div>
-                    <div class="accuracy-value-wrapper">
-                        <span class="accuracy-value">{{ $correctCount }}/{{ $totalCount }}</span>
-                        <span class="accuracy-status">
-                            @if(($attempt->status ?? 'completed') === 'pending')
-                                Pending Review
-                            @else
-                                Correct
-                            @endif
-                        </span>
-                    </div>
-                    @if($skippedCount > 0)
-                        <p class="skipped-text">You skipped {{ $skippedCount }} {{ Str::plural('question', $skippedCount) }}
+                @if($hasEssay && !$hasMcq)
+                    <!-- Pure Essay Quiz: Show Marks Earned -->
+                    <div class="stat-card accuracy-card">
+                        <div class="stat-header">
+                            <span class="accuracy-title">Marks Earned</span>
+                            <i class="fas fa-award accuracy-icon" style="color: #059669;"></i>
+                        </div>
+                        <div class="accuracy-value-wrapper">
+                            <span class="accuracy-value">
+                                @if($totalMarksPossible > 0)
+                                    {{ round($totalMarksEarned, 1) }} / {{ $totalMarksPossible }}
+                                @else
+                                    {{ $correctCount }} / {{ $totalCount }}
+                                @endif
+                            </span>
+                            <span class="accuracy-status">
+                                @if(($attempt->status ?? 'completed') === 'pending')
+                                    Pending Review
+                                @else
+                                    Total Marks
+                                @endif
+                            </span>
+                        </div>
+                        <p class="skipped-text" style="color: var(--primary-blue);">
+                            <i class="fas fa-file-alt"></i> {{ $essayQuestions->count() }} {{ Str::plural('Essay Question', $essayQuestions->count()) }}
                         </p>
-                    @endif
-                </div>
+                    </div>
+                @else
+                    <!-- MCQ or Mixed Quiz: Show Question Accuracy -->
+                    <div class="stat-card accuracy-card">
+                        <div class="stat-header">
+                            <span class="accuracy-title">{{ $isMixed ? 'Section Overview' : 'Accuracy' }}</span>
+                            <i class="far fa-check-circle accuracy-icon"></i>
+                        </div>
+                        <div class="accuracy-value-wrapper">
+                            <span class="accuracy-value">{{ $correctCount }}/{{ $totalCount }}</span>
+                            <span class="accuracy-status">
+                                @if(($attempt->status ?? 'completed') === 'pending' && $hasEssay)
+                                    Essays Pending
+                                @else
+                                    {{ $isMixed ? 'Questions Passed' : 'Correct' }}
+                                @endif
+                            </span>
+                        </div>
+                        @if($isMixed)
+                            <p class="skipped-text" style="color: var(--primary-blue);">
+                                {{ $mcqQuestions->count() }} MCQs &bull; {{ $essayQuestions->count() }} Essays
+                            </p>
+                        @elseif($skippedCount > 0)
+                            <p class="skipped-text">You skipped {{ $skippedCount }} {{ Str::plural('question', $skippedCount) }}</p>
+                        @endif
+                    </div>
+                @endif
 
                 <div class="stat-card">
                     <div class="stat-icon-wrapper warning" style="margin-top: 5px;">
@@ -1564,6 +1704,30 @@
                     </span>
                     <span class="stat-label">Duration</span>
                 </div>
+
+                @if(!empty($gradedBy) || ($attempt->status ?? null) === 'pending')
+                    <div class="stat-card assessment-driver-card">
+                        <div class="stat-header">
+                            <span class="accuracy-title">Evaluation</span>
+                            <i class="fas fa-robot accuracy-icon" style="color: var(--primary-blue);"></i>
+                        </div>
+                        <div class="accuracy-value-wrapper" style="margin-top: 0.25rem;">
+                            <span class="accuracy-value" style="font-size: 1.15rem; font-weight: 800; color: var(--primary-blue);">
+                                {{ $gradedBy ?? 'AI Assessor' }}
+                            </span>
+                            <span class="accuracy-status">
+                                @if(($attempt->status ?? 'completed') === 'graded')
+                                    <span style="color: #059669;"><i class="fas fa-check-circle"></i> Verified</span>
+                                @else
+                                    <span style="color: #d97706;"><i class="fas fa-hourglass-half"></i> In Review</span>
+                                @endif
+                            </span>
+                        </div>
+                        <p class="skipped-text" style="color: var(--gray-500); font-size: 0.75rem;">
+                            Automated marking with rubric scheme
+                        </p>
+                    </div>
+                @endif
             </div>
 
 
@@ -1586,9 +1750,10 @@
                                 } elseif ($q['user_answer'] !== null) {
                                     $statusClass = 'incorrect';
                                 }
+                                $qTypeNav = $q['type'] ?? 'mcq';
                             @endphp
                             <div class="nav-box {{ $statusClass }} {{ $index == 0 ? 'active' : '' }}"
-                                onclick="goToQuestion({{ $index }})" id="nav-box-{{ $index }}">
+                                onclick="goToQuestion({{ $index }})" id="nav-box-{{ $index }}" data-qtype="{{ $qTypeNav }}">
                                 {{ $index + 1 }}
                             </div>
                         @endforeach
@@ -1623,6 +1788,21 @@
                         </div>
                     </div>
 
+                    @if($isMixed)
+                        <!-- Section Tabs for Mixed Quizzes -->
+                        <div class="section-tabs-wrapper">
+                            <button type="button" class="section-tab-btn active" onclick="filterQuizSection('all', this)">
+                                <i class="fas fa-layer-group"></i> All Questions <span class="section-tab-badge">{{ $totalCount }}</span>
+                            </button>
+                            <button type="button" class="section-tab-btn" onclick="filterQuizSection('mcq', this)">
+                                <i class="fas fa-list-ul"></i> Section A: Multiple Choice <span class="section-tab-badge">{{ $mcqQuestions->count() }}</span>
+                            </button>
+                            <button type="button" class="section-tab-btn" onclick="filterQuizSection('essay', this)">
+                                <i class="fas fa-pen-nib"></i> Section B: Essay Questions <span class="section-tab-badge">{{ $essayQuestions->count() }}</span>
+                            </button>
+                        </div>
+                    @endif
+
                     <div class="questions-carousel" id="questionsContainer">
                         @php
                             $sanitizeMath = function($html) {
@@ -1633,10 +1813,20 @@
                             };
                         @endphp
                         @foreach($questions as $index => $question)
-                            <div class="question-card answers-hidden {{ $index == 0 ? 'active' : '' }}" id="question-{{ $index }}">
+                            @php
+                                $thisQType = $question['type'] ?? 'mcq';
+                            @endphp
+                            <div class="question-card answers-hidden {{ $index == 0 ? 'active' : '' }}" id="question-{{ $index }}" data-qtype="{{ $thisQType }}">
                                 <div class="question-info">
                                     <div class="header-main-info" style="display: flex; flex-direction: column; gap: 0.25rem;">
-                                        <span class="question-count">QUESTION {{ $index + 1 }} OF {{ $total }}</span>
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <span class="question-count">QUESTION {{ $index + 1 }} OF {{ $total }}</span>
+                                            @if($thisQType === 'essay')
+                                                <span style="font-size: 0.7rem; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 2px 8px; border-radius: 999px;">ESSAY / WRITTEN</span>
+                                            @else
+                                                <span style="font-size: 0.7rem; font-weight: 700; color: #64748b; background: #f1f5f9; padding: 2px 8px; border-radius: 999px;">MULTIPLE CHOICE</span>
+                                            @endif
+                                        </div>
                                         @if(($question['type'] ?? 'mcq') === 'essay')
                                             @if(($attempt->status ?? 'completed') === 'pending')
                                                 <span style="font-size: 0.7rem; font-weight: 700; color: #d97706; background: #fffbe6; padding: 2px 8px; border-radius: 4px; display: inline-block; width: fit-content;">PENDING GRADING</span>
@@ -1651,16 +1841,49 @@
                                     @php
                                         $isEssay = ($question['type'] ?? 'mcq') === 'essay';
                                         $isPending = ($attempt->status ?? 'completed') === 'pending';
+
+                                        // Compute marks for this specific question
+                                        $thisQMarks = 0;
+                                        $thisQPossible = 0;
+                                        if ($isEssay) {
+                                            if (!empty($question['sub_questions'])) {
+                                                foreach ($question['sub_questions'] as $sIdx => $sub) {
+                                                    if (!empty($sub['has_sub_parts']) && !empty($sub['sub_parts'])) {
+                                                        foreach ($sub['sub_parts'] as $spIdx => $sp) {
+                                                            $thisQMarks += (float) ($grading['marks']["{$index}_{$sIdx}_{$spIdx}"] ?? 0);
+                                                            $thisQPossible += ($sp['points'] ?? 1);
+                                                        }
+                                                    } else {
+                                                        $thisQMarks += (float) ($grading['marks']["{$index}_{$sIdx}"] ?? 0);
+                                                        $thisQPossible += ($sub['points'] ?? 1);
+                                                    }
+                                                }
+                                            } else {
+                                                $thisQMarks = (float) ($grading['marks'][$index] ?? 0);
+                                                $thisQPossible = ($question['points'] ?? 10);
+                                            }
+                                        }
+
                                         $badgeClass = $question['user_correct'] ? 'correct' : ($isSkipped ? 'skipped' : ($isEssay && $isPending ? 'warning' : 'incorrect'));
                                         $badgeIcon = $question['user_correct'] ? 'check-circle' : ($isSkipped ? 'minus-circle' : ($isEssay && $isPending ? 'hourglass-half' : 'times-circle'));
                                         $badgeText = $question['user_correct'] ? 'Correct' : ($isSkipped ? 'Skipped' : ($isEssay && $isPending ? 'Submitted' : 'Incorrect'));
                                     @endphp
                                     <div class="review-badges-row" style="display: flex; align-items: center; gap: 0.75rem;">
-                                        <span class="status-badge {{ $badgeClass }}" 
-                                              style="{{ $badgeClass === 'warning' ? 'background: rgba(245, 158, 11, 0.1); color: #d97706; border-color: rgba(245, 158, 11, 0.2);' : '' }}">
-                                            <i class="fas fa-{{ $badgeIcon }}"></i>
-                                            {{ $badgeText }}
-                                        </span>
+                                        @if($isEssay && !$isPending && $thisQPossible > 0)
+                                            @php
+                                                $ratio = $thisQMarks / $thisQPossible;
+                                                $pillClass = $ratio >= 0.8 ? 'full' : ($ratio >= 0.4 ? 'partial' : 'zero');
+                                            @endphp
+                                            <span class="marks-pill {{ $pillClass }}">
+                                                <i class="fas fa-award"></i> {{ round($thisQMarks, 1) }} / {{ $thisQPossible }} Marks
+                                            </span>
+                                        @else
+                                            <span class="status-badge {{ $badgeClass }}" 
+                                                  style="{{ $badgeClass === 'warning' ? 'background: rgba(245, 158, 11, 0.1); color: #d97706; border-color: rgba(245, 158, 11, 0.2);' : '' }}">
+                                                <i class="fas fa-{{ $badgeIcon }}"></i>
+                                                {{ $badgeText }}
+                                            </span>
+                                        @endif
 
                                         @if(($question['type'] ?? 'mcq') === 'mcq')
                                             <button class="reveal-toggle" onclick="toggleLocalAnswer({{ $index }}, this)">
@@ -2054,11 +2277,47 @@
     @endif
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-        let currentQuestion = 0;
-        const totalQuestions = {{ count($questions) }};
+        let currentSectionFilter = 'all';
+
+        function filterQuizSection(section, btn) {
+            currentSectionFilter = section;
+            
+            // Update active tab styling
+            document.querySelectorAll('.section-tab-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+
+            // Filter quick navigation buttons
+            let firstVisibleIndex = null;
+            document.querySelectorAll('.nav-box').forEach(nav => {
+                const qType = nav.getAttribute('data-qtype');
+                const isMatch = (section === 'all' || qType === section);
+                nav.style.display = isMatch ? 'flex' : 'none';
+                
+                if (isMatch && firstVisibleIndex === null) {
+                    firstVisibleIndex = parseInt(nav.id.replace('nav-box-', ''));
+                }
+            });
+
+            // Jump to the first question in the selected section
+            if (firstVisibleIndex !== null) {
+                goToQuestion(firstVisibleIndex);
+            }
+        }
 
         function navigateQuestion(direction) {
-            const nextIndex = currentQuestion + direction;
+            let nextIndex = currentQuestion + direction;
+            
+            // If filtering, find next visible question in filter
+            if (currentSectionFilter !== 'all') {
+                while (nextIndex >= 0 && nextIndex < totalQuestions) {
+                    const nextCard = document.getElementById(`question-${nextIndex}`);
+                    if (nextCard && nextCard.getAttribute('data-qtype') === currentSectionFilter) {
+                        break;
+                    }
+                    nextIndex += direction;
+                }
+            }
+
             if (nextIndex >= 0 && nextIndex < totalQuestions) {
                 goToQuestion(nextIndex);
             }
@@ -2077,13 +2336,42 @@
             const newNav = document.getElementById(`nav-box-${currentQuestion}`);
             if (newNav) newNav.classList.add('active');
 
-            // Update buttons
-            document.getElementById('prevBtn').disabled = currentQuestion === 0;
-            const nextBtn = document.getElementById('nextBtn');
-            if (currentQuestion === totalQuestions - 1) {
-                nextBtn.innerHTML = 'Finish Review <i class="fas fa-check"></i>';
+            // Update buttons considering section filter
+            if (currentSectionFilter === 'all') {
+                document.getElementById('prevBtn').disabled = currentQuestion === 0;
+                const nextBtn = document.getElementById('nextBtn');
+                if (currentQuestion === totalQuestions - 1) {
+                    nextBtn.innerHTML = 'Finish Review <i class="fas fa-check"></i>';
+                } else {
+                    nextBtn.innerHTML = 'Next<span class="nav-btn-text-extra"> Question</span> <i class="fas fa-arrow-right"></i>';
+                }
             } else {
-                nextBtn.innerHTML = 'Next<span class="nav-btn-text-extra"> Question</span> <i class="fas fa-arrow-right"></i>';
+                // Check if there's any prior question in this section
+                let hasPrev = false;
+                for (let i = currentQuestion - 1; i >= 0; i--) {
+                    const card = document.getElementById(`question-${i}`);
+                    if (card && card.getAttribute('data-qtype') === currentSectionFilter) {
+                        hasPrev = true;
+                        break;
+                    }
+                }
+                document.getElementById('prevBtn').disabled = !hasPrev;
+
+                // Check if there's any next question in this section
+                let hasNext = false;
+                for (let i = currentQuestion + 1; i < totalQuestions; i++) {
+                    const card = document.getElementById(`question-${i}`);
+                    if (card && card.getAttribute('data-qtype') === currentSectionFilter) {
+                        hasNext = true;
+                        break;
+                    }
+                }
+                const nextBtn = document.getElementById('nextBtn');
+                if (!hasNext) {
+                    nextBtn.innerHTML = 'Finish Section <i class="fas fa-check"></i>';
+                } else {
+                    nextBtn.innerHTML = 'Next<span class="nav-btn-text-extra"> in Section</span> <i class="fas fa-arrow-right"></i>';
+                }
             }
 
             // Sync math fields to read-only reliably without race conditions
