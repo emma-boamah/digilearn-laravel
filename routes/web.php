@@ -32,6 +32,9 @@ use App\Http\Controllers\PricingPlanController;
 use App\Http\Controllers\Admin\TaskController;
 use App\Http\Controllers\Admin\SubjectController;
 use App\Http\Controllers\Admin\QuizReviewController;
+use App\Http\Controllers\Admin\CurriculumController;
+use App\Http\Controllers\Admin\TextbookController;
+use App\Http\Controllers\GuidedLearningController;
 use App\Http\Controllers\VideoStreamController;
 use App\Http\Controllers\VirtualClassroomController;
 use Illuminate\Support\Facades\Log;
@@ -259,6 +262,14 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/dashboard/select-level-group/{groupId}', [DashboardController::class, 'selectLevelGroup'])->name('dashboard.select-level-group');
     Route::get('/dashboard/main', [DashboardController::class, 'main'])->name('dashboard.main');
     Route::get('/dashboard/change-level', [DashboardController::class, 'levelSelection'])->name('dashboard.change-level');
+
+    // Guided Learning Routes (FreeCodeCamp-style curriculum learning)
+    Route::prefix('guided-learning')->name('guided-learning.')->group(function () {
+        Route::get('/', [GuidedLearningController::class, 'index'])->name('index');
+        Route::get('/topic/{indicator}', [GuidedLearningController::class, 'topic'])->name('topic');
+        Route::post('/topic/{indicator}/toggle', [GuidedLearningController::class, 'toggleStatus'])->name('toggle');
+        Route::post('/topic/{indicator}/notes', [GuidedLearningController::class, 'saveNotes'])->name('notes');
+    });
 
     // Profile & Settings (Unrestricted - Auth only)
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
@@ -735,6 +746,33 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     // Content Management - Subjects
     Route::resource('subjects', SubjectController::class);
+
+    // Curriculum Management (GES, WAEC, NaCCA)
+    Route::prefix('curriculum')->name('curriculum.')->group(function () {
+        Route::get('/', [CurriculumController::class, 'index'])->name('index');
+        Route::post('/', [CurriculumController::class, 'store'])->name('store');
+        Route::get('/{curriculum}', [CurriculumController::class, 'show'])->name('show');
+        Route::delete('/{curriculum}', [CurriculumController::class, 'destroy'])->name('destroy');
+        Route::post('/{curriculum}/approve', [CurriculumController::class, 'approve'])->name('approve');
+        Route::post('/{curriculum}/re-extract', [CurriculumController::class, 'reExtract'])->name('re-extract');
+        Route::get('/{curriculum}/status', [CurriculumController::class, 'status'])->name('status');
+        Route::put('/strands/{strand}', [CurriculumController::class, 'updateStrand'])->name('strands.update');
+        Route::put('/sub-strands/{subStrand}', [CurriculumController::class, 'updateSubStrand'])->name('sub-strands.update');
+        Route::put('/indicators/{indicator}', [CurriculumController::class, 'updateIndicator'])->name('indicators.update');
+    });
+
+    // Textbook Management
+    Route::prefix('textbooks')->name('textbooks.')->group(function () {
+        Route::get('/', [TextbookController::class, 'index'])->name('index');
+        Route::post('/', [TextbookController::class, 'store'])->name('store');
+        Route::get('/{textbook}', [TextbookController::class, 'show'])->name('show');
+        Route::delete('/{textbook}', [TextbookController::class, 'destroy'])->name('destroy');
+        Route::post('/{textbook}/approve-toc', [TextbookController::class, 'approveToc'])->name('approve-toc');
+        Route::post('/{textbook}/extract-content', [TextbookController::class, 'extractContent'])->name('extract-content');
+        Route::put('/chapters/{chapter}', [TextbookController::class, 'updateChapter'])->name('chapters.update');
+        Route::put('/sections/{section}', [TextbookController::class, 'updateSection'])->name('sections.update');
+        Route::post('/sections/{section}/link-indicator', [TextbookController::class, 'linkIndicator'])->name('sections.link-indicator');
+    });
 
     // Progress Management
     Route::middleware(['role:super-admin'])->prefix('progress')->name('progress.')->group(

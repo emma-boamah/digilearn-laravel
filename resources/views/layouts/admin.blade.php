@@ -805,6 +805,18 @@
                     <span class="sidebar-link-text">Contents</span>
                 </a>
 
+                <a href="{{ route('admin.curriculum.index') }}"
+                    class="nav-link {{ request()->routeIs('admin.curriculum*') ? 'active' : '' }}">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span class="sidebar-link-text">Curricula</span>
+                </a>
+
+                <a href="{{ route('admin.textbooks.index') }}"
+                    class="nav-link {{ request()->routeIs('admin.textbooks*') ? 'active' : '' }}">
+                    <i class="fas fa-book-open"></i>
+                    <span class="sidebar-link-text">Textbooks</span>
+                </a>
+
                 <a href="{{ route('admin.ai-contents.index') }}"
                     class="nav-link {{ request()->routeIs('admin.ai-contents*') ? 'active' : '' }}">
                     <i class="fas fa-robot"></i>

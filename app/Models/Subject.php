@@ -45,4 +45,20 @@ class Subject extends Model
     {
         return $this->hasMany(TutorSubject::class, 'subject_id');
     }
+
+    /**
+     * Get the curricula associated with this subject.
+     */
+    public function curricula()
+    {
+        return $this->hasMany(Curriculum::class, 'subject_id');
+    }
+
+    /**
+     * Get the textbooks associated with this subject.
+     */
+    public function textbooks()
+    {
+        return $this->hasMany(Textbook::class, 'subject_id');
+    }
 }
