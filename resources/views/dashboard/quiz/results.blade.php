@@ -46,13 +46,15 @@
         }
 
         :root {
-            --primary-blue: #2480f1ff;
-            --primary-blue-hover: #1a93d9ff;
-            --primary-blue-light: rgba(36, 149, 241, 0.1);
-            --success-green: #10B981;
-            --success-green-light: rgba(16, 185, 129, 0.1);
-            --error-red: #EF4444;
-            --error-red-light: rgba(239, 68, 68, 0.1);
+            --primary-blue: #1D4ED8;
+            --primary-blue-hover: #1E40AF;
+            --primary-blue-light: #EFF6FF;
+            --primary-blue-border: #BFDBFE;
+            --success-green: #1D4ED8; /* Unified to Blue per palette requirements */
+            --success-green-light: #EFF6FF;
+            --error-red: #DC2626;
+            --error-red-light: #FEF2F2;
+            --error-red-border: #FECACA;
             --white: #ffffff;
             --gray-25: #fcfcfd;
             --gray-50: #f9fafb;
@@ -81,7 +83,7 @@
             --border-color: #2f3336;
             --header-bg: rgba(22, 24, 28, 0.8);
             --filter-bg: rgba(22, 24, 28, 0.75);
-            --accent: #E11E2D;
+            --accent: #DC2626;
             color-scheme: dark;
 
             /* Overrides for hardcoded grays */
@@ -99,16 +101,18 @@
             --white: #16181c;
         }
 
-        html,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+        }
+
         body {
             margin: 0;
             padding: 0;
             width: 100%;
-            overflow-x: hidden;
+            overflow-x: clip; /* Fix: 'clip' instead of 'hidden' preserves position: sticky! */
             -webkit-overflow-scrolling: touch;
-        }
-
-        body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background-color: var(--gray-50);
             color: var(--gray-900);
@@ -307,7 +311,7 @@
         }
 
         .content-header {
-            margin-bottom: 2.5rem;
+            margin-bottom: 1.5rem;
         }
 
         .breadcrumbs {
@@ -316,7 +320,7 @@
             gap: 0.5rem;
             color: var(--gray-500);
             font-size: 0.875rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
         }
 
         .breadcrumbs .active {
@@ -328,26 +332,27 @@
             font-size: 2rem;
             font-weight: 700;
             color: var(--gray-900);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.35rem;
         }
 
         .page-subtitle {
-            color: var(--gray-900);
-            font-size: 1rem;
+            color: var(--gray-600);
+            font-size: 0.95rem;
         }
 
         /* Stats Grid */
         .stats-grid {
             display: grid;
-            grid-template-columns: 1fr 2fr 1.2fr;
-            gap: 1.5rem;
-            margin-bottom: 3rem;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
         }
 
         .stat-card {
             background: var(--white);
             padding: 1.25rem 1rem;
             border-radius: 16px;
+            border: 1px solid var(--gray-200);
             box-shadow: var(--shadow-sm);
             display: flex;
             flex-direction: column;
@@ -355,7 +360,6 @@
             text-align: center;
             position: relative;
             min-width: 140px;
-            flex: 1 1 calc(50% - 1.5rem);
         }
 
         .stat-circle {
@@ -406,8 +410,8 @@
         }
 
         .stat-icon-wrapper.success {
-            background-color: var(--success-green-light);
-            color: var(--success-green);
+            background-color: var(--primary-blue-light);
+            color: var(--primary-blue);
         }
 
         .stat-icon-wrapper.error {
@@ -416,8 +420,8 @@
         }
 
         .stat-icon-wrapper.warning {
-            background-color: rgba(245, 158, 11, 0.1);
-            color: #F59E0B;
+            background-color: var(--gray-100);
+            color: var(--gray-600);
         }
 
         .stat-value {
@@ -1283,33 +1287,36 @@
         /* Quick Navigation Styles */
         .review-layout {
             display: grid;
-            grid-template-columns: 320px 1fr;
-            gap: 2rem;
-            margin-bottom: 3rem;
+            grid-template-columns: 280px 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
             align-items: start;
         }
 
         .quick-nav-card {
             background: var(--white);
             border-radius: 16px;
+            border: 1px solid var(--gray-200);
             box-shadow: var(--shadow-sm);
-            padding: 1.5rem;
+            padding: 1.25rem;
             position: sticky;
-            top: 100px;
-            /* Adjust based on header/needs */
+            top: 80px;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+            z-index: 10;
         }
 
         .quick-nav-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
             border-bottom: 1px solid var(--gray-100);
         }
 
         .quick-nav-title {
-            font-size: 1.125rem;
+            font-size: 1.05rem;
             font-weight: 700;
             color: var(--gray-900);
         }
@@ -1319,15 +1326,16 @@
             font-weight: 600;
             color: var(--primary-blue);
             background-color: var(--primary-blue-light);
-            padding: 0.25rem 0.75rem;
+            border: 1px solid var(--primary-blue-border);
+            padding: 0.2rem 0.65rem;
             border-radius: 20px;
         }
 
         .quick-nav-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 0.75rem;
-            margin-bottom: 1.5rem;
+            gap: 0.65rem;
+            margin-bottom: 1.25rem;
         }
 
         .nav-box {
@@ -1339,72 +1347,73 @@
             font-weight: 600;
             font-size: 0.875rem;
             cursor: pointer;
-            transition: all 0.2s ease;
-            border: 2px solid transparent;
-            color: var(--gray-500);
+            transition: all 0.15s ease;
+            border: 1.5px solid var(--gray-200);
+            color: var(--gray-600);
             background-color: var(--gray-50);
         }
 
         .nav-box:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-sm);
+            transform: translateY(-1px);
+            border-color: var(--primary-blue);
         }
 
         .nav-box.correct {
-            background-color: var(--success-green-light);
-            color: var(--success-green);
-            border-color: transparent;
+            background-color: var(--primary-blue-light);
+            color: var(--primary-blue);
+            border-color: var(--primary-blue-border);
         }
 
         .nav-box.incorrect {
             background-color: var(--error-red-light);
             color: var(--error-red);
-            border-color: transparent;
-        }
-
-        .nav-box.active {
-            border-color: var(--primary-blue);
-            box-shadow: 0 0 0 2px rgba(36, 145, 241, 0.1);
-        }
-
-        /* Nav Box Status Colors for Active State Override if needed, 
-           or just keep border. Let's make active stand out more if combined. */
-        .nav-box.active.correct {
-            background-color: var(--success-green);
-            color: white;
-        }
-
-        .nav-box.active.incorrect {
-            background-color: var(--error-red);
-            color: white;
+            border-color: var(--error-red-border);
         }
 
         .nav-box.skipped {
             background-color: var(--gray-100);
-            color: var(--gray-600);
+            color: var(--gray-500);
+            border-color: var(--gray-200);
+        }
+
+        .nav-box.active {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.2);
+            font-weight: 800;
+        }
+
+        .nav-box.active.correct {
+            background-color: var(--primary-blue);
+            color: #ffffff;
+            border-color: var(--primary-blue);
+        }
+
+        .nav-box.active.incorrect {
+            background-color: var(--error-red);
+            color: #ffffff;
+            border-color: var(--error-red);
         }
 
         .nav-box.active.skipped {
             background-color: var(--gray-800);
-            color: white;
+            color: #ffffff;
             border-color: var(--gray-800);
         }
-
 
         .quick-nav-legend {
             display: flex;
             justify-content: center;
-            gap: 1rem;
+            gap: 0.85rem;
             font-size: 0.75rem;
             color: var(--gray-500);
-            padding-top: 1rem;
+            padding-top: 0.85rem;
             border-top: 1px dashed var(--gray-200);
         }
 
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 0.375rem;
+            gap: 0.35rem;
         }
 
         .legend-dot {
@@ -1414,7 +1423,7 @@
         }
 
         .legend-dot.correct {
-            background-color: var(--success-green);
+            background-color: var(--primary-blue);
         }
 
         .legend-dot.incorrect {
@@ -1500,27 +1509,27 @@
         }
 
         .marks-pill.full {
-            background: #ecfdf5;
-            color: #059669;
-            border: 1px solid #a7f3d0;
+            background: #EFF6FF;
+            color: #1D4ED8;
+            border: 1px solid #BFDBFE;
         }
 
         .marks-pill.partial {
-            background: #fffbe6;
-            color: #d97706;
-            border: 1px solid #fde68a;
+            background: #F3F4F6;
+            color: #374151;
+            border: 1px solid #D1D5DB;
         }
 
         .marks-pill.zero {
-            background: #fef2f2;
-            color: #dc2626;
-            border: 1px solid #fecaca;
+            background: #FEF2F2;
+            color: #DC2626;
+            border: 1px solid #FECACA;
         }
 
         .marks-pill.pending {
-            background: #f3f4f6;
-            color: #6b7280;
-            border: 1px solid #e5e7eb;
+            background: #F3F4F6;
+            color: #6B7280;
+            border: 1px solid #E5E7EB;
         }
     </style>
 </head>
@@ -1642,7 +1651,7 @@
                     <div class="stat-card accuracy-card">
                         <div class="stat-header">
                             <span class="accuracy-title">Marks Earned</span>
-                            <i class="fas fa-award accuracy-icon" style="color: #059669;"></i>
+                            <i class="fas fa-pen-nib accuracy-icon" style="color: var(--primary-blue);"></i>
                         </div>
                         <div class="accuracy-value-wrapper">
                             <span class="accuracy-value">
@@ -1660,7 +1669,7 @@
                                 @endif
                             </span>
                         </div>
-                        <p class="skipped-text" style="color: var(--primary-blue);">
+                        <p class="skipped-text" style="color: var(--gray-500);">
                             <i class="fas fa-file-alt"></i> {{ $essayQuestions->count() }} {{ Str::plural('Essay Question', $essayQuestions->count()) }}
                         </p>
                     </div>
@@ -1669,7 +1678,7 @@
                     <div class="stat-card accuracy-card">
                         <div class="stat-header">
                             <span class="accuracy-title">{{ $isMixed ? 'Section Overview' : 'Accuracy' }}</span>
-                            <i class="far fa-check-circle accuracy-icon"></i>
+                            <i class="far fa-check-circle accuracy-icon" style="color: var(--primary-blue);"></i>
                         </div>
                         <div class="accuracy-value-wrapper">
                             <span class="accuracy-value">{{ $correctCount }}/{{ $totalCount }}</span>
@@ -1682,17 +1691,41 @@
                             </span>
                         </div>
                         @if($isMixed)
-                            <p class="skipped-text" style="color: var(--primary-blue);">
+                            <p class="skipped-text" style="color: var(--gray-500);">
                                 {{ $mcqQuestions->count() }} MCQs &bull; {{ $essayQuestions->count() }} Essays
                             </p>
                         @elseif($skippedCount > 0)
-                            <p class="skipped-text">You skipped {{ $skippedCount }} {{ Str::plural('question', $skippedCount) }}</p>
+                            <p class="skipped-text" style="color: var(--gray-500);">You skipped {{ $skippedCount }} {{ Str::plural('question', $skippedCount) }}</p>
                         @endif
                     </div>
                 @endif
 
+                @if(!empty($gradedBy) || ($attempt->status ?? null) === 'pending')
+                    <div class="stat-card assessment-driver-card">
+                        <div class="stat-header">
+                            <span class="accuracy-title">Evaluation</span>
+                            <i class="fas fa-clipboard-check accuracy-icon" style="color: var(--primary-blue);"></i>
+                        </div>
+                        <div class="accuracy-value-wrapper" style="margin-top: 0.25rem;">
+                            <span class="accuracy-value" style="font-size: 1.15rem; font-weight: 800; color: var(--primary-blue);">
+                                {{ $gradedBy ?? 'AI Assessor' }}
+                            </span>
+                            <span class="accuracy-status">
+                                @if(($attempt->status ?? 'completed') === 'graded')
+                                    <span style="color: var(--primary-blue); font-weight: 700;"><i class="fas fa-check-circle"></i> Graded</span>
+                                @else
+                                    <span style="color: var(--gray-600); font-weight: 600;"><i class="fas fa-clock"></i> In Review</span>
+                                @endif
+                            </span>
+                        </div>
+                        <p class="skipped-text" style="color: var(--gray-500); font-size: 0.75rem;">
+                            Standard marking rubric applied
+                        </p>
+                    </div>
+                @endif
+
                 <div class="stat-card">
-                    <div class="stat-icon-wrapper warning" style="margin-top: 5px;">
+                    <div class="stat-icon-wrapper" style="background-color: var(--primary-blue-light); color: var(--primary-blue); margin-top: 5px;">
                         <i class="far fa-clock"></i>
                     </div>
                     <span class="stat-value">
@@ -1704,30 +1737,6 @@
                     </span>
                     <span class="stat-label">Duration</span>
                 </div>
-
-                @if(!empty($gradedBy) || ($attempt->status ?? null) === 'pending')
-                    <div class="stat-card assessment-driver-card">
-                        <div class="stat-header">
-                            <span class="accuracy-title">Evaluation</span>
-                            <i class="fas fa-robot accuracy-icon" style="color: var(--primary-blue);"></i>
-                        </div>
-                        <div class="accuracy-value-wrapper" style="margin-top: 0.25rem;">
-                            <span class="accuracy-value" style="font-size: 1.15rem; font-weight: 800; color: var(--primary-blue);">
-                                {{ $gradedBy ?? 'AI Assessor' }}
-                            </span>
-                            <span class="accuracy-status">
-                                @if(($attempt->status ?? 'completed') === 'graded')
-                                    <span style="color: #059669;"><i class="fas fa-check-circle"></i> Verified</span>
-                                @else
-                                    <span style="color: #d97706;"><i class="fas fa-hourglass-half"></i> In Review</span>
-                                @endif
-                            </span>
-                        </div>
-                        <p class="skipped-text" style="color: var(--gray-500); font-size: 0.75rem;">
-                            Automated marking with rubric scheme
-                        </p>
-                    </div>
-                @endif
             </div>
 
 
@@ -1753,7 +1762,7 @@
                                 $qTypeNav = $q['type'] ?? 'mcq';
                             @endphp
                             <div class="nav-box {{ $statusClass }} {{ $index == 0 ? 'active' : '' }}"
-                                onclick="goToQuestion({{ $index }})" id="nav-box-{{ $index }}" data-qtype="{{ $qTypeNav }}">
+                                id="nav-box-{{ $index }}" data-qidx="{{ $index }}" data-qtype="{{ $qTypeNav }}">
                                 {{ $index + 1 }}
                             </div>
                         @endforeach
@@ -1761,7 +1770,7 @@
 
                     <div class="quick-nav-legend">
                         <div class="legend-item">
-                            <div class="legend-dot correct"></div> Correct
+                            <div class="legend-dot correct"></div> Passed
                         </div>
                         <div class="legend-item">
                             <div class="legend-dot incorrect"></div> Incorrect
@@ -1781,7 +1790,7 @@
                                 <h2 class="review-title">Question Review</h2>
                                 @if($percentage == 100)
                                     <span class="all-correct-badge">
-                                        <i class="fas fa-star"></i> ALL CORRECT
+                                        <i class="fas fa-check"></i> ALL CORRECT
                                     </span>
                                 @endif
                             </div>
@@ -1791,13 +1800,13 @@
                     @if($isMixed)
                         <!-- Section Tabs for Mixed Quizzes -->
                         <div class="section-tabs-wrapper">
-                            <button type="button" class="section-tab-btn active" onclick="filterQuizSection('all', this)">
+                            <button type="button" class="section-tab-btn active" data-section="all">
                                 <i class="fas fa-layer-group"></i> All Questions <span class="section-tab-badge">{{ $totalCount }}</span>
                             </button>
-                            <button type="button" class="section-tab-btn" onclick="filterQuizSection('mcq', this)">
+                            <button type="button" class="section-tab-btn" data-section="mcq">
                                 <i class="fas fa-list-ul"></i> Section A: Multiple Choice <span class="section-tab-badge">{{ $mcqQuestions->count() }}</span>
                             </button>
-                            <button type="button" class="section-tab-btn" onclick="filterQuizSection('essay', this)">
+                            <button type="button" class="section-tab-btn" data-section="essay">
                                 <i class="fas fa-pen-nib"></i> Section B: Essay Questions <span class="section-tab-badge">{{ $essayQuestions->count() }}</span>
                             </button>
                         </div>
@@ -1829,9 +1838,9 @@
                                         </div>
                                         @if(($question['type'] ?? 'mcq') === 'essay')
                                             @if(($attempt->status ?? 'completed') === 'pending')
-                                                <span style="font-size: 0.7rem; font-weight: 700; color: #d97706; background: #fffbe6; padding: 2px 8px; border-radius: 4px; display: inline-block; width: fit-content;">PENDING GRADING</span>
+                                                <span style="font-size: 0.7rem; font-weight: 700; color: var(--gray-600); background: var(--gray-100); border: 1px solid var(--gray-200); padding: 2px 8px; border-radius: 4px; display: inline-block; width: fit-content;">PENDING GRADING</span>
                                             @elseif(($attempt->status ?? 'completed') === 'graded')
-                                                <span style="font-size: 0.7rem; font-weight: 700; color: #059669; background: #ecfdf5; padding: 2px 8px; border-radius: 4px; display: inline-block; width: fit-content;">GRADED</span>
+                                                <span style="font-size: 0.7rem; font-weight: 700; color: var(--primary-blue); background: var(--primary-blue-light); border: 1px solid var(--primary-blue-border); padding: 2px 8px; border-radius: 4px; display: inline-block; width: fit-content;">GRADED</span>
                                             @endif
                                         @endif
                                     </div>
@@ -1886,7 +1895,7 @@
                                         @endif
 
                                         @if(($question['type'] ?? 'mcq') === 'mcq')
-                                            <button class="reveal-toggle" onclick="toggleLocalAnswer({{ $index }}, this)">
+                                            <button class="reveal-toggle" data-target-q="{{ $index }}" onclick="toggleLocalAnswer({{ $index }}, this)">
                                                 <i class="far fa-eye"></i> <span>Reveal Answer</span>
                                             </button>
                                         @endif
@@ -1915,24 +1924,24 @@
                                 @endif
 
                                 @if($qType === 'essay')
-                                    <div class="essay-shared-content-box" style="background: rgba(239, 246, 255, 0.5); border: 1px solid #dbeafe; border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem;">
+                                    <div class="essay-shared-content-box" style="background: var(--primary-blue-light); border: 1px solid var(--primary-blue-border); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem;">
                                         @if($hasMainContent || !$hasSubQuestions)
-                                            <div style="font-size: 0.75rem; font-weight: 700; color: #3b82f6; text-transform: uppercase; margin-bottom: 0.75rem;">
+                                            <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; margin-bottom: 0.75rem;">
                                                 {{ $hasSubQuestions ? 'Shared Content / Instructions' : 'Question Text' }}
                                             </div>
                                             <h3 class="question-text" style="margin-bottom: 0;">{!! $sanitizeMath($question['question']) !!}</h3>
                                         @endif
 
                                         @if(!empty($question['correct_answer']))
-                                            <div style="margin-top: 1.5rem; border-top: 1px dashed #bfdbfe; padding-top: 1.5rem;">
+                                            <div style="margin-top: 1.5rem; border-top: 1px dashed var(--primary-blue-border); padding-top: 1.5rem;">
                                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                                                    <span style="font-size: 0.875rem; font-weight: 600; color: #60a5fa;">{{ $hasSubQuestions ? 'SHARED CONTENT REFERENCE ANSWER' : 'REFERENCE ANSWER (SAMPLE)' }}</span>
-                                                    <button class="reveal-toggle" onclick="toggleLocalAnswer({{ $index }}, this)">
+                                                    <span style="font-size: 0.875rem; font-weight: 600; color: var(--primary-blue);">{{ $hasSubQuestions ? 'SHARED CONTENT REFERENCE ANSWER' : 'REFERENCE ANSWER (SAMPLE)' }}</span>
+                                                    <button class="reveal-toggle" data-target-q="{{ $index }}" onclick="toggleLocalAnswer({{ $index }}, this)">
                                                         <i class="far fa-eye"></i> <span>Reveal Answer</span>
                                                     </button>
                                                 </div>
-                                                <div class="sample-answer-box" style="background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.25rem;">
-                                                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--success-green); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                                <div class="sample-answer-box" style="background: var(--white); border: 1px solid var(--gray-200); border-radius: 12px; padding: 1.25rem;">
+                                                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
                                                         <i class="fas fa-check-circle"></i> Correct Answer / Model Response
                                                     </div>
                                                     <div class="sample-content" style="font-size: 1.125rem; line-height: 1.7; color: var(--gray-900);">
@@ -2001,7 +2010,7 @@
                                                                                     $subSample = $sp['sample_answer'] ?? null;
                                                                                 @endphp
                                                                                 @if(!empty($subSample))
-                                                                                    <button class="reveal-toggle" onclick="toggleSubAnswer('{{ $index }}-{{ $sIdx }}-{{ $spIdx }}', this)">
+                                                                                    <button class="reveal-toggle" data-target-sub="{{ $index }}-{{ $sIdx }}-{{ $spIdx }}" onclick="toggleSubAnswer('{{ $index }}-{{ $sIdx }}-{{ $spIdx }}', this)">
                                                                                         <i class="far fa-eye"></i> <span>Sample Answer</span>
                                                                                     </button>
                                                                                 @endif
@@ -2037,8 +2046,8 @@
                                                                             </div>
                                                                             
                                                                             @if(!empty($subSample))
-                                                                                <div class="sample-answer-box" style="background: var(--success-green-light); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1.25rem;">
-                                                                                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--success-green); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                                                                <div class="sample-answer-box" style="background: var(--primary-blue-light); border: 1px solid var(--primary-blue-border); border-radius: 12px; padding: 1.25rem;">
+                                                                                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
                                                                                         <i class="fas fa-check-circle"></i> Sample Answer
                                                                                     </div>
                                                                                     <div class="sample-content" style="font-size: 1rem; line-height: 1.6; color: var(--gray-900);">
@@ -2066,7 +2075,7 @@
                                                                         $subSample = $sub['sample_answer'] ?? ($sub['correct_answer'] ?? null);
                                                                     @endphp
                                                                     @if(!empty($subSample))
-                                                                        <button class="reveal-toggle" onclick="toggleSubAnswer('{{ $index }}-{{ $sIdx }}', this)">
+                                                                        <button class="reveal-toggle" data-target-sub="{{ $index }}-{{ $sIdx }}" onclick="toggleSubAnswer('{{ $index }}-{{ $sIdx }}', this)">
                                                                             <i class="far fa-eye"></i> <span>Sample Answer</span>
                                                                         </button>
                                                                     @endif
@@ -2101,20 +2110,20 @@
                                                                     @endif
     
                                                                     @if(!empty($grading['strengths']["{$index}_{$sIdx}"]) || !empty($grading['weaknesses']["{$index}_{$sIdx}"]))
-                                                                        <div class="ai-insights-box" style="margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, rgba(36, 128, 241, 0.05) 0%, rgba(36, 128, 241, 0.02) 100%); border: 1px solid rgba(36, 128, 241, 0.1); border-radius: 12px;">
+                                                                        <div class="ai-insights-box" style="margin-top: 1rem; padding: 1rem; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 12px;">
                                                                             <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                                                                                <i class="fas fa-robot"></i> AI Insights
+                                                                                <i class="fas fa-chart-line"></i> Performance Insights
                                                                             </div>
                                                                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                                                                                 @if(!empty($grading['strengths']["{$index}_{$sIdx}"]))
                                                                                     <div style="font-size: 0.875rem;">
-                                                                                        <div style="color: var(--success-green); font-weight: 700; margin-bottom: 0.25rem;"><i class="fas fa-plus-circle"></i> Strengths</div>
+                                                                                        <div style="color: var(--primary-blue); font-weight: 700; margin-bottom: 0.25rem;"><i class="fas fa-check-circle"></i> Strengths</div>
                                                                                         <div style="color: var(--gray-700);">{{ $grading['strengths']["{$index}_{$sIdx}"] }}</div>
                                                                                     </div>
                                                                                 @endif
                                                                                 @if(!empty($grading['weaknesses']["{$index}_{$sIdx}"]))
                                                                                     <div style="font-size: 0.875rem;">
-                                                                                        <div style="color: var(--error-red); font-weight: 700; margin-bottom: 0.25rem;"><i class="fas fa-minus-circle"></i> Weaknesses</div>
+                                                                                        <div style="color: var(--error-red); font-weight: 700; margin-bottom: 0.25rem;"><i class="fas fa-times-circle"></i> Weaknesses</div>
                                                                                         <div style="color: var(--gray-700);">{{ $grading['weaknesses']["{$index}_{$sIdx}"] }}</div>
                                                                                     </div>
                                                                                 @endif
@@ -2125,8 +2134,8 @@
     
                                                                 <!-- Sub-Question Sample Answer -->
                                                                 @if(!empty($subSample))
-                                                                    <div class="sample-answer-box" style="background: var(--success-green-light); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1.25rem;">
-                                                                        <div style="font-size: 0.75rem; font-weight: 700; color: var(--success-green); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                                                    <div class="sample-answer-box" style="background: var(--primary-blue-light); border: 1px solid var(--primary-blue-border); border-radius: 12px; padding: 1.25rem;">
+                                                                        <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
                                                                             <i class="fas fa-check-circle"></i> Sample Answer
                                                                         </div>
                                                                         <div class="sample-content" style="font-size: 1rem; line-height: 1.6; color: var(--gray-900);">
@@ -2163,20 +2172,20 @@
                                                     @endif
 
                                                     @if(!empty($grading['strengths'][$index]) || !empty($grading['weaknesses'][$index]))
-                                                        <div class="ai-insights-box" style="margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, rgba(36, 128, 241, 0.05) 0%, rgba(36, 128, 241, 0.02) 100%); border: 1px solid rgba(36, 128, 241, 0.1); border-radius: 12px;">
+                                                        <div class="ai-insights-box" style="margin-top: 1rem; padding: 1rem; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 12px;">
                                                             <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                                                                <i class="fas fa-robot"></i> AI Insights
+                                                                <i class="fas fa-chart-line"></i> Performance Insights
                                                             </div>
                                                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                                                                 @if(!empty($grading['strengths'][$index]))
                                                                     <div style="font-size: 0.875rem;">
-                                                                        <div style="color: var(--success-green); font-weight: 700; margin-bottom: 0.25rem;"><i class="fas fa-plus-circle"></i> Strengths</div>
+                                                                        <div style="color: var(--primary-blue); font-weight: 700; margin-bottom: 0.25rem;"><i class="fas fa-check-circle"></i> Strengths</div>
                                                                         <div style="color: var(--gray-700);">{{ $grading['strengths'][$index] }}</div>
                                                                     </div>
                                                                 @endif
                                                                 @if(!empty($grading['weaknesses'][$index]))
                                                                     <div style="font-size: 0.875rem;">
-                                                                        <div style="color: var(--error-red); font-weight: 700; margin-bottom: 0.25rem;"><i class="fas fa-minus-circle"></i> Weaknesses</div>
+                                                                        <div style="color: var(--error-red); font-weight: 700; margin-bottom: 0.25rem;"><i class="fas fa-times-circle"></i> Weaknesses</div>
                                                                         <div style="color: var(--gray-700);">{{ $grading['weaknesses'][$index] }}</div>
                                                                     </div>
                                                                 @endif
@@ -2277,6 +2286,8 @@
     @endif
 
     <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+        let currentQuestion = 0;
+        const totalQuestions = {{ count($questions) }};
         let currentSectionFilter = 'all';
 
         function filterQuizSection(section, btn) {
@@ -2294,7 +2305,8 @@
                 nav.style.display = isMatch ? 'flex' : 'none';
                 
                 if (isMatch && firstVisibleIndex === null) {
-                    firstVisibleIndex = parseInt(nav.id.replace('nav-box-', ''));
+                    const idxAttr = nav.getAttribute('data-qidx');
+                    firstVisibleIndex = idxAttr !== null ? parseInt(idxAttr) : parseInt(nav.id.replace('nav-box-', ''));
                 }
             });
 
@@ -2324,26 +2336,37 @@
         }
 
         function goToQuestion(index) {
+            if (index < 0 || index >= totalQuestions) return;
+
             // Remove active class from old elements
-            document.getElementById(`question-${currentQuestion}`).classList.remove('active');
+            const oldCard = document.getElementById(`question-${currentQuestion}`);
+            if (oldCard) oldCard.classList.remove('active');
             const oldNav = document.getElementById(`nav-box-${currentQuestion}`);
             if (oldNav) oldNav.classList.remove('active');
 
             currentQuestion = index;
 
             // Add active class to new elements
-            document.getElementById(`question-${currentQuestion}`).classList.add('active');
+            const newCard = document.getElementById(`question-${currentQuestion}`);
+            if (newCard) newCard.classList.add('active');
             const newNav = document.getElementById(`nav-box-${currentQuestion}`);
-            if (newNav) newNav.classList.add('active');
+            if (newNav) {
+                newNav.classList.add('active');
+                newNav.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            }
+
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
 
             // Update buttons considering section filter
             if (currentSectionFilter === 'all') {
-                document.getElementById('prevBtn').disabled = currentQuestion === 0;
-                const nextBtn = document.getElementById('nextBtn');
-                if (currentQuestion === totalQuestions - 1) {
-                    nextBtn.innerHTML = 'Finish Review <i class="fas fa-check"></i>';
-                } else {
-                    nextBtn.innerHTML = 'Next<span class="nav-btn-text-extra"> Question</span> <i class="fas fa-arrow-right"></i>';
+                if (prevBtn) prevBtn.disabled = currentQuestion === 0;
+                if (nextBtn) {
+                    if (currentQuestion === totalQuestions - 1) {
+                        nextBtn.innerHTML = 'Finish Review <i class="fas fa-check"></i>';
+                    } else {
+                        nextBtn.innerHTML = 'Next<span class="nav-btn-text-extra"> Question</span> <i class="fas fa-arrow-right"></i>';
+                    }
                 }
             } else {
                 // Check if there's any prior question in this section
@@ -2355,7 +2378,7 @@
                         break;
                     }
                 }
-                document.getElementById('prevBtn').disabled = !hasPrev;
+                if (prevBtn) prevBtn.disabled = !hasPrev;
 
                 // Check if there's any next question in this section
                 let hasNext = false;
@@ -2366,22 +2389,25 @@
                         break;
                     }
                 }
-                const nextBtn = document.getElementById('nextBtn');
-                if (!hasNext) {
-                    nextBtn.innerHTML = 'Finish Section <i class="fas fa-check"></i>';
-                } else {
-                    nextBtn.innerHTML = 'Next<span class="nav-btn-text-extra"> in Section</span> <i class="fas fa-arrow-right"></i>';
+                if (nextBtn) {
+                    if (!hasNext) {
+                        nextBtn.innerHTML = 'Finish Section <i class="fas fa-check"></i>';
+                    } else {
+                        nextBtn.innerHTML = 'Next<span class="nav-btn-text-extra"> in Section</span> <i class="fas fa-arrow-right"></i>';
+                    }
                 }
             }
 
             // Sync math fields to read-only reliably without race conditions
-            customElements.whenDefined('math-field').then(() => {
-                document.querySelectorAll('math-field').forEach(mf => {
-                    mf.readOnly = true;
-                    mf.removeAttribute('contenteditable');
-                    mf.removeAttribute('tabindex');
+            if (window.customElements) {
+                customElements.whenDefined('math-field').then(() => {
+                    document.querySelectorAll('math-field').forEach(mf => {
+                        mf.readOnly = true;
+                        mf.removeAttribute('contenteditable');
+                        mf.removeAttribute('tabindex');
+                    });
                 });
-            });
+            }
 
             // Render static LaTeX equations inside the container if any
             if (window.renderMathInElement) {
@@ -2400,8 +2426,36 @@
             }
         }
 
-        function openShareModal() { document.getElementById('shareModal').classList.add('active'); }
-        function closeShareModal() { document.getElementById('shareModal').classList.remove('active'); }
+        function toggleLocalAnswer(index, btn) {
+            const card = document.getElementById(`question-${index}`);
+            if (!card) return;
+            const isHidden = card.classList.toggle('answers-hidden');
+            
+            if (btn) {
+                const icon = btn.querySelector('i');
+                const span = btn.querySelector('span');
+                btn.classList.toggle('active', !isHidden);
+                if (icon) icon.className = isHidden ? 'far fa-eye' : 'far fa-eye-slash';
+                if (span) span.textContent = isHidden ? 'Reveal Answer' : 'Hide Answer';
+            }
+        }
+
+        function toggleSubAnswer(idStr, btn) {
+            const item = document.getElementById(`sub-${idStr}`);
+            if (!item) return;
+            const isHidden = item.classList.toggle('answer-hidden');
+            
+            if (btn) {
+                const icon = btn.querySelector('i');
+                const span = btn.querySelector('span');
+                btn.classList.toggle('active', !isHidden);
+                if (icon) icon.className = isHidden ? 'far fa-eye' : 'far fa-eye-slash';
+                if (span) span.textContent = isHidden ? 'Sample Answer' : 'Hide Answer';
+            }
+        }
+
+        function openShareModal() { document.getElementById('shareModal')?.classList.add('active'); }
+        function closeShareModal() { document.getElementById('shareModal')?.classList.remove('active'); }
 
         function shareToX() {
             const score = "{{ $correctCount }}/{{ $totalCount }}";
@@ -2418,10 +2472,22 @@
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
         }
 
-        function openRatingModal() { document.getElementById('ratingModal').classList.add('active'); }
-        function closeRatingModal() { document.getElementById('ratingModal').classList.remove('active'); }
+        function openRatingModal() { document.getElementById('ratingModal')?.classList.add('active'); }
+        function closeRatingModal() { document.getElementById('ratingModal')?.classList.remove('active'); }
 
-        // Confetti effect
+        // Expose functions globally on window
+        window.filterQuizSection = filterQuizSection;
+        window.navigateQuestion = navigateQuestion;
+        window.goToQuestion = goToQuestion;
+        window.toggleLocalAnswer = toggleLocalAnswer;
+        window.toggleSubAnswer = toggleSubAnswer;
+        window.openShareModal = openShareModal;
+        window.closeShareModal = closeShareModal;
+        window.shareToX = shareToX;
+        window.shareToWhatsApp = shareToWhatsApp;
+        window.openRatingModal = openRatingModal;
+        window.closeRatingModal = closeRatingModal;
+
         @if ($percentage >= 80)
             function createConfetti() {
                 for (let i = 0; i < 50; i++) {
@@ -2429,7 +2495,7 @@
                     confetti.className = 'confetti';
                     confetti.style.left = Math.random() * 100 + 'vw';
                     confetti.style.top = '-10px';
-                    confetti.style.backgroundColor = ['#F15A24', '#10B981', '#2677B8', '#F59E0B'][Math.floor(Math.random() * 4)];
+                    confetti.style.backgroundColor = ['#1D4ED8', '#2563EB', '#60A5FA', '#93C5FD'][Math.floor(Math.random() * 4)];
                     confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
                     document.body.appendChild(confetti);
 
@@ -2444,103 +2510,137 @@
                     animation.onfinish = () => confetti.remove();
                 }
             }
-            window.onload = () => {
+        @endif
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Navigation button listeners (CSP-safe)
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            if (prevBtn) {
+                prevBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    navigateQuestion(-1);
+                });
+            }
+            if (nextBtn) {
+                nextBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    navigateQuestion(1);
+                });
+            }
+
+            // Quick navigation boxes
+            document.querySelectorAll('.nav-box').forEach(box => {
+                box.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const idx = parseInt(box.getAttribute('data-qidx'));
+                    if (!isNaN(idx)) goToQuestion(idx);
+                });
+            });
+
+            // Section tabs
+            document.querySelectorAll('.section-tab-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    filterQuizSection(btn.getAttribute('data-section'), btn);
+                });
+            });
+
+            // Reveal and Sample Answer buttons
+            document.querySelectorAll('.reveal-toggle').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetSub = btn.getAttribute('data-target-sub');
+                    const targetQ = btn.getAttribute('data-target-q');
+                    if (targetSub) {
+                        toggleSubAnswer(targetSub, btn);
+                    } else if (targetQ !== null) {
+                        toggleLocalAnswer(parseInt(targetQ), btn);
+                    }
+                });
+            });
+
+            // Rating Star logic
+            document.querySelectorAll('.star-label').forEach((label, idx) => {
+                label.addEventListener('click', () => {
+                    document.querySelectorAll('.star-label').forEach((l, i) => {
+                        l.classList.toggle('filled', i <= idx);
+                    });
+                });
+            });
+
+            // Rating Form Submission
+            const ratingForm = document.getElementById('ratingForm');
+            if (ratingForm) {
+                ratingForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    const formData = new FormData(this);
+                    const submitBtn = this.querySelector('.submit-rating');
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.innerText = 'Submitting...';
+                    }
+
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        }
+                    })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success) {
+                                closeRatingModal();
+                                alert('Thank you for your feedback!');
+                            }
+                        })
+                        .catch(() => {
+                            if (submitBtn) {
+                                submitBtn.disabled = false;
+                                submitBtn.innerText = 'Submit Rating';
+                            }
+                        });
+                });
+            }
+
+            // Sidebar Toggle Logic
+            const sidebar = document.getElementById('youtubeSidebar');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const mobileToggle = document.getElementById('mobileSidebarToggle');
+
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (window.innerWidth <= 1024) {
+                        sidebar.classList.toggle('mobile-open');
+                    } else {
+                        sidebar.classList.toggle('collapsed');
+                    }
+                });
+            }
+
+            // Close mobile sidebar on click outside
+            document.addEventListener('click', (e) => {
+                if (window.innerWidth <= 1024 && sidebar) {
+                    if (!sidebar.contains(e.target) && !mobileToggle?.contains(e.target) && !sidebarToggle?.contains(e.target)) {
+                        sidebar.classList.remove('mobile-open');
+                    }
+                }
+            });
+
+            // Confetti effect for 80%+
+            @if ($percentage >= 80)
                 createConfetti();
                 @if (!$hasRated)
                     setTimeout(openRatingModal, 2000);
                 @endif
-                };
-        @endif
+            @endif
 
-        // Rating form logic
-        document.querySelectorAll('.star-label').forEach((label, idx) => {
-            label.addEventListener('click', () => {
-                document.querySelectorAll('.star-label').forEach((l, i) => {
-                    l.classList.toggle('filled', i <= idx);
-                });
-            });
+            // Initialize question 0 state
+            goToQuestion(0);
         });
-
-        // AJAX submission for rating
-        const ratingForm = document.getElementById('ratingForm');
-        if (ratingForm) {
-            ratingForm.addEventListener('submit', function (e) {
-                e.preventDefault();
-                const formData = new FormData(this);
-                const submitBtn = this.querySelector('.submit-rating');
-                submitBtn.disabled = true;
-                submitBtn.innerText = 'Submitting...';
-
-                fetch(this.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json'
-                    }
-                })
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.success) {
-                            closeRatingModal();
-                            alert('Thank you for your feedback!');
-                        }
-                    })
-                    .catch(() => {
-                        submitBtn.disabled = false;
-                        submitBtn.innerText = 'Submit Rating';
-                    });
-            });
-        }
-        // Sidebar Toggle Logic
-        const sidebar = document.getElementById('youtubeSidebar');
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        const mobileToggle = document.getElementById('mobileSidebarToggle');
-
-        if (sidebarToggle) {
-            sidebarToggle.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (window.innerWidth <= 1024) {
-                    sidebar.classList.toggle('mobile-open');
-                } else {
-                    sidebar.classList.toggle('collapsed');
-                }
-            });
-        }
-
-        // Close mobile sidebar on click outside
-        document.addEventListener('click', (e) => {
-            if (window.innerWidth <= 1024) {
-                if (!sidebar.contains(e.target) && !mobileToggle?.contains(e.target) && !sidebarToggle?.contains(e.target)) {
-                    sidebar.classList.remove('mobile-open');
-                }
-            }
-        });
-    </script>
-    <script>
-        function toggleLocalAnswer(index, btn) {
-            const card = document.getElementById(`question-${index}`);
-            const isHidden = card.classList.toggle('answers-hidden');
-            
-            const icon = btn.querySelector('i');
-            const span = btn.querySelector('span');
-            
-            btn.classList.toggle('active', !isHidden);
-            icon.className = isHidden ? 'far fa-eye' : 'far fa-eye-slash';
-            span.textContent = isHidden ? 'Reveal Answer' : 'Hide Answer';
-        }
-
-        function toggleSubAnswer(idStr, btn) {
-            const item = document.getElementById(`sub-${idStr}`);
-            const isHidden = item.classList.toggle('answer-hidden');
-            
-            const icon = btn.querySelector('i');
-            const span = btn.querySelector('span');
-            
-            btn.classList.toggle('active', !isHidden);
-            icon.className = isHidden ? 'far fa-eye' : 'far fa-eye-slash';
-            span.textContent = isHidden ? 'Sample Answer' : 'Hide Answer';
-        }
     </script>
     @include('dashboard.quiz.partials.lightbox')
 </body>
