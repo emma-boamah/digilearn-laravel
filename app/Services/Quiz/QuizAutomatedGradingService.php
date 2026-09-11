@@ -145,7 +145,7 @@ class QuizAutomatedGradingService
                                     $sp['text'] ?? '',
                                     $spResponse,
                                     $sample
-                                ], $question['image'] ?? null);
+                                ], $sp['image'] ?? ($sub['image'] ?? ($question['image'] ?? null)));
 
                                 $partsToGrade[] = [
                                     'key' => $key,
@@ -177,7 +177,7 @@ class QuizAutomatedGradingService
                                 $sub['text'] ?? '',
                                 $subResponse,
                                 $sample
-                            ], $question['image'] ?? null);
+                            ], $sub['image'] ?? ($question['image'] ?? null));
 
                             $partsToGrade[] = [
                                 'key' => $key,

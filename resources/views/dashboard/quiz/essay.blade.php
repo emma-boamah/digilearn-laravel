@@ -597,6 +597,16 @@
         </div>
     </header>
 
+    @if(session('error') || $errors->any())
+        <div style="background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 0.85rem 1.5rem; margin: 0.75rem 1rem 0; border-radius: 0.5rem; display: flex; align-items: center; justify-content: space-between; z-index: 100; position: relative;">
+            <div>
+                <strong><i class="fas fa-exclamation-triangle"></i> Notice:</strong>
+                {{ session('error') ?? $errors->first() }}
+            </div>
+            <button type="button" onclick="this.parentElement.remove()" style="background:none; border:none; color:#b91c1c; font-size:1.25rem; cursor:pointer; line-height:1;">&times;</button>
+        </div>
+    @endif
+
     <!-- Workspace -->
     <main class="workspace">
         <!-- Question Pane -->
@@ -1168,7 +1178,7 @@
 
             document.getElementById('finalEssay').value = fullEssay;
             document.getElementById('finalAnswers').value = JSON.stringify(answersObj);
-            document.getElementById('time_spent').value = timeLimit - timeRemaining;
+            document.getElementById('time_spent').value = Math.max(0, Math.floor(timeLimit - timeRemaining));
 
             const quizId = "{{ $quiz['id'] ?? 'default' }}";
             quillInstances.forEach(item => {

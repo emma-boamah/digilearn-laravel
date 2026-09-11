@@ -364,6 +364,11 @@ class QuizController extends Controller
 
         $seconds = (is_array($quiz) && isset($quiz['time_limit_minutes']) ? $quiz['time_limit_minutes'] : 3) * 60;
         $hasAttempted = $this->checkUserAttempt($quizId, Auth::id());
+
+        // Initialize anti-cheat heartbeat on essay quiz load
+        $userId = Auth::id();
+        Cache::put("quiz_heartbeat_{$userId}_{$quizId}", now()->timestamp, 3600);
+
         return view('dashboard.quiz.essay', compact('quiz', 'seconds', 'hasAttempted'));
     }
 
@@ -381,10 +386,20 @@ class QuizController extends Controller
 
         $isViolation = $request->has('integrity_violation') && $request->input('integrity_violation') == 'true';
 
+        Log::info('submitEssay received submission', [
+            'quiz_id' => $quizId,
+            'user_id' => Auth::id(),
+            'has_essay' => $request->filled('essay'),
+            'essay_len' => strlen($request->input('essay', '')),
+            'has_answers' => $request->filled('answers'),
+            'time_spent' => $request->input('time_spent'),
+            'is_violation' => $isViolation,
+        ]);
+
         $request->validate([
-            'essay' => $isViolation ? 'nullable|string' : 'required|string|min:20|max:20000',
-            'answers' => 'nullable|string', // JSON from updated frontend logic
-            'time_spent' => 'integer|min:0',
+            'essay' => 'nullable|string',
+            'answers' => 'nullable|string',
+            'time_spent' => 'nullable|integer|min:0',
         ]);
 
         $failedDueToViolation = $isViolation;
@@ -397,11 +412,10 @@ class QuizController extends Controller
         $lastHeartbeat = Cache::get($heartbeatKey);
         $currentPoints = Cache::get($pointsKey, 0);
 
-        if (!$lastHeartbeat || (now()->timestamp - $lastHeartbeat > 120)) {
-            $failedDueToViolation = true;
-        }
-
         if ($currentPoints >= 10) {
+            $failedDueToViolation = true;
+        } elseif ($lastHeartbeat && (now()->timestamp - $lastHeartbeat > 300)) {
+            // Only trigger violation if heartbeat was previously established and expired for > 5 minutes
             $failedDueToViolation = true;
         }
 
@@ -543,6 +557,7 @@ class QuizController extends Controller
             'score' => $score,
             'total' => $totalQuestions,
             'percentage' => $percentage,
+            'attempt' => $attempt->id,
         ])->with('success', 'Essay submitted and graded by AI.');
     }
 
@@ -943,11 +958,10 @@ class QuizController extends Controller
         $grading = [];
         $analysis = [];
         if (is_array($quiz) && isset($quiz['questions']) && is_array($quiz['questions'])) {
-            // Get the user's last attempt for this quiz
-            $lastAttempt = QuizAttempt::where('user_id', Auth::id())
-                ->where('quiz_id', $quizId)
-                ->orderBy('completed_at', 'desc')
-                ->first();
+            // Get the specific attempt if requested, otherwise user's last attempt for this quiz
+            $attemptId = $request->input('attempt');
+            $attemptQuery = QuizAttempt::where('user_id', Auth::id())->where('quiz_id', $quizId);
+            $lastAttempt = $attemptId ? ((clone $attemptQuery)->where('id', $attemptId)->first() ?? $attemptQuery->orderBy('completed_at', 'desc')->first()) : $attemptQuery->orderBy('completed_at', 'desc')->first();
 
             if ($lastAttempt && $lastAttempt->grading_details) {
                 $grading = $lastAttempt->grading_details;
