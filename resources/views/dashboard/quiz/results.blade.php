@@ -1119,6 +1119,295 @@
             color: var(--gray-400);
         }
 
+        /* Result Performance / Celebration Popup Modal */
+        .result-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2500;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            padding: 1.25rem;
+        }
+
+        .result-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .result-modal-content {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 2.5rem 2rem 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+            max-width: 460px;
+            width: 100%;
+            position: relative;
+            text-align: center;
+            transform: scale(0.85) translateY(20px);
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+            border: 1px solid var(--gray-200);
+            overflow: hidden;
+        }
+
+        .result-modal-overlay.active .result-modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+        .result-modal-content.failed {
+            border-top: 6px solid var(--error-red);
+        }
+
+        .result-modal-content.credit,
+        .result-modal-content.excellent {
+            border-top: 6px solid var(--primary-blue);
+        }
+
+        .result-modal-media {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1.25rem;
+            min-height: 150px;
+        }
+
+        .result-popup-img {
+            max-height: 160px;
+            max-width: 220px;
+            object-fit: contain;
+            filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.12));
+            animation: popInBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes popInBounce {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .result-tier-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.95rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.85rem;
+        }
+
+        .tier-badge-failed {
+            background: var(--error-red-light);
+            color: var(--error-red);
+            border: 1px solid var(--error-red-border);
+        }
+
+        .tier-badge-credit,
+        .tier-badge-excellent {
+            background: var(--primary-blue-light);
+            color: var(--primary-blue);
+            border: 1px solid var(--primary-blue-border);
+        }
+
+        .pill-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .result-modal-title {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--gray-900);
+            margin: 0 0 0.5rem;
+            line-height: 1.3;
+        }
+
+        .result-modal-desc {
+            font-size: 0.9rem;
+            line-height: 1.55;
+            color: var(--gray-600);
+            margin: 0 0 1.25rem;
+        }
+
+        .result-modal-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 0.75rem;
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            padding: 0.85rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-mini-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+            text-align: center;
+        }
+
+        .mini-stat-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .mini-stat-val {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--gray-900);
+        }
+
+        .mini-stat-val.val-red {
+            color: var(--error-red);
+        }
+
+        .mini-stat-val.val-blue {
+            color: var(--primary-blue);
+        }
+
+        .result-modal-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+        }
+
+        .btn-modal-primary {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            background: var(--primary-blue);
+            color: var(--white);
+            border: none;
+            border-radius: 10px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-modal-primary:hover {
+            background: var(--primary-blue-hover);
+            transform: translateY(-1px);
+        }
+
+        .result-modal-content.failed .btn-modal-primary {
+            background: var(--gray-800);
+        }
+
+        .result-modal-content.failed .btn-modal-primary:hover {
+            background: var(--gray-900);
+        }
+
+        .btn-modal-secondary {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            background: var(--white);
+            color: var(--gray-700);
+            border: 1px solid var(--gray-300);
+            border-radius: 10px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-modal-secondary:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+            color: var(--gray-900);
+        }
+
+        .result-modal-content.failed .btn-modal-secondary {
+            background: var(--error-red);
+            color: var(--white);
+            border-color: var(--error-red);
+        }
+
+        .result-modal-content.failed .btn-modal-secondary:hover {
+            background: #b91c1c;
+            border-color: #b91c1c;
+            color: var(--white);
+        }
+
+        .result-modal-autoclose-hint {
+            margin-top: 1.15rem;
+            font-size: 0.78rem;
+            color: var(--gray-500);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            font-weight: 500;
+            user-select: none;
+        }
+
+        .result-modal-autoclose-hint i {
+            font-size: 0.75rem;
+            color: var(--gray-400);
+        }
+
+        .result-modal-autoclose-hint strong {
+            color: var(--gray-700);
+            font-weight: 700;
+        }
+
+        .result-modal-autoclose-hint .paused-indicator {
+            color: var(--primary-blue);
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .result-modal-content.failed .result-modal-autoclose-hint .paused-indicator {
+            color: var(--error-red);
+        }
+
+        .result-modal-timer-track {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gray-200);
+            overflow: hidden;
+        }
+
+        .result-modal-timer-fill {
+            height: 100%;
+            width: 100%;
+            background: var(--primary-blue);
+            transform-origin: left;
+            transition: width 0.08s linear;
+        }
+
+        .result-modal-content.failed .result-modal-timer-fill {
+            background: var(--error-red);
+        }
+
         .stars-container {
             display: flex;
             gap: 0.5rem;
@@ -2274,6 +2563,112 @@
         </main>
     </div>
 
+    <!-- Result Celebration / Performance Popup Modal -->
+    @php
+        $resultTier = 'excellent';
+        if ($percentage < 50) {
+            $resultTier = 'failed';
+        } elseif ($percentage < 80) {
+            $resultTier = 'credit';
+        } else {
+            $resultTier = 'excellent';
+        }
+
+        // Images mapped based on user specification:
+        // Failed (<50%): First & last images (failed-girl.jpg, failed-stamp.png)
+        $failedImages = ['failed-girl.jpg', 'failed-stamp.png'];
+        // Credit (50% to 79%): Last but one image (credit-student.png)
+        $creditImages = ['credit-student.png'];
+        // Excellent (>=80%): Other two images (excellent-student.png, pass-gradcap.png)
+        $excellentImages = ['excellent-student.png', 'pass-gradcap.png'];
+
+        if ($resultTier === 'failed') {
+            $chosenImg = $failedImages[array_rand($failedImages)];
+            $tierBadgeClass = 'tier-badge-failed';
+            $tierBadgeText = 'Needs Practice';
+            $modalTitle = "Don't Give Up! Keep Going";
+            $modalDesc = "You scored " . round($percentage) . "%. Take time to review the instructor feedback and model answers below to see where you can improve!";
+            $btnPrimaryText = "Review Questions";
+            $btnSecondaryText = "Retake Quiz";
+            $btnSecondaryUrl = route($retakeRoute, $quiz['encoded_id']);
+        } elseif ($resultTier === 'credit') {
+            $chosenImg = $creditImages[0];
+            $tierBadgeClass = 'tier-badge-credit';
+            $tierBadgeText = 'Good Pass';
+            $modalTitle = "Well Done! You Passed!";
+            $modalDesc = "You achieved a solid credit score of " . round($percentage) . "%. Check the instructor reference answers below to see how to score full marks next time!";
+            $btnPrimaryText = "Review Answers";
+            $btnSecondaryText = "Retake to Improve";
+            $btnSecondaryUrl = route($retakeRoute, $quiz['encoded_id']);
+        } else {
+            $chosenImg = $excellentImages[array_rand($excellentImages)];
+            $tierBadgeClass = 'tier-badge-excellent';
+            $tierBadgeText = 'Outstanding Mastery';
+            $modalTitle = "Outstanding Achievement! 🎉";
+            $modalDesc = "Magnificent work! You scored an impressive " . round($percentage) . "% on this assessment. You have demonstrated strong mastery of this topic!";
+            $btnPrimaryText = "Review My Answers";
+            $btnSecondaryText = "Explore More Quizzes";
+            $btnSecondaryUrl = route('quiz.index');
+        }
+    @endphp
+
+    <div class="result-modal-overlay" id="resultModal">
+        <div class="result-modal-content {{ $resultTier }}">
+            <button class="modal-close" id="resultModalCloseBtn" aria-label="Close">×</button>
+            
+            <div class="result-modal-media">
+                <img src="{{ asset('images/quiz-results/' . $chosenImg) }}" alt="Result Illustration" class="result-popup-img">
+            </div>
+
+            <div class="result-modal-body">
+                <div class="result-tier-pill {{ $tierBadgeClass }}">
+                    <span class="pill-dot"></span>
+                    <span>{{ round($percentage) }}% &bull; {{ $tierBadgeText }}</span>
+                </div>
+
+                <h2 class="result-modal-title">{{ $modalTitle }}</h2>
+                <p class="result-modal-desc">{{ $modalDesc }}</p>
+
+                <div class="result-modal-stats">
+                    <div class="modal-mini-stat">
+                        <span class="mini-stat-label">Score</span>
+                        <span class="mini-stat-val">{{ $correctCount }} / {{ $totalCount }}</span>
+                    </div>
+                    @if(isset($totalMarksPossible) && $totalMarksPossible > 0)
+                        <div class="modal-mini-stat">
+                            <span class="mini-stat-label">Marks</span>
+                            <span class="mini-stat-val">{{ round($totalMarksEarned, 1) }} / {{ $totalMarksPossible }}</span>
+                        </div>
+                    @endif
+                    <div class="modal-mini-stat">
+                        <span class="mini-stat-label">Status</span>
+                        <span class="mini-stat-val {{ $resultTier === 'failed' ? 'val-red' : 'val-blue' }}">
+                            {{ strtoupper($resultTier === 'failed' ? 'Needs Review' : 'Passed') }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="result-modal-actions">
+                    <button type="button" class="btn-modal-primary" id="btnDismissResultModal">
+                        <i class="fas fa-eye"></i> {{ $btnPrimaryText }}
+                    </button>
+                    <a href="{{ $btnSecondaryUrl }}" class="btn-modal-secondary">
+                        <i class="fas {{ $resultTier === 'excellent' ? 'fa-th-large' : 'fa-redo' }}"></i> {{ $btnSecondaryText }}
+                    </a>
+                </div>
+
+                <div class="result-modal-autoclose-hint" id="resultModalAutocloseHint">
+                    <i class="fas fa-history"></i>
+                    <span id="autocloseStatusText">Auto-closing in <strong id="autoCloseCountdown">10</strong>s</span>
+                </div>
+            </div>
+
+            <div class="result-modal-timer-track">
+                <div class="result-modal-timer-fill" id="resultModalTimerFill"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Share Modal -->
     <div class="modal-overlay" id="shareModal">
         <div class="modal-content">
@@ -2527,6 +2922,92 @@
         function openShareModal() { document.getElementById('shareModal')?.classList.add('active'); }
         function closeShareModal() { document.getElementById('shareModal')?.classList.remove('active'); }
 
+        let autoCloseTimerId = null;
+        let autoCloseRemainingMs = 10000;
+        const AUTO_CLOSE_TOTAL_MS = 10000;
+        let autoCloseIsPaused = false;
+        let autoCloseLastTick = null;
+
+        function updateAutoCloseUI() {
+            const fill = document.getElementById('resultModalTimerFill');
+            const statusEl = document.getElementById('autocloseStatusText');
+
+            const pct = Math.max(0, Math.min(100, (autoCloseRemainingMs / AUTO_CLOSE_TOTAL_MS) * 100));
+            if (fill) {
+                fill.style.width = pct + '%';
+            }
+            if (statusEl) {
+                if (autoCloseIsPaused) {
+                    statusEl.innerHTML = '<span class="paused-indicator"><i class="fas fa-pause-circle"></i> Paused</span> &bull; Move mouse out to resume';
+                } else {
+                    const secs = Math.ceil(autoCloseRemainingMs / 1000);
+                    statusEl.innerHTML = `Auto-closing in <strong id="autoCloseCountdown">${secs > 0 ? secs : 0}</strong>s`;
+                }
+            }
+        }
+
+        function stopAutoCloseTimer() {
+            if (autoCloseTimerId) {
+                cancelAnimationFrame(autoCloseTimerId);
+                autoCloseTimerId = null;
+            }
+            autoCloseLastTick = null;
+        }
+
+        function startAutoCloseTimer() {
+            stopAutoCloseTimer();
+            autoCloseRemainingMs = AUTO_CLOSE_TOTAL_MS;
+            autoCloseIsPaused = false;
+            autoCloseLastTick = performance.now();
+
+            function tick(now) {
+                const modal = document.getElementById('resultModal');
+                if (!modal || !modal.classList.contains('active')) {
+                    stopAutoCloseTimer();
+                    return;
+                }
+
+                if (!autoCloseLastTick) autoCloseLastTick = now;
+                const delta = now - autoCloseLastTick;
+                autoCloseLastTick = now;
+
+                if (!autoCloseIsPaused) {
+                    autoCloseRemainingMs = Math.max(0, autoCloseRemainingMs - delta);
+                    updateAutoCloseUI();
+
+                    if (autoCloseRemainingMs <= 0) {
+                        closeResultModal();
+                        return;
+                    }
+                }
+
+                autoCloseTimerId = requestAnimationFrame(tick);
+            }
+
+            updateAutoCloseUI();
+            autoCloseTimerId = requestAnimationFrame(tick);
+        }
+
+        function openResultModal() {
+            const modal = document.getElementById('resultModal');
+            if (modal) {
+                modal.classList.add('active');
+                startAutoCloseTimer();
+                @if ($percentage >= 80)
+                    createConfetti();
+                    setTimeout(createConfetti, 650);
+                @endif
+            }
+        }
+
+        function closeResultModal() {
+            const modal = document.getElementById('resultModal');
+            if (modal) {
+                modal.classList.remove('active');
+            }
+            stopAutoCloseTimer();
+        }
+
         function shareToX() {
             const score = "{{ $correctCount }}/{{ $totalCount }}";
             const quizTitle = "{{ trim(str_replace('Quiz for:', '', $quiz['title'])) }}";
@@ -2551,6 +3032,8 @@
         window.goToQuestion = goToQuestion;
         window.toggleLocalAnswer = toggleLocalAnswer;
         window.toggleSubAnswer = toggleSubAnswer;
+        window.openResultModal = openResultModal;
+        window.closeResultModal = closeResultModal;
         window.openShareModal = openShareModal;
         window.closeShareModal = closeShareModal;
         window.shareToX = shareToX;
@@ -2560,21 +3043,26 @@
 
         @if ($percentage >= 80)
             function createConfetti() {
-                for (let i = 0; i < 50; i++) {
+                const colors = ['#1D4ED8', '#2563EB', '#60A5FA', '#93C5FD', '#FFFFFF'];
+                for (let i = 0; i < 55; i++) {
                     const confetti = document.createElement('div');
                     confetti.className = 'confetti';
                     confetti.style.left = Math.random() * 100 + 'vw';
-                    confetti.style.top = '-10px';
-                    confetti.style.backgroundColor = ['#1D4ED8', '#2563EB', '#60A5FA', '#93C5FD'][Math.floor(Math.random() * 4)];
+                    confetti.style.top = '-12px';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.width = (Math.random() * 7 + 6) + 'px';
+                    confetti.style.height = (Math.random() * 12 + 8) + 'px';
+                    confetti.style.borderRadius = Math.random() > 0.4 ? '2px' : '50%';
+                    confetti.style.zIndex = '3000';
                     confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
                     document.body.appendChild(confetti);
 
                     const animation = confetti.animate([
                         { transform: `translate3d(0, 0, 0) rotate(0deg)`, opacity: 1 },
-                        { transform: `translate3d(${(Math.random() - 0.5) * 200}px, 100vh, 0) rotate(${Math.random() * 3000}deg)`, opacity: 0 }
+                        { transform: `translate3d(${(Math.random() - 0.5) * 240}px, 105vh, 0) rotate(${Math.random() * 3000}deg)`, opacity: 0 }
                     ], {
-                        duration: Math.random() * 3000 + 2000,
-                        easing: 'cubic-bezier(0, .9, .57, 1)'
+                        duration: Math.random() * 2600 + 2000,
+                        easing: 'cubic-bezier(0.25, 1, 0.5, 1)'
                     });
 
                     animation.onfinish = () => confetti.remove();
@@ -2583,6 +3071,53 @@
         @endif
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Auto-open result modal on load after smooth 450ms delay
+            setTimeout(openResultModal, 450);
+
+            // Result modal event listeners
+            const btnDismissResult = document.getElementById('btnDismissResultModal');
+            const btnCloseResult = document.getElementById('resultModalCloseBtn');
+            const resultModal = document.getElementById('resultModal');
+
+            if (btnDismissResult) {
+                btnDismissResult.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    closeResultModal();
+                });
+            }
+            if (btnCloseResult) {
+                btnCloseResult.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    closeResultModal();
+                });
+            }
+            if (resultModal) {
+                resultModal.addEventListener('click', (e) => {
+                    if (e.target === resultModal) {
+                        closeResultModal();
+                    }
+                });
+
+                const modalContent = resultModal.querySelector('.result-modal-content');
+                if (modalContent) {
+                    modalContent.addEventListener('mouseenter', () => {
+                        autoCloseIsPaused = true;
+                        updateAutoCloseUI();
+                    });
+
+                    modalContent.addEventListener('mouseleave', () => {
+                        autoCloseIsPaused = false;
+                        autoCloseLastTick = performance.now();
+                        updateAutoCloseUI();
+                    });
+
+                    modalContent.addEventListener('touchstart', () => {
+                        autoCloseIsPaused = true;
+                        updateAutoCloseUI();
+                    }, { passive: true });
+                }
+            }
+
             // Navigation button listeners (CSP-safe)
             const prevBtn = document.getElementById('prevBtn');
             const nextBtn = document.getElementById('nextBtn');
@@ -2700,13 +3235,14 @@
                 }
             });
 
-            // Confetti effect for 80%+
-            @if ($percentage >= 80)
-                createConfetti();
-                @if (!$hasRated)
-                    setTimeout(openRatingModal, 2000);
-                @endif
-            @endif
+            // Close modals on Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeResultModal();
+                    closeShareModal();
+                    closeRatingModal();
+                }
+            });
 
             // Initialize question 0 state
             goToQuestion(0);
