@@ -15,8 +15,9 @@ class ProcessCurriculumExtractionJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = 2;
-    public int $timeout = 600; // 10 minutes max for large curriculum PDFs
+    public int $tries = 3;
+    public int $timeout = 900; // 15 minutes for 2-stage extraction across large documents
+    public int $backoff = 10;
 
     public function __construct(public int $curriculumId)
     {

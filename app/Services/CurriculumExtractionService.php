@@ -180,7 +180,7 @@ PROMPT;
                 ]);
 
                 try {
-                    $this->extractIndicatorsForStrand($strand, $fileBase64, $extractedText);
+                    $this->extractIndicatorsForStrand($strand, $fileBase64, $extractedText, $fullPath);
                 } catch (\Throwable $ex) {
                     Log::warning("Stage 2 warning for Strand '{$strand->title}': " . $ex->getMessage());
                 }
@@ -216,7 +216,7 @@ PROMPT;
     /**
      * Stage 2: Extract detailed indicators, codes, descriptions, and exemplars for a single strand.
      */
-    public function extractIndicatorsForStrand(CurriculumStrand $strand, ?string $fileBase64, ?string $extractedText): void
+    public function extractIndicatorsForStrand(CurriculumStrand $strand, ?string $fileBase64, ?string $extractedText, ?string $fullPdfPath = null): void
     {
         $strand->load('subStrands');
         $subStrandsList = $strand->subStrands->pluck('title')->implode(', ');
@@ -228,7 +228,14 @@ You are an expert curriculum analyst. For the curriculum document provided, focu
 - Strand: "{$strand->title}"
 - Sub-strands: {$subStrandsList}
 
-Extract all Learning Indicators, official indicator codes (e.g. B7.1.1.1.1, B7.1.1.1.2), learning outcome descriptions, and teacher pedagogical exemplars for this specific strand.
+Extract all Learning Indicators, official indicator codes (e.g. B7.1.1.1.1, B7.1.1.1.2, B7.3.3.1.1), learning outcome descriptions, and teacher pedagogical exemplars for this specific strand.
+
+IMPORTANT GUIDELINES FOR EXEMPLARS & VISUALS:
+1. Identify the approximate PDF page number where this indicator and its exemplars appear (look at header/footer or table page markers).
+2. When an exemplar references visual diagrams, symbols, or shapes (for example: Adinkra symbols like Nyame Biribi, Sankofa, Pempamsie, symmetry grids, reflection drawings, geometric figures, charts):
+   - Fully transcribe the example questions, tasks, and symbol names in the "exemplars" field.
+   - Provide a clear textual description of the visual diagrams and activities (e.g., "[Visual Diagram: Adinkra symbols (Nyame Biribi, Sankofa, Pempamsie) showing fold symmetries]", "[Activity: 3x4 grid with shaded square to determine lines of symmetry]").
+3. Keep descriptions clear, structured, and pedagogical.
 
 Output strictly valid JSON matching this schema:
 {
@@ -238,10 +245,11 @@ Output strictly valid JSON matching this schema:
       "title": "Exact Title of Sub-strand",
       "indicators": [
         {
-          "indicator_code": "B7.1.1.1.1",
-          "title": "Model and represent numbers up to 1,000,000,000",
-          "description": "Model number quantities and express numbers in standard form and place value chart.",
-          "exemplars": "Use place value charts to write numbers and determine digit values. Represent quantities using multi-base blocks."
+          "indicator_code": "B7.3.3.1.1",
+          "title": "Determine shapes in real life that have reflectional (or fold) symmetries",
+          "page_number": 102,
+          "description": "Identify and analyze reflectional and line symmetry in cultural artifacts and everyday objects.",
+          "exemplars": "E.g. 1: Identify examples of designs or objects in everyday life that have reflectional symmetries (e.g. Adinkra symbols: Nyame Biribi, Sesa Wo Suban, Sankofa, Pempamsie, Tamfo Bebre, Woforo Dua Pa A, Wo Nsa Da Mu A, Wawa Aba, Mmere Dane).\n\nE.g. 2: In how many different ways can one more square be shaded in a 3x4 grid so that it can have a line of symmetry?"
         }
       ]
     }
@@ -276,7 +284,7 @@ PROMPT;
 
                     $indicatorSort = 1;
                     foreach ($subData['indicators'] as $indData) {
-                        CurriculumIndicator::create([
+                        $indicator = CurriculumIndicator::create([
                             'sub_strand_id' => $subStrand->id,
                             'indicator_code' => $indData['indicator_code'] ?? null,
                             'title' => $indData['title'] ?? 'Indicator ' . $indicatorSort,
@@ -286,10 +294,66 @@ PROMPT;
                                 : ($indData['exemplars'] ?? null),
                             'sort_order' => $indicatorSort++,
                         ]);
+
+                        // Automatically extract images for this indicator if page_number is present and pdfimages exists
+                        $pageNumber = isset($indData['page_number']) ? (int) $indData['page_number'] : null;
+                        if ($fullPdfPath && $pageNumber && $pageNumber > 0) {
+                            $this->extractImagesForIndicator($indicator, $fullPdfPath, $pageNumber);
+                        }
                     }
                 }
             }
         });
+    }
+
+    /**
+     * Extract images from a specific page of a PDF using pdfimages and attach them to the indicator.
+     */
+    protected function extractImagesForIndicator(CurriculumIndicator $indicator, string $fullPdfPath, int $pageNumber): void
+    {
+        if (!function_exists('exec') || !file_exists($fullPdfPath)) {
+            return;
+        }
+
+        try {
+            $mediaDir = storage_path('app/public/curricula/media');
+            if (!is_dir($mediaDir)) {
+                @mkdir($mediaDir, 0755, true);
+            }
+
+            $prefix = "ind_{$indicator->id}_p{$pageNumber}";
+            $tempPrefix = "{$mediaDir}/{$prefix}";
+            $escapedPdf = escapeshellarg($fullPdfPath);
+
+            // pdfimages -f <first_page> -l <last_page> -png <pdf> <image_prefix>
+            $cmd = "pdfimages -f {$pageNumber} -l {$pageNumber} -png {$escapedPdf} " . escapeshellarg($tempPrefix) . " 2>&1";
+            @exec($cmd, $output, $returnVar);
+
+            if ($returnVar === 0) {
+                // Find all generated images for this prefix
+                $extractedFiles = glob("{$mediaDir}/{$prefix}-*.png");
+                $sort = 1;
+
+                foreach ($extractedFiles as $filePath) {
+                    // Filter out tiny 1x1 or decorative separator lines (under 2KB)
+                    if (filesize($filePath) > 2048) {
+                        $relativePath = 'curricula/media/' . basename($filePath);
+                        CurriculumMedia::create([
+                            'mediable_type' => CurriculumIndicator::class,
+                            'mediable_id' => $indicator->id,
+                            'file_path' => $relativePath,
+                            'caption' => "Diagram from page {$pageNumber} for {$indicator->indicator_code}",
+                            'page_number' => $pageNumber,
+                            'sort_order' => $sort++,
+                        ]);
+                    } else {
+                        @unlink($filePath);
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning("Could not extract images for indicator {$indicator->id} on page {$pageNumber}: " . $e->getMessage());
+        }
     }
 
     /**

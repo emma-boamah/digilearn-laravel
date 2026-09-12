@@ -759,6 +759,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::put('/strands/{strand}', [CurriculumController::class, 'updateStrand'])->name('strands.update');
         Route::put('/sub-strands/{subStrand}', [CurriculumController::class, 'updateSubStrand'])->name('sub-strands.update');
         Route::put('/indicators/{indicator}', [CurriculumController::class, 'updateIndicator'])->name('indicators.update');
+        Route::post('/indicators/{indicator}/media', [CurriculumController::class, 'uploadIndicatorMedia'])->name('indicators.media.store');
+        Route::delete('/media/{media}', [CurriculumController::class, 'deleteMedia'])->name('media.destroy');
     });
 
     // Textbook Management
