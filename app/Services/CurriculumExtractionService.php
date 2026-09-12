@@ -76,16 +76,30 @@ class CurriculumExtractionService
             Log::info("Curriculum ID {$curriculum->id}: Starting Stage 1 (Complete Structural Skeleton Extraction)");
 
             $structurePrompt = <<<PROMPT
-You are an expert national curriculum analyst specializing in standard educational frameworks (including Ghana Education Service - GES, NaCCA, WAEC/WASSCE, and Cambridge).
-Analyze the provided curriculum document titled "{$curriculum->title}" for Subject: "{$curriculum->subject->name}".
+You are an expert national curriculum analyst specializing in standard educational frameworks (Ghana Education Service - GES, NaCCA Common Core Programme).
+Analyze the curriculum document titled "{$curriculum->title}" for Subject: "{$curriculum->subject->name}".
 
-Extract the COMPLETE curriculum structure across ALL grades covered in this document (e.g., Basic 7 / JHS 1, Basic 8 / JHS 2, Basic 9 / JHS 3).
-Look closely at the Table of Contents, Scope and Sequence, and curriculum overview tables.
+The Common Core Programme (CCP) Mathematics curriculum spans THREE distinct grade levels:
+1. Basic 7 (JHS 1)
+2. Basic 8 (JHS 2)
+3. Basic 9 (JHS 3)
 
-Requirements:
-1. Extract EVERY Strand for every grade level (e.g. Basic 7 Strand 1, Strand 2, Strand 3, Strand 4; Basic 8 Strand 1, 2, 3, 4; Basic 9 Strand 1, 2, 3, 4).
-2. For each Strand, list all its Sub-strands and their Content Standard codes/titles (e.g. B7.1.1.1, B7.2.1.1).
-3. Do NOT include lengthy indicator descriptions or exemplars in this step. Keep it focused on the complete hierarchy.
+In each grade level, there are 4 distinct strands:
+- STRAND 1: NUMBER
+- STRAND 2: ALGEBRA
+- STRAND 3: GEOMETRY AND MEASUREMENT
+- STRAND 4: HANDLING DATA
+
+CRITICAL REQUIREMENT:
+You MUST extract ALL strands for ALL THREE grades (Total of 12 Strands: 4 for Basic 7, 4 for Basic 8, and 4 for Basic 9).
+Do not stop after Basic 7 or Basic 8. Thoroughly check the entire document, Table of Contents, and Scope & Sequence.
+
+For each Strand:
+1. Specify the "grade_label" clearly: "Basic 7 (JHS 1)", "Basic 8 (JHS 2)", or "Basic 9 (JHS 3)".
+2. Include the exact title (e.g. "STRAND 1: NUMBER").
+3. Include all its Sub-strands with their respective Content Standard codes (e.g. B7.1.1.1, B8.1.1.1, B9.1.1.1).
+
+Do NOT include indicator details or exemplars here. Keep it strictly focused on the complete strand & sub-strand structural tree across all 3 grades.
 
 Output strictly valid JSON matching this schema:
 {
@@ -101,21 +115,28 @@ Output strictly valid JSON matching this schema:
         {
           "title": "Sub-strand 1: Number and Numeration Systems",
           "content_standard": "B7.1.1.1 Demonstrate an understanding of place value of large numbers"
-        },
-        {
-          "title": "Sub-strand 2: Number Operations",
-          "content_standard": "B7.1.2.1 Apply mental mathematics strategies and number operations"
         }
       ]
     },
     {
-      "title": "STRAND 2: ALGEBRA",
-      "description": "Patterns, Relations, and Algebraic Expressions",
-      "grade_label": "Basic 7 (JHS 1)",
+      "title": "STRAND 1: NUMBER",
+      "description": "Number and Numeration Systems",
+      "grade_label": "Basic 8 (JHS 2)",
       "sub_strands": [
         {
-          "title": "Sub-strand 1: Patterns and Relations",
-          "content_standard": "B7.2.1.1 Extend and apply patterns and relations"
+          "title": "Sub-strand 1: Number and Numeration Systems",
+          "content_standard": "B8.1.1.1 Apply mental mathematics strategies and number operations"
+        }
+      ]
+    },
+    {
+      "title": "STRAND 1: NUMBER",
+      "description": "Number and Numeration Systems",
+      "grade_label": "Basic 9 (JHS 3)",
+      "sub_strands": [
+        {
+          "title": "Sub-strand 1: Number and Numeration Systems",
+          "content_standard": "B9.1.1.1 Apply operations on real numbers"
         }
       ]
     }
@@ -562,7 +583,7 @@ PROMPT;
                         ],
                         'generationConfig' => [
                             'temperature' => 0.1,
-                            'maxOutputTokens' => 8192,
+                            'maxOutputTokens' => 16384,
                             'responseMimeType' => 'application/json',
                         ],
                     ]);
