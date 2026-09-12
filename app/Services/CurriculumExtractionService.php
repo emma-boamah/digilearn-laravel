@@ -283,6 +283,7 @@ PROMPT;
                             'description' => $indData['description'] ?? ($indData['title'] ?? ''),
                             'exemplars' => is_array($indData['exemplars'] ?? null) 
                                 ? implode("\n\n", $indData['exemplars']) 
+                                : ($indData['exemplars'] ?? null),
                             'sort_order' => $indicatorSort++,
                         ]);
                     }
