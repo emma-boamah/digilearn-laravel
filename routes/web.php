@@ -757,8 +757,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/{curriculum}/re-extract', [CurriculumController::class, 'reExtract'])->name('re-extract');
         Route::get('/{curriculum}/status', [CurriculumController::class, 'status'])->name('status');
         Route::put('/strands/{strand}', [CurriculumController::class, 'updateStrand'])->name('strands.update');
+        Route::delete('/strands/{strand}', [CurriculumController::class, 'deleteStrand'])->name('strands.destroy');
+        Route::post('/strands/{strand}/extract', [CurriculumController::class, 'extractStrandIndicators'])->name('strands.extract');
         Route::put('/sub-strands/{subStrand}', [CurriculumController::class, 'updateSubStrand'])->name('sub-strands.update');
+        Route::delete('/sub-strands/{subStrand}', [CurriculumController::class, 'deleteSubStrand'])->name('sub-strands.destroy');
+        Route::post('/sub-strands/{subStrand}/indicators', [CurriculumController::class, 'storeIndicator'])->name('sub-strands.indicators.store');
         Route::put('/indicators/{indicator}', [CurriculumController::class, 'updateIndicator'])->name('indicators.update');
+        Route::delete('/indicators/{indicator}', [CurriculumController::class, 'deleteIndicator'])->name('indicators.destroy');
         Route::post('/indicators/{indicator}/media', [CurriculumController::class, 'uploadIndicatorMedia'])->name('indicators.media.store');
         Route::delete('/media/{media}', [CurriculumController::class, 'deleteMedia'])->name('media.destroy');
     });
