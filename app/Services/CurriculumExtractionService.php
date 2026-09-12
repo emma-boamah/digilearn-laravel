@@ -74,37 +74,35 @@ class CurriculumExtractionService
 You are an expert national curriculum analyst specializing in standard educational frameworks (including Ghana Education Service - GES, NaCCA, WAEC/WASSCE, and Cambridge).
 Analyze the provided curriculum document titled "{$curriculum->title}" for Subject: "{$curriculum->subject->name}".
 
-Extract the complete hierarchical educational structure. Standard curriculum documents are organized into:
-1. Strands (broad content domains / themes)
-2. Sub-strands (specific topics within the strand)
-3. Content Standards (what learners are expected to know and understand)
-4. Indicators (specific, measurable learning objectives / outcomes, usually identified by codes like B7.1.1.1.1, B8.2.1.1, etc.)
-5. Exemplars (concrete classroom activities, teaching examples, or problem scenarios)
+Look for the "Scope and Sequence", "Curriculum Structure", or the main tabular standards in this curriculum document.
+Extract all Strands, Sub-strands, Content Standards, and Learning Indicators across all covered grades (e.g. Basic 7 / JHS 1, Basic 8 / JHS 2, Basic 9 / JHS 3).
 
-If this curriculum covers multiple grades (e.g., Basic 7, Basic 8, Basic 9 OR JHS 1, JHS 2, JHS 3 OR Primary 1-6), make sure to indicate the grade_label for each strand or sub-strand.
-IMPORTANT: Keep descriptions and exemplars concise (1-2 sentences each) so that the entire curriculum hierarchy fits within output limits without truncating the JSON.
+Formatting requirements:
+1. Ensure EVERY Strand and Sub-strand from the curriculum is captured.
+2. For each Sub-strand, extract the Content Standard and its Indicators (with official codes like B7.1.1.1, B7.1.1.2, B8.1.1.1, etc.).
+3. Keep descriptions and exemplars concise (1-2 sentences) so that all strands fit completely within the JSON response without hitting length limits.
 
-Output MUST be strictly valid JSON:
+Output MUST be strictly valid JSON matching this schema:
 {
   "curriculum_title": "Official Title of Curriculum",
   "education_body": "GES / NaCCA / WAEC / etc.",
   "subject": "{$curriculum->subject->name}",
   "strands": [
     {
-      "title": "Strand 1: Name of Strand (e.g. Number)",
-      "description": "Brief description of the strand scope.",
-      "grade_label": "e.g. JHS 1 or Basic 7 or Primary 4 (or null if single-grade)",
+      "title": "STRAND 1: NUMBER",
+      "description": "Number and Numeration Systems",
+      "grade_label": "Basic 7 (JHS 1)",
       "sub_strands": [
         {
-          "title": "Sub-strand 1: Topic Name (e.g. Number Operations)",
-          "description": "Scope of this sub-strand.",
-          "content_standard": "Statement of what learners should know/understand.",
+          "title": "Sub-strand 1: Number and Numeration Systems",
+          "description": "Counting, representation, and operations",
+          "content_standard": "B7.1.1.1 Demonstrate an understanding of place value of large numbers.",
           "indicators": [
             {
-              "indicator_code": "e.g. B7.1.1.1.1",
-              "title": "Short title of the indicator",
-              "description": "Concise summary of what the learner will demonstrate.",
-              "exemplars": "Key teaching examples or activities."
+              "indicator_code": "B7.1.1.1.1",
+              "title": "Model and represent numbers up to 1,000,000,000",
+              "description": "Model number quantities and express numbers in standard form and place value chart.",
+              "exemplars": "Use place value chart to write large numbers and identify values of digits."
             }
           ]
         }
@@ -196,49 +194,58 @@ PROMPT;
      */
     protected function parseAndRepairJson(string $rawResponse): ?array
     {
-        // 1. Strip markdown fences
+        // 1. Strip markdown code fences if present
         $clean = trim(preg_replace('/^```(?:json)?|```$/m', '', trim($rawResponse)));
 
-        // 2. Try direct decode
+        // 2. Try direct decode first
         $decoded = json_decode($clean, true);
         if (is_array($decoded) && !empty($decoded['strands'])) {
             return $decoded;
         }
 
-        // 3. If json was truncated near maxOutputTokens, attempt auto-closing of brackets
+        // 3. Locate opening brace
         $firstBrace = strpos($clean, '{');
-        if ($firstBrace !== false) {
-            $candidate = substr($clean, $firstBrace);
+        if ($firstBrace === false) {
+            return null;
+        }
+
+        $candidate = substr($clean, $firstBrace);
+
+        // Step-by-step backtrack repair:
+        // When JSON cuts off abruptly, it typically leaves a dangling string or partial key/value:
+        // e.g. "description": "Number and Numerat
+        // If we trim back to the last valid complete property separator (comma or curly/square bracket),
+        // we can safely close the remaining structures!
+        for ($i = strlen($candidate) - 1; $i > 0; $i--) {
+            $char = $candidate[$i];
             
-            // If it ends abruptly inside a string, close quote
-            $quotesCount = substr_count($candidate, '"') - substr_count($candidate, '\\"');
-            if ($quotesCount % 2 !== 0) {
-                $candidate .= '"';
-            }
+            // Look for clean cut points: after a completed object '}', array ']', or comma ','
+            if ($char === '}' || $char === ']' || $char === ',') {
+                $sub = substr($candidate, 0, $char === ',' ? $i : $i + 1);
+                
+                // Count unclosed brackets
+                $openCurlies = substr_count($sub, '{') - substr_count($sub, '}');
+                $openSquares = substr_count($sub, '[') - substr_count($sub, ']');
+                
+                if ($openCurlies >= 0 && $openSquares >= 0) {
+                    $attempt = $sub;
+                    for ($s = 0; $s < $openSquares; $s++) {
+                        $attempt .= ']';
+                    }
+                    for ($c = 0; $c < $openCurlies; $c++) {
+                        $attempt .= '}';
+                    }
 
-            // Balance open brackets and braces
-            $openCurlies = substr_count($candidate, '{');
-            $closeCurlies = substr_count($candidate, '}');
-            $openSquares = substr_count($candidate, '[');
-            $closeSquares = substr_count($candidate, ']');
-
-            while ($openSquares > $closeSquares) {
-                $candidate .= ']';
-                $closeSquares++;
-            }
-            while ($openCurlies > $closeCurlies) {
-                $candidate .= '}';
-                $closeCurlies++;
-            }
-
-            $repaired = json_decode($candidate, true);
-            if (is_array($repaired) && !empty($repaired['strands'])) {
-                Log::info("CurriculumExtractionService: Successfully repaired truncated JSON response.");
-                return $repaired;
+                    $repaired = json_decode($attempt, true);
+                    if (is_array($repaired) && !empty($repaired['strands'])) {
+                        Log::info("CurriculumExtractionService: Successfully repaired truncated JSON at index {$i}.");
+                        return $repaired;
+                    }
+                }
             }
         }
 
-        return $decoded;
+        return null;
     }
 
     /**
