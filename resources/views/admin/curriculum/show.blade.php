@@ -22,6 +22,28 @@
                     <i class="fas fa-book mr-1 text-blue-600"></i> {{ $curriculum->subject->name }}
                 </span>
                 <span>•</span>
+                <!-- Extraction Status Badge in Header -->
+                <template x-if="status === 'processing'">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 animate-pulse">
+                        <i class="fas fa-spinner fa-spin mr-1.5 text-blue-600"></i> Extracting Content...
+                    </span>
+                </template>
+                <template x-if="status === 'pending'">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200">
+                        <i class="fas fa-clock mr-1.5"></i> In Queue
+                    </span>
+                </template>
+                <template x-if="status === 'failed'">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 border border-red-200">
+                        <i class="fas fa-exclamation-triangle mr-1.5"></i> Extraction Failed
+                    </span>
+                </template>
+                <template x-if="status === 'extracted'">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200">
+                        <i class="fas fa-check-circle mr-1.5"></i> Extracted
+                    </span>
+                </template>
+                <span>•</span>
                 <span>Uploaded by {{ $curriculum->uploader->name ?? 'Admin' }} ({{ $curriculum->created_at->format('M d, Y') }})</span>
                 @if($curriculum->file_size_bytes)
                     <span>•</span>
@@ -53,27 +75,52 @@
         </div>
     </div>
 
-    <!-- Processing Alert Banner -->
-    @if($curriculum->extraction_status === 'processing')
-    <div class="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-800 flex items-center justify-between shadow-sm" x-show="isProcessing">
-        <div class="flex items-center gap-3">
-            <i class="fas fa-spinner fa-spin text-xl text-blue-600"></i>
-            <div>
-                <h4 class="font-bold text-sm">AI Curriculum Extraction in Progress</h4>
-                <p class="text-xs text-blue-700 mt-0.5">Gemini is reading the curriculum structure, identifying strands, content standards, and measurable indicators. This page refreshes automatically.</p>
+    <!-- Processing Alert Banner (Shown during active background extraction) -->
+    <div x-show="status === 'processing' || status === 'pending'" x-cloak class="p-5 rounded-2xl bg-blue-50/90 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100 shadow-sm">
+        <div class="flex items-start sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                    <i class="fas fa-spinner fa-spin text-lg"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-sm text-blue-900 dark:text-white flex items-center gap-2">
+                        AI Curriculum Content Extraction in Progress
+                        <span class="inline-block w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
+                    </h4>
+                    <p class="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+                        Gemini is analyzing the curriculum structure, identifying strands, sub-strands, content standards, and measurable indicators.
+                        This page automatically updates in real-time as content is ready.
+                    </p>
+                </div>
+            </div>
+            <div class="hidden sm:flex items-center gap-2 flex-shrink-0">
+                <span class="text-xs font-semibold px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                    Auto-polling
+                </span>
             </div>
         </div>
     </div>
-    @elseif($curriculum->extraction_status === 'failed')
-    <div class="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-800 flex items-start gap-3 shadow-sm">
-        <i class="fas fa-exclamation-circle text-xl text-red-600 mt-0.5"></i>
-        <div>
-            <h4 class="font-bold text-sm">Extraction Encountered an Issue</h4>
-            <p class="text-xs text-red-700 mt-1 font-mono bg-white/80 p-2.5 rounded-xl border border-red-100">{{ $curriculum->extraction_error ?? 'Unknown error occurred during extraction.' }}</p>
-            <p class="text-xs text-red-600 mt-2">You can click "Re-extract" above to retry with alternative models.</p>
+
+    <!-- Error Alert Banner -->
+    <div x-show="status === 'failed'" x-cloak class="p-5 rounded-2xl bg-red-50 border border-red-200 text-red-800 shadow-sm">
+        <div class="flex items-start gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-exclamation-triangle text-lg"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <h4 class="font-bold text-sm text-red-900">Extraction Encountered an Issue</h4>
+                <p class="text-xs text-red-700 mt-1 font-mono bg-white/90 p-3 rounded-xl border border-red-100 break-words" x-text="errorMessage || '{{ addslashes($curriculum->extraction_error ?? 'Unknown error during extraction.') }}'"></p>
+                <div class="flex items-center gap-3 mt-3">
+                    <form action="{{ route('admin.curriculum.re-extract', $curriculum) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="inline-flex items-center px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all">
+                            <i class="fas fa-redo-alt mr-1.5"></i> Retry Extraction
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
-    @endif
 
     <!-- Main Content Review Area: Split View -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -132,8 +179,22 @@
                     </div>
                 </div>
                 @empty
-                <div class="text-center py-8 text-gray-400 text-xs">
-                    No strands extracted yet.
+                <!-- Empty State (adapts if processing vs idle) -->
+                <div class="text-center py-10 px-4">
+                    <template x-if="status === 'processing' || status === 'pending'">
+                        <div>
+                            <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center mx-auto mb-3 text-xl animate-spin">
+                                <i class="fas fa-spinner"></i>
+                            </div>
+                            <p class="text-xs font-bold text-gray-800 dark:text-gray-200">Extracting strands...</p>
+                            <p class="text-[11px] text-gray-400 mt-1">Strands and sub-strands will appear here as soon as processing completes.</p>
+                        </div>
+                    </template>
+                    <template x-if="status !== 'processing' && status !== 'pending'">
+                        <div>
+                            <p class="text-xs text-gray-400 italic">No strands extracted yet.</p>
+                        </div>
+                    </template>
                 </div>
                 @endforelse
             </div>
@@ -141,8 +202,22 @@
 
         <!-- Right: Inspector & Inline Editor -->
         <div class="lg:col-span-8 bg-white dark:bg-gray-800 p-6 sm:p-7 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm min-h-[500px]">
-            <!-- No Selection State -->
-            <div x-show="!activeIndicator && !activeStrand" class="flex flex-col items-center justify-center py-24 text-gray-400 text-center">
+            <!-- Processing State in Right Panel if no indicators yet -->
+            <div x-show="(status === 'processing' || status === 'pending') && Object.keys(indicatorsMap).length === 0" class="flex flex-col items-center justify-center py-24 text-center">
+                <div class="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center mx-auto mb-4 text-2xl">
+                    <i class="fas fa-brain fa-pulse"></i>
+                </div>
+                <h4 class="font-bold text-gray-900 dark:text-white text-base">Analyzing Curriculum Document</h4>
+                <p class="text-xs text-gray-500 dark:text-gray-400 max-w-md mt-1.5 leading-relaxed">
+                    The AI engine is reading your PDF to classify Strands, Sub-strands, and Learning Indicators. You don't need to refresh — this panel will update automatically.
+                </p>
+                <div class="w-48 bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full mt-5 overflow-hidden">
+                    <div class="bg-blue-600 h-full rounded-full animate-indeterminate"></div>
+                </div>
+            </div>
+
+            <!-- No Selection State (when strands exist or extraction complete) -->
+            <div x-show="!activeIndicator && !activeStrand && (status !== 'processing' && status !== 'pending' || Object.keys(indicatorsMap).length > 0)" class="flex flex-col items-center justify-center py-24 text-gray-400 text-center">
                 <div class="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center mx-auto mb-3 text-2xl">
                     <i class="fas fa-mouse-pointer"></i>
                 </div>
@@ -211,7 +286,8 @@
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
 function curriculumReviewApp() {
     return {
-        isProcessing: {{ $curriculum->extraction_status === 'processing' ? 'true' : 'false' }},
+        status: '{{ $curriculum->extraction_status }}',
+        errorMessage: '{{ addslashes($curriculum->extraction_error ?? '') }}',
         selectedIndicatorId: null,
         activeIndicator: null,
         activeStrand: null,
@@ -234,7 +310,7 @@ function curriculumReviewApp() {
         },
 
         init() {
-            if (this.isProcessing) {
+            if (this.status === 'processing' || this.status === 'pending') {
                 this.pollStatus();
             }
             // Auto select first indicator if exists
@@ -287,12 +363,19 @@ function curriculumReviewApp() {
                 try {
                     const res = await fetch(`{{ route('admin.curriculum.status', $curriculum) }}`);
                     const data = await res.json();
+                    this.status = data.status;
+                    if (data.error) {
+                        this.errorMessage = data.error;
+                    }
                     if (data.status === 'extracted' || data.status === 'failed') {
                         clearInterval(interval);
-                        window.location.reload();
+                        // Refresh page to populate the extracted strands and indicators hierarchy
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 800);
                     }
                 } catch (e) {}
-            }, 6000);
+            }, 4000);
         }
     };
 }

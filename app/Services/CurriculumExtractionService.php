@@ -82,8 +82,9 @@ Extract the complete hierarchical educational structure. Standard curriculum doc
 5. Exemplars (concrete classroom activities, teaching examples, or problem scenarios)
 
 If this curriculum covers multiple grades (e.g., Basic 7, Basic 8, Basic 9 OR JHS 1, JHS 2, JHS 3 OR Primary 1-6), make sure to indicate the grade_label for each strand or sub-strand.
+IMPORTANT: Keep descriptions and exemplars concise (1-2 sentences each) so that the entire curriculum hierarchy fits within output limits without truncating the JSON.
 
-Output MUST be strictly valid JSON without any markdown code fence backticks or introductory text:
+Output MUST be strictly valid JSON:
 {
   "curriculum_title": "Official Title of Curriculum",
   "education_body": "GES / NaCCA / WAEC / etc.",
@@ -102,8 +103,8 @@ Output MUST be strictly valid JSON without any markdown code fence backticks or 
             {
               "indicator_code": "e.g. B7.1.1.1.1",
               "title": "Short title of the indicator",
-              "description": "Full description of what the learner will demonstrate or do.",
-              "exemplars": "Concrete examples, sample tasks, or teacher guidelines mentioned in the curriculum."
+              "description": "Concise summary of what the learner will demonstrate.",
+              "exemplars": "Key teaching examples or activities."
             }
           ]
         }
@@ -115,9 +116,7 @@ PROMPT;
 
             $rawResponse = $this->queryGemini($prompt, $fileBase64, $extractedText);
             
-            // Clean markdown codeblocks if returned
-            $cleanJson = trim(preg_replace('/^```(?:json)?|```$/m', '', $rawResponse));
-            $data = json_decode($cleanJson, true);
+            $data = $this->parseAndRepairJson($rawResponse);
 
             if (!is_array($data) || empty($data['strands'])) {
                 throw new Exception("Curriculum extraction did not return valid strands. Response preview: " . substr($rawResponse, 0, 300));
@@ -190,6 +189,56 @@ PROMPT;
 
             throw $e;
         }
+    }
+
+    /**
+     * Parse and repair JSON that may be truncated or wrapped in markdown.
+     */
+    protected function parseAndRepairJson(string $rawResponse): ?array
+    {
+        // 1. Strip markdown fences
+        $clean = trim(preg_replace('/^```(?:json)?|```$/m', '', trim($rawResponse)));
+
+        // 2. Try direct decode
+        $decoded = json_decode($clean, true);
+        if (is_array($decoded) && !empty($decoded['strands'])) {
+            return $decoded;
+        }
+
+        // 3. If json was truncated near maxOutputTokens, attempt auto-closing of brackets
+        $firstBrace = strpos($clean, '{');
+        if ($firstBrace !== false) {
+            $candidate = substr($clean, $firstBrace);
+            
+            // If it ends abruptly inside a string, close quote
+            $quotesCount = substr_count($candidate, '"') - substr_count($candidate, '\\"');
+            if ($quotesCount % 2 !== 0) {
+                $candidate .= '"';
+            }
+
+            // Balance open brackets and braces
+            $openCurlies = substr_count($candidate, '{');
+            $closeCurlies = substr_count($candidate, '}');
+            $openSquares = substr_count($candidate, '[');
+            $closeSquares = substr_count($candidate, ']');
+
+            while ($openSquares > $closeSquares) {
+                $candidate .= ']';
+                $closeSquares++;
+            }
+            while ($openCurlies > $closeCurlies) {
+                $candidate .= '}';
+                $closeCurlies++;
+            }
+
+            $repaired = json_decode($candidate, true);
+            if (is_array($repaired) && !empty($repaired['strands'])) {
+                Log::info("CurriculumExtractionService: Successfully repaired truncated JSON response.");
+                return $repaired;
+            }
+        }
+
+        return $decoded;
     }
 
     /**
@@ -285,6 +334,7 @@ PROMPT;
                         'generationConfig' => [
                             'temperature' => 0.1,
                             'maxOutputTokens' => 8192,
+                            'responseMimeType' => 'application/json',
                         ],
                     ]);
 
