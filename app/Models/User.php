@@ -573,4 +573,12 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Booking::class, 'tutor_id');
     }
+
+    /**
+     * Get guided learning progress records for the user.
+     */
+    public function guidedLearningProgress()
+    {
+        return $this->hasMany(GuidedLearningProgress::class);
+    }
 }
