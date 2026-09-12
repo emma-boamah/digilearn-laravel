@@ -275,6 +275,38 @@
                         class="w-full p-3.5 rounded-xl text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all"></textarea>
                 </div>
 
+                <!-- Extracted Diagrams & Visual Media -->
+                <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
+                    <div class="flex items-center justify-between mb-2.5">
+                        <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fas fa-image text-blue-600"></i> Extracted Diagrams & Visuals
+                        </h4>
+                        <label class="cursor-pointer text-[11px] font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                            <i class="fas fa-plus"></i> Add Diagram
+                            <input type="file" accept="image/*" class="hidden" @change="uploadIndicatorMedia($event)">
+                        </label>
+                    </div>
+
+                    <template x-if="activeIndicator?.media?.length > 0">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                            <template x-for="item in activeIndicator.media" :key="item.id">
+                                <div class="group relative rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-750 p-1.5">
+                                    <img :src="'/storage/' + item.file_path" :alt="item.caption || 'Diagram'" class="w-full h-28 object-contain bg-white rounded-lg">
+                                    <div class="mt-1.5 px-1 flex items-center justify-between text-[10px] text-gray-500">
+                                        <span class="truncate" x-text="item.caption || ('Page ' + (item.page_number || 'N/A'))"></span>
+                                        <button type="button" @click="deleteMedia(item.id)" class="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                    <template x-if="!activeIndicator?.media || activeIndicator?.media?.length === 0">
+                        <p class="text-xs text-gray-400 italic">No diagrams attached to this indicator yet. Upload or extract page visuals to display symbols, geometric shapes, or charts.</p>
+                    </template>
+                </div>
+
                 <!-- Attached Textbook Sections Preview -->
                 <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
                     <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
@@ -319,6 +351,7 @@ function curriculumReviewApp() {
                             title: @json($ind->title),
                             description: @json($ind->description),
                             exemplars: @json($ind->exemplars),
+                            media: @json($ind->media),
                             textbook_sections: @json($ind->textbookSections)
                         },
                     @endforeach
@@ -372,6 +405,62 @@ function curriculumReviewApp() {
                 }
             } catch (e) {
                 alert('Error updating indicator: ' + e.message);
+            }
+        },
+
+        async uploadIndicatorMedia(event) {
+            const file = event.target.files[0];
+            if (!file || !this.activeIndicator) return;
+
+            const formData = new FormData();
+            formData.append('media_file', file);
+            formData.append('caption', file.name.replace(/\.[^/.]+$/, ''));
+
+            try {
+                const response = await fetch(`/admin/curriculum/indicators/${this.activeIndicator.id}/media`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    if (!this.activeIndicator.media) {
+                        this.activeIndicator.media = [];
+                    }
+                    this.activeIndicator.media.push(data.media);
+                    this.indicatorsMap[this.activeIndicator.id].media = this.activeIndicator.media;
+                    event.target.value = '';
+                } else {
+                    alert(data.message || 'Could not upload diagram.');
+                }
+            } catch (e) {
+                alert('Error uploading diagram: ' + e.message);
+            }
+        },
+
+        async deleteMedia(mediaId) {
+            if (!confirm('Are you sure you want to remove this diagram?')) return;
+
+            try {
+                const response = await fetch(`/admin/curriculum/media/${mediaId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    this.activeIndicator.media = this.activeIndicator.media.filter(m => m.id !== mediaId);
+                    this.indicatorsMap[this.activeIndicator.id].media = this.activeIndicator.media;
+                }
+            } catch (e) {
+                alert('Error removing diagram: ' + e.message);
             }
         },
 

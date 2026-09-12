@@ -7,6 +7,7 @@ use App\Models\Curriculum;
 use App\Models\CurriculumStrand;
 use App\Models\CurriculumSubStrand;
 use App\Models\CurriculumIndicator;
+use App\Models\CurriculumMedia;
 use App\Models\Subject;
 use App\Models\Level;
 use App\Models\LevelGroup;
@@ -221,5 +222,50 @@ class CurriculumController extends Controller
 
         return redirect()->route('admin.curriculum.index')
             ->with('success', 'Curriculum deleted successfully.');
+    }
+
+    /**
+     * Upload an image/diagram and attach it to an indicator.
+     */
+    public function uploadIndicatorMedia(Request $request, CurriculumIndicator $indicator): JsonResponse
+    {
+        $request->validate([
+            'media_file' => 'required|image|max:10240', // 10MB max
+            'caption' => 'nullable|string|max:255',
+        ]);
+
+        $file = $request->file('media_file');
+        $fileName = 'indicator_' . $indicator->id . '_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+        $filePath = $file->storeAs('curricula/media', $fileName, 'public');
+
+        $maxOrder = $indicator->media()->max('sort_order') ?? 0;
+
+        $media = CurriculumMedia::create([
+            'mediable_type' => CurriculumIndicator::class,
+            'mediable_id' => $indicator->id,
+            'file_path' => $filePath,
+            'caption' => $request->caption ?: $file->getClientOriginalName(),
+            'sort_order' => $maxOrder + 1,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'media' => $media,
+            'message' => 'Diagram uploaded successfully.'
+        ]);
+    }
+
+    /**
+     * Delete an attached diagram/media.
+     */
+    public function deleteMedia(CurriculumMedia $media): JsonResponse
+    {
+        if ($media->file_path && Storage::disk('public')->exists($media->file_path)) {
+            Storage::disk('public')->delete($media->file_path);
+        }
+
+        $media->delete();
+
+        return response()->json(['success' => true, 'message' => 'Diagram removed successfully.']);
     }
 }
