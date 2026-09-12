@@ -216,23 +216,48 @@ PROMPT;
     /**
      * Stage 2: Extract detailed indicators, codes, descriptions, and exemplars for a single strand.
      */
-    public function extractIndicatorsForStrand(CurriculumStrand $strand, ?string $fileBase64, ?string $extractedText, ?string $fullPdfPath = null): void
+    public function extractIndicatorsForStrand(CurriculumStrand $strand, ?string $fileBase64 = null, ?string $extractedText = null, ?string $fullPdfPath = null): int
     {
         $strand->load('subStrands');
-        $subStrandsList = $strand->subStrands->pluck('title')->implode(', ');
+
+        // If fileBase64 / extractedText was not provided (e.g. single strand extraction request), load from curriculum
+        if (!$fileBase64 && !$extractedText) {
+            $curriculum = $strand->curriculum;
+            $fullPdfPath = $fullPdfPath ?: Storage::disk('public')->path($curriculum->file_path);
+            if (!file_exists($fullPdfPath)) {
+                $altPath = storage_path('app/public/' . $curriculum->file_path);
+                if (file_exists($altPath)) {
+                    $fullPdfPath = $altPath;
+                }
+            }
+
+            if (file_exists($fullPdfPath)) {
+                $fileSize = filesize($fullPdfPath);
+                if ($fileSize < 20 * 1024 * 1024) {
+                    $fileBase64 = base64_encode(file_get_contents($fullPdfPath));
+                }
+            }
+        }
+
+        $subStrandsDetails = $strand->subStrands->map(function ($ss, $idx) {
+            $code = $ss->content_standard ? " (Content Standard: {$ss->content_standard})" : "";
+            return ($idx + 1) . ". {$ss->title}{$code}";
+        })->implode("\n");
+
         $gradeLabel = $strand->grade_label ?? 'General';
 
         $prompt = <<<PROMPT
 You are an expert curriculum analyst. For the curriculum document provided, focus EXCLUSIVELY on:
 - Grade / Level: {$gradeLabel}
 - Strand: "{$strand->title}"
-- Sub-strands: {$subStrandsList}
+- Sub-strands to extract:
+{$subStrandsDetails}
 
-Extract all Learning Indicators, official indicator codes (e.g. B7.1.1.1.1, B7.1.1.1.2, B7.3.3.1.1), learning outcome descriptions, and teacher pedagogical exemplars for this specific strand.
+Extract all Learning Indicators, official indicator codes (e.g. B7.1.1.1.1, B7.1.1.1.2, B7.3.3.1.1, B8.2.1.1.1), learning outcome descriptions, and teacher pedagogical exemplars for each sub-strand.
 
 IMPORTANT GUIDELINES FOR EXEMPLARS & VISUALS:
-1. Identify the approximate PDF page number where this indicator and its exemplars appear (look at header/footer or table page markers).
-2. When an exemplar references visual diagrams, symbols, or shapes (for example: Adinkra symbols like Nyame Biribi, Sankofa, Pempamsie, symmetry grids, reflection drawings, geometric figures, charts):
+1. Identify the approximate PDF page number where this indicator and its exemplars appear.
+2. When an exemplar references visual diagrams, symbols, or shapes (e.g. Adinkra symbols like Nyame Biribi, Sankofa, Pempamsie, symmetry grids, reflection drawings, geometric figures, charts):
    - Fully transcribe the example questions, tasks, and symbol names in the "exemplars" field.
    - Provide a clear textual description of the visual diagrams and activities (e.g., "[Visual Diagram: Adinkra symbols (Nyame Biribi, Sankofa, Pempamsie) showing fold symmetries]", "[Activity: 3x4 grid with shaded square to determine lines of symmetry]").
 3. Keep descriptions clear, structured, and pedagogical.
@@ -242,7 +267,7 @@ Output strictly valid JSON matching this schema:
   "strand_title": "{$strand->title}",
   "sub_strands": [
     {
-      "title": "Exact Title of Sub-strand",
+      "title": "Exact Title or Sub-strand 1: Title",
       "indicators": [
         {
           "indicator_code": "B7.3.3.1.1",
@@ -262,19 +287,45 @@ PROMPT;
 
         if (!is_array($data) || empty($data['sub_strands'])) {
             Log::warning("No indicators extracted for strand {$strand->id} ('{$strand->title}')");
-            return;
+            return 0;
         }
 
-        DB::transaction(function () use ($strand, $data) {
-            foreach ($data['sub_strands'] as $subData) {
-                // Match sub-strand by title or fallback to existing
-                $subStrand = $strand->subStrands->first(function ($ss) use ($subData) {
-                    $t1 = strtolower(trim($ss->title));
-                    $t2 = strtolower(trim($subData['title'] ?? ''));
-                    return $t1 === $t2 || str_contains($t1, $t2) || str_contains($t2, $t1);
+        $totalExtracted = 0;
+
+        DB::transaction(function () use ($strand, $data, $fullPdfPath, &$totalExtracted) {
+            // Helper to clean and normalize sub-strand titles for comparison
+            $cleanTitle = function (?string $text) {
+                if (!$text) return '';
+                $t = strtolower(trim($text));
+                // Strip "sub-strand 1:", "substrand 1 -", "sub strand 2."
+                $t = preg_replace('/^sub\s*-?\s*strand\s*\d+\s*[:\.\-]?\s*/i', '', $t);
+                // Strip content standard codes if attached
+                $t = preg_replace('/\(?content\s*standard.*?\)?$/i', '', $t);
+                $t = preg_replace('/[^a-z0-9\s]/', '', $t);
+                return trim(preg_replace('/\s+/', ' ', $t));
+            };
+
+            foreach ($data['sub_strands'] as $subIdx => $subData) {
+                $rawTargetTitle = $subData['title'] ?? '';
+                $normTargetTitle = $cleanTitle($rawTargetTitle);
+
+                // 1. Try exact or normalized title matching
+                $subStrand = $strand->subStrands->first(function ($ss) use ($normTargetTitle, $cleanTitle, $rawTargetTitle) {
+                    $normSs = $cleanTitle($ss->title);
+                    if ($normSs === $normTargetTitle) return true;
+                    if (!empty($normSs) && !empty($normTargetTitle) && (str_contains($normSs, $normTargetTitle) || str_contains($normTargetTitle, $normSs))) {
+                        return true;
+                    }
+                    return false;
                 });
 
-                if (!$subStrand && $strand->subStrands->isNotEmpty()) {
+                // 2. Try matching by numerical index in the array if titles had numbers
+                if (!$subStrand && isset($strand->subStrands[$subIdx])) {
+                    $subStrand = $strand->subStrands[$subIdx];
+                }
+
+                // 3. Fallback to first sub-strand if single sub-strand
+                if (!$subStrand && $strand->subStrands->count() === 1) {
                     $subStrand = $strand->subStrands->first();
                 }
 
@@ -295,6 +346,8 @@ PROMPT;
                             'sort_order' => $indicatorSort++,
                         ]);
 
+                        $totalExtracted++;
+
                         // Automatically extract images for this indicator if page_number is present and pdfimages exists
                         $pageNumber = isset($indData['page_number']) ? (int) $indData['page_number'] : null;
                         if ($fullPdfPath && $pageNumber && $pageNumber > 0) {
@@ -304,6 +357,8 @@ PROMPT;
                 }
             }
         });
+
+        return $totalExtracted;
     }
 
     /**

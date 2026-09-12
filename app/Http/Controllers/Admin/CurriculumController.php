@@ -12,6 +12,7 @@ use App\Models\Subject;
 use App\Models\Level;
 use App\Models\LevelGroup;
 use App\Jobs\ProcessCurriculumExtractionJob;
+use App\Services\CurriculumExtractionService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -177,6 +178,39 @@ class CurriculumController extends Controller
     }
 
     /**
+     * Re-extract indicators for a single strand using Gemini Stage 2.
+     */
+    public function extractStrandIndicators(CurriculumStrand $strand, CurriculumExtractionService $service): JsonResponse
+    {
+        try {
+            $extractedCount = $service->extractIndicatorsForStrand($strand);
+
+            $strand->load(['subStrands.indicators.media', 'subStrands.indicators.textbookSections']);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully extracted {$extractedCount} indicators for '{$strand->title}'!",
+                'extracted_count' => $extractedCount,
+                'strand' => $strand,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to extract indicators: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete a strand.
+     */
+    public function deleteStrand(CurriculumStrand $strand): JsonResponse
+    {
+        $strand->delete();
+        return response()->json(['success' => true, 'message' => 'Strand deleted successfully.']);
+    }
+
+    /**
      * AJAX update for a sub-strand.
      */
     public function updateSubStrand(Request $request, CurriculumSubStrand $subStrand): JsonResponse
@@ -190,6 +224,47 @@ class CurriculumController extends Controller
         $subStrand->update($validated);
 
         return response()->json(['success' => true, 'subStrand' => $subStrand]);
+    }
+
+    /**
+     * Delete a sub-strand.
+     */
+    public function deleteSubStrand(CurriculumSubStrand $subStrand): JsonResponse
+    {
+        $subStrand->delete();
+        return response()->json(['success' => true, 'message' => 'Sub-strand deleted successfully.']);
+    }
+
+    /**
+     * Manually add a new indicator to a sub-strand.
+     */
+    public function storeIndicator(Request $request, CurriculumSubStrand $subStrand): JsonResponse
+    {
+        $validated = $request->validate([
+            'indicator_code' => 'nullable|string|max:50',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'exemplars' => 'nullable|string',
+        ]);
+
+        $maxOrder = $subStrand->indicators()->max('sort_order') ?? 0;
+
+        $indicator = CurriculumIndicator::create([
+            'sub_strand_id' => $subStrand->id,
+            'indicator_code' => $validated['indicator_code'] ?? null,
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? $validated['title'],
+            'exemplars' => $validated['exemplars'] ?? null,
+            'sort_order' => $maxOrder + 1,
+        ]);
+
+        $indicator->load(['media', 'textbookSections']);
+
+        return response()->json([
+            'success' => true,
+            'indicator' => $indicator,
+            'message' => 'Indicator created successfully.'
+        ]);
     }
 
     /**
@@ -207,6 +282,15 @@ class CurriculumController extends Controller
         $indicator->update($validated);
 
         return response()->json(['success' => true, 'indicator' => $indicator]);
+    }
+
+    /**
+     * Delete an indicator.
+     */
+    public function deleteIndicator(CurriculumIndicator $indicator): JsonResponse
+    {
+        $indicator->delete();
+        return response()->json(['success' => true, 'message' => 'Indicator deleted successfully.']);
     }
 
     /**
