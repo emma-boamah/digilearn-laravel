@@ -87,15 +87,12 @@
                         AI Curriculum Content Extraction in Progress
                         <span class="inline-block w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
                     </h4>
-                    <p class="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
-                        Gemini is analyzing the curriculum structure, identifying strands, sub-strands, content standards, and measurable indicators.
-                        This page automatically updates in real-time as content is ready.
-                    </p>
+                    <p class="text-xs text-blue-700 dark:text-blue-300 mt-0.5 font-medium" x-text="progressNotes || 'Analyzing curriculum structure and extracting all strands across grades...'"></p>
                 </div>
             </div>
             <div class="hidden sm:flex items-center gap-2 flex-shrink-0">
-                <span class="text-xs font-semibold px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                    Auto-polling
+                <span class="text-xs font-semibold px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 flex items-center gap-1.5">
+                    <i class="fas fa-satellite-dish text-[10px] animate-pulse"></i> Live Sync
                 </span>
             </div>
         </div>
@@ -135,49 +132,68 @@
                 </span>
             </div>
 
-            <div class="space-y-2.5">
-                @forelse($curriculum->strands as $strand)
-                <div class="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden" x-data="{ open: true }">
-                    <button @click="open = !open; selectStrand({{ $strand->id }})"
-                        class="w-full text-left p-3.5 bg-gray-50 dark:bg-gray-750 hover:bg-blue-50/50 flex items-center justify-between text-sm font-semibold text-gray-900 dark:text-white transition-colors">
-                        <div class="flex items-center gap-2.5">
-                            <i class="fas fa-layer-group text-blue-600 text-xs"></i>
-                            <span class="truncate max-w-[200px]">{{ $strand->title }}</span>
-                        </div>
-                        <div class="flex items-center gap-2 text-xs text-gray-400">
-                            @if($strand->grade_label)
-                                <span class="px-2 py-0.5 bg-gray-200 dark:bg-gray-600 rounded-md text-[10px] font-semibold text-gray-700 dark:text-gray-200">{{ $strand->grade_label }}</span>
-                            @endif
-                            <i class="fas fa-chevron-down text-xs transition-transform" :class="{'rotate-180': open}"></i>
-                        </div>
-                    </button>
+            <div class="space-y-4">
+                @php
+                    $groupedStrands = $curriculum->strands->groupBy(function($s) {
+                        return $s->grade_label ?: 'All Grades';
+                    });
+                @endphp
 
-                    <div x-show="open" class="p-2 space-y-1.5 bg-white dark:bg-gray-800">
-                        @foreach($strand->subStrands as $subStrand)
-                        <div class="pl-2 border-l-2 border-blue-200 dark:border-gray-700">
-                            <div class="py-1 px-2 text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg">
-                                <span class="truncate">{{ $subStrand->title }}</span>
-                                <span class="text-[10px] text-gray-400 font-medium">{{ $subStrand->indicators->count() }} ind.</span>
+                @forelse($groupedStrands as $gradeLabel => $strands)
+                    <div class="space-y-2">
+                        @if($groupedStrands->count() > 1)
+                            <div class="px-2 py-1 bg-gray-100 dark:bg-gray-700/60 rounded-lg flex items-center justify-between text-xs font-bold text-gray-700 dark:text-gray-200">
+                                <span class="flex items-center gap-1.5">
+                                    <i class="fas fa-graduation-cap text-blue-600"></i> {{ $gradeLabel }}
+                                </span>
+                                <span class="text-[10px] text-gray-500">{{ $strands->count() }} Strands</span>
                             </div>
+                        @endif
 
-                            <!-- Indicator Items -->
-                            <div class="pl-2.5 space-y-1 mt-1">
-                                @foreach($subStrand->indicators as $indicator)
-                                <button type="button" @click="selectIndicator({{ $indicator->id }})"
-                                    class="w-full text-left py-1.5 px-2.5 text-[11px] rounded-lg flex items-center gap-2 transition-all"
-                                    :class="selectedIndicatorId === {{ $indicator->id }} ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'">
-                                    <span class="font-mono text-[10px] px-1.5 py-0.5 rounded font-bold"
-                                          :class="selectedIndicatorId === {{ $indicator->id }} ? 'bg-blue-700 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'">
-                                        {{ $indicator->indicator_code ?? 'IND' }}
-                                    </span>
-                                    <span class="truncate">{{ $indicator->title }}</span>
+                        <div class="space-y-2.5">
+                            @foreach($strands as $strand)
+                            <div class="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden" x-data="{ open: true }">
+                                <button @click="open = !open; selectStrand({{ $strand->id }})"
+                                    class="w-full text-left p-3.5 bg-gray-50 dark:bg-gray-750 hover:bg-blue-50/50 flex items-center justify-between text-sm font-semibold text-gray-900 dark:text-white transition-colors">
+                                    <div class="flex items-center gap-2.5">
+                                        <i class="fas fa-layer-group text-blue-600 text-xs"></i>
+                                        <span class="truncate max-w-[200px]">{{ $strand->title }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-xs text-gray-400">
+                                        <span class="text-[10px] text-gray-500">{{ $strand->subStrands->count() }} sub-strands</span>
+                                        <i class="fas fa-chevron-down text-xs transition-transform" :class="{'rotate-180': open}"></i>
+                                    </div>
                                 </button>
-                                @endforeach
+
+                                <div x-show="open" class="p-2 space-y-1.5 bg-white dark:bg-gray-800">
+                                    @foreach($strand->subStrands as $subStrand)
+                                    <div class="pl-2 border-l-2 border-blue-200 dark:border-gray-700">
+                                        <div class="py-1 px-2 text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg">
+                                            <span class="truncate">{{ $subStrand->title }}</span>
+                                            <span class="text-[10px] text-gray-400 font-medium">{{ $subStrand->indicators->count() }} ind.</span>
+                                        </div>
+
+                                        <!-- Indicator Items -->
+                                        <div class="pl-2.5 space-y-1 mt-1">
+                                            @foreach($subStrand->indicators as $indicator)
+                                            <button type="button" @click="selectIndicator({{ $indicator->id }})"
+                                                class="w-full text-left py-1.5 px-2.5 text-[11px] rounded-lg flex items-center gap-2 transition-all"
+                                                :class="selectedIndicatorId === {{ $indicator->id }} ? 'bg-blue-600 text-white font-semibold shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'">
+                                                <span class="font-mono text-[10px] px-1.5 py-0.5 rounded font-bold"
+                                                      :class="selectedIndicatorId === {{ $indicator->id }} ? 'bg-blue-700 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'">
+                                                    {{ $indicator->indicator_code ?? 'IND' }}
+                                                </span>
+                                                <span class="truncate">{{ $indicator->title }}</span>
+                                            </button>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                </div>
                             </div>
+                            @endforeach
                         </div>
-                        @endforeach
                     </div>
-                </div>
                 @empty
                 <!-- Empty State (adapts if processing vs idle) -->
                 <div class="text-center py-10 px-4">
@@ -288,6 +304,7 @@ function curriculumReviewApp() {
     return {
         status: '{{ $curriculum->extraction_status }}',
         errorMessage: '{{ addslashes($curriculum->extraction_error ?? '') }}',
+        progressNotes: '{{ addslashes($curriculum->notes ?? '') }}',
         selectedIndicatorId: null,
         activeIndicator: null,
         activeStrand: null,
@@ -364,6 +381,9 @@ function curriculumReviewApp() {
                     const res = await fetch(`{{ route('admin.curriculum.status', $curriculum) }}`);
                     const data = await res.json();
                     this.status = data.status;
+                    if (data.notes) {
+                        this.progressNotes = data.notes;
+                    }
                     if (data.error) {
                         this.errorMessage = data.error;
                     }

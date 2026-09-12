@@ -150,6 +150,7 @@ class CurriculumController extends Controller
     {
         return response()->json([
             'status' => $curriculum->extraction_status,
+            'notes' => $curriculum->notes,
             'error' => $curriculum->extraction_error,
             'is_approved' => $curriculum->is_approved,
             'strands_count' => $curriculum->strands()->count(),
