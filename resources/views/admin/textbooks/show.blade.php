@@ -54,6 +54,37 @@
         </div>
     </div>
 
+    @if($textbook->toc_extraction_status === 'processing' || $textbook->content_extraction_status === 'processing')
+    <div class="p-5 rounded-2xl bg-blue-50/90 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100 shadow-sm">
+        <div class="flex items-center gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                <i class="fas fa-spinner fa-spin text-lg"></i>
+            </div>
+            <div>
+                <h4 class="font-bold text-sm text-blue-900 dark:text-white flex items-center gap-2">
+                    AI Textbook Extraction in Progress
+                    <span class="inline-block w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
+                </h4>
+                <p class="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+                    Gemini is extracting the Table of Contents, structuring chapters, and formatting lesson content.
+                </p>
+            </div>
+        </div>
+    </div>
+    @elseif($textbook->toc_extraction_status === 'failed')
+    <div class="p-5 rounded-2xl bg-red-50 border border-red-200 text-red-800 shadow-sm">
+        <div class="flex items-start gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-exclamation-triangle text-lg"></i>
+            </div>
+            <div>
+                <h4 class="font-bold text-sm text-red-900">Textbook Extraction Issue</h4>
+                <p class="text-xs text-red-700 mt-1">An error occurred while extracting the Table of Contents.</p>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- Chapters & Sections Table of Contents -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
         <div class="p-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
