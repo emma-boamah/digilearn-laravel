@@ -374,11 +374,26 @@
                 </div>
 
                 <!-- Indicators Under this Sub-strand -->
-                <div class="border-t border-gray-100 dark:border-gray-700 pt-5 space-y-3">
-                    <div class="flex items-center justify-between">
+                <div class="border-t border-gray-100 dark:border-gray-700 pt-5 space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
                         <h4 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-2">
                             <i class="fas fa-list-check text-blue-600"></i> Learning Indicators (<span x-text="activeSubStrand?.indicators?.length || 0"></span>)
                         </h4>
+                        <!-- View Switcher in Sub-strand -->
+                        <div class="inline-flex rounded-xl bg-gray-100 dark:bg-gray-700 p-1 border border-gray-200 dark:border-gray-600">
+                            <button type="button" @click="viewMode = 'table'"
+                                class="px-3 py-1 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5"
+                                :class="viewMode === 'table' ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900'">
+                                <i class="fas fa-table text-[11px]"></i>
+                                <span>PDF Document View</span>
+                            </button>
+                            <button type="button" @click="viewMode = 'form'"
+                                class="px-3 py-1 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5"
+                                :class="viewMode === 'form' ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900'">
+                                <i class="fas fa-list text-[11px]"></i>
+                                <span>List / Edit View</span>
+                            </button>
+                        </div>
                     </div>
 
                     <template x-if="!activeSubStrand?.indicators || activeSubStrand.indicators.length === 0">
@@ -392,16 +407,110 @@
                         </div>
                     </template>
 
-                    <div class="space-y-2">
+                    <!-- PDF Document Page Mock for the entire Sub-strand -->
+                    <div x-show="viewMode === 'table' && activeSubStrand?.indicators?.length > 0" class="space-y-4">
+                        <!-- Header banner -->
+                        <div class="bg-gray-800 text-white rounded-t-xl px-5 py-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+                            <div>
+                                <div class="text-[11px] font-semibold text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                                    <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-bold" x-text="activeSubStrand?.grade_label || 'CURRICULUM'"></span>
+                                    <span x-text="activeSubStrand?.strand_title || 'Strand'"></span>
+                                </div>
+                                <h4 class="text-sm font-bold text-white mt-0.5" x-text="activeSubStrand?.title"></h4>
+                            </div>
+                            <span class="text-[11px] text-gray-300 bg-gray-700/80 px-2.5 py-1 rounded-md border border-gray-600 flex items-center gap-1">
+                                <i class="fas fa-file-pdf text-red-400"></i> NaCCA / GES Document Page
+                            </span>
+                        </div>
+
+                        <!-- 3-Column Table -->
+                        <div class="border-2 border-gray-700 dark:border-gray-600 rounded-b-xl overflow-hidden bg-white dark:bg-gray-900 shadow-sm -mt-4">
+                            <table class="w-full border-collapse text-left">
+                                <thead>
+                                    <tr class="bg-gray-600 text-white text-[11px] font-bold tracking-wider uppercase">
+                                        <th class="p-3.5 w-1/4 border-r border-gray-500">CONTENT STANDARD</th>
+                                        <th class="p-3.5 w-1/2 border-r border-gray-500">INDICATORS AND EXEMPLARS</th>
+                                        <th class="p-3.5 w-1/4">CORE COMPETENCIES</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-300 dark:divide-gray-700 text-gray-900 dark:text-gray-100">
+                                    <template x-for="(ind, index) in activeSubStrand?.indicators || []" :key="ind.id">
+                                        <tr class="align-top">
+                                            <!-- Standard cell (span first row or show standard) -->
+                                            <td class="p-4 border-r border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 text-xs font-semibold leading-relaxed">
+                                                <div class="sticky top-4">
+                                                    <div class="text-blue-700 dark:text-blue-400 font-bold font-mono text-sm mb-1.5"
+                                                        x-text="(activeSubStrand.content_standard ? (activeSubStrand.content_standard.match(/^[A-Z0-9\.]+/i) || [''])[0] : (ind.indicator_code ? ind.indicator_code.replace(/\.\d+$/, '') : 'STANDARD'))"></div>
+                                                    <p class="text-gray-800 dark:text-gray-200 font-medium"
+                                                        x-text="activeSubStrand.content_standard ? (activeSubStrand.content_standard.replace(/^[A-Z0-9\.]+\s*/i, '') || activeSubStrand.content_standard) : activeSubStrand.title"></p>
+                                                </div>
+                                            </td>
+
+                                            <!-- Indicators & Exemplars cell -->
+                                            <td class="p-4 border-r border-gray-300 dark:border-gray-700 space-y-3.5">
+                                                <div>
+                                                    <div class="flex items-center justify-between gap-2 mb-1.5">
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="font-mono text-xs font-bold px-2 py-0.5 bg-blue-100 dark:bg-blue-900/60 text-blue-900 dark:text-blue-200 rounded" x-text="ind.indicator_code || 'IND'"></span>
+                                                            <h5 class="text-xs font-bold text-gray-900 dark:text-white" x-text="ind.title"></h5>
+                                                        </div>
+                                                        <button type="button" @click="selectIndicator(ind.id, 'form')" class="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1">
+                                                            <i class="fas fa-edit text-[10px]"></i> Edit
+                                                        </button>
+                                                    </div>
+                                                    <p class="text-xs text-gray-700 dark:text-gray-300 leading-relaxed font-medium" x-text="ind.description"></p>
+                                                </div>
+
+                                                <!-- Exemplars -->
+                                                <template x-if="ind.exemplars">
+                                                    <div class="text-xs text-gray-800 dark:text-gray-200 font-sans leading-relaxed space-y-1 bg-gray-50 dark:bg-gray-800/60 p-3 rounded-xl border border-gray-200/80 dark:border-gray-700/80"
+                                                        x-html="formatExemplars(ind.exemplars)"></div>
+                                                </template>
+
+                                                <!-- Diagrams preview in table row -->
+                                                <template x-if="ind.media && ind.media.length > 0">
+                                                    <div class="flex items-center gap-2 overflow-x-auto py-1">
+                                                        <template x-for="item in ind.media" :key="item.id">
+                                                            <div class="w-24 h-24 flex-shrink-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 p-1">
+                                                                <img :src="'/storage/' + item.file_path" class="w-full h-full object-contain">
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                            </td>
+
+                                            <!-- Core Competencies cell -->
+                                            <td class="p-4 bg-gray-50/50 dark:bg-gray-800/50 space-y-2">
+                                                <template x-for="comp in getCompetencies(ind.exemplars + ' ' + ind.description)" :key="comp.code">
+                                                    <div class="p-2 rounded-lg border text-[11px] leading-snug font-medium" :class="comp.color">
+                                                        <span class="font-bold font-mono px-1 py-0.2 rounded text-[9px] bg-white/80 shadow-sm mr-1" x-text="comp.code"></span>
+                                                        <span class="font-bold" x-text="comp.label"></span>
+                                                    </div>
+                                                </template>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- List View for Sub-strand -->
+                    <div x-show="viewMode === 'form'" class="space-y-2">
                         <template x-for="ind in activeSubStrand?.indicators || []" :key="ind.id">
-                            <div class="p-3 bg-gray-50 dark:bg-gray-750 rounded-xl border border-gray-200/60 dark:border-gray-700 flex items-center justify-between gap-3 hover:border-blue-400 transition-colors">
+                            <div class="p-3.5 bg-gray-50 dark:bg-gray-750 rounded-xl border border-gray-200/60 dark:border-gray-700 flex items-center justify-between gap-3 hover:border-blue-400 transition-colors">
                                 <div class="min-w-0 flex-1 flex items-center gap-2.5">
                                     <span class="font-mono text-[10px] px-2 py-0.5 rounded font-bold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200" x-text="ind.indicator_code || 'IND'"></span>
                                     <span class="text-xs font-semibold text-gray-900 dark:text-white truncate" x-text="ind.title"></span>
                                 </div>
-                                <button type="button" @click="selectIndicator(ind.id)" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1">
-                                    <i class="fas fa-edit text-[10px]"></i> Edit
-                                </button>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" @click="selectIndicator(ind.id, 'table')" class="px-2.5 py-1 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1 shadow-sm">
+                                        <i class="fas fa-table text-[10px] text-blue-600"></i> Table
+                                    </button>
+                                    <button type="button" @click="selectIndicator(ind.id, 'form')" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1 shadow-sm">
+                                        <i class="fas fa-edit text-[10px]"></i> Edit
+                                    </button>
+                                </div>
                             </div>
                         </template>
                     </div>
@@ -450,98 +559,264 @@
                 </div>
             </div>
 
-            <!-- Indicator Detail Editor -->
+            <!-- Indicator Detail (PDF Table View & Form Editor) -->
             <div x-show="activeIndicator" class="space-y-5" style="display: none;">
-                <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-4">
-                    <div class="flex items-center gap-2.5">
-                        <button type="button" @click="activeIndicator?.sub_strand_id ? selectSubStrand(activeIndicator.sub_strand_id) : activeIndicator = null" class="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1 mr-2">
+                <!-- Header with Navigation and View Mode Toggle -->
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-700 pb-4">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button type="button" @click="activeIndicator?.sub_strand_id ? selectSubStrand(activeIndicator.sub_strand_id) : activeIndicator = null"
+                            class="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 mr-1 transition-colors">
                             <i class="fas fa-arrow-left"></i> Sub-strand
                         </button>
-                        <span class="px-3 py-1 bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-mono font-bold rounded-lg border border-blue-100" x-text="activeIndicator?.indicator_code || 'No Code'"></span>
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white" x-text="activeIndicator?.title"></h3>
+                        <span class="text-gray-300">/</span>
+                        <span class="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-mono font-bold rounded-lg border border-blue-100" x-text="activeIndicator?.indicator_code || 'No Code'"></span>
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white truncate max-w-md" x-text="activeIndicator?.title"></h3>
                     </div>
+
                     <div class="flex items-center gap-2">
-                        <button type="button" @click="deleteIndicator(activeIndicator.id)" class="h-10 px-3 text-red-600 hover:bg-red-50 border border-red-200 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5">
-                            <i class="fas fa-trash-alt"></i> Delete
+                        <!-- Dual Mode Toggle Buttons -->
+                        <div class="inline-flex rounded-xl bg-gray-100 dark:bg-gray-700 p-1 border border-gray-200 dark:border-gray-600">
+                            <button type="button" @click="viewMode = 'table'"
+                                class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5"
+                                :class="viewMode === 'table' ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900'">
+                                <i class="fas fa-table text-[11px]"></i>
+                                <span>PDF Table View</span>
+                            </button>
+                            <button type="button" @click="viewMode = 'form'"
+                                class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5"
+                                :class="viewMode === 'form' ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900'">
+                                <i class="fas fa-edit text-[11px]"></i>
+                                <span>Edit Form</span>
+                            </button>
+                        </div>
+
+                        <button type="button" @click="deleteIndicator(activeIndicator.id)" class="h-9 px-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 border border-red-200 dark:border-red-800 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5">
+                            <i class="fas fa-trash-alt"></i>
                         </button>
-                        <button type="button" @click="saveIndicator()" class="h-10 px-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-2">
-                            <i class="fas fa-save"></i> Save Changes
+                        <button type="button" @click="saveIndicator()" class="h-9 px-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+                            <i class="fas fa-save"></i>
+                            <span>Save</span>
                         </button>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- 1. PDF TABLE MOCK VIEW (Official GES / NaCCA Curriculum Document Format) -->
+                <div x-show="viewMode === 'table'" class="space-y-4">
+                    <!-- Curriculum Page Header Box (mimicking syllabus header strip) -->
+                    <div class="bg-gray-800 text-white rounded-t-xl px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+                        <div>
+                            <div class="text-[11px] font-semibold text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                                <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-bold" x-text="activeIndicator?.grade_label || 'CURRICULUM'"></span>
+                                <span x-text="activeIndicator?.strand_title || 'Strand'"></span>
+                            </div>
+                            <h4 class="text-sm font-bold text-white mt-0.5" x-text="activeIndicator?.sub_strand_title || 'Sub-strand'"></h4>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] text-gray-300 bg-gray-700/80 px-2.5 py-1 rounded-md border border-gray-600 flex items-center gap-1">
+                                <i class="fas fa-file-pdf text-red-400"></i> NaCCA / GES Format
+                            </span>
+                            <button type="button" @click="viewMode = 'form'" class="text-xs bg-white text-gray-900 hover:bg-gray-100 font-bold px-3 py-1 rounded-md shadow transition-colors flex items-center gap-1">
+                                <i class="fas fa-pencil-alt text-[10px] text-blue-600"></i> Edit Content
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- The Official 3-Column Syllabus Table -->
+                    <div class="border-2 border-gray-700 dark:border-gray-600 rounded-b-xl overflow-hidden bg-white dark:bg-gray-900 shadow-sm -mt-4">
+                        <table class="w-full border-collapse text-left">
+                            <thead>
+                                <tr class="bg-gray-600 text-white text-[11px] font-bold tracking-wider uppercase">
+                                    <th class="p-3.5 w-1/4 border-r border-gray-500">CONTENT STANDARD</th>
+                                    <th class="p-3.5 w-1/2 border-r border-gray-500">INDICATORS AND EXEMPLARS</th>
+                                    <th class="p-3.5 w-1/4">CORE COMPETENCIES</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-300 dark:divide-gray-700 text-gray-900 dark:text-gray-100">
+                                <tr class="align-top">
+                                    <!-- Column 1: CONTENT STANDARD -->
+                                    <td class="p-4 border-r border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 text-xs font-semibold leading-relaxed">
+                                        <template x-if="activeIndicator?.content_standard">
+                                            <div>
+                                                <div class="text-blue-700 dark:text-blue-400 font-bold font-mono text-sm mb-1.5" x-text="(activeIndicator.content_standard.match(/^[A-Z0-9\.]+/i) || [''])[0]"></div>
+                                                <p class="text-gray-800 dark:text-gray-200 font-medium" x-text="activeIndicator.content_standard.replace(/^[A-Z0-9\.]+\s*/i, '') || activeIndicator.content_standard"></p>
+                                            </div>
+                                        </template>
+                                        <template x-if="!activeIndicator?.content_standard">
+                                            <div class="text-gray-400 italic font-normal text-[11px]">
+                                                <span>Standard inherited from:</span>
+                                                <div class="font-semibold text-gray-700 dark:text-gray-300 mt-1" x-text="activeIndicator?.sub_strand_title"></div>
+                                            </div>
+                                        </template>
+                                    </td>
+
+                                    <!-- Column 2: INDICATORS AND EXEMPLARS -->
+                                    <td class="p-4 border-r border-gray-300 dark:border-gray-700 space-y-4">
+                                        <!-- Indicator Header in Cell -->
+                                        <div class="border-b border-gray-200 dark:border-gray-700 pb-2.5">
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <span class="font-mono text-xs font-bold px-2 py-0.5 bg-blue-100 dark:bg-blue-900/60 text-blue-900 dark:text-blue-200 rounded" x-text="activeIndicator?.indicator_code || 'IND'"></span>
+                                                <h5 class="text-xs font-bold text-gray-900 dark:text-white" x-text="activeIndicator?.title"></h5>
+                                            </div>
+                                            <p class="text-xs text-gray-700 dark:text-gray-300 leading-relaxed font-medium" x-text="activeIndicator?.description"></p>
+                                        </div>
+
+                                        <!-- Exemplars List -->
+                                        <div>
+                                            <h6 class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 flex items-center justify-between">
+                                                <span>Teacher Exemplars</span>
+                                                <button type="button" @click="viewMode = 'form'" class="text-[10px] text-blue-600 hover:underline">Edit</button>
+                                            </h6>
+                                            <template x-if="activeIndicator?.exemplars">
+                                                <div class="text-xs text-gray-800 dark:text-gray-200 font-sans leading-relaxed space-y-2 bg-gray-50 dark:bg-gray-800/60 p-3.5 rounded-xl border border-gray-200/80 dark:border-gray-700/80"
+                                                    x-html="formatExemplars(activeIndicator?.exemplars)"></div>
+                                            </template>
+                                            <template x-if="!activeIndicator?.exemplars">
+                                                <div class="text-xs text-gray-400 italic bg-gray-50 dark:bg-gray-800/40 p-3 rounded-lg border border-dashed border-gray-200">
+                                                    No exemplars recorded. Click "Edit Form" to add classroom activities and examples.
+                                                </div>
+                                            </template>
+                                        </div>
+
+                                        <!-- Attached Visuals / Diagrams Gallery in Table -->
+                                        <div>
+                                            <div class="flex items-center justify-between mb-2">
+                                                <h6 class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                                                    <i class="fas fa-image text-blue-600"></i> Attached Diagrams & Mathematical Visuals
+                                                </h6>
+                                                <label class="cursor-pointer text-[11px] font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                                                    <i class="fas fa-plus"></i> Upload Visual
+                                                    <input type="file" accept="image/*" class="hidden" @change="uploadIndicatorMedia($event)">
+                                                </label>
+                                            </div>
+
+                                            <template x-if="activeIndicator?.media?.length > 0">
+                                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                    <template x-for="item in activeIndicator.media" :key="item.id">
+                                                        <div class="group relative rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800 p-2 shadow-sm">
+                                                            <img :src="'/storage/' + item.file_path" :alt="item.caption || 'Curriculum Diagram'" class="w-full h-32 object-contain rounded-lg bg-gray-50 dark:bg-gray-900">
+                                                            <div class="mt-1.5 px-1 flex items-center justify-between text-[10px] text-gray-600 dark:text-gray-400">
+                                                                <span class="truncate font-medium" x-text="item.caption || ('Page ' + (item.page_number || 'N/A'))"></span>
+                                                                <button type="button" @click="deleteMedia(item.id)" class="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    <i class="fas fa-trash-alt"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                            <template x-if="!activeIndicator?.media || activeIndicator?.media?.length === 0">
+                                                <p class="text-[11px] text-gray-400 italic">No diagrams attached to this indicator. Upload visuals to display geometric figures, tables, or charts.</p>
+                                            </template>
+                                        </div>
+                                    </td>
+
+                                    <!-- Column 3: CORE COMPETENCIES -->
+                                    <td class="p-4 bg-gray-50/50 dark:bg-gray-800/50 space-y-3">
+                                        <div class="space-y-2">
+                                            <template x-for="comp in getCompetencies(activeIndicator?.exemplars + ' ' + activeIndicator?.description)" :key="comp.code">
+                                                <div class="p-2.5 rounded-xl border text-xs leading-snug font-medium transition-all" :class="comp.color">
+                                                    <div class="flex items-center gap-1.5 mb-0.5">
+                                                        <span class="font-bold font-mono px-1.5 py-0.2 rounded text-[10px] bg-white/70 shadow-sm" x-text="comp.code"></span>
+                                                        <span class="font-bold" x-text="comp.label"></span>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+
+                                        <div class="pt-3 border-t border-gray-200 dark:border-gray-700 text-[10px] text-gray-400">
+                                            <i class="fas fa-info-circle text-blue-500 mr-1"></i> Mapped automatically from Ghana Education Service Common Core Standards.
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 2. FORM EDIT MODE (For editing fields, text, descriptions, & textbooks) -->
+                <div x-show="viewMode === 'form'" class="space-y-5">
+                    <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800 flex items-center justify-between text-xs text-blue-900 dark:text-blue-200">
+                        <span class="flex items-center gap-2">
+                            <i class="fas fa-pen-to-square text-blue-600"></i> Editing indicator fields. Click "PDF Table View" above at any time to return to document view.
+                        </span>
+                        <button type="button" @click="viewMode = 'table'" class="font-bold underline text-blue-700 dark:text-blue-300">
+                            Switch to Table View
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Indicator Code</label>
+                            <input type="text" x-model="activeIndicator.indicator_code" class="w-full h-11 px-4 rounded-xl text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Short Title</label>
+                            <input type="text" x-model="activeIndicator.title" class="w-full h-11 px-4 rounded-xl text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all">
+                        </div>
+                    </div>
+
                     <div>
-                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Indicator Code</label>
-                        <input type="text" x-model="activeIndicator.indicator_code" class="w-full h-11 px-4 rounded-xl text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all">
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Detailed Description / Learning Outcome</label>
+                        <textarea rows="4" x-model="activeIndicator.description" class="w-full p-3.5 rounded-xl text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all"></textarea>
                     </div>
+
                     <div>
-                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Short Title</label>
-                        <input type="text" x-model="activeIndicator.title" class="w-full h-11 px-4 rounded-xl text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Detailed Description / Learning Outcome</label>
-                    <textarea rows="4" x-model="activeIndicator.description" class="w-full p-3.5 rounded-xl text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all"></textarea>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Exemplars & Teacher Guidelines</label>
-                    <textarea rows="5" x-model="activeIndicator.exemplars" placeholder="Specific classroom activities, examples, sample questions..."
-                        class="w-full p-3.5 rounded-xl text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all"></textarea>
-                </div>
-
-                <!-- Extracted Diagrams & Visual Media -->
-                <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
-                    <div class="flex items-center justify-between mb-2.5">
-                        <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
-                            <i class="fas fa-image text-blue-600"></i> Extracted Diagrams & Visuals
-                        </h4>
-                        <label class="cursor-pointer text-[11px] font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1">
-                            <i class="fas fa-plus"></i> Add Diagram
-                            <input type="file" accept="image/*" class="hidden" @change="uploadIndicatorMedia($event)">
-                        </label>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Exemplars & Teacher Guidelines</label>
+                        <textarea rows="6" x-model="activeIndicator.exemplars" placeholder="Specific classroom activities, examples, sample questions..."
+                            class="w-full p-3.5 rounded-xl text-sm font-medium border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all"></textarea>
                     </div>
 
-                    <template x-if="activeIndicator?.media?.length > 0">
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                            <template x-for="item in activeIndicator.media" :key="item.id">
-                                <div class="group relative rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-750 p-1.5">
-                                    <img :src="'/storage/' + item.file_path" :alt="item.caption || 'Diagram'" class="w-full h-28 object-contain bg-white rounded-lg">
-                                    <div class="mt-1.5 px-1 flex items-center justify-between text-[10px] text-gray-500">
-                                        <span class="truncate" x-text="item.caption || ('Page ' + (item.page_number || 'N/A'))"></span>
-                                        <button type="button" @click="deleteMedia(item.id)" class="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
+                    <!-- Extracted Diagrams & Visual Media in Form Mode -->
+                    <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
+                        <div class="flex items-center justify-between mb-2.5">
+                            <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fas fa-image text-blue-600"></i> Extracted Diagrams & Visuals
+                            </h4>
+                            <label class="cursor-pointer text-[11px] font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                                <i class="fas fa-plus"></i> Add Diagram
+                                <input type="file" accept="image/*" class="hidden" @change="uploadIndicatorMedia($event)">
+                            </label>
+                        </div>
+
+                        <template x-if="activeIndicator?.media?.length > 0">
+                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                <template x-for="item in activeIndicator.media" :key="item.id">
+                                    <div class="group relative rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-750 p-1.5">
+                                        <img :src="'/storage/' + item.file_path" :alt="item.caption || 'Diagram'" class="w-full h-28 object-contain bg-white rounded-lg">
+                                        <div class="mt-1.5 px-1 flex items-center justify-between text-[10px] text-gray-500">
+                                            <span class="truncate" x-text="item.caption || ('Page ' + (item.page_number || 'N/A'))"></span>
+                                            <button type="button" @click="deleteMedia(item.id)" class="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                            </template>
-                        </div>
-                    </template>
-                    <template x-if="!activeIndicator?.media || activeIndicator?.media?.length === 0">
-                        <p class="text-xs text-gray-400 italic">No diagrams attached to this indicator yet. Upload or extract page visuals to display symbols, geometric shapes, or charts.</p>
-                    </template>
-                </div>
+                                </template>
+                            </div>
+                        </template>
+                        <template x-if="!activeIndicator?.media || activeIndicator?.media?.length === 0">
+                            <p class="text-xs text-gray-400 italic">No diagrams attached to this indicator yet. Upload or extract page visuals to display symbols, geometric shapes, or charts.</p>
+                        </template>
+                    </div>
 
-                <!-- Attached Textbook Sections Preview -->
-                <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
-                    <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                        <i class="fas fa-book-open text-blue-600"></i> Linked Textbook Sections
-                    </h4>
-                    <template x-if="activeIndicator?.textbook_sections?.length > 0">
-                        <div class="space-y-2">
-                            <template x-for="sec in activeIndicator.textbook_sections" :key="sec.id">
-                                <div class="p-3.5 bg-gray-50 dark:bg-gray-750 rounded-xl flex items-center justify-between text-xs border border-gray-200/60 dark:border-gray-700">
-                                    <span class="font-semibold text-gray-900 dark:text-white" x-text="sec.title"></span>
-                                    <span class="text-gray-500 font-medium">Pages: <span x-text="sec.page_start || 'N/A'"></span> - <span x-text="sec.page_end || 'N/A'"></span></span>
-                                </div>
-                            </template>
-                        </div>
-                    </template>
-                    <template x-if="!activeIndicator?.textbook_sections || activeIndicator?.textbook_sections?.length === 0">
-                        <p class="text-xs text-gray-400 italic">No textbook content linked to this indicator yet. Upload textbooks in the Textbooks tab to link lessons automatically.</p>
-                    </template>
+                    <!-- Attached Textbook Sections Preview -->
+                    <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
+                        <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                            <i class="fas fa-book-open text-blue-600"></i> Linked Textbook Sections
+                        </h4>
+                        <template x-if="activeIndicator?.textbook_sections?.length > 0">
+                            <div class="space-y-2">
+                                <template x-for="sec in activeIndicator.textbook_sections" :key="sec.id">
+                                    <div class="p-3.5 bg-gray-50 dark:bg-gray-750 rounded-xl flex items-center justify-between text-xs border border-gray-200/60 dark:border-gray-700">
+                                        <span class="font-semibold text-gray-900 dark:text-white" x-text="sec.title"></span>
+                                        <span class="text-gray-500 font-medium">Pages: <span x-text="sec.page_start || 'N/A'"></span> - <span x-text="sec.page_end || 'N/A'"></span></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                        <template x-if="!activeIndicator?.textbook_sections || activeIndicator?.textbook_sections?.length === 0">
+                            <p class="text-xs text-gray-400 italic">No textbook content linked to this indicator yet. Upload textbooks in the Textbooks tab to link lessons automatically.</p>
+                        </template>
+                    </div>
                 </div>
             </div>
         </div>
@@ -608,6 +883,8 @@ function curriculumReviewApp() {
                     {{ $ss->id }}: {
                         id: {{ $ss->id }},
                         strand_id: {{ $strand->id }},
+                        strand_title: @json($strand->title),
+                        grade_label: @json($strand->grade_label),
                         title: @json($ss->title),
                         content_standard: @json($ss->content_standard),
                         description: @json($ss->description),
@@ -617,7 +894,11 @@ function curriculumReviewApp() {
                                     id: {{ $ind->id }},
                                     sub_strand_id: {{ $ss->id }},
                                     indicator_code: @json($ind->indicator_code),
-                                    title: @json($ind->title)
+                                    title: @json($ind->title),
+                                    description: @json($ind->description),
+                                    exemplars: @json($ind->exemplars),
+                                    media: @json($ind->media),
+                                    textbook_sections: @json($ind->textbookSections)
                                 },
                             @endforeach
                         ]
@@ -633,6 +914,11 @@ function curriculumReviewApp() {
                         {{ $ind->id }}: {
                             id: {{ $ind->id }},
                             sub_strand_id: {{ $subStrand->id }},
+                            sub_strand_title: @json($subStrand->title),
+                            content_standard: @json($subStrand->content_standard),
+                            strand_id: {{ $strand->id }},
+                            strand_title: @json($strand->title),
+                            grade_label: @json($strand->grade_label),
                             indicator_code: @json($ind->indicator_code),
                             title: @json($ind->title),
                             description: @json($ind->description),
@@ -661,12 +947,15 @@ function curriculumReviewApp() {
             }
         },
 
-        selectIndicator(id) {
+        viewMode: 'table', // 'table' (PDF layout) or 'form' (edit inputs)
+
+        selectIndicator(id, mode = 'table') {
             this.selectedIndicatorId = id;
             this.selectedSubStrandId = this.indicatorsMap[id]?.sub_strand_id || null;
             this.activeIndicator = Object.assign({}, this.indicatorsMap[id]);
             this.activeSubStrand = null;
             this.activeStrand = null;
+            if (mode) this.viewMode = mode;
         },
 
         selectStrand(id) {
@@ -684,6 +973,46 @@ function curriculumReviewApp() {
             this.activeIndicator = null;
             this.activeStrand = null;
             this.activeSubStrand = Object.assign({}, this.subStrandsMap[id]);
+            this.viewMode = 'table';
+        },
+
+        formatExemplars(text) {
+            if (!text) return '';
+            // Escape HTML characters
+            let escaped = text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+            
+            // Highlight E.g. or Example headings
+            escaped = escaped.replace(/(E\.g\.\s*\d+|Example\s*\d+|E\.g\.)/gi, '<strong class="text-blue-900 font-bold block mt-2.5 mb-1">$1</strong>');
+            
+            // Format line breaks
+            return escaped.replace(/\n/g, '<br>');
+        },
+
+        getCompetencies(text) {
+            if (!text) {
+                return [
+                    { code: 'CC', label: 'Communication and Collaboration', color: 'bg-blue-50 text-blue-800 border-blue-200' },
+                    { code: 'CP', label: 'Critical Thinking and Problem Solving', color: 'bg-emerald-50 text-emerald-800 border-emerald-200' }
+                ];
+            }
+            const comps = [];
+            if (/CC|Communication/i.test(text)) comps.push({ code: 'CC', label: 'Communication and Collaboration', color: 'bg-blue-50 text-blue-800 border-blue-200' });
+            if (/CP|Critical|Problem/i.test(text)) comps.push({ code: 'CP', label: 'Critical Thinking and Problem Solving', color: 'bg-emerald-50 text-emerald-800 border-emerald-200' });
+            if (/CI|Creativity|Innovation/i.test(text)) comps.push({ code: 'CI', label: 'Creativity and Innovation', color: 'bg-purple-50 text-purple-800 border-purple-200' });
+            if (/CG|Cultural|Global/i.test(text)) comps.push({ code: 'CG', label: 'Cultural Identity and Global Citizenship', color: 'bg-amber-50 text-amber-800 border-amber-200' });
+            if (/PL|Personal|Leadership/i.test(text)) comps.push({ code: 'PL', label: 'Personal Development and Leadership', color: 'bg-indigo-50 text-indigo-800 border-indigo-200' });
+            if (/DL|Digital|Literacy/i.test(text)) comps.push({ code: 'DL', label: 'Digital Literacy', color: 'bg-cyan-50 text-cyan-800 border-cyan-200' });
+            
+            if (comps.length === 0) {
+                comps.push({ code: 'CC', label: 'Communication and Collaboration', color: 'bg-blue-50 text-blue-800 border-blue-200' });
+                comps.push({ code: 'CP', label: 'Critical Thinking and Problem Solving', color: 'bg-emerald-50 text-emerald-800 border-emerald-200' });
+            }
+            return comps;
         },
 
         async saveStrand() {
