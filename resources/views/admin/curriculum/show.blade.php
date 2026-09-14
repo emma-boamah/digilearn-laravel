@@ -3,7 +3,7 @@
 @section('title', 'Review Curriculum - ' . $curriculum->title)
 
 @section('content')
-<div class="p-6 max-w-7xl mx-auto space-y-6" x-data="curriculumReviewApp()">
+<div class="p-4 mx-auto space-y-5" x-data="curriculumReviewApp()">
     <!-- Top Action Bar -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
         <div>
@@ -122,7 +122,7 @@
     <!-- Main Content Review Area: Split View -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <!-- Left: Tree Navigation -->
-        <div class="lg:col-span-4 bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-4 max-h-[800px] overflow-y-auto shadow-sm">
+        <div class="lg:col-span-3 bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-3 max-h-[800px] overflow-y-auto shadow-sm">
             <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-3">
                 <h3 class="font-bold text-xs text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-2">
                     <i class="fas fa-sitemap text-blue-600"></i> Curriculum Strands
@@ -230,7 +230,7 @@
         </div>
 
         <!-- Right: Inspector & Inline Editor -->
-        <div class="lg:col-span-8 bg-white dark:bg-gray-800 p-6 sm:p-7 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm min-h-[500px]">
+        <div class="lg:col-span-9 bg-white dark:bg-gray-800 p-4 sm:p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm min-h-[500px]">
             <!-- Processing State in Right Panel if no indicators yet -->
             <div x-show="(status === 'processing' || status === 'pending') && Object.keys(indicatorsMap).length === 0" class="flex flex-col items-center justify-center py-24 text-center">
                 <div class="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center mx-auto mb-4 text-2xl">
@@ -412,13 +412,13 @@
                         <!-- Header banner -->
                         <div class="bg-gray-800 text-white rounded-t-xl px-5 py-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
                             <div>
-                                <div class="text-[11px] font-semibold text-gray-300 uppercase tracking-wider flex items-center gap-2">
-                                    <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-bold" x-text="activeSubStrand?.grade_label || 'CURRICULUM'"></span>
+                                <div class="text-xs font-semibold text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                                    <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold" x-text="activeSubStrand?.grade_label || 'CURRICULUM'"></span>
                                     <span x-text="activeSubStrand?.strand_title || 'Strand'"></span>
                                 </div>
-                                <h4 class="text-sm font-bold text-white mt-0.5" x-text="activeSubStrand?.title"></h4>
+                                <h4 class="text-base font-bold text-white mt-0.5" x-text="activeSubStrand?.title"></h4>
                             </div>
-                            <span class="text-[11px] text-gray-300 bg-gray-700/80 px-2.5 py-1 rounded-md border border-gray-600 flex items-center gap-1">
+                            <span class="text-xs text-gray-300 bg-gray-700/80 px-2.5 py-1 rounded-md border border-gray-600 flex items-center gap-1">
                                 <i class="fas fa-file-pdf text-red-400"></i> NaCCA / GES Document Page
                             </span>
                         </div>
@@ -427,7 +427,7 @@
                         <div class="border-2 border-gray-700 dark:border-gray-600 rounded-b-xl overflow-hidden bg-white dark:bg-gray-900 shadow-sm -mt-4">
                             <table class="w-full border-collapse text-left">
                                 <thead>
-                                    <tr class="bg-gray-600 text-white text-[11px] font-bold tracking-wider uppercase">
+                                    <tr class="bg-gray-600 text-white text-xs font-bold tracking-wider uppercase">
                                         <th class="p-3.5 w-1/4 border-r border-gray-500">CONTENT STANDARD</th>
                                         <th class="p-3.5 w-1/2 border-r border-gray-500">INDICATORS AND EXEMPLARS</th>
                                         <th class="p-3.5 w-1/4">CORE COMPETENCIES</th>
@@ -437,9 +437,9 @@
                                     <template x-for="(ind, index) in activeSubStrand?.indicators || []" :key="ind.id">
                                         <tr class="align-top">
                                             <!-- Standard cell (span first row or show standard) -->
-                                            <td class="p-4 border-r border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 text-xs font-semibold leading-relaxed">
+                                            <td class="p-4 border-r border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 text-sm font-semibold leading-relaxed">
                                                 <div class="sticky top-4">
-                                                    <div class="text-blue-700 dark:text-blue-400 font-bold font-mono text-sm mb-1.5"
+                                                    <div class="text-blue-700 dark:text-blue-400 font-bold font-mono text-base mb-1.5"
                                                         x-text="(activeSubStrand.content_standard ? (activeSubStrand.content_standard.match(/^[A-Z0-9\.]+/i) || [''])[0] : (ind.indicator_code ? ind.indicator_code.replace(/\.\d+$/, '') : 'STANDARD'))"></div>
                                                     <p class="text-gray-800 dark:text-gray-200 font-medium"
                                                         x-text="activeSubStrand.content_standard ? (activeSubStrand.content_standard.replace(/^[A-Z0-9\.]+\s*/i, '') || activeSubStrand.content_standard) : activeSubStrand.title"></p>
@@ -451,19 +451,19 @@
                                                 <div>
                                                     <div class="flex items-center justify-between gap-2 mb-1.5">
                                                         <div class="flex items-center gap-2">
-                                                            <span class="font-mono text-xs font-bold px-2 py-0.5 bg-blue-100 dark:bg-blue-900/60 text-blue-900 dark:text-blue-200 rounded" x-text="ind.indicator_code || 'IND'"></span>
-                                                            <h5 class="text-xs font-bold text-gray-900 dark:text-white" x-text="ind.title"></h5>
+                                                            <span class="font-mono text-sm font-bold px-2 py-0.5 bg-blue-100 dark:bg-blue-900/60 text-blue-900 dark:text-blue-200 rounded" x-text="ind.indicator_code || 'IND'"></span>
+                                                            <h5 class="text-sm font-bold text-gray-900 dark:text-white" x-text="ind.title"></h5>
                                                         </div>
                                                         <button type="button" @click="selectIndicator(ind.id, 'form')" class="text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1">
                                                             <i class="fas fa-edit text-[10px]"></i> Edit
                                                         </button>
                                                     </div>
-                                                    <p class="text-xs text-gray-700 dark:text-gray-300 leading-relaxed font-medium" x-text="ind.description"></p>
+                                                    <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed font-medium" x-text="ind.description"></p>
                                                 </div>
 
                                                 <!-- Exemplars -->
                                                 <template x-if="ind.exemplars">
-                                                    <div class="text-xs text-gray-800 dark:text-gray-200 font-sans leading-relaxed space-y-1 bg-gray-50 dark:bg-gray-800/60 p-3 rounded-xl border border-gray-200/80 dark:border-gray-700/80"
+                                                    <div class="text-sm text-gray-800 dark:text-gray-200 font-sans leading-relaxed space-y-1 bg-gray-50 dark:bg-gray-800/60 p-3 rounded-xl border border-gray-200/80 dark:border-gray-700/80"
                                                         x-html="formatExemplars(ind.exemplars)"></div>
                                                 </template>
 
@@ -482,8 +482,8 @@
                                             <!-- Core Competencies cell -->
                                             <td class="p-4 bg-gray-50/50 dark:bg-gray-800/50 space-y-2">
                                                 <template x-for="comp in getCompetencies(ind.exemplars + ' ' + ind.description)" :key="comp.code">
-                                                    <div class="p-2 rounded-lg border text-[11px] leading-snug font-medium" :class="comp.color">
-                                                        <span class="font-bold font-mono px-1 py-0.2 rounded text-[9px] bg-white/80 shadow-sm mr-1" x-text="comp.code"></span>
+                                                    <div class="p-2 rounded-lg border text-xs leading-snug font-medium" :class="comp.color">
+                                                        <span class="font-bold font-mono px-1 py-0.2 rounded text-[11px] bg-white/80 shadow-sm mr-1" x-text="comp.code"></span>
                                                         <span class="font-bold" x-text="comp.label"></span>
                                                     </div>
                                                 </template>
@@ -605,14 +605,14 @@
                     <!-- Curriculum Page Header Box (mimicking syllabus header strip) -->
                     <div class="bg-gray-800 text-white rounded-t-xl px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 shadow-sm">
                         <div>
-                            <div class="text-[11px] font-semibold text-gray-300 uppercase tracking-wider flex items-center gap-2">
-                                <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-bold" x-text="activeIndicator?.grade_label || 'CURRICULUM'"></span>
+                            <div class="text-xs font-semibold text-gray-300 uppercase tracking-wider flex items-center gap-2">
+                                <span class="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold" x-text="activeIndicator?.grade_label || 'CURRICULUM'"></span>
                                 <span x-text="activeIndicator?.strand_title || 'Strand'"></span>
                             </div>
-                            <h4 class="text-sm font-bold text-white mt-0.5" x-text="activeIndicator?.sub_strand_title || 'Sub-strand'"></h4>
+                            <h4 class="text-base font-bold text-white mt-0.5" x-text="activeIndicator?.sub_strand_title || 'Sub-strand'"></h4>
                         </div>
                         <div class="flex items-center gap-2">
-                            <span class="text-[11px] text-gray-300 bg-gray-700/80 px-2.5 py-1 rounded-md border border-gray-600 flex items-center gap-1">
+                            <span class="text-xs text-gray-300 bg-gray-700/80 px-2.5 py-1 rounded-md border border-gray-600 flex items-center gap-1">
                                 <i class="fas fa-file-pdf text-red-400"></i> NaCCA / GES Format
                             </span>
                             <button type="button" @click="viewMode = 'form'" class="text-xs bg-white text-gray-900 hover:bg-gray-100 font-bold px-3 py-1 rounded-md shadow transition-colors flex items-center gap-1">
@@ -625,7 +625,7 @@
                     <div class="border-2 border-gray-700 dark:border-gray-600 rounded-b-xl overflow-hidden bg-white dark:bg-gray-900 shadow-sm -mt-4">
                         <table class="w-full border-collapse text-left">
                             <thead>
-                                <tr class="bg-gray-600 text-white text-[11px] font-bold tracking-wider uppercase">
+                                <tr class="bg-gray-600 text-white text-xs font-bold tracking-wider uppercase">
                                     <th class="p-3.5 w-1/4 border-r border-gray-500">CONTENT STANDARD</th>
                                     <th class="p-3.5 w-1/2 border-r border-gray-500">INDICATORS AND EXEMPLARS</th>
                                     <th class="p-3.5 w-1/4">CORE COMPETENCIES</th>
@@ -634,15 +634,15 @@
                             <tbody class="divide-y divide-gray-300 dark:divide-gray-700 text-gray-900 dark:text-gray-100">
                                 <tr class="align-top">
                                     <!-- Column 1: CONTENT STANDARD -->
-                                    <td class="p-4 border-r border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 text-xs font-semibold leading-relaxed">
+                                    <td class="p-4 border-r border-gray-300 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 text-sm font-semibold leading-relaxed">
                                         <template x-if="activeIndicator?.content_standard">
                                             <div>
-                                                <div class="text-blue-700 dark:text-blue-400 font-bold font-mono text-sm mb-1.5" x-text="(activeIndicator.content_standard.match(/^[A-Z0-9\.]+/i) || [''])[0]"></div>
+                                                <div class="text-blue-700 dark:text-blue-400 font-bold font-mono text-base mb-1.5" x-text="(activeIndicator.content_standard.match(/^[A-Z0-9\.]+/i) || [''])[0]"></div>
                                                 <p class="text-gray-800 dark:text-gray-200 font-medium" x-text="activeIndicator.content_standard.replace(/^[A-Z0-9\.]+\s*/i, '') || activeIndicator.content_standard"></p>
                                             </div>
                                         </template>
                                         <template x-if="!activeIndicator?.content_standard">
-                                            <div class="text-gray-400 italic font-normal text-[11px]">
+                                            <div class="text-gray-400 italic font-normal text-xs">
                                                 <span>Standard inherited from:</span>
                                                 <div class="font-semibold text-gray-700 dark:text-gray-300 mt-1" x-text="activeIndicator?.sub_strand_title"></div>
                                             </div>
@@ -654,24 +654,24 @@
                                         <!-- Indicator Header in Cell -->
                                         <div class="border-b border-gray-200 dark:border-gray-700 pb-2.5">
                                             <div class="flex items-center gap-2 mb-1">
-                                                <span class="font-mono text-xs font-bold px-2 py-0.5 bg-blue-100 dark:bg-blue-900/60 text-blue-900 dark:text-blue-200 rounded" x-text="activeIndicator?.indicator_code || 'IND'"></span>
-                                                <h5 class="text-xs font-bold text-gray-900 dark:text-white" x-text="activeIndicator?.title"></h5>
+                                                <span class="font-mono text-sm font-bold px-2 py-0.5 bg-blue-100 dark:bg-blue-900/60 text-blue-900 dark:text-blue-200 rounded" x-text="activeIndicator?.indicator_code || 'IND'"></span>
+                                                <h5 class="text-sm font-bold text-gray-900 dark:text-white" x-text="activeIndicator?.title"></h5>
                                             </div>
-                                            <p class="text-xs text-gray-700 dark:text-gray-300 leading-relaxed font-medium" x-text="activeIndicator?.description"></p>
+                                            <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed font-medium" x-text="activeIndicator?.description"></p>
                                         </div>
 
                                         <!-- Exemplars List -->
                                         <div>
-                                            <h6 class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 flex items-center justify-between">
+                                            <h6 class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 flex items-center justify-between">
                                                 <span>Teacher Exemplars</span>
-                                                <button type="button" @click="viewMode = 'form'" class="text-[10px] text-blue-600 hover:underline">Edit</button>
+                                                <button type="button" @click="viewMode = 'form'" class="text-xs text-blue-600 hover:underline">Edit</button>
                                             </h6>
                                             <template x-if="activeIndicator?.exemplars">
-                                                <div class="text-xs text-gray-800 dark:text-gray-200 font-sans leading-relaxed space-y-2 bg-gray-50 dark:bg-gray-800/60 p-3.5 rounded-xl border border-gray-200/80 dark:border-gray-700/80"
+                                                <div class="text-sm text-gray-800 dark:text-gray-200 font-sans leading-relaxed space-y-2 bg-gray-50 dark:bg-gray-800/60 p-3.5 rounded-xl border border-gray-200/80 dark:border-gray-700/80"
                                                     x-html="formatExemplars(activeIndicator?.exemplars)"></div>
                                             </template>
                                             <template x-if="!activeIndicator?.exemplars">
-                                                <div class="text-xs text-gray-400 italic bg-gray-50 dark:bg-gray-800/40 p-3 rounded-lg border border-dashed border-gray-200">
+                                                <div class="text-sm text-gray-400 italic bg-gray-50 dark:bg-gray-800/40 p-3 rounded-lg border border-dashed border-gray-200">
                                                     No exemplars recorded. Click "Edit Form" to add classroom activities and examples.
                                                 </div>
                                             </template>
@@ -680,10 +680,10 @@
                                         <!-- Attached Visuals / Diagrams Gallery in Table -->
                                         <div>
                                             <div class="flex items-center justify-between mb-2">
-                                                <h6 class="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                                                <h6 class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                                                     <i class="fas fa-image text-blue-600"></i> Attached Diagrams & Mathematical Visuals
                                                 </h6>
-                                                <label class="cursor-pointer text-[11px] font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                                                <label class="cursor-pointer text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1">
                                                     <i class="fas fa-plus"></i> Upload Visual
                                                     <input type="file" accept="image/*" class="hidden" @change="uploadIndicatorMedia($event)">
                                                 </label>
@@ -694,7 +694,7 @@
                                                     <template x-for="item in activeIndicator.media" :key="item.id">
                                                         <div class="group relative rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800 p-2 shadow-sm">
                                                             <img :src="'/storage/' + item.file_path" :alt="item.caption || 'Curriculum Diagram'" class="w-full h-32 object-contain rounded-lg bg-gray-50 dark:bg-gray-900">
-                                                            <div class="mt-1.5 px-1 flex items-center justify-between text-[10px] text-gray-600 dark:text-gray-400">
+                                                            <div class="mt-1.5 px-1 flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
                                                                 <span class="truncate font-medium" x-text="item.caption || ('Page ' + (item.page_number || 'N/A'))"></span>
                                                                 <button type="button" @click="deleteMedia(item.id)" class="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity">
                                                                     <i class="fas fa-trash-alt"></i>
@@ -705,7 +705,7 @@
                                                 </div>
                                             </template>
                                             <template x-if="!activeIndicator?.media || activeIndicator?.media?.length === 0">
-                                                <p class="text-[11px] text-gray-400 italic">No diagrams attached to this indicator. Upload visuals to display geometric figures, tables, or charts.</p>
+                                                <p class="text-xs text-gray-400 italic">No diagrams attached to this indicator. Upload visuals to display geometric figures, tables, or charts.</p>
                                             </template>
                                         </div>
                                     </td>
@@ -714,16 +714,16 @@
                                     <td class="p-4 bg-gray-50/50 dark:bg-gray-800/50 space-y-3">
                                         <div class="space-y-2">
                                             <template x-for="comp in getCompetencies(activeIndicator?.exemplars + ' ' + activeIndicator?.description)" :key="comp.code">
-                                                <div class="p-2.5 rounded-xl border text-xs leading-snug font-medium transition-all" :class="comp.color">
+                                                <div class="p-2.5 rounded-xl border text-sm leading-snug font-medium transition-all" :class="comp.color">
                                                     <div class="flex items-center gap-1.5 mb-0.5">
-                                                        <span class="font-bold font-mono px-1.5 py-0.2 rounded text-[10px] bg-white/70 shadow-sm" x-text="comp.code"></span>
+                                                        <span class="font-bold font-mono px-1.5 py-0.2 rounded text-xs bg-white/70 shadow-sm" x-text="comp.code"></span>
                                                         <span class="font-bold" x-text="comp.label"></span>
                                                     </div>
                                                 </div>
                                             </template>
                                         </div>
 
-                                        <div class="pt-3 border-t border-gray-200 dark:border-gray-700 text-[10px] text-gray-400">
+                                        <div class="pt-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400">
                                             <i class="fas fa-info-circle text-blue-500 mr-1"></i> Mapped automatically from Ghana Education Service Common Core Standards.
                                         </div>
                                     </td>
