@@ -320,42 +320,42 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getAvatarUrlAttribute()
     {
-        // Prioritize Google avatar if available
+        // 1. Prioritize user's custom uploaded avatar if available
+        if ($this->avatar) {
+            // If avatar is an absolute URL, return as-is
+            if (preg_match('/^https?:\/\//', $this->avatar)) {
+                return $this->avatar;
+            }
+
+            // Check for valid local avatar path
+            if (!preg_match('/^tmp\//', $this->avatar) && preg_match('/^avatars\//', $this->avatar)) {
+                try {
+                    // Use the secure_asset helper to generate proper HTTPS URL
+                    $url = secure_asset('storage/' . ltrim($this->avatar, '/'));
+
+                    // Add cache buster if file exists
+                    $fullPath = storage_path('app/public/' . $this->avatar);
+                    if (file_exists($fullPath)) {
+                        $url .= '?v=' . filemtime($fullPath);
+                    }
+
+                    return $url;
+                } catch (\Exception $e) {
+                    // Fall through
+                }
+            } else {
+                $this->avatar = null;
+                $this->save();
+            }
+        }
+
+        // 2. Fall back to Google avatar if available
         if ($this->google_avatar) {
             return $this->google_avatar;
         }
 
-        if (!$this->avatar) {
-            return $this->getAvatarWithFallback();
-        }
-
-        // If avatar is an absolute URL (e.g., Google), return as-is
-        if (preg_match('/^https?:\/\//', $this->avatar)) {
-            return $this->avatar;
-        }
-
-        // Check for invalid paths
-        if (preg_match('/^tmp\//', $this->avatar) || !preg_match('/^avatars\//', $this->avatar)) {
-            $this->avatar = null;
-            $this->save();
-            return $this->getAvatarWithFallback();
-        }
-
-        try {
-            // Use the secure_asset helper to generate proper HTTPS URL
-            $url = secure_asset('storage/' . ltrim($this->avatar, '/'));
-
-            // Add cache buster if file exists
-            $fullPath = storage_path('app/public/' . $this->avatar);
-            if (file_exists($fullPath)) {
-                $url .= '?v=' . filemtime($fullPath);
-            }
-
-            return $url;
-        } catch (\Exception $e) {
-            // Fallback to UI Avatars
-            return $this->getAvatarWithFallback();
-        }
+        // 3. Fallback to UI Avatars
+        return $this->getAvatarWithFallback();
     }
 
     /**
@@ -378,20 +378,13 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getAvatarWithFallback($size = 40)
     {
-        // Prioritize Google avatar if available
-        if ($this->google_avatar) {
-            return $this->google_avatar;
-        }
-
+        // 1. Prioritize user's custom uploaded avatar if available
         if ($this->avatar) {
-            // Use the same logic as getAvatarUrlAttribute for local avatars
             if (preg_match('/^https?:\/\//', $this->avatar)) {
                 return $this->avatar;
             }
 
-            if (preg_match('/^tmp\//', $this->avatar) || !preg_match('/^avatars\//', $this->avatar)) {
-                // Invalid, fall back
-            } else {
+            if (!preg_match('/^tmp\//', $this->avatar) && preg_match('/^avatars\//', $this->avatar)) {
                 try {
                     $url = secure_asset('storage/' . ltrim($this->avatar, '/'));
                     $fullPath = storage_path('app/public/' . $this->avatar);
@@ -400,12 +393,17 @@ class User extends Authenticatable implements MustVerifyEmail
                     }
                     return $url;
                 } catch (\Exception $e) {
-                    // Fall through to UI Avatars
+                    // Fall through
                 }
             }
         }
 
-        // Fallback to UI Avatars service
+        // 2. Fall back to Google avatar if available
+        if ($this->google_avatar) {
+            return $this->google_avatar;
+        }
+
+        // 3. Fallback to UI Avatars service
         $name = urlencode($this->name ?? 'User');
         return "https://ui-avatars.com/api/?name={$name}&size={$size}&background=random&color=fff&bold=true";
     }

@@ -311,10 +311,8 @@ class GoogleController extends Controller
                 if (!$user->google_id && $googleId) {
                     $updateData['google_id'] = $googleId;
                 }
-                if (!$user->avatar && $avatar) {
-                    $updateData['avatar'] = $avatar;
-                }
-                if (!$user->google_avatar && $avatar) {
+                // Only set avatar on existing user if they have no custom avatar or google avatar
+                if (!$user->avatar && !$user->google_avatar && $avatar) {
                     $updateData['google_avatar'] = $avatar;
                 }
                 if (!$user->email_verified_at) {
