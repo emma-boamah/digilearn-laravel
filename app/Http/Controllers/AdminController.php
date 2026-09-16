@@ -4199,12 +4199,21 @@ class AdminController extends Controller
                         $item->content_type = 'quiz';
                         $item->thumbnail_url = null;
                         $attachedQuiz = $item->quizzes->first() ?? ($item->quiz_id ? Quiz::find($item->quiz_id) : null);
-                        if ($attachedQuiz && $attachedQuiz->status) {
-                            $item->status = $attachedQuiz->status;
+                        if ($attachedQuiz) {
+                            $item->real_content_id = $attachedQuiz->id;
+                            $item->parent_video_id = $item->id;
+                            if ($attachedQuiz->status) {
+                                $item->status = $attachedQuiz->status;
+                            }
                         }
                     } elseif ($item->documents_count > 0 || !empty($item->document_path)) {
                         $item->content_type = 'document';
-                        $docFilePath = $item->documents->first()->file_path ?? $item->document_path;
+                        $attachedDoc = $item->documents->first();
+                        if ($attachedDoc) {
+                            $item->real_content_id = $attachedDoc->id;
+                            $item->parent_video_id = $item->id;
+                        }
+                        $docFilePath = $attachedDoc->file_path ?? $item->document_path;
                         $item->thumbnail_url = $docFilePath ? \App\Services\PdfParser::getCoverThumbnailUrl($docFilePath) : null;
                     }
                 }
@@ -4802,8 +4811,42 @@ class AdminController extends Controller
         // Look up by explicitly requested type first
         if ($contentType === 'quiz') {
             $content = Quiz::with(['uploader:id,name,email,avatar,google_avatar', 'subject', 'categories', 'ratings'])->find($contentId);
+            // If not found or if contentId was actually a reclassified Video container ID
+            if (!$content) {
+                $containerVideo = Video::with([
+                    'uploader:id,name,email,avatar,google_avatar',
+                    'subject',
+                    'documents.uploader',
+                    'quiz.uploader',
+                    'quizzes',
+                    'categories'
+                ])->find($contentId);
+                if ($containerVideo && ($containerVideo->quiz_id || $containerVideo->quizzes->count() > 0)) {
+                    $attachedQuizId = $containerVideo->quiz_id ?: $containerVideo->quizzes->first()->id;
+                    $content = Quiz::with(['uploader:id,name,email,avatar,google_avatar', 'subject', 'categories', 'ratings'])->find($attachedQuizId);
+                    if (!$content) {
+                        $content = $containerVideo;
+                        $contentType = 'video';
+                    }
+                }
+            }
         } elseif ($contentType === 'document') {
             $content = Document::with(['uploader:id,name,email,avatar,google_avatar', 'categories'])->find($contentId);
+            if (!$content) {
+                $containerVideo = Video::with([
+                    'uploader:id,name,email,avatar,google_avatar',
+                    'subject',
+                    'documents.uploader',
+                    'quiz.uploader',
+                    'quizzes',
+                    'categories'
+                ])->find($contentId);
+                if ($containerVideo && ($containerVideo->documents->count() > 0 || !empty($containerVideo->document_path))) {
+                    $attachedDoc = $containerVideo->documents->first();
+                    $content = $attachedDoc ?: $containerVideo;
+                    if (!$attachedDoc) $contentType = 'video';
+                }
+            }
         } elseif ($contentType === 'video') {
             $content = Video::with([
                 'uploader:id,name,email,avatar,google_avatar',
@@ -4872,8 +4915,28 @@ class AdminController extends Controller
 
         if ($contentType === 'quiz') {
             $content = Quiz::with(['subject', 'categories', 'uploader'])->find($contentId);
+            // If not found or if contentId was a Video ID that holds the quiz
+            if (!$content) {
+                $containerVideo = Video::with(['subject', 'documents', 'quiz', 'quizzes', 'categories'])->find($contentId);
+                if ($containerVideo && ($containerVideo->quiz_id || $containerVideo->quizzes->count() > 0)) {
+                    $attachedQuizId = $containerVideo->quiz_id ?: $containerVideo->quizzes->first()->id;
+                    $content = Quiz::with(['subject', 'categories', 'uploader'])->find($attachedQuizId);
+                    if (!$content) {
+                        $content = $containerVideo;
+                        $contentType = 'video';
+                    }
+                }
+            }
         } elseif ($contentType === 'document') {
             $content = Document::with(['categories', 'uploader'])->find($contentId);
+            if (!$content) {
+                $containerVideo = Video::with(['subject', 'documents', 'quiz', 'quizzes', 'categories'])->find($contentId);
+                if ($containerVideo && ($containerVideo->documents->count() > 0 || !empty($containerVideo->document_path))) {
+                    $attachedDoc = $containerVideo->documents->first();
+                    $content = $attachedDoc ?: $containerVideo;
+                    if (!$attachedDoc) $contentType = 'video';
+                }
+            }
         } elseif ($contentType === 'video') {
             $content = Video::with(['subject', 'documents', 'quiz', 'quizzes', 'categories'])->find($contentId);
         }
@@ -4944,8 +5007,27 @@ class AdminController extends Controller
 
         if ($contentType === 'quiz') {
             $content = Quiz::find($contentId);
+            if (!$content) {
+                $containerVideo = Video::find($contentId);
+                if ($containerVideo && ($containerVideo->quiz_id || $containerVideo->quizzes()->exists())) {
+                    $attachedQuizId = $containerVideo->quiz_id ?: $containerVideo->quizzes()->first()->id;
+                    $content = Quiz::find($attachedQuizId);
+                    if (!$content) {
+                        $content = $containerVideo;
+                        $contentType = 'video';
+                    }
+                }
+            }
         } elseif ($contentType === 'document') {
             $content = Document::find($contentId);
+            if (!$content) {
+                $containerVideo = Video::find($contentId);
+                if ($containerVideo && ($containerVideo->documents()->exists() || !empty($containerVideo->document_path))) {
+                    $attachedDoc = $containerVideo->documents()->first();
+                    $content = $attachedDoc ?: $containerVideo;
+                    if (!$attachedDoc) $contentType = 'video';
+                }
+            }
         } elseif ($contentType === 'video') {
             $content = Video::find($contentId);
         }
@@ -5214,8 +5296,27 @@ class AdminController extends Controller
         // Look up by explicitly requested type first
         if ($contentType === 'quiz') {
             $content = Quiz::find($contentId);
+            if (!$content) {
+                $containerVideo = Video::find($contentId);
+                if ($containerVideo && ($containerVideo->quiz_id || $containerVideo->quizzes()->exists())) {
+                    $attachedQuizId = $containerVideo->quiz_id ?: $containerVideo->quizzes()->first()->id;
+                    $content = Quiz::find($attachedQuizId);
+                    if (!$content) {
+                        $content = $containerVideo;
+                        $contentType = 'video';
+                    }
+                }
+            }
         } elseif ($contentType === 'document') {
             $content = Document::find($contentId);
+            if (!$content) {
+                $containerVideo = Video::find($contentId);
+                if ($containerVideo && ($containerVideo->documents()->exists() || !empty($containerVideo->document_path))) {
+                    $attachedDoc = $containerVideo->documents()->first();
+                    $content = $attachedDoc ?: $containerVideo;
+                    if (!$attachedDoc) $contentType = 'video';
+                }
+            }
         } elseif ($contentType === 'video') {
             $content = Video::find($contentId);
         }
