@@ -889,6 +889,7 @@
             }
         }, 300000); // 5 minutes
     </script>
+    @include('partials.google-one-tap')
     @stack('scripts')
 </body>
 

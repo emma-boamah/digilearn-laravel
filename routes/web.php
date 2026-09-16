@@ -240,6 +240,9 @@ Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])
 Route::get('auth/google/callback/route', [GoogleController::class, 'handleGoogleCallback'])
     ->middleware('throttle.redirect:' . config('services.google.rate_limit', 5) . ',1')
     ->name('auth.google.callback');
+Route::post('auth/google/one-tap', [GoogleController::class, 'handleOneTap'])
+    ->middleware('throttle:15,1')
+    ->name('auth.google.one-tap');
 
 // Forgot Password Routes
 Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');

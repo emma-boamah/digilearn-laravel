@@ -8,8 +8,11 @@ use App\Models\User;
 use App\Models\UserProgress;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Auth\Events\Registered;
 
 use App\Traits\HasOtpVerification;
 
@@ -204,6 +207,200 @@ class GoogleController extends Controller
     }
 
     /**
+     * Handle Google One Tap credential callback
+     */
+    public function handleOneTap(Request $request)
+    {
+        try {
+            $credential = $request->input('credential');
+            if (!$credential) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Missing Google credential token.',
+                ], 400);
+            }
+
+            // Verify Google ID token via Google's TokenInfo endpoint
+            $response = Http::timeout(10)->get('https://oauth2.googleapis.com/tokeninfo', [
+                'id_token' => $credential,
+            ]);
+
+            if (!$response->successful()) {
+                $this->logGoogleAuthEvent('one_tap_invalid_token', self::ERROR_CATEGORIES['GOOGLE_AUTH_FAILED'], $request, [
+                    'ip' => $request->ip(),
+                    'status' => $response->status(),
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid or expired Google authentication credential.',
+                ], 401);
+            }
+
+            $payload = $response->json();
+
+            // Validate that the audience matches our configured Google Client ID
+            $clientId = config('services.google.client_id');
+            if (empty($clientId) || ($payload['aud'] ?? '') !== $clientId) {
+                $this->logGoogleAuthEvent('one_tap_audience_mismatch', self::ERROR_CATEGORIES['GOOGLE_AUTH_FAILED'], $request, [
+                    'expected_aud' => $clientId,
+                    'token_aud' => $payload['aud'] ?? null,
+                    'ip' => $request->ip(),
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Google Client ID verification failed.',
+                ], 403);
+            }
+
+            $email = $payload['email'] ?? null;
+            $emailVerified = filter_var($payload['email_verified'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+            if (!$email || !$emailVerified) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Google account must have a verified email address.',
+                ], 422);
+            }
+
+            $googleId = $payload['sub'] ?? null;
+            $name = $payload['name'] ?? ($payload['given_name'] ?? 'Google User');
+            $avatar = $payload['picture'] ?? null;
+
+            // Find existing user by email
+            $user = User::where('email', $email)->first();
+
+            if (!$user) {
+                // Instant registration without OTP for maximum conversion
+                $user = User::create([
+                    'name' => $name,
+                    'email' => $email,
+                    'google_id' => $googleId,
+                    'avatar' => $avatar,
+                    'google_avatar' => $avatar,
+                    'password' => Hash::make(Str::random(64)),
+                    'email_verified_at' => now(),
+                    'last_login_at' => now(),
+                    'last_login_ip' => $request->ip(),
+                    'registration_ip' => $request->ip(),
+                ]);
+
+                try {
+                    if (method_exists($user, 'assignRole')) {
+                        $user->assignRole('student');
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('Role assignment skipped or failed for One Tap user: ' . $e->getMessage());
+                }
+
+                event(new Registered($user));
+
+                $this->logGoogleAuthEvent('one_tap_user_registered', 'success', $request, [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'google_id' => $googleId,
+                ]);
+            } else {
+                // Update existing user info
+                $updateData = [
+                    'last_login_ip' => $request->ip(),
+                    'last_login_at' => now(),
+                ];
+
+                if (!$user->google_id && $googleId) {
+                    $updateData['google_id'] = $googleId;
+                }
+                if (!$user->avatar && $avatar) {
+                    $updateData['avatar'] = $avatar;
+                }
+                if (!$user->google_avatar && $avatar) {
+                    $updateData['google_avatar'] = $avatar;
+                }
+                if (!$user->email_verified_at) {
+                    $updateData['email_verified_at'] = now();
+                }
+
+                $user->update($updateData);
+
+                $this->logGoogleAuthEvent('one_tap_existing_user_login', 'success', $request, [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                ]);
+            }
+
+            // Check if user account is suspended
+            if ($user->isSuspended()) {
+                $this->logGoogleAuthEvent('one_tap_account_suspended', 'account_suspended', $request, [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'suspended_at' => $user->suspended_at,
+                    'suspension_reason' => $user->suspension_reason,
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'suspended' => true,
+                    'redirect' => route('auth.suspended', [
+                        'email' => $user->email,
+                        'reason' => $user->suspension_reason,
+                    ]),
+                ]);
+            }
+
+            Auth::login($user, true);
+            if ($request->hasSession()) {
+                $request->session()->regenerate();
+            }
+
+            // Progress handling / session restoration
+            $latestProgress = UserProgress::where('user_id', $user->id)
+                ->where('is_active', true)
+                ->first();
+
+            if ($latestProgress) {
+                session(['selected_level_group' => $latestProgress->level_group]);
+            } else {
+                $anyProgress = UserProgress::where('user_id', $user->id)->latest()->first();
+                if ($anyProgress) {
+                    session(['selected_level_group' => $anyProgress->level_group]);
+                }
+            }
+
+            // Multi-tenant and role-based redirect
+            if (app()->has('tenant')) {
+                $subdomain = app('tenant')->subdomain;
+                $parsedUrl = parse_url(config('app.url'));
+                $scheme = $parsedUrl['scheme'] ?? 'http';
+                $host = $parsedUrl['host'] ?? 'localhost';
+                $port = isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '';
+                $targetPath = (method_exists($user, 'hasRole') && $user->hasRole('school-admin')) ? '/school-admin' : '/dashboard/main';
+                $redirectUrl = "{$scheme}://{$subdomain}.{$host}{$port}{$targetPath}";
+            } elseif ($user->is_admin || $user->is_superuser) {
+                $redirectUrl = route('admin.dashboard');
+            } else {
+                $redirectUrl = route('dashboard.main');
+            }
+
+            return response()->json([
+                'success' => true,
+                'redirect' => $redirectUrl,
+            ]);
+
+        } catch (\Throwable $e) {
+            $this->logGoogleAuthEvent('one_tap_unexpected_error', self::ERROR_CATEGORIES['SYSTEM'], $request, [
+                'error' => $e->getMessage(),
+                'ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication encountered an error. Please try again.',
+            ], 500);
+        }
+    }
+
+    /**
      * Ensure user progress is initialized for the selected level group
      */
     private function ensureUserProgressInitializedForLevelGroup($user, $levelGroup)
@@ -285,7 +482,7 @@ class GoogleController extends Controller
             'ip' => $request->ip(),
             'user_agent' => $request->userAgent(),
             'timestamp' => now()->toISOString(),
-            'session_id' => $request->session()->getId(),
+            'session_id' => $request->hasSession() ? $request->session()->getId() : null,
         ], $context);
 
         // Log to appropriate channels
