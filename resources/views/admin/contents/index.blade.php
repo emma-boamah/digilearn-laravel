@@ -1509,7 +1509,12 @@
                                             </div>
                                             <div class="video-info">
                                                 <div class="video-title">
-                                                    <a href="{{ route('admin.contents.show', ['contentId' => $content->id, 'type' => $content->content_type]) }}" class="hover:text-blue-600 transition-colors">
+                                                    @php
+                                                        $effectiveTitleId = (!empty($content->real_content_id) && in_array($content->content_type, ['quiz', 'document'])) 
+                                                            ? $content->real_content_id 
+                                                            : $content->id;
+                                                    @endphp
+                                                    <a href="{{ route('admin.contents.show', ['contentId' => $effectiveTitleId, 'type' => $content->content_type]) }}" class="hover:text-blue-600 transition-colors">
                                                         {{ $content->title }}
                                                     </a>
                                                     @if(isset($content->is_agent_generated) && $content->is_agent_generated)
@@ -1605,7 +1610,12 @@
                                         @endif
                                     </td>
                                     <td class="actions-cell">
-                                        <a href="{{ route('admin.contents.show', ['contentId' => $content->id, 'type' => $content->content_type]) }}" class="action-btn" title="View Details" style="color: #64748b;">
+                                        @php
+                                            $effectiveId = (!empty($content->real_content_id) && in_array($content->content_type, ['quiz', 'document'])) 
+                                                ? $content->real_content_id 
+                                                : $content->id;
+                                        @endphp
+                                        <a href="{{ route('admin.contents.show', ['contentId' => $effectiveId, 'type' => $content->content_type]) }}" class="action-btn" title="View Details" style="color: #64748b;">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         @if($type === 'pending' && $content->content_type === 'video')
@@ -1624,12 +1634,12 @@
                                                 <i class="fas fa-times"></i>
                                             </button>
                                         @else
-                                            <button class="action-btn edit-btn" title="Edit" data-content-id="{{ $content->id }}"
+                                            <button class="action-btn edit-btn" title="Edit" data-content-id="{{ $effectiveId }}"
                                                 data-content-type="{{ $content->content_type }}">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                             <button class="action-btn delete delete-btn" title="Delete"
-                                                data-content-id="{{ $content->id }}" data-content-type="{{ $content->content_type }}"
+                                                data-content-id="{{ $effectiveId }}" data-content-type="{{ $content->content_type }}"
                                                 data-video-source="{{ $content->video_source ?? '' }}"
                                                 data-has-docs="{{ ($content->documents_count ?? 0) > 0 || !empty($content->document_path) ? 'true' : 'false' }}"
                                                 data-has-quizzes="{{ ($content->quizzes_count ?? 0) > 0 || !empty($content->quiz_id) ? 'true' : 'false' }}">
