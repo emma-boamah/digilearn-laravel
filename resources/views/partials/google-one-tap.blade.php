@@ -38,6 +38,16 @@
                     console.error('Google One Tap request failed:', err);
                 });
             };
+
+            window.handleOneTapMoment = function(notification) {
+                if (notification.isNotDisplayed()) {
+                    console.warn('[Google One Tap] Not displayed:', notification.getNotDisplayedReason());
+                } else if (notification.isSkippedMoment()) {
+                    console.warn('[Google One Tap] Skipped:', notification.getSkippedReason());
+                } else if (notification.isDismissedMoment()) {
+                    console.warn('[Google One Tap] Dismissed:', notification.getDismissedReason());
+                }
+            };
         </script>
 
         <script nonce="{{ request()->attributes->get('csp_nonce') }}" src="https://accounts.google.com/gsi/client" async defer></script>
@@ -45,10 +55,10 @@
         <div id="g_id_onload"
              data-client_id="{{ config('services.google.client_id') }}"
              data-callback="handleGoogleOneTap"
+             data-moment_callback="handleOneTapMoment"
              data-auto_prompt="true"
              data-auto_select="false"
-             data-cancel_on_tap_outside="false"
-             data-itp_support="true">
+             data-cancel_on_tap_outside="false">
         </div>
     @endif
 @endguest
