@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Login - {{ isset($tenant) ? $tenant->name : 'ShoutOutGH' }} | Online Learning Platform Ghana</title>
     <meta name="description" content="Log in to your ShoutOutGH account to access online lessons, quizzes, and study materials. Ghana's premier online education platform.">
     <meta name="keywords" content="ShoutOutGH login, online education ghana login, e-learning ghana, student login, online school ghana">
@@ -814,5 +815,6 @@
             }, 300000); // 5 minutes
         });
     </script>
+    @include('partials.google-one-tap')
 </body>
 </html>

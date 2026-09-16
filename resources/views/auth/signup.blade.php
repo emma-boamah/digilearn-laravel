@@ -1648,5 +1648,6 @@
         });
     </script>
     @endif
+    @include('partials.google-one-tap')
 </body>
 </html>
