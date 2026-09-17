@@ -54,21 +54,45 @@
         </div>
     </div>
 
-    @if($textbook->toc_extraction_status === 'processing' || $textbook->content_extraction_status === 'processing')
-    <div class="p-5 rounded-2xl bg-blue-50/90 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100 shadow-sm">
-        <div class="flex items-center gap-3.5">
-            <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
-                <i class="fas fa-spinner fa-spin text-lg"></i>
+    @if($textbook->toc_extraction_status === 'processing' || $textbook->toc_extraction_status === 'pending' || $textbook->content_extraction_status === 'processing')
+    <div x-data="{
+            pollInterval: null,
+            init() {
+                this.pollInterval = setInterval(async () => {
+                    try {
+                        const res = await fetch('{{ route('admin.textbooks.status', $textbook) }}');
+                        if (!res.ok) return;
+                        const data = await res.json();
+                        if (data.toc_extraction_status !== 'processing' && data.toc_extraction_status !== 'pending' && data.content_extraction_status !== 'processing') {
+                            clearInterval(this.pollInterval);
+                            window.location.reload();
+                        }
+                    } catch (e) {
+                        console.error('Textbook status polling error:', e);
+                    }
+                }, 3500);
+            }
+        }"
+        class="p-5 rounded-2xl bg-blue-50/90 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100 shadow-sm">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-3.5">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                    <i class="fas fa-spinner fa-spin text-lg"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-sm text-blue-900 dark:text-white flex items-center gap-2">
+                        AI Textbook Extraction in Progress
+                        <span class="inline-block w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
+                    </h4>
+                    <p class="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+                        Gemini is analyzing the textbook. This page will update automatically once complete.
+                    </p>
+                </div>
             </div>
-            <div>
-                <h4 class="font-bold text-sm text-blue-900 dark:text-white flex items-center gap-2">
-                    AI Textbook Extraction in Progress
-                    <span class="inline-block w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
-                </h4>
-                <p class="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
-                    Gemini is extracting the Table of Contents, structuring chapters, and formatting lesson content.
-                </p>
-            </div>
+            <span class="text-[11px] font-medium text-blue-600 dark:text-blue-400 bg-blue-100/70 dark:bg-blue-900/50 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                Checking live status...
+            </span>
         </div>
     </div>
     @elseif($textbook->toc_extraction_status === 'failed')
@@ -100,7 +124,7 @@
                             </h4>
                             @if($isTokenExhausted)
                                 <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-200 text-amber-900 border border-amber-300">
-                                    Google AI Studio Credits Exhausted
+                                    Credits Depleted
                                 </span>
                             @endif
                         </div>

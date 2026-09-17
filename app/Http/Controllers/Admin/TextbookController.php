@@ -139,6 +139,28 @@ class TextbookController extends Controller
     }
 
     /**
+     * Get live extraction status and error details for a textbook (AJAX polling).
+     */
+    public function status(Textbook $textbook): JsonResponse
+    {
+        $errorData = null;
+        if (!empty($textbook->extraction_error)) {
+            $errorData = is_array($textbook->extraction_error)
+                ? $textbook->extraction_error
+                : json_decode($textbook->extraction_error, true);
+        }
+
+        return response()->json([
+            'id' => $textbook->id,
+            'toc_extraction_status' => $textbook->toc_extraction_status,
+            'content_extraction_status' => $textbook->content_extraction_status,
+            'is_toc_approved' => (bool) $textbook->is_toc_approved,
+            'chapters_count' => $textbook->chapters()->count(),
+            'error' => $errorData,
+        ]);
+    }
+
+    /**
      * Queue content extraction for a textbook or single chapter.
      */
     public function extractContent(Textbook $textbook, Request $request)
