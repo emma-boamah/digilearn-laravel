@@ -778,6 +778,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::get('/{textbook}', [TextbookController::class, 'show'])->name('show');
         Route::delete('/{textbook}', [TextbookController::class, 'destroy'])->name('destroy');
         Route::post('/{textbook}/approve-toc', [TextbookController::class, 'approveToc'])->name('approve-toc');
+        Route::post('/{textbook}/retry-toc', [TextbookController::class, 'retryToc'])->name('retry-toc');
         Route::post('/{textbook}/extract-content', [TextbookController::class, 'extractContent'])->name('extract-content');
         Route::put('/chapters/{chapter}', [TextbookController::class, 'updateChapter'])->name('chapters.update');
         Route::put('/sections/{section}', [TextbookController::class, 'updateSection'])->name('sections.update');

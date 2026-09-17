@@ -68,8 +68,19 @@
                                     <i class="fas fa-spinner fa-spin mr-1.5"></i> Reading TOC
                                 </span>
                             @elseif($book->toc_extraction_status === 'failed')
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 border border-red-200">
-                                    Failed
+                                @php
+                                    $err = !empty($book->extraction_error) 
+                                        ? (is_array($book->extraction_error) ? $book->extraction_error : json_decode($book->extraction_error, true)) 
+                                        : null;
+                                    $isExhausted = ($err['type'] ?? '') === 'token_exhausted';
+                                @endphp
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold {{ $isExhausted ? 'bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-300' : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 border border-red-200' }}"
+                                      title="{{ $err['message'] ?? 'Extraction failed' }}">
+                                    @if($isExhausted)
+                                        <i class="fas fa-coins mr-1.5 text-amber-600"></i> Quota Depleted (429)
+                                    @else
+                                        <i class="fas fa-exclamation-circle mr-1.5 text-red-500"></i> Extraction Failed
+                                    @endif
                                 </span>
                             @else
                                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
@@ -94,6 +105,16 @@
                             {{ $book->chapters_count }} Chapters
                         </td>
                         <td class="px-6 py-4 text-right space-x-2">
+                            @if($book->toc_extraction_status === 'failed')
+                                <form action="{{ route('admin.textbooks.retry-toc', $book) }}" method="POST" class="inline">
+                                    @csrf
+                                    <button type="submit" title="Retry TOC Extraction"
+                                            class="inline-flex items-center px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold rounded-lg transition-colors border border-amber-200">
+                                        <i class="fas fa-redo mr-1"></i> Retry
+                                    </button>
+                                </form>
+                            @endif
+
                             <a href="{{ route('admin.textbooks.show', $book) }}"
                                class="inline-flex items-center px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold rounded-lg transition-colors border border-blue-100">
                                 <i class="fas fa-eye mr-1.5"></i> Review & Lessons

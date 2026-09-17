@@ -72,17 +72,85 @@
         </div>
     </div>
     @elseif($textbook->toc_extraction_status === 'failed')
-    <div class="p-5 rounded-2xl bg-red-50 border border-red-200 text-red-800 shadow-sm">
-        <div class="flex items-start gap-3.5">
-            <div class="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0">
-                <i class="fas fa-exclamation-triangle text-lg"></i>
+        @php
+            $errorData = null;
+            if (!empty($textbook->extraction_error)) {
+                $errorData = is_array($textbook->extraction_error) ? $textbook->extraction_error : json_decode($textbook->extraction_error, true);
+            }
+            $isTokenExhausted = ($errorData['type'] ?? '') === 'token_exhausted';
+            $isAuthError = ($errorData['type'] ?? '') === 'auth_error';
+        @endphp
+
+        <div class="p-6 rounded-2xl {{ $isTokenExhausted ? 'bg-amber-50/90 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-700' : 'bg-red-50/90 dark:bg-red-950/40 border-2 border-red-300 dark:border-red-700' }} shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                <div class="flex items-start gap-3.5">
+                    <div class="w-11 h-11 rounded-xl {{ $isTokenExhausted ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300' : 'bg-red-100 dark:bg-red-900/60 text-red-600 dark:text-red-300' }} flex items-center justify-center flex-shrink-0 text-xl shadow-xs">
+                        @if($isTokenExhausted)
+                            <i class="fas fa-coins"></i>
+                        @elseif($isAuthError)
+                            <i class="fas fa-key"></i>
+                        @else
+                            <i class="fas fa-exclamation-triangle"></i>
+                        @endif
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h4 class="font-bold text-base {{ $isTokenExhausted ? 'text-amber-950 dark:text-amber-100' : 'text-red-950 dark:text-red-100' }}">
+                                {{ $errorData['title'] ?? 'Table of Contents Extraction Failed' }}
+                            </h4>
+                            @if($isTokenExhausted)
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-200 text-amber-900 border border-amber-300">
+                                    Google AI Studio Credits Exhausted
+                                </span>
+                            @endif
+                        </div>
+                        <p class="text-sm mt-1 leading-relaxed {{ $isTokenExhausted ? 'text-amber-900 dark:text-amber-200' : 'text-red-900 dark:text-red-200' }}">
+                            {{ $errorData['message'] ?? 'An error occurred while communicating with Google Gemini AI during Table of Contents extraction.' }}
+                        </p>
+
+                        @if(!empty($errorData['action']))
+                            <div class="mt-3">
+                                <a href="{{ $errorData['action'] }}" target="_blank" rel="noopener noreferrer"
+                                   class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-sm transition-all">
+                                    <i class="fas fa-external-link-alt"></i>
+                                    {{ $errorData['action_label'] ?? 'Open AI Studio Billing' }}
+                                </a>
+                                <span class="text-xs text-amber-700 dark:text-amber-300 ml-2">
+                                    Once credits are renewed, click "Retry TOC Extraction" below.
+                                </span>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Retry Button -->
+                <div class="flex-shrink-0">
+                    <form action="{{ route('admin.textbooks.retry-toc', $textbook) }}" method="POST">
+                        @csrf
+                        <button type="submit"
+                                class="inline-flex items-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold rounded-xl shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <i class="fas fa-redo mr-2"></i>
+                            Retry TOC Extraction
+                        </button>
+                    </form>
+                </div>
             </div>
-            <div>
-                <h4 class="font-bold text-sm text-red-900">Textbook Extraction Issue</h4>
-                <p class="text-xs text-red-700 mt-1">An error occurred while extracting the Table of Contents.</p>
-            </div>
+
+            @if(!empty($errorData['raw']))
+                <!-- Collapsible technical details -->
+                <div x-data="{ showRaw: false }" class="border-t {{ $isTokenExhausted ? 'border-amber-200 dark:border-amber-800/60' : 'border-red-200 dark:border-red-800/60' }} pt-3">
+                    <button type="button" @click="showRaw = !showRaw"
+                            class="text-xs font-medium {{ $isTokenExhausted ? 'text-amber-700 hover:text-amber-900' : 'text-red-700 hover:text-red-900' }} flex items-center gap-1.5 focus:outline-none">
+                        <i class="fas fa-code text-[10px]"></i>
+                        <span x-text="showRaw ? 'Hide technical error details' : 'View technical error details'"></span>
+                        <i class="fas fa-chevron-down text-[10px] transition-transform" :class="{'rotate-180': showRaw}"></i>
+                    </button>
+                    <div x-show="showRaw" x-cloak class="mt-2.5 p-3 rounded-xl bg-slate-900 text-slate-200 text-xs font-mono overflow-x-auto max-h-48 leading-normal select-all">
+                        {{ $errorData['raw'] }}
+                    </div>
+                </div>
+            @endif
         </div>
-    </div>
     @endif
 
     <!-- Chapters & Sections Table of Contents -->
