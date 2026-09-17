@@ -772,19 +772,20 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        if ($request->user()->google_id) {
+        $user = Auth::user();
+
+        if ($user && !empty($user->google_id) && !empty($user->google_token)) {
             try {
-                Http::post('https://oauth2.googleapis.com/revoke', [
-                    'token' => $request->user()->google_token,
+                Http::timeout(5)->post('https://oauth2.googleapis.com/revoke', [
+                    'token' => $user->google_token,
                 ]);
             } catch (\Exception $e) {
                 Log::error('Google token revocation failed', [
-                    'user_id' => $request->user()->id,
+                    'user_id' => $user->id,
                     'error' => $e->getMessage()
                 ]);
             }
         }
-        $user = Auth::user();
         
         $this->logAuthEvent('user_logout', 'info', $request, [
             'user_id' => $user ? $user->id : null,
