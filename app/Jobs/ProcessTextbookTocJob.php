@@ -41,8 +41,12 @@ class ProcessTextbookTocJob implements ShouldQueue
 
         $textbook = Textbook::find($this->textbookId);
         if ($textbook) {
+            $service = app(TextbookExtractionService::class);
+            $parsed = $service->parseGeminiError($exception->getMessage());
+
             $textbook->update([
                 'toc_extraction_status' => 'failed',
+                'extraction_error' => json_encode($parsed),
             ]);
         }
     }

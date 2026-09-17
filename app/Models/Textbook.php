@@ -25,6 +25,7 @@ class Textbook extends Model
         'file_size_bytes',
         'total_pages',
         'toc_extraction_status',
+        'extraction_error',
         'content_extraction_status',
         'is_toc_approved',
         'is_content_approved',

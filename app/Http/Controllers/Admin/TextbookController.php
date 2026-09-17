@@ -124,6 +124,21 @@ class TextbookController extends Controller
     }
 
     /**
+     * Retry Table of Contents extraction for a failed or pending textbook.
+     */
+    public function retryToc(Textbook $textbook)
+    {
+        $textbook->update([
+            'toc_extraction_status' => 'pending',
+            'extraction_error' => null,
+        ]);
+
+        ProcessTextbookTocJob::dispatch($textbook->id);
+
+        return back()->with('success', 'TOC extraction job has been queued. If background workers are running, it will extract automatically.');
+    }
+
+    /**
      * Queue content extraction for a textbook or single chapter.
      */
     public function extractContent(Textbook $textbook, Request $request)

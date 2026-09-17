@@ -98,6 +98,11 @@ Output MUST be strictly valid JSON without any markdown code fence backticks or 
 }
 PROMPT;
 
+            $textbook->update([
+                'toc_extraction_status' => 'processing',
+                'extraction_error' => null,
+            ]);
+
             $rawResponse = $this->queryGemini($prompt, $fileBase64, $extractedText);
             $cleanJson = trim(preg_replace('/^```(?:json)?|```$/m', '', $rawResponse));
             $data = json_decode($cleanJson, true);
@@ -135,6 +140,7 @@ PROMPT;
                 $textbook->update([
                     'toc_extraction_status' => 'extracted',
                     'raw_toc_json' => $data,
+                    'extraction_error' => null,
                 ]);
             });
 
@@ -142,9 +148,11 @@ PROMPT;
             return $data;
 
         } catch (\Throwable $e) {
+            $formattedError = $this->parseGeminiError($e->getMessage());
             Log::error("Textbook TOC extraction failed for ID {$textbook->id}: " . $e->getMessage());
             $textbook->update([
                 'toc_extraction_status' => 'failed',
+                'extraction_error' => json_encode($formattedError),
             ]);
             throw $e;
         }
@@ -270,9 +278,10 @@ PROMPT;
 
         $modelsToTry = [
             $this->model,
+            'gemini-3.6-flash',
+            'gemini-3.5-flash',
             'gemini-flash-latest',
-            'gemini-2.0-flash',
-            'gemini-1.5-flash',
+            'gemini-3.1-flash-lite',
             'gemini-flash-lite-latest',
         ];
         $modelsToTry = array_values(array_unique(array_filter($modelsToTry)));
@@ -314,5 +323,78 @@ PROMPT;
         }
 
         throw new Exception("All Gemini models failed for textbook extraction. " . $lastError);
+    }
+
+    /**
+     * Parse raw exception or API error into human-readable diagnosis and actionable guidance.
+     */
+    public function parseGeminiError(string $rawError): array
+    {
+        $error = [
+            'type' => 'unknown',
+            'title' => 'Extraction Failed',
+            'message' => 'An unexpected error occurred during AI analysis.',
+            'action' => null,
+            'action_label' => null,
+            'raw' => $rawError,
+        ];
+
+        // 1. Credit / Prepayment depletion or Resource Exhausted (HTTP 429)
+        if (
+            str_contains($rawError, 'RESOURCE_EXHAUSTED') ||
+            str_contains($rawError, 'prepayment credits are depleted') ||
+            str_contains($rawError, 'billing#prepay') ||
+            str_contains($rawError, 'quota') ||
+            str_contains($rawError, 'HTTP 429')
+        ) {
+            $error['type'] = 'token_exhausted';
+            $error['title'] = 'AI Tokens / Credits Depleted (HTTP 429)';
+            $error['message'] = 'Your Google Gemini API prepayment credits or quota have been exhausted. Please top up your project credits in Google AI Studio to resume automatic textbook extraction.';
+            $error['action'] = 'https://ai.studio/projects';
+            $error['action_label'] = 'Manage Gemini Billing in AI Studio';
+            return $error;
+        }
+
+        // 2. Authentication / Invalid API Key (HTTP 400 / 401 / 403)
+        if (
+            str_contains($rawError, 'API_KEY_INVALID') ||
+            str_contains($rawError, 'API key not valid') ||
+            str_contains($rawError, 'HTTP 401') ||
+            str_contains($rawError, 'HTTP 403') ||
+            str_contains($rawError, 'PERMISSION_DENIED')
+        ) {
+            $error['type'] = 'auth_error';
+            $error['title'] = 'Gemini API Key Invalid or Unauthorized';
+            $error['message'] = 'The configured Gemini API key was rejected by Google AI. Please check your GEMINI_API_KEY environment variable.';
+            $error['action'] = 'https://aistudio.google.com/app/apikey';
+            $error['action_label'] = 'Get API Key from AI Studio';
+            return $error;
+        }
+
+        // 3. File not found
+        if (str_contains($rawError, 'PDF file not found')) {
+            $error['type'] = 'file_missing';
+            $error['title'] = 'PDF File Missing from Storage';
+            $error['message'] = 'The textbook PDF document could not be located on the server filesystem. Please try re-uploading the file.';
+            return $error;
+        }
+
+        // 4. JSON parse error / invalid structure returned
+        if (str_contains($rawError, 'did not return valid chapters list')) {
+            $error['type'] = 'json_parse_error';
+            $error['title'] = 'Table of Contents Formatting Issue';
+            $error['message'] = 'The AI read the document but was unable to detect standard chapter divisions in the first 25 pages. You can retry the extraction or verify the PDF layout.';
+            return $error;
+        }
+
+        // 5. Network / timeout
+        if (str_contains($rawError, 'cURL error') || str_contains($rawError, 'timed out') || str_contains($rawError, 'timeout')) {
+            $error['type'] = 'timeout';
+            $error['title'] = 'Connection Timeout';
+            $error['message'] = 'The request to Google AI timed out while uploading or processing the large document. Please try again.';
+            return $error;
+        }
+
+        return $error;
     }
 }
