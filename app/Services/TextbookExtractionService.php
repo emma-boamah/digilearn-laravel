@@ -348,8 +348,8 @@ PROMPT;
             str_contains($rawError, 'HTTP 429')
         ) {
             $error['type'] = 'token_exhausted';
-            $error['title'] = 'AI Tokens / Credits Depleted (HTTP 429)';
-            $error['message'] = 'Your Google Gemini API prepayment credits or quota have been exhausted. Please top up your project credits in Google AI Studio to resume automatic textbook extraction.';
+            $error['title'] = 'Gemini Credits Depleted (HTTP 429)';
+            $error['message'] = 'Google Gemini credits are depleted. Please top up in Google AI Studio.';
             $error['action'] = 'https://ai.studio/projects';
             $error['action_label'] = 'Manage Gemini Billing in AI Studio';
             return $error;
