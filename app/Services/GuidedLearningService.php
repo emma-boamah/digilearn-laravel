@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\Video;
 use App\Models\Document;
 use App\Models\Quiz;
+use App\Services\UrlObfuscator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -60,6 +61,16 @@ class GuidedLearningService
     }
 
     /**
+     * Clean any indicator/strand numbering prefix (e.g. "Strand 1:", "B7.1.1.1.1:", "Indicator 1:").
+     */
+    public static function cleanTitle(?string $title): string
+    {
+        if (!$title) return '';
+        $cleaned = preg_replace('/^(?:(?:Strand|Sub-Strand|Indicator|Content\s*Standard)\s*\d*(?:\.\d+)*\s*[:\-]?\s*|B\d+(?:\.\d+)+\s*[:\-]?\s*)/i', '', $title);
+        return trim($cleaned);
+    }
+
+    /**
      * Format curriculum into an interactive tree with student progress.
      */
     public function formatCurriculumTree(Curriculum $curriculum, User $user): array
@@ -100,10 +111,13 @@ class GuidedLearningService
                         $inProgressIndicators++;
                     }
 
+                    $cleanIndTitle = self::cleanTitle($ind->title);
+
                     $indicators[] = [
                         'id' => $ind->id,
+                        'encoded_id' => UrlObfuscator::encode($ind->id),
                         'code' => $ind->indicator_code,
-                        'title' => $ind->title,
+                        'title' => $cleanIndTitle,
                         'description' => $ind->description,
                         'exemplars' => $ind->exemplars,
                         'status' => $status,
@@ -114,7 +128,7 @@ class GuidedLearningService
 
                 $subStrands[] = [
                     'id' => $subStrand->id,
-                    'title' => $subStrand->title,
+                    'title' => self::cleanTitle($subStrand->title),
                     'description' => $subStrand->description,
                     'content_standard' => $subStrand->content_standard,
                     'indicators' => $indicators,
@@ -125,7 +139,7 @@ class GuidedLearningService
 
             $strands[] = [
                 'id' => $strand->id,
-                'title' => $strand->title,
+                'title' => self::cleanTitle($strand->title),
                 'description' => $strand->description,
                 'grade_label' => $strand->grade_label,
                 'total_topics' => $strandTotal,
@@ -203,6 +217,14 @@ class GuidedLearningService
             'media',
         ])->findOrFail($indicatorId);
 
+        $indicator->title = self::cleanTitle($indicator->title);
+        if ($indicator->subStrand) {
+            $indicator->subStrand->title = self::cleanTitle($indicator->subStrand->title);
+            if ($indicator->subStrand->strand) {
+                $indicator->subStrand->strand->title = self::cleanTitle($indicator->subStrand->strand->title);
+            }
+        }
+
         $curriculum = $indicator->subStrand->strand->curriculum;
         $subject = $curriculum->subject;
 
@@ -228,8 +250,7 @@ class GuidedLearningService
         // Find related quizzes
         $relatedQuizzes = Quiz::where('subject_id', $subject->id)
             ->where(function ($q) use ($indicator) {
-                $q->where('title', 'like', '%' . mb_substr($indicator->title, 0, 20) . '%')
-                  ->orWhere('description', 'like', '%' . mb_substr($indicator->title, 0, 20) . '%');
+                $q->where('title', 'like', '%' . mb_substr($indicator->title, 0, 20) . '%');
             })
             ->take(3)
             ->get();
@@ -249,18 +270,20 @@ class GuidedLearningService
 
         return [
             'indicator' => $indicator,
+            'encodedIndicatorId' => UrlObfuscator::encode($indicator->id),
             'subStrand' => $indicator->subStrand,
             'strand' => $indicator->subStrand->strand,
             'curriculum' => $curriculum,
             'subject' => $subject,
+            'encodedSubjectId' => UrlObfuscator::encode($subject->id),
             'status' => $progress ? $progress->status : 'not_started',
             'progress' => $progress,
             'textbookSections' => $indicator->textbookSections,
             'media' => $indicator->media,
             'relatedVideos' => $relatedVideos,
             'relatedQuizzes' => $relatedQuizzes,
-            'prevIndicatorId' => $prevId,
-            'nextIndicatorId' => $nextId,
+            'prevIndicatorId' => $prevId ? UrlObfuscator::encode($prevId) : null,
+            'nextIndicatorId' => $nextId ? UrlObfuscator::encode($nextId) : null,
         ];
     }
 }

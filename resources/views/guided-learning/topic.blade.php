@@ -1,203 +1,341 @@
-@extends('layouts.dashboard')
+@extends('layouts.dashboard-components')
+
+@section('head')
+<script src="https://cdn.tailwindcss.com"></script>
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
+  tailwind.config = {
+    darkMode: ['class', '[data-theme="dark"]'],
+  }
+</script>
+<!-- MathLive for Math & Scientific Formula Rendering -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mathlive/mathlive-static.css" />
+<script defer src="https://unpkg.com/mathlive" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+<script type="module" nonce="{{ request()->attributes->get('csp_nonce') }}">
+    import { renderMathInElement } from "https://unpkg.com/mathlive?module";
+    window.renderMathInElement = renderMathInElement;
+</script>
+@endsection
 
 @section('content')
-<!-- KaTeX for math formulas -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" crossorigin="anonymous">
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" crossorigin="anonymous" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" crossorigin="anonymous" nonce="{{ request()->attributes->get('csp_nonce') }}"
-    onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
 
-<div class="max-w-5xl mx-auto py-8 px-4 sm:px-6 space-y-8" x-data="topicReaderApp()">
-    <!-- Navigation Breadcrumbs & Completion Button -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div class="max-w-7xl mx-auto pt-20 sm:pt-24 pb-12 px-4 sm:px-6" x-data="topicReaderApp()" id="topic-content">
+    
+    <!-- Top Navigation Bar & Completion Controls (full width) -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-            <a href="{{ route('guided-learning.index', ['subject_id' => $subject->id]) }}"
-               class="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors gap-1.5 mb-2">
-                <i class="fas fa-arrow-left"></i> Back to {{ $subject->name }} Curriculum
-            </a>
-            <div class="flex items-center gap-2 text-xs text-gray-500">
-                <span>{{ $strand->title }}</span>
+            <div class="flex items-center gap-2 mb-2">
+                <a href="{{ route('guided-learning.index', ['subject_id' => $encodedSubjectId ?? $subject->id]) }}"
+                   class="inline-flex items-center text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors gap-1.5">
+                    <i class="fas fa-arrow-left text-[10px]"></i> {{ $subject->name }} Roadmap
+                </a>
+                <span class="text-gray-300 dark:text-gray-600">•</span>
+                <a href="{{ route('guided-learning.index') }}"
+                   class="text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
+                    All Subjects
+                </a>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
+                <span class="font-medium">{{ $strand->title }}</span>
                 <span>/</span>
                 <span>{{ $subStrand->title }}</span>
             </div>
         </div>
 
-        <div>
+        <div class="flex items-center gap-3">
             <button type="button" 
                     @click="toggleComplete()"
-                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm"
-                    :class="status === 'completed' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-white dark:bg-gray-800 hover:bg-gray-50 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200'">
+                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-2xs"
+                    :class="status === 'completed' 
+                        ? 'border-2 border-blue-600 bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400' 
+                        : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200'">
                 <i class="fas" :class="status === 'completed' ? 'fa-check-circle' : 'fa-circle'"></i>
-                <span x-text="status === 'completed' ? 'Completed' : 'Mark as Complete'"></span>
+                <span x-text="status === 'completed' ? 'Checkpoint Completed' : 'Mark as Complete'"></span>
             </button>
-        </div>
-    </div>
 
-    <!-- Topic Card Header -->
-    <div class="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-sm space-y-4">
-        <div class="flex items-center gap-3">
-            @if($indicator->indicator_code)
-                <span class="px-3 py-1 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 font-mono font-bold text-xs rounded-lg border border-blue-200 dark:border-blue-800">
-                    {{ $indicator->indicator_code }}
-                </span>
+            @if($nextIndicatorId)
+            <button type="button"
+                    @click="completeAndNext('{{ route('guided-learning.topic', $nextIndicatorId) }}')"
+                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-blue-600 bg-gray-50 hover:bg-blue-50/60 dark:bg-gray-750 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400 text-xs font-bold transition-all shadow-2xs">
+                <span>Complete & Next</span>
+                <i class="fas fa-arrow-right text-[10px]"></i>
+            </button>
             @endif
-            <span class="text-xs font-semibold uppercase tracking-wider text-gray-400">Learning Objective</span>
         </div>
-
-        <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white leading-tight">
-            {{ $indicator->title }}
-        </h1>
-
-        <p class="text-base text-gray-600 dark:text-gray-300 leading-relaxed">
-            {{ $indicator->description }}
-        </p>
-
-        @if($indicator->exemplars)
-        <div class="mt-4 p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200">
-            <h4 class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 mb-1 text-amber-800 dark:text-amber-300">
-                <i class="fas fa-lightbulb"></i> Teaching Exemplars & Key Activities
-            </h4>
-            <div class="text-xs space-y-1 whitespace-pre-line leading-relaxed">
-                {{ $indicator->exemplars }}
-            </div>
-        </div>
-        @endif
     </div>
 
-    <!-- Main Content Area: Textbook Lessons -->
-    @if($textbookSections->isNotEmpty())
-        @foreach($textbookSections as $sec)
-        <div class="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-sm space-y-6">
-            <div class="border-b border-gray-100 dark:border-gray-700 pb-4 flex items-center justify-between">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                    <i class="fas fa-book-reader text-blue-600"></i>
-                    {{ $sec->title }}
-                </h2>
-                @if($sec->chapter)
-                    <span class="text-xs text-gray-400">From {{ $sec->chapter->textbook->title ?? 'Textbook' }}</span>
-                @endif
+    <!-- ===== Main Grid: Content (left) + Sidebar (right) ===== -->
+    <div class="flex flex-col lg:flex-row gap-8">
+
+        <!-- ===== LEFT: Main Reading Content ===== -->
+        <div class="flex-1 min-w-0">
+
+            <!-- Topic Title -->
+            <div class="mb-8">
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">{{ $subject->name }}</span>
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white leading-tight mt-1">
+                    {{ $indicator->title }}
+                </h1>
+                <p class="text-base text-gray-600 dark:text-gray-300 leading-relaxed mt-3">
+                    {{ $indicator->description }}
+                </p>
             </div>
 
-            <!-- Content HTML/Markdown with math rendering -->
-            <div class="prose dark:prose-invert max-w-none text-gray-800 dark:text-gray-200 text-sm leading-relaxed space-y-4">
-                {!! $sec->content_html !!}
+            <!-- Exemplars / Practice Section — Clean Unified Gray Container -->
+            @if($indicator->exemplars)
+            <div class="mb-10 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-5 sm:p-6 space-y-3">
+                <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                    <span class="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">
+                        <i class="fas fa-lightbulb"></i>
+                    </span>
+                    <span>Let's Practice</span>
+                </div>
+                <div class="prose dark:prose-invert max-w-none text-sm leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-line">{{ $indicator->exemplars }}</div>
             </div>
+            @endif
 
-            <!-- Media / Diagrams for this section -->
-            @if($sec->media->isNotEmpty())
-            <div class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700 space-y-4">
-                <h4 class="text-xs font-bold uppercase text-gray-500 tracking-wider">Educational Diagrams & Visual Aids</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    @foreach($sec->media as $mediaItem)
-                    <div class="rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-900">
-                        <img src="{{ Storage::url($mediaItem->file_path) }}" alt="{{ $mediaItem->caption ?? 'Diagram' }}" class="w-full h-auto object-cover">
-                        @if($mediaItem->caption)
-                            <p class="p-3 text-xs text-gray-600 dark:text-gray-400 italic text-center">{{ $mediaItem->caption }}</p>
+            <!-- Main Content Area: Textbook Lessons (Unified Flow) -->
+            @if($textbookSections->isNotEmpty())
+                @foreach($textbookSections as $sec)
+                <div class="mb-10">
+                    <!-- Section Header: Bold blue-accented heading -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200 dark:border-gray-700 pb-3 mb-5">
+                        <h2 class="text-xl font-bold text-blue-600 dark:text-blue-400">
+                            {{ $sec->title }}
+                        </h2>
+                        @if($sec->chapter)
+                            <span class="text-xs font-semibold px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg">
+                                {{ $sec->chapter->textbook->title ?? 'Textbook Resource' }}
+                            </span>
                         @endif
                     </div>
-                    @endforeach
+
+                    <!-- Content HTML/Markdown with math rendering -->
+                    <div class="prose dark:prose-invert max-w-none text-gray-800 dark:text-gray-200 text-sm leading-relaxed space-y-4">
+                        {!! $sec->content_html !!}
+                    </div>
+
+                    <!-- Media / Diagrams for this section -->
+                    @if($sec->media->isNotEmpty())
+                    <div class="mt-6 space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            @foreach($sec->media as $mediaItem)
+                            <div class="rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-900">
+                                <img src="{{ Storage::url($mediaItem->file_path) }}" alt="{{ $mediaItem->caption ?? 'Diagram' }}" class="w-full h-auto object-cover">
+                                @if($mediaItem->caption)
+                                    <p class="p-3 text-xs text-gray-600 dark:text-gray-400 italic text-center">{{ $mediaItem->caption }}</p>
+                                @endif
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endif
                 </div>
+                @endforeach
+            @else
+            <!-- Placeholder if textbook lesson not yet extracted -->
+            <div class="py-12 text-center mb-8">
+                <div class="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-400 flex items-center justify-center mx-auto mb-3 text-2xl">
+                    <i class="fas fa-feather-alt"></i>
+                </div>
+                <h3 class="font-bold text-base text-gray-900 dark:text-white">Content Coming Soon</h3>
+                <p class="text-xs text-gray-500 max-w-md mx-auto mt-1 leading-relaxed">
+                    The lesson notes for this topic are being verified. Use the video lessons and practice quizzes to start learning!
+                </p>
             </div>
             @endif
-        </div>
-        @endforeach
-    @else
-    <!-- Placeholder if textbook lesson not yet extracted -->
-    <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl border border-gray-200 dark:border-gray-700 text-center shadow-sm">
-        <i class="fas fa-feather-alt text-3xl text-indigo-400 mb-2"></i>
-        <h3 class="font-bold text-base text-gray-900 dark:text-white">Detailed Lesson Being Compiled</h3>
-        <p class="text-xs text-gray-500 max-w-md mx-auto mt-1">
-            The textbook lessons for this indicator are being synthesized by AI instructional designers. Use the related platform video lectures and practice quizzes below to master this topic!
-        </p>
-    </div>
-    @endif
 
-    <!-- Related Platform Resources -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Related Video Lessons -->
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-sm space-y-4">
-            <h3 class="font-bold text-sm text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                <i class="fas fa-play-circle text-red-500"></i>
-                Recommended Video Lessons
-            </h3>
-
-            <div class="space-y-3">
-                @forelse($relatedVideos as $video)
-                <a href="{{ route('dashboard.main') }}" class="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-gray-750 hover:bg-red-50/40 transition-colors group">
-                    <div class="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
-                        <i class="fas fa-play text-sm"></i>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <h4 class="text-xs font-bold text-gray-900 dark:text-white truncate group-hover:text-red-600 transition-colors">{{ $video->title }}</h4>
-                        <p class="text-[11px] text-gray-400 truncate">{{ $video->unit_name ?? 'Lesson Lecture' }}</p>
-                    </div>
-                </a>
-                @empty
-                <p class="text-xs text-gray-400 italic py-2">No direct video match found.</p>
-                @endforelse
+            <!-- My Notes (stays in main content flow) -->
+            <div class="bg-white dark:bg-gray-800 p-5 sm:p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-2xs space-y-3 mb-8">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                        <i class="fas fa-pen text-blue-600"></i>
+                        My Notes
+                    </h3>
+                    <span class="text-[11px] font-semibold text-gray-400" x-text="saveStatus"></span>
+                </div>
+                <textarea x-model="notes" @input.debounce.800ms="saveNotes()" rows="3"
+                    placeholder="Jot down formulas, reminders, or questions for your tutor on this topic..."
+                    class="w-full text-xs rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-750 text-gray-900 dark:text-white p-3.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"></textarea>
             </div>
-        </div>
 
-        <!-- Practice Quizzes -->
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-sm space-y-4">
-            <h3 class="font-bold text-sm text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                <i class="fas fa-check-circle text-emerald-500"></i>
-                Check Your Knowledge (Quiz)
-            </h3>
+        </div>{{-- END left column --}}
 
-            <div class="space-y-3">
-                @forelse($relatedQuizzes as $quiz)
-                <a href="{{ route('quiz.take', $quiz) }}" class="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-gray-750 hover:bg-emerald-50/40 transition-colors group">
-                    <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
-                        <i class="fas fa-question text-sm"></i>
+        <!-- ===== RIGHT: Sticky Sidebar ===== -->
+        <div class="lg:w-72 xl:w-80 flex-shrink-0">
+            <div class="lg:sticky lg:top-24 space-y-5">
+
+                <!-- Video Lessons -->
+                <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-2xs space-y-3">
+                    <h3 class="font-bold text-xs text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                        <i class="fas fa-play-circle text-red-600"></i>
+                        Video Lessons
+                    </h3>
+
+                    <div class="space-y-3">
+                        @forelse($relatedVideos as $video)
+                        <a href="{{ route('dashboard.lesson.view', $video->id) }}" class="block group">
+                            <div class="relative aspect-video w-full rounded-xl overflow-hidden bg-gray-900 border border-gray-200/80 dark:border-gray-700/80">
+                                <img src="{{ $video->getThumbnailUrl() }}" 
+                                     alt="{{ $video->title }}" 
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                     onerror="this.onerror=null; this.src='{{ asset('images/video-placeholder.jpg') }}';">
+                                <div class="absolute inset-0 bg-black/25 group-hover:bg-black/15 transition-colors flex items-center justify-center">
+                                    <div class="w-8 h-8 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                                        <i class="fas fa-play text-[10px] ml-0.5"></i>
+                                    </div>
+                                </div>
+                                @if($video->duration_seconds)
+                                <span class="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-semibold text-white">
+                                    {{ gmdate($video->duration_seconds >= 3600 ? "H:i:s" : "i:s", $video->duration_seconds) }}
+                                </span>
+                                @endif
+                            </div>
+                            <h4 class="text-xs font-semibold text-gray-800 dark:text-gray-200 line-clamp-2 mt-1.5 leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                {{ $video->title }}
+                            </h4>
+                        </a>
+                        @empty
+                        <p class="text-xs text-gray-400 italic py-2">No video lectures linked yet.</p>
+                        @endforelse
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <h4 class="text-xs font-bold text-gray-900 dark:text-white truncate group-hover:text-emerald-600 transition-colors">{{ $quiz->title }}</h4>
-                        <p class="text-[11px] text-gray-400 truncate">Practice Assessment</p>
+                </div>
+
+                <!-- Practice Quizzes -->
+                <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-2xs space-y-3">
+                    <h3 class="font-bold text-xs text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                        <i class="fas fa-check-circle text-blue-600"></i>
+                        Practice Quiz
+                    </h3>
+
+                    <div class="space-y-2">
+                        @forelse($relatedQuizzes as $quiz)
+                        <a href="{{ route('quiz.take', $quiz) }}" class="flex items-center gap-3 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750 hover:bg-blue-50/40 dark:hover:bg-blue-950/20 transition-colors group border border-transparent hover:border-blue-200">
+                            <div class="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                                <i class="fas fa-question text-xs"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="text-xs font-bold text-gray-900 dark:text-white truncate group-hover:text-blue-600 transition-colors">{{ $quiz->title }}</h4>
+                                <p class="text-[10px] text-gray-400 truncate">Practice Assessment</p>
+                            </div>
+                        </a>
+                        @empty
+                        <p class="text-xs text-gray-400 italic py-2">No practice quizzes yet.</p>
+                        @endforelse
                     </div>
-                </a>
-                @empty
-                <p class="text-xs text-gray-400 italic py-2">No practice quizzes available for this topic yet.</p>
-                @endforelse
+                </div>
+
             </div>
-        </div>
-    </div>
+        </div>{{-- END right sidebar --}}
 
-    <!-- Student Personal Study Notes -->
-    <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-sm space-y-3">
-        <div class="flex items-center justify-between">
-            <h3 class="font-bold text-sm text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                <i class="fas fa-pen text-blue-600"></i>
-                Personal Study Notes
-            </h3>
-            <span class="text-[11px] text-gray-400" x-text="saveStatus"></span>
-        </div>
-        <textarea x-model="notes" @input.debounce.800ms="saveNotes()" rows="3"
-            placeholder="Jot down formulas, reminders, or questions for your tutor on this topic..."
-            class="w-full text-sm rounded-2xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-white p-3.5 focus:ring-blue-500 focus:border-blue-500"></textarea>
-    </div>
+    </div>{{-- END grid --}}
 
-    <!-- Bottom Navigation (Previous / Next) -->
-    <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+    <!-- Sticky Bottom Navigation Bar (full width, below grid) -->
+    <div class="sticky bottom-6 z-20 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md p-4 rounded-2xl border border-gray-200/80 dark:border-gray-700 shadow-xl flex items-center justify-between gap-4 mt-8">
         @if($prevIndicatorId)
             <a href="{{ route('guided-learning.topic', $prevIndicatorId) }}"
-               class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 transition-colors">
-                <i class="fas fa-chevron-left text-xs"></i> Previous Objective
+               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <i class="fas fa-chevron-left text-[10px]"></i>
+                <span class="hidden sm:inline">Previous Checkpoint</span>
+                <span class="sm:hidden">Prev</span>
             </a>
         @else
             <div></div>
         @endif
 
-        @if($nextIndicatorId)
-            <a href="{{ route('guided-learning.topic', $nextIndicatorId) }}"
-               class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-sm transition-colors">
-                Next Objective <i class="fas fa-chevron-right text-xs"></i>
+        <div class="flex items-center gap-2">
+            <button type="button" 
+                    @click="toggleComplete()"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all"
+                    :class="status === 'completed' 
+                        ? 'border border-blue-600 bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400' 
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200'">
+                <i class="fas" :class="status === 'completed' ? 'fa-check-circle' : 'fa-circle'"></i>
+                <span x-text="status === 'completed' ? 'Completed' : 'Mark Done'"></span>
+            </button>
+
+            @if($nextIndicatorId)
+            <button type="button"
+                    @click="completeAndNext('{{ route('guided-learning.topic', $nextIndicatorId) }}')"
+                    class="inline-flex items-center gap-2 px-5 py-2 rounded-xl border-2 border-blue-600 bg-gray-50 hover:bg-blue-50/60 dark:bg-gray-750 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400 text-xs font-bold shadow-2xs transition-all">
+                <span>Next Checkpoint</span>
+                <i class="fas fa-arrow-right text-[10px]"></i>
+            </button>
+            @else
+            <a href="{{ route('guided-learning.index', ['subject_id' => $encodedSubjectId ?? $subject->id]) }}"
+               class="inline-flex items-center gap-2 px-5 py-2 rounded-xl border-2 border-blue-600 bg-gray-50 hover:bg-blue-50/60 dark:bg-gray-750 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400 text-xs font-bold shadow-2xs transition-all">
+                <i class="fas fa-flag-checkered"></i>
+                <span>Finish Roadmap</span>
             </a>
-        @endif
+            @endif
+        </div>
     </div>
 </div>
 
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
+// Auto-detect common math notation and render with HTML sup/sub tags
+function preprocessMathNotation(container) {
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+    textNodes.forEach(function(node) {
+        let text = node.textContent;
+        let changed = false;
+
+        // Replace X^{Y} patterns first (e.g., 4^{12} → 4<sup>12</sup>)
+        if (/\w\^\{/.test(text)) {
+            text = text.replace(/(\w+)\^\{([^}]+)\}/g, '$1<sup>$2</sup>');
+            changed = true;
+        }
+
+        // Replace X^Y patterns (e.g., 4^2 → 4<sup>2</sup>, x^n → x<sup>n</sup>)
+        if (/\w\^\w/.test(text)) {
+            text = text.replace(/(\w+)\^(\w+)/g, '$1<sup>$2</sup>');
+            changed = true;
+        }
+
+        // Replace X_Y subscript patterns (e.g., a_1 → a<sub>1</sub>)
+        if (/[a-zA-Z]_\d/.test(text)) {
+            text = text.replace(/([a-zA-Z])_(\d+)/g, '$1<sub>$2</sub>');
+            changed = true;
+        }
+
+        if (changed) {
+            var span = document.createElement('span');
+            span.innerHTML = text;
+            node.parentNode.replaceChild(span, node);
+        }
+    });
+}
+
+// Render MathLive formulas after page loads
+document.addEventListener('DOMContentLoaded', function() {
+    var container = document.getElementById('topic-content');
+
+    function renderAll() {
+        // First preprocess plain-text math patterns into $ delimiters
+        preprocessMathNotation(container);
+        // Then let MathLive render all delimited math
+        if (window.renderMathInElement) {
+            renderMathInElement(container);
+        }
+    }
+
+    if (window.renderMathInElement) {
+        renderAll();
+    } else {
+        // Retry after MathLive loads (deferred script)
+        var interval = setInterval(function() {
+            if (window.renderMathInElement) {
+                clearInterval(interval);
+                renderAll();
+            }
+        }, 200);
+        // Stop trying after 5 seconds
+        setTimeout(function() { clearInterval(interval); }, 5000);
+    }
+});
+
 function topicReaderApp() {
     return {
         status: '{{ $status }}',
@@ -206,7 +344,7 @@ function topicReaderApp() {
 
         async toggleComplete() {
             try {
-                const response = await fetch(`/guided-learning/topic/{{ $indicator->id }}/toggle`, {
+                const response = await fetch(`/guided-learning/topic/{{ $encodedIndicatorId ?? $indicator->id }}/toggle`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -226,10 +364,27 @@ function topicReaderApp() {
             }
         },
 
+        async completeAndNext(nextUrl) {
+            try {
+                await fetch(`/guided-learning/topic/{{ $encodedIndicatorId ?? $indicator->id }}/toggle`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ status: 'completed' })
+                });
+                window.location.href = nextUrl;
+            } catch (e) {
+                window.location.href = nextUrl;
+            }
+        },
+
         async saveNotes() {
             this.saveStatus = 'Saving...';
             try {
-                const response = await fetch(`/guided-learning/topic/{{ $indicator->id }}/notes`, {
+                const response = await fetch(`/guided-learning/topic/{{ $encodedIndicatorId ?? $indicator->id }}/notes`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -249,4 +404,17 @@ function topicReaderApp() {
     };
 }
 </script>
+
+@push('scripts')
+<script nonce="{{ request()->attributes->get('csp_nonce') }}">
+    window.__aiContext = {
+        page: 'guided-learning-topic',
+        subject: @json($subject->name),
+        indicator: @json($indicator->title),
+        strand: @json($strand->title),
+        subStrand: @json($subStrand->title),
+    };
+</script>
+@endpush
+
 @endsection

@@ -19,7 +19,7 @@ class ProcessCurriculumExtractionJob implements ShouldQueue
     public int $timeout = 900; // 15 minutes for 2-stage extraction across large documents
     public int $backoff = 10;
 
-    public function __construct(public int $curriculumId)
+    public function __construct(public int $curriculumId, public string $mode = 'auto')
     {
     }
 
@@ -32,8 +32,8 @@ class ProcessCurriculumExtractionJob implements ShouldQueue
             return;
         }
 
-        Log::info("ProcessCurriculumExtractionJob starting for ID {$this->curriculumId}");
-        $service->extractCurriculum($curriculum);
+        Log::info("ProcessCurriculumExtractionJob starting for ID {$this->curriculumId} (mode: {$this->mode})");
+        $service->extractCurriculum($curriculum, $this->mode);
     }
 
     public function failed(\Throwable $exception): void
