@@ -93,6 +93,14 @@ class StudentLessonService
         }
 
         // 4. TIER 4: Deterministic Local Synthesizer Fallback (Zero AI, instant, offline)
+        return $this->generateAndCacheLocalLesson($indicator);
+    }
+
+    /**
+     * Synthesize and cache lesson locally using the deterministic synthesizer.
+     */
+    public function generateAndCacheLocalLesson(CurriculumIndicator $indicator): array
+    {
         $localLesson = $this->localSynthesizer->synthesize($indicator);
 
         // Cache local lesson so page loads instantly
