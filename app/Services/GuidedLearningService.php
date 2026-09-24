@@ -232,32 +232,11 @@ class GuidedLearningService
             ->where('curriculum_indicator_id', $indicator->id)
             ->first();
 
-        // Find related videos by subject and topic matching
-        $relatedVideos = Video::where('subject_id', $subject->id)
-            ->where(function ($q) use ($indicator) {
-                $q->where('title', 'like', '%' . mb_substr($indicator->title, 0, 20) . '%')
-                  ->orWhere('description', 'like', '%' . mb_substr($indicator->title, 0, 20) . '%')
-                  ->orWhere('unit_name', 'like', '%' . mb_substr($indicator->subStrand->title, 0, 20) . '%');
-            })
-            ->take(4)
-            ->get();
+        // Find related videos using keyword-scored relevance matching
+        $relatedVideos = $this->findRelevantVideos($indicator, $subject);
 
-        if ($relatedVideos->isEmpty()) {
-            // Fallback to top videos for the subject
-            $relatedVideos = Video::where('subject_id', $subject->id)->take(3)->get();
-        }
-
-        // Find related quizzes
-        $relatedQuizzes = Quiz::where('subject_id', $subject->id)
-            ->where(function ($q) use ($indicator) {
-                $q->where('title', 'like', '%' . mb_substr($indicator->title, 0, 20) . '%');
-            })
-            ->take(3)
-            ->get();
-
-        if ($relatedQuizzes->isEmpty()) {
-            $relatedQuizzes = Quiz::where('subject_id', $subject->id)->take(2)->get();
-        }
+        // Find related quizzes using keyword-scored relevance matching
+        $relatedQuizzes = $this->findRelevantQuizzes($indicator, $subject);
 
         // Find next and previous indicators
         $allIndicators = CurriculumIndicator::whereHas('subStrand.strand', function ($q) use ($curriculum) {
@@ -289,5 +268,299 @@ class GuidedLearningService
             'prevIndicatorId' => $prevId ? UrlObfuscator::encode($prevId) : null,
             'nextIndicatorId' => $nextId ? UrlObfuscator::encode($nextId) : null,
         ];
+    }
+
+    /**
+     * Find genuinely relevant videos for an indicator using keyword-scored matching.
+     * Falls back to YouTube search when DB has no relevant matches, caching results for future visits.
+     */
+    private function findRelevantVideos(CurriculumIndicator $indicator, Subject $subject): \Illuminate\Support\Collection
+    {
+        $keywords = $this->extractTopicKeywords($indicator);
+        $gradeLabel = $indicator->subStrand?->strand?->grade_label;
+
+        // 1. Score existing DB videos by keyword relevance
+        $dbResults = $this->scoreDbVideos($keywords, $subject, $gradeLabel);
+
+        if ($dbResults->isNotEmpty()) {
+            return $dbResults;
+        }
+
+        // 2. No DB match — search YouTube, save results to DB, return them
+        return $this->searchAndCacheYouTubeVideos($indicator, $subject, $keywords, $gradeLabel);
+    }
+
+    /**
+     * Score all DB videos against topic keywords, return only genuinely relevant ones.
+     */
+    private function scoreDbVideos(array $keywords, Subject $subject, ?string $gradeLabel): \Illuminate\Support\Collection
+    {
+        $candidates = Video::where(function ($q) use ($subject) {
+            $q->where('subject_id', $subject->id)
+              ->orWhereNull('subject_id');
+        })->get();
+
+        $scored = [];
+        foreach ($candidates as $video) {
+            $score = $this->scoreContentRelevance(
+                $video->title . ' ' . ($video->description ?? '') . ' ' . ($video->unit_name ?? ''),
+                $keywords
+            );
+
+            // Bonus for matching grade level
+            if ($gradeLabel && $video->grade_level && stripos($video->grade_level, $gradeLabel) !== false) {
+                $score += 2;
+            }
+
+            // Only include videos that genuinely match (at least 2 keyword hits)
+            if ($score >= 2) {
+                $scored[] = ['video' => $video, 'score' => $score];
+            }
+        }
+
+        usort($scored, fn($a, $b) => $b['score'] <=> $a['score']);
+        $topResults = array_slice($scored, 0, 4);
+
+        return collect(array_map(fn($item) => $item['video'], $topResults));
+    }
+
+    /**
+     * Search YouTube for topic-relevant videos, save the best matches to the DB,
+     * and return them. Uses a cache lock to avoid duplicate API calls.
+     * Guaranteed not to hang — 10s timeout on the HTTP call.
+     */
+    private function searchAndCacheYouTubeVideos(
+        CurriculumIndicator $indicator,
+        Subject $subject,
+        array $keywords,
+        ?string $gradeLabel
+    ): \Illuminate\Support\Collection {
+        $cacheKey = 'yt_search_indicator_' . $indicator->id;
+
+        // Don't re-search if we already searched recently (24h cooldown)
+        if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
+            return collect();
+        }
+
+        try {
+            $youtubeApiKey = config('services.youtube.api_key');
+            if (empty($youtubeApiKey)) {
+                return collect();
+            }
+
+            // Build a precise educational search query
+            $cleanGrade = $gradeLabel ? preg_replace('/[()]/', '', $gradeLabel) : 'JHS';
+            $searchQuery = trim($indicator->student_title . ' ' . $subject->name . ' ' . $cleanGrade);
+
+            // Search YouTube with a short timeout (never hang)
+            $response = \Illuminate\Support\Facades\Http::timeout(10)
+                ->get('https://www.googleapis.com/youtube/v3/search', [
+                    'key' => $youtubeApiKey,
+                    'q' => $searchQuery,
+                    'part' => 'snippet',
+                    'type' => 'video',
+                    'maxResults' => 6,
+                    'relevanceLanguage' => 'en',
+                    'videoDuration' => 'medium', // 4-20 minutes (educational sweet spot)
+                    'safeSearch' => 'strict',
+                ]);
+
+            if (!$response->successful()) {
+                \Illuminate\Support\Facades\Cache::put($cacheKey, true, now()->addHours(1));
+                return collect();
+            }
+
+            $items = $response->json('items', []);
+            if (empty($items)) {
+                \Illuminate\Support\Facades\Cache::put($cacheKey, true, now()->addHours(6));
+                return collect();
+            }
+
+            // Score YouTube results against our keywords, pick the best
+            $ytScored = [];
+            foreach ($items as $item) {
+                $videoId = $item['id']['videoId'] ?? null;
+                if (!$videoId) continue;
+
+                // Skip if already in our DB
+                if (Video::where('external_video_id', $videoId)->exists()) continue;
+
+                $title = html_entity_decode($item['snippet']['title'] ?? 'Untitled', ENT_QUOTES, 'UTF-8');
+                $description = html_entity_decode($item['snippet']['description'] ?? '', ENT_QUOTES, 'UTF-8');
+                $channelTitle = $item['snippet']['channelTitle'] ?? '';
+
+                $score = $this->scoreContentRelevance($title . ' ' . $description, $keywords);
+
+                // Boost educational channels
+                $eduChannels = ['khan academy', 'organic chemistry tutor', 'math antics', 'fuse school', 'professor leonard', 'eddie woo', 'hub beyond numbers', 'easy mathematics'];
+                foreach ($eduChannels as $edu) {
+                    if (stripos($channelTitle, $edu) !== false) {
+                        $score += 3;
+                        break;
+                    }
+                }
+
+                if ($score >= 1) {
+                    $ytScored[] = [
+                        'videoId' => $videoId,
+                        'title' => $title,
+                        'description' => $description,
+                        'channelTitle' => $channelTitle,
+                        'thumbnail' => $item['snippet']['thumbnails']['high']['url']
+                            ?? $item['snippet']['thumbnails']['default']['url']
+                            ?? null,
+                        'score' => $score,
+                    ];
+                }
+            }
+
+            usort($ytScored, fn($a, $b) => $b['score'] <=> $a['score']);
+            $bestResults = array_slice($ytScored, 0, 3);
+
+            $adminUserId = Auth::id()
+                ?? User::where('role', 'admin')->value('id')
+                ?? User::first()?->id
+                ?? 1;
+
+            // Save the best YouTube results to the DB (cached for all future visits)
+            $savedVideos = [];
+            foreach ($bestResults as $yt) {
+                $duration = null;
+                try {
+                    $duration = app(YouTubeService::class)->getVideoDuration($yt['videoId']);
+                } catch (\Exception $e) {
+                    $duration = null;
+                }
+
+                $video = Video::create([
+                    'title' => $yt['title'],
+                    'description' => mb_substr($yt['description'], 0, 500),
+                    'subject_id' => $subject->id,
+                    'grade_level' => $gradeLabel ?? 'JHS 1',
+                    'video_source' => 'youtube',
+                    'external_video_id' => $yt['videoId'],
+                    'external_video_url' => 'https://www.youtube.com/embed/' . $yt['videoId'],
+                    'thumbnail_path' => null, // Will use YouTube thumbnail via getThumbnailUrl()
+                    'duration_seconds' => $duration,
+                    'uploaded_by' => $adminUserId,
+                    'status' => 'approved',
+                    'is_agent_generated' => true,
+                    'agent_topic' => $indicator->student_title,
+                ]);
+                $savedVideos[] = $video;
+            }
+
+            // Mark this indicator as searched (24h cooldown)
+            \Illuminate\Support\Facades\Cache::put($cacheKey, true, now()->addHours(24));
+
+            return collect($savedVideos);
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('YouTube search for guided learning failed', [
+                'indicator_id' => $indicator->id,
+                'error' => $e->getMessage(),
+            ]);
+            // Set a short cooldown so we don't spam on errors
+            \Illuminate\Support\Facades\Cache::put($cacheKey, true, now()->addMinutes(30));
+            return collect();
+        }
+    }
+
+    /**
+     * Find genuinely relevant quizzes for an indicator using keyword-scored matching.
+     */
+    private function findRelevantQuizzes(CurriculumIndicator $indicator, Subject $subject): \Illuminate\Support\Collection
+    {
+        $keywords = $this->extractTopicKeywords($indicator);
+
+        $candidates = Quiz::where('subject_id', $subject->id)->get();
+
+        $scored = [];
+        foreach ($candidates as $quiz) {
+            $score = $this->scoreContentRelevance($quiz->title . ' ' . ($quiz->description ?? ''), $keywords);
+
+            if ($score >= 2) {
+                $scored[] = ['quiz' => $quiz, 'score' => $score];
+            }
+        }
+
+        usort($scored, fn($a, $b) => $b['score'] <=> $a['score']);
+        $topResults = array_slice($scored, 0, 3);
+
+        return collect(array_map(fn($item) => $item['quiz'], $topResults));
+    }
+
+    /**
+     * Extract meaningful topic keywords from an indicator and its curriculum hierarchy.
+     * Filters out common stopwords and short fragments to produce search-quality terms.
+     *
+     * @return array<string> Lowercase keywords sorted by length (longest first)
+     */
+    private function extractTopicKeywords(CurriculumIndicator $indicator): array
+    {
+        // Gather text from all relevant context levels
+        $sources = [
+            $indicator->title,
+            $indicator->description,
+            $indicator->student_title,
+            $indicator->subStrand?->title,
+            $indicator->subStrand?->strand?->title,
+        ];
+
+        $text = strtolower(implode(' ', array_filter($sources)));
+
+        // Remove curriculum codes (e.g. B7.1.1.1.1)
+        $text = preg_replace('/b\d+(\.\d+)+/i', '', $text);
+
+        // Remove common curriculum prefixes
+        $text = preg_replace('/\b(strand|sub-strand|indicator|content\s*standard)\s*\d*\s*[:\-]?\s*/i', '', $text);
+
+        // Split into words
+        $words = preg_split('/[\s,;:\.\(\)\[\]\/\-]+/', $text, -1, PREG_SPLIT_NO_EMPTY);
+
+        // Stopwords to exclude (educational/grammatical noise)
+        $stopwords = [
+            'the', 'a', 'an', 'of', 'in', 'to', 'for', 'and', 'or', 'by', 'on', 'at',
+            'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
+            'do', 'does', 'did', 'will', 'shall', 'would', 'could', 'should', 'may',
+            'can', 'with', 'from', 'that', 'this', 'these', 'those', 'it', 'its',
+            'as', 'not', 'but', 'if', 'than', 'more', 'less', 'using', 'use',
+            'model', 'demonstrate', 'understanding', 'apply', 'perform', 'identify',
+            'describe', 'explain', 'show', 'represent', 'determine', 'solve',
+            'learners', 'students', 'teacher', 'up', 'down', 'off', 'out',
+        ];
+
+        $keywords = [];
+        foreach ($words as $word) {
+            if (strlen($word) >= 3 && !in_array($word, $stopwords) && !is_numeric($word)) {
+                $keywords[$word] = true; // deduplicate
+            }
+        }
+
+        $keywords = array_keys($keywords);
+
+        // Sort by length descending so longer (more specific) terms match first
+        usort($keywords, fn($a, $b) => strlen($b) <=> strlen($a));
+
+        return $keywords;
+    }
+
+    /**
+     * Score how relevant a text blob is to a set of topic keywords.
+     * Returns an integer score (0 = no relevance).
+     */
+    private function scoreContentRelevance(string $text, array $keywords): int
+    {
+        $text = strtolower($text);
+        $score = 0;
+
+        foreach ($keywords as $keyword) {
+            if (str_contains($text, $keyword)) {
+                // Longer keywords are worth more (they're more specific)
+                $score += strlen($keyword) >= 6 ? 2 : 1;
+            }
+        }
+
+        return $score;
     }
 }
