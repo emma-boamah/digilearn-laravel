@@ -295,27 +295,31 @@ class GuidedLearningService
      */
     private function scoreDbVideos(array $keywords, Subject $subject, ?string $gradeLabel): \Illuminate\Support\Collection
     {
-        $candidates = Video::where(function ($q) use ($subject) {
-            $q->where('subject_id', $subject->id)
-              ->orWhereNull('subject_id');
-        })->get();
+        // STRICT: Only look for videos belonging to this exact subject!
+        // Never allow videos from other subjects or null subjects to bleed in.
+        $candidates = Video::where('subject_id', $subject->id)->get();
 
         $scored = [];
         foreach ($candidates as $video) {
-            $score = $this->scoreContentRelevance(
+            $keywordScore = $this->scoreContentRelevance(
                 $video->title . ' ' . ($video->description ?? '') . ' ' . ($video->unit_name ?? ''),
                 $keywords
             );
 
-            // Bonus for matching grade level
+            // STRICT: Must have at least 2 keyword hits on the actual content!
+            // Never let grade level alone qualify an unrelated video.
+            if ($keywordScore < 2) {
+                continue;
+            }
+
+            $score = $keywordScore;
+
+            // Bonus for matching grade level (only awarded to videos that already match content keywords)
             if ($gradeLabel && $video->grade_level && stripos($video->grade_level, $gradeLabel) !== false) {
                 $score += 2;
             }
 
-            // Only include videos that genuinely match (at least 2 keyword hits)
-            if ($score >= 2) {
-                $scored[] = ['video' => $video, 'score' => $score];
-            }
+            $scored[] = ['video' => $video, 'score' => $score];
         }
 
         usort($scored, fn($a, $b) => $b['score'] <=> $a['score']);
