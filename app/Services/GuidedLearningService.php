@@ -111,7 +111,7 @@ class GuidedLearningService
                         $inProgressIndicators++;
                     }
 
-                    $cleanIndTitle = self::cleanTitle($ind->title);
+                    $cleanIndTitle = $ind->student_title;
 
                     $indicators[] = [
                         'id' => $ind->id,
@@ -268,6 +268,9 @@ class GuidedLearningService
         $prevId = ($currentIndex !== false && $currentIndex > 0) ? $allIndicators[$currentIndex - 1] : null;
         $nextId = ($currentIndex !== false && $currentIndex < count($allIndicators) - 1) ? $allIndicators[$currentIndex + 1] : null;
 
+        // Resolve student lesson notes (Tier 1: Textbook -> Tier 2: Cached AI -> Tier 3: Local Synthesizer)
+        $studentLesson = app(StudentLessonService::class)->getLesson($indicator);
+
         return [
             'indicator' => $indicator,
             'encodedIndicatorId' => UrlObfuscator::encode($indicator->id),
@@ -279,6 +282,7 @@ class GuidedLearningService
             'status' => $progress ? $progress->status : 'not_started',
             'progress' => $progress,
             'textbookSections' => $indicator->textbookSections,
+            'studentLesson' => $studentLesson,
             'media' => $indicator->media,
             'relatedVideos' => $relatedVideos,
             'relatedQuizzes' => $relatedQuizzes,
