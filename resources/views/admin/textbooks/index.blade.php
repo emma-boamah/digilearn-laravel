@@ -60,9 +60,25 @@
                         </td>
                         <td class="px-6 py-4">
                             @if($book->toc_extraction_status === 'extracted')
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200">
-                                    <i class="fas fa-check mr-1.5"></i> TOC Extracted
-                                </span>
+                                <div class="flex flex-col gap-1 items-start">
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200">
+                                        <i class="fas fa-check mr-1.5"></i> TOC Extracted
+                                    </span>
+                                    @if($book->extraction_method === 'local')
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700 dark:bg-gray-750 dark:text-gray-300 border border-gray-300 dark:border-gray-600" title="Extracted with deterministic local parser (no AI used)">
+                                            <i class="fas fa-microchip mr-1 text-gray-500"></i> Local Engine
+                                        </span>
+                                    @elseif($book->extraction_method === 'ai')
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200" title="Extracted via Gemini AI">
+                                            <i class="fas fa-robot mr-1 text-blue-500"></i> AI Enhanced
+                                        </span>
+                                    @endif
+                                    @if($book->requires_review && !$book->is_toc_approved)
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200" title="Requires manual admin verification before approval">
+                                            <i class="fas fa-eye mr-1 text-amber-500"></i> Review Needed
+                                        </span>
+                                    @endif
+                                </div>
                             @elseif($book->toc_extraction_status === 'processing')
                                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 animate-pulse">
                                     <i class="fas fa-spinner fa-spin mr-1.5"></i> Reading TOC

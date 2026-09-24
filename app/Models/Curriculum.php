@@ -31,10 +31,19 @@ class Curriculum extends Model
         'raw_extraction_json',
         'uploaded_by',
         'notes',
+        'extraction_method',
+        'extraction_quality',
+        'requires_review',
+        'ocr_required',
+        'source_page_count',
+        'local_parser_version',
     ];
 
     protected $casts = [
         'is_approved' => 'boolean',
+        'requires_review' => 'boolean',
+        'ocr_required' => 'boolean',
+        'source_page_count' => 'integer',
         'approved_at' => 'datetime',
         'file_size_bytes' => 'integer',
         'raw_extraction_json' => 'array',

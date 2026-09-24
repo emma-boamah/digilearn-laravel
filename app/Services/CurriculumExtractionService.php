@@ -12,17 +12,20 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use App\Services\CurriculumLocalParser;
 use Exception;
 
 class CurriculumExtractionService
 {
     protected string $apiKey;
     protected string $model;
+    protected CurriculumLocalParser $localParser;
 
-    public function __construct()
+    public function __construct(CurriculumLocalParser $localParser)
     {
         $this->apiKey = config('services.gemini.key', env('GEMINI_API_KEY', ''));
         $this->model = config('services.gemini.model', 'gemini-flash-latest');
+        $this->localParser = $localParser;
     }
 
     /**
@@ -30,8 +33,13 @@ class CurriculumExtractionService
      * Stage 1: Extracts the complete structural tree (ALL strands and sub-strands across Basic 7, 8, 9).
      * Stage 2: In-depth extraction of learning indicators and teacher exemplars for each strand.
      */
-    public function extractCurriculum(Curriculum $curriculum): array
+    public function extractCurriculum(Curriculum $curriculum, string $mode = 'auto'): array
     {
+        if ($mode === 'local') {
+            Log::info("Curriculum ID {$curriculum->id}: Directly running deterministic local parser as requested.");
+            return $this->localParser->parse($curriculum);
+        }
+
         $curriculum->update([
             'extraction_status' => 'processing',
             'extraction_error' => null,
@@ -211,6 +219,9 @@ PROMPT;
 
             $curriculum->update([
                 'extraction_status' => 'extracted',
+                'extraction_method' => 'ai',
+                'extraction_quality' => 'high',
+                'requires_review' => true,
                 'raw_extraction_json' => $structureData,
                 'extraction_error' => null,
                 'notes' => "Extraction successfully completed: {$totalStrands} strands with full learning indicators and exemplars.",
@@ -220,17 +231,29 @@ PROMPT;
             return $structureData;
 
         } catch (\Throwable $e) {
-            Log::error("Curriculum extraction failed for ID {$curriculum->id}: " . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-            ]);
+            Log::warning("Curriculum AI extraction failed for ID {$curriculum->id} ({$e->getMessage()}). Attempting local deterministic fallback parser.");
 
-            $curriculum->update([
-                'extraction_status' => 'failed',
-                'extraction_error' => $e->getMessage(),
-                'notes' => 'Extraction failed: ' . $e->getMessage(),
-            ]);
+            try {
+                $curriculum->update([
+                    'notes' => 'AI extraction failed. Running deterministic local parser fallback...',
+                ]);
 
-            throw $e;
+                return $this->localParser->parse($curriculum);
+            } catch (\Throwable $localEx) {
+                Log::error("Curriculum local fallback extraction ALSO failed for ID {$curriculum->id}: " . $localEx->getMessage(), [
+                    'trace' => $localEx->getTraceAsString(),
+                ]);
+
+                $curriculum->update([
+                    'extraction_status' => 'failed',
+                    'extraction_method' => 'local',
+                    'extraction_error' => "AI error: " . $e->getMessage() . " | Local parser error: " . $localEx->getMessage(),
+                    'notes' => 'Extraction failed: ' . $localEx->getMessage(),
+                    'requires_review' => true,
+                ]);
+
+                throw $localEx;
+            }
         }
     }
 

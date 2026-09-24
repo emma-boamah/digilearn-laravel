@@ -39,10 +39,30 @@
                     </span>
                 </template>
                 <template x-if="status === 'extracted'">
-                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200">
-                        <i class="fas fa-check-circle mr-1.5"></i> Extracted
+                    <span class="inline-flex items-center gap-1.5">
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200">
+                            <i class="fas fa-check-circle mr-1.5"></i> Extracted
+                        </span>
+                        @if($curriculum->extraction_method === 'local')
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600" title="Deterministic local parser (no AI used)">
+                                <i class="fas fa-microchip mr-1 text-gray-500"></i> Local Engine
+                            </span>
+                        @elseif($curriculum->extraction_method === 'ai')
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200" title="Gemini AI extracted">
+                                <i class="fas fa-robot mr-1 text-blue-500"></i> AI Enhanced
+                            </span>
+                        @endif
+                        @if($curriculum->requires_review && !$curriculum->is_approved)
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200" title="Needs review before final approval">
+                                <i class="fas fa-eye mr-1 text-amber-500"></i> Review Needed
+                            </span>
+                        @endif
                     </span>
                 </template>
+                <span>•</span>
+                <span class="font-medium text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-list-ol mr-1 text-gray-400"></i> {{ $curriculum->totalIndicatorsCount() }} Learning Indicators
+                </span>
                 <span>•</span>
                 <span>Uploaded by {{ $curriculum->uploader->name ?? 'Admin' }} ({{ $curriculum->created_at->format('M d, Y') }})</span>
                 @if($curriculum->file_size_bytes)
@@ -66,12 +86,23 @@
                 </div>
             @endif
 
-            <form action="{{ route('admin.curriculum.re-extract', $curriculum) }}" method="POST" onsubmit="return confirm('Re-running AI extraction will overwrite any existing strands. Continue?');">
-                @csrf
-                <button type="submit" class="inline-flex items-center px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm font-medium rounded-xl transition-all">
-                    <i class="fas fa-sync-alt mr-1.5 text-gray-500"></i> Re-extract
-                </button>
-            </form>
+            <div class="flex items-center gap-2">
+                <form action="{{ route('admin.curriculum.re-extract', $curriculum) }}" method="POST" onsubmit="return confirm('Re-running extraction will overwrite any existing strands. Continue?');">
+                    @csrf
+                    <input type="hidden" name="mode" value="auto">
+                    <button type="submit" class="inline-flex items-center px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm font-medium rounded-xl transition-all" title="Extract with AI (automatically falls back to local engine on failure)">
+                        <i class="fas fa-sync-alt mr-1.5 text-gray-500"></i> Re-extract
+                    </button>
+                </form>
+
+                <form action="{{ route('admin.curriculum.re-extract', $curriculum) }}" method="POST" onsubmit="return confirm('Run deterministic local parser directly? (Fast, uses zero AI tokens)');">
+                    @csrf
+                    <input type="hidden" name="mode" value="local">
+                    <button type="submit" class="inline-flex items-center px-3.5 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-xl transition-all" title="Extract directly using local deterministic parser without AI">
+                        <i class="fas fa-microchip mr-1.5 text-gray-500"></i> Local Engine
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -84,7 +115,7 @@
                 </div>
                 <div>
                     <h4 class="font-bold text-sm text-blue-900 dark:text-white flex items-center gap-2">
-                        AI Curriculum Content Extraction in Progress
+                        Curriculum Content Extraction in Progress
                         <span class="inline-block w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
                     </h4>
                     <p class="text-xs text-blue-700 dark:text-blue-300 mt-0.5 font-medium" x-text="progressNotes || 'Analyzing curriculum structure and extracting all strands across grades...'"></p>
@@ -110,8 +141,16 @@
                 <div class="flex items-center gap-3 mt-3">
                     <form action="{{ route('admin.curriculum.re-extract', $curriculum) }}" method="POST">
                         @csrf
+                        <input type="hidden" name="mode" value="auto">
                         <button type="submit" class="inline-flex items-center px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all">
-                            <i class="fas fa-redo-alt mr-1.5"></i> Retry Extraction
+                            <i class="fas fa-redo-alt mr-1.5"></i> Retry AI Extraction
+                        </button>
+                    </form>
+                    <form action="{{ route('admin.curriculum.re-extract', $curriculum) }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="mode" value="local">
+                        <button type="submit" class="inline-flex items-center px-4 py-1.5 bg-gray-800 hover:bg-gray-900 text-white text-xs font-semibold rounded-lg shadow-sm transition-all">
+                            <i class="fas fa-microchip mr-1.5 text-gray-300"></i> Extract via Local Engine
                         </button>
                     </form>
                 </div>

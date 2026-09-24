@@ -80,48 +80,105 @@
         display: none;
     }
 
-    /* Focus Mode Toggle Button */
-    .focus-mode-toggle {
+    /* Video Player Overlay Controls (Fullscreen & Theater Mode) */
+    .video-overlay-controls {
         position: absolute;
         top: 1rem;
         right: 1rem;
         z-index: 50;
-        background: rgba(0, 0, 0, 0.5);
-        border: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        opacity: 0;
+        transition: opacity 0.25s ease, transform 0.2s ease;
+    }
+
+    .video-container:hover .video-overlay-controls,
+    .video-container:focus-within .video-overlay-controls,
+    .video-overlay-controls.visible {
+        opacity: 1;
+    }
+
+    .video-control-btn {
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.2);
         color: white;
         padding: 0.5rem;
         border-radius: 0.5rem;
         cursor: pointer;
-        backdrop-filter: blur(4px);
+        backdrop-filter: blur(6px);
         transition: all 0.2s ease;
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        opacity: 0;
     }
 
-    .video-container:hover .focus-mode-toggle {
-        opacity: 1;
+    .video-control-btn:hover {
+        background: rgba(0, 0, 0, 0.85);
+        border-color: rgba(255, 255, 255, 0.4);
+        transform: scale(1.08);
     }
 
-    .focus-mode-toggle:hover {
-        background: rgba(0, 0, 0, 0.8);
-        transform: scale(1.1);
-    }
-
-    .focus-mode-toggle svg {
+    .video-control-btn svg {
         width: 20px;
         height: 20px;
     }
 
-    .lesson-page.focus-mode .focus-mode-toggle .exit-icon {
-        display: block;
+    /* True Fullscreen styles for Video Container */
+    .video-container:fullscreen,
+    .video-container:-webkit-full-screen,
+    .video-container:-moz-full-screen,
+    .video-container:-ms-fullscreen,
+    .video-container.is-fullscreen {
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: 100vw !important;
+        max-height: 100vh !important;
+        border-radius: 0 !important;
+        aspect-ratio: auto !important;
+        background-color: #000 !important;
+        box-shadow: none !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        z-index: 2147483647 !important;
     }
-    .lesson-page.focus-mode .focus-mode-toggle .enter-icon {
-        display: none;
+
+    .video-container:fullscreen #lesson-video-player,
+    .video-container:-webkit-full-screen #lesson-video-player,
+    .video-container.is-fullscreen #lesson-video-player,
+    .video-container:fullscreen .video-preview,
+    .video-container:-webkit-full-screen .video-preview,
+    .video-container.is-fullscreen .video-preview {
+        width: 100% !important;
+        height: 100% !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        border-radius: 0 !important;
     }
-    .focus-mode-toggle .exit-icon {
-        display: none;
+
+    .video-container:fullscreen iframe,
+    .video-container:-webkit-full-screen iframe,
+    .video-container.is-fullscreen iframe,
+    .video-container:fullscreen video,
+    .video-container:-webkit-full-screen video,
+    .video-container.is-fullscreen video {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: contain !important;
+    }
+
+    /* Hide theater mode button & mobile badge while in fullscreen */
+    .video-container:fullscreen #theaterModeToggle,
+    .video-container:-webkit-full-screen #theaterModeToggle,
+    .video-container.is-fullscreen #theaterModeToggle,
+    .video-container:fullscreen .lesson-level-badge,
+    .video-container:-webkit-full-screen .lesson-level-badge,
+    .video-container.is-fullscreen .lesson-level-badge {
+        display: none !important;
     }
 
 
@@ -3983,15 +4040,27 @@
                 </button>
                 <!-- Enhanced Video Player using VideoFacadeManager -->
                 <div class="video-container">
-                    <!-- Focus Mode Toggle -->
-                    <button id="focusModeToggle" class="focus-mode-toggle" title="Toggle Focus Mode">
-                        <svg class="enter-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                        </svg>
-                        <svg class="exit-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9L4 4m0 0v4m0-4h4m11 5l5-5m0 0v4m0-4h-4M9 15l-5 5m0 0v-4m0 4h4m11-5l5 5m0 0v-4m0 4h-4" />
-                        </svg>
-                    </button>
+                    <!-- Video Controls: Theater Mode and Full Screen -->
+                    <div class="video-overlay-controls">
+                        <button id="theaterModeToggle" class="video-control-btn" title="Theater mode (t)" aria-label="Toggle Theater Mode">
+                            <svg class="theater-default-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <rect x="3" y="5" width="18" height="14" rx="2" stroke-width="2" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 9h4v6h-4z" />
+                            </svg>
+                            <svg class="theater-wide-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
+                                <rect x="3" y="5" width="18" height="14" rx="2" stroke-width="2" />
+                                <rect x="7" y="8" width="10" height="8" rx="1" fill="currentColor" stroke-width="0" />
+                            </svg>
+                        </button>
+                        <button id="fullscreenToggle" class="video-control-btn" title="Full screen (f)" aria-label="Toggle Full Screen">
+                            <svg class="enter-fullscreen-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                            </svg>
+                            <svg class="exit-fullscreen-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9L4 4m0 0v4m0-4h4m11 5l5-5m0 0v4m0-4h-4M9 15l-5 5m0 0v-4m0 4h4m11-5l5 5m0 0v-4m0 4h-4" />
+                            </svg>
+                        </button>
+                    </div>
                     @php
                     $badgeLevelDisplay = '';
                     if (isset($lesson)) {
@@ -4701,7 +4770,7 @@
         checkDocumentAvailability();
         initializeVideoProgressTracking();
         initializeSearchToggle(); // Initialize mobile search toggle
-        initializeFocusMode();
+        initializeVideoControls();
     }
 
     /**
@@ -4776,23 +4845,137 @@
         }));
     }
 
+    function initializeVideoControls() {
+        initializeTheaterMode();
+        initializeFullscreen();
+    }
+
+    // Backward compatibility alias
     function initializeFocusMode() {
-        const toggle = document.getElementById('focusModeToggle');
+        initializeTheaterMode();
+    }
+
+    function initializeTheaterMode() {
+        const toggle = document.getElementById('theaterModeToggle') || document.getElementById('focusModeToggle');
         const lessonPage = document.querySelector('.lesson-page');
         
         if (!toggle || !lessonPage) return;
 
+        const updateTheaterUI = (isTheater) => {
+            const defaultIcon = toggle.querySelector('.theater-default-icon');
+            const wideIcon = toggle.querySelector('.theater-wide-icon');
+            if (defaultIcon && wideIcon) {
+                defaultIcon.style.display = isTheater ? 'none' : 'block';
+                wideIcon.style.display = isTheater ? 'block' : 'none';
+            }
+            toggle.title = isTheater ? 'Default view (t)' : 'Theater mode (t)';
+            toggle.setAttribute('aria-label', toggle.title);
+        };
+
         // Check for saved preference
-        if (localStorage.getItem('focusMode') === 'true') {
+        const savedTheater = localStorage.getItem('theaterMode') === 'true' || localStorage.getItem('focusMode') === 'true';
+        if (savedTheater) {
             lessonPage.classList.add('focus-mode');
+            updateTheaterUI(true);
         }
 
-        toggle.addEventListener('click', () => {
-            const isFocus = lessonPage.classList.toggle('focus-mode');
-            localStorage.setItem('focusMode', isFocus);
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isTheater = lessonPage.classList.toggle('focus-mode');
+            localStorage.setItem('theaterMode', isTheater);
+            localStorage.setItem('focusMode', isTheater);
+            updateTheaterUI(isTheater);
             
             // Re-trigger resize events for players if needed
             window.dispatchEvent(new Event('resize'));
+        });
+    }
+
+    function initializeFullscreen() {
+        const toggle = document.getElementById('fullscreenToggle');
+        const videoContainer = document.querySelector('.video-container');
+        if (!toggle || !videoContainer) return;
+
+        const isFullscreenActive = () => {
+            return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+        };
+
+        const updateFullscreenUI = () => {
+            const isFs = isFullscreenActive();
+            const enterIcon = toggle.querySelector('.enter-fullscreen-icon');
+            const exitIcon = toggle.querySelector('.exit-fullscreen-icon');
+
+            if (isFs) {
+                videoContainer.classList.add('is-fullscreen');
+                if (enterIcon) enterIcon.style.display = 'none';
+                if (exitIcon) exitIcon.style.display = 'block';
+                toggle.title = 'Exit full screen (f)';
+                toggle.setAttribute('aria-label', 'Exit full screen');
+            } else {
+                videoContainer.classList.remove('is-fullscreen');
+                if (enterIcon) enterIcon.style.display = 'block';
+                if (exitIcon) exitIcon.style.display = 'none';
+                toggle.title = 'Full screen (f)';
+                toggle.setAttribute('aria-label', 'Full screen');
+            }
+
+            window.dispatchEvent(new Event('resize'));
+        };
+
+        const toggleFullscreen = async () => {
+            try {
+                if (!isFullscreenActive()) {
+                    if (videoContainer.requestFullscreen) {
+                        await videoContainer.requestFullscreen();
+                    } else if (videoContainer.webkitRequestFullscreen) {
+                        await videoContainer.webkitRequestFullscreen();
+                    } else if (videoContainer.mozRequestFullScreen) {
+                        await videoContainer.mozRequestFullScreen();
+                    } else if (videoContainer.msRequestFullscreen) {
+                        await videoContainer.msRequestFullscreen();
+                    }
+                } else {
+                    if (document.exitFullscreen) {
+                        await document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        await document.webkitExitFullscreen();
+                    } else if (document.mozCancelFullScreen) {
+                        await document.mozCancelFullScreen();
+                    } else if (document.msExitFullscreen) {
+                        await document.msExitFullscreen();
+                    }
+                }
+            } catch (err) {
+                console.warn('Fullscreen toggle failed:', err);
+            }
+        };
+
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleFullscreen();
+        });
+
+        // Double click on video container to toggle fullscreen (like YouTube)
+        videoContainer.addEventListener('dblclick', (e) => {
+            if (e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) return;
+            toggleFullscreen();
+        });
+
+        // Auto-hide overlay controls after idle in fullscreen
+        let controlsHideTimeout = null;
+        const overlayControls = videoContainer.querySelector('.video-overlay-controls');
+        videoContainer.addEventListener('mousemove', () => {
+            if (!isFullscreenActive() || !overlayControls) return;
+            overlayControls.classList.add('visible');
+            clearTimeout(controlsHideTimeout);
+            controlsHideTimeout = setTimeout(() => {
+                overlayControls.classList.remove('visible');
+            }, 2500);
+        });
+
+        // Cross-browser fullscreen change events
+        ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
+            document.addEventListener(evt, updateFullscreenUI);
         });
     }
 
@@ -6908,6 +7091,31 @@
             if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
                 e.preventDefault();
                 document.getElementById('addNotesBtn').click();
+            }
+
+            // Video player shortcuts (only when not typing in text fields)
+            const activeEl = document.activeElement;
+            const isTyping = activeEl && (
+                activeEl.tagName === 'INPUT' ||
+                activeEl.tagName === 'TEXTAREA' ||
+                activeEl.isContentEditable ||
+                activeEl.closest('.ql-editor') ||
+                activeEl.closest('emoji-picker')
+            );
+
+            if (!isTyping && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                // 'f' or 'F' to toggle Fullscreen
+                if (e.key === 'f' || e.key === 'F') {
+                    e.preventDefault();
+                    const fsBtn = document.getElementById('fullscreenToggle');
+                    if (fsBtn) fsBtn.click();
+                }
+                // 't' or 'T' to toggle Theater Mode
+                if (e.key === 't' || e.key === 'T') {
+                    e.preventDefault();
+                    const theaterBtn = document.getElementById('theaterModeToggle') || document.getElementById('focusModeToggle');
+                    if (theaterBtn) theaterBtn.click();
+                }
             }
         });
     }

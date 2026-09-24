@@ -31,11 +31,18 @@ class Textbook extends Model
         'is_content_approved',
         'raw_toc_json',
         'uploaded_by',
+        'extraction_method',
+        'extraction_quality',
+        'requires_review',
+        'ocr_required',
+        'local_parser_version',
     ];
 
     protected $casts = [
         'is_toc_approved' => 'boolean',
         'is_content_approved' => 'boolean',
+        'requires_review' => 'boolean',
+        'ocr_required' => 'boolean',
         'file_size_bytes' => 'integer',
         'total_pages' => 'integer',
         'raw_toc_json' => 'array',

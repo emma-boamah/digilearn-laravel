@@ -140,7 +140,7 @@
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Curriculum</th>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Subject & Grade</th>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Structure</th>
-                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">AI Status</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Extraction</th>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Approval</th>
                         <th class="px-6 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -149,7 +149,10 @@
                     @forelse($curricula as $curriculum)
                     <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-750 transition-colors">
                         <td class="px-6 py-4">
-                            <div class="font-bold text-gray-900 dark:text-white">{{ $curriculum->title }}</div>
+                            @php
+                                $curriculumName = trim(explode(':', $curriculum->title)[0]);
+                            @endphp
+                            <div class="font-bold text-gray-900 dark:text-white" title="{{ $curriculum->title }}">{{ $curriculumName }}</div>
                             <div class="flex items-center gap-2 mt-1">
                                 <span class="px-2 py-0.5 text-xs rounded-md bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800">
                                     {{ $curriculum->education_body }}
@@ -166,21 +169,18 @@
                             </div>
                         </td>
                         <td class="px-6 py-4">
-                            <div class="text-sm text-gray-900 dark:text-white font-medium">
+                            <span class="text-sm font-semibold text-gray-900 dark:text-white">
                                 {{ $curriculum->strands_count }} Strands
-                            </div>
-                            <div class="text-xs text-gray-500">
-                                {{ $curriculum->totalIndicatorsCount() }} Learning Indicators
-                            </div>
+                            </span>
                         </td>
                         <td class="px-6 py-4">
                             @if($curriculum->extraction_status === 'extracted')
                                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200">
-                                    <i class="fas fa-check-circle mr-1.5"></i> Extracted
+                                    <i class="fas fa-check mr-1.5"></i> Extracted
                                 </span>
                             @elseif($curriculum->extraction_status === 'processing')
                                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 animate-pulse">
-                                    <i class="fas fa-spinner fa-spin mr-1.5"></i> Processing AI
+                                    <i class="fas fa-spinner fa-spin mr-1.5"></i> Processing
                                 </span>
                             @elseif($curriculum->extraction_status === 'failed')
                                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 border border-red-200" title="{{ $curriculum->extraction_error }}">

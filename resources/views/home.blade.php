@@ -2426,9 +2426,9 @@ $jsonLd = [
             poster="{{ secure_asset('images/hero-image.png') }}" aria-hidden="true"
             title="ShoutoutGH - Ghana's leading e-learning platform video background">
             <source
-                src="{{ secure_asset('videos/hailuo-2_3_animate_it_into_a_talking_head_video_make_the_characters_nod_and_use_subtle_hand-0.mp4') }}"
-                type="video/mp4">
-            <source src="{{ secure_asset('videos/hero-video-new.webm') }}" type="video/webm">
+                src="{{ secure_asset('videos/hailuo-2_3_animate_it_into_a_talking_head_video_make_the_characters_nod_and_use_subtle_hand-0.webm') }}"
+                type="video/webm">
+           <!-- <source src="{{ secure_asset('videos/hero-video-new.webm') }}" type="video/webm"> -->
             Your browser does not support the video tag.
         </video>
         <div class="hero-overlay"></div>
@@ -2535,7 +2535,7 @@ $jsonLd = [
                     <div class="youtube-style-video-container">
                         <video preload="auto" loading="lazy" autoplay id="whyChooseVideo" muted loop playsinline
                             aria-label="Video demonstration of ShoutOutGH's interactive learning features">
-                            <source src="{{ secure_asset('videos/shoutoutgh_quiz-guide.mp4') }}" type="video/mp4">
+                            <source src="{{ secure_asset('videos/shoutoutgh_quiz-guide.webm') }}" type="video/webm">
                             <track kind="captions" src="" srclang="en" label="English captions">
                             Your browser does not support the video tag.
                         </video>

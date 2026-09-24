@@ -133,16 +133,25 @@ class CurriculumController extends Controller
     /**
      * Trigger re-extraction of the curriculum.
      */
-    public function reExtract(Curriculum $curriculum)
+    public function reExtract(\Illuminate\Http\Request $request, Curriculum $curriculum)
     {
+        $mode = $request->input('mode', 'auto');
+
         $curriculum->update([
             'extraction_status' => 'pending',
             'extraction_error' => null,
+            'notes' => $mode === 'local' 
+                ? 'Queued for deterministic local extraction...' 
+                : 'Queued for extraction (AI with deterministic local fallback)...',
         ]);
 
-        ProcessCurriculumExtractionJob::dispatch($curriculum->id);
+        ProcessCurriculumExtractionJob::dispatch($curriculum->id, $mode);
 
-        return back()->with('success', 'Re-extraction job queued successfully.');
+        $msg = $mode === 'local' 
+            ? 'Local deterministic extraction job queued.' 
+            : 'Re-extraction job queued (AI with local fallback).';
+
+        return back()->with('success', $msg);
     }
 
     /**

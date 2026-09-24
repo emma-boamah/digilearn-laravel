@@ -679,6 +679,10 @@
         }
     </script>
 
+    @auth
+        @include('components.ai-chat-bubble')
+    @endauth
+
     @stack('scripts')
     @include('cookie-consent-banner')
 </body>

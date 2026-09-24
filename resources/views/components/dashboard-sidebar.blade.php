@@ -45,13 +45,25 @@
                     </span>
                     <div class="tooltip">Learning Hub</div>
                 </a>
+                <a href="{{ route('guided-learning.index') }}"
+                    class="sidebar-menu-item {{ request()->routeIs('guided-learning*') ? 'active' : '' }}">
+                    <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="sidebar-menu-text">
+                        <span class="full-label">Guided Learning</span>
+                        <span class="short-label">Curriculum</span>
+                    </span>
+                    <div class="tooltip">Guided Learning</div>
+                </a>
                 <a href="{{ route('dashboard.digilearn') }}"
                     class="sidebar-menu-item {{ request()->routeIs('dashboard.digilearn') ? 'active' : '' }}">
                     <svg class="sidebar-menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
-                    <span class="sidebar-menu-text">Lessons</span>
+                    <span class="sidebar-menu-text">Lesson Videos</span>
                     <div class="tooltip">Lessons</div>
                 </a>
                 <a href="{{ route('dashboard.library') }}"
@@ -69,7 +81,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    <span class="sidebar-menu-text">Quiz</span>
+                    <span class="sidebar-menu-text">Quizzes</span>
                     <div class="tooltip">Quiz</div>
                 </a>
             </div>

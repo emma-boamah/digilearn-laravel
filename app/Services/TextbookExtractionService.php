@@ -12,17 +12,20 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use App\Services\TextbookLocalParser;
 use Exception;
 
 class TextbookExtractionService
 {
     protected string $apiKey;
     protected string $model;
+    protected TextbookLocalParser $localParser;
 
-    public function __construct()
+    public function __construct(TextbookLocalParser $localParser)
     {
         $this->apiKey = config('services.gemini.key', env('GEMINI_API_KEY', ''));
         $this->model = config('services.gemini.model', 'gemini-flash-latest');
+        $this->localParser = $localParser;
     }
 
     /**
@@ -57,8 +60,8 @@ class TextbookExtractionService
                 $output = [];
                 $returnVar = 0;
                 $escaped = escapeshellarg($fullPath);
-                // Extract first 25 pages which typically contain the TOC
-                @exec("pdftotext -f 1 -l 25 -layout {$escaped} -", $output, $returnVar);
+                // Extract first 50 pages which typically contain the TOC
+                @exec("pdftotext -f 1 -l 50 -layout {$escaped} -", $output, $returnVar);
                 if ($returnVar === 0 && !empty($output)) {
                     $extractedText = implode("\n", $output);
                 }
@@ -139,6 +142,9 @@ PROMPT;
 
                 $textbook->update([
                     'toc_extraction_status' => 'extracted',
+                    'extraction_method' => 'ai',
+                    'extraction_quality' => 'high',
+                    'requires_review' => true,
                     'raw_toc_json' => $data,
                     'extraction_error' => null,
                 ]);
@@ -148,13 +154,21 @@ PROMPT;
             return $data;
 
         } catch (\Throwable $e) {
-            $formattedError = $this->parseGeminiError($e->getMessage());
-            Log::error("Textbook TOC extraction failed for ID {$textbook->id}: " . $e->getMessage());
-            $textbook->update([
-                'toc_extraction_status' => 'failed',
-                'extraction_error' => json_encode($formattedError),
-            ]);
-            throw $e;
+            Log::warning("Textbook TOC AI extraction failed for ID {$textbook->id} ({$e->getMessage()}). Attempting local deterministic fallback parser.");
+
+            try {
+                return $this->localParser->parseTableOfContents($textbook);
+            } catch (\Throwable $localEx) {
+                $formattedError = $this->parseGeminiError($e->getMessage());
+                Log::error("Textbook local TOC extraction ALSO failed for ID {$textbook->id}: " . $localEx->getMessage());
+                $textbook->update([
+                    'toc_extraction_status' => 'failed',
+                    'extraction_method' => 'local',
+                    'extraction_error' => json_encode($formattedError) . " | Local parser: " . $localEx->getMessage(),
+                    'requires_review' => true,
+                ]);
+                throw $localEx;
+            }
         }
     }
 
@@ -209,35 +223,52 @@ Output MUST be strictly valid JSON without markdown code fences:
 }
 PROMPT;
 
-        $rawResponse = $this->queryGemini($prompt, null, $pageContext);
-        $cleanJson = trim(preg_replace('/^```(?:json)?|```$/m', '', $rawResponse));
-        $data = json_decode($cleanJson, true);
+        try {
+            $rawResponse = $this->queryGemini($prompt, null, $pageContext);
+            $cleanJson = trim(preg_replace('/^```(?:json)?|```$/m', '', $rawResponse));
+            $data = json_decode($cleanJson, true);
 
-        if (!is_array($data) || empty($data['sections'])) {
-            throw new Exception("Chapter content extraction returned invalid format.");
-        }
+            if (!is_array($data) || empty($data['sections'])) {
+                throw new Exception("Chapter content extraction returned invalid format.");
+            }
 
-        DB::transaction(function () use ($chapter, $data) {
-            foreach ($data['sections'] as $index => $secData) {
-                // Find existing matching section or create
-                $section = TextbookSection::where('chapter_id', $chapter->id)
-                    ->where('title', 'like', '%' . mb_substr($secData['title'], 0, 30) . '%')
-                    ->first();
+            DB::transaction(function () use ($chapter, $data) {
+                foreach ($data['sections'] as $index => $secData) {
+                    // Find existing matching section or create
+                    $section = TextbookSection::where('chapter_id', $chapter->id)
+                        ->where('title', 'like', '%' . mb_substr($secData['title'], 0, 30) . '%')
+                        ->first();
 
-                if (!$section) {
-                    $section = TextbookSection::create([
-                        'chapter_id' => $chapter->id,
-                        'title' => $secData['title'],
-                        'sort_order' => $index + 1,
+                    if (!$section) {
+                        $section = TextbookSection::create([
+                            'chapter_id' => $chapter->id,
+                            'title' => $secData['title'],
+                            'sort_order' => $index + 1,
+                        ]);
+                    }
+
+                    $section->update([
+                        'content_markdown' => $secData['content_markdown'] ?? null,
+                        'content_html' => $secData['content_html'] ?? $this->renderMarkdownToHtml($secData['content_markdown'] ?? ''),
                     ]);
                 }
+            });
 
-                $section->update([
-                    'content_markdown' => $secData['content_markdown'] ?? null,
-                    'content_html' => $secData['content_html'] ?? $this->renderMarkdownToHtml($secData['content_markdown'] ?? ''),
-                ]);
+            $chapter->textbook->update([
+                'content_extraction_status' => 'extracted',
+                'extraction_method' => 'ai',
+                'requires_review' => true,
+            ]);
+
+        } catch (\Throwable $e) {
+            Log::warning("Textbook chapter content AI extraction failed for Chapter ID {$chapter->id} ({$e->getMessage()}). Falling back to local content extractor.");
+            try {
+                $this->localParser->parseChapterContent($chapter);
+            } catch (\Throwable $localEx) {
+                Log::error("Textbook local chapter content extraction ALSO failed for Chapter ID {$chapter->id}: " . $localEx->getMessage());
+                throw $localEx;
             }
-        });
+        }
     }
 
     /**
