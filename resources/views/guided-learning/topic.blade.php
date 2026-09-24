@@ -5,8 +5,19 @@
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
   tailwind.config = {
     darkMode: ['class', '[data-theme="dark"]'],
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
+        }
+      }
+    }
   }
 </script>
+<!-- Educational Typography: Plus Jakarta Sans & Inter from Bunny Fonts -->
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
+
 <!-- MathLive for Math & Scientific Formula Rendering -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mathlive/mathlive-static.css" />
 <script defer src="https://unpkg.com/mathlive" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
@@ -14,6 +25,125 @@
     import { renderMathInElement } from "https://unpkg.com/mathlive?module";
     window.renderMathInElement = renderMathInElement;
 </script>
+
+<style nonce="{{ request()->attributes->get('csp_nonce') }}">
+    .lesson-reader {
+        font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+        font-size: 1.0625rem; /* 17px optimal reading size */
+        line-height: 1.85;
+        letter-spacing: -0.011em;
+        color: #1f2937;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+    }
+    .dark .lesson-reader, [data-theme="dark"] .lesson-reader {
+        color: #e5e7eb;
+    }
+
+    /* Headings */
+    .lesson-reader h2 {
+        font-size: 1.45rem;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        line-height: 1.35;
+        color: #111827;
+        margin-top: 1.75rem;
+        margin-bottom: 1.15rem;
+    }
+    .dark .lesson-reader h2, [data-theme="dark"] .lesson-reader h2 {
+        color: #f9fafb;
+    }
+
+    .lesson-reader h3 {
+        font-size: 1.25rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        line-height: 1.4;
+        color: #1d4ed8;
+        margin-top: 2.25rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.4rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    .dark .lesson-reader h3, [data-theme="dark"] .lesson-reader h3 {
+        color: #60a5fa;
+        border-bottom-color: #374151;
+    }
+
+    .lesson-reader h4 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        letter-spacing: -0.015em;
+        line-height: 1.45;
+        color: #1f2937;
+        margin-top: 1.75rem;
+        margin-bottom: 0.65rem;
+    }
+    .dark .lesson-reader h4, [data-theme="dark"] .lesson-reader h4 {
+        color: #e5e7eb;
+    }
+
+    /* Paragraphs */
+    .lesson-reader p {
+        margin-bottom: 1.35rem;
+        line-height: 1.85;
+    }
+
+    /* Strong text */
+    .lesson-reader strong {
+        font-weight: 700;
+        color: #111827;
+    }
+    .dark .lesson-reader strong, [data-theme="dark"] .lesson-reader strong {
+        color: #ffffff;
+    }
+
+    /* Ordered & Unordered Lists */
+    .lesson-reader ol {
+        list-style-type: decimal;
+        padding-left: 1.5rem;
+        margin-top: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+    .lesson-reader ol > li {
+        margin-bottom: 0.85rem;
+        line-height: 1.75;
+        padding-left: 0.35rem;
+    }
+    .lesson-reader ul {
+        list-style-type: disc;
+        padding-left: 1.5rem;
+        margin-top: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+    .lesson-reader ul > li {
+        margin-bottom: 0.65rem;
+        line-height: 1.75;
+        padding-left: 0.35rem;
+    }
+
+    /* Inline Code & Formulas */
+    .lesson-reader code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.9em;
+        background-color: #f3f4f6;
+        color: #1d4ed8;
+        padding: 0.15rem 0.4rem;
+        border-radius: 0.375rem;
+        font-weight: 600;
+    }
+    .dark .lesson-reader code, [data-theme="dark"] .lesson-reader code {
+        background-color: #1e293b;
+        color: #93c5fd;
+    }
+
+    /* MathLive Formulas Sizing */
+    .lesson-reader math-field,
+    .lesson-reader .ML__base {
+        font-size: 1.15em !important;
+    }
+</style>
 @endsection
 
 @section('content')
@@ -145,7 +275,7 @@
                     </div>
 
                     <!-- Content HTML/Markdown with math rendering -->
-                    <div class="prose dark:prose-invert max-w-none text-gray-800 dark:text-gray-200 text-sm leading-relaxed space-y-4">
+                    <div class="lesson-reader max-w-none">
                         {!! $sec->content_html !!}
                     </div>
 
@@ -176,13 +306,13 @@
                         </span>
                         <span>Let's Practice</span>
                     </div>
-                    <div class="prose dark:prose-invert max-w-none text-sm leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-line">{{ $indicator->exemplars }}</div>
+                    <div class="lesson-reader max-w-none whitespace-pre-line">{{ $indicator->exemplars }}</div>
                 </div>
                 @endif
             @elseif(!empty($studentLesson['html']))
                 <!-- Synthesized / AI Student Lesson (Interactive & Explained for Students) -->
-                <div class="mb-10 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 sm:p-8 shadow-2xs space-y-6">
-                    <div class="prose dark:prose-invert max-w-none text-gray-800 dark:text-gray-200 text-sm leading-relaxed space-y-4">
+                <div class="mb-10 rounded-2xl border border-gray-200/90 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 sm:p-10 shadow-sm space-y-6">
+                    <div class="lesson-reader max-w-none">
                         {!! $studentLesson['html'] !!}
                     </div>
                 </div>
