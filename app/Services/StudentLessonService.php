@@ -47,6 +47,15 @@ class StudentLessonService
 
         // 2. TIER 2: Check for cached lesson in database
         if (!empty($indicator->student_lesson_html)) {
+            $subjectName = $indicator->subStrand?->strand?->curriculum?->subject?->name ?? '';
+            $isNotMath = !empty($subjectName) && !str_contains(strtolower($subjectName), 'math');
+
+            // Auto-heal: If an indicator belonging to a non-math subject was previously cached
+            // with the legacy fallback text ("mathematical foundation"), regenerate it properly.
+            if ($isNotMath && str_contains($indicator->student_lesson_html, 'mathematical foundation')) {
+                return $this->generateAndCacheLocalLesson($indicator);
+            }
+
             return [
                 'html' => $indicator->student_lesson_html,
                 'markdown' => $indicator->student_lesson_markdown ?? '',
@@ -123,10 +132,10 @@ Syllabus Context: Strand: "{$strand?->title}", Sub-strand: "{$subStrand?->title}
 Exemplar tasks from curriculum:
 {$indicator->exemplars}
 
-Write a comprehensive, engaging student lesson formatted in GitHub Markdown with LaTeX math notation (\$...$ for inline, \$\$...\$\$ for display):
+Write a comprehensive, engaging student lesson formatted in GitHub Markdown (with LaTeX math notation \$...$ or \$\$...\$\$ where applicable):
 1. **The Big Idea**: Explain the concept clearly and why it matters in real life (use relatable analogies).
-2. **Step-by-Step Rules & Methods**: Break down the core mathematical rules and procedures in a clear, sequential list.
-3. **Step-by-Step Worked Examples**: Solve 2 to 3 detailed examples based on the syllabus exemplars, showing each step of working clearly.
+2. **Step-by-Step Rules & Methods**: Break down the core concepts, procedures, architectural features, or rules in a clear, sequential list.
+3. **Step-by-Step Worked Examples**: Walk through 2 to 3 detailed examples, practical scenarios, or solved exercises based on the syllabus exemplars, showing each step clearly.
 4. **Key Takeaways**: 3 to 4 concise bullet points summarizing what was learned.
 
 Do NOT sound like a teacher's syllabus or exam rubric. Write directly to the student in an encouraging, crystal-clear tone.
