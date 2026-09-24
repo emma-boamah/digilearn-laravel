@@ -305,129 +305,211 @@
             </div>
         </div>
 
-        <!-- FreeCodeCamp Style Learning Roadmap -->
-        <div class="space-y-6">
-            @foreach($curriculumData['strands'] as $strand)
-            <div class="bg-gray-50/70 dark:bg-gray-800 rounded-3xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-xs transition-all"
-                 x-show="isStrandVisible({{ $strand['id'] }})">
+        <!-- Level / Grade Tabs (Visible when curriculum covers multiple levels e.g. Basic 7, Basic 8, Basic 9) -->
+        @if(isset($curriculumData['grade_levels']) && count($curriculumData['grade_levels']) > 1)
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar pt-1">
+            <span class="text-xs font-bold text-gray-500 dark:text-gray-400 mr-1 flex items-center gap-1.5 flex-shrink-0 uppercase tracking-wider text-[11px]">
+                <i class="fas fa-layer-group text-blue-600 dark:text-blue-400"></i> Grade Level:
+            </span>
+            <button type="button"
+                    @click="selectedGrade = 'all'"
+                    :class="selectedGrade === 'all' 
+                        ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/30' 
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'"
+                    class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap shadow-2xs flex items-center gap-1.5">
+                <span>All Levels</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded-full"
+                      :class="selectedGrade === 'all' ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'">
+                    {{ $curriculumData['stats']['total_indicators'] }}
+                </span>
+            </button>
+            @foreach($curriculumData['grade_levels'] as $gl)
+            <button type="button"
+                    @click="selectedGrade = '{{ addslashes($gl['label']) }}'"
+                    :class="selectedGrade === '{{ addslashes($gl['label']) }}' 
+                        ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/30' 
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'"
+                    class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap shadow-2xs flex items-center gap-1.5">
+                <span>{{ $gl['label'] }}</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded-full"
+                      :class="selectedGrade === '{{ addslashes($gl['label']) }}' ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'">
+                    {{ $gl['total_topics'] }}
+                </span>
+            </button>
+            @endforeach
+        </div>
+        @endif
+
+        <!-- FreeCodeCamp Style Learning Roadmap Grouped by Grade Level -->
+        <div class="space-y-10">
+            @foreach($curriculumData['grade_levels'] as $gradeLevel)
+            <div class="space-y-4" x-show="isGradeLevelVisible('{{ addslashes($gradeLevel['label']) }}')">
                 
-                <!-- Strand Header (Unnumbered, clean title) -->
-                <div class="p-5 sm:p-6 bg-gray-100/80 dark:bg-gray-750 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer border-b border-gray-200/80 dark:border-gray-700"
-                     @click="strandsOpen[{{ $strand['id'] }}] = !strandsOpen[{{ $strand['id'] }}]">
-                    
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-2xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center justify-center text-sm border border-gray-200 dark:border-gray-600 shadow-xs">
-                            <i class="fas fa-layer-group"></i>
+                @if(count($curriculumData['grade_levels']) > 1)
+                <!-- Level Section Header Banner with Clear Distinction -->
+                <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-gray-100/90 to-white dark:from-gray-850 dark:to-gray-800 border-2 border-gray-200 dark:border-gray-700 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-md shadow-blue-600/20 flex-shrink-0">
+                            <i class="fas fa-graduation-cap"></i>
                         </div>
                         <div>
-                            <h3 class="font-bold text-gray-900 dark:text-white text-base sm:text-lg flex items-center gap-2">
-                                {{ $strand['title'] }}
-                                @if(!empty($strand['grade_label']))
-                                    <span class="text-[11px] px-2.5 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full font-semibold">
-                                        {{ $strand['grade_label'] }}
-                                    </span>
-                                @endif
-                            </h3>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h2 class="text-base sm:text-lg font-black text-gray-900 dark:text-white">
+                                    {{ $gradeLevel['label'] }}
+                                </h2>
+                                <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                    {{ count($gradeLevel['strands']) }} Strands • {{ $gradeLevel['total_topics'] }} Checkpoints
+                                </span>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                Curriculum milestones and checkpoints for {{ $gradeLevel['label'] }}
+                            </p>
                         </div>
                     </div>
 
-                    <!-- Strand Progress & Accordion Arrow -->
-                    <div class="flex items-center justify-between sm:justify-end gap-5 pl-14 sm:pl-0">
-                        <div class="flex flex-col items-end min-w-[120px]">
+                    <!-- Level Completion Metric -->
+                    <div class="flex items-center gap-4 self-end sm:self-center pl-13 sm:pl-0">
+                        <div class="flex flex-col items-end min-w-[130px]">
                             <div class="flex items-center gap-1.5 text-xs font-bold text-gray-700 dark:text-gray-200">
-                                <span x-text="getStrandCompleted({{ $strand['id'] }})">{{ $strand['completed_topics'] }}</span>
+                                <span x-text="getGradeCompleted('{{ addslashes($gradeLevel['label']) }}')">{{ $gradeLevel['completed_topics'] }}</span>
                                 <span class="text-gray-400">/</span>
-                                <span>{{ $strand['total_topics'] }} Completed</span>
+                                <span>{{ $gradeLevel['total_topics'] }} Completed</span>
                             </div>
-                            <div class="w-28 bg-gray-200 dark:bg-gray-700 h-2 rounded-full mt-1.5 overflow-hidden">
+                            <div class="w-32 bg-gray-200 dark:bg-gray-700 h-2 rounded-full mt-1.5 overflow-hidden">
                                 <div class="bg-blue-600 h-full rounded-full transition-all duration-300"
-                                     :style="'width: ' + getStrandPercentage({{ $strand['id'] }}, {{ $strand['total_topics'] }}) + '%'"></div>
+                                     :style="'width: ' + getGradePercentage('{{ addslashes($gradeLevel['label']) }}', {{ $gradeLevel['total_topics'] }}) + '%'"></div>
                             </div>
-                        </div>
-
-                        <div class="w-8 h-8 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-transparent text-gray-500 flex items-center justify-center text-xs transition-transform duration-200"
-                             :class="{'rotate-180': strandsOpen[{{ $strand['id'] }}]}">
-                            <i class="fas fa-chevron-down"></i>
                         </div>
                     </div>
                 </div>
+                @endif
 
-                <!-- Sub-Strands & Checklist Items -->
-                <div x-show="strandsOpen[{{ $strand['id'] }}]" class="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
-                    @foreach($strand['sub_strands'] as $subStrand)
-                    <div class="p-5 sm:p-6" x-show="isSubStrandVisible({{ $subStrand['id'] }})">
-                        <div class="mb-3">
-                            <h4 class="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
-                                <span class="w-5 h-5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 flex items-center justify-center text-[10px]">
-                                    <i class="fas fa-bookmark"></i>
-                                </span>
-                                {{ $subStrand['title'] }}
-                            </h4>
-                        </div>
+                <!-- Strands within this Grade Level -->
+                <div class="space-y-4">
+                    @foreach($gradeLevel['strands'] as $strand)
+                    <div class="bg-gray-50/70 dark:bg-gray-800 rounded-3xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-xs transition-all"
+                         x-show="isStrandVisible({{ $strand['id'] }}, '{{ addslashes($strand['grade_label'] ?? '') }}')">
+                        
+                        <!-- Strand Header (Unnumbered, clean title) -->
+                        <div class="p-5 sm:p-6 bg-gray-100/80 dark:bg-gray-750 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer border-b border-gray-200/80 dark:border-gray-700"
+                             @click="strandsOpen[{{ $strand['id'] }}] = !strandsOpen[{{ $strand['id'] }}]">
+                            
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-2xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center justify-center text-sm border border-gray-200 dark:border-gray-600 shadow-xs">
+                                    <i class="fas fa-layer-group"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-900 dark:text-white text-base sm:text-lg flex items-center gap-2 flex-wrap">
+                                        {{ $strand['title'] }}
+                                        @if(!empty($strand['grade_label']))
+                                            <span class="text-[11px] px-2.5 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full font-semibold">
+                                                {{ $strand['grade_label'] }}
+                                            </span>
+                                        @endif
+                                    </h3>
+                                </div>
+                            </div>
 
-                        <!-- Indicators (Checklist Rows - Entire row clickable, clean unnumbered titles) -->
-                        <div class="space-y-2.5 pl-2 sm:pl-7">
-                            @foreach($subStrand['indicators'] as $ind)
-                            <a href="{{ route('guided-learning.topic', $ind['encoded_id'] ?? $ind['id']) }}"
-                               class="flex items-center justify-between p-3.5 rounded-2xl transition-all border group cursor-pointer block text-left"
-                               x-show="isIndicatorVisible({{ $ind['id'] }}, '{{ addslashes($ind['title']) }}')"
-                               :class="{
-                                  'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200/70 dark:border-gray-700/60 opacity-80 hover:opacity-100': indicatorsStatus[{{ $ind['id'] }}] === 'completed',
-                                  'bg-blue-50/40 dark:bg-blue-950/20 border-2 border-blue-500 dark:border-blue-600 shadow-xs': indicatorsStatus[{{ $ind['id'] }}] === 'in_progress',
-                                  'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 shadow-2xs hover:border-blue-500 hover:shadow-xs': !indicatorsStatus[{{ $ind['id'] }}] || indicatorsStatus[{{ $ind['id'] }}] === 'not_started'
-                               }">
-                                
-                                <!-- Left: Checkbox Icon + Topic Title -->
-                                <div class="flex items-center gap-3.5 flex-1 min-w-0">
-                                    <!-- FreeCodeCamp Completion Circle (Clickable Toggle) -->
-                                    <button type="button" 
-                                            @click.stop.prevent="toggleIndicator({{ $ind['id'] }}, {{ $strand['id'] }})"
-                                            title="Click to toggle status"
-                                            class="w-7 h-7 rounded-full flex items-center justify-center transition-all transform active:scale-90 flex-shrink-0 shadow-2xs"
-                                            :class="{
-                                                'border-2 border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-400 bg-gray-100 dark:bg-gray-700': indicatorsStatus[{{ $ind['id'] }}] === 'completed',
-                                                'border-2 border-blue-600 text-blue-600 bg-blue-50 dark:bg-blue-900/40 shadow-xs shadow-blue-600/20': indicatorsStatus[{{ $ind['id'] }}] === 'in_progress',
-                                                'border-2 border-gray-400 dark:border-gray-500 hover:border-blue-600 bg-white dark:bg-transparent': !indicatorsStatus[{{ $ind['id'] }}] || indicatorsStatus[{{ $ind['id'] }}] === 'not_started'
-                                            }">
-                                        <template x-if="indicatorsStatus[{{ $ind['id'] }}] === 'completed'">
-                                            <i class="fas fa-check text-xs"></i>
-                                        </template>
-                                        <template x-if="indicatorsStatus[{{ $ind['id'] }}] === 'in_progress'">
-                                            <div class="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></div>
-                                        </template>
-                                    </button>
-
-                                    <!-- Topic Title (Clean, unnumbered - Bold for active, dimmed for completed) -->
-                                    <div class="flex items-center gap-2.5 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                        <span class="text-sm truncate"
-                                              :class="indicatorsStatus[{{ $ind['id'] }}] === 'completed'
-                                                  ? 'line-through text-gray-400 dark:text-gray-500 font-normal'
-                                                  : 'text-gray-900 dark:text-white font-bold'">
-                                            {{ $ind['title'] }}
-                                        </span>
+                            <!-- Strand Progress & Accordion Arrow -->
+                            <div class="flex items-center justify-between sm:justify-end gap-5 pl-14 sm:pl-0">
+                                <div class="flex flex-col items-end min-w-[120px]">
+                                    <div class="flex items-center gap-1.5 text-xs font-bold text-gray-700 dark:text-gray-200">
+                                        <span x-text="getStrandCompleted({{ $strand['id'] }})">{{ $strand['completed_topics'] }}</span>
+                                        <span class="text-gray-400">/</span>
+                                        <span>{{ $strand['total_topics'] }} Completed</span>
+                                    </div>
+                                    <div class="w-28 bg-gray-200 dark:bg-gray-700 h-2 rounded-full mt-1.5 overflow-hidden">
+                                        <div class="bg-blue-600 h-full rounded-full transition-all duration-300"
+                                             :style="'width: ' + getStrandPercentage({{ $strand['id'] }}, {{ $strand['total_topics'] }}) + '%'"></div>
                                     </div>
                                 </div>
 
-                                <!-- Right: Review Button (for completed) / In Progress Badge / Arrow -->
-                                <div class="flex items-center gap-2.5 pl-3 flex-shrink-0">
-                                    <!-- Review Button: Only for completed items -->
-                                    <span x-show="indicatorsStatus[{{ $ind['id'] }}] === 'completed'"
-                                          class="px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all inline-flex items-center bg-gray-100/90 group-hover:bg-gray-200 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
-                                        Review
-                                        <i class="fas fa-arrow-right text-[10px] ml-1.5"></i>
-                                    </span>
-
-                                    <!-- In Progress Badge -->
-                                    <span x-show="indicatorsStatus[{{ $ind['id'] }}] === 'in_progress'"
-                                          class="text-[10px] font-bold px-2.5 py-0.5 rounded-full border bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800/40">
-                                        In Progress
-                                    </span>
-
-                                    <!-- Subtle Chevron for uncompleted items -->
-                                    <i x-show="indicatorsStatus[{{ $ind['id'] }}] !== 'completed'"
-                                       class="fas fa-chevron-right text-xs text-gray-300 dark:text-gray-600 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all"></i>
+                                <div class="w-8 h-8 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-transparent text-gray-500 flex items-center justify-center text-xs transition-transform duration-200"
+                                     :class="{'rotate-180': strandsOpen[{{ $strand['id'] }}]}">
+                                    <i class="fas fa-chevron-down"></i>
                                 </div>
-                            </a>
+                            </div>
+                        </div>
+
+                        <!-- Sub-Strands & Checklist Items -->
+                        <div x-show="strandsOpen[{{ $strand['id'] }}]" class="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                            @foreach($strand['sub_strands'] as $subStrand)
+                            <div class="p-5 sm:p-6" x-show="isSubStrandVisible({{ $subStrand['id'] }})">
+                                <div class="mb-3">
+                                    <h4 class="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                                        <span class="w-5 h-5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 flex items-center justify-center text-[10px]">
+                                            <i class="fas fa-bookmark"></i>
+                                        </span>
+                                        {{ $subStrand['title'] }}
+                                    </h4>
+                                </div>
+
+                                <!-- Indicators (Checklist Rows - Entire row clickable, clean unnumbered titles) -->
+                                <div class="space-y-2.5 pl-2 sm:pl-7">
+                                    @foreach($subStrand['indicators'] as $ind)
+                                    <a href="{{ route('guided-learning.topic', $ind['encoded_id'] ?? $ind['id']) }}"
+                                       class="flex items-center justify-between p-3.5 rounded-2xl transition-all border group cursor-pointer block text-left"
+                                       x-show="isIndicatorVisible({{ $ind['id'] }}, '{{ addslashes($ind['title']) }}')"
+                                       :class="{
+                                          'bg-gray-50/60 dark:bg-gray-800/40 border-gray-200/70 dark:border-gray-700/60 opacity-80 hover:opacity-100': indicatorsStatus[{{ $ind['id'] }}] === 'completed',
+                                          'bg-blue-50/40 dark:bg-blue-950/20 border-2 border-blue-500 dark:border-blue-600 shadow-xs': indicatorsStatus[{{ $ind['id'] }}] === 'in_progress',
+                                          'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 shadow-2xs hover:border-blue-500 hover:shadow-xs': !indicatorsStatus[{{ $ind['id'] }}] || indicatorsStatus[{{ $ind['id'] }}] === 'not_started'
+                                       }">
+                                        
+                                        <!-- Left: Checkbox Icon + Topic Title -->
+                                        <div class="flex items-center gap-3.5 flex-1 min-w-0">
+                                            <!-- FreeCodeCamp Completion Circle (Clickable Toggle) -->
+                                            <button type="button" 
+                                                    @click.stop.prevent="toggleIndicator({{ $ind['id'] }}, {{ $strand['id'] }})"
+                                                    title="Click to toggle status"
+                                                    class="w-7 h-7 rounded-full flex items-center justify-center transition-all transform active:scale-90 flex-shrink-0 shadow-2xs"
+                                                    :class="{
+                                                        'border-2 border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-400 bg-gray-100 dark:bg-gray-700': indicatorsStatus[{{ $ind['id'] }}] === 'completed',
+                                                        'border-2 border-blue-600 text-blue-600 bg-blue-50 dark:bg-blue-900/40 shadow-xs shadow-blue-600/20': indicatorsStatus[{{ $ind['id'] }}] === 'in_progress',
+                                                        'border-2 border-gray-400 dark:border-gray-500 hover:border-blue-600 bg-white dark:bg-transparent': !indicatorsStatus[{{ $ind['id'] }}] || indicatorsStatus[{{ $ind['id'] }}] === 'not_started'
+                                                    }">
+                                                <template x-if="indicatorsStatus[{{ $ind['id'] }}] === 'completed'">
+                                                    <i class="fas fa-check text-xs"></i>
+                                                </template>
+                                                <template x-if="indicatorsStatus[{{ $ind['id'] }}] === 'in_progress'">
+                                                    <div class="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></div>
+                                                </template>
+                                            </button>
+
+                                            <!-- Topic Title (Clean, unnumbered - Bold for active, dimmed for completed) -->
+                                            <div class="flex items-center gap-2.5 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                <span class="text-sm truncate"
+                                                      :class="indicatorsStatus[{{ $ind['id'] }}] === 'completed'
+                                                          ? 'line-through text-gray-400 dark:text-gray-500 font-normal'
+                                                          : 'text-gray-900 dark:text-white font-bold'">
+                                                    {{ $ind['title'] }}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Right: Review Button (for completed) / In Progress Badge / Arrow -->
+                                        <div class="flex items-center gap-2.5 pl-3 flex-shrink-0">
+                                            <!-- Review Button: Only for completed items -->
+                                            <span x-show="indicatorsStatus[{{ $ind['id'] }}] === 'completed'"
+                                                  class="px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all inline-flex items-center bg-gray-100/90 group-hover:bg-gray-200 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                                                Review
+                                                <i class="fas fa-arrow-right text-[10px] ml-1.5"></i>
+                                            </span>
+
+                                            <!-- In Progress Badge -->
+                                            <span x-show="indicatorsStatus[{{ $ind['id'] }}] === 'in_progress'"
+                                                  class="text-[10px] font-bold px-2.5 py-0.5 rounded-full border bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800/40">
+                                                In Progress
+                                            </span>
+
+                                            <!-- Subtle Chevron for uncompleted items -->
+                                            <i x-show="indicatorsStatus[{{ $ind['id'] }}] !== 'completed'"
+                                               class="fas fa-chevron-right text-xs text-gray-300 dark:text-gray-600 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all"></i>
+                                        </div>
+                                    </a>
+                                    @endforeach
+                                </div>
+                            </div>
                             @endforeach
                         </div>
                     </div>
@@ -455,6 +537,7 @@
         return {
             searchQuery: '',
             activeFilter: 'all', // 'all', 'in_progress', 'completed', 'not_started'
+            selectedGrade: 'all',
             allOpen: false,
             stats: @json($curriculumData['stats'] ?? ['overall_percentage' => 0, 'completed_indicators' => 0, 'total_indicators' => 0]),
             
@@ -490,6 +573,7 @@
                                     title: '{{ addslashes($ind['title']) }}',
                                     strandId: {{ $strand['id'] }},
                                     strandTitle: '{{ addslashes($strand['title']) }}',
+                                    gradeLabel: '{{ addslashes($strand['grade_label'] ?? '') }}',
                                     subStrandId: {{ $subStrand['id'] }},
                                 },
                             @endforeach
@@ -522,6 +606,24 @@
                 return Math.round((completed / totalTopics) * 100);
             },
 
+            getGradeCompleted(gradeLabel) {
+                const items = this.indicatorsList.filter(i => i.gradeLabel === gradeLabel);
+                return items.filter(i => this.indicatorsStatus[i.id] === 'completed').length;
+            },
+
+            getGradePercentage(gradeLabel, total) {
+                if (!total || total === 0) return 0;
+                return Math.round((this.getGradeCompleted(gradeLabel) / total) * 100);
+            },
+
+            isGradeLevelVisible(gradeLabel) {
+                if (this.selectedGrade !== 'all' && this.selectedGrade !== gradeLabel) {
+                    return false;
+                }
+                const items = this.indicatorsList.filter(i => i.gradeLabel === gradeLabel);
+                return items.some(i => this.isIndicatorVisible(i.id, i.title));
+            },
+
             isIndicatorVisible(id, title) {
                 const status = this.indicatorsStatus[id] || 'not_started';
 
@@ -542,7 +644,10 @@
                 return items.some(i => this.isIndicatorVisible(i.id, i.title));
             },
 
-            isStrandVisible(strandId) {
+            isStrandVisible(strandId, gradeLabel) {
+                if (this.selectedGrade !== 'all' && gradeLabel && this.selectedGrade !== gradeLabel) {
+                    return false;
+                }
                 const items = this.indicatorsList.filter(i => i.strandId === strandId);
                 return items.some(i => this.isIndicatorVisible(i.id, i.title));
             },

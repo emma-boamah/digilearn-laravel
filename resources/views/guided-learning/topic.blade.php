@@ -165,9 +165,15 @@
                 </a>
             </div>
             <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
-                <span class="font-medium">{{ $strand->title }}</span>
-                <span>/</span>
-                <span>{{ $subStrand->title }}</span>
+                @if(!empty($strand->grade_label))
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-bold text-[11px]">
+                    <i class="fas fa-graduation-cap text-[9px]"></i> {{ $strand->grade_label }}
+                </span>
+                <span class="text-gray-300 dark:text-gray-600">/</span>
+                @endif
+                <span class="font-bold text-gray-800 dark:text-gray-200">{{ $strand->title }}</span>
+                <span class="text-gray-400">/</span>
+                <span class="font-medium text-gray-600 dark:text-gray-400">{{ $subStrand->title }}</span>
             </div>
         </div>
 
@@ -201,16 +207,16 @@
 
             <!-- Topic Title & Meta Header -->
             <div class="mb-8">
-                <div class="flex items-center gap-2 flex-wrap mb-2.5">
+                <div class="flex items-center gap-2 flex-wrap mb-3">
                     <span class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1 rounded-lg">
                         {{ $subject->name }}
                     </span>
-                    @if($strand->grade_label)
-                    <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
-                        {{ $strand->grade_label }}
+                    @if(!empty($strand->grade_label))
+                    <span class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-lg bg-blue-600 text-white shadow-xs">
+                        <i class="fas fa-graduation-cap text-[10px]"></i> {{ $strand->grade_label }}
                     </span>
                     @endif
-                    <span class="text-xs font-mono font-medium px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                    <span class="text-xs font-mono font-medium px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
                         {{ $indicator->indicator_code }}
                     </span>
                     @if(($studentLesson['source'] ?? '') === 'textbook' || $textbookSections->isNotEmpty())
