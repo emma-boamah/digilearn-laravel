@@ -45,27 +45,18 @@ class StudentLessonService
             ];
         }
 
-        // 2. TIER 2: Check for cached lesson in database
-        if (!empty($indicator->student_lesson_html)) {
-            $subjectName = $indicator->subStrand?->strand?->curriculum?->subject?->name ?? '';
-            $isNotMath = !empty($subjectName) && !str_contains(strtolower($subjectName), 'math');
-
-            // Auto-heal: If an indicator belonging to a non-math subject was previously cached
-            // with the legacy fallback text ("mathematical foundation"), regenerate it properly.
-            if ($isNotMath && str_contains($indicator->student_lesson_html, 'mathematical foundation')) {
-                return $this->generateAndCacheLocalLesson($indicator);
-            }
-
+        // 2. TIER 2: If we already have a cached AI lesson, return it instantly
+        if (!empty($indicator->student_lesson_html) && $indicator->lesson_source === 'ai') {
             return [
                 'html' => $indicator->student_lesson_html,
                 'markdown' => $indicator->student_lesson_markdown ?? '',
-                'source' => $indicator->lesson_source ?? 'ai',
+                'source' => 'ai',
                 'key_takeaways' => $indicator->lesson_key_takeaways ?? [],
                 'has_textbook' => false,
             ];
         }
 
-        // 3. TIER 3: Attempt AI Lesson Generation
+        // 3. TIER 3: Attempt AI Lesson Generation (enriches and upgrades any local lesson)
         if (!empty($this->apiKey)) {
             try {
                 $aiLesson = $this->generateWithGemini($indicator);
@@ -88,11 +79,22 @@ class StudentLessonService
                     ];
                 }
             } catch (\Throwable $e) {
-                Log::warning("AI Lesson generation failed for indicator {$indicator->id} ({$e->getMessage()}). Falling back to local synthesizer.");
+                Log::warning("AI Lesson generation failed for indicator {$indicator->id} ({$e->getMessage()}). Using local synthesizer fallback.");
             }
         }
 
-        // 4. TIER 4: Deterministic Local Synthesizer Fallback (Zero AI, instant, offline)
+        // 4. If we already have a cached local lesson (and AI was unavailable), return it
+        if (!empty($indicator->student_lesson_html)) {
+            return [
+                'html' => $indicator->student_lesson_html,
+                'markdown' => $indicator->student_lesson_markdown ?? '',
+                'source' => $indicator->lesson_source ?? 'local',
+                'key_takeaways' => $indicator->lesson_key_takeaways ?? [],
+                'has_textbook' => false,
+            ];
+        }
+
+        // 5. TIER 5: Deterministic Local Synthesizer Fallback (Zero AI, instant, offline)
         return $this->generateAndCacheLocalLesson($indicator);
     }
 
@@ -122,7 +124,7 @@ class StudentLessonService
     }
 
     /**
-     * Generate student-friendly lesson using Google Gemini.
+     * Generate student-friendly lesson using Google Gemini with multi-model fallback.
      */
     protected function generateWithGemini(CurriculumIndicator $indicator): array
     {
@@ -140,40 +142,68 @@ Syllabus Context: Strand: "{$strand?->title}", Sub-strand: "{$subStrand?->title}
 Exemplar tasks from curriculum:
 {$indicator->exemplars}
 
-Write a comprehensive, engaging student lesson formatted in GitHub Markdown (with LaTeX math notation \$...$ or \$\$...\$\$ where applicable):
-1. **The Big Idea**: Explain the concept clearly and why it matters in real life (use relatable analogies).
-2. **Step-by-Step Rules & Methods**: Break down the core concepts, procedures, architectural features, or rules in a clear, sequential list.
-3. **Step-by-Step Worked Examples**: Walk through 2 to 3 detailed examples, practical scenarios, or solved exercises based on the syllabus exemplars, showing each step clearly.
-4. **Key Takeaways**: 3 to 4 concise bullet points summarizing what was learned.
+Write a comprehensive, deeply informative, and engaging student lesson formatted in GitHub Markdown (use LaTeX notation $...$ for inline formulas, and $$...$$ for display formulas where applicable):
+1. **The Big Idea**: Explain the concept thoroughly with relatable real-world analogies, why it was developed, and how it impacts modern daily life.
+2. **Core Concepts & Deep Dive**: Provide a clear, detailed breakdown of the principles, components, mechanisms, rules, or architectural milestones involved. Don't be brief—explain the "why" and "how".
+3. **Step-by-Step Practical Examples / Worked Solutions**: Walk through 2 to 3 detailed, solved real-world scenarios or exercises based on the syllabus exemplars, breaking down each step with clear explanations.
+4. **Common Mistakes & Exam Tips**: Highlight 2 to 3 common pitfalls or misconceptions students make on this topic and how to avoid them in exams.
+5. **Key Takeaways**: 4 concise bullet points summarizing the essential facts learned.
 
-Do NOT sound like a teacher's syllabus or exam rubric. Write directly to the student in an encouraging, crystal-clear tone.
+Do NOT sound like a teacher's syllabus or exam rubric. Write directly to the student in an encouraging, crystal-clear, and informative tone.
 PROMPT;
 
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
+        $modelsToTry = [
+            'gemini-flash-lite-latest',
+            'gemini-3.5-flash-lite',
+            'gemini-2.5-flash-lite',
+            'gemini-3.8-flash',
+            'gemini-flash-latest',
+        ];
 
-        $response = Http::timeout(15)->post($url, [
-            'contents' => [
-                [
-                    'parts' => [
-                        ['text' => $prompt]
-                    ]
-                ]
-            ],
-            'generationConfig' => [
-                'temperature' => 0.4,
-                'maxOutputTokens' => 2048,
-            ]
-        ]);
+        if (!empty($this->model) && !in_array($this->model, $modelsToTry)) {
+            array_unshift($modelsToTry, $this->model);
+        }
+        $modelsToTry = array_values(array_unique($modelsToTry));
 
-        if (!$response->successful()) {
-            throw new \Exception("Gemini API error (Status: {$response->status()}): " . $response->body());
+        $rawMarkdown = null;
+        $lastError = null;
+
+        foreach ($modelsToTry as $modelName) {
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$modelName}:generateContent?key={$this->apiKey}";
+            try {
+                $response = Http::timeout(30)
+                    ->withOptions(['curl' => [CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4]])
+                    ->post($url, [
+                        'contents' => [
+                            [
+                                'parts' => [
+                                    ['text' => $prompt]
+                                ]
+                            ]
+                        ],
+                        'generationConfig' => [
+                            'temperature' => 0.4,
+                            'maxOutputTokens' => 2500,
+                        ]
+                    ]);
+
+                if ($response->successful()) {
+                    $body = $response->json();
+                    $text = $body['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                    if (!empty($text)) {
+                        $rawMarkdown = $text;
+                        break;
+                    }
+                } else {
+                    $lastError = "Gemini error (HTTP {$response->status()} on {$modelName})";
+                }
+            } catch (\Throwable $e) {
+                $lastError = "Gemini exception on {$modelName}: " . $e->getMessage();
+            }
         }
 
-        $body = $response->json();
-        $rawMarkdown = $body['candidates'][0]['content']['parts'][0]['text'] ?? '';
-
         if (empty($rawMarkdown)) {
-            throw new \Exception("Gemini returned empty response.");
+            throw new \Exception($lastError ?? "All Gemini models failed or returned empty response.");
         }
 
         // Clean markdown fences if any
