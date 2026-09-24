@@ -250,7 +250,15 @@
                             </h4>
                         </a>
                         @empty
-                        <p class="text-xs text-gray-400 italic py-2">No video lectures linked yet.</p>
+                        <div class="text-center py-3 space-y-2">
+                            <p class="text-xs text-gray-400 italic">No matching video lessons found for this topic.</p>
+                            <a href="https://www.youtube.com/results?search_query={{ urlencode($indicator->student_title . ' ' . $subject->name . ' explained') }}"
+                               target="_blank" rel="noopener"
+                               class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-red-600 hover:text-red-700 transition-colors">
+                                <i class="fab fa-youtube"></i> Search YouTube
+                                <i class="fas fa-external-link-alt text-[8px]"></i>
+                            </a>
+                        </div>
                         @endforelse
                     </div>
                 </div>
@@ -465,9 +473,13 @@ function topicReaderApp() {
     window.__aiContext = {
         page: 'guided-learning-topic',
         subject: @json($subject->name),
-        indicator: @json($indicator->title),
+        indicator: @json($indicator->student_title),
+        code: @json($indicator->indicator_code),
         strand: @json($strand->title),
         subStrand: @json($subStrand->title),
+        takeaways: @json($studentLesson['key_takeaways'] ?? []),
+        hasTextbook: @json($textbookSections->isNotEmpty()),
+        lessonSource: @json($studentLesson['source'] ?? 'none'),
     };
 </script>
 @endpush

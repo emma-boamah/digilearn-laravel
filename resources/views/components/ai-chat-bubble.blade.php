@@ -828,11 +828,19 @@ function aiChatBubble() {
             if (this.pageContext) {
                 const parts = [];
                 if (this.pageContext.subject) parts.push('Subject: ' + this.pageContext.subject);
+                if (this.pageContext.code) parts.push('Checkpoint Code: ' + this.pageContext.code);
                 if (this.pageContext.indicator) parts.push('Topic: ' + this.pageContext.indicator);
                 if (this.pageContext.strand) parts.push('Strand: ' + this.pageContext.strand);
+                if (this.pageContext.subStrand) parts.push('Sub-Strand: ' + this.pageContext.subStrand);
                 if (this.pageContext.level) parts.push('Level: ' + this.pageContext.level);
+                if (this.pageContext.takeaways && Array.isArray(this.pageContext.takeaways) && this.pageContext.takeaways.length > 0) {
+                    parts.push('Lesson Objectives: ' + this.pageContext.takeaways.join('; '));
+                }
+                if (this.pageContext.hasTextbook) {
+                    parts.push('Curriculum Textbook: Verified notes & diagrams available on this page');
+                }
                 if (parts.length > 0) {
-                    contextPrefix = '[Student is currently studying: ' + parts.join(', ') + ']\n\n';
+                    contextPrefix = '[Student is studying in Guided Learning: ' + parts.join(' | ') + ']\n\n';
                 }
             }
 
