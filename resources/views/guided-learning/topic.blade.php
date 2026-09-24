@@ -69,31 +69,66 @@
         <!-- ===== LEFT: Main Reading Content ===== -->
         <div class="flex-1 min-w-0">
 
-            <!-- Topic Title -->
+            <!-- Topic Title & Meta Header -->
             <div class="mb-8">
-                <span class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">{{ $subject->name }}</span>
-                <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white leading-tight mt-1">
-                    {{ $indicator->title }}
+                <div class="flex items-center gap-2 flex-wrap mb-2.5">
+                    <span class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1 rounded-lg">
+                        {{ $subject->name }}
+                    </span>
+                    @if($strand->grade_label)
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+                        {{ $strand->grade_label }}
+                    </span>
+                    @endif
+                    <span class="text-xs font-mono font-medium px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                        {{ $indicator->indicator_code }}
+                    </span>
+                    @if(($studentLesson['source'] ?? '') === 'textbook' || $textbookSections->isNotEmpty())
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-1.5">
+                        <i class="fas fa-book-open text-[10px]"></i> Verified Textbook
+                    </span>
+                    @elseif(($studentLesson['source'] ?? '') === 'ai')
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 flex items-center gap-1.5">
+                        <i class="fas fa-wand-magic-sparkles text-[10px] text-blue-500"></i> AI Guided Lesson
+                    </span>
+                    @else
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 flex items-center gap-1.5">
+                        <i class="fas fa-graduation-cap text-[10px] text-blue-500"></i> Structured Study Guide
+                    </span>
+                    @endif
+                </div>
+
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white leading-tight">
+                    {{ $indicator->student_title }}
                 </h1>
+                @if($indicator->description && $indicator->description !== $indicator->title)
                 <p class="text-base text-gray-600 dark:text-gray-300 leading-relaxed mt-3">
                     {{ $indicator->description }}
                 </p>
+                @endif
             </div>
 
-            <!-- Exemplars / Practice Section — Clean Unified Gray Container -->
-            @if($indicator->exemplars)
-            <div class="mb-10 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-5 sm:p-6 space-y-3">
-                <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                    <span class="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">
-                        <i class="fas fa-lightbulb"></i>
+            <!-- Key Takeaways (if provided) -->
+            @if(!empty($studentLesson['key_takeaways']) && is_array($studentLesson['key_takeaways']))
+            <div class="mb-8 rounded-2xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 p-5 sm:p-6 space-y-3">
+                <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300">
+                    <span class="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">
+                        <i class="fas fa-bullseye"></i>
                     </span>
-                    <span>Let's Practice</span>
+                    <span>What You Will Learn In This Lesson</span>
                 </div>
-                <div class="prose dark:prose-invert max-w-none text-sm leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-line">{{ $indicator->exemplars }}</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-2">
+                    @foreach($studentLesson['key_takeaways'] as $takeaway)
+                    <div class="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-300 font-medium">
+                        <i class="fas fa-check-circle text-blue-600 dark:text-blue-400 mt-0.5 text-xs flex-shrink-0"></i>
+                        <span>{{ $takeaway }}</span>
+                    </div>
+                    @endforeach
+                </div>
             </div>
             @endif
 
-            <!-- Main Content Area: Textbook Lessons (Unified Flow) -->
+            <!-- Main Content Area: Textbook Lessons or Synthesized Student Lesson -->
             @if($textbookSections->isNotEmpty())
                 @foreach($textbookSections as $sec)
                 <div class="mb-10">
@@ -131,17 +166,37 @@
                     @endif
                 </div>
                 @endforeach
-            @else
-            <!-- Placeholder if textbook lesson not yet extracted -->
-            <div class="py-12 text-center mb-8">
-                <div class="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-400 flex items-center justify-center mx-auto mb-3 text-2xl">
-                    <i class="fas fa-feather-alt"></i>
+
+                <!-- Exemplars / Practice Section for Textbook Lessons -->
+                @if($indicator->exemplars)
+                <div class="mb-10 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-5 sm:p-6 space-y-3">
+                    <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                        <span class="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">
+                            <i class="fas fa-lightbulb"></i>
+                        </span>
+                        <span>Let's Practice</span>
+                    </div>
+                    <div class="prose dark:prose-invert max-w-none text-sm leading-relaxed text-gray-800 dark:text-gray-200 whitespace-pre-line">{{ $indicator->exemplars }}</div>
                 </div>
-                <h3 class="font-bold text-base text-gray-900 dark:text-white">Content Coming Soon</h3>
-                <p class="text-xs text-gray-500 max-w-md mx-auto mt-1 leading-relaxed">
-                    The lesson notes for this topic are being verified. Use the video lessons and practice quizzes to start learning!
-                </p>
-            </div>
+                @endif
+            @elseif(!empty($studentLesson['html']))
+                <!-- Synthesized / AI Student Lesson (Interactive & Explained for Students) -->
+                <div class="mb-10 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 sm:p-8 shadow-2xs space-y-6">
+                    <div class="prose dark:prose-invert max-w-none text-gray-800 dark:text-gray-200 text-sm leading-relaxed space-y-4">
+                        {!! $studentLesson['html'] !!}
+                    </div>
+                </div>
+            @else
+                <!-- Placeholder if lesson notes could not be synthesized -->
+                <div class="py-12 text-center mb-8">
+                    <div class="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-400 flex items-center justify-center mx-auto mb-3 text-2xl">
+                        <i class="fas fa-feather-alt"></i>
+                    </div>
+                    <h3 class="font-bold text-base text-gray-900 dark:text-white">Content Coming Soon</h3>
+                    <p class="text-xs text-gray-500 max-w-md mx-auto mt-1 leading-relaxed">
+                        The lesson notes for this topic are being prepared. Use the video lessons and practice quizzes on the right to start learning!
+                    </p>
+                </div>
             @endif
 
             <!-- My Notes (stays in main content flow) -->
