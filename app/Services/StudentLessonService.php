@@ -51,7 +51,7 @@ class StudentLessonService
                 'html' => self::cleanMathTypography($indicator->student_lesson_html),
                 'markdown' => $indicator->student_lesson_markdown ?? '',
                 'source' => 'ai',
-                'key_takeaways' => $indicator->lesson_key_takeaways ?? [],
+                'key_takeaways' => self::formatTakeaways($indicator->lesson_key_takeaways ?? []),
                 'has_textbook' => false,
             ];
         }
@@ -62,13 +62,14 @@ class StudentLessonService
                 $aiLesson = $this->generateWithGemini($indicator);
                 if (!empty($aiLesson['html'])) {
                     $cleanedHtml = self::cleanMathTypography($aiLesson['html']);
+                    $formattedTakeaways = self::formatTakeaways($aiLesson['key_takeaways']);
 
                     // Cache in database
                     $indicator->update([
                         'student_lesson_markdown' => $aiLesson['markdown'],
                         'student_lesson_html' => $cleanedHtml,
                         'lesson_source' => 'ai',
-                        'lesson_key_takeaways' => $aiLesson['key_takeaways'],
+                        'lesson_key_takeaways' => $formattedTakeaways,
                         'lesson_generated_at' => now(),
                     ]);
 
@@ -76,7 +77,7 @@ class StudentLessonService
                         'html' => $cleanedHtml,
                         'markdown' => $aiLesson['markdown'],
                         'source' => 'ai',
-                        'key_takeaways' => $aiLesson['key_takeaways'],
+                        'key_takeaways' => $formattedTakeaways,
                         'has_textbook' => false,
                     ];
                 }
@@ -91,7 +92,7 @@ class StudentLessonService
                 'html' => self::cleanMathTypography($indicator->student_lesson_html),
                 'markdown' => $indicator->student_lesson_markdown ?? '',
                 'source' => $indicator->lesson_source ?? 'local',
-                'key_takeaways' => $indicator->lesson_key_takeaways ?? [],
+                'key_takeaways' => self::formatTakeaways($indicator->lesson_key_takeaways ?? []),
                 'has_textbook' => false,
             ];
         }
@@ -107,13 +108,14 @@ class StudentLessonService
     {
         $localLesson = $this->localSynthesizer->synthesize($indicator);
         $cleanHtml = self::cleanMathTypography($localLesson['html']);
+        $formattedTakeaways = self::formatTakeaways($localLesson['key_takeaways']);
 
         // Cache local lesson so page loads instantly
         $indicator->update([
             'student_lesson_markdown' => $localLesson['markdown'],
             'student_lesson_html' => $cleanHtml,
             'lesson_source' => 'local',
-            'lesson_key_takeaways' => $localLesson['key_takeaways'],
+            'lesson_key_takeaways' => $formattedTakeaways,
             'lesson_generated_at' => now(),
         ]);
 
@@ -121,7 +123,7 @@ class StudentLessonService
             'html' => $cleanHtml,
             'markdown' => $localLesson['markdown'],
             'source' => 'local',
-            'key_takeaways' => $localLesson['key_takeaways'],
+            'key_takeaways' => $formattedTakeaways,
             'has_textbook' => false,
         ];
     }
@@ -159,6 +161,27 @@ class StudentLessonService
         $html = preg_replace('/\$([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)\$/', '$1', $html);
 
         return $html;
+    }
+
+    /**
+     * Format a single takeaway string with clean bold/italic tags and math typography.
+     */
+    public static function formatTakeaway(string $text): string
+    {
+        // Convert **bold** to <strong>bold</strong>
+        $html = preg_replace('/\*\*(.*?)\*\*/s', '<strong>$1</strong>', $text);
+        // Convert *italic* to <em>italic</em>
+        $html = preg_replace('/(?<!\*)\*(?!\*)(.*?)(?<!\*)\*(?!\*)/s', '<em>$1</em>', $html);
+        // Clean math typography (arrows, operators, plain numbers)
+        return self::cleanMathTypography($html);
+    }
+
+    /**
+     * Format an array of takeaway strings.
+     */
+    public static function formatTakeaways(array $takeaways): array
+    {
+        return array_map([self::class, 'formatTakeaway'], $takeaways);
     }
 
     /**

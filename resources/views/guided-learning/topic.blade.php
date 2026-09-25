@@ -244,20 +244,22 @@
                 @endif
             </div>
 
-            <!-- Key Takeaways (if provided) -->
+            <!-- Key Takeaways (What You Will Learn In This Lesson) -->
             @if(!empty($studentLesson['key_takeaways']) && is_array($studentLesson['key_takeaways']))
-            <div class="mb-8 rounded-2xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 p-5 sm:p-6 space-y-3">
+            <div class="mb-8 rounded-2xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 p-5 sm:p-6 space-y-3.5 shadow-2xs">
                 <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-800 dark:text-blue-300">
                     <span class="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs">
                         <i class="fas fa-bullseye"></i>
                     </span>
                     <span>What You Will Learn In This Lesson</span>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-2">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
                     @foreach($studentLesson['key_takeaways'] as $takeaway)
-                    <div class="flex items-start gap-2 text-xs text-gray-700 dark:text-gray-300 font-medium">
-                        <i class="fas fa-check-circle text-blue-600 dark:text-blue-400 mt-0.5 text-xs flex-shrink-0"></i>
-                        <span>{{ $takeaway }}</span>
+                    <div class="flex items-start gap-2.5 p-3 sm:p-3.5 rounded-xl bg-white/85 dark:bg-gray-800/80 border border-blue-100 dark:border-blue-900/40 shadow-2xs">
+                        <i class="fas fa-check-circle text-blue-600 dark:text-blue-400 mt-0.5 text-sm flex-shrink-0"></i>
+                        <div class="lesson-reader text-sm leading-relaxed text-gray-800 dark:text-gray-200 font-medium takeaway-text">
+                            {!! $takeaway !!}
+                        </div>
                     </div>
                     @endforeach
                 </div>
@@ -569,7 +571,8 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     function renderAll() {
-        document.querySelectorAll('.lesson-reader').forEach(function(el) {
+        const elements = new Set(document.querySelectorAll('.lesson-reader, .takeaway-text'));
+        elements.forEach(function(el) {
             preprocessMathNotation(el);
             const renderFn = window.renderMathInElement || (window.MathfieldElement && window.MathfieldElement.renderMathInElement);
             if (typeof renderFn === 'function') {
