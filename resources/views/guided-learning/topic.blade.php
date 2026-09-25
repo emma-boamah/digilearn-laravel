@@ -165,9 +165,15 @@
                 </a>
             </div>
             <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
-                <span class="font-medium">{{ $strand->title }}</span>
-                <span>/</span>
-                <span>{{ $subStrand->title }}</span>
+                @if(!empty($strand->grade_label))
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-bold text-[11px]">
+                    <i class="fas fa-graduation-cap text-[9px]"></i> {{ $strand->grade_label }}
+                </span>
+                <span class="text-gray-300 dark:text-gray-600">/</span>
+                @endif
+                <span class="font-bold text-gray-800 dark:text-gray-200">{{ $strand->title }}</span>
+                <span class="text-gray-400">/</span>
+                <span class="font-medium text-gray-600 dark:text-gray-400">{{ $subStrand->title }}</span>
             </div>
         </div>
 
@@ -201,16 +207,16 @@
 
             <!-- Topic Title & Meta Header -->
             <div class="mb-8">
-                <div class="flex items-center gap-2 flex-wrap mb-2.5">
+                <div class="flex items-center gap-2 flex-wrap mb-3">
                     <span class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1 rounded-lg">
                         {{ $subject->name }}
                     </span>
-                    @if($strand->grade_label)
-                    <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
-                        {{ $strand->grade_label }}
+                    @if(!empty($strand->grade_label))
+                    <span class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-lg bg-blue-600 text-white shadow-xs">
+                        <i class="fas fa-graduation-cap text-[10px]"></i> {{ $strand->grade_label }}
                     </span>
                     @endif
-                    <span class="text-xs font-mono font-medium px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                    <span class="text-xs font-mono font-medium px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
                         {{ $indicator->indicator_code }}
                     </span>
                     @if(($studentLesson['source'] ?? '') === 'textbook' || $textbookSections->isNotEmpty())
@@ -465,8 +471,9 @@
 </div>
 
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-// Auto-detect common math notation and render with HTML sup/sub tags
+// Auto-detect common math notation and clean plain text arrows/numbers/symbols
 function preprocessMathNotation(container) {
+    if (!container) return;
     const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
     const textNodes = [];
     while (walker.nextNode()) textNodes.push(walker.currentNode);
@@ -475,19 +482,68 @@ function preprocessMathNotation(container) {
         let text = node.textContent;
         let changed = false;
 
-        // Replace X^{Y} patterns first (e.g., 4^{12} → 4<sup>12</sup>)
+        // 1. Clean arrows in text (e.g. $\rightarrow$, \rightarrow)
+        if (/\$?\\(rightarrow|to|longrightarrow)\$?/.test(text)) {
+            text = text.replace(/\$?\\(rightarrow|to|longrightarrow)\$?([a-zA-Z0-9\s])/g, ' → $2')
+                       .replace(/\$?\\(rightarrow|to|longrightarrow)\$?/g, ' → ');
+            changed = true;
+        }
+        if (/\$?\\(leftarrow|longleftarrow)\$?/.test(text)) {
+            text = text.replace(/\$?\\(leftarrow|longleftarrow)\$?/g, ' ← ');
+            changed = true;
+        }
+        if (/\$?\\(leftrightarrow)\$?/.test(text)) {
+            text = text.replace(/\$?\\(leftrightarrow)\$?/g, ' ↔ ');
+            changed = true;
+        }
+
+        // 2. Clean comparison symbols in dollars: $>$, $<$, $=$
+        if (/\$([><=])\$/.test(text)) {
+            text = text.replace(/\$([><=])\$/g, ' $1 ');
+            changed = true;
+        }
+
+        // 3. Clean isolated plain numbers in dollars (e.g. $1$, $100$, $1,000,000,000$)
+        if (/\$([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)\$/.test(text)) {
+            text = text.replace(/\$([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)\$/g, '$1');
+            changed = true;
+        }
+
+        // 4. Clean basic LaTeX operator commands if unrendered
+        if (/\$?\\times\$?/.test(text)) {
+            text = text.replace(/\$?\\times\$?/g, ' × ');
+            changed = true;
+        }
+        if (/\$?\\div\$?/.test(text)) {
+            text = text.replace(/\$?\\div\$?/g, ' ÷ ');
+            changed = true;
+        }
+        if (/\$?\\(le|leq)\$?/.test(text)) {
+            text = text.replace(/\$?\\(le|leq)\$?/g, ' ≤ ');
+            changed = true;
+        }
+        if (/\$?\\(ge|geq)\$?/.test(text)) {
+            text = text.replace(/\$?\\(ge|geq)\$?/g, ' ≥ ');
+            changed = true;
+        }
+        if (/\$?\\(ne|neq)\$?/.test(text)) {
+            text = text.replace(/\$?\\(ne|neq)\$?/g, ' ≠ ');
+            changed = true;
+        }
+
+        // 5. Replace X^{Y} patterns first (e.g., 4^{12} → 4<sup>12</sup>)
         if (/\w\^\{/.test(text)) {
             text = text.replace(/(\w+)\^\{([^}]+)\}/g, '$1<sup>$2</sup>');
             changed = true;
         }
 
-        // Replace X^Y patterns (e.g., 4^2 → 4<sup>2</sup>, x^n → x<sup>n</sup>)
+        // 6. Replace X^Y patterns (e.g., 4^2 → 4<sup>2</sup>, x^n → x<sup>n</sup>)
         if (/\w\^\w/.test(text)) {
             text = text.replace(/(\w+)\^(\w+)/g, '$1<sup>$2</sup>');
             changed = true;
         }
 
-        // Replace X_Y subscript patterns (e.g., a_1 → a<sub>1</sub>)
+        // 7. Replace X_Y subscript patterns (e.g., a_1 → a<sub>1</sub>)
         if (/[a-zA-Z]_\d/.test(text)) {
             text = text.replace(/([a-zA-Z])_(\d+)/g, '$1<sub>$2</sub>');
             changed = true;
@@ -501,32 +557,43 @@ function preprocessMathNotation(container) {
     });
 }
 
-// Render MathLive formulas after page loads
+// Render MathLive formulas with full TeX delimiter support
 document.addEventListener('DOMContentLoaded', function() {
-    var container = document.getElementById('topic-content');
+    const texConfig = {
+        TeX: {
+            delimiters: {
+                inline: [['$', '$'], ['\\(', '\\)']],
+                display: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        }
+    };
 
     function renderAll() {
-        // First preprocess plain-text math patterns into $ delimiters
-        preprocessMathNotation(container);
-        // Then let MathLive render all delimited math
-        if (window.renderMathInElement) {
-            renderMathInElement(container);
-        }
+        document.querySelectorAll('.lesson-reader').forEach(function(el) {
+            preprocessMathNotation(el);
+            const renderFn = window.renderMathInElement || (window.MathfieldElement && window.MathfieldElement.renderMathInElement);
+            if (typeof renderFn === 'function') {
+                try {
+                    renderFn(el, texConfig);
+                } catch(e) {
+                    console.warn('MathLive render error:', e);
+                }
+            }
+        });
     }
 
-    if (window.renderMathInElement) {
-        renderAll();
-    } else {
-        // Retry after MathLive loads (deferred script)
-        var interval = setInterval(function() {
-            if (window.renderMathInElement) {
-                clearInterval(interval);
-                renderAll();
-            }
-        }, 200);
-        // Stop trying after 5 seconds
-        setTimeout(function() { clearInterval(interval); }, 5000);
-    }
+    // Run initial typography pass immediately
+    renderAll();
+
+    // Check if MathLive loads asynchronously and re-render
+    var interval = setInterval(function() {
+        const renderFn = window.renderMathInElement || (window.MathfieldElement && window.MathfieldElement.renderMathInElement);
+        if (typeof renderFn === 'function') {
+            clearInterval(interval);
+            renderAll();
+        }
+    }, 200);
+    setTimeout(function() { clearInterval(interval); }, 6000);
 });
 
 function topicReaderApp() {

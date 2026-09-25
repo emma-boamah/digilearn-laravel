@@ -149,6 +149,31 @@ class GuidedLearningService
             ];
         }
 
+        // Group strands into distinct Grade/Level sections
+        $gradeLevels = [];
+        foreach ($strands as $st) {
+            $label = !empty($st['grade_label']) ? $st['grade_label'] : 'Standard Curriculum';
+            if (!isset($gradeLevels[$label])) {
+                $gradeLevels[$label] = [
+                    'label' => $label,
+                    'total_topics' => 0,
+                    'completed_topics' => 0,
+                    'strands' => [],
+                ];
+            }
+            $gradeLevels[$label]['total_topics'] += $st['total_topics'];
+            $gradeLevels[$label]['completed_topics'] += $st['completed_topics'];
+            $gradeLevels[$label]['strands'][] = $st;
+        }
+
+        foreach ($gradeLevels as &$gl) {
+            $gl['progress_percentage'] = $gl['total_topics'] > 0
+                ? round(($gl['completed_topics'] / $gl['total_topics']) * 100)
+                : 0;
+        }
+        unset($gl);
+        $gradeLevels = array_values($gradeLevels);
+
         $overallPct = $totalIndicators > 0 ? round(($completedIndicators / $totalIndicators) * 100) : 0;
 
         return [
@@ -167,6 +192,7 @@ class GuidedLearningService
                 'overall_percentage' => $overallPct,
             ],
             'strands' => $strands,
+            'grade_levels' => $gradeLevels,
         ];
     }
 
