@@ -48,7 +48,7 @@ class StudentLessonService
         // 2. TIER 2: If we already have a cached AI lesson, return it instantly
         if (!empty($indicator->student_lesson_html) && $indicator->lesson_source === 'ai') {
             return [
-                'html' => $indicator->student_lesson_html,
+                'html' => self::cleanMathTypography($indicator->student_lesson_html),
                 'markdown' => $indicator->student_lesson_markdown ?? '',
                 'source' => 'ai',
                 'key_takeaways' => $indicator->lesson_key_takeaways ?? [],
@@ -61,17 +61,19 @@ class StudentLessonService
             try {
                 $aiLesson = $this->generateWithGemini($indicator);
                 if (!empty($aiLesson['html'])) {
+                    $cleanedHtml = self::cleanMathTypography($aiLesson['html']);
+
                     // Cache in database
                     $indicator->update([
                         'student_lesson_markdown' => $aiLesson['markdown'],
-                        'student_lesson_html' => $aiLesson['html'],
+                        'student_lesson_html' => $cleanedHtml,
                         'lesson_source' => 'ai',
                         'lesson_key_takeaways' => $aiLesson['key_takeaways'],
                         'lesson_generated_at' => now(),
                     ]);
 
                     return [
-                        'html' => $aiLesson['html'],
+                        'html' => $cleanedHtml,
                         'markdown' => $aiLesson['markdown'],
                         'source' => 'ai',
                         'key_takeaways' => $aiLesson['key_takeaways'],
@@ -86,7 +88,7 @@ class StudentLessonService
         // 4. If we already have a cached local lesson (and AI was unavailable), return it
         if (!empty($indicator->student_lesson_html)) {
             return [
-                'html' => $indicator->student_lesson_html,
+                'html' => self::cleanMathTypography($indicator->student_lesson_html),
                 'markdown' => $indicator->student_lesson_markdown ?? '',
                 'source' => $indicator->lesson_source ?? 'local',
                 'key_takeaways' => $indicator->lesson_key_takeaways ?? [],
@@ -104,23 +106,59 @@ class StudentLessonService
     public function generateAndCacheLocalLesson(CurriculumIndicator $indicator): array
     {
         $localLesson = $this->localSynthesizer->synthesize($indicator);
+        $cleanHtml = self::cleanMathTypography($localLesson['html']);
 
         // Cache local lesson so page loads instantly
         $indicator->update([
             'student_lesson_markdown' => $localLesson['markdown'],
-            'student_lesson_html' => $localLesson['html'],
+            'student_lesson_html' => $cleanHtml,
             'lesson_source' => 'local',
             'lesson_key_takeaways' => $localLesson['key_takeaways'],
             'lesson_generated_at' => now(),
         ]);
 
         return [
-            'html' => $localLesson['html'],
+            'html' => $cleanHtml,
             'markdown' => $localLesson['markdown'],
             'source' => 'local',
             'key_takeaways' => $localLesson['key_takeaways'],
             'has_textbook' => false,
         ];
+    }
+
+    /**
+     * Clean up LaTeX notation into clean student-friendly typography for numbers, symbols, and arrows.
+     */
+    public static function cleanMathTypography(?string $html): string
+    {
+        if (empty($html)) {
+            return '';
+        }
+
+        // 1. Directional and logical arrows
+        $html = preg_replace('/\$?\\\\(?:rightarrow|to|longrightarrow)\$?/', ' &rarr; ', $html);
+        $html = preg_replace('/\$?\\\\(?:leftarrow|longleftarrow)\$?/', ' &larr; ', $html);
+        $html = preg_replace('/\$?\\\\(?:leftrightarrow)\$?/', ' &harr; ', $html);
+        $html = preg_replace('/\$?\\\\(?:Rightarrow)\$?/', ' &rArr; ', $html);
+        $html = preg_replace('/\$?\\\\(?:Leftarrow)\$?/', ' &lArr; ', $html);
+        $html = preg_replace('/\$?\\\\(?:Leftrightarrow)\$?/', ' &hArr; ', $html);
+
+        // 2. Comparison and operators wrapped in dollars ($>, $<, $=, $\le$, $\ge$, etc.)
+        $html = preg_replace('/\$(&gt;|>)\$/', '&gt;', $html);
+        $html = preg_replace('/\$(&lt;|<)\$/', '&lt;', $html);
+        $html = preg_replace('/\$(=)\$/', '=', $html);
+        $html = preg_replace('/\$?\\\\(?:le|leq)\$?/', '&le;', $html);
+        $html = preg_replace('/\$?\\\\(?:ge|geq)\$?/', '&ge;', $html);
+        $html = preg_replace('/\$?\\\\(?:ne|neq)\$?/', '&ne;', $html);
+        $html = preg_replace('/\$?\\\\(?:times)\$?/', '&times;', $html);
+        $html = preg_replace('/\$?\\\\(?:div)\$?/', '&divide;', $html);
+        $html = preg_replace('/\$?\\\\(?:approx)\$?/', '&asymp;', $html);
+        $html = preg_replace('/\$?\\\\(?:pm)\$?/', '&plusmn;', $html);
+
+        // 3. Isolated plain numbers wrapped in dollars (e.g. $1$, $100$, $1,000,000,000$)
+        $html = preg_replace('/\$([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)\$/', '$1', $html);
+
+        return $html;
     }
 
     /**
@@ -142,7 +180,13 @@ Syllabus Context: Strand: "{$strand?->title}", Sub-strand: "{$subStrand?->title}
 Exemplar tasks from curriculum:
 {$indicator->exemplars}
 
-Write a comprehensive, deeply informative, and engaging student lesson formatted in GitHub Markdown (use LaTeX notation $...$ for inline formulas, and $$...$$ for display formulas where applicable):
+Write a comprehensive, deeply informative, and engaging student lesson formatted in GitHub Markdown.
+Typography Rules:
+- Write plain numbers and values directly as clean text without dollar signs (e.g. write "100", "1,000,000,000", "billions" - NEVER wrap normal numbers in $).
+- Use standard symbols for arrows (→) and comparisons (>, <, =, ≤, ≥).
+- Reserve LaTeX $...$ or $$...$$ exclusively for actual algebraic equations or complex formulas (e.g. $x^2 + y^2 = r^2$, $\frac{a}{b}$).
+
+Structure:
 1. **The Big Idea**: Explain the concept thoroughly with relatable real-world analogies, why it was developed, and how it impacts modern daily life.
 2. **Core Concepts & Deep Dive**: Provide a clear, detailed breakdown of the principles, components, mechanisms, rules, or architectural milestones involved. Don't be brief—explain the "why" and "how".
 3. **Step-by-Step Practical Examples / Worked Solutions**: Walk through 2 to 3 detailed, solved real-world scenarios or exercises based on the syllabus exemplars, breaking down each step with clear explanations.
