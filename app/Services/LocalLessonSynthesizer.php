@@ -65,12 +65,16 @@ class LocalLessonSynthesizer
         // 5. Generate Checkpoint Quiz (3 questions for student verification)
         $quiz = $this->synthesizeQuiz($indicator, $cleanTitle, $subjectName, $takeaways);
 
+        // 6. Generate Brilliant-Style Interactive Segments (Interleaved Concept + Challenge)
+        $segments = $this->synthesizeInteractiveSegments($indicator, $cleanTitle, $subjectName, $intro, $rules, $workedExamples, $takeaways);
+
         return [
             'markdown' => $markdownText,
             'html' => $htmlText,
             'source' => 'local',
             'key_takeaways' => $takeaways,
             'quiz' => $quiz,
+            'interactive_segments' => $segments,
         ];
     }
 
@@ -407,5 +411,168 @@ class LocalLessonSynthesizer
 
         return $questions;
     }
+
+    /**
+     * Synthesize 3 Brilliant-style sequential micro-segments (Concept -> Challenge).
+     *
+     * @return array<int, array{id: int, title: string, subtitle: string, content_html: string, challenge: array}>
+     */
+    public function synthesizeInteractiveSegments(
+        CurriculumIndicator $indicator,
+        string $title,
+        string $subject,
+        string $intro,
+        string $rules,
+        string $workedExamples,
+        array $takeaways = []
+    ): array {
+        $sLower = strtolower($subject);
+        $cleanTitle = trim($title);
+
+        $segments = [];
+
+        // SEGMENT 1: The Intuition & The Big Idea
+        $challenge1 = [];
+        if (str_contains($sLower, 'math')) {
+            $challenge1 = [
+                'type' => 'multiple-choice',
+                'prompt' => "In everyday situations, why is understanding \"{$cleanTitle}\" important?",
+                'options' => [
+                    "To accurately represent and compare quantities without confusion",
+                    "To guess values quickly without using standard mathematical notation",
+                    "Because numbers greater than 1,000 never appear in daily life",
+                    "To replace place value systems with simple tally marks",
+                ],
+                'correct_answer' => 0,
+                'hint' => "Think about banking, national populations, or large measurements.",
+                'explanation' => "Accurate numerical reasoning and standard notation prevent errors when working with real-world quantities.",
+            ];
+        } elseif (str_contains($sLower, 'ict') || str_contains($sLower, 'comput')) {
+            $challenge1 = [
+                'type' => 'multiple-choice',
+                'prompt' => "What is the primary role of this concept in digital technology?",
+                'options' => [
+                    "To build a clear understanding of hardware components and digital operations",
+                    "To avoid using operating system utilities",
+                    "To replace computer software with manual tools",
+                    "To bypass standard user authentication",
+                ],
+                'correct_answer' => 0,
+                'hint' => "Consider how systems coordinate data and communicate instructions.",
+                'explanation' => "Foundational technical understanding allows you to navigate computer systems reliably and safely.",
+            ];
+        } else {
+            $challenge1 = [
+                'type' => 'multiple-choice',
+                'prompt' => "What is the key takeaway of this opening concept?",
+                'options' => [
+                    "It forms the foundational rule for understanding \"{$cleanTitle}\"",
+                    "It should be skipped when solving practical problems",
+                    "It is only useful for final exams, not daily understanding",
+                    "It contradicts standard learning guidelines",
+                ],
+                'correct_answer' => 0,
+                'hint' => "Notice how this concept sets the stage for the rest of the topic.",
+                'explanation' => "Every advanced topic starts with an intuitive foundation that guides subsequent steps.",
+            ];
+        }
+
+        $segments[] = [
+            'id' => 1,
+            'title' => "Part 1: The Intuition",
+            'subtitle' => "Why this concept matters & how it impacts daily life",
+            'content_html' => Str::markdown($intro),
+            'challenge' => $challenge1,
+        ];
+
+        // SEGMENT 2: Core Rules & Practical Application
+        $challenge2 = [];
+        if (str_contains($sLower, 'math')) {
+            $challenge2 = [
+                'type' => 'multiple-choice',
+                'prompt' => "When applying the core rule for \"{$cleanTitle}\", what should you do first?",
+                'options' => [
+                    "Identify place values from left to right (highest period first)",
+                    "Start comparing numbers from the lowest decimal position",
+                    "Ignore commas and decimal separators",
+                    "Change the order of digits randomly",
+                ],
+                'correct_answer' => 0,
+                'hint' => "Always begin with the highest period (e.g. billions, millions) when analyzing values.",
+                'explanation' => "Comparing from the highest place value immediately reveals the most significant difference.",
+            ];
+        } elseif (str_contains($sLower, 'ict') || str_contains($sLower, 'comput')) {
+            $challenge2 = [
+                'type' => 'multiple-choice',
+                'prompt' => "Which of the following describes the correct procedure for this topic?",
+                'options' => [
+                    "Following orderly procedural steps and verifying system feedback",
+                    "Interrupting operations while files are actively saving",
+                    "Disregarding safety warnings and operating instructions",
+                    "Assuming all hardware devices function identically without configuration",
+                ],
+                'correct_answer' => 0,
+                'hint' => "Reliable computing relies on systematic procedures.",
+                'explanation' => "Structured procedural execution ensures data integrity and system reliability.",
+            ];
+        } else {
+            $challenge2 = [
+                'type' => 'multiple-choice',
+                'prompt' => "When applying these principles in practice, what is the best approach?",
+                'options' => [
+                    "Follow the structured steps and verify your findings at each stage",
+                    "Skip steps to arrive at an answer faster",
+                    "Rely on guesswork instead of the lesson rules",
+                    "Apply rules from an unrelated subject",
+                ],
+                'correct_answer' => 0,
+                'hint' => "Review the core rules section above.",
+                'explanation' => "Systematic verification step-by-step prevents simple mistakes.",
+            ];
+        }
+
+        $segment2Content = "### Core Rules & Principles\n" . $rules;
+        if (!empty($workedExamples)) {
+            $segment2Content .= "\n\n### Worked Example\n" . $workedExamples;
+        }
+
+        $segments[] = [
+            'id' => 2,
+            'title' => "Part 2: Core Principles & Application",
+            'subtitle' => "How to work through problems step-by-step",
+            'content_html' => Str::markdown($segment2Content),
+            'challenge' => $challenge2,
+        ];
+
+        // SEGMENT 3: Synthesis & Real-World Mastery
+        $takeawaySummary = !empty($takeaways)
+            ? implode("\n- ", array_map(fn($t) => "**{$t}**", $takeaways))
+            : "Review and master the core techniques of {$cleanTitle}.";
+
+        $challenge3 = [
+            'type' => 'multiple-choice',
+            'prompt' => "To achieve full mastery in \"{$cleanTitle}\", which strategy ensures 100% accuracy?",
+            'options' => [
+                "Re-check calculations, verify against the core rules, and confirm the result makes logical sense",
+                "Submit answers immediately without re-reading the question",
+                "Assume the simplest answer is always right regardless of data",
+                "Memorize steps without understanding their underlying reasons",
+            ],
+            'correct_answer' => 0,
+            'hint' => "Think about how experts verify their solutions.",
+            'explanation' => "Mastery comes from double-checking logic and confirming that your solution satisfies the original question.",
+        ];
+
+        $segments[] = [
+            'id' => 3,
+            'title' => "Part 3: Concept Mastery & Reflection",
+            'subtitle' => "Essential takeaways and verification strategies",
+            'content_html' => Str::markdown("### 🎯 Essential Takeaways\n- " . $takeawaySummary),
+            'challenge' => $challenge3,
+        ];
+
+        return $segments;
+    }
 }
+
 

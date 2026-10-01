@@ -37,12 +37,14 @@ class StudentLessonService
         // 1. TIER 1: Check for attached textbook sections
         if ($indicator->textbookSections()->exists()) {
             $quiz = $this->getOrGenerateQuiz($indicator);
+            $segments = $this->getOrGenerateSegments($indicator);
             return [
                 'html' => '',
                 'markdown' => '',
                 'source' => 'textbook',
                 'key_takeaways' => $indicator->lesson_key_takeaways ?? [],
                 'quiz' => $quiz,
+                'interactive_segments' => $segments,
                 'has_textbook' => true,
             ];
         }
@@ -50,12 +52,14 @@ class StudentLessonService
         // 2. TIER 2: If we already have a cached AI lesson, return it instantly
         if (!empty($indicator->student_lesson_html) && $indicator->lesson_source === 'ai') {
             $quiz = $this->getOrGenerateQuiz($indicator);
+            $segments = $this->getOrGenerateSegments($indicator);
             return [
                 'html' => self::cleanMathTypography($indicator->student_lesson_html),
                 'markdown' => $indicator->student_lesson_markdown ?? '',
                 'source' => 'ai',
                 'key_takeaways' => self::formatTakeaways($indicator->lesson_key_takeaways ?? []),
                 'quiz' => $quiz,
+                'interactive_segments' => $segments,
                 'has_textbook' => false,
             ];
         }
@@ -68,6 +72,7 @@ class StudentLessonService
                     $cleanedHtml = self::cleanMathTypography($aiLesson['html']);
                     $formattedTakeaways = self::formatTakeaways($aiLesson['key_takeaways']);
                     $quiz = !empty($aiLesson['quiz']) ? $aiLesson['quiz'] : $this->localSynthesizer->synthesizeQuiz($indicator, $indicator->student_title, $indicator->subStrand?->strand?->curriculum?->subject?->name ?? 'Mathematics', $formattedTakeaways);
+                    $segments = $this->getOrGenerateSegments($indicator);
 
                     // Cache in database
                     $indicator->update([
@@ -76,6 +81,7 @@ class StudentLessonService
                         'lesson_source' => 'ai',
                         'lesson_key_takeaways' => $formattedTakeaways,
                         'lesson_quiz' => $quiz,
+                        'interactive_segments' => $segments,
                         'lesson_generated_at' => now(),
                     ]);
 
@@ -85,6 +91,7 @@ class StudentLessonService
                         'source' => 'ai',
                         'key_takeaways' => $formattedTakeaways,
                         'quiz' => $quiz,
+                        'interactive_segments' => $segments,
                         'has_textbook' => false,
                     ];
                 }
@@ -96,12 +103,14 @@ class StudentLessonService
         // 4. If we already have a cached local lesson (and AI was unavailable), return it
         if (!empty($indicator->student_lesson_html)) {
             $quiz = $this->getOrGenerateQuiz($indicator);
+            $segments = $this->getOrGenerateSegments($indicator);
             return [
                 'html' => self::cleanMathTypography($indicator->student_lesson_html),
                 'markdown' => $indicator->student_lesson_markdown ?? '',
                 'source' => $indicator->lesson_source ?? 'local',
                 'key_takeaways' => self::formatTakeaways($indicator->lesson_key_takeaways ?? []),
                 'quiz' => $quiz,
+                'interactive_segments' => $segments,
                 'has_textbook' => false,
             ];
         }
@@ -119,6 +128,7 @@ class StudentLessonService
         $cleanHtml = self::cleanMathTypography($localLesson['html']);
         $formattedTakeaways = self::formatTakeaways($localLesson['key_takeaways']);
         $quiz = $localLesson['quiz'] ?? $this->localSynthesizer->synthesizeQuiz($indicator, $indicator->student_title, $indicator->subStrand?->strand?->curriculum?->subject?->name ?? 'Mathematics', $formattedTakeaways);
+        $segments = $localLesson['interactive_segments'] ?? $this->getOrGenerateSegments($indicator);
 
         // Cache local lesson so page loads instantly
         $indicator->update([
@@ -127,6 +137,7 @@ class StudentLessonService
             'lesson_source' => 'local',
             'lesson_key_takeaways' => $formattedTakeaways,
             'lesson_quiz' => $quiz,
+            'interactive_segments' => $segments,
             'lesson_generated_at' => now(),
         ]);
 
@@ -136,6 +147,7 @@ class StudentLessonService
             'source' => 'local',
             'key_takeaways' => $formattedTakeaways,
             'quiz' => $quiz,
+            'interactive_segments' => $segments,
             'has_textbook' => false,
         ];
     }
@@ -156,6 +168,25 @@ class StudentLessonService
         $indicator->update(['lesson_quiz' => $quiz]);
 
         return $quiz;
+    }
+
+    /**
+     * Ensure indicator has interactive segments, synthesizing them if missing.
+     */
+    public function getOrGenerateSegments(CurriculumIndicator $indicator): array
+    {
+        if (!empty($indicator->interactive_segments) && is_array($indicator->interactive_segments) && count($indicator->interactive_segments) > 0) {
+            return $indicator->interactive_segments;
+        }
+
+        $localLesson = $this->localSynthesizer->synthesize($indicator);
+        $segments = $localLesson['interactive_segments'] ?? [];
+
+        if (!empty($segments)) {
+            $indicator->update(['interactive_segments' => $segments]);
+        }
+
+        return $segments;
     }
 
     /**
