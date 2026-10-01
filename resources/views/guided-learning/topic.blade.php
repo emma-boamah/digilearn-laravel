@@ -465,7 +465,7 @@
                                 <div class="grid grid-cols-1 gap-2.5 mb-4">
                                     @foreach($segment['challenge']['options'] as $optIdx => $option)
                                     <div @click="if (!completedSegments.includes({{ $segment['id'] }}) && !segmentChecking[{{ $segment['id'] }}]) { segmentAnswers[{{ $segment['id'] }}] = {{ $optIdx }}; }"
-                                         class="flex items-center gap-3 p-3.5 rounded-xl border text-xs font-medium transition-all"
+                                         class="flex items-center gap-3 p-3.5 rounded-xl border text-sm font-medium transition-all"
                                          :class="{
                                              'border-blue-600 bg-blue-50/70 dark:bg-blue-950/50 text-blue-900 dark:text-blue-100 shadow-2xs cursor-pointer': segmentAnswers[{{ $segment['id'] }}] === {{ $optIdx }} && !completedSegments.includes({{ $segment['id'] }}),
                                              'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-blue-300 cursor-pointer': segmentAnswers[{{ $segment['id'] }}] !== {{ $optIdx }} && !completedSegments.includes({{ $segment['id'] }}),
