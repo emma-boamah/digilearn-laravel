@@ -324,8 +324,221 @@
                     <div class="lesson-reader max-w-none whitespace-pre-line">{{ $indicator->exemplars }}</div>
                 </div>
                 @endif
+            @elseif(!empty($studentLesson['interactive_segments']) && is_array($studentLesson['interactive_segments']) && count($studentLesson['interactive_segments']) > 0)
+                <!-- Brilliant-Style Interleaved Interactive Learning Segments -->
+                <div class="space-y-8 mb-10" id="interactive-learning-flow">
+                    
+                    {{-- Interactive Segments Flow Header / Progress Tracker --}}
+                    <div class="flex items-center justify-between p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-2xs">
+                                <i class="fas fa-layer-group"></i>
+                            </span>
+                            <div>
+                                <h4 class="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider">Interactive Lesson Flow</h4>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                                    Read concept &bull; Solve embedded challenge &bull; Unlock next section
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <div class="text-right">
+                                <span class="text-xs font-bold text-blue-600 dark:text-blue-400">
+                                    <span x-text="completedSegments.length"></span> of {{ count($studentLesson['interactive_segments']) }} Solved
+                                </span>
+                                <div class="w-24 bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden mt-1">
+                                    <div class="bg-blue-600 h-full rounded-full transition-all duration-500"
+                                         :style="'width: ' + ((completedSegments.length / {{ count($studentLesson['interactive_segments']) }}) * 100) + '%'"></div>
+                                </div>
+                            </div>
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-[11px] font-bold text-amber-700 dark:text-amber-300">
+                                🔥 <span x-text="completedSegments.length"></span> Streak
+                            </span>
+                        </div>
+                    </div>
+
+                    {{-- Loop through each Segment --}}
+                    @foreach($studentLesson['interactive_segments'] as $index => $segment)
+                    @php $segNum = $index + 1; @endphp
+                    <div id="segment-card-{{ $segment['id'] }}"
+                         class="rounded-2xl border transition-all duration-300 overflow-hidden shadow-sm"
+                         :class="{
+                             'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700': isSegmentUnlocked({{ $segment['id'] }}),
+                             'bg-gray-50 dark:bg-gray-800/40 border-gray-200/60 dark:border-gray-800 opacity-60 pointer-events-none select-none': !isSegmentUnlocked({{ $segment['id'] }})
+                         }">
+                        
+                        {{-- Segment Header --}}
+                        <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700/60 flex items-center justify-between gap-4 bg-gray-50/50 dark:bg-gray-750/30">
+                            <div class="flex items-center gap-3">
+                                <span class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shadow-2xs"
+                                      :class="{
+                                          'bg-green-100 text-green-700 dark:bg-green-900/60 dark:text-green-300': completedSegments.includes({{ $segment['id'] }}),
+                                          'bg-blue-600 text-white': isSegmentUnlocked({{ $segment['id'] }}) && !completedSegments.includes({{ $segment['id'] }}),
+                                          'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400': !isSegmentUnlocked({{ $segment['id'] }})
+                                      }">
+                                    <template x-if="completedSegments.includes({{ $segment['id'] }})">
+                                        <i class="fas fa-check text-[11px]"></i>
+                                    </template>
+                                    <template x-if="!completedSegments.includes({{ $segment['id'] }})">
+                                        <span>{{ $segNum }}</span>
+                                    </template>
+                                </span>
+                                <div>
+                                    <h3 class="font-bold text-sm text-gray-900 dark:text-white">{{ $segment['title'] }}</h3>
+                                    @if(!empty($segment['subtitle']))
+                                    <p class="text-[11px] text-gray-500 dark:text-gray-400">{{ $segment['subtitle'] }}</p>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div>
+                                <template x-if="completedSegments.includes({{ $segment['id'] }})">
+                                    <span class="inline-flex items-center gap-1 text-[11px] font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/40 px-2 py-0.5 rounded-full border border-green-200 dark:border-green-900">
+                                        <i class="fas fa-check-circle text-[10px]"></i> Solved
+                                    </span>
+                                </template>
+                                <template x-if="!isSegmentUnlocked({{ $segment['id'] }})">
+                                    <span class="inline-flex items-center gap-1 text-[11px] font-medium text-gray-400">
+                                        <i class="fas fa-lock text-[10px]"></i> Locked
+                                    </span>
+                                </template>
+                            </div>
+                        </div>
+
+                        {{-- Segment Body (shown when unlocked) --}}
+                        <div class="p-6 sm:p-8 space-y-6">
+                            
+                            {{-- Concept Explanation --}}
+                            <div class="lesson-reader max-w-none">
+                                {!! $segment['content_html'] !!}
+                            </div>
+
+                            {{-- Embedded Hands-on Challenge Card --}}
+                            @if(!empty($segment['challenge']))
+                            <div class="p-5 sm:p-6 rounded-2xl border-2 transition-all"
+                                 :class="{
+                                     'border-green-500/40 bg-green-50/20 dark:bg-green-950/20': completedSegments.includes({{ $segment['id'] }}),
+                                     'border-blue-600/30 bg-blue-50/20 dark:bg-blue-950/10': !completedSegments.includes({{ $segment['id'] }})
+                                 }">
+                                
+                                <div class="flex items-center justify-between gap-3 mb-4">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-6 h-6 rounded-md bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold">
+                                            <i class="fas fa-puzzle-piece"></i>
+                                        </span>
+                                        <h4 class="text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white">
+                                            Interactive Challenge
+                                        </h4>
+                                    </div>
+
+                                    {{-- Hint Toggle Button --}}
+                                    @if(!empty($segment['challenge']['hint']))
+                                    <button type="button"
+                                            @click="toggleHint({{ $segment['id'] }})"
+                                            class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 hover:text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-900 transition-colors">
+                                        <i class="fas fa-lightbulb text-[10px]"></i>
+                                        <span x-text="hintsRevealed[{{ $segment['id'] }}] ? 'Hide Hint' : '💡 Need a hint?'"></span>
+                                    </button>
+                                    @endif
+                                </div>
+
+                                {{-- Challenge Prompt --}}
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white leading-relaxed mb-4">
+                                    {{ $segment['challenge']['prompt'] }}
+                                </p>
+
+                                {{-- Hint Drawer --}}
+                                @if(!empty($segment['challenge']['hint']))
+                                <div x-show="hintsRevealed[{{ $segment['id'] }}]"
+                                     x-transition
+                                     class="mb-4 p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-300 leading-relaxed flex items-start gap-2.5">
+                                    <i class="fas fa-info-circle text-amber-600 mt-0.5"></i>
+                                    <div>
+                                        <strong class="font-bold">Hint:</strong> {{ $segment['challenge']['hint'] }}
+                                    </div>
+                                </div>
+                                @endif
+
+                                {{-- Multiple Choice Options --}}
+                                @if(($segment['challenge']['type'] ?? 'multiple-choice') === 'multiple-choice')
+                                <div class="grid grid-cols-1 gap-2.5 mb-4">
+                                    @foreach($segment['challenge']['options'] as $optIdx => $option)
+                                    <label class="flex items-center gap-3 p-3.5 rounded-xl border text-xs font-medium cursor-pointer transition-all select-none"
+                                           :class="{
+                                               'border-blue-600 bg-blue-50/70 dark:bg-blue-950/50 text-blue-900 dark:text-blue-100 shadow-2xs': segmentAnswers[{{ $segment['id'] }}] === {{ $optIdx }} && !completedSegments.includes({{ $segment['id'] }}),
+                                               'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-blue-300': segmentAnswers[{{ $segment['id'] }}] !== {{ $optIdx }} && !completedSegments.includes({{ $segment['id'] }}),
+                                               'border-green-500 bg-green-50 dark:bg-green-950/40 text-green-900 dark:text-green-200 font-bold': completedSegments.includes({{ $segment['id'] }}) && {{ $optIdx }} === (segmentFeedback[{{ $segment['id'] }}]?.correct_answer ?? {{ $segment['challenge']['correct_answer'] ?? 0 }}),
+                                               'opacity-60 cursor-default': completedSegments.includes({{ $segment['id'] }})
+                                           }">
+                                        <input type="radio"
+                                               name="segment_opt_{{ $segment['id'] }}"
+                                               value="{{ $optIdx }}"
+                                               x-model.number="segmentAnswers[{{ $segment['id'] }}]"
+                                               :disabled="completedSegments.includes({{ $segment['id'] }}) || segmentChecking[{{ $segment['id'] }}]"
+                                               class="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+                                        <span class="flex-1">{!! $option !!}</span>
+                                    </label>
+                                    @endforeach
+                                </div>
+                                @endif
+
+                                {{-- Feedback & Explanation Box --}}
+                                <div x-show="segmentFeedback[{{ $segment['id'] }}]" class="mb-4">
+                                    <template x-if="segmentFeedback[{{ $segment['id'] }}]?.is_correct">
+                                        <div class="p-3.5 rounded-xl bg-green-100 dark:bg-green-900/40 border border-green-200 dark:border-green-800 text-xs text-green-900 dark:text-green-200 space-y-1">
+                                            <div class="flex items-center gap-1.5 font-bold">
+                                                <i class="fas fa-check-circle text-green-600"></i>
+                                                <span>Awesome! Correct answer.</span>
+                                            </div>
+                                            <p class="leading-relaxed" x-text="segmentFeedback[{{ $segment['id'] }}]?.explanation"></p>
+                                        </div>
+                                    </template>
+                                    <template x-if="segmentFeedback[{{ $segment['id'] }}] && !segmentFeedback[{{ $segment['id'] }}]?.is_correct">
+                                        <div class="p-3.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-xs text-red-900 dark:text-red-200 space-y-1">
+                                            <div class="flex items-center gap-1.5 font-bold">
+                                                <i class="fas fa-times-circle text-red-500"></i>
+                                                <span>Not quite right. Review the explanation or click the hint to try again!</span>
+                                            </div>
+                                            <p class="leading-relaxed text-gray-700 dark:text-gray-300" x-text="segmentFeedback[{{ $segment['id'] }}]?.explanation"></p>
+                                        </div>
+                                    </template>
+                                </div>
+
+                                {{-- Action Buttons --}}
+                                <div class="flex items-center justify-between gap-3 pt-2">
+                                    <template x-if="!completedSegments.includes({{ $segment['id'] }})">
+                                        <button type="button"
+                                                @click="checkSegmentChallenge({{ $segment['id'] }})"
+                                                :disabled="segmentAnswers[{{ $segment['id'] }}] === undefined || segmentChecking[{{ $segment['id'] }}]"
+                                                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold shadow-md transition-all">
+                                            <template x-if="segmentChecking[{{ $segment['id'] }}]">
+                                                <i class="fas fa-spinner fa-spin"></i>
+                                            </template>
+                                            <template x-if="!segmentChecking[{{ $segment['id'] }}]">
+                                                <i class="fas fa-arrow-right text-[10px]"></i>
+                                            </template>
+                                            <span x-text="segmentChecking[{{ $segment['id'] }}] ? 'Checking...' : 'Check & Unlock Next'"></span>
+                                        </button>
+                                    </template>
+
+                                    <template x-if="completedSegments.includes({{ $segment['id'] }})">
+                                        <span class="inline-flex items-center gap-1.5 text-xs font-bold text-green-700 dark:text-green-300">
+                                            <i class="fas fa-check-double text-green-600"></i> Segment Mastered & Unlocked
+                                        </span>
+                                    </template>
+                                </div>
+
+                            </div>
+                            @endif
+
+                        </div>
+                    </div>
+                    @endforeach
+
+                </div>
             @elseif(!empty($studentLesson['html']))
-                <!-- Synthesized / AI Student Lesson (Interactive & Explained for Students) -->
+                <!-- Fallback: Standard Synthesized Student Lesson -->
                 <div class="mb-10 rounded-2xl border border-gray-200/90 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 sm:p-10 shadow-sm space-y-6">
                     <div class="lesson-reader max-w-none">
                         {!! $studentLesson['html'] !!}
@@ -801,6 +1014,95 @@ function topicReaderApp() {
         quizFeedbackMessage: '',
         quizResultsMap: {},
         retakingQuiz: false,
+
+        // Brilliant-Style Interactive Segments State
+        interactiveSegments: @json($studentLesson['interactive_segments'] ?? []),
+        completedSegments: {{ ($progress && ($progress->quiz_passed_at !== null || $progress->status === 'completed')) ? json_encode(array_column($studentLesson['interactive_segments'] ?? [], 'id')) : '[]' }},
+        segmentAnswers: {},
+        segmentFeedback: {},
+        segmentChecking: {},
+        hintsRevealed: {},
+
+        isSegmentUnlocked(segmentId) {
+            // If already completed or topic is mastered, unlock all
+            if (this.status === 'completed') return true;
+            if (this.completedSegments.includes(segmentId)) return true;
+
+            // First segment is always unlocked
+            const segIndex = this.interactiveSegments.findIndex(s => s.id === segmentId);
+            if (segIndex <= 0) return true;
+
+            // Prior segment must be completed
+            const prevSeg = this.interactiveSegments[segIndex - 1];
+            return prevSeg && this.completedSegments.includes(prevSeg.id);
+        },
+
+        toggleHint(segmentId) {
+            this.hintsRevealed[segmentId] = !this.hintsRevealed[segmentId];
+        },
+
+        async checkSegmentChallenge(segmentId) {
+            const answer = this.segmentAnswers[segmentId];
+            if (answer === undefined) return;
+
+            this.segmentChecking[segmentId] = true;
+
+            try {
+                const response = await fetch(`/guided-learning/topic/{{ $encodedIndicatorId ?? $indicator->id }}/verify-segment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        segment_id: segmentId,
+                        answer: answer,
+                        completed_segments: this.completedSegments
+                    })
+                });
+
+                const data = await response.json();
+                this.segmentChecking[segmentId] = false;
+
+                if (data.success) {
+                    this.segmentFeedback[segmentId] = data;
+
+                    if (data.is_correct) {
+                        if (!this.completedSegments.includes(segmentId)) {
+                            this.completedSegments.push(segmentId);
+                        }
+
+                        // If all segments solved, mark completed!
+                        if (data.all_completed) {
+                            this.status = 'completed';
+                            this.quizPassed = true;
+
+                            if (data.next_url) {
+                                setTimeout(() => {
+                                    window.location.href = data.next_url;
+                                }, 2400);
+                            }
+                        } else {
+                            // Find and scroll to next segment
+                            const segIndex = this.interactiveSegments.findIndex(s => s.id === segmentId);
+                            if (segIndex >= 0 && segIndex < this.interactiveSegments.length - 1) {
+                                const nextSeg = this.interactiveSegments[segIndex + 1];
+                                setTimeout(() => {
+                                    const nextCard = document.getElementById(`segment-card-${nextSeg.id}`);
+                                    if (nextCard) {
+                                        nextCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }
+                                }, 500);
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                this.segmentChecking[segmentId] = false;
+                console.error(e);
+            }
+        },
 
         triggerCheckpoint() {
             const gate = document.getElementById('topic-checkpoint-gate');

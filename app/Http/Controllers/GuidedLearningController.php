@@ -343,6 +343,98 @@ class GuidedLearningController extends Controller
     }
 
     /**
+     * Verify student answer for an interleaved interactive segment challenge.
+     * Evaluates server-side, returns feedback/hint, and updates progression.
+     */
+    public function verifySegment(Request $request, string|int $indicator): JsonResponse
+    {
+        $user = Auth::user();
+        $indicatorId = UrlObfuscator::decode($indicator) ?? $indicator;
+        $indicatorModel = CurriculumIndicator::findOrFail($indicatorId);
+
+        $segmentId = (int) $request->input('segment_id');
+        $studentAnswer = $request->input('answer');
+
+        $segments = app(\App\Services\StudentLessonService::class)->getOrGenerateSegments($indicatorModel);
+        $targetSegment = collect($segments)->firstWhere('id', $segmentId);
+
+        if (!$targetSegment || empty($targetSegment['challenge'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Segment challenge not found.',
+            ], 404);
+        }
+
+        $challenge = $targetSegment['challenge'];
+        $type = $challenge['type'] ?? 'multiple-choice';
+        $correctAnswer = $challenge['correct_answer'] ?? 0;
+        $isCorrect = false;
+
+        if ($type === 'multiple-choice') {
+            $isCorrect = ((int) $studentAnswer === (int) $correctAnswer);
+        } else {
+            // Numeric or text input matching (cleans commas, whitespace, dollar signs)
+            $cleanStudent = strtolower(trim(str_replace([',', '$', ' '], '', (string) $studentAnswer)));
+            $cleanCorrect = strtolower(trim(str_replace([',', '$', ' '], '', (string) $correctAnswer)));
+            $isCorrect = ($cleanStudent === $cleanCorrect);
+        }
+
+        // Check if this was the last segment in the indicator
+        $totalSegments = count($segments);
+        $completedSegments = (array) $request->input('completed_segments', []);
+        if ($isCorrect && !in_array($segmentId, $completedSegments)) {
+            $completedSegments[] = $segmentId;
+        }
+
+        $allSegmentsCompleted = count($completedSegments) >= $totalSegments;
+
+        // If all segments solved, mark progress completed!
+        $nextUrl = null;
+        if ($allSegmentsCompleted) {
+            $progress = GuidedLearningProgress::firstOrCreate(
+                ['user_id' => $user->id, 'curriculum_indicator_id' => $indicatorModel->id],
+                ['status' => 'in_progress']
+            );
+
+            $progress->status = 'completed';
+            $progress->completed_at = now();
+            $progress->quiz_passed_at = now();
+            $progress->quiz_score = 100;
+            $progress->save();
+
+            // Next topic URL
+            $curriculum = $indicatorModel->subStrand?->strand?->curriculum;
+            if ($curriculum) {
+                $allIndicators = CurriculumIndicator::whereHas('subStrand.strand', function ($q) use ($curriculum) {
+                    $q->where('curriculum_id', $curriculum->id);
+                })->orderBy('id')->pluck('id')->toArray();
+
+                $currentIndex = array_search($indicatorModel->id, $allIndicators);
+                if ($currentIndex !== false && $currentIndex < count($allIndicators) - 1) {
+                    $nextIndicatorId = $allIndicators[$currentIndex + 1];
+                    $nextUrl = route('guided-learning.topic', UrlObfuscator::encode($nextIndicatorId));
+                } else {
+                    $nextUrl = route('guided-learning.index', [
+                        'subject_id' => UrlObfuscator::encode($curriculum->subject_id ?? 1)
+                    ]);
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'is_correct' => $isCorrect,
+            'correct_answer' => $correctAnswer,
+            'explanation' => $challenge['explanation'] ?? '',
+            'hint' => $challenge['hint'] ?? '',
+            'segment_id' => $segmentId,
+            'completed_segments' => $completedSegments,
+            'all_completed' => $allSegmentsCompleted,
+            'next_url' => $nextUrl,
+        ]);
+    }
+
+    /**
      * Save student personal notes for an indicator.
      */
     public function saveNotes(Request $request, string|int $indicator): JsonResponse

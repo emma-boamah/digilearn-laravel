@@ -23,6 +23,7 @@ class CurriculumIndicator extends Model
         'lesson_source',
         'lesson_key_takeaways',
         'lesson_quiz',
+        'interactive_segments',
         'lesson_generated_at',
         'sort_order',
     ];
@@ -30,6 +31,7 @@ class CurriculumIndicator extends Model
     protected $casts = [
         'lesson_key_takeaways' => 'array',
         'lesson_quiz' => 'array',
+        'interactive_segments' => 'array',
         'lesson_generated_at' => 'datetime',
     ];
 
