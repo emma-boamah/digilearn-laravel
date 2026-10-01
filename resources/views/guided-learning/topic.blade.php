@@ -181,17 +181,17 @@
             <template x-if="status === 'completed'">
                 <button type="button" 
                         @click="toggleComplete()"
-                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-2xs border-2 border-blue-600 bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400">
+                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-2xs border-2 border-green-500 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300">
                     <i class="fas fa-check-circle"></i>
-                    <span>Checkpoint Completed</span>
+                    <span>Completed</span>
                 </button>
             </template>
             <template x-if="status !== 'completed'">
                 <button type="button" 
-                        @click="triggerCheckpoint()"
+                        @click="scrollToInteractiveFlow()"
                         class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-2xs bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200">
-                    <i class="fas fa-tasks text-blue-600"></i>
-                    <span>Pass Checkpoint to Complete</span>
+                    <i class="fas fa-layer-group text-blue-600"></i>
+                    <span>Complete Challenges</span>
                 </button>
             </template>
 
@@ -464,21 +464,20 @@
                                 @if(($segment['challenge']['type'] ?? 'multiple-choice') === 'multiple-choice')
                                 <div class="grid grid-cols-1 gap-2.5 mb-4">
                                     @foreach($segment['challenge']['options'] as $optIdx => $option)
-                                    <label class="flex items-center gap-3 p-3.5 rounded-xl border text-xs font-medium cursor-pointer transition-all select-none"
-                                           :class="{
-                                               'border-blue-600 bg-blue-50/70 dark:bg-blue-950/50 text-blue-900 dark:text-blue-100 shadow-2xs': segmentAnswers[{{ $segment['id'] }}] === {{ $optIdx }} && !completedSegments.includes({{ $segment['id'] }}),
-                                               'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-blue-300': segmentAnswers[{{ $segment['id'] }}] !== {{ $optIdx }} && !completedSegments.includes({{ $segment['id'] }}),
-                                               'border-green-500 bg-green-50 dark:bg-green-950/40 text-green-900 dark:text-green-200 font-bold': completedSegments.includes({{ $segment['id'] }}) && {{ $optIdx }} === (segmentFeedback[{{ $segment['id'] }}]?.correct_answer ?? {{ $segment['challenge']['correct_answer'] ?? 0 }}),
-                                               'opacity-60 cursor-default': completedSegments.includes({{ $segment['id'] }})
-                                           }">
-                                        <input type="radio"
-                                               name="segment_opt_{{ $segment['id'] }}"
-                                               value="{{ $optIdx }}"
-                                               x-model.number="segmentAnswers[{{ $segment['id'] }}]"
-                                               :disabled="completedSegments.includes({{ $segment['id'] }}) || segmentChecking[{{ $segment['id'] }}]"
-                                               class="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+                                    <div @click="if (!completedSegments.includes({{ $segment['id'] }}) && !segmentChecking[{{ $segment['id'] }}]) { segmentAnswers[{{ $segment['id'] }}] = {{ $optIdx }}; }"
+                                         class="flex items-center gap-3 p-3.5 rounded-xl border text-xs font-medium transition-all"
+                                         :class="{
+                                             'border-blue-600 bg-blue-50/70 dark:bg-blue-950/50 text-blue-900 dark:text-blue-100 shadow-2xs cursor-pointer': segmentAnswers[{{ $segment['id'] }}] === {{ $optIdx }} && !completedSegments.includes({{ $segment['id'] }}),
+                                             'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-blue-300 cursor-pointer': segmentAnswers[{{ $segment['id'] }}] !== {{ $optIdx }} && !completedSegments.includes({{ $segment['id'] }}),
+                                             'border-green-500 bg-green-50 dark:bg-green-950/40 text-green-900 dark:text-green-200 font-bold': completedSegments.includes({{ $segment['id'] }}) && {{ $optIdx }} === (segmentFeedback[{{ $segment['id'] }}]?.correct_answer ?? {{ $segment['challenge']['correct_answer'] ?? 0 }}),
+                                             'opacity-60 cursor-default': completedSegments.includes({{ $segment['id'] }})
+                                         }">
+                                        <span class="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+                                              :class="segmentAnswers[{{ $segment['id'] }}] === {{ $optIdx }} ? 'border-blue-600 bg-blue-600' : 'border-gray-300 dark:border-gray-600'">
+                                            <span x-show="segmentAnswers[{{ $segment['id'] }}] === {{ $optIdx }}" class="w-1.5 h-1.5 rounded-full bg-white"></span>
+                                        </span>
                                         <span class="flex-1">{!! $option !!}</span>
-                                    </label>
+                                    </div>
                                     @endforeach
                                 </div>
                                 @endif
@@ -571,178 +570,6 @@
                     class="w-full text-xs rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-750 text-gray-900 dark:text-white p-3.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"></textarea>
             </div>
 
-            <!-- Topic Mastery Checkpoint (Mandatory Gate) -->
-            <div id="topic-checkpoint-gate" class="bg-white dark:bg-gray-800 rounded-2xl border-2 transition-all p-6 sm:p-7 mb-8 shadow-sm"
-                 :class="status === 'completed' ? 'border-green-500/40 bg-green-50/10 dark:bg-green-950/10' : 'border-blue-600/30 dark:border-blue-500/30'">
-                
-                {{-- Header --}}
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-gray-100 dark:border-gray-700/60">
-                    <div class="flex items-center gap-3">
-                        <div class="w-11 h-11 rounded-xl flex items-center justify-center text-lg font-bold shadow-2xs"
-                             :class="status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/60 dark:text-green-300' : 'bg-blue-600 text-white'">
-                            <template x-if="status === 'completed'">
-                                <i class="fas fa-check"></i>
-                            </template>
-                            <template x-if="status !== 'completed'">
-                                <i class="fas fa-shield-alt"></i>
-                            </template>
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <h3 class="font-extrabold text-base text-gray-900 dark:text-white">Topic Mastery Checkpoint</h3>
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
-                                      :class="status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' : 'bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'">
-                                    <span x-text="status === 'completed' ? 'Checkpoint Passed (100%)' : 'Required to Complete'"></span>
-                                </span>
-                            </div>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                Answer all questions correctly to verify your comprehension and unlock topic completion.
-                            </p>
-                        </div>
-                    </div>
-
-                    {{-- Retake button if already passed --}}
-                    <template x-if="status === 'completed' && !retakingQuiz">
-                        <button type="button" @click="startRetake()"
-                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700/60 transition-colors border border-gray-200 dark:border-gray-700">
-                            <i class="fas fa-redo text-[10px]"></i>
-                            <span>Retake Practice</span>
-                        </button>
-                    </template>
-                </div>
-
-                {{-- Passed Celebration Card --}}
-                <template x-if="status === 'completed' && !retakingQuiz">
-                    <div class="py-6 text-center space-y-4">
-                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-300 text-3xl mx-auto shadow-inner">
-                            <i class="fas fa-award"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-lg font-bold text-gray-900 dark:text-white">Checkpoint Mastered!</h4>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 max-w-md mx-auto mt-1">
-                                You demonstrated complete understanding of <span class="font-semibold text-gray-700 dark:text-gray-200">{{ $indicator->student_title }}</span>.
-                            </p>
-                        </div>
-
-                        <div class="flex items-center justify-center gap-3 pt-2">
-                            @if($nextIndicatorId)
-                            <a href="{{ route('guided-learning.topic', $nextIndicatorId) }}"
-                               class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md transition-all">
-                                <span>Continue to Next Topic</span>
-                                <i class="fas fa-arrow-right text-[10px]"></i>
-                            </a>
-                            @else
-                            <a href="{{ route('guided-learning.index', ['subject_id' => $encodedSubjectId ?? $subject->id]) }}"
-                               class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md transition-all">
-                                <i class="fas fa-flag-checkered"></i>
-                                <span>Roadmap Completed! Back to Subjects</span>
-                            </a>
-                            @endif
-                        </div>
-                    </div>
-                </template>
-
-                {{-- Active Checkpoint Quiz Form --}}
-                <template x-if="status !== 'completed' || retakingQuiz">
-                    <form @submit.prevent="submitCheckpointQuiz()" class="pt-6 space-y-6">
-                        
-                        {{-- Question List --}}
-                        <template x-for="(q, qIndex) in quizQuestions" :key="q.id">
-                            <div class="p-5 rounded-xl bg-gray-50/70 dark:bg-gray-750/50 border border-gray-200/70 dark:border-gray-700/60 space-y-3.5 transition-all">
-                                <div class="flex items-start gap-3">
-                                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600/10 text-blue-600 dark:text-blue-400 text-xs font-bold flex-shrink-0"
-                                          x-text="qIndex + 1"></span>
-                                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white leading-snug pt-0.5"
-                                        x-text="q.question"></h4>
-                                </div>
-
-                                {{-- Options (Radio micro-cards) --}}
-                                <div class="grid grid-cols-1 gap-2.5 pl-9">
-                                    <template x-for="(option, optIndex) in q.options" :key="optIndex">
-                                        <label class="flex items-center gap-3 p-3 rounded-xl border text-xs font-medium cursor-pointer transition-all select-none"
-                                               :class="{
-                                                   'border-blue-600 bg-blue-50/60 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200 shadow-2xs': selectedAnswers[q.id] === optIndex && !quizSubmitted,
-                                                   'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600': selectedAnswers[q.id] !== optIndex && !quizSubmitted,
-                                                   'border-green-500 bg-green-50 dark:bg-green-950/40 text-green-900 dark:text-green-200 font-semibold': quizSubmitted && quizResultsMap[q.id] && quizResultsMap[q.id].correct_answer === optIndex,
-                                                   'border-red-400 bg-red-50 dark:bg-red-950/40 text-red-900 dark:text-red-200': quizSubmitted && quizResultsMap[q.id] && selectedAnswers[q.id] === optIndex && !quizResultsMap[q.id].is_correct
-                                               }">
-                                            <input type="radio" :name="'question_' + q.id" :value="optIndex"
-                                                   x-model.number="selectedAnswers[q.id]"
-                                                   :disabled="quizSubmitting"
-                                                   class="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300">
-                                            <span class="flex-1" x-text="option"></span>
-                                            
-                                            {{-- Correct/Incorrect icons on feedback --}}
-                                            <template x-if="quizSubmitted && quizResultsMap[q.id]">
-                                                <span>
-                                                    <template x-if="quizResultsMap[q.id].correct_answer === optIndex">
-                                                        <i class="fas fa-check-circle text-green-600 dark:text-green-400 text-sm"></i>
-                                                    </template>
-                                                    <template x-if="selectedAnswers[q.id] === optIndex && !quizResultsMap[q.id].is_correct">
-                                                        <i class="fas fa-times-circle text-red-500 text-sm"></i>
-                                                    </template>
-                                                </span>
-                                            </template>
-                                        </label>
-                                    </template>
-                                </div>
-
-                                {{-- Question Explanation Feedback Card --}}
-                                <template x-if="quizSubmitted && quizResultsMap[q.id] && !quizResultsMap[q.id].is_correct">
-                                    <div class="ml-9 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-xs text-amber-800 dark:text-amber-300 space-y-1">
-                                        <div class="flex items-center gap-1.5 font-bold">
-                                            <i class="fas fa-info-circle text-[11px]"></i>
-                                            <span>Concept Review:</span>
-                                        </div>
-                                        <p class="leading-relaxed" x-text="quizResultsMap[q.id].explanation"></p>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
-
-                        {{-- Submission feedback banner --}}
-                        <template x-if="quizFeedbackMessage">
-                            <div class="p-4 rounded-xl text-xs font-medium flex items-center justify-between gap-3 shadow-2xs"
-                                 :class="quizPassed ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800'">
-                                <div class="flex items-center gap-2.5">
-                                    <i class="fas text-sm" :class="quizPassed ? 'fa-check-circle text-green-600' : 'fa-exclamation-circle text-red-500'"></i>
-                                    <span x-text="quizFeedbackMessage"></span>
-                                </div>
-                                <template x-if="!quizPassed">
-                                    <button type="button" @click="resetForRetry()"
-                                            class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold transition-colors">
-                                        Try Again
-                                    </button>
-                                </template>
-                            </div>
-                        </template>
-
-                        {{-- Action buttons --}}
-                        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-                            <div class="text-xs text-gray-500 dark:text-gray-400">
-                                <span class="font-semibold text-gray-700 dark:text-gray-200" x-text="Object.keys(selectedAnswers).length"></span>
-                                of <span x-text="quizQuestions.length"></span> questions answered
-                            </div>
-
-                            <div class="flex items-center gap-3 w-full sm:w-auto">
-                                <button type="submit"
-                                        :disabled="quizSubmitting || Object.keys(selectedAnswers).length < quizQuestions.length"
-                                        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold transition-all shadow-md">
-                                    <template x-if="quizSubmitting">
-                                        <i class="fas fa-spinner fa-spin"></i>
-                                    </template>
-                                    <template x-if="!quizSubmitting">
-                                        <i class="fas fa-check-double"></i>
-                                    </template>
-                                    <span x-text="quizSubmitting ? 'Verifying Answers...' : 'Submit Checkpoint Answers'"></span>
-                                </button>
-                            </div>
-                        </div>
-
-                    </form>
-                </template>
-
-            </div>
 
         </div>{{-- END left column --}}
 
@@ -829,7 +656,7 @@
             <a href="{{ route('guided-learning.topic', $prevIndicatorId) }}"
                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <i class="fas fa-chevron-left text-[10px]"></i>
-                <span class="hidden sm:inline">Previous Checkpoint</span>
+                <span class="hidden sm:inline">Previous Topic</span>
                 <span class="sm:hidden">Prev</span>
             </a>
         @else
@@ -840,17 +667,17 @@
             <template x-if="status === 'completed'">
                 <button type="button" 
                         @click="toggleComplete()"
-                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border border-blue-600 bg-gray-100 dark:bg-gray-700 text-blue-600 dark:text-blue-400">
+                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border border-green-500 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300">
                     <i class="fas fa-check-circle"></i>
                     <span>Completed</span>
                 </button>
             </template>
             <template x-if="status !== 'completed'">
                 <button type="button" 
-                        @click="triggerCheckpoint()"
+                        @click="scrollToInteractiveFlow()"
                         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all bg-blue-600 hover:bg-blue-700 text-white shadow-2xs">
-                    <i class="fas fa-tasks"></i>
-                    <span>Pass Checkpoint</span>
+                    <i class="fas fa-layer-group"></i>
+                    <span>Complete Challenges</span>
                 </button>
             </template>
 
@@ -858,7 +685,7 @@
             <button type="button"
                     @click="handleCompleteAndNext('{{ route('guided-learning.topic', $nextIndicatorId) }}')"
                     class="inline-flex items-center gap-2 px-5 py-2 rounded-xl border-2 border-blue-600 bg-gray-50 hover:bg-blue-50/60 dark:bg-gray-750 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400 text-xs font-bold shadow-2xs transition-all">
-                <span>Next Checkpoint</span>
+                <span>Next Topic</span>
                 <i class="fas fa-arrow-right text-[10px]"></i>
             </button>
             @else
@@ -1005,23 +832,15 @@ function topicReaderApp() {
         notes: @json($progress->notes ?? ''),
         saveStatus: 'Saved',
 
-        // Checkpoint Quiz State
-        quizQuestions: @json($studentLesson['quiz'] ?? []),
-        selectedAnswers: {},
-        quizSubmitting: false,
-        quizSubmitted: false,
-        quizPassed: {{ ($progress && ($progress->quiz_passed_at !== null || $progress->status === 'completed')) ? 'true' : 'false' }},
-        quizFeedbackMessage: '',
-        quizResultsMap: {},
-        retakingQuiz: false,
-
         // Brilliant-Style Interactive Segments State
         interactiveSegments: @json($studentLesson['interactive_segments'] ?? []),
         completedSegments: {{ ($progress && ($progress->quiz_passed_at !== null || $progress->status === 'completed')) ? json_encode(array_column($studentLesson['interactive_segments'] ?? [], 'id')) : '[]' }},
-        segmentAnswers: {},
-        segmentFeedback: {},
-        segmentChecking: {},
-        hintsRevealed: {},
+
+        // Pre-initialized segment state objects for Alpine reactivity
+        segmentAnswers: { @foreach($studentLesson['interactive_segments'] ?? [] as $seg){{ $seg['id'] }}: undefined,@endforeach },
+        segmentFeedback: { @foreach($studentLesson['interactive_segments'] ?? [] as $seg){{ $seg['id'] }}: null,@endforeach },
+        segmentChecking: { @foreach($studentLesson['interactive_segments'] ?? [] as $seg){{ $seg['id'] }}: false,@endforeach },
+        hintsRevealed: { @foreach($studentLesson['interactive_segments'] ?? [] as $seg){{ $seg['id'] }}: false,@endforeach },
 
         isSegmentUnlocked(segmentId) {
             // If already completed or topic is mastered, unlock all
@@ -1039,6 +858,15 @@ function topicReaderApp() {
 
         toggleHint(segmentId) {
             this.hintsRevealed[segmentId] = !this.hintsRevealed[segmentId];
+        },
+
+        scrollToInteractiveFlow() {
+            const flow = document.getElementById('interactive-learning-flow');
+            if (flow) {
+                flow.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                flow.classList.add('ring-4', 'ring-blue-500/30');
+                setTimeout(() => flow.classList.remove('ring-4', 'ring-blue-500/30'), 1500);
+            }
         },
 
         async checkSegmentChallenge(segmentId) {
@@ -1076,7 +904,6 @@ function topicReaderApp() {
                         // If all segments solved, mark completed!
                         if (data.all_completed) {
                             this.status = 'completed';
-                            this.quizPassed = true;
 
                             if (data.next_url) {
                                 setTimeout(() => {
@@ -1104,96 +931,14 @@ function topicReaderApp() {
             }
         },
 
-        triggerCheckpoint() {
-            const gate = document.getElementById('topic-checkpoint-gate');
-            if (gate) {
-                gate.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                gate.classList.add('ring-4', 'ring-blue-500/50');
-                setTimeout(() => gate.classList.remove('ring-4', 'ring-blue-500/50'), 1500);
-            }
-        },
-
-        startRetake() {
-            this.retakingQuiz = true;
-            this.selectedAnswers = {};
-            this.quizSubmitted = false;
-            this.quizFeedbackMessage = '';
-            this.quizResultsMap = {};
-            this.triggerCheckpoint();
-        },
-
-        resetForRetry() {
-            this.quizSubmitted = false;
-            this.quizFeedbackMessage = '';
-            this.quizResultsMap = {};
-            this.triggerCheckpoint();
-        },
-
         async handleCompleteAndNext(nextUrl) {
             if (this.status === 'completed') {
                 window.location.href = nextUrl;
                 return;
             }
 
-            // Must pass checkpoint first
-            this.triggerCheckpoint();
-        },
-
-        async submitCheckpointQuiz() {
-            if (Object.keys(this.selectedAnswers).length < this.quizQuestions.length) {
-                alert('Please answer all questions before submitting.');
-                return;
-            }
-
-            this.quizSubmitting = true;
-            this.quizFeedbackMessage = '';
-
-            try {
-                const response = await fetch(`/guided-learning/topic/{{ $encodedIndicatorId ?? $indicator->id }}/quiz`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        answers: this.selectedAnswers
-                    })
-                });
-
-                const data = await response.json();
-                this.quizSubmitting = false;
-
-                if (data.success) {
-                    this.quizSubmitted = true;
-                    this.quizPassed = data.passed;
-                    this.quizResultsMap = {};
-                    (data.results || []).forEach(r => {
-                        this.quizResultsMap[r.id] = r;
-                    });
-
-                    if (data.passed) {
-                        this.status = 'completed';
-                        this.retakingQuiz = false;
-                        this.quizFeedbackMessage = 'Outstanding! 100% correct — Checkpoint mastered!';
-                        
-                        // Auto advance if nextUrl is available after a 2-second celebration
-                        if (data.next_url) {
-                            setTimeout(() => {
-                                window.location.href = data.next_url;
-                            }, 2200);
-                        }
-                    } else {
-                        this.quizFeedbackMessage = `You scored ${data.correct_count} of ${data.total} (${data.score}%). 100% is required to complete this checkpoint. Review the concepts below and try again!`;
-                    }
-                } else {
-                    this.quizFeedbackMessage = data.message || 'Error evaluating answers. Please try again.';
-                }
-            } catch (e) {
-                this.quizSubmitting = false;
-                this.quizFeedbackMessage = 'Connection error. Please try again.';
-                console.error(e);
-            }
+            // Scroll to interactive challenges if not yet completed
+            this.scrollToInteractiveFlow();
         },
 
         async toggleComplete() {
@@ -1212,8 +957,8 @@ function topicReaderApp() {
                 const data = await response.json();
                 if (data.success) {
                     this.status = data.status;
-                } else if (data.requires_quiz) {
-                    this.triggerCheckpoint();
+                } else if (data.requires_interactive) {
+                    this.scrollToInteractiveFlow();
                 }
             } catch (e) {
                 console.error('Failed to update status:', e);

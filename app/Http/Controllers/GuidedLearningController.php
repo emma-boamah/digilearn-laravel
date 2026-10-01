@@ -216,8 +216,8 @@ class GuidedLearningController extends Controller
             if (!$hasPassedQuiz) {
                 return response()->json([
                     'success' => false,
-                    'requires_quiz' => true,
-                    'message' => 'Please complete and pass the Checkpoint Quiz before marking this topic as completed.',
+                    'requires_interactive' => true,
+                    'message' => 'Please complete all interactive challenges before marking this topic as completed.',
                 ], 422);
             }
         }
