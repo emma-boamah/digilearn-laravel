@@ -22,12 +22,14 @@ class CurriculumIndicator extends Model
         'student_lesson_html',
         'lesson_source',
         'lesson_key_takeaways',
+        'lesson_quiz',
         'lesson_generated_at',
         'sort_order',
     ];
 
     protected $casts = [
         'lesson_key_takeaways' => 'array',
+        'lesson_quiz' => 'array',
         'lesson_generated_at' => 'datetime',
     ];
 

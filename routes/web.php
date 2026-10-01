@@ -271,6 +271,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [GuidedLearningController::class, 'index'])->name('index');
         Route::get('/topic/{indicator}', [GuidedLearningController::class, 'topic'])->name('topic');
         Route::post('/topic/{indicator}/toggle', [GuidedLearningController::class, 'toggleStatus'])->name('toggle');
+        Route::post('/topic/{indicator}/quiz', [GuidedLearningController::class, 'submitQuiz'])->name('quiz.submit');
         Route::post('/topic/{indicator}/notes', [GuidedLearningController::class, 'saveNotes'])->name('notes');
     });
 

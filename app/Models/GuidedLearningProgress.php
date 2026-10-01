@@ -19,12 +19,18 @@ class GuidedLearningProgress extends Model
         'status',
         'completed_at',
         'time_spent_seconds',
+        'quiz_score',
+        'quiz_attempts',
+        'quiz_passed_at',
         'notes',
     ];
 
     protected $casts = [
         'completed_at' => 'datetime',
+        'quiz_passed_at' => 'datetime',
         'time_spent_seconds' => 'integer',
+        'quiz_score' => 'integer',
+        'quiz_attempts' => 'integer',
     ];
 
     public function user(): BelongsTo
