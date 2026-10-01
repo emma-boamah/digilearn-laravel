@@ -36,22 +36,26 @@ class StudentLessonService
     {
         // 1. TIER 1: Check for attached textbook sections
         if ($indicator->textbookSections()->exists()) {
+            $quiz = $this->getOrGenerateQuiz($indicator);
             return [
                 'html' => '',
                 'markdown' => '',
                 'source' => 'textbook',
                 'key_takeaways' => $indicator->lesson_key_takeaways ?? [],
+                'quiz' => $quiz,
                 'has_textbook' => true,
             ];
         }
 
         // 2. TIER 2: If we already have a cached AI lesson, return it instantly
         if (!empty($indicator->student_lesson_html) && $indicator->lesson_source === 'ai') {
+            $quiz = $this->getOrGenerateQuiz($indicator);
             return [
                 'html' => self::cleanMathTypography($indicator->student_lesson_html),
                 'markdown' => $indicator->student_lesson_markdown ?? '',
                 'source' => 'ai',
                 'key_takeaways' => self::formatTakeaways($indicator->lesson_key_takeaways ?? []),
+                'quiz' => $quiz,
                 'has_textbook' => false,
             ];
         }
@@ -63,6 +67,7 @@ class StudentLessonService
                 if (!empty($aiLesson['html'])) {
                     $cleanedHtml = self::cleanMathTypography($aiLesson['html']);
                     $formattedTakeaways = self::formatTakeaways($aiLesson['key_takeaways']);
+                    $quiz = !empty($aiLesson['quiz']) ? $aiLesson['quiz'] : $this->localSynthesizer->synthesizeQuiz($indicator, $indicator->student_title, $indicator->subStrand?->strand?->curriculum?->subject?->name ?? 'Mathematics', $formattedTakeaways);
 
                     // Cache in database
                     $indicator->update([
@@ -70,6 +75,7 @@ class StudentLessonService
                         'student_lesson_html' => $cleanedHtml,
                         'lesson_source' => 'ai',
                         'lesson_key_takeaways' => $formattedTakeaways,
+                        'lesson_quiz' => $quiz,
                         'lesson_generated_at' => now(),
                     ]);
 
@@ -78,6 +84,7 @@ class StudentLessonService
                         'markdown' => $aiLesson['markdown'],
                         'source' => 'ai',
                         'key_takeaways' => $formattedTakeaways,
+                        'quiz' => $quiz,
                         'has_textbook' => false,
                     ];
                 }
@@ -88,11 +95,13 @@ class StudentLessonService
 
         // 4. If we already have a cached local lesson (and AI was unavailable), return it
         if (!empty($indicator->student_lesson_html)) {
+            $quiz = $this->getOrGenerateQuiz($indicator);
             return [
                 'html' => self::cleanMathTypography($indicator->student_lesson_html),
                 'markdown' => $indicator->student_lesson_markdown ?? '',
                 'source' => $indicator->lesson_source ?? 'local',
                 'key_takeaways' => self::formatTakeaways($indicator->lesson_key_takeaways ?? []),
+                'quiz' => $quiz,
                 'has_textbook' => false,
             ];
         }
@@ -109,6 +118,7 @@ class StudentLessonService
         $localLesson = $this->localSynthesizer->synthesize($indicator);
         $cleanHtml = self::cleanMathTypography($localLesson['html']);
         $formattedTakeaways = self::formatTakeaways($localLesson['key_takeaways']);
+        $quiz = $localLesson['quiz'] ?? $this->localSynthesizer->synthesizeQuiz($indicator, $indicator->student_title, $indicator->subStrand?->strand?->curriculum?->subject?->name ?? 'Mathematics', $formattedTakeaways);
 
         // Cache local lesson so page loads instantly
         $indicator->update([
@@ -116,6 +126,7 @@ class StudentLessonService
             'student_lesson_html' => $cleanHtml,
             'lesson_source' => 'local',
             'lesson_key_takeaways' => $formattedTakeaways,
+            'lesson_quiz' => $quiz,
             'lesson_generated_at' => now(),
         ]);
 
@@ -124,8 +135,27 @@ class StudentLessonService
             'markdown' => $localLesson['markdown'],
             'source' => 'local',
             'key_takeaways' => $formattedTakeaways,
+            'quiz' => $quiz,
             'has_textbook' => false,
         ];
+    }
+
+    /**
+     * Ensure indicator has a checkpoint quiz, generating one deterministically if missing.
+     */
+    public function getOrGenerateQuiz(CurriculumIndicator $indicator): array
+    {
+        if (!empty($indicator->lesson_quiz) && is_array($indicator->lesson_quiz)) {
+            return $indicator->lesson_quiz;
+        }
+
+        $subjectName = $indicator->subStrand?->strand?->curriculum?->subject?->name ?? 'Mathematics';
+        $takeaways = $indicator->lesson_key_takeaways ?? [];
+        $quiz = $this->localSynthesizer->synthesizeQuiz($indicator, $indicator->student_title, $subjectName, $takeaways);
+
+        $indicator->update(['lesson_quiz' => $quiz]);
+
+        return $quiz;
     }
 
     /**
@@ -215,6 +245,19 @@ Structure:
 3. **Step-by-Step Practical Examples / Worked Solutions**: Walk through 2 to 3 detailed, solved real-world scenarios or exercises based on the syllabus exemplars, breaking down each step with clear explanations.
 4. **Common Mistakes & Exam Tips**: Highlight 2 to 3 common pitfalls or misconceptions students make on this topic and how to avoid them in exams.
 5. **Key Takeaways**: 4 concise bullet points summarizing the essential facts learned.
+6. **Checkpoint Quiz**: End with a JSON codeblock containing 3 multiple-choice questions to test comprehension:
+```json
+[
+  {
+    "id": 1,
+    "question": "Clear question text?",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correct_answer": 0,
+    "explanation": "Brief student explanation of why this answer is correct."
+  }
+]
+```
+Note: correct_answer is the 0-indexed integer of the correct option. Ensure questions test genuine comprehension of this topic.
 
 Do NOT sound like a teacher's syllabus or exam rubric. Write directly to the student in an encouraging, crystal-clear, and informative tone.
 PROMPT;
@@ -250,7 +293,7 @@ PROMPT;
                         ],
                         'generationConfig' => [
                             'temperature' => 0.4,
-                            'maxOutputTokens' => 2500,
+                            'maxOutputTokens' => 3000,
                         ]
                     ]);
 
@@ -273,8 +316,25 @@ PROMPT;
             throw new \Exception($lastError ?? "All Gemini models failed or returned empty response.");
         }
 
+        // Extract quiz JSON before converting markdown to HTML
+        $quiz = [];
+        if (preg_match('/```(?:json)?\s*(\[\s*\{.*?\}\s*\])\s*```/is', $rawMarkdown, $qm)) {
+            try {
+                $parsed = json_decode($qm[1], true);
+                if (is_array($parsed) && count($parsed) >= 2) {
+                    $quiz = $parsed;
+                    // Remove the raw quiz json block from the displayed lesson markdown
+                    $rawMarkdown = str_replace($qm[0], '', $rawMarkdown);
+                }
+            } catch (\Throwable $e) {
+                // Ignore parse errors, will fallback to synthesized quiz below
+            }
+        }
+
         // Clean markdown fences if any
         $cleanMarkdown = trim(preg_replace('/^```(?:markdown)?|```$/m', '', $rawMarkdown));
+        // Remove empty Checkpoint Quiz heading if left over
+        $cleanMarkdown = trim(preg_replace('/###?\s*Checkpoint Quiz\s*$/im', '', $cleanMarkdown));
         $html = Str::markdown($cleanMarkdown);
 
         // Extract takeaways
@@ -294,10 +354,16 @@ PROMPT;
             ];
         }
 
+        // Fallback to local quiz synthesis if AI didn't provide valid JSON
+        if (empty($quiz)) {
+            $quiz = $this->localSynthesizer->synthesizeQuiz($indicator, $indicator->student_title, $subjectName, $takeaways);
+        }
+
         return [
             'markdown' => $cleanMarkdown,
             'html' => $html,
             'key_takeaways' => $takeaways,
+            'quiz' => $quiz,
         ];
     }
 }

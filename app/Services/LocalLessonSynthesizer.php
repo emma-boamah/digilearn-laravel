@@ -62,11 +62,15 @@ class LocalLessonSynthesizer
         $markdownText = implode("\n", $md);
         $htmlText = Str::markdown($markdownText);
 
+        // 5. Generate Checkpoint Quiz (3 questions for student verification)
+        $quiz = $this->synthesizeQuiz($indicator, $cleanTitle, $subjectName, $takeaways);
+
         return [
             'markdown' => $markdownText,
             'html' => $htmlText,
             'source' => 'local',
             'key_takeaways' => $takeaways,
+            'quiz' => $quiz,
         ];
     }
 
@@ -287,4 +291,121 @@ class LocalLessonSynthesizer
             "Prepared to solve related checkpoint quizzes and exam practice questions.",
         ];
     }
+
+    /**
+     * Synthesize 3 multiple-choice comprehension questions for the topic.
+     * Guaranteed deterministic, offline, and relevant to the indicator context.
+     *
+     * @return array<int, array{id: int, question: string, options: array<int, string>, correct_answer: int, explanation: string}>
+     */
+    public function synthesizeQuiz(CurriculumIndicator $indicator, string $title, string $subject, array $takeaways = []): array
+    {
+        $exemplars = $indicator->exemplars ?? '';
+        $sLower = strtolower($subject);
+        $cleanTitle = trim($title);
+
+        $questions = [];
+
+        // Question 1: Core purpose / Big Idea
+        if (str_contains($sLower, 'math')) {
+            $questions[] = [
+                'id' => 1,
+                'question' => "What is the primary objective when studying \"{$cleanTitle}\"?",
+                'options' => [
+                    "To memorize answers without understanding mathematical steps",
+                    "To accurately interpret, model, and apply numerical reasoning to solve problems",
+                    "To avoid using place values and standard comparison symbols",
+                    "To calculate values only using estimation without verification",
+                ],
+                'correct_answer' => 1,
+                'explanation' => "The primary goal of \"{$cleanTitle}\" is to accurately understand, model, and apply systematic reasoning to solve problems.",
+            ];
+        } elseif (str_contains($sLower, 'ict') || str_contains($sLower, 'comput') || str_contains($sLower, 'tech')) {
+            $questions[] = [
+                'id' => 1,
+                'question' => "In computer literacy, what is the main purpose of understanding \"{$cleanTitle}\"?",
+                'options' => [
+                    "To bypass standard system security procedures",
+                    "To understand how hardware, software, and computational processes work together",
+                    "To use electronic devices without adhering to digital safety rules",
+                    "To replace software applications with manual mechanical tools",
+                ],
+                'correct_answer' => 1,
+                'explanation' => "Understanding \"{$cleanTitle}\" builds foundational knowledge of digital architecture, processes, and safe technology utilization.",
+            ];
+        } else {
+            $questions[] = [
+                'id' => 1,
+                'question' => "What is the key takeaway of this lesson on \"{$cleanTitle}\"?",
+                'options' => [
+                    "To understand and apply the core principles and steps covered in the lesson",
+                    "To ignore the foundational rules and guess answers randomly",
+                    "To rely solely on memory without conceptual understanding",
+                    "To skip practical examples and exercises",
+                ],
+                'correct_answer' => 0,
+                'explanation' => "Mastering the topic requires understanding the foundational concepts and following the structured steps outlined in the lesson.",
+            ];
+        }
+
+        // Question 2: Practical Application / Exemplar or Rule-based
+        if (str_contains($sLower, 'math')) {
+            $questions[] = [
+                'id' => 2,
+                'question' => "When comparing or organizing numerical values in \"{$cleanTitle}\", which practice is essential?",
+                'options' => [
+                    "Compare values starting randomly from any position",
+                    "Align numbers by their place values and compare from the highest place value to the lowest",
+                    "Assume larger looking digits always represent larger values regardless of place",
+                    "Disregard decimal points and periods",
+                ],
+                'correct_answer' => 1,
+                'explanation' => "Place value alignment and comparing from the highest period (leftmost digit) is the standard rule for exact comparison.",
+            ];
+        } elseif (str_contains($sLower, 'ict') || str_contains($sLower, 'comput')) {
+            $questions[] = [
+                'id' => 2,
+                'question' => "Which of the following is considered best practice when working on \"{$cleanTitle}\"?",
+                'options' => [
+                    "Following structured procedures and verifying system inputs/outputs",
+                    "Shutting down equipment abruptly during active operations",
+                    "Ignoring error messages and system alerts",
+                    "Disabling all user confirmation prompts",
+                ],
+                'correct_answer' => 0,
+                'explanation' => "Systematic verification and following correct operational guidelines ensure system integrity and reliable performance.",
+            ];
+        } else {
+            $questions[] = [
+                'id' => 2,
+                'question' => "Which step is crucial when solving exercises related to \"{$cleanTitle}\"?",
+                'options' => [
+                    "Skipping the initial problem reading step",
+                    "Carefully identifying the given information and following the correct procedural steps",
+                    "Guessing the final answer before analyzing the question",
+                    "Using unrelated formulas from different topics",
+                ],
+                'correct_answer' => 1,
+                'explanation' => "Analyzing the given information and applying the specific steps taught in this topic ensures an accurate and verifiable solution.",
+            ];
+        }
+
+        // Question 3: Synthesis / Verification
+        $takeawayTip = !empty($takeaways[0]) ? $takeaways[0] : "understanding key rules and verifying results";
+        $questions[] = [
+            'id' => 3,
+            'question' => "To verify that your work on \"{$cleanTitle}\" is correct, what should you always do?",
+            'options' => [
+                "Submit immediately without checking your calculations or steps",
+                "Review each step, check against the standard rules, and ensure the answer is reasonable",
+                "Change your answer repeatedly until it matches a friend's answer",
+                "Assume the first step is always the only one that matters",
+            ],
+            'correct_answer' => 1,
+            'explanation' => "Verification involves reviewing your steps, ensuring standard rules were respected, and verifying that the final conclusion makes logical sense.",
+        ];
+
+        return $questions;
+    }
 }
+

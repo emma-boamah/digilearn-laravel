@@ -52,8 +52,8 @@
                             d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span class="sidebar-menu-text">
-                        <span class="full-label">Guided Learning</span>
-                        <span class="short-label">Curriculum</span>
+                        <span class="full-label">Courses</span>
+                        <span class="short-label">Courses</span>
                     </span>
                     <div class="tooltip">Guided Learning</div>
                 </a>

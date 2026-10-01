@@ -204,6 +204,24 @@ class GuidedLearningController extends Controller
         $indicatorModel = CurriculumIndicator::findOrFail($indicatorId);
         $explicitStatus = $request->input('status'); // optional: not_started, in_progress, completed
 
+        // COMPREHENSION GATE: If student attempts to mark as completed directly, check if quiz was passed
+        if ($explicitStatus === 'completed') {
+            $existingProgress = GuidedLearningProgress::where('user_id', $user->id)
+                ->where('curriculum_indicator_id', $indicatorModel->id)
+                ->first();
+
+            // Allow if previously passed, or if existing completed record exists (retroactive compatibility)
+            $hasPassedQuiz = $existingProgress && ($existingProgress->quiz_passed_at !== null || $existingProgress->status === 'completed');
+
+            if (!$hasPassedQuiz) {
+                return response()->json([
+                    'success' => false,
+                    'requires_quiz' => true,
+                    'message' => 'Please complete and pass the Checkpoint Quiz before marking this topic as completed.',
+                ], 422);
+            }
+        }
+
         $progress = $this->guidedLearningService->toggleIndicatorStatus($user, $indicatorModel->id, $explicitStatus);
 
         // Fetch refreshed stats for this subject
@@ -217,6 +235,110 @@ class GuidedLearningController extends Controller
             'status' => $progress->status,
             'completed_at' => $progress->completed_at?->format('M d, Y'),
             'stats' => $tree['stats'] ?? null,
+        ]);
+    }
+
+    /**
+     * Submit and evaluate the topic checkpoint quiz.
+     * All answers must be correct (100%) to complete the topic.
+     */
+    public function submitQuiz(Request $request, string|int $indicator): JsonResponse
+    {
+        $user = Auth::user();
+        $indicatorId = UrlObfuscator::decode($indicator) ?? $indicator;
+        $indicatorModel = CurriculumIndicator::findOrFail($indicatorId);
+
+        $answers = $request->input('answers', []); // map of question_id => selected_option_index
+
+        // Retrieve server-side truth quiz
+        $serverQuiz = app(\App\Services\StudentLessonService::class)->getOrGenerateQuiz($indicatorModel);
+
+        $totalQuestions = count($serverQuiz);
+        if ($totalQuestions === 0) {
+            // Edge case: No questions exist, auto-pass
+            $progress = $this->guidedLearningService->toggleIndicatorStatus($user, $indicatorModel->id, 'completed');
+            return response()->json([
+                'success' => true,
+                'passed' => true,
+                'score' => 100,
+                'total' => 0,
+                'correct_count' => 0,
+            ]);
+        }
+
+        $correctCount = 0;
+        $questionResults = [];
+
+        foreach ($serverQuiz as $q) {
+            $qId = (string) ($q['id'] ?? 0);
+            $userAns = isset($answers[$qId]) ? (int) $answers[$qId] : null;
+            $correctAns = (int) ($q['correct_answer'] ?? 0);
+            $isCorrect = ($userAns !== null && $userAns === $correctAns);
+
+            if ($isCorrect) {
+                $correctCount++;
+            }
+
+            $questionResults[] = [
+                'id' => $q['id'],
+                'user_answer' => $userAns,
+                'is_correct' => $isCorrect,
+                'correct_answer' => $correctAns,
+                'explanation' => $q['explanation'] ?? '',
+            ];
+        }
+
+        $percentage = round(($correctCount / $totalQuestions) * 100);
+        $passed = ($correctCount === $totalQuestions); // 100% required
+
+        // Update student progress
+        $progress = GuidedLearningProgress::firstOrCreate(
+            ['user_id' => $user->id, 'curriculum_indicator_id' => $indicatorModel->id],
+            ['status' => 'in_progress']
+        );
+
+        $progress->quiz_attempts = ($progress->quiz_attempts ?? 0) + 1;
+        $progress->quiz_score = max($progress->quiz_score ?? 0, (int) $percentage);
+
+        if ($passed) {
+            $progress->status = 'completed';
+            $progress->completed_at = now();
+            $progress->quiz_passed_at = now();
+        }
+
+        $progress->save();
+
+        // Calculate next indicator URL if passed
+        $nextUrl = null;
+        if ($passed) {
+            $curriculum = $indicatorModel->subStrand?->strand?->curriculum;
+            if ($curriculum) {
+                $allIndicators = CurriculumIndicator::whereHas('subStrand.strand', function ($q) use ($curriculum) {
+                    $q->where('curriculum_id', $curriculum->id);
+                })->orderBy('id')->pluck('id')->toArray();
+
+                $currentIndex = array_search($indicatorModel->id, $allIndicators);
+                if ($currentIndex !== false && $currentIndex < count($allIndicators) - 1) {
+                    $nextIndicatorId = $allIndicators[$currentIndex + 1];
+                    $nextUrl = route('guided-learning.topic', UrlObfuscator::encode($nextIndicatorId));
+                } else {
+                    $nextUrl = route('guided-learning.index', [
+                        'subject_id' => UrlObfuscator::encode($curriculum->subject_id ?? 1)
+                    ]);
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'passed' => $passed,
+            'score' => $percentage,
+            'total' => $totalQuestions,
+            'correct_count' => $correctCount,
+            'attempts' => $progress->quiz_attempts,
+            'results' => $questionResults,
+            'next_url' => $nextUrl,
+            'status' => $progress->status,
         ]);
     }
 
