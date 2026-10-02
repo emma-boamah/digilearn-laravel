@@ -268,12 +268,17 @@ class LocalLessonSynthesizer
                     "- Each step adds a constant **\$+3\$**! This is the **Common Difference**: \$d = 3\$.\n" .
                     "- To find the missing value at Day 5, simply add 3: \$13 + 3 = \\mathbf{16}\$!\n\n" .
                     "#### Step 2: Discover the General Rule\n" .
-                    "What if your teacher asks: *\"What is the total savings on Day 100?\"* You cannot add 3 one hundred times! Instead, let us find a **general rule**:\n\n" .
-                    "1. Since the common difference is \$d = 3\$, the rule has the form: \$y = 3x + c\$ (where \$c\$ is a constant we need to find).\n" .
-                    "2. We know that on Day 1 (\$x = 1\$), the total is \$y = 4\$. Substitute:\n" .
-                    "   \$\$4 = 3(1) + c \\implies 4 = 3 + c \\implies c = 1\$\$\n" .
-                    "3. So the **rule** is:\n" .
-                    "   \$\$\\boxed{y = 3x + 1}\$\$\n\n" .
+                    "What if your teacher asks: *\"What is the total savings on Day 100?\"* You cannot add 3 one hundred times! We need a **formula**.\n\n" .
+                    "Since you add ₵3 **every single day**, you might think: *\"The total is just 3 times the day number!\"* Let us test that idea:\n" .
+                    "- Day 1: \$3 \\times 1 = 3\$ ... but the actual total is **₵4**, not ₵3! ❌\n" .
+                    "- Day 2: \$3 \\times 2 = 6\$ ... but the actual total is **₵7**, not ₵6! ❌\n" .
+                    "- Day 3: \$3 \\times 3 = 9\$ ... but the actual total is **₵10**, not ₵9! ❌\n\n" .
+                    "Do you see the pattern? The answer \$3x\$ is always **₵1 too low**! So we need to **add 1** to fix it:\n" .
+                    "- Day 1: \$3 \\times 1 + 1 = 4\$ ✅\n" .
+                    "- Day 2: \$3 \\times 2 + 1 = 7\$ ✅\n" .
+                    "- Day 3: \$3 \\times 3 + 1 = 10\$ ✅\n\n" .
+                    "That extra \$+1\$ is what mathematicians call the **constant** (written as \$c\$). So the complete **rule** is:\n" .
+                    "\$\$\\boxed{y = 3x + 1}\$\$\n\n" .
                     "#### Step 3: Verify and Predict\n" .
                     "- For Day 1 (\$x = 1\$): \$y = 3(1) + 1 = 4\$ ✅\n" .
                     "- For Day 2 (\$x = 2\$): \$y = 3(2) + 1 = 7\$ ✅\n" .
