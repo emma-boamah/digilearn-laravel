@@ -247,26 +247,39 @@ class LocalLessonSynthesizer
                     "Now imagine you put ₵4 into a Susu savings box on Day 1, and every single day you add ₵3 more. " .
                     "On Day 2 you have ₵7, on Day 3 you have ₵10, on Day 4 you have ₵13! " .
                     "That is a **growing pattern**, and in mathematics we call this predictable connection a **Relation** or a **Linear Pattern**.\n\n" .
-                    "#### How Do We Organize a Relation?\n\n" .
-                    "A **Relation** is a mathematical bridge that connects an **Input** to an **Output**:\n" .
-                    "- **The Domain (Input / Position)**: The starting numbers or positions (\$x = 1, 2, 3, 4, \\dots\$).\n" .
-                    "- **The Co-domain (Output / Value)**: The resulting numbers produced by the rule (\$y = 4, 7, 10, 13, \\dots\$).\n\n" .
-                    "We can organize this relationship into a clean table:\n\n" .
-                    "| Domain (Input \$x\$) | 1 | 2 | 3 | 4 | 5 | ... | 9 |\n" .
+                    "#### 📖 Math Vocabulary: Connecting the Words\n\n" .
+                    "In the Susu savings example above, you already used patterns and relationships without realizing it! Here is how everyday words map to math vocabulary:\n\n" .
+                    "| Everyday Word | Math Name | Example from Susu Savings |\n" .
+                    "| :--- | :--- | :--- |\n" .
+                    "| The day number you put money in | **Domain** (or **Input**, \$x\$) | Day 1, Day 2, Day 3, Day 4 |\n" .
+                    "| The total amount you have that day | **Co-domain** (or **Output**, \$y\$) | \$\\text{₵}4, \\text{₵}7, \\text{₵}10, \\text{₵}13\$ |\n" .
+                    "| The constant amount added each day | **Common Difference** (\$d\$) | \$+3\$ (you add ₵3 every day) |\n" .
+                    "| The formula connecting day to total | **Rule** | \$y = 3x + 1\$ (we will derive this below!) |\n\n" .
+                    "So **Domain** simply means *the numbers you start with* (inputs), and **Co-domain** means *the numbers that come out* (outputs). The **relationship** or **rule** is what connects them!\n\n" .
+                    "---\n\n" .
+                    "#### Organizing the Pattern into a Table\n\n" .
+                    "Let us organize the Susu savings pattern into a table:\n\n" .
+                    "| Day (Input \$x\$) | 1 | 2 | 3 | 4 | 5 | ... | 9 |\n" .
                     "| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |\n" .
-                    "| Co-domain (Output \$y\$) | 4 | 7 | 10 | 13 | **?** | ... | **?** |\n\n" .
-                    "#### How Does Each Element Differ from the Preceding One?\n" .
-                    "Look at the step between consecutive co-domain values: \$4 \\rightarrow 7 \\rightarrow 10 \\rightarrow 13\$.\n" .
-                    "- Each step adds a constant **+3**! This constant jump is called the **Common Difference (\$d\$)** or **Step Size**.\n" .
-                    "- To find the missing value at \$x = 5\$, simply add 3: \$13 + 3 = \\mathbf{16}\$!\n\n" .
-                    "#### The Power of the Rule\n" .
-                    "What if your teacher asks: *\"What is the output when the domain is 100?\"*\n" .
-                    "You don't need to count by 3s one hundred times! Instead, we discover the **general rule**:\n" .
-                    "\$\$\\mathbf{\\text{Rule}: \\quad y = 3x + 1}\$\$\n" .
-                    "- For \$x = 1\$: \$y = 3(1) + 1 = 4\$ ✅\n" .
-                    "- For \$x = 2\$: \$y = 3(2) + 1 = 7\$ ✅\n" .
-                    "- For \$x = 100\$: \$y = 3(100) + 1 = \\mathbf{301}\$! 🎉\n\n" .
-                    "> 💡 **Key Takeaway**: A pattern follows a specific rule that repeats or grows. A relationship connects two patterns or sequences using a mathematical rule. Finding the constant step difference unlocks the rule to predict ANY future element instantly!";
+                    "| Total Savings, Output \$y\$ (₵) | 4 | 7 | 10 | 13 | **?** | ... | **?** |\n\n" .
+                    "#### Step 1: Find the Common Difference\n" .
+                    "Look at how the output changes between consecutive days: \$4 \\rightarrow 7 \\rightarrow 10 \\rightarrow 13\$.\n" .
+                    "- \$7 - 4 = 3\$, \$10 - 7 = 3\$, \$13 - 10 = 3\$.\n" .
+                    "- Each step adds a constant **\$+3\$**! This is the **Common Difference**: \$d = 3\$.\n" .
+                    "- To find the missing value at Day 5, simply add 3: \$13 + 3 = \\mathbf{16}\$!\n\n" .
+                    "#### Step 2: Discover the General Rule\n" .
+                    "What if your teacher asks: *\"What is the total savings on Day 100?\"* You cannot add 3 one hundred times! Instead, let us find a **general rule**:\n\n" .
+                    "1. Since the common difference is \$d = 3\$, the rule has the form: \$y = 3x + c\$ (where \$c\$ is a constant we need to find).\n" .
+                    "2. We know that on Day 1 (\$x = 1\$), the total is \$y = 4\$. Substitute:\n" .
+                    "   \$\$4 = 3(1) + c \\implies 4 = 3 + c \\implies c = 1\$\$\n" .
+                    "3. So the **rule** is:\n" .
+                    "   \$\$\\boxed{y = 3x + 1}\$\$\n\n" .
+                    "#### Step 3: Verify and Predict\n" .
+                    "- For Day 1 (\$x = 1\$): \$y = 3(1) + 1 = 4\$ ✅\n" .
+                    "- For Day 2 (\$x = 2\$): \$y = 3(2) + 1 = 7\$ ✅\n" .
+                    "- For Day 4 (\$x = 4\$): \$y = 3(4) + 1 = 13\$ ✅\n" .
+                    "- For **Day 100** (\$x = 100\$): \$y = 3(100) + 1 = \\mathbf{301}\$! That is ₵301! 🎉\n\n" .
+                    "> 💡 **Key Takeaway**: A pattern follows a specific rule that repeats or grows. The **Domain** (input) feeds into a **Rule** to produce the **Co-domain** (output). To find the rule: (1) find the common difference \$d\$, (2) write \$y = dx + c\$, (3) substitute one known pair to solve for \$c\$. Then you can predict any term instantly!";
 
             case 'data_collection_charts':
                 return "### 📊 Why Do We Organize Data?\n\n" .
