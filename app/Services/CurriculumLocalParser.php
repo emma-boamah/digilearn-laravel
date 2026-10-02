@@ -134,16 +134,44 @@ class CurriculumLocalParser
             4 => 'HANDLING DATA',
         ];
 
-        // Track sub-strand titles discovered across pages (e.g. [1 => [1 => 'Number and Numeration Systems', 2 => 'Number Operations']])
+        // Standard GES/NaCCA curriculum sub-strand definitions for Mathematics
+        $standardMathSubStrands = [
+            1 => [
+                1 => 'Number and Numeration Systems',
+                2 => 'Number Operations',
+                3 => 'Fractions, Decimals and Percentages',
+                4 => 'Ratios and Proportion',
+            ],
+            2 => [
+                1 => 'Patterns and Relations',
+                2 => 'Algebraic Expressions',
+                3 => 'Variables and Equations',
+            ],
+            3 => [
+                1 => 'Shapes and Space',
+                2 => 'Measurement',
+                3 => 'Position and Transformation',
+            ],
+            4 => [
+                1 => 'Data',
+                2 => 'Chance and Probability',
+            ],
+        ];
+
+        // Track sub-strand titles discovered across pages by strand and sub-strand: [$strandNum][$subNum]
         $subStrandTitles = [];
+        $activeStrandNum = 1;
         foreach ($pages as $p) {
             $pLines = explode("\n", $p['normalized_text']);
             foreach ($pLines as $l) {
+                if (preg_match('/STRAND\s+(\d+)\s*[:.\-]?/i', $l, $sm)) {
+                    $activeStrandNum = (int) $sm[1];
+                }
                 if (preg_match('/Sub[-\s]?strand\s+(\d+)\s*[:.\-]?\s*([A-Za-z].*?)$/i', trim($l), $m)) {
                     $sNum = (int) $m[1];
                     $sName = trim(preg_replace('/\.{2,}\s*\d+$/', '', $m[2]));
-                    if (!isset($subStrandTitles[$sNum]) && strlen($sName) > 2) {
-                        $subStrandTitles[$sNum] = $sName;
+                    if (strlen($sName) > 2) {
+                        $subStrandTitles[$activeStrandNum][$sNum] = $sName;
                     }
                 }
             }
@@ -186,7 +214,9 @@ class CurriculumLocalParser
 
                     $subKey = "sub-{$subNum}";
                     if (!isset($tree[$strandKey]['sub_strands'][$subKey])) {
-                        $subName = $subStrandTitles[$subNum] ?? "Sub-strand {$subNum}";
+                        $subName = $subStrandTitles[$strandNum][$subNum]
+                            ?? $standardMathSubStrands[$strandNum][$subNum]
+                            ?? "Sub-strand {$subNum}";
                         $tree[$strandKey]['sub_strands'][$subKey] = [
                             'title' => "SUB-STRAND {$subNum}: " . mb_strtoupper($subName),
                             'content_standard' => null,

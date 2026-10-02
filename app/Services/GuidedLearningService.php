@@ -302,11 +302,12 @@ class GuidedLearningService
      */
     private function findRelevantVideos(CurriculumIndicator $indicator, Subject $subject): \Illuminate\Support\Collection
     {
+        $primaryKeywords = $this->extractPrimaryTopicKeywords($indicator);
         $keywords = $this->extractTopicKeywords($indicator);
         $gradeLabel = $indicator->subStrand?->strand?->grade_label;
 
-        // 1. Score existing DB videos by keyword relevance
-        $dbResults = $this->scoreDbVideos($keywords, $subject, $gradeLabel);
+        // 1. Score existing DB videos by keyword relevance (must match specific topic)
+        $dbResults = $this->scoreDbVideos($keywords, $primaryKeywords, $subject, $gradeLabel);
 
         if ($dbResults->isNotEmpty()) {
             return $dbResults;
@@ -319,28 +320,33 @@ class GuidedLearningService
     /**
      * Score all DB videos against topic keywords, return only genuinely relevant ones.
      */
-    private function scoreDbVideos(array $keywords, Subject $subject, ?string $gradeLabel): \Illuminate\Support\Collection
+    private function scoreDbVideos(array $keywords, array $primaryKeywords, Subject $subject, ?string $gradeLabel): \Illuminate\Support\Collection
     {
         // STRICT: Only look for videos belonging to this exact subject!
-        // Never allow videos from other subjects or null subjects to bleed in.
         $candidates = Video::where('subject_id', $subject->id)->get();
 
         $scored = [];
         foreach ($candidates as $video) {
-            $keywordScore = $this->scoreContentRelevance(
-                $video->title . ' ' . ($video->description ?? '') . ' ' . ($video->unit_name ?? ''),
-                $keywords
-            );
+            $videoText = $video->title . ' ' . ($video->description ?? '') . ' ' . ($video->unit_name ?? '') . ' ' . ($video->agent_topic ?? '');
 
-            // STRICT: Must have at least 2 keyword hits on the actual content!
-            // Never let grade level alone qualify an unrelated video.
+            // STRICT: If we have primary topic keywords, the video MUST match at least one!
+            // A place value video must NEVER match an angles, algebra, or geometry topic.
+            if (!empty($primaryKeywords)) {
+                $primaryScore = $this->scoreContentRelevance($videoText, $primaryKeywords);
+                if ($primaryScore < 1) {
+                    continue;
+                }
+            }
+
+            $keywordScore = $this->scoreContentRelevance($videoText, $keywords);
+
             if ($keywordScore < 2) {
                 continue;
             }
 
             $score = $keywordScore;
 
-            // Bonus for matching grade level (only awarded to videos that already match content keywords)
+            // Bonus for matching grade level
             if ($gradeLabel && $video->grade_level && stripos($video->grade_level, $gradeLabel) !== false) {
                 $score += 2;
             }
@@ -448,8 +454,8 @@ class GuidedLearningService
             $bestResults = array_slice($ytScored, 0, 3);
 
             $adminUserId = Auth::id()
-                ?? User::where('role', 'admin')->value('id')
-                ?? User::first()?->id
+                ?? User::where('is_admin', true)->value('id')
+                ?? User::min('id')
                 ?? 1;
 
             // Save the best YouTube results to the DB (cached for all future visits)
@@ -521,6 +527,60 @@ class GuidedLearningService
     }
 
     /**
+     * Extract specific keywords strictly from the indicator title and student title.
+     * These identify the exact topic concept (e.g. "angles", "alternate", "triangle").
+     *
+     * @return array<string>
+     */
+    private function getTopicStopwords(): array
+    {
+        return [
+            'the', 'a', 'an', 'of', 'in', 'to', 'for', 'and', 'or', 'by', 'on', 'at',
+            'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
+            'do', 'does', 'did', 'will', 'shall', 'would', 'could', 'should', 'may',
+            'can', 'with', 'from', 'that', 'this', 'these', 'those', 'it', 'its',
+            'as', 'not', 'but', 'if', 'than', 'more', 'less', 'using', 'use',
+            'model', 'demonstrate', 'understanding', 'apply', 'perform', 'identify',
+            'describe', 'explain', 'show', 'represent', 'determine', 'solve',
+            'learners', 'students', 'teacher', 'up', 'down', 'off', 'out', 'their',
+            'according', 'measured', 'sizes', 'values', 'draw', 'working', 'practicing',
+            'recognizing', 'concept', 'calculate', 'calculating', 'write', 'writing',
+            'read', 'reading', 'form', 'forms', 'line', 'lines', 'simple', 'given',
+            'review', 'express', 'expressing', 'plot', 'plotting', 'construct',
+            'constructing', 'find', 'finding', 'table', 'tables', 'part', 'parts',
+            'knowledge', 'real', 'life', 'problems', 'problem', 'state', 'stating',
+            'measure', 'measures',
+        ];
+    }
+
+    private function extractPrimaryTopicKeywords(CurriculumIndicator $indicator): array
+    {
+        $sources = [
+            $indicator->student_title,
+            $indicator->title,
+        ];
+
+        $text = strtolower(implode(' ', array_filter($sources)));
+        $text = preg_replace('/b\d+(\.\d+)+/i', '', $text);
+        $text = preg_replace('/\b(strand|sub-strand|indicator|content\s*standard)\s*\d*\s*[:\-]?\s*/i', '', $text);
+        $words = preg_split('/[\s,;:\.\(\)\[\]\/\-]+/', $text, -1, PREG_SPLIT_NO_EMPTY);
+
+        $stopwords = $this->getTopicStopwords();
+
+        $keywords = [];
+        foreach ($words as $word) {
+            if (strlen($word) >= 3 && !in_array($word, $stopwords) && !is_numeric($word)) {
+                $keywords[$word] = true;
+            }
+        }
+
+        $keywords = array_keys($keywords);
+        usort($keywords, fn($a, $b) => strlen($b) <=> strlen($a));
+
+        return $keywords;
+    }
+
+    /**
      * Extract meaningful topic keywords from an indicator and its curriculum hierarchy.
      * Filters out common stopwords and short fragments to produce search-quality terms.
      *
@@ -548,17 +608,7 @@ class GuidedLearningService
         // Split into words
         $words = preg_split('/[\s,;:\.\(\)\[\]\/\-]+/', $text, -1, PREG_SPLIT_NO_EMPTY);
 
-        // Stopwords to exclude (educational/grammatical noise)
-        $stopwords = [
-            'the', 'a', 'an', 'of', 'in', 'to', 'for', 'and', 'or', 'by', 'on', 'at',
-            'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
-            'do', 'does', 'did', 'will', 'shall', 'would', 'could', 'should', 'may',
-            'can', 'with', 'from', 'that', 'this', 'these', 'those', 'it', 'its',
-            'as', 'not', 'but', 'if', 'than', 'more', 'less', 'using', 'use',
-            'model', 'demonstrate', 'understanding', 'apply', 'perform', 'identify',
-            'describe', 'explain', 'show', 'represent', 'determine', 'solve',
-            'learners', 'students', 'teacher', 'up', 'down', 'off', 'out',
-        ];
+        $stopwords = $this->getTopicStopwords();
 
         $keywords = [];
         foreach ($words as $word) {
@@ -577,6 +627,7 @@ class GuidedLearningService
 
     /**
      * Score how relevant a text blob is to a set of topic keywords.
+     * Uses word boundary matching to prevent substring false positives.
      * Returns an integer score (0 = no relevance).
      */
     private function scoreContentRelevance(string $text, array $keywords): int
@@ -585,9 +636,12 @@ class GuidedLearningService
         $score = 0;
 
         foreach ($keywords as $keyword) {
-            if (str_contains($text, $keyword)) {
-                // Longer keywords are worth more (they're more specific)
-                $score += strlen($keyword) >= 6 ? 2 : 1;
+            $kw = strtolower($keyword);
+            if (strlen($kw) < 3) continue;
+
+            if (preg_match('/\b' . preg_quote($kw, '/') . '(s|es|ed|ing)?\b/i', $text)) {
+                // Longer, more specific keywords carry higher weight
+                $score += strlen($kw) >= 6 ? 3 : 2;
             }
         }
 
