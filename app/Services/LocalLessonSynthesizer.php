@@ -70,7 +70,7 @@ class LocalLessonSynthesizer
         }
 
         $markdownText = implode("\n", $md);
-        $htmlText = Str::markdown($markdownText);
+        $htmlText = $this->renderMarkdownWithMath($markdownText);
 
         // 6. Generate Checkpoint Quiz
         $quiz = $this->synthesizeQuiz($indicator, $cleanTitle, $subjectName, $takeaways);
@@ -544,7 +544,7 @@ class LocalLessonSynthesizer
             'id' => 1,
             'title' => "Part 1: The Intuition & Layman's Foundation",
             'subtitle' => "Understanding the concept using everyday examples",
-            'content_html' => Str::markdown($intro),
+            'content_html' => $this->renderMarkdownWithMath($intro),
             'challenge' => null, // Non-blocking! Renders "Understood! Let's Learn How To Do It ->" button
         ];
 
@@ -560,7 +560,7 @@ class LocalLessonSynthesizer
             'id' => 2,
             'title' => "Part 2: How It Works & Guided Examples",
             'subtitle' => "Step-by-step methods with real numbers worked out",
-            'content_html' => Str::markdown($segment2Content),
+            'content_html' => $this->renderMarkdownWithMath($segment2Content),
             'challenge' => $challenge2,
         ];
 
@@ -577,11 +577,27 @@ class LocalLessonSynthesizer
             'id' => 3,
             'title' => "Part 3: Concept Mastery & Pro-Tips",
             'subtitle' => "Mastery traps to avoid, pro-tips, and final reflection",
-            'content_html' => Str::markdown($segment3Content),
+            'content_html' => $this->renderMarkdownWithMath($segment3Content),
             'challenge' => $challenge3,
         ];
 
         return $segments;
+    }
+
+    /**
+     * Render Markdown to HTML while preserving LaTeX math delimiters ($ and $$).
+     */
+    public function renderMarkdownWithMath(string $markdown): string
+    {
+        // 1. Convert \( ... \) into $ ... $
+        $normalized = preg_replace('/\\\\\\((.*?)\\\\\\)/s', '$$1$', $markdown);
+        // 2. Convert \[ ... \] into $$ ... $$
+        $normalized = preg_replace('/\\\\\\[(.*?)\\\\\\]/s', '$$$$1$$$', $normalized);
+        // 3. Convert any ( \frac... ) or ( \text... ) into $ ... $ (requires backslash before command name)
+        $normalized = preg_replace('/\\(\\s*(\\\\(?:frac|text|mathbf|sqrt|alpha|beta|theta|pi|ge|le|approx|times|div|pm|circ)\\b[^)]*)\\)/', '$$$1$$', $normalized);
+
+        // 4. Render Markdown
+        return Str::markdown($normalized);
     }
 
     protected function detectDomain(CurriculumIndicator $indicator, string $title, string $subject): string

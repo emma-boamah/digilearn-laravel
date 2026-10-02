@@ -18,13 +18,12 @@
 <link rel="preconnect" href="https://fonts.bunny.net">
 <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800|inter:400,500,600,700&display=swap" rel="stylesheet" />
 
-<!-- MathLive for Math & Scientific Formula Rendering -->
+<!-- KaTeX & MathLive for Mathematical and Scientific Typography -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mathlive/mathlive-static.css" />
-<script defer src="https://unpkg.com/mathlive" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
-<script type="module" nonce="{{ request()->attributes->get('csp_nonce') }}">
-    import { renderMathInElement } from "https://unpkg.com/mathlive?module";
-    window.renderMathInElement = renderMathInElement;
-</script>
+<script src="https://unpkg.com/mathlive" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
 
 <style nonce="{{ request()->attributes->get('csp_nonce') }}">
     .lesson-reader {
@@ -138,10 +137,83 @@
         color: #93c5fd;
     }
 
-    /* MathLive Formulas Sizing */
-    .lesson-reader math-field,
-    .lesson-reader .ML__base {
-        font-size: 1.15em !important;
+    /* Educational Markdown Tables */
+    .lesson-reader table {
+        width: 100%;
+        margin-top: 1.25rem;
+        margin-bottom: 1.75rem;
+        border-collapse: separate;
+        border-spacing: 0;
+        border-radius: 0.75rem;
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+        font-size: 0.9375rem;
+    }
+    .dark .lesson-reader table, [data-theme="dark"] .lesson-reader table {
+        border-color: #374151;
+    }
+    .lesson-reader thead {
+        background-color: #f8fafc;
+    }
+    .dark .lesson-reader thead, [data-theme="dark"] .lesson-reader thead {
+        background-color: #1e293b;
+    }
+    .lesson-reader th {
+        padding: 0.75rem 1rem;
+        font-weight: 700;
+        text-align: left;
+        color: #1f2937;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    .dark .lesson-reader th, [data-theme="dark"] .lesson-reader th {
+        color: #f3f4f6;
+        border-color: #374151;
+    }
+    .lesson-reader td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        color: #374151;
+        vertical-align: middle;
+    }
+    .dark .lesson-reader td, [data-theme="dark"] .lesson-reader td {
+        border-color: #1f2937;
+        color: #d1d5db;
+    }
+    .lesson-reader tbody tr:last-child td {
+        border-bottom: none;
+    }
+    .lesson-reader tbody tr:nth-child(even) {
+        background-color: #fafbfc;
+    }
+    .dark .lesson-reader tbody tr:nth-child(even), [data-theme="dark"] .lesson-reader tbody tr:nth-child(even) {
+        background-color: rgba(30, 41, 59, 0.4);
+    }
+
+    /* MathLive & KaTeX Mathematical and Scientific Typography */
+    math-field {
+        font-size: 1.12em;
+        background: transparent !important;
+        display: inline-block;
+        border: none !important;
+        outline: none !important;
+        cursor: default;
+        pointer-events: none;
+        vertical-align: middle;
+        padding: 0 2px;
+        line-height: normal;
+    }
+    math-field::part(virtual-keyboard-toggle),
+    math-field::part(menu-toggle) {
+        display: none !important;
+    }
+    .dark math-field, [data-theme="dark"] math-field {
+        color: #f3f4f6;
+    }
+    .katex {
+        font-size: 1.08em;
+    }
+    .katex-display {
+        margin: 1.25rem 0 !important;
     }
 </style>
 @endsection
@@ -726,130 +798,88 @@
 </div>
 
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
-// Auto-detect common math notation and clean plain text arrows/numbers/symbols
-function preprocessMathNotation(container) {
-    if (!container) return;
-    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+// Universal Mathematical and Scientific Typography Renderer (KaTeX & MathLive)
+window.renderAllMath = function(root) {
+    const target = root || document.getElementById('topic-content') || document.body;
+    if (!target) return;
+
+    // 1. Normalize any unrendered parenthesized LaTeX notation:
+    // e.g. (\frac{1}{10} = 0.1) or (\text{GH₵ } 0.01) -> $\frac{1}{10} = 0.1$
+    const walker = document.createTreeWalker(target, NodeFilter.SHOW_TEXT);
     const textNodes = [];
     while (walker.nextNode()) textNodes.push(walker.currentNode);
-
-    textNodes.forEach(function(node) {
-        let text = node.textContent;
-        let changed = false;
-
-        // 1. Clean arrows in text (e.g. $\rightarrow$, \rightarrow)
-        if (/\$?\\(rightarrow|to|longrightarrow)\$?/.test(text)) {
-            text = text.replace(/\$?\\(rightarrow|to|longrightarrow)\$?([a-zA-Z0-9\s])/g, ' → $2')
-                       .replace(/\$?\\(rightarrow|to|longrightarrow)\$?/g, ' → ');
-            changed = true;
-        }
-        if (/\$?\\(leftarrow|longleftarrow)\$?/.test(text)) {
-            text = text.replace(/\$?\\(leftarrow|longleftarrow)\$?/g, ' ← ');
-            changed = true;
-        }
-        if (/\$?\\(leftrightarrow)\$?/.test(text)) {
-            text = text.replace(/\$?\\(leftrightarrow)\$?/g, ' ↔ ');
-            changed = true;
-        }
-
-        // 2. Clean comparison symbols in dollars: $>$, $<$, $=$
-        if (/\$([><=])\$/.test(text)) {
-            text = text.replace(/\$([><=])\$/g, ' $1 ');
-            changed = true;
-        }
-
-        // 3. Clean isolated plain numbers in dollars (e.g. $1$, $100$, $1,000,000,000$)
-        if (/\$([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)\$/.test(text)) {
-            text = text.replace(/\$([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)\$/g, '$1');
-            changed = true;
-        }
-
-        // 4. Clean basic LaTeX operator commands if unrendered
-        if (/\$?\\times\$?/.test(text)) {
-            text = text.replace(/\$?\\times\$?/g, ' × ');
-            changed = true;
-        }
-        if (/\$?\\div\$?/.test(text)) {
-            text = text.replace(/\$?\\div\$?/g, ' ÷ ');
-            changed = true;
-        }
-        if (/\$?\\(le|leq)\$?/.test(text)) {
-            text = text.replace(/\$?\\(le|leq)\$?/g, ' ≤ ');
-            changed = true;
-        }
-        if (/\$?\\(ge|geq)\$?/.test(text)) {
-            text = text.replace(/\$?\\(ge|geq)\$?/g, ' ≥ ');
-            changed = true;
-        }
-        if (/\$?\\(ne|neq)\$?/.test(text)) {
-            text = text.replace(/\$?\\(ne|neq)\$?/g, ' ≠ ');
-            changed = true;
-        }
-
-        // 5. Replace X^{Y} patterns first (e.g., 4^{12} → 4<sup>12</sup>)
-        if (/\w\^\{/.test(text)) {
-            text = text.replace(/(\w+)\^\{([^}]+)\}/g, '$1<sup>$2</sup>');
-            changed = true;
-        }
-
-        // 6. Replace X^Y patterns (e.g., 4^2 → 4<sup>2</sup>, x^n → x<sup>n</sup>)
-        if (/\w\^\w/.test(text)) {
-            text = text.replace(/(\w+)\^(\w+)/g, '$1<sup>$2</sup>');
-            changed = true;
-        }
-
-        // 7. Replace X_Y subscript patterns (e.g., a_1 → a<sub>1</sub>)
-        if (/[a-zA-Z]_\d/.test(text)) {
-            text = text.replace(/([a-zA-Z])_(\d+)/g, '$1<sub>$2</sub>');
-            changed = true;
-        }
-
-        if (changed) {
-            var span = document.createElement('span');
-            span.innerHTML = text;
-            node.parentNode.replaceChild(span, node);
+    textNodes.forEach(node => {
+        let t = node.textContent;
+        if (/\((?:\\?(?:frac|text|mathbf|sqrt|alpha|beta|theta|pi|ge|le|approx|times|div|pm|circ)[^)]+)\)/.test(t)) {
+            node.textContent = t.replace(/\(\s*(\\?(?:frac|text|mathbf|sqrt|alpha|beta|theta|pi|ge|le|approx|times|div|pm|circ)[^)]*)\)/g, '$$$1$$');
         }
     });
-}
 
-// Render MathLive formulas with full TeX delimiter support
-document.addEventListener('DOMContentLoaded', function() {
-    const texConfig = {
-        TeX: {
-            delimiters: {
-                inline: [['$', '$'], ['\\(', '\\)']],
-                display: [['$$', '$$'], ['\\[', '\\]']]
-            }
+    const delimiters = [
+        { left: '$$', right: '$$', display: true },
+        { left: '\\[', right: '\\]', display: true },
+        { left: '\\(', right: '\\)', display: false },
+        { left: '$', right: '$', display: false }
+    ];
+
+    // 2. Render static LaTeX with KaTeX auto-render if available
+    if (typeof renderMathInElement === 'function') {
+        try {
+            renderMathInElement(target, {
+                delimiters: delimiters,
+                throwOnError: false,
+                trust: true
+            });
+        } catch(e) {
+            console.warn('KaTeX render error:', e);
         }
-    };
-
-    function renderAll() {
-        const elements = new Set(document.querySelectorAll('.lesson-reader, .takeaway-text'));
-        elements.forEach(function(el) {
-            preprocessMathNotation(el);
-            const renderFn = window.renderMathInElement || (window.MathfieldElement && window.MathfieldElement.renderMathInElement);
-            if (typeof renderFn === 'function') {
-                try {
-                    renderFn(el, texConfig);
-                } catch(e) {
-                    console.warn('MathLive render error:', e);
-                }
-            }
-        });
     }
 
-    // Run initial typography pass immediately
-    renderAll();
+    // 3. Render with MathLive if available
+    const mathliveRender = window.MathLive?.renderMathInElement || (window.MathfieldElement && window.MathfieldElement.renderMathInElement);
+    if (typeof mathliveRender === 'function' && mathliveRender !== window.renderMathInElement) {
+        try {
+            mathliveRender(target, {
+                processEnvironments: true,
+                TeX: {
+                    processEnvironments: true,
+                    delimiters: {
+                        inline: [['$', '$'], ['\\(', '\\)']],
+                        display: [['$$', '$$'], ['\\[', '\\]']]
+                    }
+                }
+            });
+        } catch(e) {
+            console.warn('MathLive render error:', e);
+        }
+    }
 
-    // Check if MathLive loads asynchronously and re-render
+    // 4. Ensure all math-field elements are strictly read-only with no keyboard popups
+    if (window.customElements && typeof customElements.whenDefined === 'function') {
+        customElements.whenDefined('math-field').then(() => {
+            target.querySelectorAll('math-field').forEach(mf => {
+                mf.readOnly = true;
+                mf.setAttribute('read-only', '');
+                mf.setAttribute('math-virtual-keyboard-policy', 'none');
+                mf.removeAttribute('contenteditable');
+                mf.removeAttribute('tabindex');
+            });
+        });
+    }
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    window.renderAllMath();
+
+    // Re-check after async MathLive script loads
+    var checks = 0;
     var interval = setInterval(function() {
-        const renderFn = window.renderMathInElement || (window.MathfieldElement && window.MathfieldElement.renderMathInElement);
-        if (typeof renderFn === 'function') {
+        checks++;
+        window.renderAllMath();
+        if (checks > 12 || (window.MathLive && window.katex)) {
             clearInterval(interval);
-            renderAll();
         }
     }, 200);
-    setTimeout(function() { clearInterval(interval); }, 6000);
 });
 
 function topicReaderApp() {
@@ -867,6 +897,12 @@ function topicReaderApp() {
         segmentFeedback: { @foreach($studentLesson['interactive_segments'] ?? [] as $seg){{ $seg['id'] }}: null,@endforeach },
         segmentChecking: { @foreach($studentLesson['interactive_segments'] ?? [] as $seg){{ $seg['id'] }}: false,@endforeach },
         hintsRevealed: { @foreach($studentLesson['interactive_segments'] ?? [] as $seg){{ $seg['id'] }}: false,@endforeach },
+
+        init() {
+            this.$nextTick(() => {
+                if (window.renderAllMath) window.renderAllMath();
+            });
+        },
 
         isSegmentUnlocked(segmentId) {
             // If already completed or topic is mastered, unlock all
@@ -921,6 +957,7 @@ function topicReaderApp() {
 
                 if (data.success) {
                     this.segmentFeedback[segmentId] = data;
+                    this.$nextTick(() => window.renderAllMath());
 
                     if (data.is_correct) {
                         if (!this.completedSegments.includes(segmentId)) {
@@ -996,6 +1033,8 @@ function topicReaderApp() {
                     }
                 }, 300);
             }
+
+            this.$nextTick(() => window.renderAllMath());
         },
 
         async handleCompleteAndNext(nextUrl) {
