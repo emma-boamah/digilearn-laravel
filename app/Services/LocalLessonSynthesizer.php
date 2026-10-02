@@ -228,32 +228,22 @@ class LocalLessonSynthesizer
 
 
             case 'data_collection_charts':
-                return "### 📊 Types of Data & How We Organize Them\n\n" .
-                    "In our daily lives, information comes in all forms—from the scores in a football match to the names of your favorite school subjects. " .
-                    "In mathematics and statistics, **data is classified into different types based on whether it represents numbers or qualities, and how it is organized**.\n\n" .
-                    "---\n\n" .
-                    "### 1. Numerical (Quantitative) Data\n" .
-                    "**Numerical data** represents quantities, counts, or measurements and is always expressed in numbers.\n\n" .
-                    "- **Discrete Data**: Whole numbers that you count individually. You cannot have fractions or decimals of these items.\n" .
-                    "  - *Examples*: Number of students in a class ($35$), family size ($4$ siblings), goals scored in a match ($2$).\n" .
-                    "- **Continuous Data**: Measurements that can take any value within a continuous range, including decimals and fractions.\n" .
-                    "  - *Examples*: Height of a student ($1.65\\text{ m}$), body temperature ($36.8^\\circ\\text{C}$), weight of a cocoa bag ($64.5\\text{ kg}$), time taken to run $100\\text{ m}$ ($12.4\\text{ s}$).\n\n" .
-                    "---\n\n" .
-                    "### 2. Categorical (Qualitative) Data\n" .
-                    "**Categorical data** represents characteristics, descriptions, words, or labels that describe qualities rather than numerical amounts.\n\n" .
-                    "- **Nominal Data**: Categories with **no natural or logical order**. One category is not \"higher\" or \"lower\" than another.\n" .
-                    "  - *Examples*: Eye color (Brown, Black, Hazel), gender (Male, Female), favorite Ghanaian dish (Jollof, Waakye, Banku, Fufu), blood group (A, B, AB, O).\n" .
-                    "- **Ordinal Data**: Categories that follow a **natural order, ranking, or scale**, but the differences between ranks cannot be precisely measured.\n" .
-                    "  - *Examples*: Exam letter grades (A, B, C, D, E), race finishes ($1^{\\text{st}}$, $2^{\\text{nd}}$, $3^{\\text{rd}}$), clothing sizes (Small, Medium, Large), education levels (Primary, JHS, SHS, Tertiary).\n\n" .
-                    "---\n\n" .
-                    "### 3. Ungrouped vs. Grouped Data\n\n" .
-                    "#### A. Ungrouped Data (Raw Data)\n" .
-                    "Data presented as **individual, raw values** or a list of scores that haven't been summarized or put into intervals.\n\n" .
-                    "- *Example*: Test marks obtained by 5 students:\n" .
-                    "  $$[72, \\; 85, \\; 90, \\; 65, \\; 88]$$\n\n" .
-                    "#### B. Grouped Data\n" .
-                    "When working with large amounts of data, individual scores become overwhelming. We organize and summarize the data into **frequency distributions** using **class intervals**.\n\n" .
-                    "- *Example*: Test scores of 24 students grouped into intervals:\n\n" .
+                return "### 📊 Why Do We Organize Data?\n\n" .
+                    "Imagine you are the Senior Prefect in a school of 1,200 students in Kumasi. " .
+                    "The Headteacher asks you: *\"What is the favorite meal of the students, and what are their test marks?\"*\n\n" .
+                    "If you bring 1,200 loose pieces of paper with random numbers and names scrawled everywhere, nobody can understand it! " .
+                    "That messy collection of raw information is called **Raw or Ungrouped Data**.\n\n" .
+                    "To make sense of the real world, mathematicians organize information into clear categories:\n\n" .
+                    "#### 1. Categorical vs. Numerical Data\n" .
+                    "- **Categorical Data (Qualitative)**: Data made of names, words, or labels that cannot be added up.\n" .
+                    "  - *Nominal Data*: Categories with NO natural order (e.g., favorite food: Jollof, Waakye, Banku; blood group; gender).\n" .
+                    "  - *Ordinal Data*: Categories with a natural order or ranking (e.g., boxing weight divisions: lightweight, middleweight, heavyweight; grade ranks: 1st, 2nd, 3rd).\n" .
+                    "- **Numerical Data (Quantitative)**: Data made of numbers that can be measured or counted.\n" .
+                    "  - *Discrete*: Counted in whole numbers (e.g., number of students in a class: 35, number of siblings: 3).\n" .
+                    "  - *Continuous*: Measured on a scale with decimals (e.g., height: 1.65 m, temperature: 37.2°C).\n\n" .
+                    "#### 2. Ungrouped vs. Grouped Data\n" .
+                    "- **Ungrouped Data**: Individual raw scores listed one by one (e.g., marks of 5 students: $12, 18, 25, 30, 42$).\n" .
+                    "- **Grouped Data**: When you have lots of data, you gather numbers into **Class Intervals** (like $50 - 60, 61 - 70, 71 - 80$) and count how many students fall into each group (**Frequency**)!\n\n" .
                     "| Class Interval (Marks) | Tally | Frequency (Students) |\n" .
                     "| :--- | :---: | :---: |\n" .
                     "| $50 - 60$ | &#124;&#124;&#124;&#124; | $4$ |\n" .
