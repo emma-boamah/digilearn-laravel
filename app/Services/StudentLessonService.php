@@ -268,7 +268,7 @@ Write a comprehensive, deeply informative, and engaging student lesson formatted
 Typography Rules:
 - Write plain numbers and values directly as clean text without dollar signs (e.g. write "100", "1,000,000,000", "billions" - NEVER wrap normal numbers in $).
 - Use standard symbols for arrows (→) and comparisons (>, <, =, ≤, ≥).
-- Reserve LaTeX $...$ or $$...$$ exclusively for actual algebraic equations or complex formulas (e.g. $x^2 + y^2 = r^2$, $\frac{a}{b}$).
+- Reserve LaTeX $...$ or $$...$$ exclusively for actual algebraic equations or complex formulas (e.g. \$x^2 + \$y^2 = r^2, $\frac{a}{b}$).
 
 Structure:
 1. **The Big Idea**: Explain the concept thoroughly with relatable real-world analogies, why it was developed, and how it impacts modern daily life.
