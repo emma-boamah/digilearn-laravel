@@ -529,6 +529,32 @@
                                 </div>
 
                             </div>
+                            @else
+                            {{-- Reading & Layman Foundation Completion Bar --}}
+                            <div class="pt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-t border-gray-100 dark:border-gray-700/60 mt-6">
+                                <div class="flex items-center gap-2.5 text-xs text-gray-600 dark:text-gray-400">
+                                    <span class="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs flex-shrink-0">
+                                        <i class="fas fa-lightbulb"></i>
+                                    </span>
+                                    <span>Take your time to absorb this foundation before moving to the step-by-step rules.</span>
+                                </div>
+
+                                <div>
+                                    <template x-if="!completedSegments.includes({{ $segment['id'] }})">
+                                        <button type="button"
+                                                @click="completeReadingSegment({{ $segment['id'] }})"
+                                                class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all">
+                                            <span>Understood! Let's Learn How To Do It</span>
+                                            <i class="fas fa-arrow-right text-[10px]"></i>
+                                        </button>
+                                    </template>
+                                    <template x-if="completedSegments.includes({{ $segment['id'] }})">
+                                        <span class="inline-flex items-center gap-1.5 text-xs font-bold text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-950/40 px-3.5 py-1.5 rounded-xl border border-green-200 dark:border-green-800">
+                                            <i class="fas fa-check-circle text-green-600"></i> Foundation Understood &bull; Unlocked Next Part
+                                        </span>
+                                    </template>
+                                </div>
+                            </div>
                             @endif
 
                         </div>
@@ -928,6 +954,47 @@ function topicReaderApp() {
             } catch (e) {
                 this.segmentChecking[segmentId] = false;
                 console.error(e);
+            }
+        },
+
+        async completeReadingSegment(segmentId) {
+            if (!this.completedSegments.includes(segmentId)) {
+                this.completedSegments.push(segmentId);
+            }
+
+            try {
+                const response = await fetch(`/guided-learning/topic/{{ $encodedIndicatorId ?? $indicator->id }}/verify-segment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        segment_id: segmentId,
+                        reading_completed: true,
+                        completed_segments: this.completedSegments
+                    })
+                });
+
+                const data = await response.json();
+                if (data.all_completed) {
+                    this.status = 'completed';
+                }
+            } catch (e) {
+                console.warn('Failed to sync segment completion', e);
+            }
+
+            // Smooth scroll to next segment
+            const segIndex = this.interactiveSegments.findIndex(s => s.id === segmentId);
+            if (segIndex >= 0 && segIndex < this.interactiveSegments.length - 1) {
+                const nextSeg = this.interactiveSegments[segIndex + 1];
+                setTimeout(() => {
+                    const nextCard = document.getElementById(`segment-card-${nextSeg.id}`);
+                    if (nextCard) {
+                        nextCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 300);
             }
         },
 

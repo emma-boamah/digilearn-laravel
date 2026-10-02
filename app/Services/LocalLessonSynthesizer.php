@@ -26,17 +26,21 @@ class LocalLessonSynthesizer
         $gradeLabel = $strand?->grade_label ?? 'JHS';
 
         $cleanTitle = $indicator->student_title;
+        $domain = $this->detectDomain($indicator, $cleanTitle, $subjectName);
 
-        // 1. Generate "The Big Idea" (Student introduction)
-        $intro = $this->generateIntro($indicator, $subjectName, $gradeLabel);
+        // 1. Generate "The Intuition & Layman's Foundation"
+        $intro = $this->generateStudentFriendlyIntro($domain, $indicator, $cleanTitle, $subjectName);
 
         // 2. Generate Core Principles & Rules
-        $rules = $this->generateCoreRules($indicator, $subjectName);
+        $rules = $this->generateDomainRules($domain, $indicator, $subjectName);
 
-        // 3. Transform Exemplars into Worked Examples
-        $workedExamples = $this->transformExemplarsIntoWorkedExamples($indicator->exemplars, $subjectName);
+        // 3. Handcrafted Worked Examples (with real numbers, step-by-step reasoning)
+        $workedExamples = $this->generateDomainWorkedExamples($domain, $cleanTitle, $indicator->exemplars, $subjectName);
 
-        // 4. Generate Key Takeaways
+        // 4. Pro-Tips and Pitfalls to Avoid
+        $proTips = $this->generateDomainProTips($domain, $cleanTitle);
+
+        // 5. Key Takeaways
         $takeaways = $this->generateTakeaways($indicator, $cleanTitle, $subjectName);
 
         // Assemble clean Markdown
@@ -54,6 +58,12 @@ class LocalLessonSynthesizer
             $md[] = "";
         }
 
+        if (!empty($proTips)) {
+            $md[] = "### 💡 Pro-Tips & Common Traps";
+            $md[] = $proTips;
+            $md[] = "";
+        }
+
         $md[] = "### 🎯 Key Takeaways";
         foreach ($takeaways as $t) {
             $md[] = "- **{$t}**";
@@ -62,10 +72,10 @@ class LocalLessonSynthesizer
         $markdownText = implode("\n", $md);
         $htmlText = Str::markdown($markdownText);
 
-        // 5. Generate Checkpoint Quiz (3 questions for student verification)
+        // 6. Generate Checkpoint Quiz
         $quiz = $this->synthesizeQuiz($indicator, $cleanTitle, $subjectName, $takeaways);
 
-        // 6. Generate Brilliant-Style Interactive Segments (Interleaved Concept + Challenge)
+        // 7. Generate Brilliant-Style Interactive Segments (Part 1 is non-blocking reading foundation!)
         $segments = $this->synthesizeInteractiveSegments($indicator, $cleanTitle, $subjectName, $intro, $rules, $workedExamples, $takeaways);
 
         return [
@@ -79,304 +89,355 @@ class LocalLessonSynthesizer
     }
 
     /**
-     * Build student-oriented introduction tailored to the subject.
+     * Build student-friendly introduction with layman explanations, analogies, and real-world intuition.
      */
-    protected function generateIntro(CurriculumIndicator $indicator, string $subject, string $grade): string
+    protected function generateStudentFriendlyIntro(string $domain, CurriculumIndicator $indicator, string $cleanTitle, string $subject): string
     {
-        $rawDesc = $indicator->description ?: $indicator->title;
-        // Strip bureaucratic syllabus jargon: "Demonstrate understanding and use of", "Demonstrate understanding of"
-        $cleanDesc = preg_replace('/^(Demonstrate\s+(an\s+)?understanding\s+(and\s+use\s+)?of\s+)/i', '', $rawDesc);
-        $cleanDesc = preg_replace('/^(Demonstrate\s+)/i', '', $cleanDesc);
-        $cleanDesc = lcfirst(trim($cleanDesc));
+        switch ($domain) {
+            case 'number_rounding_decimals':
+                return "### 🛒 Why Do We Round Decimals?\n\n" .
+                    "Imagine you visit a filling station in Accra to buy fuel for a motorcycle, or you buy fruits at the market with a digital weighing scale. " .
+                    "The pump screen might calculate your cost as **GH₵ 14.863** or the scale shows **2.478 kg**.\n\n" .
+                    "In Ghana, our smallest physical currency coin is **1 Pesewa** (which is \\(\\text{GH₵ } 0.01\\), or one-hundredth of a Cedi). " .
+                    "You cannot pay 0.003 of a Cedi! So the attendant rounds the bill to **GH₵ 14.86**. " .
+                    "Rounding is not about guessing; it is about finding the **closest convenient value** that is practical and meaningful in the real world.\n\n" .
+                    "#### 🔍 Understanding Decimal Place Values\n" .
+                    "When you look at a decimal number like **14.863**, each spot after the dot has a special name and value:\n\n" .
+                    "| Digit | Position Name | Fraction Value | Real-World Money Comparison |\n" .
+                    "| :--- | :--- | :--- | :--- |\n" .
+                    "| **8** | **Tenths** (1st place) | \\(\\frac{1}{10} = 0.1\\) | 10-pesewa coins (0.8 = 80 Pesewas) |\n" .
+                    "| **6** | **Hundredths** (2nd place) | \\(\\frac{1}{100} = 0.01\\) | 1-pesewa coins (0.06 = 6 Pesewas) |\n" .
+                    "| **3** | **Thousandths** (3rd place) | \\(\\frac{1}{1000} = 0.001\\) | Tiny fractions of a pesewa |\n\n" .
+                    "#### 🚶 The \"Walking Down the Road\" Intuition\n" .
+                    "Suppose you are walking along a street from **3.40** to **3.50**, and your position right now is **3.47**:\n\n" .
+                    "- The exact middle point of the journey is **3.45**.\n" .
+                    "- Because you are at **3.47**, you have already crossed the halfway mark.\n" .
+                    "- You are physically closer to **3.50** than to **3.40**!\n\n" .
+                    "That is the golden intuition of rounding: if you are at **5 or above** (the halfway mark or beyond), you move forward (**round up**). " .
+                    "If you haven't reached the halfway mark (less than 5), you stay closer to where you started (**round down**).";
 
-        $topicName = $indicator->student_title;
-        $strandTitle = $indicator->subStrand?->strand?->title ?? 'Core Concept';
-        $subStrandTitle = $indicator->subStrand?->title ?? 'Topic';
+            case 'number_rounding_whole':
+                return "### 🏟️ Why Do We Round Whole Numbers?\n\n" .
+                    "Suppose you attend an exciting football match at the Accra Sports Stadium, and exactly **38,472 fans** bought tickets. " .
+                    "When the sports reporter announces the news that evening, they won't say \"38,472 fans watched the match\". Instead, they say **\"about 38,000 fans\"** or **\"nearly 40,000 fans\"**.\n\n" .
+                    "Why? Because our brains understand and remember round numbers much faster! Rounding whole numbers allows us to summarize large counts and compare quantities effortlessly.\n\n" .
+                    "#### 📍 The Halfway Checkpoint\n" .
+                    "Rounding whole numbers works by checking the halfway checkpoint:\n" .
+                    "- Halfway between 0 and 10 is **5**.\n" .
+                    "- Halfway between 0 and 100 is **50**.\n" .
+                    "- Halfway between 0 and 1,000 is **500**.\n\n" .
+                    "If your number has reached or passed the halfway point (5 or higher in the next place value), it is closer to the upper number, so you round up!";
 
-        // Clean titles
-        $strandClean = trim(preg_replace('/^STRAND\s+\d+\s*[:.\-]?\s*/i', '', $strandTitle));
-        $subClean = trim(preg_replace('/^SUB[-\s]?STRAND\s+\d+\s*[:.\-]?\s*/i', '', $subStrandTitle));
+            case 'number_large_quantities':
+                return "### 🌍 Big Numbers in Our Country\n\n" .
+                    "Have you ever thought about the total population of Ghana? It is approximately **34,000,000** (thirty-four million people)! " .
+                    "And the national budget for roads, schools, and hospitals reaches into **billions of Ghana Cedis** (e.g., GH₵ 150,000,000,000).\n\n" .
+                    "Reading such gigantic numbers can seem intimidating at first, but mathematicians invented a brilliant trick: **Place Value Periods**.\n\n" .
+                    "- Digits are grouped in sets of **3**, separated by commas.\n" .
+                    "- Each group has its own family name: **Units**, **Thousands**, **Millions**, and **Billions**.\n" .
+                    "- Within each family, you just read a simple three-digit number (like 450), followed by the family name (450 Million)!";
 
-        $sLower = strtolower($subject);
-        if (str_contains($sLower, 'ict') || str_contains($sLower, 'comput') || str_contains($sLower, 'technol')) {
-            $outcome = "Mastering this topic equips you with vital digital literacy, hardware architecture principles, and computational skills needed to understand and navigate modern technology.";
-        } elseif (str_contains($sLower, 'sci') || str_contains($sLower, 'phys') || str_contains($sLower, 'chem') || str_contains($sLower, 'bio')) {
-            $outcome = "Developing this understanding builds your scientific inquiry, observation, and analytical skills to understand natural phenomena, physical laws, and the living world.";
-        } elseif (str_contains($sLower, 'social') || str_contains($sLower, 'hist') || str_contains($sLower, 'geog') || str_contains($sLower, 'civic') || str_contains($sLower, 'econ')) {
-            $outcome = "Understanding this topic enriches your perspective on society, governance, historical developments, and community environments.";
-        } elseif (str_contains($sLower, 'eng') || str_contains($sLower, 'french') || str_contains($sLower, 'literat') || str_contains($sLower, 'lang')) {
-            $outcome = "Mastering this enhances your language mastery, reading comprehension, critical analysis, and clear communication.";
-        } elseif (str_contains($sLower, 'math')) {
-            $contextText = strtolower($strandClean . ' ' . $subClean . ' ' . $cleanDesc);
-            if (str_contains($contextText, 'geometry') || str_contains($contextText, 'angle') || str_contains($contextText, 'shape') || str_contains($contextText, 'space')) {
-                $outcome = "Mastering this topic gives you the geometric foundation and spatial reasoning skills to analyze angles, geometric properties, shapes, and structural measurements.";
-            } elseif (str_contains($contextText, 'algebra') || str_contains($contextText, 'equation') || str_contains($contextText, 'expression') || str_contains($contextText, 'relation')) {
-                $outcome = "Understanding this topic strengthens your algebraic thinking, pattern recognition, and ability to model relationships using equations and formulas.";
-            } elseif (str_contains($contextText, 'data') || str_contains($contextText, 'probability') || str_contains($contextText, 'chance') || str_contains($contextText, 'statistic')) {
-                $outcome = "This lesson builds your statistical literacy to collect, organize, analyze real-world data, and make evidence-based predictions.";
-            } else {
-                $outcome = "Understanding this concept gives you the mathematical foundation to solve real-world problems involving quantities, measurements, patterns, and numerical relationships.";
-            }
-        } else {
-            $outcome = "Understanding this concept builds foundational knowledge and practical skills that prepare you for future academic and real-world success.";
+            case 'number_significant_figures':
+                return "### 🔬 What Makes a Figure \"Significant\"?\n\n" .
+                    "Imagine a goldsmith weighing a small piece of gold jewelry. Their digital scale reads **4.05 grams**. " .
+                    "Now imagine a highway sign stating that Kumasi is **200 km** away. Which measurement has more detail?\n\n" .
+                    "In science, mathematics, and engineering, **Significant Figures (s.f.)** tell us which digits were actually measured with precision, versus digits that are just placeholder zeros showing how big or small the number is.\n\n" .
+                    "- Digits that come from real measurement are **significant**.\n" .
+                    "- Zeros that only act as spacers (like the leading zeros in **0.005**) are not significant—they just tell us where the decimal point is!";
+
+            case 'number_fractions':
+                return "### 🥧 Sharing Fairly with Fractions\n\n" .
+                    "Imagine buying a freshly baked meat pie or a warm loaf of bread to share equally among 4 friends. " .
+                    "You cut the bread into **4 equal pieces**. Each friend gets **1 piece** out of the 4, written as \\(\\frac{1}{4}\\).\n\n" .
+                    "- The bottom number (**Denominator**) tells you how many equal slices the whole object was divided into.\n" .
+                    "- The top number (**Numerator**) tells you how many of those slices you are holding.\n\n" .
+                    "Fractions are simply a way of counting equal parts of a whole!";
+
+            case 'number_percentages':
+                return "### 🔋 Percentages: Everything Out of 100\n\n" .
+                    "When you look at your smartphone screen in the morning and see **85%**, you immediately know how much battery you have left without doing any math. " .
+                    "The word **Percent** comes from the Latin *per centum*, which literally means **\"out of 100\"**.\n\n" .
+                    "- **85%** means 85 bars of energy out of every 100.\n" .
+                    "- **50%** is exactly half (50 out of 100).\n" .
+                    "- **100%** means the whole thing is completely full!\n\n" .
+                    "Whether calculating discounts at a shop, exam scores, or bank interest, percentages turn every quantity into a simple score out of 100.";
+
+            case 'number_ratios_proportions':
+                return "### 🥤 Ratios: Recipes and Mixtures\n\n" .
+                    "Think about making a delicious batch of Sobolo drink or mixing concrete on a building site. " .
+                    "To make concrete strong, the mason uses **1 bag of cement** for every **2 headpans of sand** (a ratio of **1 : 2**).\n\n" .
+                    "If the mason needs to mix 5 bags of cement, how many headpans of sand do they need? Since the recipe must stay in balance, they multiply by 5 to get **10 headpans**! " .
+                    "Ratios compare two quantities to ensure the balance or flavor remains identical no matter how much you make.";
+
+            case 'algebra_linear_relations_graphs':
+                return "### 🚕 The Story Behind a Straight Line Graph\n\n" .
+                    "Imagine taking a taxi in town. The driver charges a starting flag-fall fee of **GH₵ 10**, plus **GH₵ 5 for every kilometer** traveled.\n\n" .
+                    "- Travel 1 km: cost is \\(10 + 5(1) = 15\\) Cedis.\n" .
+                    "- Travel 2 km: cost is \\(10 + 5(2) = 20\\) Cedis.\n" .
+                    "- Travel 3 km: cost is \\(10 + 5(3) = 25\\) Cedis.\n\n" .
+                    "Notice the pattern: for every 1 kilometer you move forward, the cost increases by exactly 5 Cedis! " .
+                    "When you plot these points on a graph, they connect in a **perfect straight line**. That is what a **linear relation** is: a steady, predictable change that tells a real-world story.";
+
+            case 'geometry_bearings':
+                return "### 🧭 Bearings: Navigating the Ocean & Skies\n\n" .
+                    "When an airplane takes off from Kotoka International Airport in Accra heading for Tamale, or a cargo ship leaves Tema Harbour, the pilot cannot simply say \"fly a little bit to the right\". " .
+                    "The ocean and the sky have no road signs!\n\n" .
+                    "Instead, navigators use **Bearings**:\n" .
+                    "- You always stand facing true **North** (which is \\(000^\\circ\\)).\n" .
+                    "- You measure your turn clockwise (the direction clock hands turn).\n" .
+                    "- You always write the direction using **3 digits** (e.g., \\(065^\\circ\\) or \\(240^\\circ\\)).\n\n" .
+                    "With bearings, anyone on Earth can find their exact direction with pinpoint accuracy.";
+
+            case 'geometry_parallel_angles':
+                return "### 🛤️ Parallel Lines & The Transversal\n\n" .
+                    "Imagine looking down at two parallel railway tracks running side by side into the distance. They will never touch each other. " .
+                    "Now imagine a road crossing over both tracks diagonally. In geometry, that crossing line is called a **Transversal**.\n\n" .
+                    "The crossing creates angle patterns that mirror each other like twins:\n" .
+                    "- **Z-Angles (Alternate Angles)**: Look like the corners of the letter Z. They are equal!\n" .
+                    "- **F-Angles (Corresponding Angles)**: Sit in matching spots under the branches of an F. They are equal!\n" .
+                    "- **C-Angles (Co-Interior Angles)**: Sit inside the letter C between the tracks. Together they sum to \\(180^\\circ\\)!";
+
+            case 'geometry_pythagoras_trigonometry':
+                return "### 📐 Pythagoras: The Carpenter's Secret\n\n" .
+                    "Whenever carpenters build a sturdy roof truss or masons lay the foundation of a new room, they need to ensure the corners form a perfect \\(90^\\circ\\) right angle.\n\n" .
+                    "Over 2,500 years ago, Pythagoras discovered a magical geometric law: if you build squares on the two shorter sides of a right-angled triangle, their combined area equals the square on the longest diagonal side (the **hypotenuse**):\n\n" .
+                    "\\[ a^2 + b^2 = c^2 \\]\n\n" .
+                    "This powerful formula lets you find any missing distance without ever having to measure it directly!";
+
+            case 'computing_hardware':
+                return "### 💻 The Computer as an Information Factory\n\n" .
+                    "Think of a computer system like the human body or a busy bakery factory:\n\n" .
+                    "1. **Input Devices** (Your eyes and ears / Keyboard & Mouse): They receive raw signals, ingredients, or keystrokes from the outside world.\n" .
+                    "2. **The CPU** (The human brain / The Chef): The Central Processing Unit thinks, calculates, and follows recipe instructions at lightning speed.\n" .
+                    "3. **Memory & Storage** (Your short-term memory & notebook / RAM & SSD): Keeps data safe while working on it, or preserves files permanently after you shut down.\n" .
+                    "4. **Output Devices** (Your voice & drawings / Screen & Printer): Presents the final processed result in a format humans can see, hear, or read.";
+
+            case 'computing_safety':
+                return "### 🛡️ Guarding Your Digital Life\n\n" .
+                    "You wouldn't leave your front door wide open when leaving your house in the morning, or hand your house keys to a stranger on the street. " .
+                    "In the digital world, your smartphone, email, and social media accounts hold your personal photos, messages, and money.\n\n" .
+                    "Cyber safety is about building digital walls: creating strong passphrases, recognizing fake phishing messages, and knowing how to navigate the internet safely without falling for traps.";
+
+            case 'science_matter':
+                return "### 🧊 The Secret Dance of Particles\n\n" .
+                    "Take an ice cube out of the freezer and place it on a saucer under the sun. Within minutes, it turns into water. Leave that water in a pot on the stove, and it boils into invisible steam!\n\n" .
+                    "The substance is still water (\\(H_2O\\)), so what changed? **How fast the particles are dancing!**\n\n" .
+                    "- In **Solids** (Ice): Particles are locked shoulder-to-shoulder, vibrating gently in place.\n" .
+                    "- In **Liquids** (Water): Heat gives particles enough energy to slide and roll over each other.\n" .
+                    "- In **Gases** (Steam): Particles have so much energy they fly freely in all directions, bouncing off the walls!";
+
+            default:
+                return "### 💡 Getting to the Heart of {$cleanTitle}\n\n" .
+                    "Every important concept in {$subject} began as a solution to a real-world question or curiosity. " .
+                    "Instead of memorizing definitions without meaning, let's explore **what this idea does**, **why it was created**, and **how it applies to everyday problem-solving**.\n\n" .
+                    "By understanding the intuition first, you will find the step-by-step rules feel natural and easy to remember.";
         }
-
-        return "In this lesson on **{$topicName}** ({$subClean} &bull; {$strandClean}), you will learn how to {$cleanDesc}. {$outcome}";
     }
 
     /**
-     * Formulate clear educational rules based on subject and indicator context.
+     * Formulate clear educational rules based on subject and domain.
      */
-    protected function generateCoreRules(CurriculumIndicator $indicator, string $subject): string
+    protected function generateDomainRules(string $domain, CurriculumIndicator $indicator, string $subject): string
     {
-        $text = strtolower($indicator->title . ' ' . ($indicator->description ?? ''));
-        $sLower = strtolower($subject);
-        $isComputing = str_contains($sLower, 'ict') || str_contains($sLower, 'comput') || str_contains($sLower, 'technol');
-        $isScience = str_contains($sLower, 'sci') || str_contains($sLower, 'phys') || str_contains($sLower, 'chem') || str_contains($sLower, 'bio');
+        switch ($domain) {
+            case 'number_rounding_decimals':
+                return "1. **Identify the Target Place Value**:\n" .
+                    "   - **Tenths (1 decimal place)**: The 1st digit directly after the decimal point (e.g. 0.**X**).\n" .
+                    "   - **Hundredths (2 decimal places)**: The 2nd digit after the decimal point (e.g. 0.x**X**).\n" .
+                    "   - **Thousandths (3 decimal places)**: The 3rd digit after the decimal point (e.g. 0.xx**X**).\n" .
+                    "2. **Inspect ONLY the Immediate Neighbor to the Right**:\n" .
+                    "   - Look at the single digit right next to your target place.\n" .
+                    "   - Ignore all digits further down the road—do not look two places away!\n" .
+                    "3. **Apply the 5-or-More Check**:\n" .
+                    "   - If the neighbor is **5, 6, 7, 8, or 9** (5 or more): Round **UP** by adding 1 to your target digit.\n" .
+                    "   - If the neighbor is **0, 1, 2, 3, or 4** (4 or less): Round **DOWN** by leaving your target digit unchanged.\n" .
+                    "4. **Drop All Following Digits**:\n" .
+                    "   - In decimals, remove all digits to the right of your target place value.\n" .
+                    "5. **The \"9 Roll-Up\" Special Rule**:\n" .
+                    "   - If your target digit is a **9** and you need to round up, \\(9 + 1 = 10\\). Write **0** in your target place and carry over the **1** to the digit on the left (e.g., \\(2.96\\) rounded to tenths becomes \\(3.0\\)).";
 
-        if ($isComputing) {
-            if (str_contains($text, 'generation') || str_contains($text, 'architecture') || str_contains($text, 'history')) {
-                return "1. **Core Processing Milestone**: Recognize the defining hardware component of the generation:\n" .
-                       "   - 1st Gen: Vacuum Tubes | 2nd Gen: Transistors | 3rd Gen: Integrated Circuits (ICs)\n" .
-                       "   - **4th Gen**: Very Large Scale Integration (VLSI) & Microprocessors (Single-chip CPUs)\n" .
-                       "   - 5th Gen: Artificial Intelligence (AI), Parallel Processing & Quantum Computing.\n" .
-                       "2. **Architectural Innovations**: 4th generation introduced microprocessors (e.g., Intel 4004/8086), high-speed semiconductor memory (RAM/ROM), and graphical operating systems.\n" .
-                       "3. **Physical & Operational Characteristics**: Vastly smaller footprint (desktop/laptop), higher processing speeds (megahertz to gigahertz), minimal power consumption, and negligible heat generation compared to previous eras.\n" .
-                       "4. **Accessibility & Networking**: Enabled personal computing (PCs), local area networks (LAN), wide-scale Internet connectivity, and user-friendly software.";
-            }
+            case 'number_rounding_whole':
+                return "1. **Locate Target Place Value**: Identify the units, tens, hundreds, thousands, or ten-thousands digit.\n" .
+                    "2. **Check the Next Digit to the Right**:\n" .
+                    "   - If it is **5 or greater**, add 1 to the target digit.\n" .
+                    "   - If it is **4 or less**, keep the target digit unchanged.\n" .
+                    "3. **Fill with Zeros**: Change ALL digits to the right of the target position into **zeros** (e.g., 48,270 to nearest thousand becomes 48,000).\n" .
+                    "4. **Preserve Digits to the Left**: Keep all digits to the left of your target place value unless a 9 rolls up.";
 
-            if (str_contains($text, 'input') || str_contains($text, 'output') || str_contains($text, 'device') || str_contains($text, 'hardware')) {
-                return "1. **Input Devices**: Feed raw data and user instructions into the system (e.g., keyboard, mouse, scanner, microphone, touchscreen).\n" .
-                       "2. **Central Processing Unit (CPU)**: Interprets and executes instructions via the Control Unit (CU) and Arithmetic Logic Unit (ALU).\n" .
-                       "3. **Output Devices**: Communicate processed information in human-readable or audio/visual format (e.g., monitor, printer, speakers, projectors).\n" .
-                       "4. **Storage Subsystems**: Retain data temporarily during execution (Primary: RAM/Cache) or permanently for future retrieval (Secondary: SSD, HDD, Flash Drives).";
-            }
+            case 'number_significant_figures':
+                return "1. **Non-Zero Digits are ALWAYS Significant**: In 482, all 3 digits count.\n" .
+                    "2. **Captive Zeros (Between non-zeros) are ALWAYS Significant**: In 4,008, all 4 digits count.\n" .
+                    "3. **Leading Zeros are NEVER Significant**: In 0.0045, only 4 and 5 count (2 s.f.). The zeros just locate the decimal point.\n" .
+                    "4. **Trailing Zeros After a Decimal Point ARE Significant**: In 4.500, all 4 digits count because they indicate precision.\n" .
+                    "5. **Rounding to $n$ Significant Figures**: Count $n$ digits starting from the first non-zero digit on the left, then inspect the next digit to decide whether to round up.";
 
-            if (str_contains($text, 'network') || str_contains($text, 'internet') || str_contains($text, 'cyber') || str_contains($text, 'safety') || str_contains($text, 'security')) {
-                return "1. **Authentication & Password Hygiene**: Create strong passphrases combining letters, numbers, and symbols; never reuse credentials across services.\n" .
-                       "2. **Data Privacy**: Keep personal identifying information (PII), location details, and financial credentials private and secure.\n" .
-                       "3. **Safe Navigation**: Avoid opening unverified attachments, clicking phishing links, or installing unapproved software.\n" .
-                       "4. **Digital Citizenship & Netiquette**: Practice ethical communication online, respect intellectual property, and report malicious activity immediately.";
-            }
+            case 'number_fractions':
+                return "1. **Equivalent Fractions**: Multiply or divide both numerator and denominator by the same non-zero number: \\(\\frac{a}{b} = \\frac{a \\times k}{b \\times k}\\).\n" .
+                    "2. **Adding & Subtracting**: Ensure fractions share a Common Denominator (LCM) before combining numerators.\n" .
+                    "3. **Multiplying Fractions**: Multiply numerators straight across, and multiply denominators straight across: \\(\\frac{a}{b} \\times \\frac{c}{d} = \\frac{a \\times c}{b \\times d}\\).\n" .
+                    "4. **Dividing Fractions**: Multiply by the reciprocal (flip the second fraction): \\(\\frac{a}{b} \\div \\frac{c}{d} = \\frac{a}{b} \\times \\frac{d}{c}\\).";
 
-            return "1. **Identify the Core System/Component**: Clearly define the hardware, software, or digital system under study.\n" .
-                   "2. **Trace the Information Processing Cycle**: Analyze the path of data from Input $\\rightarrow$ Processing $\\rightarrow$ Storage $\\rightarrow$ Output.\n" .
-                   "3. **Apply Technical Terminology**: Use standard, accurate computing and architectural terminology in your analysis.\n" .
-                   "4. **Evaluate Practical Application**: Relate the technical concept to real-world tasks, efficiency, and safety considerations.";
+            case 'algebra_linear_relations_graphs':
+                return "1. **Linear Equation Form**: Standard gradient-intercept form is \\(y = mx + c\\), where \\(m\\) is the gradient (slope) and \\(c\\) is the y-intercept.\n" .
+                    "2. **Calculate Gradient**: \\(m = \\frac{\\Delta y}{\\Delta x} = \\frac{y_2 - y_1}{x_2 - x_1}\\).\n" .
+                    "3. **Generate Table of Values**: Substitute given values of \\(x\\) into the rule to calculate corresponding \\(y\\) values.\n" .
+                    "4. **Plotting Points**: Plot ordered pairs \\((x, y)\\)$ on Cartesian axes and draw a ruler-straight line passing through them.";
+
+            case 'geometry_bearings':
+                return "1. **Start at North**: Always draw a vertical North arrow (N) at the starting reference point.\n" .
+                    "2. **Measure Clockwise**: Rotate clockwise from North to the direction line connecting to the destination.\n" .
+                    "3. **Always Use 3 Digits**: Express bearings with three figures (e.g. \\(045^\\circ\\), \\(090^\\circ\\), \\(270^\\circ\\)).\n" .
+                    "4. **Back Bearing Rule**: If the forward bearing is \\(< 180^\\circ\\), add \\(180^\\circ\\). If \\(\\ge 180^\\circ\\), subtract \\(180^\\circ\\).";
+
+            case 'computing_hardware':
+                return "1. **Trace the Information Processing Cycle**: Input $\\rightarrow$ Processing $\\rightarrow$ Storage $\\rightarrow$ Output.\n" .
+                    "2. **Classify Hardware Subsystems**: Clearly distinguish between input peripherals, central processing, internal memory (RAM/ROM), and secondary storage.\n" .
+                    "3. **Evaluate Specifications**: Understand performance metrics (CPU clock speed in GHz, RAM capacity in GB, storage transfer speed in MB/s).";
+
+            default:
+                return "1. **Identify the Core Given Information**: Isolate the given numbers, variables, or statements carefully.\n" .
+                    "2. **Select the Governing Principle**: Apply the fundamental rule or formula that connects the quantities.\n" .
+                    "3. **Execute Step-by-Step Working**: Show each line of calculation clearly without skipping intermediate steps.\n" .
+                    "4. **Sanity Check**: Review the final answer to verify it is physically reasonable and correctly formatted.";
         }
-
-        if ($isScience) {
-            return "1. **Observe and Identify Phenomena**: Note key variables, states, or biological/physical structures carefully.\n" .
-                   "2. **Relate to Scientific Principles**: Connect the observed event to fundamental laws, properties of matter, or biological processes.\n" .
-                   "3. **Analyze Cause and Effect**: Examine how changes in one variable (temperature, pressure, concentration, force) impact the system.\n" .
-                   "4. **Formulate Conclusions**: State clear findings supported by empirical evidence and correct scientific vocabulary.";
-        }
-
-        // Mathematics: Geometry & Angles rules
-        if (str_contains($text, 'alternate') || str_contains($text, 'corresponding') || str_contains($text, 'transversal') || (str_contains($text, 'parallel') && str_contains($text, 'angle'))) {
-            return '1. **Identify the Transversal & Parallel Lines**: Spot the line intersecting two parallel lines ($L_1 \parallel L_2).' . "\n" .
-                   '2. **Alternate Angles (Z-Shape)**: Lie on opposite sides of the transversal between parallel lines; they are always **equal** (e.g., $\angle a = \angle b$).' . "\n" .
-                   '3. **Corresponding Angles (F-Shape)**: Occupy matching relative positions at each intersection; they are always **equal** (e.g., $\angle c = \angle d$).' . "\n" .
-                   '4. **Vertically Opposite Angles (X-Shape)**: Oppose each other at any line intersection and are always **equal**.' . "\n" .
-                   '5. **Co-Interior Angles (C-Shape)**: Lie on the same side inside parallel lines and are **supplementary** (they sum to $180^\circ$).';
-        }
-
-        if (str_contains($text, 'triangle') && (str_contains($text, 'angle') || str_contains($text, 'interior'))) {
-            return '1. **Angle Sum of a Triangle**: The interior angles of any triangle always sum to **$180^\circ$** ($\angle A + \angle B + \angle C = 180^\circ$).' . "\n" .
-                   '2. **Exterior Angle Theorem**: The exterior angle of a triangle equals the sum of the two opposite interior angles.' . "\n" .
-                   '3. **Isosceles Triangle Rule**: The angles opposite the equal sides are equal in measure.' . "\n" .
-                   '4. **Equilateral Triangle Rule**: All three sides are equal, and each interior angle measures exactly $60^\circ$ ($180^\circ \div 3 = 60^\circ$).';
-        }
-
-        if (str_contains($text, 'classify angle') || str_contains($text, 'acute') || str_contains($text, 'obtuse') || str_contains($text, 'reflex') || str_contains($text, 'complementary') || str_contains($text, 'supplementary')) {
-            return '1. **Angle Classifications by Size**:' . "\n" .
-                   '   - **Acute Angle**: Greater than $0^\circ$ and less than $90^\circ$ ($0^\circ < \theta < 90^\circ$).' . "\n" .
-                   '   - **Right Angle**: Exactly $90^\circ$ ($\theta = 90^\circ$, formed by perpendicular lines).' . "\n" .
-                   '   - **Obtuse Angle**: Greater than $90^\circ$ and less than $180^\circ$ ($90^\circ < \theta < 180^\circ$).' . "\n" .
-                   '   - **Straight Angle**: Exactly $180^\circ$ ($\theta = 180^\circ$, forming a straight line).' . "\n" .
-                   '   - **Reflex Angle**: Greater than $180^\circ$ and less than $360^\circ$ ($180^\circ < \theta < 360^\circ$).' . "\n" .
-                   '2. **Complementary Angles**: Two angles whose measures sum to **$90^\circ$** ($\angle a + \angle b = 90^\circ$).' . "\n" .
-                   '3. **Supplementary Angles**: Two angles whose measures sum to **$180^\circ$** ($\angle a + \angle b = 180^\circ$).' . "\n" .
-                   '4. **Angles at a Point**: Angles around a complete circle always sum to **$360^\circ$**.';
-        }
-
-        if (str_contains($text, 'pythagoras') || str_contains($text, 'hypotenuse') || str_contains($text, 'trigonometr')) {
-            return '1. **Pythagoras\' Theorem**: In any right-angled triangle, the square of the hypotenuse ($c$) equals the sum of the squares of the other two sides ($a$ and $b$):' . "\n" .
-                   '   $$a^2 + b^2 = c^2$$' . "\n" .
-                   '2. **Identify the Hypotenuse**: The hypotenuse is always the longest side, located directly opposite the $90^\circ$ right angle.' . "\n" .
-                   '3. **Finding a Shorter Side**: If $c$ and $a$ are known, rearrange: $b = \sqrt{c^2 - a^2}.' . "\n" .
-                   '4. **Common Pythagorean Triples**: Familiarize yourself with standard integer triples: $(3, 4, 5)$, $(5, 12, 13)$, and $(8, 15, 17)$.';
-        }
-
-        if (str_contains($text, 'vector') || str_contains($text, 'bearing')) {
-            return '1. **Vector Quantities**: A vector possesses both magnitude (size) and direction (e.g., velocity, displacement, force).' . "\n" .
-                   '2. **Column Vector Notation**: Written as $\binom{x}{y}$, where $x$ represents horizontal movement and $y$ represents vertical movement.' . "\n" .
-                   '3. **Vector Addition & Subtraction**: Combine corresponding components: $\binom{x_1}{y_1} + \binom{x_2}{y_2} = \binom{x_1 + x_2}{y_1 + y_2}.' . "\n" .
-                   '4. **Three-Figure Bearings**: Measured in degrees clockwise from True North ($000^\circ$ to $360^\circ$). Back bearing = $\text{Bearing} \pm 180^\circ$.';
-        }
-
-        // Mathematics: Algebra rules
-        if (str_contains($text, 'gradient') || str_contains($text, 'y = mx + c') || str_contains($text, 'equation of a line') || str_contains($text, 'slope')) {
-            return '1. **Slope-Intercept Form**: The equation of any straight line is written as:' . "\n" .
-                   '   $$y = mx + c$$' . "\n" .
-                   '   - $m$ is the **gradient** (steepness or slope).' . "\n" .
-                   '   - $c$ is the **$y$-intercept** (the value of $y$ where the line crosses the vertical axis).' . "\n" .
-                   '2. **Calculating Gradient**: Given two points $(x_1, y_1)$ and $(x_2, y_2):' . "\n" .
-                   '   $$m = \frac{y_2 - y_1}{x_2 - x_1} = \frac{\text{Change in } y}{\text{Change in } x}$$' . "\n" .
-                   '3. **Parallel & Perpendicular Lines**: Parallel lines have equal gradients ($m_1 = m_2$). Perpendicular lines satisfy $m_1 \times m_2 = -1.' . "\n" .
-                   '4. **Finding the Equation**: Substitute $m$ and one known point $(x, y)$ into $y = mx + c$ to solve for $c$.';
-        }
-
-        if (str_contains($text, 'equation') || str_contains($text, 'inequalit') || str_contains($text, 'variable') || str_contains($text, 'change of subject')) {
-            return '1. **Maintain Equation Balance**: Whatever mathematical operation you perform on one side, you must perform identically on the other side.' . "\n" .
-                   '2. **Apply Inverse Operations**: Reverse operations to isolate the unknown variable:' . "\n" .
-                   '   - Addition $\leftrightarrow$ Subtraction | Multiplication $\leftrightarrow$ Division' . "\n" .
-                   '3. **Collecting Like Terms**: Group all terms containing the variable on one side and constants on the other side.' . "\n" .
-                   '4. **Inequality Rule**: When multiplying or dividing both sides of an inequality by a negative number, **flip the inequality sign** ($<$ becomes $>$, $\le$ becomes $\ge$).';
-        }
-
-        if (str_contains($text, 'factoris') || str_contains($text, 'factoriz') || str_contains($text, 'binomial') || str_contains($text, 'algebraic expression')) {
-            return '1. **Distributive Law**: Multiply the term outside the brackets by every term inside: $a(b + c) = ab + ac.' . "\n" .
-                   '2. **Finding the Highest Common Factor (HCF)**: Identify the greatest common numerical factor and common variable powers in all terms.' . "\n" .
-                   '3. **Factorisation**: Extract the HCF outside parentheses: $6x + 15 = 3(2x + 5).' . "\n" .
-                   '4. **Expanding Binomials (FOIL)**: $(a + b)(c + d) = ac + ad + bc + bd$ (First, Outer, Inner, Last).';
-        }
-
-        if (str_contains($text, 'pattern') || str_contains($text, 'sequence') || str_contains($text, 'nth term')) {
-            return '1. **Find the Common Difference ($d$)**: Calculate the difference between consecutive terms: $d = T_2 - T_1.' . "\n" .
-                   '2. **Linear Sequence Formula**: The $n^{\text{th}}$ term is given by:' . "\n" .
-                   '   $$T_n = a + (n - 1)d$$' . "\n" .
-                   '   where $a$ is the first term and $d$ is the common difference.' . "\n" .
-                   '3. **Predicting Terms**: Substitute the desired position $n$ (e.g. $n = 20$) into the formula to find the value directly.' . "\n" .
-                   '4. **Checking Rules**: Verify the formula against known terms in the sequence.';
-        }
-
-        // Mathematics: Statistics & Probability rules
-        if (str_contains($text, 'mean') || str_contains($text, 'median') || str_contains($text, 'mode') || str_contains($text, 'data') || str_contains($text, 'frequency')) {
-            return '1. **Mean (Average)**: Sum of all values divided by the total number of values: $\text{Mean} = \frac{\sum x}{n}.' . "\n" .
-                   '2. **Median (Middle Value)**: Arrange data in ascending order; the median is the central value (or the average of the two middle values if $n$ is even).' . "\n" .
-                   '3. **Mode (Most Frequent)**: The value that appears most often in the data set.' . "\n" .
-                   '4. **Range (Spread)**: The difference between the highest and lowest values: $\text{Range} = \text{Maximum} - \text{Minimum}$.';
-        }
-
-        if (str_contains($text, 'probability') || str_contains($text, 'chance') || str_contains($text, 'sample space')) {
-            return '1. **Theoretical Probability Formula**:' . "\n" .
-                   '   $$P(\text{Event}) = \frac{\text{Number of Favourable Outcomes}}{\text{Total Number of Possible Outcomes}}$$' . "\n" .
-                   '2. **Probability Range**: Probability is always a value between 0 and 1 inclusive ($0 \le P \le 1$):' . "\n" .
-                   '   - $P = 0$: Impossible event | $P = 1$: Certain event.' . "\n" .
-                   '3. **Complementary Events**: The probability of an event NOT happening is $P(\text{Not } E) = 1 - P(E).' . "\n" .
-                   '4. **Sample Space ($S$)**: List all possible outcomes systematically (e.g., flipping a coin has $S = \{H, T\}$, rolling a die has $S = \{1, 2, 3, 4, 5, 6\}$).';
-        }
-
-        if (str_contains($text, 'fraction') || str_contains($text, 'ratio') || str_contains($text, 'percent') || str_contains($text, 'bodmas')) {
-            return '1. **Adding & Subtracting Fractions**: Find the Least Common Denominator (LCD) before adding or subtracting numerators.' . "\n" .
-                   '2. **Multiplying & Dividing Fractions**: Multiply straight across ($\frac{a}{b} \times \frac{c}{d} = \frac{ac}{bd}$). To divide, multiply by the reciprocal ($\frac{a}{b} \div \frac{c}{d} = \frac{a}{b} \times \frac{d}{c}$).' . "\n" .
-                   '3. **Sharing in a Ratio ($a : b$)**: Add parts ($a + b$), divide the total by total parts to find 1 part, then multiply each share.' . "\n" .
-                   '4. **BODMAS Order of Operations**: Evaluate in order: **B**rackets $\rightarrow$ **O**rders (powers/roots) $\rightarrow$ **D**ivision & **M**ultiplication $\rightarrow$ **A**ddition & **S**ubtraction.';
-        }
-
-        if (str_contains($text, 'set') || str_contains($text, 'venn')) {
-            return '1. **Set Notation**: A set is a well-defined collection of distinct elements enclosed in curly braces $\{ \}.' . "\n" .
-                   '2. **Intersection ($A \cap B$)**: Elements common to both set $A$ and set $B$.' . "\n" .
-                   '3. **Union ($A \cup B$)**: All elements belonging to set $A$, set $B$, or both combined.' . "\n" .
-                   '4. **Complement ($A\'$)**: All elements in the Universal set ($\mathcal{U}$) that do not belong to set $A$.';
-        }
-
-        // Mathematics: Numbers & Numeration rules
-        if (str_contains($text, 'compare') || str_contains($text, 'order') || str_contains($text, 'greater') || str_contains($text, 'less')) {
-            return "1. **Check the Number of Digits**: A number with more digits is always greater than a number with fewer digits.\n" .
-                   "2. **Compare from Left to Right**: If two numbers have the same number of digits, compare each digit starting from the highest place value (the leftmost digit).\n" .
-                   "3. **Use the Correct Symbol**:\n" .
-                   "   - `>` means **greater than** (e.g., $15 > 9$)\n" .
-                   "   - `<` means **less than** (e.g., $4 < 12$)\n" .
-                   "   - `=` means **equal to** (e.g., $100 = 100$)\n" .
-                   "4. **Ordering Sequences**:\n" .
-                   "   - **Ascending Order**: Arrange from smallest to largest.\n" .
-                   "   - **Descending Order**: Arrange from largest to smallest.";
-        }
-
-        if (str_contains($text, 'place value') || str_contains($text, 'model number') || str_contains($text, 'billion') || str_contains($text, 'million')) {
-            return "1. **Place Value Periods**: In base-ten numerals, digits are grouped into periods separated by commas: **Units**, **Thousands**, **Millions**, and **Billions**.\n" .
-                   "2. **Powers of 10**: Each place value step to the left represents a quantity 10 times larger (\\(10^1 = 10\\), \\(10^2 = 100\\), \\(10^3 = 1,000\\), ..., \\(10^9 = 1,000,000,000\\)).\n" .
-                   "3. **Multi-base & Currency Modeling**: Large sums can be represented using multi-base blocks (unit cubes, rods, flats, large blocks) or currency notes (GH₵50, GH₵100, GH₵200).\n" .
-                   "4. **Reading Large Numbers**: Read the digits in each period as a three-digit group, followed by the period name (e.g., \\(2,450,000,000\\) is *two billion, four hundred and fifty million*).";
-        }
-
-        if (str_contains($text, 'round') || str_contains($text, 'nearest')) {
-            return "1. **Locate Target Place Value**: Identify the digit at the place value you are rounding to.\n" .
-                   "2. **Examine the Next Digit (to the right)**:\n" .
-                   "   - If it is **5, 6, 7, 8, or 9**, round **UP** (add $1$ to target digit).\n" .
-                   "   - If it is **0, 1, 2, 3, or 4**, round **DOWN** (keep target digit unchanged).\n" .
-                   "3. **Replace with Zeros**: Change all digits to the right of the target place value to zeros.";
-        }
-
-        if (str_contains($text, 'decimal') || str_contains($text, 'significant') || str_contains($text, 'standard form')) {
-            return "1. **Decimal Places (d.p.)**: Count digits directly to the right of the decimal point.\n" .
-                   "2. **Significant Figures (s.f.)**: Count all non-zero digits, and zeros between non-zero digits or trailing zeros after a decimal point.\n" .
-                   "3. **Standard Scientific Form**: Express as $A \\times 10^n$, where $1 \\le A < 10$ and $n$ is an integer.\n" .
-                   "4. **Apply the 5-or-More Rule**: Check the immediate next digit to determine whether to round up or keep the digit unchanged.";
-        }
-
-        // General default structured rules
-        return "1. **Identify the Core Concepts**: Read the problem or topic carefully to isolate key requirements and terms.\n" .
-               "2. **Apply Analytical Steps**: Break down the topic systematically using established subject principles.\n" .
-               "3. **Follow Standard Procedures**: Present each step of analysis or working clearly and concisely.\n" .
-               "4. **Verify Your Solution**: Review the outcome to confirm it directly answers the objective.";
     }
 
     /**
-     * Transform raw syllabus exemplars into step-by-step worked examples.
+     * Handcraft clean, realistic worked examples with actual numbers and clear steps.
+     * Never output raw unformatted OCR fragments!
      */
-    protected function transformExemplarsIntoWorkedExamples(?string $exemplarsText, string $subject): string
+    protected function generateDomainWorkedExamples(string $domain, string $cleanTitle, ?string $exemplars, string $subject): string
     {
-        if (empty($exemplarsText)) {
-            return "";
+        switch ($domain) {
+            case 'number_rounding_decimals':
+                return "#### Example 1: Rounding to the Nearest Tenth (1 Decimal Place)\n\n" .
+                    "**Problem Statement:** Round **14.863** to the nearest tenth.\n\n" .
+                    "- **Step 1 (Find the target digit):** The tenths place is the first digit after the decimal point $\\rightarrow$ **8**.\n" .
+                    "- **Step 2 (Inspect the neighbor):** The digit immediately to its right (hundredths place) is **6**.\n" .
+                    "- **Step 3 (Apply the 5-rule):** Since \\(6 \\ge 5\\), we round **UP** by adding 1 to our target digit: \\(8 + 1 = 9\\).\n" .
+                    "- **Step 4 (Final Answer):** Drop all digits after the tenths place.\n\n" .
+                    "$$\\mathbf{14.863 \\approx 14.9}$$\n\n" .
+                    "---\n\n" .
+                    "#### Example 2: Rounding to the Nearest Hundredth (2 Decimal Places)\n\n" .
+                    "**Problem Statement:** Round **7.423** to the nearest hundredth.\n\n" .
+                    "- **Step 1 (Find the target digit):** The hundredths place is the second digit after the decimal point $\\rightarrow$ **2**.\n" .
+                    "- **Step 2 (Inspect the neighbor):** The digit immediately to its right (thousandths place) is **3**.\n" .
+                    "- **Step 3 (Apply the 5-rule):** Since \\(3 < 5\\), we round **DOWN** (let it rest): the target digit **2** stays unchanged.\n" .
+                    "- **Step 4 (Final Answer):** Drop the thousandths digit.\n\n" .
+                    "$$\\mathbf{7.423 \\approx 7.42}$$\n\n" .
+                    "---\n\n" .
+                    "#### Example 3: Handling the Tricky \"9 Roll-Up\"\n\n" .
+                    "**Problem Statement:** Round **2.964** to the nearest tenth (1 decimal place).\n\n" .
+                    "- **Step 1 (Find the target digit):** The tenths place digit is **9**.\n" .
+                    "- **Step 2 (Inspect the neighbor):** The hundredths digit is **6** (which is \\(\\ge 5\\), so we must round up).\n" .
+                    "- **Step 3 (Perform the roll-up):** Adding 1 to 9 gives 10. Write **0** in the tenths place and carry **1** over to the units place: \\(2 + 1 = 3\\).\n" .
+                    "- **Step 4 (Final Answer):** Keep the zero to show precision to the nearest tenth!\n\n" .
+                    "$$\\mathbf{2.964 \\approx 3.0}$$";
+
+            case 'number_rounding_whole':
+                return "#### Example 1: Rounding to the Nearest Ten-Thousand\n\n" .
+                    "**Problem Statement:** Round **482,750** to the nearest ten-thousand.\n\n" .
+                    "- **Step 1 (Find target digit):** The ten-thousands place is **8**.\n" .
+                    "- **Step 2 (Inspect the neighbor):** The digit immediately to the right (thousands place) is **2**.\n" .
+                    "- **Step 3 (Apply rule):** Since \\(2 < 5\\), we round **DOWN**: the **8** remains unchanged.\n" .
+                    "- **Step 4 (Fill with zeros):** All lower place values become zeros.\n\n" .
+                    "$$\\mathbf{482,750 \\approx 480,000}$$\n\n" .
+                    "---\n\n" .
+                    "#### Example 2: Rounding to the Nearest Hundred with Roll-Up\n\n" .
+                    "**Problem Statement:** Round **5,981** to the nearest hundred.\n\n" .
+                    "- **Step 1 (Find target digit):** The hundreds place is **9**.\n" .
+                    "- **Step 2 (Inspect the neighbor):** The tens place is **8** (which is \\(\\ge 5\\)).\n" .
+                    "- **Step 3 (Roll up):** \\(9 + 1 = 10\\). Put 0 in hundreds and add 1 to thousands: \\(5 + 1 = 6\\).\n\n" .
+                    "$$\\mathbf{5,981 \\approx 6,000}$$";
+
+            case 'number_significant_figures':
+                return "#### Example 1: Identifying Significant Figures\n\n" .
+                    "**Problem Statement:** How many significant figures are in **0.004050**?\n\n" .
+                    "- **Step 1:** The leading zeros (**0.00**) are placeholders only $\\rightarrow$ do not count.\n" .
+                    "- **Step 2:** The digit **4** is the first significant figure.\n" .
+                    "- **Step 3:** The zero between 4 and 5 is captive $\\rightarrow$ counts!\n" .
+                    "- **Step 4:** The trailing zero after 5 appears after the decimal point $\\rightarrow$ counts!\n\n" .
+                    "**Result:** **4 significant figures** (4, 0, 5, 0).\n\n" .
+                    "---\n\n" .
+                    "#### Example 2: Rounding to 2 Significant Figures\n\n" .
+                    "**Problem Statement:** Express **4,582** correct to **2 significant figures**.\n\n" .
+                    "- **Step 1:** The first 2 significant figures are **4** and **5**.\n" .
+                    "- **Step 2:** The next digit is **8** (which is \\(\\ge 5\\)).\n" .
+                    "- **Step 3:** Round up the 5 to 6, and fill remaining places with zeros: \\(\\mathbf{4,600}\\).";
+
+            case 'algebra_linear_relations_graphs':
+                return "#### Example 1: Finding Gradient and Equation\n\n" .
+                    "**Problem Statement:** A line passes through points \\(A(1, 3)\\) and \\(B(3, 7)\\). Find its gradient.\n\n" .
+                    "- **Step 1:** Identify coordinates: \\(x_1 = 1, y_1 = 3, x_2 = 3, y_2 = 7\\).\n" .
+                    "- **Step 2:** Apply gradient formula:\n" .
+                    "  \\[ m = \\frac{y_2 - y_1}{x_2 - x_1} = \\frac{7 - 3}{3 - 1} = \\frac{4}{2} = 2 \\]\n" .
+                    "- **Step 3:** The line rises 2 units for every 1 unit across $\\rightarrow$ **Gradient = 2**.";
+
+            case 'geometry_bearings':
+                return "#### Example 1: Finding a 3-Figure Bearing\n\n" .
+                    "**Problem Statement:** Point B is located due East of Point A. What is the bearing of B from A?\n\n" .
+                    "- **Step 1:** Draw a vertical North line at starting point A.\n" .
+                    "- **Step 2:** East is a quarter-turn clockwise from North (a right angle of \\(90^\\circ\\)).\n" .
+                    "- **Step 3:** Write as a 3-figure bearing: **\\(090^\\circ\\)**.\n\n" .
+                    "---\n\n" .
+                    "#### Example 2: Calculating Back Bearing\n\n" .
+                    "**Problem Statement:** The bearing of town Q from town P is \\(065^\\circ\\). Find the bearing of P from Q.\n\n" .
+                    "- **Step 1:** Since \\(065^\\circ < 180^\\circ\\), add \\(180^\\circ\\):\n" .
+                    "  \\[ 065^\\circ + 180^\\circ = 245^\\circ \\]\n" .
+                    "- **Step 2:** Back Bearing = **\\(245^\\circ\\)**.";
+
+            case 'computing_hardware':
+                return "#### Example 1: Tracing Hardware Processing\n\n" .
+                    "**Scenario:** A student types an assignment in a word processor and prints a hard copy.\n\n" .
+                    "- **Step 1 (Input):** Keystrokes are captured by the keyboard controller and sent as binary ASCII signals.\n" .
+                    "- **Step 2 (Processing):** The CPU interprets keystrokes, coordinates font rendering, and stores active text in RAM.\n" .
+                    "- **Step 3 (Secondary Storage):** Clicking \"Save\" writes the document permanently to the SSD/hard drive.\n" .
+                    "- **Step 4 (Output):** Clicking \"Print\" sends the rasterized document to the printer for physical output.";
+
+            default:
+                return "#### Example 1: Guided Application\n\n" .
+                    "**Problem Statement:** Apply the core steps of **{$cleanTitle}** to solve a standard exercise.\n\n" .
+                    "- **Step 1:** Carefully isolate the key variables and requirements from the problem statement.\n" .
+                    "- **Step 2:** Select and write down the relevant governing formula or rule.\n" .
+                    "- **Step 3:** Substitute known values systematically and compute the intermediate results.\n" .
+                    "- **Step 4:** State the final answer with appropriate units and check that it is mathematically sound.";
         }
+    }
 
-        $sLower = strtolower($subject);
-        $isComputing = str_contains($sLower, 'ict') || str_contains($sLower, 'comput') || str_contains($sLower, 'technol');
-        $isScience = str_contains($sLower, 'sci') || str_contains($sLower, 'phys') || str_contains($sLower, 'chem') || str_contains($sLower, 'bio');
+    /**
+     * Generate domain-tailored pro-tips and common traps to avoid.
+     */
+    protected function generateDomainProTips(string $domain, string $cleanTitle): string
+    {
+        switch ($domain) {
+            case 'number_rounding_decimals':
+                return "- 🚫 **Trap 1: Don't \"Look Down the Street\" (No Chained Rounding)**: Only inspect the **single digit** immediately to the right of your target place. Never look two or three digits away! (For example, in **3.448**, rounding to the nearest tenth looks only at the **4**, giving **3.4**. Do NOT use the 8 to make 4 a 5—that is a common exam mistake!).\n" .
+                    "- 🎯 **Trap 2: Don't Drop Required Precision Zeros**: If an exam asks you to round **4.98** to **1 decimal place**, the answer is **5.0**, NOT **5**. Writing the **.0** proves that you rounded to tenths!\n" .
+                    "- 💡 **Ghana Currency Pro-Tip**: In financial transactions involving Ghana Cedis, always round to **2 decimal places** (nearest Pesewa) at the very final step, never during intermediate working.";
 
-        if ($isComputing) {
-            $step1 = "- Step 1: Identify the technical component, generation, or scenario in the prompt.";
-            $step2 = "- Step 2: Analyze its architectural features, operation, and functional role.";
-            $step3 = "- Step 3: State the practical outcome or standard technical classification.\n";
-        } elseif ($isScience) {
-            $step1 = "- Step 1: Identify the scientific apparatus, variables, or phenomenon.";
-            $step2 = "- Step 2: Apply the governing scientific law, observation, or formula.";
-            $step3 = "- Step 3: Draw a clear, evidence-based conclusion using correct scientific terms.\n";
-        } else {
-            $step1 = "- Step 1: Identify the given information and relationships specified in the problem.";
-            $step2 = "- Step 2: Apply the standard concept rule and evaluate each part carefully.";
-            $step3 = "- Step 3: State the final solution clearly with proper annotations.\n";
+            case 'number_rounding_whole':
+                return "- 🚫 **Trap 1: Forgetting to Fill with Zeros**: Rounding 4,821 to the nearest hundred is **4,800**, NOT 48! Whole numbers must keep their place-holding zeros.\n" .
+                    "- 💡 **Pro-Tip**: The number of zeros at the end usually matches the place value (nearest ten = 1 zero, nearest hundred = 2 zeros, nearest thousand = 3 zeros).";
+
+            case 'number_significant_figures':
+                return "- 🚫 **Trap 1: Counting Leading Zeros**: In **0.0072**, there are only **2** significant figures. The zeros are just place-holders showing where the decimal sits!\n" .
+                    "- 💡 **Pro-Tip**: Trailing zeros *after* a decimal point (like **2.50**) count because someone intentionally measured with that precision.";
+
+            case 'geometry_bearings':
+                return "- 🚫 **Trap 1: Forgetting the Leading Zero**: Bearings must ALWAYS have 3 digits! An angle of \\(45^\\circ\\) must be written as **\\(045^\\circ\\)**.\n" .
+                    "- 🚫 **Trap 2: Turning Counter-Clockwise**: Never turn anti-clockwise from North. Bearings always rotate in the clockwise direction.";
+
+            case 'algebra_linear_relations_graphs':
+                return "- 💡 **Pro-Tip: Check the Gradient Sign**: If the line goes up from left to right, the gradient is positive ($m > 0$). If it goes down from left to right, the gradient is negative ($m < 0$).";
+
+            case 'computing_hardware':
+                return "- 💡 **Pro-Tip: RAM vs Storage**: RAM is volatile (erased when power is turned off); storage (SSD/HDD) is non-volatile (preserves files permanently).";
+
+            default:
+                return "- 💡 **Pro-Tip 1**: Always write out the formula before substituting values.\n" .
+                    "- 🚫 **Trap 1**: Never rush through the intermediate arithmetic—double check signs and decimals.\n" .
+                    "- 🎯 **Pro-Tip 2**: Confirm your final answer directly answers what the question asked.";
         }
-
-        // Split by E.g. or bullet
-        $rawItems = preg_split('/(?=E\.g\.[,\s]*\d*[\.:]?)/i', $exemplarsText, -1, PREG_SPLIT_NO_EMPTY);
-        $output = [];
-        $count = 1;
-
-        foreach ($rawItems as $item) {
-            $cleaned = trim($item);
-            if (strlen($cleaned) < 10) continue;
-
-            // Remove leading "E.g. 1:" prefix
-            $cleaned = preg_replace('/^E\.g\.[,\s]*\d*[\.:]?\s*/i', '', $cleaned);
-            $cleaned = trim($cleaned);
-
-            $output[] = "#### Example {$count}\n";
-            $output[] = "**Problem Statement:**";
-            $output[] = "{$cleaned}\n";
-            $output[] = "**Step-by-Step Guided Solution:**";
-            $output[] = $step1;
-            $output[] = $step2;
-            $output[] = $step3;
-
-            $count++;
-            if ($count > 3) break; // Limit to top 3 focused examples
-        }
-
-        return implode("\n", $output);
     }
 
     /**
@@ -458,8 +519,9 @@ class LocalLessonSynthesizer
 
     /**
      * Synthesize 3 Brilliant-style sequential micro-segments (Concept -> Challenge).
+     * Part 1 has NO challenge barrier (reading & intuition only) so students absorb the foundation!
      *
-     * @return array<int, array{id: int, title: string, subtitle: string, content_html: string, challenge: array}>
+     * @return array<int, array{id: int, title: string, subtitle: string, content_html: string, challenge: ?array}>
      */
     public function synthesizeInteractiveSegments(
         CurriculumIndicator $indicator,
@@ -472,56 +534,56 @@ class LocalLessonSynthesizer
     ): array {
         $cleanTitle = trim($title);
         $domain = $this->detectDomain($indicator, $title, $subject);
-
-        // SEGMENT 1: The Intuition & The Big Idea
-        $challenge1 = $this->generateChallenge1($domain, $cleanTitle);
+        $proTips = $this->generateDomainProTips($domain, $cleanTitle);
 
         $segments = [];
+
+        // SEGMENT 1: The Intuition & Layman's Foundation (NO CHALLENGE BARRIER)
+        // Students absorb the concept without being tested before being taught!
         $segments[] = [
             'id' => 1,
-            'title' => "Part 1: The Intuition",
-            'subtitle' => "Why this concept matters & how it impacts daily life",
+            'title' => "Part 1: The Intuition & Layman's Foundation",
+            'subtitle' => "Understanding the concept using everyday examples",
             'content_html' => Str::markdown($intro),
-            'challenge' => $challenge1,
+            'challenge' => null, // Non-blocking! Renders "Understood! Let's Learn How To Do It ->" button
         ];
 
-        // SEGMENT 2: Core Rules & Practical Application
+        // SEGMENT 2: Step-by-Step Rules & Guided Examples
         $challenge2 = $this->generateChallenge2($domain, $cleanTitle);
 
-        $segment2Content = "### Core Rules & Principles\n" . $rules;
+        $segment2Content = "### 📌 Core Rules & Steps to Follow\n\n" . $rules;
         if (!empty($workedExamples)) {
-            $segment2Content .= "\n\n### Worked Example\n" . $workedExamples;
+            $segment2Content .= "\n\n### 💡 Step-by-Step Worked Examples\n\n" . $workedExamples;
         }
 
         $segments[] = [
             'id' => 2,
-            'title' => "Part 2: Core Principles & Application",
-            'subtitle' => "How to work through problems step-by-step",
+            'title' => "Part 2: How It Works & Guided Examples",
+            'subtitle' => "Step-by-step methods with real numbers worked out",
             'content_html' => Str::markdown($segment2Content),
             'challenge' => $challenge2,
         ];
 
-        // SEGMENT 3: Synthesis & Real-World Mastery
+        // SEGMENT 3: Concept Mastery & Pro-Tips
         $takeawaySummary = !empty($takeaways)
             ? implode("\n- ", array_map(fn($t) => "**{$t}**", $takeaways))
             : "Review and master the core techniques of {$cleanTitle}.";
+
+        $segment3Content = "### 💡 Pro-Tips & Common Traps to Avoid\n\n" . $proTips . "\n\n### 🎯 Essential Takeaways\n- " . $takeawaySummary;
 
         $challenge3 = $this->generateChallenge3($domain, $cleanTitle, $takeaways);
 
         $segments[] = [
             'id' => 3,
-            'title' => "Part 3: Concept Mastery & Reflection",
-            'subtitle' => "Essential takeaways and verification strategies",
-            'content_html' => Str::markdown("### 🎯 Essential Takeaways\n- " . $takeawaySummary),
+            'title' => "Part 3: Concept Mastery & Pro-Tips",
+            'subtitle' => "Mastery traps to avoid, pro-tips, and final reflection",
+            'content_html' => Str::markdown($segment3Content),
             'challenge' => $challenge3,
         ];
 
         return $segments;
     }
 
-    /**
-     * Classify an indicator into a granular, topic-specific domain using word-boundary matching.
-     */
     protected function detectDomain(CurriculumIndicator $indicator, string $title, string $subject): string
     {
         $strandTitle = $indicator->subStrand?->strand?->title ?? '';
