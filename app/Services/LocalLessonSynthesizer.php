@@ -227,6 +227,35 @@ class LocalLessonSynthesizer
                     "- In **Gases** (Steam): Particles have so much energy they fly freely in all directions, bouncing off the walls!";
 
 
+            case 'algebra_patterns_sequences':
+                return "### 🧵 The Magic of Patterns & Relations\n\n" .
+                    "Imagine you are watching a master weaver at the famous Bonwire Kente weaving village near Kumasi. " .
+                    "As the weaver's shuttle flies back and forth across the loom, you notice something fascinating: every single stripe of yellow, green, and gold appears in an exact, predictable order. " .
+                    "Or imagine you put ₵4 into a Susu savings box on Day 1, and every single day you add ₵3 more. " .
+                    "On Day 2 you have ₵7, on Day 3 you have ₵10, on Day 4 you have ₵13!\n\n" .
+                    "In mathematics, this predictable connection is called a **Relation** or a **Linear Pattern**.\n\n" .
+                    "#### 1. What is a Relation?\n" .
+                    "A **Relation** is a mathematical bridge that connects an **Input** to an **Output**:\n" .
+                    "- **The Domain (Input / Position)**: The starting numbers or positions (\$x = 1, 2, 3, 4, \\dots\$).\n" .
+                    "- **The Co-domain (Output / Value)**: The resulting numbers produced by the rule (\$y = 4, 7, 10, 13, \\dots\$).\n\n" .
+                    "#### 2. The Table of Values\n" .
+                    "We can organize this relationship into a clean table:\n\n" .
+                    "| Domain (Input \$x\$) | 1 | 2 | 3 | 4 | 5 | ... | 9 |\n" .
+                    "| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |\n" .
+                    "| Co-domain (Output \$y\$) | 4 | 7 | 10 | 13 | **?** | ... | **?** |\n\n" .
+                    "#### 3. How Does Each Element Differ from the Preceding One?\n" .
+                    "Look at the step between consecutive co-domain values: \$4 \\rightarrow 7 \\rightarrow 10 \\rightarrow 13\$.\n" .
+                    "- Each step adds a constant **+3**! This constant jump is called the **Common Difference (\$d\$)** or **Step Size**.\n" .
+                    "- To find the missing value at \$x = 5\$, simply add 3: \$13 + 3 = \\mathbf{16}\$!\n\n" .
+                    "#### 4. The Power of the Rule\n" .
+                    "What if your teacher asks: *\"What is the output when the domain is 100?\"*\n" .
+                    "You don't need to count by 3s one hundred times! Instead, we discover the **general rule**:\n" .
+                    "$$\\mathbf{\\text{Rule}: \\quad y = 3x + 1}$$\n" .
+                    "- For \$x = 1\$: \$y = 3(1) + 1 = 4\$ ✅\n" .
+                    "- For \$x = 2\$: \$y = 3(2) + 1 = 7\$ ✅\n" .
+                    "- For \$x = 100\$: \$y = 3(100) + 1 = \\mathbf{301}\$! 🎉\n\n" .
+                    "> 💡 **Key Takeaway**: A relation links inputs (Domain) to outputs (Co-domain). Finding the constant step difference unlocks the rule to predict ANY future element instantly!";
+
             case 'data_collection_charts':
                 return "### 📊 Why Do We Organize Data?\n\n" .
                     "Imagine you are the Senior Prefect in a school of 1,200 students in Kumasi. " .
@@ -358,6 +387,24 @@ class LocalLessonSynthesizer
                     "2. **Classify Hardware Subsystems**: Clearly distinguish between input peripherals, central processing, internal memory (RAM/ROM), and secondary storage.\n" .
                     "3. **Evaluate Specifications**: Understand performance metrics (CPU clock speed in GHz, RAM capacity in GB, storage transfer speed in MB/s).";
 
+
+            case 'algebra_patterns_sequences':
+                return "1. **Identify the Common Difference (\$d\$)**:\n" .
+                    "   - Subtract any term from the term that immediately follows it:\n" .
+                    "     $$\\mathbf{d = y_2 - y_1 = y_3 - y_2}$$\n" .
+                    "   - For the sequence \$4, 7, 10, 13\\dots\$: \$d = 7 - 4 = \\mathbf{+3}\$.\n\n" .
+                    "2. **Find the Multiplier and Adjustment Constant (\$c\$)**:\n" .
+                    "   - Every linear relation follows the equation: $$\\mathbf{y = mx + c}$$\n" .
+                    "   - The multiplier \$m\$ is ALWAYS the common difference: \$m = d = 3\$.\n" .
+                    "   - To find \$c\$, substitute the first pair (\$x=1, y=4\$):\n" .
+                    "     $$4 = 3(1) + c \\implies c = 4 - 3 = \\mathbf{+1}$$\n" .
+                    "   - So the relation rule is: $$\\mathbf{y = 3x + 1}$$\n\n" .
+                    "3. **Predict Missing or Subsequent Elements**:\n" .
+                    "   - **Immediate next term**: Add the common difference (\$13 + 3 = 16\$).\n" .
+                    "   - **Distant term (\$n\\text{th}\$ element)**: Substitute the domain value into the rule:\n" .
+                    "     $$\\text{When } x = 9: \\quad y = 3(9) + 1 = 27 + 1 = \\mathbf{28}$$\n\n" .
+                    "4. **State the Rule in Words (Mathematical Language)**:\n" .
+                    "   - \$y = 3x + 1\\$ in words: *\"Multiply the domain value by 3, then add 1\"* or *\"One more than three times the number\"*.";
 
             case 'data_collection_charts':
                 return "1. **Categorical vs. Numerical Data**:\n" .
@@ -492,6 +539,44 @@ class LocalLessonSynthesizer
                     "- **Step 4 (Output):** Clicking \"Print\" sends the rasterized document to the printer for physical output.";
 
 
+            case 'algebra_patterns_sequences':
+                return "#### Example 1: Completing a Relation Table & Finding Missing Terms\n\n" .
+                    "**Question:** Study the pattern of numbers in the table below:\n\n" .
+                    "| Domain (\$x\$) | 1 | 2 | 3 | 4 | 5 | 6 | 7 |\n" .
+                    "| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |\n" .
+                    "| Co-domain (\$y\$) | 4 | 7 | 10 | **?** | 16 | **?** | 22 |\n\n" .
+                    "1. What are the missing numbers in the co-domain when \$x = 4\$ and \$x = 6\$?\n" .
+                    "2. State the mathematical rule connecting \$x\$ and \$y\$.\n" .
+                    "3. If the next number in the domain is 9, what is the corresponding number in the co-domain?\n\n" .
+                    "- **Step 1 (Find the step difference):**\n" .
+                    "  - Subtract consecutive co-domain values: \$7 - 4 = 3\$, \$10 - 7 = 3\$.\n" .
+                    "  - The common difference is **+3**.\n" .
+                    "- **Step 2 (Find the missing numbers):**\n" .
+                    "  - For \$x = 4\$: \$10 + 3 = \\mathbf{13}\$\n" .
+                    "  - For \$x = 6\$: \$16 + 3 = \\mathbf{19}\$\n" .
+                    "- **Step 3 (Derive the rule):**\n" .
+                    "  - Form: \$y = 3x + c\$. When \$x = 1, y = 4 \\implies 4 = 3(1) + c \\implies c = +1\$.\n" .
+                    "  - **Rule**: $$\\mathbf{y = 3x + 1}$$\n" .
+                    "- **Step 4 (Predict for domain \$x = 9\$):**\n" .
+                    "  \$\$y = 3(9) + 1 = 27 + 1 = \\mathbf{28}\$\$\n\n" .
+                    "---\n\n" .
+                    "#### Example 2: Describing a Relation in Words\n\n" .
+                    "**Question:** Given the relation \$x \\rightarrow 2x + 5\$, calculate the outputs for domain values \$x = [1, 2, 3]\$ and state the rule in words.\n\n" .
+                    "- **For \$x = 1\$**: \$2(1) + 5 = 2 + 5 = \\mathbf{7}\$\n" .
+                    "- **For \$x = 2\$**: \$2(2) + 5 = 4 + 5 = \\mathbf{9}\$\n" .
+                    "- **For \$x = 3\$**: \$2(3) + 5 = 6 + 5 = \\mathbf{11}\$\n" .
+                    "- **Rule in Words**: *\"Multiply each input number by 2, then add 5\"* or *\"Five more than twice the number\"*.\n\n" .
+                    "---\n\n" .
+                    "#### Example 3: Matchstick Geometric Patterns\n\n" .
+                    "**Question:** A student builds a row of connected squares using matchsticks:\n" .
+                    "- 1 square requires **4 matchsticks**.\n" .
+                    "- 2 squares require **7 matchsticks**.\n" .
+                    "- 3 squares require **10 matchsticks**.\n" .
+                    "How many matchsticks are needed to build a pattern of **20 squares**?\n\n" .
+                    "- **Step 1:** Sequence of sticks: \$4, 7, 10, \\dots\$ Common difference \$d = 7 - 4 = 3\$.\n" .
+                    "- **Step 2:** Rule: \$S = 3n + 1\$ (check for \$n=1\$: \$3(1)+1 = 4\$).\n" .
+                    "- **Step 3:** For \$n = 20\$ squares: $$\\text{Sticks} = 3(20) + 1 = 60 + 1 = \\mathbf{61 \\text{ matchsticks}}$$.";
+
             case 'data_collection_charts':
                 return "#### Example 1: Finding Class Limits, Class Boundaries, and Class Width\n\n" .
                     "**Problem Statement:** A teacher groups examination marks into intervals: **$10 - 19$**, **$20 - 29$**, **$30 - 39$**, **$40 - 49$**. For the interval **$20 - 29$**, determine:\n" .
@@ -582,6 +667,15 @@ class LocalLessonSynthesizer
 
             case 'algebra_linear_relations_graphs':
                 return "- 💡 **Pro-Tip: Check the Gradient Sign**: If the line goes up from left to right, the gradient is positive ($m > 0$). If it goes down from left to right, the gradient is negative ($m < 0$).";
+
+            case 'algebra_patterns_sequences':
+                return "- 🚫 **Trap 1: Using Non-Consecutive Terms for the Common Difference**: The common difference \$d\$ must be found by subtracting **consecutive** terms: \$d = T_2 - T_1\$. Never subtract \$T_3 - T_1\$ (that gives \$2d\$, not \$d\$)!\n" .
+                    "- 🚫 **Trap 2: Forgetting the \$+ c\$ Constant**: The rule for a linear sequence is \$T_n = d \\times n + c\$, NOT just \$T_n = d \\times n\$. You must calculate \$c\$ by substituting the first term back in.\n" .
+                    "- 💡 **Pro-Tip: Verify Your Rule**: After finding \$T_n = d \\times n + c\$, **always test it** with 2–3 known terms. If your rule gives \$T_1 = 4\$ but the actual first term is \$4\$, you know it works!\n" .
+                    "- 🎯 **Domain vs. Co-domain Memory Rule**:\n" .
+                    "  - **Domain** = the **input** values (what you start with).\n" .
+                    "  - **Co-domain (Range)** = the **output** values (what the rule produces).\n" .
+                    "  - Think of it like a *machine*: you feed in the Domain, the rule processes it, and out comes the Co-domain.";
 
             case 'computing_hardware':
                 return "- 💡 **Pro-Tip: RAM vs Storage**: RAM is volatile (erased when power is turned off); storage (SSD/HDD) is non-volatile (preserves files permanently).";
