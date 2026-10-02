@@ -226,6 +226,80 @@ class LocalLessonSynthesizer
                     "- In **Liquids** (Water): Heat gives particles enough energy to slide and roll over each other.\n" .
                     "- In **Gases** (Steam): Particles have so much energy they fly freely in all directions, bouncing off the walls!";
 
+
+            case 'data_collection_charts':
+                return "### 📊 Types of Data & How We Organize Them\n\n" .
+                    "In our daily lives, information comes in all forms—from the scores in a football match to the names of your favorite school subjects. " .
+                    "In mathematics and statistics, **data is classified into different types based on whether it represents numbers or qualities, and how it is organized**.\n\n" .
+                    "---\n\n" .
+                    "### 1. Numerical (Quantitative) Data\n" .
+                    "**Numerical data** represents quantities, counts, or measurements and is always expressed in numbers.\n\n" .
+                    "- **Discrete Data**: Whole numbers that you count individually. You cannot have fractions or decimals of these items.\n" .
+                    "  - *Examples*: Number of students in a class ($35$), family size ($4$ siblings), goals scored in a match ($2$).\n" .
+                    "- **Continuous Data**: Measurements that can take any value within a continuous range, including decimals and fractions.\n" .
+                    "  - *Examples*: Height of a student ($1.65\\text{ m}$), body temperature ($36.8^\\circ\\text{C}$), weight of a cocoa bag ($64.5\\text{ kg}$), time taken to run $100\\text{ m}$ ($12.4\\text{ s}$).\n\n" .
+                    "---\n\n" .
+                    "### 2. Categorical (Qualitative) Data\n" .
+                    "**Categorical data** represents characteristics, descriptions, words, or labels that describe qualities rather than numerical amounts.\n\n" .
+                    "- **Nominal Data**: Categories with **no natural or logical order**. One category is not \"higher\" or \"lower\" than another.\n" .
+                    "  - *Examples*: Eye color (Brown, Black, Hazel), gender (Male, Female), favorite Ghanaian dish (Jollof, Waakye, Banku, Fufu), blood group (A, B, AB, O).\n" .
+                    "- **Ordinal Data**: Categories that follow a **natural order, ranking, or scale**, but the differences between ranks cannot be precisely measured.\n" .
+                    "  - *Examples*: Exam letter grades (A, B, C, D, E), race finishes ($1^{\\text{st}}$, $2^{\\text{nd}}$, $3^{\\text{rd}}$), clothing sizes (Small, Medium, Large), education levels (Primary, JHS, SHS, Tertiary).\n\n" .
+                    "---\n\n" .
+                    "### 3. Ungrouped vs. Grouped Data\n\n" .
+                    "#### A. Ungrouped Data (Raw Data)\n" .
+                    "Data presented as **individual, raw values** or a list of scores that haven't been summarized or put into intervals.\n\n" .
+                    "- *Example*: Test marks obtained by 5 students:\n" .
+                    "  $$[72, \\; 85, \\; 90, \\; 65, \\; 88]$$\n\n" .
+                    "#### B. Grouped Data\n" .
+                    "When working with large amounts of data, individual scores become overwhelming. We organize and summarize the data into **frequency distributions** using **class intervals**.\n\n" .
+                    "- *Example*: Test scores of 24 students grouped into intervals:\n\n" .
+                    "| Class Interval (Marks) | Tally | Frequency (Students) |\n" .
+                    "| :--- | :---: | :---: |\n" .
+                    "| $50 - 60$ | &#124;&#124;&#124;&#124; | $4$ |\n" .
+                    "| $61 - 70$ | &#124;&#124;&#124;&#124; &#124;&#124;&#124; | $8$ |\n" .
+                    "| $71 - 80$ | &#124;&#124;&#124;&#124; &#124;&#124;&#124;&#124; &#124;&#124; | $12$ |\n" .
+                    "| **Total** | | **$24$** |\n\n" .
+                    "> 💡 **Key Takeaway**: Ungrouped data shows every single individual score, while grouped data organizes scores into convenient ranges (class intervals) with frequencies!";
+
+            case 'data_central_tendency':
+                return "### 🎯 Central Tendency: The Story Behind the Average\n\n" .
+                    "Suppose a football striker scores 3, 0, 1, 4, and 2 goals across 5 matches. " .
+                    "How do we summarize their performance with a single fair number?\n\n" .
+                    "In statistics, **Measures of Central Tendency** find the \"center\" or typical value of a dataset:\n\n" .
+                    "- **The Mean (Fair Share Average)**: Add up all the values and divide equally by how many there are: $\\text{Mean} = \\frac{\\sum x}{n}$.\n" .
+                    "- **The Median (The Middle Value)**: Line up all values in order from least to greatest; the median is the person standing right in the middle!\n" .
+                    "- **The Mode (The Most Popular)**: The number that appears most frequently.\n" .
+                    "- **The Range (The Spread)**: The gap between the champion and the lowest score: $\\text{Highest} - \\text{Lowest}$.";
+
+            case 'data_probability':
+                return "### 🎲 Probability: The Science of Chance\n\n" .
+                    "Before a football match kicks off, the referee flips a coin in front of the two team captains. " .
+                    "Why? Because a fair coin has exactly **2 equal outcomes** (Head or Tail), giving each team a 50% chance!\n\n" .
+                    "In mathematics, **Probability** measures how likely an event is to happen on a scale from **0** (completely impossible) to **1** (absolutely certain):\n\n" .
+                    "$$\\mathbf{P(\\text{Event}) = \\frac{\\text{Number of Successful Outcomes}}{\\text{Total Number of Possible Outcomes}}}$$\n\n" .
+                    "When rolling a standard 6-sided die, the chance of rolling a 4 is $\\frac{1}{6}$, while the chance of rolling an even number (2, 4, or 6) is $\\frac{3}{6} = \\frac{1}{2}$!";
+
+            case 'number_sets':
+                return "### 🧺 The Power of Sets: Sorting Our World\n\n" .
+                    "Think of a set like a shopping basket or a school club. " .
+                    "A **Set** is simply a well-defined collection of distinct objects or numbers, called **members** or **elements**.\n\n" .
+                    "In everyday school life:\n" .
+                    "- Let Set A be students who play **Football**.\n" .
+                    "- Let Set B be students who sing in the **School Choir**.\n\n" .
+                    "Mathematicians use **Venn Diagrams** to visualize how groups overlap:\n" .
+                    "- **Intersection ($A \\cap B$)**: The students who do BOTH (play football AND sing in the choir).\n" .
+                    "- **Union ($A \\cup B$)**: The students who do EITHER (football players OR choir singers OR both).\n" .
+                    "- **Universal Set ($\\mathcal{U}$)**: All students in the entire school!";
+
+            case 'algebra_expressions_factorisation':
+                return "### 🎁 Distributing & Factoring: Packing and Unpacking Boxes\n\n" .
+                    "Imagine you are preparing 3 gift bags for your friends. In each bag, you place **1 notebook ($x$)** and **2 pens**.\n\n" .
+                    "In mathematics, we write this as: $3(x + 2)$.\n\n" .
+                    "- **Expanding (Opening the bags)**: Multiply the 3 by everything inside: $3 \\times x + 3 \\times 2 = \\mathbf{3x + 6}$.\n" .
+                    "- **Factoring (Repacking the bags)**: Look at $3x + 6$. What number divides both terms? The number 3! Pull out the common factor: $\\mathbf{3(x + 2)}$.\n\n" .
+                    "Expanding and Factoring are simply two sides of the same coin!";
+
             default:
                 return "### 💡 Getting to the Heart of {$cleanTitle}\n\n" .
                     "Every important concept in {$subject} began as a solution to a real-world question or curiosity. " .
@@ -293,6 +367,39 @@ class LocalLessonSynthesizer
                 return "1. **Trace the Information Processing Cycle**: Input $\\rightarrow$ Processing $\\rightarrow$ Storage $\\rightarrow$ Output.\n" .
                     "2. **Classify Hardware Subsystems**: Clearly distinguish between input peripherals, central processing, internal memory (RAM/ROM), and secondary storage.\n" .
                     "3. **Evaluate Specifications**: Understand performance metrics (CPU clock speed in GHz, RAM capacity in GB, storage transfer speed in MB/s).";
+
+
+            case 'data_collection_charts':
+                return "1. **Categorical vs. Numerical Data**:\n" .
+                    "   - **Categorical (Qualitative)**: Non-numeric traits. *Nominal* = names with no order (e.g., gender, eye color); *Ordinal* = categories with ranking (e.g., 1st/2nd/3rd place, boxer weight classes).\n" .
+                    "   - **Numerical (Quantitative)**: Quantities. *Discrete* = whole count values (e.g., number of goals); *Continuous* = measured with decimals (e.g., length, mass, time).\n" .
+                    "2. **Identify Class Limits in Grouped Data**:\n" .
+                    "   - For an interval like **$10 - 19$**:\n" .
+                    "     - **Lower Class Limit**: Smallest value in group $\\rightarrow \\mathbf{10}$.\n" .
+                    "     - **Upper Class Limit**: Largest value in group $\\rightarrow \\mathbf{19}$.\n" .
+                    "3. **The Class Width Formula (CRITICAL)**:\n" .
+                    "   - **Method A (Difference between consecutive lower limits)**:\n" .
+                    "     $$\\mathbf{\\text{Class Width} = \\text{Lower Limit of Next Interval} - \\text{Lower Limit of Current Interval}}$$\n" .
+                    "     For $10 - 19$ and $20 - 29$: $\\text{Width} = 20 - 10 = \\mathbf{10}$.\n" .
+                    "   - **Method B (Count all included integer values)**: $10, 11, 12, 13, 14, 15, 16, 17, 18, 19 \\rightarrow \\mathbf{10}$ values.\n" .
+                    "   - ⚠️ **Trap to Avoid**: Do NOT compute $19 - 10 = 9$! That leaves out the starting number 10!\n" .
+                    "4. **Class Midpoint (Class Mark)**:\n" .
+                    "   $$\\text{Midpoint} = \\frac{\\text{Lower Limit} + \\text{Upper Limit}}{2} = \\frac{10 + 19}{2} = \\mathbf{14.5}$$\n" .
+                    "5. **Class Boundaries**:\n" .
+                    "   - For integer data with a gap of 1 unit, subtract 0.5 from lower limit and add 0.5 to upper limit: **$9.5 - 19.5$**. Width = $19.5 - 9.5 = \\mathbf{10}$.";
+
+            case 'data_central_tendency':
+                return "1. **Mean Formula**: $\\bar{x} = \\frac{\\sum x}{n} = \\frac{\\text{Sum of all values}}{\\text{Total number of values}}$.\n" .
+                    "2. **Median Rule**: Arrange numbers in ascending order. If $n$ is odd, median is the middle value at position $\\frac{n+1}{2}$. If $n$ is even, average the two middle values.\n" .
+                    "3. **Mode Rule**: Identify the value with the highest frequency. A dataset can have no mode, one mode (unimodal), or multiple modes (bimodal).\n" .
+                    "4. **Range Formula**: $\\text{Range} = \\text{Maximum Value} - \\text{Minimum Value}$.";
+
+            case 'number_sets':
+                return "1. **Element Notation**: $x \\in A$ means $x$ is a member of set $A$; $x \\notin A$ means it is not a member.\n" .
+                    "2. **Intersection ($A \\cap B$)**: List elements that belong to **both** set A AND set B.\n" .
+                    "3. **Union ($A \\cup B$)**: Combine elements from set A and set B without repeating duplicate members.\n" .
+                    "4. **Complement ($A'$)**: List elements in the Universal Set ($\\mathcal{U}$) that do NOT belong to set $A$.\n" .
+                    "5. **Set Cardinality Rule**: $n(A \\cup B) = n(A) + n(B) - n(A \\cap B)$.";
 
             default:
                 return "1. **Identify the Core Given Information**: Isolate the given numbers, variables, or statements carefully.\n" .
@@ -394,6 +501,62 @@ class LocalLessonSynthesizer
                     "- **Step 3 (Secondary Storage):** Clicking \"Save\" writes the document permanently to the SSD/hard drive.\n" .
                     "- **Step 4 (Output):** Clicking \"Print\" sends the rasterized document to the printer for physical output.";
 
+
+            case 'data_collection_charts':
+                return "#### Example 1: Finding Class Limits, Class Boundaries, and Class Width\n\n" .
+                    "**Problem Statement:** A teacher groups examination marks into intervals: **$10 - 19$**, **$20 - 29$**, **$30 - 39$**, **$40 - 49$**. For the interval **$20 - 29$**, determine:\n" .
+                    "1. The lower and upper class limits.\n" .
+                    "2. The class width of the interval.\n" .
+                    "3. The class midpoint.\n\n" .
+                    "- **Step 1 (Identify class limits):**\n" .
+                    "  - Lower Class Limit = $\\mathbf{20}$\n" .
+                    "  - Upper Class Limit = $\\mathbf{29}$\n\n" .
+                    "- **Step 2 (Calculate class width):**\n" .
+                    "  - Subtract consecutive lower limits: $\\text{Class Width} = 30 - 20 = \\mathbf{10}$.\n" .
+                    "  - *(Verification by counting: $20, 21, 22, 23, 24, 25, 26, 27, 28, 29$ contains exactly $\\mathbf{10}$ integer scores).*\n\n" .
+                    "- **Step 3 (Calculate class midpoint):**\n" .
+                    "  $$\\text{Midpoint} = \\frac{\\text{Lower Limit} + \\text{Upper Limit}}{2} = \\frac{20 + 29}{2} = \\frac{49}{2} = \\mathbf{24.5}$$\n\n" .
+                    "---\n\n" .
+                    "#### Example 2: Classifying Data as Categorical or Numerical\n\n" .
+                    "**Problem Statement:** Classify each item below as **Categorical (Nominal/Ordinal)** or **Numerical (Discrete/Continuous)**:\n" .
+                    "1. Favorite Ghanaian dish (Fufu, Banku, Jollof).\n" .
+                    "2. Order of finishing in a sprint race (1st, 2nd, 3rd).\n" .
+                    "3. Number of children in a household.\n" .
+                    "4. Weight of cocoa sacks measured in kilograms.\n\n" .
+                    "- **Item 1 (Favorite dish):** Words with no ranking $\\rightarrow$ **Categorical (Nominal)**.\n" .
+                    "- **Item 2 (Race finish):** Categories with clear rank $\\rightarrow$ **Categorical (Ordinal)**.\n" .
+                    "- **Item 3 (Children count):** Counted in whole numbers ($0, 1, 2, \\dots$) $\\rightarrow$ **Numerical (Discrete)**.\n" .
+                    "- **Item 4 (Cocoa weight):** Measured on a continuous scale with decimals $\\rightarrow$ **Numerical (Continuous)**.\n\n" .
+                    "---\n\n" .
+                    "#### Example 3: Organizing Raw (Ungrouped) Data into a Grouped Frequency Table\n\n" .
+                    "**Problem Statement:** A teacher recorded the test marks of 10 students: **$12, 15, 19, 22, 25, 27, 28, 31, 34, 38$**. " .
+                    "Organize these marks into a grouped frequency table using class intervals of width $10$ starting with $10 - 19$.\n\n" .
+                    "- **Step 1 (Set up the class intervals):**\n" .
+                    "  - First interval: $10 - 19$\n" .
+                    "  - Second interval: $20 - 29$\n" .
+                    "  - Third interval: $30 - 39$\n\n" .
+                    "- **Step 2 (Tally and count the frequency for each interval):**\n" .
+                    "  - $10 - 19$: Marks are $12, 15, 19 \\rightarrow$ **$3$ students**\n" .
+                    "  - $20 - 29$: Marks are $22, 25, 27, 28 \\rightarrow$ **$4$ students**\n" .
+                    "  - $30 - 39$: Marks are $31, 34, 38 \\rightarrow$ **$3$ students**\n\n" .
+                    "- **Step 3 (Construct the frequency table):**\n\n" .
+                    "| Class Interval (Marks) | Tally | Frequency (\$f\$) |\n" .
+                    "| :--- | :---: | :---: |\n" .
+                    "| $10 - 19$ | &#124;&#124;&#124; | $3$ |\n" .
+                    "| $20 - 29$ | &#124;&#124;&#124;&#124; | $4$ |\n" .
+                    "| $30 - 39$ | &#124;&#124;&#124; | $3$ |\n" .
+                    "| **Total** | | **$10$** |";
+
+            case 'data_central_tendency':
+                return "#### Example 1: Calculating Mean, Median, and Mode\n\n" .
+                    "**Problem Statement:** Find the mean, median, mode, and range of the test scores: **$4, 7, 5, 9, 7, 8, 2$**.\n\n" .
+                    "- **Step 1 (Order data from least to greatest):** $2, 4, 5, 7, 7, 8, 9$ ($n = 7$ values).\n" .
+                    "- **Step 2 (Calculate Mean):**\n" .
+                    "  $$\\bar{x} = \\frac{2 + 4 + 5 + 7 + 7 + 8 + 9}{7} = \\frac{42}{7} = \\mathbf{6}$$\n" .
+                    "- **Step 3 (Find Median):** The middle (4th) value is $\\mathbf{7}$.\n" .
+                    "- **Step 4 (Find Mode):** The number $7$ appears twice $\\rightarrow$ $\\mathbf{\\text{Mode} = 7}$.\n" .
+                    "- **Step 5 (Find Range):** $\\text{Highest} - \\text{Lowest} = 9 - 2 = \\mathbf{7}$.";
+
             default:
                 return "#### Example 1: Guided Application\n\n" .
                     "**Problem Statement:** Apply the core steps of **{$cleanTitle}** to solve a standard exercise.\n\n" .
@@ -432,6 +595,19 @@ class LocalLessonSynthesizer
 
             case 'computing_hardware':
                 return "- 💡 **Pro-Tip: RAM vs Storage**: RAM is volatile (erased when power is turned off); storage (SSD/HDD) is non-volatile (preserves files permanently).";
+
+
+            case 'data_collection_charts':
+                return "- 🚫 **Trap 1: The Subtraction Trap for Class Width**: In intervals like **$10 - 19$**, students often do $19 - 10 = 9$. **That is wrong!** Because both 10 and 19 are included in the group, the true width is **$10$** ($20 - 10 = 10$).\n" .
+                    "- 💡 **Pro-Tip: Quick Width Formula**: Always find the difference between consecutive *lower* limits ($20 - 10 = 10$ or $30 - 20 = 10$).\n" .
+                    "- 🎯 **Nominal vs. Ordinal Memory Rule**:\n" .
+                    "  - **No**minal = **No** natural order (names, colors, gender).\n" .
+                    "  - **Or**dinal = **Or**der / rank (1st/2nd/3rd, small/medium/large).\n" .
+                    "- 💡 **Discrete vs. Continuous**: If you count it in whole items, it is *discrete*; if you measure it with a device (decimals allowed), it is *continuous*.";
+
+            case 'data_central_tendency':
+                return "- 🚫 **Trap 1: Forgetting to Order Values for Median**: You must ALWAYS sort numbers from least to greatest before finding the middle value!\n" .
+                    "- 💡 **Pro-Tip: Even Number of Values**: When $n$ is even, there is no single middle number. Add the two middle numbers and divide by 2.";
 
             default:
                 return "- 💡 **Pro-Tip 1**: Always write out the formula before substituting values.\n" .
@@ -1727,14 +1903,14 @@ class LocalLessonSynthesizer
                     'type' => 'multiple-choice',
                     'prompt' => "In a grouped frequency table with class intervals 10–19, 20–29, 30–39, what is the class width of each interval?",
                     'options' => [
-                        "10 (each interval spans 10 integer values)",
-                        "9 (subtracting 19 - 10 without including boundaries)",
-                        "19 (the upper limit)",
-                        "30 (the number of intervals multiplied by 10)",
+                        "10 (subtracting consecutive lower limits: 20 - 10 = 10, or counting 10 to 19 inclusive)",
+                        "9 (subtracting 19 - 10 without including both endpoints)",
+                        "19 (the upper limit of the first class)",
+                        "30 (the upper limit of the last interval)",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Count the integers in 10 through 19: 10, 11, ..., 19 (10 values).",
-                    'explanation' => "The class width is 10 (from 9.5 to 19.5 class boundaries).",
+                    'hint' => "Use the formula: Next Lower Limit - Current Lower Limit = 20 - 10, or count the integers 10 through 19 inclusive.",
+                    'explanation' => "The class width is 10. You can calculate it as 20 - 10 = 10, or by using class boundaries (19.5 - 9.5 = 10). A common mistake is 19 - 10 = 9, which leaves out the starting value 10!",
                 ];
 
             case 'data_probability':
