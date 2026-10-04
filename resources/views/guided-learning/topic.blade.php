@@ -482,9 +482,39 @@
                         <div class="p-6 sm:p-8 space-y-6">
                             
                             {{-- Concept Explanation --}}
-                            <div class="lesson-reader max-w-none">
-                                {!! $segment['content_html'] !!}
-                            </div>
+                            @if($segment['id'] === 1)
+                                {{-- Part 1: Always fully visible — this is the main teaching content --}}
+                                <div class="lesson-reader max-w-none">
+                                    {!! $segment['content_html'] !!}
+                                </div>
+                            @else
+                                {{-- Parts 2 & 3: Hidden behind a collapsible study-guide tip icon --}}
+                                <details class="group rounded-xl border border-indigo-200 dark:border-indigo-800/50 bg-indigo-50/30 dark:bg-indigo-950/20 transition-all">
+                                    <summary class="flex items-center gap-3 px-5 py-3.5 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+                                        <span class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 flex items-center justify-center text-sm flex-shrink-0 transition-transform group-open:rotate-12">
+                                            💡
+                                        </span>
+                                        <div class="flex-1">
+                                            <span class="text-sm font-bold text-indigo-900 dark:text-indigo-200">
+                                                @if($segment['id'] === 2)
+                                                    Study Guide: Rules & Worked Examples
+                                                @else
+                                                    Study Guide: Pro-Tips & Key Takeaways
+                                                @endif
+                                            </span>
+                                            <p class="text-[11px] text-indigo-600/70 dark:text-indigo-400/70 mt-0.5">
+                                                Tap to expand reference notes
+                                            </p>
+                                        </div>
+                                        <span class="text-indigo-400 dark:text-indigo-500 text-xs transition-transform group-open:rotate-180">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </span>
+                                    </summary>
+                                    <div class="px-5 pb-5 pt-2 lesson-reader max-w-none border-t border-indigo-200/50 dark:border-indigo-800/30 mt-1">
+                                        {!! $segment['content_html'] !!}
+                                    </div>
+                                </details>
+                            @endif
 
                             {{-- Embedded Hands-on Challenge Card --}}
                             @if(!empty($segment['challenge']))
