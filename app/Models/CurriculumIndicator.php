@@ -65,6 +65,9 @@ class CurriculumIndicator extends Model
             'B8.4.1.1.1' => 'Types of Data: Numerical, Categorical, Grouped & Ungrouped',
             'B9.1.1.2.1' => 'Relationships Between Number Sets',
             'B9.2.1.1.1' => 'Table of Values and Graphs for Simultaneous Relations',
+            'B7.3.1.1.1' => 'Measuring and Classifying Angles: Right, Acute, Obtuse and Reflex',
+            'B7.3.1.1.2' => 'Complementary and Supplementary Angles',
+            'B7.3.1.1.3' => 'Adjacent, Supplementary and Vertically Opposite Angles',
         ];
 
         if (!empty($code) && isset($canonicalMap[$code])) {

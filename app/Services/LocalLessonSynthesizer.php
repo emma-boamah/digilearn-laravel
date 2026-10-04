@@ -286,6 +286,43 @@ class LocalLessonSynthesizer
                     "- For **Day 100** (\$x = 100\$): \$y = 3(100) + 1 = \\mathbf{301}\$! That is ₵301! 🎉\n\n" .
                     "> 💡 **Key Takeaway**: A pattern follows a specific rule that repeats or grows. The **Domain** (input) feeds into a **Rule** to produce the **Co-domain** (output). To find the rule: (1) find the common difference \$d\$, (2) write \$y = dx + c\$, (3) substitute one known pair to solve for \$c\$. Then you can predict any term instantly!";
 
+            case 'geometry_angles_classification':
+                return "### 📐 Measuring and Classifying Angles\n\n" .
+                    "Angles are everywhere around you — from the hands of the clock on your classroom wall, to the slope of a roof, to the turn you make at a road junction.\n\n" .
+                    "#### What Is an Angle?\n" .
+                    "An **angle** is the amount of **turn** or **rotation** between two straight lines (called **rays** or **arms**) that meet at a common point called the **vertex**.\n\n" .
+                    "Think of it like a door: when a door is closed, the angle between the door and the wall is \$0^\\circ\$. As you push it open, the angle gets bigger. A full turn all the way around is \$360^\\circ\$.\n\n" .
+                    "We measure angles in **degrees** (the ° symbol), using a tool called a **protractor**.\n\n" .
+                    "---\n\n" .
+                    "#### 🏫 Real-Life Example: The Clock on the Wall\n\n" .
+                    "Look at the clock in your classroom. At exactly **3 o'clock**, the minute hand points straight up (12) and the hour hand points to the right (3). " .
+                    "The two hands form a perfect square corner — that is a **right angle** (exactly \$90^\\circ\$).\n\n" .
+                    "Now imagine the time changes:\n" .
+                    "- At **1 o'clock**, the hands are close together — a small angle (\$30^\\circ\$). That is an **acute angle**.\n" .
+                    "- At **3 o'clock**, the hands form a square corner (\$90^\\circ\$). That is a **right angle**.\n" .
+                    "- At **5 o'clock**, the hands are spread wide (\$150^\\circ\$). That is an **obtuse angle**.\n" .
+                    "- At **7 o'clock**, if you measure the *larger* angle going the long way around (\$210^\\circ\$), that is a **reflex angle**.\n\n" .
+                    "---\n\n" .
+                    "#### 📖 Math Vocabulary: Types of Angles\n\n" .
+                    "Mathematicians classify angles into **four types** based on their size:\n\n" .
+                    "| Type of Angle | Size Range | What It Looks Like | Example |\n" .
+                    "| :--- | :--- | :--- | :--- |\n" .
+                    "| **Acute Angle** | Less than \$90^\\circ\$ | A sharp, narrow opening | The tip of a slice of pizza 🍕 |\n" .
+                    "| **Right Angle** | Exactly \$90^\\circ\$ | A perfect square corner (marked with a small square ◻) | The corner of your exercise book 📓 |\n" .
+                    "| **Obtuse Angle** | Between \$90^\\circ\$ and \$180^\\circ\$ | A wide, spread opening | An opened laptop screen 💻 |\n" .
+                    "| **Reflex Angle** | Between \$180^\\circ\$ and \$360^\\circ\$ | Wraps around the outside, past a straight line | The *larger* angle when a door is slightly open 🚪 |\n\n" .
+                    "There are also two special boundary angles:\n" .
+                    "- **Straight Angle**: Exactly \$180^\\circ\$ — the two rays form a straight line.\n" .
+                    "- **Full Turn (Complete Angle)**: Exactly \$360^\\circ\$ — a full rotation back to the starting position.\n\n" .
+                    "---\n\n" .
+                    "#### 🔧 How to Use a Protractor\n\n" .
+                    "To measure an angle with a protractor:\n" .
+                    "1. Place the **center point** (the small hole or crosshair) of the protractor exactly on the **vertex** of the angle.\n" .
+                    "2. Line up the **baseline** (\$0^\\circ\$ line) of the protractor with one **ray** (arm) of the angle.\n" .
+                    "3. Read the number where the **other ray** crosses the scale. Use the **inner scale** if your baseline ray is on the right, or the **outer scale** if it is on the left.\n" .
+                    "4. Classify the angle based on the measurement!\n\n" .
+                    "> 💡 **Key Takeaway**: An angle measures rotation between two rays at a vertex. Acute means *less than \$90^\\circ\$*, right means *exactly \$90^\\circ\$*, obtuse means *between \$90^\\circ\$ and \$180^\\circ\$*, and reflex means *between \$180^\\circ\$ and \$360^\\circ\$*. Use a protractor to measure, then classify!";
+
             case 'data_collection_charts':
                 return "### 📊 Why Do We Organize Data?\n\n" .
                     "Imagine you are the Senior Prefect in a school of 1,200 students in Kumasi. " .
@@ -411,6 +448,21 @@ class LocalLessonSynthesizer
                     "2. **Measure Clockwise**: Rotate clockwise from North to the direction line connecting to the destination.\n" .
                     "3. **Always Use 3 Digits**: Express bearings with three figures (e.g. \\(045^\\circ\\), \\(090^\\circ\\), \\(270^\\circ\\)).\n" .
                     "4. **Back Bearing Rule**: If the forward bearing is \\(< 180^\\circ\\), add \\(180^\\circ\\). If \\(\\ge 180^\\circ\\), subtract \\(180^\\circ\\).";
+
+
+            case 'geometry_angles_classification':
+                return "**The 4 Rules of Angle Classification:**\n\n" .
+                    "**Rule 1 — Acute Angle:** Any angle that measures **less than \$90^\\circ\$** is acute.\n" .
+                    "- Example: \$30^\\circ\$, \$45^\\circ\$, \$89^\\circ\$ are all acute.\n\n" .
+                    "**Rule 2 — Right Angle:** An angle that measures **exactly \$90^\\circ\$** is a right angle.\n" .
+                    "- It is marked with a small square (◻) at the vertex — never with an arc.\n\n" .
+                    "**Rule 3 — Obtuse Angle:** Any angle **greater than \$90^\\circ\$** but **less than \$180^\\circ\$** is obtuse.\n" .
+                    "- Example: \$91^\\circ\$, \$120^\\circ\$, \$179^\\circ\$ are all obtuse.\n\n" .
+                    "**Rule 4 — Reflex Angle:** Any angle **greater than \$180^\\circ\$** but **less than \$360^\\circ\$** is reflex.\n" .
+                    "- To find a reflex angle when you know the smaller angle: \$\\text{Reflex} = 360^\\circ - \\text{smaller angle}\$.\n" .
+                    "- Example: If the acute angle is \$50^\\circ\$, the reflex angle on the other side is \$360^\\circ - 50^\\circ = 310^\\circ\$.\n\n" .
+                    "**Quick Memory Rule:**\n" .
+                    "$$0^\\circ < \\text{Acute} < 90^\\circ < \\text{Obtuse} < 180^\\circ < \\text{Reflex} < 360^\\circ$$";
 
             case 'computing_hardware':
                 return "1. **Trace the Information Processing Cycle**: Input $\\rightarrow$ Processing $\\rightarrow$ Storage $\\rightarrow$ Output.\n" .
@@ -607,6 +659,28 @@ class LocalLessonSynthesizer
                     "- **Step 2:** Rule: \$S = 3n + 1\$ (check for \$n=1\$: \$3(1)+1 = 4\$).\n" .
                     "- **Step 3:** For \$n = 20\$ squares: $$\\text{Sticks} = 3(20) + 1 = 60 + 1 = \\mathbf{61 \\text{ matchsticks}}$$.";
 
+            case 'geometry_angles_classification':
+                return "#### Example 1: Classifying Angles by Size\n\n" .
+                    "**Problem:** Classify each of the following angles as acute, right, obtuse, or reflex:\n" .
+                    "  (a) \$47^\\circ\$   (b) \$90^\\circ\$   (c) \$135^\\circ\$   (d) \$250^\\circ\$\n\n" .
+                    "- **(a) \$47^\\circ\$**: Is \$47 < 90\$? Yes → **Acute angle** ✅\n" .
+                    "- **(b) \$90^\\circ\$**: Is it exactly \$90\$? Yes → **Right angle** ✅\n" .
+                    "- **(c) \$135^\\circ\$**: Is \$90 < 135 < 180\$? Yes → **Obtuse angle** ✅\n" .
+                    "- **(d) \$250^\\circ\$**: Is \$180 < 250 < 360\$? Yes → **Reflex angle** ✅\n\n" .
+                    "---\n\n" .
+                    "#### Example 2: Finding the Reflex Angle\n\n" .
+                    "**Problem:** A protractor shows that the angle between two rays is \$110^\\circ\$. What is the reflex angle on the other side?\n\n" .
+                    "- **Step 1:** A full turn around a point is \$360^\\circ\$.\n" .
+                    "- **Step 2:** Subtract the measured angle: \$360^\\circ - 110^\\circ = \\mathbf{250^\\circ}\$\n" .
+                    "- **Step 3:** Is \$180 < 250 < 360\$? Yes → The reflex angle is **\$250^\\circ\$** ✅\n\n" .
+                    "---\n\n" .
+                    "#### Example 3: Reading a Protractor\n\n" .
+                    "**Problem:** You place a protractor on an angle. The baseline ray aligns with \$0^\\circ\$ and the other ray crosses at \$72^\\circ\$ on the inner scale. Classify the angle.\n\n" .
+                    "- **Step 1:** Read the measurement: \$72^\\circ\$.\n" .
+                    "- **Step 2:** Apply the classification rule: Is \$72 < 90\$? Yes → **Acute angle** ✅\n" .
+                    "- **Step 3:** State: *The angle is an acute angle measuring \$72^\\circ\$.*";
+
+
             case 'data_collection_charts':
                 return "#### Example 1: Finding Class Limits, Class Boundaries, and Class Width\n\n" .
                     "**Problem Statement:** A teacher groups examination marks into intervals: **$10 - 19$**, **$20 - 29$**, **$30 - 39$**, **$40 - 49$**. For the interval **$20 - 29$**, determine:\n" .
@@ -706,6 +780,13 @@ class LocalLessonSynthesizer
                     "  - **Domain** = the **input** values (what you start with).\n" .
                     "  - **Co-domain (Range)** = the **output** values (what the rule produces).\n" .
                     "  - Think of it like a *machine*: you feed in the Domain, the rule processes it, and out comes the Co-domain.";
+
+            case 'geometry_angles_classification':
+                return "- 🚫 **Trap 1: Reading the Wrong Protractor Scale**: Protractors have two scales (inner and outer). If your baseline ray starts at \$0^\\circ\$ on the inner scale, read the other ray on the **inner scale** too — never mix scales!\n" .
+                    "- 🚫 **Trap 2: Confusing Obtuse and Reflex**: An obtuse angle is wide but still less than \$180^\\circ\$. If the angle wraps past a straight line, it is reflex (\$> 180^\\circ\$). Check: *Can I see it with a standard protractor (which only goes to \$180^\\circ\$)?* If yes → acute, right, or obtuse. If no → reflex.\n" .
+                    "- 💡 **Pro-Tip: Finding Reflex Angles**: A standard protractor only measures up to \$180^\\circ\$. To find a reflex angle, measure the smaller angle first, then subtract from \$360^\\circ\$.\n" .
+                    "- 🎯 **Memory Aid**: **A**cute = **A**-small (like the sharp tip of the letter A), **O**btuse = **O**-wide (like the wide round letter O), **R**eflex = **R**-wraps around (goes past a straight line).";
+
 
             case 'computing_hardware':
                 return "- 💡 **Pro-Tip: RAM vs Storage**: RAM is volatile (erased when power is turned off); storage (SSD/HDD) is non-volatile (preserves files permanently).";
