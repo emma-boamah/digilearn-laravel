@@ -786,6 +786,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::put('/chapters/{chapter}', [TextbookController::class, 'updateChapter'])->name('chapters.update');
         Route::put('/sections/{section}', [TextbookController::class, 'updateSection'])->name('sections.update');
         Route::post('/sections/{section}/link-indicator', [TextbookController::class, 'linkIndicator'])->name('sections.link-indicator');
+        Route::post('/{textbook}/chapters', [TextbookController::class, 'storeChapter'])->name('chapters.store');
+        Route::post('/chapters/{chapter}/sections', [TextbookController::class, 'storeSection'])->name('sections.store');
+        Route::delete('/chapters/{chapter}', [TextbookController::class, 'destroyChapter'])->name('chapters.destroy');
+        Route::delete('/sections/{section}', [TextbookController::class, 'destroySection'])->name('sections.destroy');
     });
 
     // Progress Management

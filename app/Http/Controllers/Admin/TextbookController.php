@@ -208,6 +208,8 @@ class TextbookController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
+            'page_start' => 'nullable|integer',
+            'page_end' => 'nullable|integer',
             'content_markdown' => 'nullable|string',
             'content_html' => 'nullable|string',
         ]);
@@ -234,5 +236,72 @@ class TextbookController extends Controller
 
         return redirect()->route('admin.textbooks.index')
             ->with('success', 'Textbook deleted successfully.');
+    }
+
+    /**
+     * AJAX: Create a new chapter under a textbook.
+     */
+    public function storeChapter(Request $request, Textbook $textbook): JsonResponse
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'page_start' => 'nullable|integer|min:1',
+            'page_end' => 'nullable|integer|min:1',
+        ]);
+
+        $maxOrder = $textbook->chapters()->max('sort_order') ?? 0;
+
+        $chapter = $textbook->chapters()->create([
+            'title' => $validated['title'],
+            'page_start' => $validated['page_start'] ?? null,
+            'page_end' => $validated['page_end'] ?? null,
+            'sort_order' => $maxOrder + 1,
+        ]);
+
+        return response()->json(['success' => true, 'chapter' => $chapter->load('sections')]);
+    }
+
+    /**
+     * AJAX: Create a new section under a chapter.
+     */
+    public function storeSection(Request $request, TextbookChapter $chapter): JsonResponse
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'page_start' => 'nullable|integer|min:1',
+            'page_end' => 'nullable|integer|min:1',
+        ]);
+
+        $maxOrder = $chapter->sections()->max('sort_order') ?? 0;
+
+        $section = $chapter->sections()->create([
+            'title' => $validated['title'],
+            'page_start' => $validated['page_start'] ?? null,
+            'page_end' => $validated['page_end'] ?? null,
+            'sort_order' => $maxOrder + 1,
+        ]);
+
+        return response()->json(['success' => true, 'section' => $section]);
+    }
+
+    /**
+     * AJAX: Delete a chapter and all its sections.
+     */
+    public function destroyChapter(TextbookChapter $chapter): JsonResponse
+    {
+        $chapter->sections()->delete();
+        $chapter->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * AJAX: Delete a section.
+     */
+    public function destroySection(TextbookSection $section): JsonResponse
+    {
+        $section->delete();
+
+        return response()->json(['success' => true]);
     }
 }

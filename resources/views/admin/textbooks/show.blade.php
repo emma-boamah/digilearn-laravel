@@ -177,85 +177,178 @@
         </div>
     @endif
 
-    <!-- Chapters & Sections Table of Contents -->
+    <!-- Chapters & Sections Table of Contents (Editable) -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
         <div class="p-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <h3 class="font-bold text-gray-900 dark:text-white flex items-center gap-2 text-base">
                 <i class="fas fa-list-ol text-blue-600"></i>
                 Table of Contents & Lesson Mappings
             </h3>
-            <span class="text-xs text-gray-500">
-                Map extracted textbook lessons to official curriculum indicators.
-            </span>
+            <div class="flex items-center gap-3">
+                <span class="text-xs text-gray-500">
+                    Click titles to edit • Map lessons to curriculum indicators
+                </span>
+                <button type="button"
+                        @click="addChapter()"
+                        class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors">
+                    <i class="fas fa-plus mr-1.5"></i> Add Chapter
+                </button>
+            </div>
         </div>
 
-        <div class="divide-y divide-gray-200 dark:divide-gray-700">
+        <div class="divide-y divide-gray-200 dark:divide-gray-700" id="toc-chapters-list">
             @forelse($textbook->chapters as $chapter)
-            <div class="p-5" x-data="{ chapterOpen: true }">
-                <div class="flex items-center justify-between cursor-pointer" @click="chapterOpen = !chapterOpen">
-                    <div class="flex items-center gap-3">
-                        <i class="fas fa-folder text-blue-500 text-lg"></i>
-                        <div>
-                            <h4 class="font-bold text-gray-900 dark:text-white text-sm">{{ $chapter->title }}</h4>
-                            <p class="text-xs text-gray-400">
-                                @if($chapter->page_start) Pages {{ $chapter->page_start }} - {{ $chapter->page_end ?? 'end' }} • @endif
-                                {{ $chapter->sections->count() }} sub-sections
-                            </p>
+            <div class="p-5" x-data="{ chapterOpen: true, editing: false, editTitle: '{{ addslashes($chapter->title) }}', editPageStart: '{{ $chapter->page_start }}', editPageEnd: '{{ $chapter->page_end }}' }" id="chapter-row-{{ $chapter->id }}">
+                <!-- Chapter Header -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <i class="fas fa-folder text-blue-500 text-lg flex-shrink-0"></i>
+                        <div class="flex-1 min-w-0">
+                            <!-- Display mode -->
+                            <template x-if="!editing">
+                                <div>
+                                    <h4 class="font-bold text-gray-900 dark:text-white text-sm cursor-pointer hover:text-blue-600 transition-colors"
+                                        @click="editing = true"
+                                        title="Click to edit">
+                                        {{ $chapter->title }}
+                                        <i class="fas fa-pencil-alt text-[10px] text-gray-300 ml-1"></i>
+                                    </h4>
+                                    <p class="text-xs text-gray-400">
+                                        @if($chapter->page_start) Pages {{ $chapter->page_start }} - {{ $chapter->page_end ?? 'end' }} • @endif
+                                        {{ $chapter->sections->count() }} sub-sections
+                                    </p>
+                                </div>
+                            </template>
+                            <!-- Edit mode -->
+                            <template x-if="editing">
+                                <div class="space-y-2">
+                                    <input type="text" x-model="editTitle"
+                                           @keydown.enter="saveChapter({{ $chapter->id }}, editTitle, editPageStart, editPageEnd); editing = false"
+                                           @keydown.escape="editing = false"
+                                           x-ref="chapterTitleInput"
+                                           x-init="$watch('editing', v => { if(v) $nextTick(() => $refs.chapterTitleInput?.focus()) })"
+                                           class="w-full text-sm font-bold rounded-lg border-blue-300 dark:border-blue-600 dark:bg-gray-700 text-gray-900 dark:text-white py-1.5 px-3 focus:ring-blue-500 focus:border-blue-500">
+                                    <div class="flex items-center gap-2">
+                                        <input type="number" x-model="editPageStart" placeholder="Start page"
+                                               class="w-24 text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-white py-1 px-2">
+                                        <span class="text-gray-400 text-xs">to</span>
+                                        <input type="number" x-model="editPageEnd" placeholder="End page"
+                                               class="w-24 text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-white py-1 px-2">
+                                        <button @click="saveChapter({{ $chapter->id }}, editTitle, editPageStart, editPageEnd); editing = false"
+                                                class="px-2.5 py-1 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                                            <i class="fas fa-check mr-1"></i> Save
+                                        </button>
+                                        <button @click="editing = false"
+                                                class="px-2.5 py-1 text-xs text-gray-500 hover:text-gray-700 rounded-lg">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </div>
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2 flex-shrink-0 ml-3">
+                        <button @click="addSection({{ $chapter->id }})"
+                                class="px-2.5 py-1 text-xs border border-emerald-200 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-md font-medium transition-colors"
+                                title="Add sub-section">
+                            <i class="fas fa-plus mr-1"></i> Add Section
+                        </button>
                         <form action="{{ route('admin.textbooks.extract-content', $textbook) }}" method="POST" class="inline">
                             @csrf
                             <input type="hidden" name="chapter_id" value="{{ $chapter->id }}">
-                            <button type="submit" class="px-2.5 py-1 text-xs border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 text-gray-600 dark:text-gray-300 rounded-md">
+                            <button type="submit" class="px-2.5 py-1 text-xs border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 text-gray-600 dark:text-gray-300 rounded-md transition-colors">
                                 <i class="fas fa-sync-alt mr-1"></i> Extract Chapter
                             </button>
                         </form>
-                        <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform" :class="{'rotate-180': chapterOpen}"></i>
+                        <button @click="if(confirm('Delete chapter \'{{ addslashes($chapter->title) }}\' and all its sections?')) deleteChapter({{ $chapter->id }})"
+                                class="px-2 py-1 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md transition-colors"
+                                title="Delete chapter">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                        <button @click="chapterOpen = !chapterOpen" class="p-1">
+                            <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform" :class="{'rotate-180': chapterOpen}"></i>
+                        </button>
                     </div>
                 </div>
 
                 <!-- Sections under this chapter -->
-                <div x-show="chapterOpen" class="mt-4 pl-4 border-l-2 border-blue-100 dark:border-gray-700 space-y-3">
+                <div x-show="chapterOpen" class="mt-4 pl-4 border-l-2 border-blue-100 dark:border-gray-700 space-y-3" id="chapter-{{ $chapter->id }}-sections">
                     @forelse($chapter->sections as $section)
-                    <div class="p-3.5 bg-gray-50 dark:bg-gray-750 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3">
-                        <div>
-                            <div class="font-semibold text-xs text-gray-900 dark:text-white flex items-center gap-2">
-                                <i class="fas fa-file-alt text-gray-400"></i>
-                                {{ $section->title }}
-                            </div>
-                            @if($section->page_start)
-                                <div class="text-[11px] text-gray-400 mt-0.5">Pages {{ $section->page_start }} - {{ $section->page_end ?? 'end' }}</div>
-                            @endif
-                            @if($section->content_markdown)
-                                <div class="text-[11px] text-emerald-600 font-medium mt-1 flex items-center gap-1">
-                                    <i class="fas fa-check-circle"></i> Lesson content extracted
+                    <div class="p-3.5 bg-gray-50 dark:bg-gray-750 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3"
+                         x-data="{ sectionEditing: false, sectionTitle: '{{ addslashes($section->title) }}', sectionPageStart: '{{ $section->page_start }}', sectionPageEnd: '{{ $section->page_end }}' }"
+                         id="section-row-{{ $section->id }}">
+                        <div class="flex-1 min-w-0">
+                            <!-- Display mode -->
+                            <template x-if="!sectionEditing">
+                                <div>
+                                    <div class="font-semibold text-xs text-gray-900 dark:text-white flex items-center gap-2 cursor-pointer hover:text-blue-600 transition-colors"
+                                         @click="sectionEditing = true" title="Click to edit">
+                                        <i class="fas fa-file-alt text-gray-400"></i>
+                                        {{ $section->title }}
+                                        <i class="fas fa-pencil-alt text-[9px] text-gray-300"></i>
+                                    </div>
+                                    @if($section->page_start)
+                                        <div class="text-[11px] text-gray-400 mt-0.5 ml-6">Pages {{ $section->page_start }} - {{ $section->page_end ?? 'end' }}</div>
+                                    @endif
+                                    @if($section->content_markdown)
+                                        <div class="text-[11px] text-emerald-600 font-medium mt-1 ml-6 flex items-center gap-1">
+                                            <i class="fas fa-check-circle"></i> Lesson content extracted
+                                        </div>
+                                    @endif
                                 </div>
-                            @endif
+                            </template>
+                            <!-- Edit mode -->
+                            <template x-if="sectionEditing">
+                                <div class="space-y-2">
+                                    <input type="text" x-model="sectionTitle"
+                                           @keydown.enter="saveSection({{ $section->id }}, sectionTitle, sectionPageStart, sectionPageEnd); sectionEditing = false"
+                                           @keydown.escape="sectionEditing = false"
+                                           x-ref="sectionTitleInput"
+                                           x-init="$watch('sectionEditing', v => { if(v) $nextTick(() => $refs.sectionTitleInput?.focus()) })"
+                                           class="w-full text-xs font-semibold rounded-lg border-blue-300 dark:border-blue-600 dark:bg-gray-700 text-gray-900 dark:text-white py-1.5 px-3 focus:ring-blue-500 focus:border-blue-500">
+                                    <div class="flex items-center gap-2">
+                                        <input type="number" x-model="sectionPageStart" placeholder="Start pg"
+                                               class="w-20 text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-white py-1 px-2">
+                                        <span class="text-gray-400 text-xs">to</span>
+                                        <input type="number" x-model="sectionPageEnd" placeholder="End pg"
+                                               class="w-20 text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-white py-1 px-2">
+                                        <button @click="saveSection({{ $section->id }}, sectionTitle, sectionPageStart, sectionPageEnd); sectionEditing = false"
+                                                class="px-2 py-1 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button @click="sectionEditing = false"
+                                                class="px-2 py-1 text-xs text-gray-500 hover:text-gray-700">Cancel</button>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
 
-                        <!-- Link to Curriculum Indicator -->
-                        <div class="flex items-center gap-2">
-                            <label class="text-[11px] font-medium text-gray-500 whitespace-nowrap">Indicator:</label>
-                            <select @change="linkIndicator({{ $section->id }}, $event.target.value)"
-                                class="text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-white py-1 px-2.5 max-w-[260px]">
-                                <option value="">Select Curriculum Indicator</option>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <!-- Link to Curriculum Indicator -->
+                            <select @change="linkIndicator($event.target.value, {{ $section->id }})"
+                                class="text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-white py-1 px-2.5 max-w-[220px]">
+                                <option value="">Select Indicator</option>
                                 @foreach($availableIndicators as $ind)
                                     <option value="{{ $ind->id }}" {{ $section->curriculum_indicator_id == $ind->id ? 'selected' : '' }}>
                                         [{{ $ind->indicator_code ?? 'IND' }}] {{ \Illuminate\Support\Str::limit($ind->title, 35) }}
                                     </option>
                                 @endforeach
                             </select>
+                            <button @click="if(confirm('Delete section \'{{ addslashes($section->title) }}\'?')) deleteSection({{ $section->id }})"
+                                    class="px-2 py-1 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md transition-colors"
+                                    title="Delete section">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
                         </div>
                     </div>
                     @empty
-                    <p class="text-xs text-gray-400 italic py-1">No sub-sections extracted for this chapter yet.</p>
+                    <p class="text-xs text-gray-400 italic py-1">No sub-sections yet. Click "Add Section" to create one.</p>
                     @endforelse
                 </div>
             </div>
             @empty
             <div class="text-center py-12 text-gray-400 text-sm">
-                No Table of Contents extracted yet.
+                No Table of Contents extracted yet. Click "Add Chapter" to build one manually.
             </div>
             @endforelse
         </div>
@@ -265,23 +358,129 @@
 <script nonce="{{ request()->attributes->get('csp_nonce') }}">
 function textbookViewerApp() {
     return {
-        async linkIndicator(sectionId, indicatorId) {
+        csrfToken: document.querySelector('meta[name="csrf-token"]')?.content,
+
+        headers() {
+            return {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': this.csrfToken,
+                'Accept': 'application/json'
+            };
+        },
+
+        // ── Link indicator (existing) ──
+        async linkIndicator(indicatorId, sectionId) {
             try {
-                const response = await fetch(`/admin/textbooks/sections/${sectionId}/link-indicator`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json'
-                    },
+                const res = await fetch(`/admin/textbooks/sections/${sectionId}/link-indicator`, {
+                    method: 'POST', headers: this.headers(),
                     body: JSON.stringify({ curriculum_indicator_id: indicatorId || null })
                 });
-                const data = await response.json();
-                if (data.success) {
-                    // Linked successfully
-                }
+                const data = await res.json();
+                if (!data.success) throw new Error('Server error');
             } catch (e) {
                 alert('Failed to link indicator: ' + e.message);
+            }
+        },
+
+        // ── Save chapter title & pages ──
+        async saveChapter(chapterId, title, pageStart, pageEnd) {
+            try {
+                const res = await fetch(`/admin/textbooks/chapters/${chapterId}`, {
+                    method: 'PUT', headers: this.headers(),
+                    body: JSON.stringify({
+                        title: title,
+                        page_start: pageStart || null,
+                        page_end: pageEnd || null
+                    })
+                });
+                const data = await res.json();
+                if (data.success) window.location.reload();
+            } catch (e) {
+                alert('Failed to save chapter: ' + e.message);
+            }
+        },
+
+        // ── Save section title & pages ──
+        async saveSection(sectionId, title, pageStart, pageEnd) {
+            try {
+                const res = await fetch(`/admin/textbooks/sections/${sectionId}`, {
+                    method: 'PUT', headers: this.headers(),
+                    body: JSON.stringify({
+                        title: title,
+                        page_start: pageStart || null,
+                        page_end: pageEnd || null
+                    })
+                });
+                const data = await res.json();
+                if (data.success) window.location.reload();
+            } catch (e) {
+                alert('Failed to save section: ' + e.message);
+            }
+        },
+
+        // ── Add new chapter ──
+        async addChapter() {
+            const title = prompt('Enter chapter title:');
+            if (!title || !title.trim()) return;
+
+            try {
+                const res = await fetch(`/admin/textbooks/{{ $textbook->id }}/chapters`, {
+                    method: 'POST', headers: this.headers(),
+                    body: JSON.stringify({ title: title.trim() })
+                });
+                const data = await res.json();
+                if (data.success) window.location.reload();
+            } catch (e) {
+                alert('Failed to add chapter: ' + e.message);
+            }
+        },
+
+        // ── Add new section under a chapter ──
+        async addSection(chapterId) {
+            const title = prompt('Enter section/sub-topic title:');
+            if (!title || !title.trim()) return;
+
+            try {
+                const res = await fetch(`/admin/textbooks/chapters/${chapterId}/sections`, {
+                    method: 'POST', headers: this.headers(),
+                    body: JSON.stringify({ title: title.trim() })
+                });
+                const data = await res.json();
+                if (data.success) window.location.reload();
+            } catch (e) {
+                alert('Failed to add section: ' + e.message);
+            }
+        },
+
+        // ── Delete chapter ──
+        async deleteChapter(chapterId) {
+            try {
+                const res = await fetch(`/admin/textbooks/chapters/${chapterId}`, {
+                    method: 'DELETE', headers: this.headers()
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const row = document.getElementById(`chapter-row-${chapterId}`);
+                    if (row) row.remove();
+                }
+            } catch (e) {
+                alert('Failed to delete chapter: ' + e.message);
+            }
+        },
+
+        // ── Delete section ──
+        async deleteSection(sectionId) {
+            try {
+                const res = await fetch(`/admin/textbooks/sections/${sectionId}`, {
+                    method: 'DELETE', headers: this.headers()
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const row = document.getElementById(`section-row-${sectionId}`);
+                    if (row) row.remove();
+                }
+            } catch (e) {
+                alert('Failed to delete section: ' + e.message);
             }
         }
     };
