@@ -17,11 +17,12 @@ class PdfTextExtractionService
         }
 
         // 1. Try pdfinfo CLI (fastest & most accurate)
-        if (function_exists('exec')) {
+        $bin = CurriculumLocalParser::getBinaryPath('pdfinfo');
+        if ($bin && function_exists('exec')) {
             $output = [];
             $returnVar = 0;
             $escaped = escapeshellarg($filePath);
-            @exec("pdfinfo {$escaped} 2>&1", $output, $returnVar);
+            @exec("{$bin} {$escaped} 2>&1", $output, $returnVar);
 
             if ($returnVar === 0) {
                 foreach ($output as $line) {
@@ -51,12 +52,13 @@ class PdfTextExtractionService
             return [];
         }
 
+        $bin = CurriculumLocalParser::getBinaryPath('pdftotext');
         $rawOutput = '';
-        if (function_exists('exec')) {
+        if ($bin && function_exists('exec')) {
             $output = [];
             $returnVar = 0;
             $escaped = escapeshellarg($filePath);
-            @exec("pdftotext -layout {$escaped} -", $output, $returnVar);
+            @exec("{$bin} -layout {$escaped} -", $output, $returnVar);
             if ($returnVar === 0) {
                 $rawOutput = implode("\n", $output);
             }
@@ -98,13 +100,14 @@ class PdfTextExtractionService
             return '';
         }
 
-        if (function_exists('exec')) {
+        $bin = CurriculumLocalParser::getBinaryPath('pdftotext');
+        if ($bin && function_exists('exec')) {
             $output = [];
             $returnVar = 0;
             $escaped = escapeshellarg($filePath);
             $start = max(1, $startPage);
             $end = max($start, $endPage);
-            @exec("pdftotext -f {$start} -l {$end} -layout {$escaped} -", $output, $returnVar);
+            @exec("{$bin} -f {$start} -l {$end} -layout {$escaped} -", $output, $returnVar);
 
             if ($returnVar === 0 && !empty($output)) {
                 return $this->normalizeText(implode("\n", $output));
