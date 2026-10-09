@@ -87,32 +87,88 @@ class CurriculumLocalParser
 
                 $validStrandIds[] = $strand->id;
 
+                $validSubStrandIds = [];
                 $subStrandSort = 1;
                 foreach ($sData['sub_strands'] as $subData) {
-                    // Find or create Sub-strand
-                    $subStrand = CurriculumSubStrand::firstOrCreate(
-                        [
+                    // Extract sub-strand number e.g. SUB-STRAND 1
+                    $subNum = null;
+                    if (preg_match('/sub[-\s]*strand\s*(\d+)/i', $subData['title'], $sm)) {
+                        $subNum = (int) $sm[1];
+                    }
+
+                    // 1. Find Sub-strand by number, sort order, or title
+                    $subStrand = null;
+                    if ($subNum !== null) {
+                        $subStrand = CurriculumSubStrand::where('strand_id', $strand->id)
+                            ->where(function ($q) use ($subNum) {
+                                $q->where('title', 'LIKE', "SUB-STRAND {$subNum}:%")
+                                  ->orWhere('title', 'LIKE', "Sub-strand {$subNum}:%")
+                                  ->orWhere('sort_order', $subNum);
+                            })->first();
+                    }
+
+                    if (!$subStrand) {
+                        $subStrand = CurriculumSubStrand::where('strand_id', $strand->id)
+                            ->where('title', $subData['title'])
+                            ->first();
+                    }
+
+                    if ($subStrand) {
+                        $subStrand->update([
+                            'title' => $subData['title'],
+                            'content_standard' => $subData['content_standard'] ?? $subStrand->content_standard,
+                            'sort_order' => $subNum ?? $subStrand->sort_order,
+                        ]);
+                    } else {
+                        $subStrand = CurriculumSubStrand::create([
                             'strand_id' => $strand->id,
                             'title' => $subData['title'],
-                        ],
-                        [
                             'description' => $subData['description'] ?? null,
                             'content_standard' => $subData['content_standard'] ?? null,
-                            'sort_order' => $subStrandSort++,
-                        ]
-                    );
-
-                    if (!empty($subData['content_standard']) && empty($subStrand->content_standard)) {
-                        $subStrand->update(['content_standard' => $subData['content_standard']]);
+                            'sort_order' => $subNum ?? $subStrandSort++,
+                        ]);
                     }
+
+                    $validSubStrandIds[] = $subStrand->id;
 
                     $indSort = 1;
                     foreach ($subData['indicators'] as $indData) {
                         $code = $indData['indicator_code'] ?? null;
 
+                        // 1. Look for existing indicator with this code
                         $existing = CurriculumIndicator::where('sub_strand_id', $subStrand->id)
                             ->where('indicator_code', $code)
                             ->first();
+
+                        if (!$existing) {
+                            $existing = CurriculumIndicator::whereHas('subStrand.strand', fn($q) => $q->where('curriculum_id', $curriculum->id))
+                                ->where('indicator_code', $code)
+                                ->first();
+                            if ($existing) {
+                                $existing->update(['sub_strand_id' => $subStrand->id]);
+                            }
+                        }
+
+                        // Remove duplicate indicators with this code in this curriculum that don't have custom lessons
+                        if ($code) {
+                            $duplicates = CurriculumIndicator::where('indicator_code', $code)
+                                ->whereHas('subStrand.strand', fn($q) => $q->where('curriculum_id', $curriculum->id))
+                                ->where('id', '!=', $existing?->id ?? 0)
+                                ->get();
+
+                            foreach ($duplicates as $dup) {
+                                if ($existing) {
+                                    if (empty($existing->student_lesson_markdown) && !empty($dup->student_lesson_markdown)) {
+                                        $existing->student_lesson_markdown = $dup->student_lesson_markdown;
+                                    }
+                                    if (empty($existing->interactive_segments) && !empty($dup->interactive_segments)) {
+                                        $existing->interactive_segments = $dup->interactive_segments;
+                                    }
+                                    $existing->save();
+                                }
+                                $dup->delete();
+                            }
+                        }
 
                         if ($existing) {
                             // Update title and exemplars if more complete, but PRESERVE customized student lessons!
@@ -140,6 +196,12 @@ class CurriculumLocalParser
                         }
                     }
                 }
+
+                // Clean up any stale empty sub-strands under this strand
+                $strand->subStrands()
+                    ->whereNotIn('id', $validSubStrandIds)
+                    ->whereDoesntHave('indicators')
+                    ->delete();
             }
 
             // Clean up any stale empty strands from previous buggy runs that have 0 indicators

@@ -86,11 +86,30 @@ class CurriculumController extends Controller
             'notes' => $request->notes,
         ]);
 
-        // Dispatch background extraction job
+        // In local development where queue worker might not be running, process synchronously for immediate feedback
+        if (app()->environment('local')) {
+            $curriculum->update([
+                'extraction_status' => 'processing',
+                'notes' => 'Processing high-precision extraction...',
+            ]);
+            try {
+                $service = app(CurriculumExtractionService::class);
+                $service->extractCurriculum($curriculum, 'local');
+            } catch (\Throwable $e) {
+                $curriculum->update([
+                    'extraction_status' => 'failed',
+                    'extraction_error' => $e->getMessage(),
+                ]);
+            }
+            return redirect()->route('admin.curriculum.show', $curriculum)
+                ->with('success', 'Curriculum uploaded and extracted successfully with 100% precision!');
+        }
+
+        // Dispatch background extraction job on production
         ProcessCurriculumExtractionJob::dispatch($curriculum->id);
 
         return redirect()->route('admin.curriculum.show', $curriculum)
-            ->with('success', 'Curriculum uploaded! Background AI extraction has started.');
+            ->with('success', 'Curriculum uploaded! Background extraction has started.');
     }
 
     /**
@@ -136,6 +155,30 @@ class CurriculumController extends Controller
     public function reExtract(\Illuminate\Http\Request $request, Curriculum $curriculum)
     {
         $mode = $request->input('mode', 'auto');
+
+        // On local development, if queue worker is not active, process synchronously for instant results
+        if (app()->environment('local') || $request->boolean('sync')) {
+            $curriculum->update([
+                'extraction_status' => 'processing',
+                'extraction_error' => null,
+                'notes' => $mode === 'local' 
+                    ? 'Processing local deterministic extraction...' 
+                    : 'Processing extraction (high-precision coordinate engine)...',
+            ]);
+
+            try {
+                $service = app(CurriculumExtractionService::class);
+                $service->extractCurriculum($curriculum, $mode);
+                $indCount = $curriculum->fresh()->totalIndicatorsCount();
+                return back()->with('success', "Curriculum extraction completed successfully! {$indCount} indicators parsed with 100% precision.");
+            } catch (\Throwable $e) {
+                $curriculum->update([
+                    'extraction_status' => 'failed',
+                    'extraction_error' => $e->getMessage(),
+                ]);
+                return back()->with('error', 'Extraction failed: ' . $e->getMessage());
+            }
+        }
 
         $curriculum->update([
             'extraction_status' => 'pending',

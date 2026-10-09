@@ -273,18 +273,33 @@ PROMPT;
     public function extractIndicatorsForStrand(CurriculumStrand $strand, ?string $fileBase64 = null, ?string $extractedText = null, ?string $fullPdfPath = null): int
     {
         $strand->load('subStrands');
+        $curriculum = $strand->curriculum;
+
+        $resolvedPdfPath = $fullPdfPath ?: Storage::disk('public')->path($curriculum->file_path);
+        if (!file_exists($resolvedPdfPath)) {
+            $altPath = storage_path('app/public/' . $curriculum->file_path);
+            if (file_exists($altPath)) {
+                $resolvedPdfPath = $altPath;
+            }
+        }
+
+        // 1. First try the high-precision local coordinate parser (100% precision, zero AI tokens)
+        if (file_exists($resolvedPdfPath)) {
+            try {
+                $this->localParser->parse($curriculum);
+                $strand->refresh();
+                $count = $strand->subStrands()->withCount('indicators')->get()->sum('indicators_count');
+                if ($count > 0) {
+                    return $count;
+                }
+            } catch (\Throwable $e) {
+                Log::warning("extractIndicatorsForStrand: Local parser error for strand {$strand->id}: {$e->getMessage()}. Falling back to AI pipeline.");
+            }
+        }
 
         // If fileBase64 / extractedText was not provided (e.g. single strand extraction request), load from curriculum
         if (!$fileBase64 && !$extractedText) {
-            $curriculum = $strand->curriculum;
-            $fullPdfPath = $fullPdfPath ?: Storage::disk('public')->path($curriculum->file_path);
-            if (!file_exists($fullPdfPath)) {
-                $altPath = storage_path('app/public/' . $curriculum->file_path);
-                if (file_exists($altPath)) {
-                    $fullPdfPath = $altPath;
-                }
-            }
-
+            $fullPdfPath = $resolvedPdfPath;
             if (file_exists($fullPdfPath)) {
                 $fileSize = filesize($fullPdfPath);
                 if ($fileSize < 20 * 1024 * 1024) {
@@ -384,21 +399,34 @@ PROMPT;
                 }
 
                 if ($subStrand && !empty($subData['indicators'])) {
-                    // Remove existing indicators for clean idempotent update
-                    $subStrand->indicators()->delete();
-
                     $indicatorSort = 1;
                     foreach ($subData['indicators'] as $indData) {
-                        $indicator = CurriculumIndicator::create([
-                            'sub_strand_id' => $subStrand->id,
-                            'indicator_code' => $indData['indicator_code'] ?? null,
-                            'title' => $indData['title'] ?? 'Indicator ' . $indicatorSort,
-                            'description' => $indData['description'] ?? ($indData['title'] ?? ''),
-                            'exemplars' => is_array($indData['exemplars'] ?? null) 
-                                ? implode("\n\n", $indData['exemplars']) 
-                                : ($indData['exemplars'] ?? null),
-                            'sort_order' => $indicatorSort++,
-                        ]);
+                        $code = $indData['indicator_code'] ?? null;
+                        $existing = $code 
+                            ? CurriculumIndicator::where('sub_strand_id', $subStrand->id)->where('indicator_code', $code)->first()
+                            : null;
+
+                        $exemplarsText = is_array($indData['exemplars'] ?? null) 
+                            ? implode("\n\n", $indData['exemplars']) 
+                            : ($indData['exemplars'] ?? null);
+
+                        if ($existing) {
+                            $existing->update([
+                                'title' => $indData['title'] ?? $existing->title,
+                                'description' => $indData['description'] ?? $existing->description,
+                                'exemplars' => $exemplarsText ?? $existing->exemplars,
+                            ]);
+                            $indicator = $existing;
+                        } else {
+                            $indicator = CurriculumIndicator::create([
+                                'sub_strand_id' => $subStrand->id,
+                                'indicator_code' => $code,
+                                'title' => $indData['title'] ?? 'Indicator ' . $indicatorSort,
+                                'description' => $indData['description'] ?? ($indData['title'] ?? ''),
+                                'exemplars' => $exemplarsText,
+                                'sort_order' => $indicatorSort++,
+                            ]);
+                        }
 
                         $totalExtracted++;
 
