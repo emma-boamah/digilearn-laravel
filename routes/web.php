@@ -787,7 +787,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::put('/sections/{section}', [TextbookController::class, 'updateSection'])->name('sections.update');
         Route::post('/sections/{section}/link-indicator', [TextbookController::class, 'linkIndicator'])->name('sections.link-indicator');
         Route::post('/{textbook}/chapters', [TextbookController::class, 'storeChapter'])->name('chapters.store');
+        Route::post('/{textbook}/chapters/bulk', [TextbookController::class, 'bulkStoreChapters'])->name('chapters.bulk-store');
+        Route::post('/{textbook}/reorder-chapters', [TextbookController::class, 'reorderChapters'])->name('chapters.reorder');
         Route::post('/chapters/{chapter}/sections', [TextbookController::class, 'storeSection'])->name('sections.store');
+        Route::post('/chapters/{chapter}/sections/bulk', [TextbookController::class, 'bulkStoreSections'])->name('sections.bulk-store');
+        Route::post('/chapters/{chapter}/reorder-sections', [TextbookController::class, 'reorderSections'])->name('sections.reorder');
         Route::delete('/chapters/{chapter}', [TextbookController::class, 'destroyChapter'])->name('chapters.destroy');
         Route::delete('/sections/{section}', [TextbookController::class, 'destroySection'])->name('sections.destroy');
     });
