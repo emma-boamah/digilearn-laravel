@@ -171,8 +171,14 @@ class CurriculumLocalParser
                         }
 
                         if ($existing) {
-                            // Update title and exemplars if more complete, but PRESERVE customized student lessons!
+                            // Update title, content_standard, core_competencies, and exemplars, but PRESERVE customized student lessons!
                             $updates = [];
+                            if (!empty($indData['content_standard'])) {
+                                $updates['content_standard'] = $indData['content_standard'];
+                            }
+                            if (!empty($indData['core_competencies'])) {
+                                $updates['core_competencies'] = $indData['core_competencies'];
+                            }
                             if (strlen($indData['title']) > strlen($existing->title)) {
                                 $updates['title'] = $indData['title'];
                             }
@@ -188,6 +194,8 @@ class CurriculumLocalParser
                                 'sub_strand_id' => $subStrand->id,
                                 'indicator_code' => $code,
                                 'title' => $indData['title'],
+                                'content_standard' => $indData['content_standard'] ?? null,
+                                'core_competencies' => $indData['core_competencies'] ?? null,
                                 'description' => $indData['description'] ?? "Demonstrate understanding of {$indData['title']}",
                                 'exemplars' => $indData['exemplars'] ?? null,
                                 'sort_order' => $indSort++,
@@ -254,7 +262,8 @@ class CurriculumLocalParser
         $strandRegex = '/(?<!sub[-\s])\bstrand\s+(\d+)\s*[:.\-]?\s*(.*)/i';
         $substrandRegex = '/\bSub[-\s]?strand\s+(\d+)\s*[:.\-]?\s*(.*)/i';
         $stdRegex = '/\b(B\d+\.\d+\.\d+\.\d+)\b(.*)/i';
-        $indRegex = '/\b(B\d+\.\d+\.\d+\.\d+\.\d+)\b(.*)/i';
+        // In Column 2: match 5-part B7.1.1.1.1, 4-part typo B7.1.1.2, or typo B71.2.2.2
+        $indRegex = '/^(B\d+(?:\.\d+){2,4}|B\d{2,}\.\d+(?:\.\d+)+)\b\s*(.*)/i';
 
         // Discovered titles
         $strandTitles = [
@@ -272,6 +281,38 @@ class CurriculumLocalParser
         $curStdTitle = '';
 
         $curStrandNum = 1;
+
+        // Pass 1: Build comprehensive Content Standards map from Column 1 across all pages
+        $standardsMap = [];
+        $activeStdCode = null;
+        foreach ($xml->page as $page) {
+            $c1Texts = [];
+            foreach ($page->text as $t) {
+                $left = (int) $t['left'];
+                $val = trim(strip_tags($t->asXML()));
+                if ($left < 280 && $val !== '' && !preg_match('/^(CONTENT STANDARD|===|\d+$)/i', $val)) {
+                    $c1Texts[] = [
+                        'top' => (int) $t['top'],
+                        'val' => $val,
+                    ];
+                }
+            }
+            usort($c1Texts, fn($a, $b) => $a['top'] <=> $b['top']);
+
+            foreach ($c1Texts as $item) {
+                $v = $item['val'];
+                if (preg_match('/^(B\d+\.\d+\.\d+\.\d+)\b\s*(.*)/i', $v, $m)) {
+                    $activeStdCode = $m[1];
+                    if (!isset($standardsMap[$activeStdCode])) {
+                        $standardsMap[$activeStdCode] = $m[1] . (trim($m[2]) !== '' ? ' ' . trim($m[2]) : '');
+                    }
+                } elseif ($activeStdCode && isset($standardsMap[$activeStdCode])) {
+                    if (!str_contains($standardsMap[$activeStdCode], $v)) {
+                        $standardsMap[$activeStdCode] .= ' ' . $v;
+                    }
+                }
+            }
+        }
 
         foreach ($xml->page as $page) {
             $texts = [];
@@ -324,6 +365,7 @@ class CurriculumLocalParser
             // 2. Scan Columns:
             // Column 1: Content Standard (left < 280)
             // Column 2: Indicators and Exemplars (280 <= left < 910)
+            // Column 3: Core Competencies (left >= 910)
             foreach ($texts as $item) {
                 $val = $item['val'];
                 $left = $item['left'];
@@ -345,9 +387,14 @@ class CurriculumLocalParser
                 // Column 2: Indicators and Exemplars
                 elseif ($left >= 280 && $left < 910) {
                     if (preg_match($indRegex, $val, $mInd)) {
-                        $code = $mInd[1];
-                        $idx = strpos($val, $code);
-                        $rest = trim(substr($val, $idx + strlen($code)));
+                        $rawCode = $mInd[1];
+                        $rest = trim($mInd[2]);
+
+                        // Normalize typo codes like B71.2.2.2 -> B7.1.2.2.2
+                        $code = $rawCode;
+                        if (preg_match('/^B(\d)(\d)\.(\d+)\.(\d+)(.*)/', $rawCode, $tm)) {
+                            $code = "B{$tm[1]}.{$tm[2]}.{$tm[3]}.{$tm[4]}" . $tm[5];
+                        }
 
                         $parts = explode('.', $code);
                         $gradeNum = (int) substr($parts[0], 1);
@@ -355,24 +402,34 @@ class CurriculumLocalParser
                         $subNum = (int) ($parts[2] ?? 1);
                         $stdCode = implode('.', array_slice($parts, 0, 4));
 
+                        $contentStandard = $standardsMap[$stdCode] ?? ($curStdCode && isset($standardsMap[$curStdCode]) ? $standardsMap[$curStdCode] : ($curStdCode ? trim("{$curStdCode} {$curStdTitle}") : null));
+
                         $activeCode = $code;
                         $allIndicators[$code] = [
                             'code' => $code,
                             'title_parts' => $rest !== '' ? [$rest] : [],
                             'exemplars' => [],
+                            'core_competencies' => [],
                             'grade_num' => $gradeNum,
                             'strand_num' => $sNum,
                             'substrand_num' => $subNum,
-                            'std_code' => $stdCode,
-                            'std_title' => ($curStdCode === $stdCode) ? $curStdTitle : '',
+                            'content_standard' => $contentStandard,
                         ];
                     } elseif ($activeCode && isset($allIndicators[$activeCode])) {
                         $isEg = preg_match('/^(E\.g|Example|\b\d+\.|\b[ivx]+\.|\b[a-d]\.|•|\-)/i', $val);
                         if ($isEg || !empty($allIndicators[$activeCode]['exemplars'])) {
-                            $allIndicators[$activeCode]['exemplars'][] = $val;
+                            // Normalize "E.g., 1" or "E.g.,1." to "E.g. 1: "
+                            $cleanVal = preg_replace('/^E\.g\.[,\s]*(\d+)[\.:]?\s*/i', 'E.g. $1: ', $val);
+                            $allIndicators[$activeCode]['exemplars'][] = $cleanVal;
                         } elseif (!preg_match($strandRegex, $val) && !preg_match($substrandRegex, $val) && !preg_match($stdRegex, $val)) {
                             $allIndicators[$activeCode]['title_parts'][] = $val;
                         }
+                    }
+                }
+                // Column 3: Core Competencies
+                elseif ($left >= 910) {
+                    if ($activeCode && isset($allIndicators[$activeCode]) && $top > 140) {
+                        $allIndicators[$activeCode]['core_competencies'][] = $val;
                     }
                 }
             }
@@ -410,7 +467,7 @@ class CurriculumLocalParser
                 $subName = $substrandTitles[$sNum][$subNum] ?? "Sub-strand {$subNum}";
                 $tree[$strandKey]['sub_strands'][$subKey] = [
                     'title' => "SUB-STRAND {$subNum}: " . mb_strtoupper($subName),
-                    'content_standard' => $ind['std_title'] ? "{$ind['std_code']} {$ind['std_title']}" : null,
+                    'content_standard' => $ind['content_standard'],
                     'indicators' => [],
                 ];
             }
@@ -421,13 +478,16 @@ class CurriculumLocalParser
                 $title = "Demonstrate understanding of {$code}";
             }
 
-            $exemplarsText = !empty($ind['exemplars']) ? implode("
-", $ind['exemplars']) : '';
+            $exemplarsText = !empty($ind['exemplars']) ? implode("\n", $ind['exemplars']) : '';
+            $cleanComps = array_unique($ind['core_competencies']);
+            $coreCompText = !empty($cleanComps) ? implode("\n", $cleanComps) : null;
 
             $tree[$strandKey]['sub_strands'][$subKey]['indicators'][$code] = [
                 'indicator_code' => $code,
                 'title' => $title,
                 'description' => "Demonstrate understanding of {$title}",
+                'content_standard' => $ind['content_standard'],
+                'core_competencies' => $coreCompText,
                 'exemplars' => $exemplarsText,
             ];
         }

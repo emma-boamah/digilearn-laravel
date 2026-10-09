@@ -752,7 +752,7 @@
                                     <!-- Column 3: CORE COMPETENCIES -->
                                     <td class="p-4 bg-gray-50/50 dark:bg-gray-800/50 space-y-3">
                                         <div class="space-y-2">
-                                            <template x-for="comp in getCompetencies(activeIndicator?.exemplars + ' ' + activeIndicator?.description)" :key="comp.code">
+                                            <template x-for="comp in getCompetencies(activeIndicator?.core_competencies || (activeIndicator?.exemplars + ' ' + activeIndicator?.description))" :key="comp.code">
                                                 <div class="p-2.5 rounded-xl border text-sm leading-snug font-medium transition-all" :class="comp.color">
                                                     <div class="flex items-center gap-1.5 mb-0.5">
                                                         <span class="font-bold font-mono px-1.5 py-0.2 rounded text-xs bg-white/70 shadow-sm" x-text="comp.code"></span>
@@ -934,6 +934,8 @@ function curriculumReviewApp() {
                                     sub_strand_id: {{ $ss->id }},
                                     indicator_code: @json($ind->indicator_code),
                                     title: @json($ind->title),
+                                    content_standard: @json($ind->content_standard ?: $ss->content_standard),
+                                    core_competencies: @json($ind->core_competencies),
                                     description: @json($ind->description),
                                     exemplars: @json($ind->exemplars),
                                     media: @json($ind->media),
@@ -954,7 +956,8 @@ function curriculumReviewApp() {
                             id: {{ $ind->id }},
                             sub_strand_id: {{ $subStrand->id }},
                             sub_strand_title: @json($subStrand->title),
-                            content_standard: @json($subStrand->content_standard),
+                            content_standard: @json($ind->content_standard ?: $subStrand->content_standard),
+                            core_competencies: @json($ind->core_competencies),
                             strand_id: {{ $strand->id }},
                             strand_title: @json($strand->title),
                             grade_label: @json($strand->grade_label),
@@ -1026,7 +1029,7 @@ function curriculumReviewApp() {
                 .replace(/'/g, "&#039;");
             
             // Highlight E.g. or Example headings
-            escaped = escaped.replace(/(E\.g\.\s*\d+|Example\s*\d+|E\.g\.)/gi, '<strong class="text-blue-900 font-bold block mt-2.5 mb-1">$1</strong>');
+            escaped = escaped.replace(/(E\.g\.?[,\s]*\d+[\.:]?|Example\s*\d+[\.:]?|E\.g\.)/gi, '<strong class="text-blue-900 dark:text-blue-300 font-bold block mt-2.5 mb-1">$1</strong>');
             
             // Format line breaks
             return escaped.replace(/\n/g, '<br>');
