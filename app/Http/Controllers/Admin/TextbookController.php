@@ -105,7 +105,50 @@ class TextbookController extends Controller
             })->get();
         }
 
-        return view('admin.textbooks.show', compact('textbook', 'availableIndicators'));
+        $chaptersData = $textbook->chapters->map(function ($c) {
+            return [
+                'id' => $c->id,
+                'title' => $c->title,
+                'page_start' => $c->page_start,
+                'page_end' => $c->page_end,
+                'sort_order' => $c->sort_order,
+                'isOpen' => true,
+                'isEditing' => false,
+                'editTitle' => $c->title,
+                'editPageStart' => $c->page_start,
+                'editPageEnd' => $c->page_end,
+                'newTitle' => '',
+                'newPageStart' => '',
+                'newPageEnd' => '',
+                'isSavingQuick' => false,
+                'sections' => $c->sections->map(function ($s) {
+                    return [
+                        'id' => $s->id,
+                        'chapter_id' => $s->chapter_id,
+                        'title' => $s->title,
+                        'page_start' => $s->page_start,
+                        'page_end' => $s->page_end,
+                        'sort_order' => $s->sort_order,
+                        'curriculum_indicator_id' => $s->curriculum_indicator_id,
+                        'has_content' => !empty($s->content_markdown),
+                        'isEditing' => false,
+                        'editTitle' => $s->title,
+                        'editPageStart' => $s->page_start,
+                        'editPageEnd' => $s->page_end,
+                    ];
+                })->values()->all(),
+            ];
+        })->values()->all();
+
+        $indicatorsData = $availableIndicators->map(function ($ind) {
+            return [
+                'id' => $ind->id,
+                'code' => $ind->indicator_code ?? 'IND',
+                'title' => \Illuminate\Support\Str::limit($ind->title, 40),
+            ];
+        })->values()->all();
+
+        return view('admin.textbooks.show', compact('textbook', 'availableIndicators', 'chaptersData', 'indicatorsData'));
     }
 
     /**
@@ -208,6 +251,8 @@ class TextbookController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
+            'page_start' => 'nullable|integer',
+            'page_end' => 'nullable|integer',
             'content_markdown' => 'nullable|string',
             'content_html' => 'nullable|string',
         ]);
@@ -234,5 +279,165 @@ class TextbookController extends Controller
 
         return redirect()->route('admin.textbooks.index')
             ->with('success', 'Textbook deleted successfully.');
+    }
+
+    /**
+     * AJAX: Create a new chapter under a textbook.
+     */
+    public function storeChapter(Request $request, Textbook $textbook): JsonResponse
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'page_start' => 'nullable|integer|min:1',
+            'page_end' => 'nullable|integer|min:1',
+        ]);
+
+        $maxOrder = $textbook->chapters()->max('sort_order') ?? 0;
+
+        $chapter = $textbook->chapters()->create([
+            'title' => $validated['title'],
+            'page_start' => $validated['page_start'] ?? null,
+            'page_end' => $validated['page_end'] ?? null,
+            'sort_order' => $maxOrder + 1,
+        ]);
+
+        return response()->json(['success' => true, 'chapter' => $chapter->load('sections')]);
+    }
+
+    /**
+     * AJAX: Create a new section under a chapter.
+     */
+    public function storeSection(Request $request, TextbookChapter $chapter): JsonResponse
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'page_start' => 'nullable|integer|min:1',
+            'page_end' => 'nullable|integer|min:1',
+        ]);
+
+        $maxOrder = $chapter->sections()->max('sort_order') ?? 0;
+
+        $section = $chapter->sections()->create([
+            'title' => $validated['title'],
+            'page_start' => $validated['page_start'] ?? null,
+            'page_end' => $validated['page_end'] ?? null,
+            'sort_order' => $maxOrder + 1,
+        ]);
+
+        return response()->json(['success' => true, 'section' => $section]);
+    }
+
+    /**
+     * AJAX: Delete a chapter and all its sections.
+     */
+    public function destroyChapter(TextbookChapter $chapter): JsonResponse
+    {
+        $chapter->sections()->delete();
+        $chapter->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * AJAX: Bulk create chapters under a textbook.
+     */
+    public function bulkStoreChapters(Request $request, Textbook $textbook): JsonResponse
+    {
+        $validated = $request->validate([
+            'chapters' => 'required|array|min:1',
+            'chapters.*.title' => 'required|string|max:255',
+            'chapters.*.page_start' => 'nullable|integer|min:1',
+            'chapters.*.page_end' => 'nullable|integer|min:1',
+        ]);
+
+        $maxOrder = $textbook->chapters()->max('sort_order') ?? 0;
+        $createdChapters = [];
+
+        foreach ($validated['chapters'] as $item) {
+            $maxOrder++;
+            $created = $textbook->chapters()->create([
+                'title' => trim($item['title']),
+                'page_start' => $item['page_start'] ?? null,
+                'page_end' => $item['page_end'] ?? null,
+                'sort_order' => $maxOrder,
+            ]);
+            $created->setRelation('sections', collect());
+            $createdChapters[] = $created;
+        }
+
+        return response()->json([
+            'success' => true,
+            'count' => count($createdChapters),
+            'chapters' => $createdChapters,
+        ]);
+    }
+
+    /**
+     * AJAX: Bulk create sections under a chapter.
+     */
+    public function bulkStoreSections(Request $request, TextbookChapter $chapter): JsonResponse
+    {
+        $validated = $request->validate([
+            'sections' => 'required|array|min:1',
+            'sections.*.title' => 'required|string|max:255',
+            'sections.*.page_start' => 'nullable|integer|min:1',
+            'sections.*.page_end' => 'nullable|integer|min:1',
+        ]);
+
+        $maxOrder = $chapter->sections()->max('sort_order') ?? 0;
+        $createdSections = [];
+
+        foreach ($validated['sections'] as $item) {
+            $maxOrder++;
+            $createdSections[] = $chapter->sections()->create([
+                'title' => trim($item['title']),
+                'page_start' => $item['page_start'] ?? null,
+                'page_end' => $item['page_end'] ?? null,
+                'sort_order' => $maxOrder,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'count' => count($createdSections),
+            'sections' => $createdSections,
+        ]);
+    }
+
+    /**
+     * AJAX: Reorder chapters in a textbook.
+     */
+    public function reorderChapters(Request $request, Textbook $textbook): JsonResponse
+    {
+        $validated = $request->validate([
+            'chapter_ids' => 'required|array',
+            'chapter_ids.*' => 'integer|exists:textbook_chapters,id',
+        ]);
+
+        foreach ($validated['chapter_ids'] as $index => $chapterId) {
+            $textbook->chapters()->where('id', $chapterId)->update(['sort_order' => $index + 1]);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * AJAX: Reorder sections in a chapter (or move to chapter).
+     */
+    public function reorderSections(Request $request, TextbookChapter $chapter): JsonResponse
+    {
+        $validated = $request->validate([
+            'section_ids' => 'required|array',
+            'section_ids.*' => 'integer|exists:textbook_sections,id',
+        ]);
+
+        foreach ($validated['section_ids'] as $index => $sectionId) {
+            TextbookSection::where('id', $sectionId)->update([
+                'chapter_id' => $chapter->id,
+                'sort_order' => $index + 1,
+            ]);
+        }
+
+        return response()->json(['success' => true]);
     }
 }

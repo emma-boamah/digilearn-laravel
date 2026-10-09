@@ -26,17 +26,21 @@ class LocalLessonSynthesizer
         $gradeLabel = $strand?->grade_label ?? 'JHS';
 
         $cleanTitle = $indicator->student_title;
+        $domain = $this->detectDomain($indicator, $cleanTitle, $subjectName);
 
-        // 1. Generate "The Big Idea" (Student introduction)
-        $intro = $this->generateIntro($indicator, $subjectName, $gradeLabel);
+        // 1. Generate "The Intuition & Layman's Foundation"
+        $intro = $this->generateStudentFriendlyIntro($domain, $indicator, $cleanTitle, $subjectName);
 
         // 2. Generate Core Principles & Rules
-        $rules = $this->generateCoreRules($indicator, $subjectName);
+        $rules = $this->generateDomainRules($domain, $indicator, $subjectName);
 
-        // 3. Transform Exemplars into Worked Examples
-        $workedExamples = $this->transformExemplarsIntoWorkedExamples($indicator->exemplars, $subjectName);
+        // 3. Handcrafted Worked Examples (with real numbers, step-by-step reasoning)
+        $workedExamples = $this->generateDomainWorkedExamples($domain, $cleanTitle, $indicator->exemplars, $subjectName);
 
-        // 4. Generate Key Takeaways
+        // 4. Pro-Tips and Pitfalls to Avoid
+        $proTips = $this->generateDomainProTips($domain, $cleanTitle);
+
+        // 5. Key Takeaways
         $takeaways = $this->generateTakeaways($indicator, $cleanTitle, $subjectName);
 
         // Assemble clean Markdown
@@ -54,18 +58,24 @@ class LocalLessonSynthesizer
             $md[] = "";
         }
 
+        if (!empty($proTips)) {
+            $md[] = "### 💡 Pro-Tips & Common Traps";
+            $md[] = $proTips;
+            $md[] = "";
+        }
+
         $md[] = "### 🎯 Key Takeaways";
         foreach ($takeaways as $t) {
             $md[] = "- **{$t}**";
         }
 
         $markdownText = implode("\n", $md);
-        $htmlText = Str::markdown($markdownText);
+        $htmlText = $this->renderMarkdownWithMath($markdownText);
 
-        // 5. Generate Checkpoint Quiz (3 questions for student verification)
+        // 6. Generate Checkpoint Quiz
         $quiz = $this->synthesizeQuiz($indicator, $cleanTitle, $subjectName, $takeaways);
 
-        // 6. Generate Brilliant-Style Interactive Segments (Interleaved Concept + Challenge)
+        // 7. Generate Brilliant-Style Interactive Segments (Part 1 is non-blocking reading foundation!)
         $segments = $this->synthesizeInteractiveSegments($indicator, $cleanTitle, $subjectName, $intro, $rules, $workedExamples, $takeaways);
 
         return [
@@ -79,304 +89,726 @@ class LocalLessonSynthesizer
     }
 
     /**
-     * Build student-oriented introduction tailored to the subject.
+     * Build student-friendly introduction with layman explanations, analogies, and real-world intuition.
      */
-    protected function generateIntro(CurriculumIndicator $indicator, string $subject, string $grade): string
+    protected function generateStudentFriendlyIntro(string $domain, CurriculumIndicator $indicator, string $cleanTitle, string $subject): string
     {
-        $rawDesc = $indicator->description ?: $indicator->title;
-        // Strip bureaucratic syllabus jargon: "Demonstrate understanding and use of", "Demonstrate understanding of"
-        $cleanDesc = preg_replace('/^(Demonstrate\s+(an\s+)?understanding\s+(and\s+use\s+)?of\s+)/i', '', $rawDesc);
-        $cleanDesc = preg_replace('/^(Demonstrate\s+)/i', '', $cleanDesc);
-        $cleanDesc = lcfirst(trim($cleanDesc));
+        switch ($domain) {
+            case 'number_rounding_decimals':
+                return "### 🛒 Why Do We Round Decimals?\n\n" .
+                    "Imagine you visit a filling station in Accra to buy fuel for a motorcycle, or you buy fruits at the market with a digital weighing scale. " .
+                    "The pump screen might calculate your cost as **GH₵ 14.863** or the scale shows **2.478 kg**.\n\n" .
+                    "In Ghana, our smallest physical currency coin is **1 Pesewa** (which is \\(\\text{GH₵ } 0.01\\), or one-hundredth of a Cedi). " .
+                    "You cannot pay 0.003 of a Cedi! So the attendant rounds the bill to **GH₵ 14.86**. " .
+                    "Rounding is not about guessing; it is about finding the **closest convenient value** that is practical and meaningful in the real world.\n\n" .
+                    "#### 🔍 Understanding Decimal Place Values\n" .
+                    "When you look at a decimal number like **14.863**, each spot after the dot has a special name and value:\n\n" .
+                    "| Digit | Position Name | Fraction Value | Real-World Money Comparison |\n" .
+                    "| :--- | :--- | :--- | :--- |\n" .
+                    "| **8** | **Tenths** (1st place) | \\(\\frac{1}{10} = 0.1\\) | 10-pesewa coins (0.8 = 80 Pesewas) |\n" .
+                    "| **6** | **Hundredths** (2nd place) | \\(\\frac{1}{100} = 0.01\\) | 1-pesewa coins (0.06 = 6 Pesewas) |\n" .
+                    "| **3** | **Thousandths** (3rd place) | \\(\\frac{1}{1000} = 0.001\\) | Tiny fractions of a pesewa |\n\n" .
+                    "#### 🚶 The \"Walking Down the Road\" Intuition\n" .
+                    "Suppose you are walking along a street from **3.40** to **3.50**, and your position right now is **3.47**:\n\n" .
+                    "- The exact middle point of the journey is **3.45**.\n" .
+                    "- Because you are at **3.47**, you have already crossed the halfway mark.\n" .
+                    "- You are physically closer to **3.50** than to **3.40**!\n\n" .
+                    "That is the golden intuition of rounding: if you are at **5 or above** (the halfway mark or beyond), you move forward (**round up**). " .
+                    "If you haven't reached the halfway mark (less than 5), you stay closer to where you started (**round down**).";
 
-        $topicName = $indicator->student_title;
-        $strandTitle = $indicator->subStrand?->strand?->title ?? 'Core Concept';
-        $subStrandTitle = $indicator->subStrand?->title ?? 'Topic';
+            case 'number_rounding_whole':
+                return "### 🏟️ Why Do We Round Whole Numbers?\n\n" .
+                    "Suppose you attend an exciting football match at the Accra Sports Stadium, and exactly **38,472 fans** bought tickets. " .
+                    "When the sports reporter announces the news that evening, they won't say \"38,472 fans watched the match\". Instead, they say **\"about 38,000 fans\"** or **\"nearly 40,000 fans\"**.\n\n" .
+                    "Why? Because our brains understand and remember round numbers much faster! Rounding whole numbers allows us to summarize large counts and compare quantities effortlessly.\n\n" .
+                    "#### 📍 The Halfway Checkpoint\n" .
+                    "Rounding whole numbers works by checking the halfway checkpoint:\n" .
+                    "- Halfway between 0 and 10 is **5**.\n" .
+                    "- Halfway between 0 and 100 is **50**.\n" .
+                    "- Halfway between 0 and 1,000 is **500**.\n\n" .
+                    "If your number has reached or passed the halfway point (5 or higher in the next place value), it is closer to the upper number, so you round up!";
 
-        // Clean titles
-        $strandClean = trim(preg_replace('/^STRAND\s+\d+\s*[:.\-]?\s*/i', '', $strandTitle));
-        $subClean = trim(preg_replace('/^SUB[-\s]?STRAND\s+\d+\s*[:.\-]?\s*/i', '', $subStrandTitle));
+            case 'number_large_quantities':
+                return "### 🌍 Big Numbers in Our Country\n\n" .
+                    "Have you ever thought about the total population of Ghana? It is approximately **34,000,000** (thirty-four million people)! " .
+                    "And the national budget for roads, schools, and hospitals reaches into **billions of Ghana Cedis** (e.g., GH₵ 150,000,000,000).\n\n" .
+                    "Reading such gigantic numbers can seem intimidating at first, but mathematicians invented a brilliant trick: **Place Value Periods**.\n\n" .
+                    "- Digits are grouped in sets of **3**, separated by commas.\n" .
+                    "- Each group has its own family name: **Units**, **Thousands**, **Millions**, and **Billions**.\n" .
+                    "- Within each family, you just read a simple three-digit number (like 450), followed by the family name (450 Million)!";
 
-        $sLower = strtolower($subject);
-        if (str_contains($sLower, 'ict') || str_contains($sLower, 'comput') || str_contains($sLower, 'technol')) {
-            $outcome = "Mastering this topic equips you with vital digital literacy, hardware architecture principles, and computational skills needed to understand and navigate modern technology.";
-        } elseif (str_contains($sLower, 'sci') || str_contains($sLower, 'phys') || str_contains($sLower, 'chem') || str_contains($sLower, 'bio')) {
-            $outcome = "Developing this understanding builds your scientific inquiry, observation, and analytical skills to understand natural phenomena, physical laws, and the living world.";
-        } elseif (str_contains($sLower, 'social') || str_contains($sLower, 'hist') || str_contains($sLower, 'geog') || str_contains($sLower, 'civic') || str_contains($sLower, 'econ')) {
-            $outcome = "Understanding this topic enriches your perspective on society, governance, historical developments, and community environments.";
-        } elseif (str_contains($sLower, 'eng') || str_contains($sLower, 'french') || str_contains($sLower, 'literat') || str_contains($sLower, 'lang')) {
-            $outcome = "Mastering this enhances your language mastery, reading comprehension, critical analysis, and clear communication.";
-        } elseif (str_contains($sLower, 'math')) {
-            $contextText = strtolower($strandClean . ' ' . $subClean . ' ' . $cleanDesc);
-            if (str_contains($contextText, 'geometry') || str_contains($contextText, 'angle') || str_contains($contextText, 'shape') || str_contains($contextText, 'space')) {
-                $outcome = "Mastering this topic gives you the geometric foundation and spatial reasoning skills to analyze angles, geometric properties, shapes, and structural measurements.";
-            } elseif (str_contains($contextText, 'algebra') || str_contains($contextText, 'equation') || str_contains($contextText, 'expression') || str_contains($contextText, 'relation')) {
-                $outcome = "Understanding this topic strengthens your algebraic thinking, pattern recognition, and ability to model relationships using equations and formulas.";
-            } elseif (str_contains($contextText, 'data') || str_contains($contextText, 'probability') || str_contains($contextText, 'chance') || str_contains($contextText, 'statistic')) {
-                $outcome = "This lesson builds your statistical literacy to collect, organize, analyze real-world data, and make evidence-based predictions.";
-            } else {
-                $outcome = "Understanding this concept gives you the mathematical foundation to solve real-world problems involving quantities, measurements, patterns, and numerical relationships.";
-            }
-        } else {
-            $outcome = "Understanding this concept builds foundational knowledge and practical skills that prepare you for future academic and real-world success.";
+            case 'number_significant_figures':
+                return "### 🔬 What Makes a Figure \"Significant\"?\n\n" .
+                    "Imagine a goldsmith weighing a small piece of gold jewelry. Their digital scale reads **4.05 grams**. " .
+                    "Now imagine a highway sign stating that Kumasi is **200 km** away. Which measurement has more detail?\n\n" .
+                    "In science, mathematics, and engineering, **Significant Figures (s.f.)** tell us which digits were actually measured with precision, versus digits that are just placeholder zeros showing how big or small the number is.\n\n" .
+                    "- Digits that come from real measurement are **significant**.\n" .
+                    "- Zeros that only act as spacers (like the leading zeros in **0.005**) are not significant—they just tell us where the decimal point is!";
+
+            case 'number_fractions':
+                return "### 🥧 Sharing Fairly with Fractions\n\n" .
+                    "Imagine buying a freshly baked meat pie or a warm loaf of bread to share equally among 4 friends. " .
+                    "You cut the bread into **4 equal pieces**. Each friend gets **1 piece** out of the 4, written as \\(\\frac{1}{4}\\).\n\n" .
+                    "- The bottom number (**Denominator**) tells you how many equal slices the whole object was divided into.\n" .
+                    "- The top number (**Numerator**) tells you how many of those slices you are holding.\n\n" .
+                    "Fractions are simply a way of counting equal parts of a whole!";
+
+            case 'number_percentages':
+                return "### 🔋 Percentages: Everything Out of 100\n\n" .
+                    "When you look at your smartphone screen in the morning and see **85%**, you immediately know how much battery you have left without doing any math. " .
+                    "The word **Percent** comes from the Latin *per centum*, which literally means **\"out of 100\"**.\n\n" .
+                    "- **85%** means 85 bars of energy out of every 100.\n" .
+                    "- **50%** is exactly half (50 out of 100).\n" .
+                    "- **100%** means the whole thing is completely full!\n\n" .
+                    "Whether calculating discounts at a shop, exam scores, or bank interest, percentages turn every quantity into a simple score out of 100.";
+
+            case 'number_ratios_proportions':
+                return "### 🥤 Ratios: Recipes and Mixtures\n\n" .
+                    "Think about making a delicious batch of Sobolo drink or mixing concrete on a building site. " .
+                    "To make concrete strong, the mason uses **1 bag of cement** for every **2 headpans of sand** (a ratio of **1 : 2**).\n\n" .
+                    "If the mason needs to mix 5 bags of cement, how many headpans of sand do they need? Since the recipe must stay in balance, they multiply by 5 to get **10 headpans**! " .
+                    "Ratios compare two quantities to ensure the balance or flavor remains identical no matter how much you make.";
+
+            case 'algebra_linear_relations_graphs':
+                return "### 🚕 The Story Behind a Straight Line Graph\n\n" .
+                    "Imagine taking a taxi in town. The driver charges a starting flag-fall fee of **GH₵ 10**, plus **GH₵ 5 for every kilometer** traveled.\n\n" .
+                    "- Travel 1 km: cost is \\(10 + 5(1) = 15\\) Cedis.\n" .
+                    "- Travel 2 km: cost is \\(10 + 5(2) = 20\\) Cedis.\n" .
+                    "- Travel 3 km: cost is \\(10 + 5(3) = 25\\) Cedis.\n\n" .
+                    "Notice the pattern: for every 1 kilometer you move forward, the cost increases by exactly 5 Cedis! " .
+                    "When you plot these points on a graph, they connect in a **perfect straight line**. That is what a **linear relation** is: a steady, predictable change that tells a real-world story.";
+
+            case 'geometry_bearings':
+                return "### 🧭 Bearings: Navigating the Ocean & Skies\n\n" .
+                    "When an airplane takes off from Kotoka International Airport in Accra heading for Tamale, or a cargo ship leaves Tema Harbour, the pilot cannot simply say \"fly a little bit to the right\". " .
+                    "The ocean and the sky have no road signs!\n\n" .
+                    "Instead, navigators use **Bearings**:\n" .
+                    "- You always stand facing true **North** (which is \\(000^\\circ\\)).\n" .
+                    "- You measure your turn clockwise (the direction clock hands turn).\n" .
+                    "- You always write the direction using **3 digits** (e.g., \\(065^\\circ\\) or \\(240^\\circ\\)).\n\n" .
+                    "With bearings, anyone on Earth can find their exact direction with pinpoint accuracy.";
+
+            case 'geometry_parallel_angles':
+                return "### 🛤️ Parallel Lines & The Transversal\n\n" .
+                    "Imagine looking down at two parallel railway tracks running side by side into the distance. They will never touch each other. " .
+                    "Now imagine a road crossing over both tracks diagonally. In geometry, that crossing line is called a **Transversal**.\n\n" .
+                    "The crossing creates angle patterns that mirror each other like twins:\n" .
+                    "- **Z-Angles (Alternate Angles)**: Look like the corners of the letter Z. They are equal!\n" .
+                    "- **F-Angles (Corresponding Angles)**: Sit in matching spots under the branches of an F. They are equal!\n" .
+                    "- **C-Angles (Co-Interior Angles)**: Sit inside the letter C between the tracks. Together they sum to \\(180^\\circ\\)!";
+
+            case 'geometry_pythagoras_trigonometry':
+                return "### 📐 Pythagoras: The Carpenter's Secret\n\n" .
+                    "Whenever carpenters build a sturdy roof truss or masons lay the foundation of a new room, they need to ensure the corners form a perfect \\(90^\\circ\\) right angle.\n\n" .
+                    "Over 2,500 years ago, Pythagoras discovered a magical geometric law: if you build squares on the two shorter sides of a right-angled triangle, their combined area equals the square on the longest diagonal side (the **hypotenuse**):\n\n" .
+                    "\\[ a^2 + b^2 = c^2 \\]\n\n" .
+                    "This powerful formula lets you find any missing distance without ever having to measure it directly!";
+
+            case 'computing_hardware':
+                return "### 💻 The Computer as an Information Factory\n\n" .
+                    "Think of a computer system like the human body or a busy bakery factory:\n\n" .
+                    "1. **Input Devices** (Your eyes and ears / Keyboard & Mouse): They receive raw signals, ingredients, or keystrokes from the outside world.\n" .
+                    "2. **The CPU** (The human brain / The Chef): The Central Processing Unit thinks, calculates, and follows recipe instructions at lightning speed.\n" .
+                    "3. **Memory & Storage** (Your short-term memory & notebook / RAM & SSD): Keeps data safe while working on it, or preserves files permanently after you shut down.\n" .
+                    "4. **Output Devices** (Your voice & drawings / Screen & Printer): Presents the final processed result in a format humans can see, hear, or read.";
+
+            case 'computing_safety':
+                return "### 🛡️ Guarding Your Digital Life\n\n" .
+                    "You wouldn't leave your front door wide open when leaving your house in the morning, or hand your house keys to a stranger on the street. " .
+                    "In the digital world, your smartphone, email, and social media accounts hold your personal photos, messages, and money.\n\n" .
+                    "Cyber safety is about building digital walls: creating strong passphrases, recognizing fake phishing messages, and knowing how to navigate the internet safely without falling for traps.";
+
+            case 'science_matter':
+                return "### 🧊 The Secret Dance of Particles\n\n" .
+                    "Take an ice cube out of the freezer and place it on a saucer under the sun. Within minutes, it turns into water. Leave that water in a pot on the stove, and it boils into invisible steam!\n\n" .
+                    "The substance is still water (\\(H_2O\\)), so what changed? **How fast the particles are dancing!**\n\n" .
+                    "- In **Solids** (Ice): Particles are locked shoulder-to-shoulder, vibrating gently in place.\n" .
+                    "- In **Liquids** (Water): Heat gives particles enough energy to slide and roll over each other.\n" .
+                    "- In **Gases** (Steam): Particles have so much energy they fly freely in all directions, bouncing off the walls!";
+
+
+            case 'algebra_patterns_sequences':
+                return "### 🧵 Patterns & Relationships\n\n" .
+                    "Patterns and relationships involve recognizing repeating or growing structures and describing how different sequences or numbers connect to one another.\n\n" .
+                    "#### What Are Patterns?\n" .
+                    "A **pattern** is a sequence of shapes, colors, or numbers that follows a specific rule and repeats or changes in a predictable way.\n\n" .
+                    "There are two main types of patterns:\n" .
+                    "- **Repeating Patterns**: These cycle through the same elements over and over. For example, the colors of Ghana's flag stripes — *red, gold, green, red, gold, green* — repeat in the same order every time.\n" .
+                    "- **Growing Patterns**: These increase (or decrease) by a consistent amount each step. For example, imagine stacking blocks: you put 2 blocks on step 1, 5 blocks on step 2, 8 blocks on step 3 — you are adding **3 more blocks** at every step!\n\n" .
+                    "#### What Are Relationships?\n" .
+                    "A **relationship** explains the connection or rule between two separate things — for example, the link between matching terms in two different number sequences.\n\n" .
+                    "You can find a relationship by comparing matching terms using **addition, subtraction, multiplication, or division**:\n" .
+                    "- If Pattern A is \$0, 5, 10\$ and Pattern B is \$2, 7, 12\$, the relationship is that you **add 2** to each term in Pattern A to get Pattern B (\$A + 2 = B\$).\n\n" .
+                    "---\n\n" .
+                    "#### 🎨 Real-Life Example: The Kente Weaver\n\n" .
+                    "Imagine you are watching a master weaver at the famous Bonwire Kente weaving village near Kumasi. " .
+                    "As the weaver's shuttle flies back and forth across the loom, you notice something fascinating: every single stripe of yellow, green, and gold appears in an exact, predictable order. " .
+                    "That is a **repeating pattern**!\n\n" .
+                    "Now imagine you put ₵4 into a Susu savings box on Day 1, and every single day you add ₵3 more. " .
+                    "On Day 2 you have ₵7, on Day 3 you have ₵10, on Day 4 you have ₵13! " .
+                    "That is a **growing pattern**, and in mathematics we call this predictable connection a **Relation** or a **Linear Pattern**.\n\n" .
+                    "#### 📖 Math Vocabulary: Connecting the Words\n\n" .
+                    "In the Susu savings example above, you already used patterns and relationships without realizing it! Here is how everyday words map to math vocabulary:\n\n" .
+                    "| Everyday Word | Math Name | Example from Susu Savings |\n" .
+                    "| :--- | :--- | :--- |\n" .
+                    "| The day number you put money in | **Domain** (or **Input**, \$x\$) | Day 1, Day 2, Day 3, Day 4 |\n" .
+                    "| The total amount you have that day | **Co-domain** (or **Output**, \$y\$) | \$\\text{₵}4, \\text{₵}7, \\text{₵}10, \\text{₵}13\$ |\n" .
+                    "| The constant amount added each day | **Common Difference** (\$d\$) | \$+3\$ (you add ₵3 every day) |\n" .
+                    "| The formula connecting day to total | **Rule** | \$y = 3x + 1\$ (we will derive this below!) |\n\n" .
+                    "So **Domain** simply means *the numbers you start with* (inputs), and **Co-domain** means *the numbers that come out* (outputs). The **relationship** or **rule** is what connects them!\n\n" .
+                    "---\n\n" .
+                    "#### Organizing the Pattern into a Table\n\n" .
+                    "Let us organize the Susu savings pattern into a table:\n\n" .
+                    "| Day (Input \$x\$) | 1 | 2 | 3 | 4 | 5 | ... | 9 |\n" .
+                    "| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |\n" .
+                    "| Total Savings, Output \$y\$ (₵) | 4 | 7 | 10 | 13 | **?** | ... | **?** |\n\n" .
+                    "#### Step 1: Find the Common Difference\n" .
+                    "Look at how the output changes between consecutive days: \$4 \\rightarrow 7 \\rightarrow 10 \\rightarrow 13\$.\n" .
+                    "- \$7 - 4 = 3\$, \$10 - 7 = 3\$, \$13 - 10 = 3\$.\n" .
+                    "- Each step adds a constant **\$+3\$**! This is the **Common Difference**: \$d = 3\$.\n" .
+                    "- To find the missing value at Day 5, simply add 3: \$13 + 3 = \\mathbf{16}\$!\n\n" .
+                    "#### Step 2: Discover the General Rule\n" .
+                    "What if your teacher asks: *\"What is the total savings on Day 100?\"* You cannot add 3 one hundred times! We need a **formula**.\n\n" .
+                    "Since you add ₵3 **every single day**, you might think: *\"The total is just 3 times the day number!\"* Let us test that idea:\n" .
+                    "- Day 1: \$3 \\times 1 = 3\$ ... but the actual total is **₵4**, not ₵3! ❌\n" .
+                    "- Day 2: \$3 \\times 2 = 6\$ ... but the actual total is **₵7**, not ₵6! ❌\n" .
+                    "- Day 3: \$3 \\times 3 = 9\$ ... but the actual total is **₵10**, not ₵9! ❌\n\n" .
+                    "Do you see the pattern? The answer \$3x\$ is always **₵1 too low**! So we need to **add 1** to fix it:\n" .
+                    "- Day 1: \$3 \\times 1 + 1 = 4\$ ✅\n" .
+                    "- Day 2: \$3 \\times 2 + 1 = 7\$ ✅\n" .
+                    "- Day 3: \$3 \\times 3 + 1 = 10\$ ✅\n\n" .
+                    "That extra \$+1\$ is what mathematicians call the **constant** (written as \$c\$). So the complete **rule** is:\n" .
+                    "\$\$\\boxed{y = 3x + 1}\$\$\n\n" .
+                    "#### Step 3: Verify and Predict\n" .
+                    "- For Day 1 (\$x = 1\$): \$y = 3(1) + 1 = 4\$ ✅\n" .
+                    "- For Day 2 (\$x = 2\$): \$y = 3(2) + 1 = 7\$ ✅\n" .
+                    "- For Day 4 (\$x = 4\$): \$y = 3(4) + 1 = 13\$ ✅\n" .
+                    "- For **Day 100** (\$x = 100\$): \$y = 3(100) + 1 = \\mathbf{301}\$! That is ₵301! 🎉\n\n" .
+                    "> 💡 **Key Takeaway**: A pattern follows a specific rule that repeats or grows. The **Domain** (input) feeds into a **Rule** to produce the **Co-domain** (output). To find the rule: (1) find the common difference \$d\$, (2) write \$y = dx + c\$, (3) substitute one known pair to solve for \$c\$. Then you can predict any term instantly!";
+
+            case 'geometry_angles_classification':
+                return "### 📐 Measuring and Classifying Angles\n\n" .
+                    "Angles are everywhere around you — from the hands of the clock on your classroom wall, to the slope of a roof, to the turn you make at a road junction.\n\n" .
+                    "#### What Is an Angle?\n" .
+                    "An **angle** is the amount of **turn** or **rotation** between two straight lines (called **rays** or **arms**) that meet at a common point called the **vertex**.\n\n" .
+                    "Think of it like a door: when a door is closed, the angle between the door and the wall is \$0^\\circ\$. As you push it open, the angle gets bigger. A full turn all the way around is \$360^\\circ\$.\n\n" .
+                    "We measure angles in **degrees** (the ° symbol), using a tool called a **protractor**.\n\n" .
+                    "---\n\n" .
+                    "#### 🏫 Real-Life Example: The Clock on the Wall\n\n" .
+                    "Look at the clock in your classroom. At exactly **3 o'clock**, the minute hand points straight up (12) and the hour hand points to the right (3). " .
+                    "The two hands form a perfect square corner — that is a **right angle** (exactly \$90^\\circ\$).\n\n" .
+                    "Now imagine the time changes:\n" .
+                    "- At **1 o'clock**, the hands are close together — a small angle (\$30^\\circ\$). That is an **acute angle**.\n" .
+                    "- At **3 o'clock**, the hands form a square corner (\$90^\\circ\$). That is a **right angle**.\n" .
+                    "- At **5 o'clock**, the hands are spread wide (\$150^\\circ\$). That is an **obtuse angle**.\n" .
+                    "- At **7 o'clock**, if you measure the *larger* angle going the long way around (\$210^\\circ\$), that is a **reflex angle**.\n\n" .
+                    "---\n\n" .
+                    "#### 📖 Math Vocabulary: Types of Angles\n\n" .
+                    "Mathematicians classify angles into **four types** based on their size:\n\n" .
+                    "| Type of Angle | Size Range | What It Looks Like | Example |\n" .
+                    "| :--- | :--- | :--- | :--- |\n" .
+                    "| **Acute Angle** | Less than \$90^\\circ\$ | A sharp, narrow opening | The tip of a slice of pizza 🍕 |\n" .
+                    "| **Right Angle** | Exactly \$90^\\circ\$ | A perfect square corner (marked with a small square ◻) | The corner of your exercise book 📓 |\n" .
+                    "| **Obtuse Angle** | Between \$90^\\circ\$ and \$180^\\circ\$ | A wide, spread opening | An opened laptop screen 💻 |\n" .
+                    "| **Reflex Angle** | Between \$180^\\circ\$ and \$360^\\circ\$ | Wraps around the outside, past a straight line | The *larger* angle when a door is slightly open 🚪 |\n\n" .
+                    "There are also two special boundary angles:\n" .
+                    "- **Straight Angle**: Exactly \$180^\\circ\$ — the two rays form a straight line.\n" .
+                    "- **Full Turn (Complete Angle)**: Exactly \$360^\\circ\$ — a full rotation back to the starting position.\n\n" .
+                    "---\n\n" .
+                    "#### 🔧 How to Use a Protractor\n\n" .
+                    "To measure an angle with a protractor:\n" .
+                    "1. Place the **center point** (the small hole or crosshair) of the protractor exactly on the **vertex** of the angle.\n" .
+                    "2. Line up the **baseline** (\$0^\\circ\$ line) of the protractor with one **ray** (arm) of the angle.\n" .
+                    "3. Read the number where the **other ray** crosses the scale. Use the **inner scale** if your baseline ray is on the right, or the **outer scale** if it is on the left.\n" .
+                    "4. Classify the angle based on the measurement!\n\n" .
+                    "> 💡 **Key Takeaway**: An angle measures rotation between two rays at a vertex. Acute means *less than \$90^\\circ\$*, right means *exactly \$90^\\circ\$*, obtuse means *between \$90^\\circ\$ and \$180^\\circ\$*, and reflex means *between \$180^\\circ\$ and \$360^\\circ\$*. Use a protractor to measure, then classify!";
+
+            case 'data_collection_charts':
+                return "### 📊 Why Do We Organize Data?\n\n" .
+                    "Imagine you are the Senior Prefect in a school of 1,200 students in Kumasi. " .
+                    "The Headteacher asks you: *\"What is the favorite meal of the students, and what are their test marks?\"*\n\n" .
+                    "If you bring 1,200 loose pieces of paper with random numbers and names scrawled everywhere, nobody can understand it! " .
+                    "That messy collection of raw information is called **Raw or Ungrouped Data**.\n\n" .
+                    "To make sense of the real world, mathematicians organize information into clear categories:\n\n" .
+                    "#### 1. Categorical vs. Numerical Data\n" .
+                    "- **Categorical Data (Qualitative)**: Data made of names, words, or labels that cannot be added up.\n" .
+                    "  - *Nominal Data*: Categories with NO natural order (e.g., favorite food: Jollof, Waakye, Banku; blood group; gender).\n" .
+                    "  - *Ordinal Data*: Categories with a natural order or ranking (e.g., boxing weight divisions: lightweight, middleweight, heavyweight; grade ranks: 1st, 2nd, 3rd).\n" .
+                    "- **Numerical Data (Quantitative)**: Data made of numbers that can be measured or counted.\n" .
+                    "  - *Discrete*: Counted in whole numbers (e.g., number of students in a class: 35, number of siblings: 3).\n" .
+                    "  - *Continuous*: Measured on a scale with decimals (e.g., height: 1.65 m, temperature: 37.2°C).\n\n" .
+                    "#### 2. Ungrouped vs. Grouped Data\n" .
+                    "- **Ungrouped Data**: Individual raw scores listed one by one (e.g., marks of 5 students: $12, 18, 25, 30, 42$).\n" .
+                    "- **Grouped Data**: When you have lots of data, you gather numbers into **Class Intervals** (like $50 - 60, 61 - 70, 71 - 80$) and count how many students fall into each group (**Frequency**)!\n\n" .
+                    "| Class Interval (Marks) | Tally | Frequency (Students) |\n" .
+                    "| :--- | :---: | :---: |\n" .
+                    "| $50 - 60$ | &#124;&#124;&#124;&#124; | $4$ |\n" .
+                    "| $61 - 70$ | &#124;&#124;&#124;&#124; &#124;&#124;&#124; | $8$ |\n" .
+                    "| $71 - 80$ | &#124;&#124;&#124;&#124; &#124;&#124;&#124;&#124; &#124;&#124; | $12$ |\n" .
+                    "| **Total** | | **$24$** |\n\n" .
+                    "> 💡 **Key Takeaway**: Ungrouped data shows every single individual score, while grouped data organizes scores into convenient ranges (class intervals) with frequencies!";
+
+            case 'data_central_tendency':
+                return "### 🎯 Central Tendency: The Story Behind the Average\n\n" .
+                    "Suppose a football striker scores 3, 0, 1, 4, and 2 goals across 5 matches. " .
+                    "How do we summarize their performance with a single fair number?\n\n" .
+                    "In statistics, **Measures of Central Tendency** find the \"center\" or typical value of a dataset:\n\n" .
+                    "- **The Mean (Fair Share Average)**: Add up all the values and divide equally by how many there are: $\\text{Mean} = \\frac{\\sum x}{n}$.\n" .
+                    "- **The Median (The Middle Value)**: Line up all values in order from least to greatest; the median is the person standing right in the middle!\n" .
+                    "- **The Mode (The Most Popular)**: The number that appears most frequently.\n" .
+                    "- **The Range (The Spread)**: The gap between the champion and the lowest score: $\\text{Highest} - \\text{Lowest}$.";
+
+            case 'data_probability':
+                return "### 🎲 Probability: The Science of Chance\n\n" .
+                    "Before a football match kicks off, the referee flips a coin in front of the two team captains. " .
+                    "Why? Because a fair coin has exactly **2 equal outcomes** (Head or Tail), giving each team a 50% chance!\n\n" .
+                    "In mathematics, **Probability** measures how likely an event is to happen on a scale from **0** (completely impossible) to **1** (absolutely certain):\n\n" .
+                    "$$\\mathbf{P(\\text{Event}) = \\frac{\\text{Number of Successful Outcomes}}{\\text{Total Number of Possible Outcomes}}}$$\n\n" .
+                    "When rolling a standard 6-sided die, the chance of rolling a 4 is $\\frac{1}{6}$, while the chance of rolling an even number (2, 4, or 6) is $\\frac{3}{6} = \\frac{1}{2}$!";
+
+            case 'number_sets':
+                return "### 🧺 The Power of Sets: Sorting Our World\n\n" .
+                    "Think of a set like a shopping basket or a school club. " .
+                    "A **Set** is simply a well-defined collection of distinct objects or numbers, called **members** or **elements**.\n\n" .
+                    "In everyday school life:\n" .
+                    "- Let Set A be students who play **Football**.\n" .
+                    "- Let Set B be students who sing in the **School Choir**.\n\n" .
+                    "Mathematicians use **Venn Diagrams** to visualize how groups overlap:\n" .
+                    "- **Intersection ($A \\cap B$)**: The students who do BOTH (play football AND sing in the choir).\n" .
+                    "- **Union ($A \\cup B$)**: The students who do EITHER (football players OR choir singers OR both).\n" .
+                    "- **Universal Set ($\\mathcal{U}$)**: All students in the entire school!";
+
+            case 'algebra_expressions_factorisation':
+                return "### 🎁 Distributing & Factoring: Packing and Unpacking Boxes\n\n" .
+                    "Imagine you are preparing 3 gift bags for your friends. In each bag, you place **1 notebook ($x$)** and **2 pens**.\n\n" .
+                    "In mathematics, we write this as: $3(x + 2)$.\n\n" .
+                    "- **Expanding (Opening the bags)**: Multiply the 3 by everything inside: $3 \\times x + 3 \\times 2 = \\mathbf{3x + 6}$.\n" .
+                    "- **Factoring (Repacking the bags)**: Look at $3x + 6$. What number divides both terms? The number 3! Pull out the common factor: $\\mathbf{3(x + 2)}$.\n\n" .
+                    "Expanding and Factoring are simply two sides of the same coin!";
+
+            default:
+                return "### 💡 Getting to the Heart of {$cleanTitle}\n\n" .
+                    "Every important concept in {$subject} began as a solution to a real-world question or curiosity. " .
+                    "Instead of memorizing definitions without meaning, let's explore **what this idea does**, **why it was created**, and **how it applies to everyday problem-solving**.\n\n" .
+                    "By understanding the intuition first, you will find the step-by-step rules feel natural and easy to remember.";
         }
-
-        return "In this lesson on **{$topicName}** ({$subClean} &bull; {$strandClean}), you will learn how to {$cleanDesc}. {$outcome}";
     }
 
     /**
-     * Formulate clear educational rules based on subject and indicator context.
+     * Formulate clear educational rules based on subject and domain.
      */
-    protected function generateCoreRules(CurriculumIndicator $indicator, string $subject): string
+    protected function generateDomainRules(string $domain, CurriculumIndicator $indicator, string $subject): string
     {
-        $text = strtolower($indicator->title . ' ' . ($indicator->description ?? ''));
-        $sLower = strtolower($subject);
-        $isComputing = str_contains($sLower, 'ict') || str_contains($sLower, 'comput') || str_contains($sLower, 'technol');
-        $isScience = str_contains($sLower, 'sci') || str_contains($sLower, 'phys') || str_contains($sLower, 'chem') || str_contains($sLower, 'bio');
+        switch ($domain) {
+            case 'number_rounding_decimals':
+                return "1. **Identify the Target Place Value**:\n" .
+                    "   - **Tenths (1 decimal place)**: The 1st digit directly after the decimal point (e.g. 0.**X**).\n" .
+                    "   - **Hundredths (2 decimal places)**: The 2nd digit after the decimal point (e.g. 0.x**X**).\n" .
+                    "   - **Thousandths (3 decimal places)**: The 3rd digit after the decimal point (e.g. 0.xx**X**).\n" .
+                    "2. **Inspect ONLY the Immediate Neighbor to the Right**:\n" .
+                    "   - Look at the single digit right next to your target place.\n" .
+                    "   - Ignore all digits further down the road—do not look two places away!\n" .
+                    "3. **Apply the 5-or-More Check**:\n" .
+                    "   - If the neighbor is **5, 6, 7, 8, or 9** (5 or more): Round **UP** by adding 1 to your target digit.\n" .
+                    "   - If the neighbor is **0, 1, 2, 3, or 4** (4 or less): Round **DOWN** by leaving your target digit unchanged.\n" .
+                    "4. **Drop All Following Digits**:\n" .
+                    "   - In decimals, remove all digits to the right of your target place value.\n" .
+                    "5. **The \"9 Roll-Up\" Special Rule**:\n" .
+                    "   - If your target digit is a **9** and you need to round up, \\(9 + 1 = 10\\). Write **0** in your target place and carry over the **1** to the digit on the left (e.g., \\(2.96\\) rounded to tenths becomes \\(3.0\\)).";
 
-        if ($isComputing) {
-            if (str_contains($text, 'generation') || str_contains($text, 'architecture') || str_contains($text, 'history')) {
-                return "1. **Core Processing Milestone**: Recognize the defining hardware component of the generation:\n" .
-                       "   - 1st Gen: Vacuum Tubes | 2nd Gen: Transistors | 3rd Gen: Integrated Circuits (ICs)\n" .
-                       "   - **4th Gen**: Very Large Scale Integration (VLSI) & Microprocessors (Single-chip CPUs)\n" .
-                       "   - 5th Gen: Artificial Intelligence (AI), Parallel Processing & Quantum Computing.\n" .
-                       "2. **Architectural Innovations**: 4th generation introduced microprocessors (e.g., Intel 4004/8086), high-speed semiconductor memory (RAM/ROM), and graphical operating systems.\n" .
-                       "3. **Physical & Operational Characteristics**: Vastly smaller footprint (desktop/laptop), higher processing speeds (megahertz to gigahertz), minimal power consumption, and negligible heat generation compared to previous eras.\n" .
-                       "4. **Accessibility & Networking**: Enabled personal computing (PCs), local area networks (LAN), wide-scale Internet connectivity, and user-friendly software.";
-            }
+            case 'number_rounding_whole':
+                return "1. **Locate Target Place Value**: Identify the units, tens, hundreds, thousands, or ten-thousands digit.\n" .
+                    "2. **Check the Next Digit to the Right**:\n" .
+                    "   - If it is **5 or greater**, add 1 to the target digit.\n" .
+                    "   - If it is **4 or less**, keep the target digit unchanged.\n" .
+                    "3. **Fill with Zeros**: Change ALL digits to the right of the target position into **zeros** (e.g., 48,270 to nearest thousand becomes 48,000).\n" .
+                    "4. **Preserve Digits to the Left**: Keep all digits to the left of your target place value unless a 9 rolls up.";
 
-            if (str_contains($text, 'input') || str_contains($text, 'output') || str_contains($text, 'device') || str_contains($text, 'hardware')) {
-                return "1. **Input Devices**: Feed raw data and user instructions into the system (e.g., keyboard, mouse, scanner, microphone, touchscreen).\n" .
-                       "2. **Central Processing Unit (CPU)**: Interprets and executes instructions via the Control Unit (CU) and Arithmetic Logic Unit (ALU).\n" .
-                       "3. **Output Devices**: Communicate processed information in human-readable or audio/visual format (e.g., monitor, printer, speakers, projectors).\n" .
-                       "4. **Storage Subsystems**: Retain data temporarily during execution (Primary: RAM/Cache) or permanently for future retrieval (Secondary: SSD, HDD, Flash Drives).";
-            }
+            case 'number_significant_figures':
+                return "1. **Non-Zero Digits are ALWAYS Significant**: In 482, all 3 digits count.\n" .
+                    "2. **Captive Zeros (Between non-zeros) are ALWAYS Significant**: In 4,008, all 4 digits count.\n" .
+                    "3. **Leading Zeros are NEVER Significant**: In 0.0045, only 4 and 5 count (2 s.f.). The zeros just locate the decimal point.\n" .
+                    "4. **Trailing Zeros After a Decimal Point ARE Significant**: In 4.500, all 4 digits count because they indicate precision.\n" .
+                    "5. **Rounding to $n$ Significant Figures**: Count $n$ digits starting from the first non-zero digit on the left, then inspect the next digit to decide whether to round up.";
 
-            if (str_contains($text, 'network') || str_contains($text, 'internet') || str_contains($text, 'cyber') || str_contains($text, 'safety') || str_contains($text, 'security')) {
-                return "1. **Authentication & Password Hygiene**: Create strong passphrases combining letters, numbers, and symbols; never reuse credentials across services.\n" .
-                       "2. **Data Privacy**: Keep personal identifying information (PII), location details, and financial credentials private and secure.\n" .
-                       "3. **Safe Navigation**: Avoid opening unverified attachments, clicking phishing links, or installing unapproved software.\n" .
-                       "4. **Digital Citizenship & Netiquette**: Practice ethical communication online, respect intellectual property, and report malicious activity immediately.";
-            }
+            case 'number_fractions':
+                return "1. **Equivalent Fractions**: Multiply or divide both numerator and denominator by the same non-zero number: \\(\\frac{a}{b} = \\frac{a \\times k}{b \\times k}\\).\n" .
+                    "2. **Adding & Subtracting**: Ensure fractions share a Common Denominator (LCM) before combining numerators.\n" .
+                    "3. **Multiplying Fractions**: Multiply numerators straight across, and multiply denominators straight across: \\(\\frac{a}{b} \\times \\frac{c}{d} = \\frac{a \\times c}{b \\times d}\\).\n" .
+                    "4. **Dividing Fractions**: Multiply by the reciprocal (flip the second fraction): \\(\\frac{a}{b} \\div \\frac{c}{d} = \\frac{a}{b} \\times \\frac{d}{c}\\).";
 
-            return "1. **Identify the Core System/Component**: Clearly define the hardware, software, or digital system under study.\n" .
-                   "2. **Trace the Information Processing Cycle**: Analyze the path of data from Input $\\rightarrow$ Processing $\\rightarrow$ Storage $\\rightarrow$ Output.\n" .
-                   "3. **Apply Technical Terminology**: Use standard, accurate computing and architectural terminology in your analysis.\n" .
-                   "4. **Evaluate Practical Application**: Relate the technical concept to real-world tasks, efficiency, and safety considerations.";
+            case 'algebra_linear_relations_graphs':
+                return "1. **Linear Equation Form**: Standard gradient-intercept form is \\(y = mx + c\\), where \\(m\\) is the gradient (slope) and \\(c\\) is the y-intercept.\n" .
+                    "2. **Calculate Gradient**: \\(m = \\frac{\\Delta y}{\\Delta x} = \\frac{y_2 - y_1}{x_2 - x_1}\\).\n" .
+                    "3. **Generate Table of Values**: Substitute given values of \\(x\\) into the rule to calculate corresponding \\(y\\) values.\n" .
+                    "4. **Plotting Points**: Plot ordered pairs \\((x, y)\\)$ on Cartesian axes and draw a ruler-straight line passing through them.";
+
+            case 'geometry_bearings':
+                return "1. **Start at North**: Always draw a vertical North arrow (N) at the starting reference point.\n" .
+                    "2. **Measure Clockwise**: Rotate clockwise from North to the direction line connecting to the destination.\n" .
+                    "3. **Always Use 3 Digits**: Express bearings with three figures (e.g. \\(045^\\circ\\), \\(090^\\circ\\), \\(270^\\circ\\)).\n" .
+                    "4. **Back Bearing Rule**: If the forward bearing is \\(< 180^\\circ\\), add \\(180^\\circ\\). If \\(\\ge 180^\\circ\\), subtract \\(180^\\circ\\).";
+
+
+            case 'geometry_angles_classification':
+                return "**The 4 Rules of Angle Classification:**\n\n" .
+                    "**Rule 1 — Acute Angle:** Any angle that measures **less than \$90^\\circ\$** is acute.\n" .
+                    "- Example: \$30^\\circ\$, \$45^\\circ\$, \$89^\\circ\$ are all acute.\n\n" .
+                    "**Rule 2 — Right Angle:** An angle that measures **exactly \$90^\\circ\$** is a right angle.\n" .
+                    "- It is marked with a small square (◻) at the vertex — never with an arc.\n\n" .
+                    "**Rule 3 — Obtuse Angle:** Any angle **greater than \$90^\\circ\$** but **less than \$180^\\circ\$** is obtuse.\n" .
+                    "- Example: \$91^\\circ\$, \$120^\\circ\$, \$179^\\circ\$ are all obtuse.\n\n" .
+                    "**Rule 4 — Reflex Angle:** Any angle **greater than \$180^\\circ\$** but **less than \$360^\\circ\$** is reflex.\n" .
+                    "- To find a reflex angle when you know the smaller angle: \$\\text{Reflex} = 360^\\circ - \\text{smaller angle}\$.\n" .
+                    "- Example: If the acute angle is \$50^\\circ\$, the reflex angle on the other side is \$360^\\circ - 50^\\circ = 310^\\circ\$.\n\n" .
+                    "**Quick Memory Rule:**\n" .
+                    "$$0^\\circ < \\text{Acute} < 90^\\circ < \\text{Obtuse} < 180^\\circ < \\text{Reflex} < 360^\\circ$$";
+
+            case 'computing_hardware':
+                return "1. **Trace the Information Processing Cycle**: Input $\\rightarrow$ Processing $\\rightarrow$ Storage $\\rightarrow$ Output.\n" .
+                    "2. **Classify Hardware Subsystems**: Clearly distinguish between input peripherals, central processing, internal memory (RAM/ROM), and secondary storage.\n" .
+                    "3. **Evaluate Specifications**: Understand performance metrics (CPU clock speed in GHz, RAM capacity in GB, storage transfer speed in MB/s).";
+
+
+            case 'algebra_patterns_sequences':
+                return "1. **Identify the Common Difference (\$d\$)**:\n" .
+                    "   - Subtract any term from the term that immediately follows it:\n" .
+                    "     $$\\mathbf{d = y_2 - y_1 = y_3 - y_2}$$\n" .
+                    "   - For the sequence \$4, 7, 10, 13\\dots\$: \$d = 7 - 4 = \\mathbf{+3}\$.\n\n" .
+                    "2. **Find the Multiplier and Adjustment Constant (\$c\$)**:\n" .
+                    "   - Every linear relation follows the equation: $$\\mathbf{y = mx + c}$$\n" .
+                    "   - The multiplier \$m\$ is ALWAYS the common difference: \$m = d = 3\$.\n" .
+                    "   - To find \$c\$, substitute the first pair (\$x=1, y=4\$):\n" .
+                    "     $$4 = 3(1) + c \\implies c = 4 - 3 = \\mathbf{+1}$$\n" .
+                    "   - So the relation rule is: $$\\mathbf{y = 3x + 1}$$\n\n" .
+                    "3. **Predict Missing or Subsequent Elements**:\n" .
+                    "   - **Immediate next term**: Add the common difference (\$13 + 3 = 16\$).\n" .
+                    "   - **Distant term (\$n\\text{th}\$ element)**: Substitute the domain value into the rule:\n" .
+                    "     $$\\text{When } x = 9: \\quad y = 3(9) + 1 = 27 + 1 = \\mathbf{28}$$\n\n" .
+                    "4. **State the Rule in Words (Mathematical Language)**:\n" .
+                    "   - \$y = 3x + 1\\$ in words: *\"Multiply the domain value by 3, then add 1\"* or *\"One more than three times the number\"*.";
+
+            case 'data_collection_charts':
+                return "1. **Categorical vs. Numerical Data**:\n" .
+                    "   - **Categorical (Qualitative)**: Non-numeric traits. *Nominal* = names with no order (e.g., gender, eye color); *Ordinal* = categories with ranking (e.g., 1st/2nd/3rd place, boxer weight classes).\n" .
+                    "   - **Numerical (Quantitative)**: Quantities. *Discrete* = whole count values (e.g., number of goals); *Continuous* = measured with decimals (e.g., length, mass, time).\n" .
+                    "2. **Identify Class Limits in Grouped Data**:\n" .
+                    "   - For an interval like **$10 - 19$**:\n" .
+                    "     - **Lower Class Limit**: Smallest value in group $\\rightarrow \\mathbf{10}$.\n" .
+                    "     - **Upper Class Limit**: Largest value in group $\\rightarrow \\mathbf{19}$.\n" .
+                    "3. **The Class Width Formula (CRITICAL)**:\n" .
+                    "   - **Method A (Difference between consecutive lower limits)**:\n" .
+                    "     $$\\mathbf{\\text{Class Width} = \\text{Lower Limit of Next Interval} - \\text{Lower Limit of Current Interval}}$$\n" .
+                    "     For $10 - 19$ and $20 - 29$: $\\text{Width} = 20 - 10 = \\mathbf{10}$.\n" .
+                    "   - **Method B (Count all included integer values)**: $10, 11, 12, 13, 14, 15, 16, 17, 18, 19 \\rightarrow \\mathbf{10}$ values.\n" .
+                    "   - ⚠️ **Trap to Avoid**: Do NOT compute $19 - 10 = 9$! That leaves out the starting number 10!\n" .
+                    "4. **Class Midpoint (Class Mark)**:\n" .
+                    "   $$\\text{Midpoint} = \\frac{\\text{Lower Limit} + \\text{Upper Limit}}{2} = \\frac{10 + 19}{2} = \\mathbf{14.5}$$\n" .
+                    "5. **Class Boundaries**:\n" .
+                    "   - For integer data with a gap of 1 unit, subtract 0.5 from lower limit and add 0.5 to upper limit: **$9.5 - 19.5$**. Width = $19.5 - 9.5 = \\mathbf{10}$.";
+
+            case 'data_central_tendency':
+                return "1. **Mean Formula**: $\\bar{x} = \\frac{\\sum x}{n} = \\frac{\\text{Sum of all values}}{\\text{Total number of values}}$.\n" .
+                    "2. **Median Rule**: Arrange numbers in ascending order. If $n$ is odd, median is the middle value at position $\\frac{n+1}{2}$. If $n$ is even, average the two middle values.\n" .
+                    "3. **Mode Rule**: Identify the value with the highest frequency. A dataset can have no mode, one mode (unimodal), or multiple modes (bimodal).\n" .
+                    "4. **Range Formula**: $\\text{Range} = \\text{Maximum Value} - \\text{Minimum Value}$.";
+
+            case 'number_sets':
+                return "1. **Element Notation**: $x \\in A$ means $x$ is a member of set $A$; $x \\notin A$ means it is not a member.\n" .
+                    "2. **Intersection ($A \\cap B$)**: List elements that belong to **both** set A AND set B.\n" .
+                    "3. **Union ($A \\cup B$)**: Combine elements from set A and set B without repeating duplicate members.\n" .
+                    "4. **Complement ($A'$)**: List elements in the Universal Set ($\\mathcal{U}$) that do NOT belong to set $A$.\n" .
+                    "5. **Set Cardinality Rule**: $n(A \\cup B) = n(A) + n(B) - n(A \\cap B)$.";
+
+            default:
+                return "1. **Identify the Core Given Information**: Isolate the given numbers, variables, or statements carefully.\n" .
+                    "2. **Select the Governing Principle**: Apply the fundamental rule or formula that connects the quantities.\n" .
+                    "3. **Execute Step-by-Step Working**: Show each line of calculation clearly without skipping intermediate steps.\n" .
+                    "4. **Sanity Check**: Review the final answer to verify it is physically reasonable and correctly formatted.";
         }
-
-        if ($isScience) {
-            return "1. **Observe and Identify Phenomena**: Note key variables, states, or biological/physical structures carefully.\n" .
-                   "2. **Relate to Scientific Principles**: Connect the observed event to fundamental laws, properties of matter, or biological processes.\n" .
-                   "3. **Analyze Cause and Effect**: Examine how changes in one variable (temperature, pressure, concentration, force) impact the system.\n" .
-                   "4. **Formulate Conclusions**: State clear findings supported by empirical evidence and correct scientific vocabulary.";
-        }
-
-        // Mathematics: Geometry & Angles rules
-        if (str_contains($text, 'alternate') || str_contains($text, 'corresponding') || str_contains($text, 'transversal') || (str_contains($text, 'parallel') && str_contains($text, 'angle'))) {
-            return '1. **Identify the Transversal & Parallel Lines**: Spot the line intersecting two parallel lines ($L_1 \parallel L_2).' . "\n" .
-                   '2. **Alternate Angles (Z-Shape)**: Lie on opposite sides of the transversal between parallel lines; they are always **equal** (e.g., $\angle a = \angle b$).' . "\n" .
-                   '3. **Corresponding Angles (F-Shape)**: Occupy matching relative positions at each intersection; they are always **equal** (e.g., $\angle c = \angle d$).' . "\n" .
-                   '4. **Vertically Opposite Angles (X-Shape)**: Oppose each other at any line intersection and are always **equal**.' . "\n" .
-                   '5. **Co-Interior Angles (C-Shape)**: Lie on the same side inside parallel lines and are **supplementary** (they sum to $180^\circ$).';
-        }
-
-        if (str_contains($text, 'triangle') && (str_contains($text, 'angle') || str_contains($text, 'interior'))) {
-            return '1. **Angle Sum of a Triangle**: The interior angles of any triangle always sum to **$180^\circ$** ($\angle A + \angle B + \angle C = 180^\circ$).' . "\n" .
-                   '2. **Exterior Angle Theorem**: The exterior angle of a triangle equals the sum of the two opposite interior angles.' . "\n" .
-                   '3. **Isosceles Triangle Rule**: The angles opposite the equal sides are equal in measure.' . "\n" .
-                   '4. **Equilateral Triangle Rule**: All three sides are equal, and each interior angle measures exactly $60^\circ$ ($180^\circ \div 3 = 60^\circ$).';
-        }
-
-        if (str_contains($text, 'classify angle') || str_contains($text, 'acute') || str_contains($text, 'obtuse') || str_contains($text, 'reflex') || str_contains($text, 'complementary') || str_contains($text, 'supplementary')) {
-            return '1. **Angle Classifications by Size**:' . "\n" .
-                   '   - **Acute Angle**: Greater than $0^\circ$ and less than $90^\circ$ ($0^\circ < \theta < 90^\circ$).' . "\n" .
-                   '   - **Right Angle**: Exactly $90^\circ$ ($\theta = 90^\circ$, formed by perpendicular lines).' . "\n" .
-                   '   - **Obtuse Angle**: Greater than $90^\circ$ and less than $180^\circ$ ($90^\circ < \theta < 180^\circ$).' . "\n" .
-                   '   - **Straight Angle**: Exactly $180^\circ$ ($\theta = 180^\circ$, forming a straight line).' . "\n" .
-                   '   - **Reflex Angle**: Greater than $180^\circ$ and less than $360^\circ$ ($180^\circ < \theta < 360^\circ$).' . "\n" .
-                   '2. **Complementary Angles**: Two angles whose measures sum to **$90^\circ$** ($\angle a + \angle b = 90^\circ$).' . "\n" .
-                   '3. **Supplementary Angles**: Two angles whose measures sum to **$180^\circ$** ($\angle a + \angle b = 180^\circ$).' . "\n" .
-                   '4. **Angles at a Point**: Angles around a complete circle always sum to **$360^\circ$**.';
-        }
-
-        if (str_contains($text, 'pythagoras') || str_contains($text, 'hypotenuse') || str_contains($text, 'trigonometr')) {
-            return '1. **Pythagoras\' Theorem**: In any right-angled triangle, the square of the hypotenuse ($c$) equals the sum of the squares of the other two sides ($a$ and $b$):' . "\n" .
-                   '   $$a^2 + b^2 = c^2$$' . "\n" .
-                   '2. **Identify the Hypotenuse**: The hypotenuse is always the longest side, located directly opposite the $90^\circ$ right angle.' . "\n" .
-                   '3. **Finding a Shorter Side**: If $c$ and $a$ are known, rearrange: $b = \sqrt{c^2 - a^2}.' . "\n" .
-                   '4. **Common Pythagorean Triples**: Familiarize yourself with standard integer triples: $(3, 4, 5)$, $(5, 12, 13)$, and $(8, 15, 17)$.';
-        }
-
-        if (str_contains($text, 'vector') || str_contains($text, 'bearing')) {
-            return '1. **Vector Quantities**: A vector possesses both magnitude (size) and direction (e.g., velocity, displacement, force).' . "\n" .
-                   '2. **Column Vector Notation**: Written as $\binom{x}{y}$, where $x$ represents horizontal movement and $y$ represents vertical movement.' . "\n" .
-                   '3. **Vector Addition & Subtraction**: Combine corresponding components: $\binom{x_1}{y_1} + \binom{x_2}{y_2} = \binom{x_1 + x_2}{y_1 + y_2}.' . "\n" .
-                   '4. **Three-Figure Bearings**: Measured in degrees clockwise from True North ($000^\circ$ to $360^\circ$). Back bearing = $\text{Bearing} \pm 180^\circ$.';
-        }
-
-        // Mathematics: Algebra rules
-        if (str_contains($text, 'gradient') || str_contains($text, 'y = mx + c') || str_contains($text, 'equation of a line') || str_contains($text, 'slope')) {
-            return '1. **Slope-Intercept Form**: The equation of any straight line is written as:' . "\n" .
-                   '   $$y = mx + c$$' . "\n" .
-                   '   - $m$ is the **gradient** (steepness or slope).' . "\n" .
-                   '   - $c$ is the **$y$-intercept** (the value of $y$ where the line crosses the vertical axis).' . "\n" .
-                   '2. **Calculating Gradient**: Given two points $(x_1, y_1)$ and $(x_2, y_2):' . "\n" .
-                   '   $$m = \frac{y_2 - y_1}{x_2 - x_1} = \frac{\text{Change in } y}{\text{Change in } x}$$' . "\n" .
-                   '3. **Parallel & Perpendicular Lines**: Parallel lines have equal gradients ($m_1 = m_2$). Perpendicular lines satisfy $m_1 \times m_2 = -1.' . "\n" .
-                   '4. **Finding the Equation**: Substitute $m$ and one known point $(x, y)$ into $y = mx + c$ to solve for $c$.';
-        }
-
-        if (str_contains($text, 'equation') || str_contains($text, 'inequalit') || str_contains($text, 'variable') || str_contains($text, 'change of subject')) {
-            return '1. **Maintain Equation Balance**: Whatever mathematical operation you perform on one side, you must perform identically on the other side.' . "\n" .
-                   '2. **Apply Inverse Operations**: Reverse operations to isolate the unknown variable:' . "\n" .
-                   '   - Addition $\leftrightarrow$ Subtraction | Multiplication $\leftrightarrow$ Division' . "\n" .
-                   '3. **Collecting Like Terms**: Group all terms containing the variable on one side and constants on the other side.' . "\n" .
-                   '4. **Inequality Rule**: When multiplying or dividing both sides of an inequality by a negative number, **flip the inequality sign** ($<$ becomes $>$, $\le$ becomes $\ge$).';
-        }
-
-        if (str_contains($text, 'factoris') || str_contains($text, 'factoriz') || str_contains($text, 'binomial') || str_contains($text, 'algebraic expression')) {
-            return '1. **Distributive Law**: Multiply the term outside the brackets by every term inside: $a(b + c) = ab + ac.' . "\n" .
-                   '2. **Finding the Highest Common Factor (HCF)**: Identify the greatest common numerical factor and common variable powers in all terms.' . "\n" .
-                   '3. **Factorisation**: Extract the HCF outside parentheses: $6x + 15 = 3(2x + 5).' . "\n" .
-                   '4. **Expanding Binomials (FOIL)**: $(a + b)(c + d) = ac + ad + bc + bd$ (First, Outer, Inner, Last).';
-        }
-
-        if (str_contains($text, 'pattern') || str_contains($text, 'sequence') || str_contains($text, 'nth term')) {
-            return '1. **Find the Common Difference ($d$)**: Calculate the difference between consecutive terms: $d = T_2 - T_1.' . "\n" .
-                   '2. **Linear Sequence Formula**: The $n^{\text{th}}$ term is given by:' . "\n" .
-                   '   $$T_n = a + (n - 1)d$$' . "\n" .
-                   '   where $a$ is the first term and $d$ is the common difference.' . "\n" .
-                   '3. **Predicting Terms**: Substitute the desired position $n$ (e.g. $n = 20$) into the formula to find the value directly.' . "\n" .
-                   '4. **Checking Rules**: Verify the formula against known terms in the sequence.';
-        }
-
-        // Mathematics: Statistics & Probability rules
-        if (str_contains($text, 'mean') || str_contains($text, 'median') || str_contains($text, 'mode') || str_contains($text, 'data') || str_contains($text, 'frequency')) {
-            return '1. **Mean (Average)**: Sum of all values divided by the total number of values: $\text{Mean} = \frac{\sum x}{n}.' . "\n" .
-                   '2. **Median (Middle Value)**: Arrange data in ascending order; the median is the central value (or the average of the two middle values if $n$ is even).' . "\n" .
-                   '3. **Mode (Most Frequent)**: The value that appears most often in the data set.' . "\n" .
-                   '4. **Range (Spread)**: The difference between the highest and lowest values: $\text{Range} = \text{Maximum} - \text{Minimum}$.';
-        }
-
-        if (str_contains($text, 'probability') || str_contains($text, 'chance') || str_contains($text, 'sample space')) {
-            return '1. **Theoretical Probability Formula**:' . "\n" .
-                   '   $$P(\text{Event}) = \frac{\text{Number of Favourable Outcomes}}{\text{Total Number of Possible Outcomes}}$$' . "\n" .
-                   '2. **Probability Range**: Probability is always a value between 0 and 1 inclusive ($0 \le P \le 1$):' . "\n" .
-                   '   - $P = 0$: Impossible event | $P = 1$: Certain event.' . "\n" .
-                   '3. **Complementary Events**: The probability of an event NOT happening is $P(\text{Not } E) = 1 - P(E).' . "\n" .
-                   '4. **Sample Space ($S$)**: List all possible outcomes systematically (e.g., flipping a coin has $S = \{H, T\}$, rolling a die has $S = \{1, 2, 3, 4, 5, 6\}$).';
-        }
-
-        if (str_contains($text, 'fraction') || str_contains($text, 'ratio') || str_contains($text, 'percent') || str_contains($text, 'bodmas')) {
-            return '1. **Adding & Subtracting Fractions**: Find the Least Common Denominator (LCD) before adding or subtracting numerators.' . "\n" .
-                   '2. **Multiplying & Dividing Fractions**: Multiply straight across ($\frac{a}{b} \times \frac{c}{d} = \frac{ac}{bd}$). To divide, multiply by the reciprocal ($\frac{a}{b} \div \frac{c}{d} = \frac{a}{b} \times \frac{d}{c}$).' . "\n" .
-                   '3. **Sharing in a Ratio ($a : b$)**: Add parts ($a + b$), divide the total by total parts to find 1 part, then multiply each share.' . "\n" .
-                   '4. **BODMAS Order of Operations**: Evaluate in order: **B**rackets $\rightarrow$ **O**rders (powers/roots) $\rightarrow$ **D**ivision & **M**ultiplication $\rightarrow$ **A**ddition & **S**ubtraction.';
-        }
-
-        if (str_contains($text, 'set') || str_contains($text, 'venn')) {
-            return '1. **Set Notation**: A set is a well-defined collection of distinct elements enclosed in curly braces $\{ \}.' . "\n" .
-                   '2. **Intersection ($A \cap B$)**: Elements common to both set $A$ and set $B$.' . "\n" .
-                   '3. **Union ($A \cup B$)**: All elements belonging to set $A$, set $B$, or both combined.' . "\n" .
-                   '4. **Complement ($A\'$)**: All elements in the Universal set ($\mathcal{U}$) that do not belong to set $A$.';
-        }
-
-        // Mathematics: Numbers & Numeration rules
-        if (str_contains($text, 'compare') || str_contains($text, 'order') || str_contains($text, 'greater') || str_contains($text, 'less')) {
-            return "1. **Check the Number of Digits**: A number with more digits is always greater than a number with fewer digits.\n" .
-                   "2. **Compare from Left to Right**: If two numbers have the same number of digits, compare each digit starting from the highest place value (the leftmost digit).\n" .
-                   "3. **Use the Correct Symbol**:\n" .
-                   "   - `>` means **greater than** (e.g., $15 > 9$)\n" .
-                   "   - `<` means **less than** (e.g., $4 < 12$)\n" .
-                   "   - `=` means **equal to** (e.g., $100 = 100$)\n" .
-                   "4. **Ordering Sequences**:\n" .
-                   "   - **Ascending Order**: Arrange from smallest to largest.\n" .
-                   "   - **Descending Order**: Arrange from largest to smallest.";
-        }
-
-        if (str_contains($text, 'place value') || str_contains($text, 'model number') || str_contains($text, 'billion') || str_contains($text, 'million')) {
-            return "1. **Place Value Periods**: In base-ten numerals, digits are grouped into periods separated by commas: **Units**, **Thousands**, **Millions**, and **Billions**.\n" .
-                   "2. **Powers of 10**: Each place value step to the left represents a quantity 10 times larger (\\(10^1 = 10\\), \\(10^2 = 100\\), \\(10^3 = 1,000\\), ..., \\(10^9 = 1,000,000,000\\)).\n" .
-                   "3. **Multi-base & Currency Modeling**: Large sums can be represented using multi-base blocks (unit cubes, rods, flats, large blocks) or currency notes (GH₵50, GH₵100, GH₵200).\n" .
-                   "4. **Reading Large Numbers**: Read the digits in each period as a three-digit group, followed by the period name (e.g., \\(2,450,000,000\\) is *two billion, four hundred and fifty million*).";
-        }
-
-        if (str_contains($text, 'round') || str_contains($text, 'nearest')) {
-            return "1. **Locate Target Place Value**: Identify the digit at the place value you are rounding to.\n" .
-                   "2. **Examine the Next Digit (to the right)**:\n" .
-                   "   - If it is **5, 6, 7, 8, or 9**, round **UP** (add $1$ to target digit).\n" .
-                   "   - If it is **0, 1, 2, 3, or 4**, round **DOWN** (keep target digit unchanged).\n" .
-                   "3. **Replace with Zeros**: Change all digits to the right of the target place value to zeros.";
-        }
-
-        if (str_contains($text, 'decimal') || str_contains($text, 'significant') || str_contains($text, 'standard form')) {
-            return "1. **Decimal Places (d.p.)**: Count digits directly to the right of the decimal point.\n" .
-                   "2. **Significant Figures (s.f.)**: Count all non-zero digits, and zeros between non-zero digits or trailing zeros after a decimal point.\n" .
-                   "3. **Standard Scientific Form**: Express as $A \\times 10^n$, where $1 \\le A < 10$ and $n$ is an integer.\n" .
-                   "4. **Apply the 5-or-More Rule**: Check the immediate next digit to determine whether to round up or keep the digit unchanged.";
-        }
-
-        // General default structured rules
-        return "1. **Identify the Core Concepts**: Read the problem or topic carefully to isolate key requirements and terms.\n" .
-               "2. **Apply Analytical Steps**: Break down the topic systematically using established subject principles.\n" .
-               "3. **Follow Standard Procedures**: Present each step of analysis or working clearly and concisely.\n" .
-               "4. **Verify Your Solution**: Review the outcome to confirm it directly answers the objective.";
     }
 
     /**
-     * Transform raw syllabus exemplars into step-by-step worked examples.
+     * Handcraft clean, realistic worked examples with actual numbers and clear steps.
+     * Never output raw unformatted OCR fragments!
      */
-    protected function transformExemplarsIntoWorkedExamples(?string $exemplarsText, string $subject): string
+    protected function generateDomainWorkedExamples(string $domain, string $cleanTitle, ?string $exemplars, string $subject): string
     {
-        if (empty($exemplarsText)) {
-            return "";
+        switch ($domain) {
+            case 'number_rounding_decimals':
+                return "#### Example 1: Rounding to the Nearest Tenth (1 Decimal Place)\n\n" .
+                    "**Problem Statement:** Round **14.863** to the nearest tenth.\n\n" .
+                    "- **Step 1 (Find the target digit):** The tenths place is the first digit after the decimal point $\\rightarrow$ **8**.\n" .
+                    "- **Step 2 (Inspect the neighbor):** The digit immediately to its right (hundredths place) is **6**.\n" .
+                    "- **Step 3 (Apply the 5-rule):** Since \\(6 \\ge 5\\), we round **UP** by adding 1 to our target digit: \\(8 + 1 = 9\\).\n" .
+                    "- **Step 4 (Final Answer):** Drop all digits after the tenths place.\n\n" .
+                    "$$\\mathbf{14.863 \\approx 14.9}$$\n\n" .
+                    "---\n\n" .
+                    "#### Example 2: Rounding to the Nearest Hundredth (2 Decimal Places)\n\n" .
+                    "**Problem Statement:** Round **7.423** to the nearest hundredth.\n\n" .
+                    "- **Step 1 (Find the target digit):** The hundredths place is the second digit after the decimal point $\\rightarrow$ **2**.\n" .
+                    "- **Step 2 (Inspect the neighbor):** The digit immediately to its right (thousandths place) is **3**.\n" .
+                    "- **Step 3 (Apply the 5-rule):** Since \\(3 < 5\\), we round **DOWN** (let it rest): the target digit **2** stays unchanged.\n" .
+                    "- **Step 4 (Final Answer):** Drop the thousandths digit.\n\n" .
+                    "$$\\mathbf{7.423 \\approx 7.42}$$\n\n" .
+                    "---\n\n" .
+                    "#### Example 3: Handling the Tricky \"9 Roll-Up\"\n\n" .
+                    "**Problem Statement:** Round **2.964** to the nearest tenth (1 decimal place).\n\n" .
+                    "- **Step 1 (Find the target digit):** The tenths place digit is **9**.\n" .
+                    "- **Step 2 (Inspect the neighbor):** The hundredths digit is **6** (which is \\(\\ge 5\\), so we must round up).\n" .
+                    "- **Step 3 (Perform the roll-up):** Adding 1 to 9 gives 10. Write **0** in the tenths place and carry **1** over to the units place: \\(2 + 1 = 3\\).\n" .
+                    "- **Step 4 (Final Answer):** Keep the zero to show precision to the nearest tenth!\n\n" .
+                    "$$\\mathbf{2.964 \\approx 3.0}$$";
+
+            case 'number_rounding_whole':
+                return "#### Example 1: Rounding to the Nearest Ten-Thousand\n\n" .
+                    "**Problem Statement:** Round **482,750** to the nearest ten-thousand.\n\n" .
+                    "- **Step 1 (Find target digit):** The ten-thousands place is **8**.\n" .
+                    "- **Step 2 (Inspect the neighbor):** The digit immediately to the right (thousands place) is **2**.\n" .
+                    "- **Step 3 (Apply rule):** Since \\(2 < 5\\), we round **DOWN**: the **8** remains unchanged.\n" .
+                    "- **Step 4 (Fill with zeros):** All lower place values become zeros.\n\n" .
+                    "$$\\mathbf{482,750 \\approx 480,000}$$\n\n" .
+                    "---\n\n" .
+                    "#### Example 2: Rounding to the Nearest Hundred with Roll-Up\n\n" .
+                    "**Problem Statement:** Round **5,981** to the nearest hundred.\n\n" .
+                    "- **Step 1 (Find target digit):** The hundreds place is **9**.\n" .
+                    "- **Step 2 (Inspect the neighbor):** The tens place is **8** (which is \\(\\ge 5\\)).\n" .
+                    "- **Step 3 (Roll up):** \\(9 + 1 = 10\\). Put 0 in hundreds and add 1 to thousands: \\(5 + 1 = 6\\).\n\n" .
+                    "$$\\mathbf{5,981 \\approx 6,000}$$";
+
+            case 'number_significant_figures':
+                return "#### Example 1: Identifying Significant Figures\n\n" .
+                    "**Problem Statement:** How many significant figures are in **0.004050**?\n\n" .
+                    "- **Step 1:** The leading zeros (**0.00**) are placeholders only $\\rightarrow$ do not count.\n" .
+                    "- **Step 2:** The digit **4** is the first significant figure.\n" .
+                    "- **Step 3:** The zero between 4 and 5 is captive $\\rightarrow$ counts!\n" .
+                    "- **Step 4:** The trailing zero after 5 appears after the decimal point $\\rightarrow$ counts!\n\n" .
+                    "**Result:** **4 significant figures** (4, 0, 5, 0).\n\n" .
+                    "---\n\n" .
+                    "#### Example 2: Rounding to 2 Significant Figures\n\n" .
+                    "**Problem Statement:** Express **4,582** correct to **2 significant figures**.\n\n" .
+                    "- **Step 1:** The first 2 significant figures are **4** and **5**.\n" .
+                    "- **Step 2:** The next digit is **8** (which is \\(\\ge 5\\)).\n" .
+                    "- **Step 3:** Round up the 5 to 6, and fill remaining places with zeros: \\(\\mathbf{4,600}\\).";
+
+            case 'algebra_linear_relations_graphs':
+                return "#### Example 1: Finding Gradient and Equation\n\n" .
+                    "**Problem Statement:** A line passes through points \\(A(1, 3)\\) and \\(B(3, 7)\\). Find its gradient.\n\n" .
+                    "- **Step 1:** Identify coordinates: \\(x_1 = 1, y_1 = 3, x_2 = 3, y_2 = 7\\).\n" .
+                    "- **Step 2:** Apply gradient formula:\n" .
+                    "  \\[ m = \\frac{y_2 - y_1}{x_2 - x_1} = \\frac{7 - 3}{3 - 1} = \\frac{4}{2} = 2 \\]\n" .
+                    "- **Step 3:** The line rises 2 units for every 1 unit across $\\rightarrow$ **Gradient = 2**.";
+
+            case 'geometry_bearings':
+                return "#### Example 1: Finding a 3-Figure Bearing\n\n" .
+                    "**Problem Statement:** Point B is located due East of Point A. What is the bearing of B from A?\n\n" .
+                    "- **Step 1:** Draw a vertical North line at starting point A.\n" .
+                    "- **Step 2:** East is a quarter-turn clockwise from North (a right angle of \\(90^\\circ\\)).\n" .
+                    "- **Step 3:** Write as a 3-figure bearing: **\\(090^\\circ\\)**.\n\n" .
+                    "---\n\n" .
+                    "#### Example 2: Calculating Back Bearing\n\n" .
+                    "**Problem Statement:** The bearing of town Q from town P is \\(065^\\circ\\). Find the bearing of P from Q.\n\n" .
+                    "- **Step 1:** Since \\(065^\\circ < 180^\\circ\\), add \\(180^\\circ\\):\n" .
+                    "  \\[ 065^\\circ + 180^\\circ = 245^\\circ \\]\n" .
+                    "- **Step 2:** Back Bearing = **\\(245^\\circ\\)**.";
+
+            case 'computing_hardware':
+                return "#### Example 1: Tracing Hardware Processing\n\n" .
+                    "**Scenario:** A student types an assignment in a word processor and prints a hard copy.\n\n" .
+                    "- **Step 1 (Input):** Keystrokes are captured by the keyboard controller and sent as binary ASCII signals.\n" .
+                    "- **Step 2 (Processing):** The CPU interprets keystrokes, coordinates font rendering, and stores active text in RAM.\n" .
+                    "- **Step 3 (Secondary Storage):** Clicking \"Save\" writes the document permanently to the SSD/hard drive.\n" .
+                    "- **Step 4 (Output):** Clicking \"Print\" sends the rasterized document to the printer for physical output.";
+
+
+            case 'algebra_patterns_sequences':
+                return "#### Example 1: Completing a Relation Table & Finding Missing Terms\n\n" .
+                    "**Question:** Study the pattern of numbers in the table below:\n\n" .
+                    "| Domain (\$x\$) | 1 | 2 | 3 | 4 | 5 | 6 | 7 |\n" .
+                    "| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |\n" .
+                    "| Co-domain (\$y\$) | 4 | 7 | 10 | **?** | 16 | **?** | 22 |\n\n" .
+                    "1. What are the missing numbers in the co-domain when \$x = 4\$ and \$x = 6\$?\n" .
+                    "2. State the mathematical rule connecting \$x\$ and \$y\$.\n" .
+                    "3. If the next number in the domain is 9, what is the corresponding number in the co-domain?\n\n" .
+                    "- **Step 1 (Find the step difference):**\n" .
+                    "  - Subtract consecutive co-domain values: \$7 - 4 = 3\$, \$10 - 7 = 3\$.\n" .
+                    "  - The common difference is **+3**.\n" .
+                    "- **Step 2 (Find the missing numbers):**\n" .
+                    "  - For \$x = 4\$: \$10 + 3 = \\mathbf{13}\$\n" .
+                    "  - For \$x = 6\$: \$16 + 3 = \\mathbf{19}\$\n" .
+                    "- **Step 3 (Derive the rule):**\n" .
+                    "  - Form: \$y = 3x + c\$. When \$x = 1, y = 4 \\implies 4 = 3(1) + c \\implies c = +1\$.\n" .
+                    "  - **Rule**: $$\\mathbf{y = 3x + 1}$$\n" .
+                    "- **Step 4 (Predict for domain \$x = 9\$):**\n" .
+                    "  \$\$y = 3(9) + 1 = 27 + 1 = \\mathbf{28}\$\$\n\n" .
+                    "---\n\n" .
+                    "#### Example 2: Describing a Relation in Words\n\n" .
+                    "**Question:** Given the relation \$x \\rightarrow 2x + 5\$, calculate the outputs for domain values \$x = [1, 2, 3]\$ and state the rule in words.\n\n" .
+                    "- **For \$x = 1\$**: \$2(1) + 5 = 2 + 5 = \\mathbf{7}\$\n" .
+                    "- **For \$x = 2\$**: \$2(2) + 5 = 4 + 5 = \\mathbf{9}\$\n" .
+                    "- **For \$x = 3\$**: \$2(3) + 5 = 6 + 5 = \\mathbf{11}\$\n" .
+                    "- **Rule in Words**: *\"Multiply each input number by 2, then add 5\"* or *\"Five more than twice the number\"*.\n\n" .
+                    "---\n\n" .
+                    "#### Example 3: Matchstick Geometric Patterns\n\n" .
+                    "**Question:** A student builds a row of connected squares using matchsticks:\n" .
+                    "- 1 square requires **4 matchsticks**.\n" .
+                    "- 2 squares require **7 matchsticks**.\n" .
+                    "- 3 squares require **10 matchsticks**.\n" .
+                    "How many matchsticks are needed to build a pattern of **20 squares**?\n\n" .
+                    "- **Step 1:** Sequence of sticks: \$4, 7, 10, \\dots\$ Common difference \$d = 7 - 4 = 3\$.\n" .
+                    "- **Step 2:** Rule: \$S = 3n + 1\$ (check for \$n=1\$: \$3(1)+1 = 4\$).\n" .
+                    "- **Step 3:** For \$n = 20\$ squares: $$\\text{Sticks} = 3(20) + 1 = 60 + 1 = \\mathbf{61 \\text{ matchsticks}}$$.";
+
+            case 'geometry_angles_classification':
+                return "#### Example 1: Classifying Angles by Size\n\n" .
+                    "**Problem:** Classify each of the following angles as acute, right, obtuse, or reflex:\n" .
+                    "  (a) \$47^\\circ\$   (b) \$90^\\circ\$   (c) \$135^\\circ\$   (d) \$250^\\circ\$\n\n" .
+                    "- **(a) \$47^\\circ\$**: Is \$47 < 90\$? Yes → **Acute angle** ✅\n" .
+                    "- **(b) \$90^\\circ\$**: Is it exactly \$90\$? Yes → **Right angle** ✅\n" .
+                    "- **(c) \$135^\\circ\$**: Is \$90 < 135 < 180\$? Yes → **Obtuse angle** ✅\n" .
+                    "- **(d) \$250^\\circ\$**: Is \$180 < 250 < 360\$? Yes → **Reflex angle** ✅\n\n" .
+                    "---\n\n" .
+                    "#### Example 2: Finding the Reflex Angle\n\n" .
+                    "**Problem:** A protractor shows that the angle between two rays is \$110^\\circ\$. What is the reflex angle on the other side?\n\n" .
+                    "- **Step 1:** A full turn around a point is \$360^\\circ\$.\n" .
+                    "- **Step 2:** Subtract the measured angle: \$360^\\circ - 110^\\circ = \\mathbf{250^\\circ}\$\n" .
+                    "- **Step 3:** Is \$180 < 250 < 360\$? Yes → The reflex angle is **\$250^\\circ\$** ✅\n\n" .
+                    "---\n\n" .
+                    "#### Example 3: Reading a Protractor\n\n" .
+                    "**Problem:** You place a protractor on an angle. The baseline ray aligns with \$0^\\circ\$ and the other ray crosses at \$72^\\circ\$ on the inner scale. Classify the angle.\n\n" .
+                    "- **Step 1:** Read the measurement: \$72^\\circ\$.\n" .
+                    "- **Step 2:** Apply the classification rule: Is \$72 < 90\$? Yes → **Acute angle** ✅\n" .
+                    "- **Step 3:** State: *The angle is an acute angle measuring \$72^\\circ\$.*";
+
+
+            case 'data_collection_charts':
+                return "#### Example 1: Finding Class Limits, Class Boundaries, and Class Width\n\n" .
+                    "**Problem Statement:** A teacher groups examination marks into intervals: **$10 - 19$**, **$20 - 29$**, **$30 - 39$**, **$40 - 49$**. For the interval **$20 - 29$**, determine:\n" .
+                    "1. The lower and upper class limits.\n" .
+                    "2. The class width of the interval.\n" .
+                    "3. The class midpoint.\n\n" .
+                    "- **Step 1 (Identify class limits):**\n" .
+                    "  - Lower Class Limit = $\\mathbf{20}$\n" .
+                    "  - Upper Class Limit = $\\mathbf{29}$\n\n" .
+                    "- **Step 2 (Calculate class width):**\n" .
+                    "  - Subtract consecutive lower limits: $\\text{Class Width} = 30 - 20 = \\mathbf{10}$.\n" .
+                    "  - *(Verification by counting: $20, 21, 22, 23, 24, 25, 26, 27, 28, 29$ contains exactly $\\mathbf{10}$ integer scores).*\n\n" .
+                    "- **Step 3 (Calculate class midpoint):**\n" .
+                    "  $$\\text{Midpoint} = \\frac{\\text{Lower Limit} + \\text{Upper Limit}}{2} = \\frac{20 + 29}{2} = \\frac{49}{2} = \\mathbf{24.5}$$\n\n" .
+                    "---\n\n" .
+                    "#### Example 2: Classifying Data as Categorical or Numerical\n\n" .
+                    "**Problem Statement:** Classify each item below as **Categorical (Nominal/Ordinal)** or **Numerical (Discrete/Continuous)**:\n" .
+                    "1. Favorite Ghanaian dish (Fufu, Banku, Jollof).\n" .
+                    "2. Order of finishing in a sprint race (1st, 2nd, 3rd).\n" .
+                    "3. Number of children in a household.\n" .
+                    "4. Weight of cocoa sacks measured in kilograms.\n\n" .
+                    "- **Item 1 (Favorite dish):** Words with no ranking $\\rightarrow$ **Categorical (Nominal)**.\n" .
+                    "- **Item 2 (Race finish):** Categories with clear rank $\\rightarrow$ **Categorical (Ordinal)**.\n" .
+                    "- **Item 3 (Children count):** Counted in whole numbers ($0, 1, 2, \\dots$) $\\rightarrow$ **Numerical (Discrete)**.\n" .
+                    "- **Item 4 (Cocoa weight):** Measured on a continuous scale with decimals $\\rightarrow$ **Numerical (Continuous)**.\n\n" .
+                    "---\n\n" .
+                    "#### Example 3: Organizing Raw (Ungrouped) Data into a Grouped Frequency Table\n\n" .
+                    "**Problem Statement:** A teacher recorded the test marks of 10 students: **$12, 15, 19, 22, 25, 27, 28, 31, 34, 38$**. " .
+                    "Organize these marks into a grouped frequency table using class intervals of width $10$ starting with $10 - 19$.\n\n" .
+                    "- **Step 1 (Set up the class intervals):**\n" .
+                    "  - First interval: $10 - 19$\n" .
+                    "  - Second interval: $20 - 29$\n" .
+                    "  - Third interval: $30 - 39$\n\n" .
+                    "- **Step 2 (Tally and count the frequency for each interval):**\n" .
+                    "  - $10 - 19$: Marks are $12, 15, 19 \\rightarrow$ **$3$ students**\n" .
+                    "  - $20 - 29$: Marks are $22, 25, 27, 28 \\rightarrow$ **$4$ students**\n" .
+                    "  - $30 - 39$: Marks are $31, 34, 38 \\rightarrow$ **$3$ students**\n\n" .
+                    "- **Step 3 (Construct the frequency table):**\n\n" .
+                    "| Class Interval (Marks) | Tally | Frequency (\$f\$) |\n" .
+                    "| :--- | :---: | :---: |\n" .
+                    "| $10 - 19$ | &#124;&#124;&#124; | $3$ |\n" .
+                    "| $20 - 29$ | &#124;&#124;&#124;&#124; | $4$ |\n" .
+                    "| $30 - 39$ | &#124;&#124;&#124; | $3$ |\n" .
+                    "| **Total** | | **$10$** |";
+
+            case 'data_central_tendency':
+                return "#### Example 1: Calculating Mean, Median, and Mode\n\n" .
+                    "**Problem Statement:** Find the mean, median, mode, and range of the test scores: **$4, 7, 5, 9, 7, 8, 2$**.\n\n" .
+                    "- **Step 1 (Order data from least to greatest):** $2, 4, 5, 7, 7, 8, 9$ ($n = 7$ values).\n" .
+                    "- **Step 2 (Calculate Mean):**\n" .
+                    "  $$\\bar{x} = \\frac{2 + 4 + 5 + 7 + 7 + 8 + 9}{7} = \\frac{42}{7} = \\mathbf{6}$$\n" .
+                    "- **Step 3 (Find Median):** The middle (4th) value is $\\mathbf{7}$.\n" .
+                    "- **Step 4 (Find Mode):** The number $7$ appears twice $\\rightarrow$ $\\mathbf{\\text{Mode} = 7}$.\n" .
+                    "- **Step 5 (Find Range):** $\\text{Highest} - \\text{Lowest} = 9 - 2 = \\mathbf{7}$.";
+
+            default:
+                return "#### Example 1: Guided Application\n\n" .
+                    "**Problem Statement:** Apply the core steps of **{$cleanTitle}** to solve a standard exercise.\n\n" .
+                    "- **Step 1:** Carefully isolate the key variables and requirements from the problem statement.\n" .
+                    "- **Step 2:** Select and write down the relevant governing formula or rule.\n" .
+                    "- **Step 3:** Substitute known values systematically and compute the intermediate results.\n" .
+                    "- **Step 4:** State the final answer with appropriate units and check that it is mathematically sound.";
         }
+    }
 
-        $sLower = strtolower($subject);
-        $isComputing = str_contains($sLower, 'ict') || str_contains($sLower, 'comput') || str_contains($sLower, 'technol');
-        $isScience = str_contains($sLower, 'sci') || str_contains($sLower, 'phys') || str_contains($sLower, 'chem') || str_contains($sLower, 'bio');
+    /**
+     * Generate domain-tailored pro-tips and common traps to avoid.
+     */
+    protected function generateDomainProTips(string $domain, string $cleanTitle): string
+    {
+        switch ($domain) {
+            case 'number_rounding_decimals':
+                return "- 🚫 **Trap 1: Don't \"Look Down the Street\" (No Chained Rounding)**: Only inspect the **single digit** immediately to the right of your target place. Never look two or three digits away! (For example, in **3.448**, rounding to the nearest tenth looks only at the **4**, giving **3.4**. Do NOT use the 8 to make 4 a 5—that is a common exam mistake!).\n" .
+                    "- 🎯 **Trap 2: Don't Drop Required Precision Zeros**: If an exam asks you to round **4.98** to **1 decimal place**, the answer is **5.0**, NOT **5**. Writing the **.0** proves that you rounded to tenths!\n" .
+                    "- 💡 **Ghana Currency Pro-Tip**: In financial transactions involving Ghana Cedis, always round to **2 decimal places** (nearest Pesewa) at the very final step, never during intermediate working.";
 
-        if ($isComputing) {
-            $step1 = "- Step 1: Identify the technical component, generation, or scenario in the prompt.";
-            $step2 = "- Step 2: Analyze its architectural features, operation, and functional role.";
-            $step3 = "- Step 3: State the practical outcome or standard technical classification.\n";
-        } elseif ($isScience) {
-            $step1 = "- Step 1: Identify the scientific apparatus, variables, or phenomenon.";
-            $step2 = "- Step 2: Apply the governing scientific law, observation, or formula.";
-            $step3 = "- Step 3: Draw a clear, evidence-based conclusion using correct scientific terms.\n";
-        } else {
-            $step1 = "- Step 1: Identify the given information and relationships specified in the problem.";
-            $step2 = "- Step 2: Apply the standard concept rule and evaluate each part carefully.";
-            $step3 = "- Step 3: State the final solution clearly with proper annotations.\n";
+            case 'number_rounding_whole':
+                return "- 🚫 **Trap 1: Forgetting to Fill with Zeros**: Rounding 4,821 to the nearest hundred is **4,800**, NOT 48! Whole numbers must keep their place-holding zeros.\n" .
+                    "- 💡 **Pro-Tip**: The number of zeros at the end usually matches the place value (nearest ten = 1 zero, nearest hundred = 2 zeros, nearest thousand = 3 zeros).";
+
+            case 'number_significant_figures':
+                return "- 🚫 **Trap 1: Counting Leading Zeros**: In **0.0072**, there are only **2** significant figures. The zeros are just place-holders showing where the decimal sits!\n" .
+                    "- 💡 **Pro-Tip**: Trailing zeros *after* a decimal point (like **2.50**) count because someone intentionally measured with that precision.";
+
+            case 'geometry_bearings':
+                return "- 🚫 **Trap 1: Forgetting the Leading Zero**: Bearings must ALWAYS have 3 digits! An angle of \\(45^\\circ\\) must be written as **\\(045^\\circ\\)**.\n" .
+                    "- 🚫 **Trap 2: Turning Counter-Clockwise**: Never turn anti-clockwise from North. Bearings always rotate in the clockwise direction.";
+
+            case 'algebra_linear_relations_graphs':
+                return "- 💡 **Pro-Tip: Check the Gradient Sign**: If the line goes up from left to right, the gradient is positive ($m > 0$). If it goes down from left to right, the gradient is negative ($m < 0$).";
+
+            case 'algebra_patterns_sequences':
+                return "- 🚫 **Trap 1: Using Non-Consecutive Terms for the Common Difference**: The common difference \$d\$ must be found by subtracting **consecutive** terms: \$d = T_2 - T_1\$. Never subtract \$T_3 - T_1\$ (that gives \$2d\$, not \$d\$)!\n" .
+                    "- 🚫 **Trap 2: Forgetting the \$+ c\$ Constant**: The rule for a linear sequence is \$T_n = d \\times n + c\$, NOT just \$T_n = d \\times n\$. You must calculate \$c\$ by substituting the first term back in.\n" .
+                    "- 💡 **Pro-Tip: Verify Your Rule**: After finding \$T_n = d \\times n + c\$, **always test it** with 2–3 known terms. If your rule gives \$T_1 = 4\$ but the actual first term is \$4\$, you know it works!\n" .
+                    "- 🎯 **Domain vs. Co-domain Memory Rule**:\n" .
+                    "  - **Domain** = the **input** values (what you start with).\n" .
+                    "  - **Co-domain (Range)** = the **output** values (what the rule produces).\n" .
+                    "  - Think of it like a *machine*: you feed in the Domain, the rule processes it, and out comes the Co-domain.";
+
+            case 'geometry_angles_classification':
+                return "- 🚫 **Trap 1: Reading the Wrong Protractor Scale**: Protractors have two scales (inner and outer). If your baseline ray starts at \$0^\\circ\$ on the inner scale, read the other ray on the **inner scale** too — never mix scales!\n" .
+                    "- 🚫 **Trap 2: Confusing Obtuse and Reflex**: An obtuse angle is wide but still less than \$180^\\circ\$. If the angle wraps past a straight line, it is reflex (\$> 180^\\circ\$). Check: *Can I see it with a standard protractor (which only goes to \$180^\\circ\$)?* If yes → acute, right, or obtuse. If no → reflex.\n" .
+                    "- 💡 **Pro-Tip: Finding Reflex Angles**: A standard protractor only measures up to \$180^\\circ\$. To find a reflex angle, measure the smaller angle first, then subtract from \$360^\\circ\$.\n" .
+                    "- 🎯 **Memory Aid**: **A**cute = **A**-small (like the sharp tip of the letter A), **O**btuse = **O**-wide (like the wide round letter O), **R**eflex = **R**-wraps around (goes past a straight line).";
+
+
+            case 'computing_hardware':
+                return "- 💡 **Pro-Tip: RAM vs Storage**: RAM is volatile (erased when power is turned off); storage (SSD/HDD) is non-volatile (preserves files permanently).";
+
+
+            case 'data_collection_charts':
+                return "- 🚫 **Trap 1: The Subtraction Trap for Class Width**: In intervals like **$10 - 19$**, students often do $19 - 10 = 9$. **That is wrong!** Because both 10 and 19 are included in the group, the true width is **$10$** ($20 - 10 = 10$).\n" .
+                    "- 💡 **Pro-Tip: Quick Width Formula**: Always find the difference between consecutive *lower* limits ($20 - 10 = 10$ or $30 - 20 = 10$).\n" .
+                    "- 🎯 **Nominal vs. Ordinal Memory Rule**:\n" .
+                    "  - **No**minal = **No** natural order (names, colors, gender).\n" .
+                    "  - **Or**dinal = **Or**der / rank (1st/2nd/3rd, small/medium/large).\n" .
+                    "- 💡 **Discrete vs. Continuous**: If you count it in whole items, it is *discrete*; if you measure it with a device (decimals allowed), it is *continuous*.";
+
+            case 'data_central_tendency':
+                return "- 🚫 **Trap 1: Forgetting to Order Values for Median**: You must ALWAYS sort numbers from least to greatest before finding the middle value!\n" .
+                    "- 💡 **Pro-Tip: Even Number of Values**: When $n$ is even, there is no single middle number. Add the two middle numbers and divide by 2.";
+
+            default:
+                return "- 💡 **Pro-Tip 1**: Always write out the formula before substituting values.\n" .
+                    "- 🚫 **Trap 1**: Never rush through the intermediate arithmetic—double check signs and decimals.\n" .
+                    "- 🎯 **Pro-Tip 2**: Confirm your final answer directly answers what the question asked.";
         }
-
-        // Split by E.g. or bullet
-        $rawItems = preg_split('/(?=E\.g\.[,\s]*\d*[\.:]?)/i', $exemplarsText, -1, PREG_SPLIT_NO_EMPTY);
-        $output = [];
-        $count = 1;
-
-        foreach ($rawItems as $item) {
-            $cleaned = trim($item);
-            if (strlen($cleaned) < 10) continue;
-
-            // Remove leading "E.g. 1:" prefix
-            $cleaned = preg_replace('/^E\.g\.[,\s]*\d*[\.:]?\s*/i', '', $cleaned);
-            $cleaned = trim($cleaned);
-
-            $output[] = "#### Example {$count}\n";
-            $output[] = "**Problem Statement:**";
-            $output[] = "{$cleaned}\n";
-            $output[] = "**Step-by-Step Guided Solution:**";
-            $output[] = $step1;
-            $output[] = $step2;
-            $output[] = $step3;
-
-            $count++;
-            if ($count > 3) break; // Limit to top 3 focused examples
-        }
-
-        return implode("\n", $output);
     }
 
     /**
@@ -458,8 +890,9 @@ class LocalLessonSynthesizer
 
     /**
      * Synthesize 3 Brilliant-style sequential micro-segments (Concept -> Challenge).
+     * Part 1 has NO challenge barrier (reading & intuition only) so students absorb the foundation!
      *
-     * @return array<int, array{id: int, title: string, subtitle: string, content_html: string, challenge: array}>
+     * @return array<int, array{id: int, title: string, subtitle: string, content_html: string, challenge: ?array}>
      */
     public function synthesizeInteractiveSegments(
         CurriculumIndicator $indicator,
@@ -472,59 +905,50 @@ class LocalLessonSynthesizer
     ): array {
         $cleanTitle = trim($title);
         $domain = $this->detectDomain($indicator, $title, $subject);
-
-        // SEGMENT 1: The Intuition & The Big Idea
-        $challenge1 = $this->generateChallenge1($domain, $cleanTitle);
+        $proTips = $this->generateDomainProTips($domain, $cleanTitle);
 
         $segments = [];
+
+        // SEGMENT 1: The Intuition & Layman's Foundation (NO CHALLENGE BARRIER)
+        // Students absorb the concept without being tested before being taught!
         $segments[] = [
             'id' => 1,
-            'title' => "Part 1: The Intuition",
-            'subtitle' => "Why this concept matters & how it impacts daily life",
-            'content_html' => Str::markdown($intro),
-            'challenge' => $challenge1,
+            'title' => "Part 1: The Intuition & Layman's Foundation",
+            'subtitle' => "Understanding the concept using everyday examples",
+            'content_html' => $this->renderMarkdownWithMath($intro),
+            'challenge' => null, // Non-blocking! Renders "Understood! Let's Learn How To Do It ->" button
         ];
 
-        // SEGMENT 2: Core Rules & Practical Application
+        // SEGMENT 2: Step-by-Step Rules & Guided Examples
         $challenge2 = $this->generateChallenge2($domain, $cleanTitle);
 
-        $segment2Content = "### Core Rules & Principles\n" . $rules;
+        $segment2Content = "### 📌 Core Rules & Steps to Follow\n\n" . $rules;
         if (!empty($workedExamples)) {
-            $segment2Content .= "\n\n### Worked Example\n" . $workedExamples;
+            $segment2Content .= "\n\n### 💡 Step-by-Step Worked Examples\n\n" . $workedExamples;
         }
 
         $segments[] = [
             'id' => 2,
-            'title' => "Part 2: Core Principles & Application",
-            'subtitle' => "How to work through problems step-by-step",
-            'content_html' => Str::markdown($segment2Content),
+            'title' => "Part 2: How It Works & Guided Examples",
+            'subtitle' => "Step-by-step methods with real numbers worked out",
+            'content_html' => $this->renderMarkdownWithMath($segment2Content),
             'challenge' => $challenge2,
         ];
 
-        // SEGMENT 3: Synthesis & Real-World Mastery
+        // SEGMENT 3: Concept Mastery & Pro-Tips
         $takeawaySummary = !empty($takeaways)
             ? implode("\n- ", array_map(fn($t) => "**{$t}**", $takeaways))
             : "Review and master the core techniques of {$cleanTitle}.";
 
-        $challenge3 = [
-            'type' => 'multiple-choice',
-            'prompt' => "To achieve full mastery in \"{$cleanTitle}\", which strategy ensures reliable accuracy?",
-            'options' => [
-                "Re-check calculations or reasoning, verify against the core rules, and confirm the result makes logical sense",
-                "Submit answers immediately without re-reading the question",
-                "Assume the first computed answer is always right without verification",
-                "Memorize steps blindly without understanding their underlying reasons",
-            ],
-            'correct_answer' => 0,
-            'hint' => "Think about how experts verify their solutions.",
-            'explanation' => "Mastery comes from double-checking logic and confirming that your solution satisfies the original question.",
-        ];
+        $segment3Content = "### 💡 Pro-Tips & Common Traps to Avoid\n\n" . $proTips . "\n\n### 🎯 Essential Takeaways\n- " . $takeawaySummary;
+
+        $challenge3 = $this->generateChallenge3($domain, $cleanTitle, $takeaways);
 
         $segments[] = [
             'id' => 3,
-            'title' => "Part 3: Concept Mastery & Reflection",
-            'subtitle' => "Essential takeaways and verification strategies",
-            'content_html' => Str::markdown("### 🎯 Essential Takeaways\n- " . $takeawaySummary),
+            'title' => "Part 3: Concept Mastery & Pro-Tips",
+            'subtitle' => "Mastery traps to avoid, pro-tips, and final reflection",
+            'content_html' => $this->renderMarkdownWithMath($segment3Content),
             'challenge' => $challenge3,
         ];
 
@@ -532,69 +956,207 @@ class LocalLessonSynthesizer
     }
 
     /**
-     * Classify an indicator into a subject/topic domain for content generation.
+     * Render Markdown to HTML while preserving LaTeX math delimiters ($ and $$).
      */
+    public function renderMarkdownWithMath(string $markdown): string
+    {
+        // 1. Convert \( ... \) into $ ... $
+        $normalized = preg_replace('/\\\\\\((.*?)\\\\\\)/s', '$$1$', $markdown);
+        // 2. Convert \[ ... \] into $$ ... $$
+        $normalized = preg_replace('/\\\\\\[(.*?)\\\\\\]/s', '$$$$1$$$', $normalized);
+        // 3. Convert any ( \frac... ) or ( \text... ) into $ ... $ (requires backslash before command name)
+        $normalized = preg_replace('/\\(\\s*(\\\\(?:frac|text|mathbf|sqrt|alpha|beta|theta|pi|ge|le|approx|times|div|pm|circ)\\b[^)]*)\\)/', '$$$1$$', $normalized);
+
+        // 4. Render Markdown
+        return Str::markdown($normalized);
+    }
+
     protected function detectDomain(CurriculumIndicator $indicator, string $title, string $subject): string
     {
-        $sLower = strtolower($subject);
+        $strandTitle = $indicator->subStrand?->strand?->title ?? '';
+        $subStrandTitle = $indicator->subStrand?->title ?? '';
+        $subjectName = $indicator->subStrand?->strand?->curriculum?->subject?->name ?? $subject;
+
         $context = strtolower(
             $title . ' ' .
+            ($indicator->student_title ?? '') . ' ' .
             ($indicator->description ?? '') . ' ' .
-            ($indicator->subStrand?->title ?? '') . ' ' .
-            ($indicator->subStrand?->strand?->title ?? '')
+            $subStrandTitle
         );
+        $sLower = strtolower($subjectName . ' ' . $strandTitle);
 
-        if (str_contains($sLower, 'ict') || str_contains($sLower, 'comput') || str_contains($sLower, 'technol')) {
-            return 'computing_ict';
+        $match = function (array $patterns) use ($context): bool {
+            foreach ($patterns as $pattern) {
+                if (preg_match('/' . $pattern . '/i', $context)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        // 1. ICT / Computing
+        if (str_contains($sLower, 'ict') || str_contains($sLower, 'comput') || str_contains($sLower, 'hardware') || str_contains($sLower, 'digital')) {
+            if ($match(['\bcyber\b', '\binternet safety\b', '\betiquette\b', '\bphishing\b', '\bmalware\b', '\bpassword\b', '\bhygiene\b'])) {
+                return 'computing_safety';
+            }
+            if ($match(['(input|output).*device', '\bhardware\b', '\bperipherals\b', '\bdata processing\b', '\bstorage device\b', '\bcomponents of a computer\b'])) {
+                return 'computing_hardware';
+            }
+            return 'computing_general';
         }
 
-        if (str_contains($sLower, 'sci') || str_contains($sLower, 'phys') || str_contains($sLower, 'chem') || str_contains($sLower, 'bio')) {
-            return 'science';
+        // 2. English Language & Literacy
+        if (str_contains($sLower, 'english') || str_contains($sLower, 'grammar') || str_contains($sLower, 'reading') || str_contains($sLower, 'comprehension')) {
+            if ($match(['\bconcord\b', '\bagreement\b', '\bsubject-verb\b'])) {
+                return 'english_concord';
+            }
+            if ($match(['\bmain idea\b', '\btopic sentence\b', '\bparagraph\b', '\bsummary\b', '\bcomprehension\b'])) {
+                return 'english_reading';
+            }
+            if ($match(['\bnoun\b', '\bcollective noun\b', '\bpronoun\b', '\bverb\b', '\badjective\b', '\btense\b'])) {
+                return 'english_nouns';
+            }
+            return 'english_grammar';
+        }
+
+        // 3. Integrated Science
+        if (str_contains($sLower, 'sci') || str_contains($sLower, 'phys') || str_contains($sLower, 'chem') || str_contains($sLower, 'bio') || str_contains($sLower, 'matter') || str_contains($sLower, 'energy') || str_contains($sLower, 'living')) {
+            if ($match(['\bstate\b', '\bstates of matter\b', '\bparticle theory\b', '\bkinetic particle\b', '\bsolid\b', '\bliquid\b', '\bgas\b', '\bmelting\b', '\bboiling\b', '\bevaporation\b'])) {
+                return 'science_matter';
+            }
+            if ($match(['\bcell\b', '\bcells\b', '\bnucleus\b', '\bcytoplasm\b', '\bcell wall\b', '\bcell membrane\b', '\bmicroscope\b'])) {
+                return 'science_cells';
+            }
+            if ($match(['\benergy\b', '\bconservation of energy\b', '\bpotential energy\b', '\bkinetic energy\b', '\bforms of energy\b', '\btransformation\b'])) {
+                return 'science_energy';
+            }
+            return 'science_general';
+        }
+
+        // 4. Mathematics - Decimals & Rounding
+        if ($match(['\bround.*decimal', '\bdecimal.*round', '\bnearest tenth', '\bnearest hundredth', '\bthousandth', '\bthousandths'])) {
+            return 'number_rounding_decimals';
+        }
+        if ($match(['\bround.*whole', '\bnearest hundred-thousand', '\bnearest ten-thousand', '\bnearest thousand', '\bnearest hundred', '\bnearest ten'])) {
+            return 'number_rounding_whole';
+        }
+        if ($match(['\bsignificant\b', '\bdecimal place', '\bstandard form', '\bscientific notation'])) {
+            return 'number_significant_figures';
+        }
+        if ($match(['\bpowers of 10\b', '\bpower of 10\b'])) {
+            return 'number_powers_of_ten';
+        }
+        if ($match(['1,000,000,000', '\bbillion\b', '\bmulti-base\b', '\bisometric\b', '\bplace value period', '\bplace value\b', '\bplace\b'])) {
+            return 'number_large_quantities';
+        }
+
+        // 5. Mathematics - Indices, Surds, Powers & Factors
+        if ($match(['\bindices\b', '\blaws of indices\b', '\bindex law', '\bexponential\b', '\bsurd\b', '\bsurds\b', '\bsquare root', '\bnon-perfect square', '\bproduct of primes?\b', '\bproduct of powers?\b', '\bindex form\b', '\brepeated factors?\b', '\bhighest common factors?\b', '\bhcf\b', '\blcm\b', '\bpowers? of natural\b', '\bexponents?\b'])) {
+            return 'number_indices_surds';
+        }
+
+        // 6. Mathematics - Operations & Arithmetic
+        if ($match(['\bbodmas\b', '\bpemdas\b', '\border of operation', '\bmental math', '\bfour-digit\b', '\bmulti-digit\b', '\bassociative property', '\bfour basic operations?\b', '\boperations involving\b'])) {
+            return 'number_integers_operations';
+        }
+
+        // 7. Mathematics - Fractions, Percentages, Ratios
+        if ($match(['\bfraction\b', '\bfractions\b', '\bnumerator\b', '\bdenominator\b'])) {
+            return 'number_fractions';
+        }
+        if ($match(['\bpercent\b', '\bpercentage\b', '\bsimple interest\b', '\bdiscount\b', '\bcommission\b', '\btax\b', '\bdepreciation\b'])) {
+            return 'number_percentages';
+        }
+        if ($match(['\bratio\b', '\bratios\b', '\bproportional\b', '\bproportionality\b', '\bunit rate\b', '\btravel graph\b', '\bdistance-time\b', '\bspeed\b'])) {
+            return 'number_ratios_proportions';
+        }
+
+        // 8. Mathematics - Sets
+        if ($match(['\bconcept of sets\b', '\bvenn\b', '\buniversal set\b', '\bintersection.*set\b', '\bunion.*set\b', '\bsubset\b', '\bempty set\b', '\bmembers of the set\b', '\bmembers of the\b'])) {
+            return 'number_sets';
+        }
+
+        // 9. Mathematics - Algebra: Linear Graphs, Relations, Gradients
+        if ($match(['\bgradient\b', '\bslope\b', 'y\s*=\s*mx\s*\+\s*c', '\blinear relation', '\bordered pair', '\btable of values', '\bstraight line graph'])) {
+            return 'algebra_linear_relations_graphs';
+        }
+
+        // 10. Mathematics - Algebra: Expressions, Distributive, Factorisation
+        if ($match(['\bdistributive property\b', '\bdistributive law\b', '\bbinomial\b', '\bfactorise\b', '\bfactorize\b', '\bexpand brackets\b', '\bremove brackets\b', '\balgebraic expression\b', '\brational coefficient\b', '\balgebraic\b', '\bfactorising expression\b'])) {
+            return 'algebra_expressions_factorisation';
+        }
+
+        // 11. Mathematics - Algebra: Linear Equations & Variables
+        if ($match(['\bchange of subject\b', '\bsubstitute values\b', '\bformulae\b', '\bevaluate.*algebraic', '\blinear equation\b', '\bone variable\b', '\bvariables and equations\b'])) {
+            return 'algebra_substitution_formulae';
+        }
+
+        // 12. Mathematics - Algebra: Inequalities
+        if ($match(['\binequalit', '\bsolution set'])) {
+            return 'algebra_inequalities';
+        }
+
+        // 13. Mathematics - Algebra: Patterns & Sequences
+        if ($match(['\bpattern\b', '\bpatterns\b', '\bsequence\b', '\bsequences\b', '\bnth term\b', '\blinear sequence'])) {
+            return 'algebra_patterns_sequences';
+        }
+
+        // 14. Mathematics - Geometry: Bearings & Direction
+        if ($match(['\bbearing\b', '\bbearings\b', '\bback bearing\b', '\bthree-figure\b'])) {
+            return 'geometry_bearings';
+        }
+
+        // 15. Mathematics - Geometry: Parallel Lines & Transversals
+        if ($match(['\balternate\b', '\bcorresponding\b', '\btransversal\b', '\bco-interior\b', '\bparallel.*angle'])) {
+            return 'geometry_parallel_angles';
+        }
+
+        // 16. Mathematics - Geometry: Pythagoras & Trigonometry
+        if ($match(['\bpythagor', '\bhypotenuse\b', '\btrigonometr', '\bsine\b', '\bcosine\b', '\btangent\b', '\bright-angled triangle', '\bsoh cah toa\b'])) {
+            return 'geometry_pythagoras_trigonometry';
+        }
+
+        // 17. Mathematics - Geometry: Angle Classification & Measurement
+        if ($match(['\bacute\b', '\bobtuse\b', '\breflex\b', '\bcomplementary\b', '\bsupplementary\b', '\bclassify angle', '\bangle.*size'])) {
+            return 'geometry_angles_classification';
+        }
+
+        // 18. Mathematics - Geometry: Triangles & Polygons
+        if ($match(['\btriangle\b', '\btriangles\b', '\binterior angle', '\bexterior angle', '\bcongruent triangle', '\bsimilar triangle', '\bpolygon\b'])) {
+            return 'geometry_triangles_polygons';
+        }
+
+        // 19. Mathematics - Geometry: Constructions, Measurement & 3-D Nets
+        if ($match(['\bconstruct\b', '\bbisect\b', '\binscribed\b', '\bcircumscribed\b', '\bnet of\b', '\bcuboid\b', '\bprism\b', '\bsurface area\b', '\bdiameter\b', '\bradius\b', '\bcircumference\b', '\bperimeter\b', '\bsquare grid\b', '\brectangles and\b'])) {
+            return 'geometry_constructions';
+        }
+
+        // 20. Mathematics - Geometry: Vectors
+        if ($match(['\bvector\b', '\bvectors\b', '\bcolumn vector', '\bscalar multiplication', '\bposition vector', '\bdisplacement\b', '\btriangular and parallelogram\b'])) {
+            return 'geometry_vectors';
+        }
+
+        // 21. Mathematics - Geometry: Transformations
+        if ($match(['\brotation\b', '\benlargement\b', '\breflection\b', '\btranslation\b', '\btransformation\b'])) {
+            return 'geometry_transformations';
+        }
+
+        // 22. Mathematics - Statistics: Central Tendency
+        if ($match(['\bmean\b', '\bmedian\b', '\bmode\b', '\bcentral tendency\b', '\brange of data'])) {
+            return 'data_central_tendency';
+        }
+
+        // 23. Mathematics - Statistics: Data Collection & Charts (Careful: avoid single word 'data' collision)
+        if ($match(['\bfrequency table\b', '\bhistogram\b', '\bcategorical\b', '\bgrouped data\b', '\bungrouped\b', '\bbar graph\b', '\bpie chart\b', '\bstem-and-leaf\b', '\bcollection of data\b', '\braw data\b', '\borganise and analyse data\b', '\bcollect.*data\b'])) {
+            return 'data_collection_charts';
+        }
+
+        // 23. Mathematics - Probability
+        if ($match(['\bprobability\b', '\bchance\b', '\bsample space\b', '\blikelihood\b', '\bdie\b', '\bdice\b', '\bcoin\b'])) {
+            return 'data_probability';
         }
 
         if (str_contains($sLower, 'math')) {
-            if (str_contains($context, 'alternate') || str_contains($context, 'corresponding') || str_contains($context, 'transversal') || str_contains($context, 'parallel line') || str_contains($context, 'co-interior')) {
-                return 'geometry_parallel_angles';
-            }
-            if (str_contains($context, 'triangle') || str_contains($context, 'polygon') || str_contains($context, 'quadrilateral') || str_contains($context, 'interior angle') || str_contains($context, 'exterior angle')) {
-                return 'geometry_triangles';
-            }
-            if (str_contains($context, 'pythagoras') || str_contains($context, 'hypotenuse') || str_contains($context, 'trigonometr')) {
-                return 'geometry_pythagoras_trig';
-            }
-            if (str_contains($context, 'vector') || str_contains($context, 'bearing')) {
-                return 'geometry_vectors_bearings';
-            }
-            if (str_contains($context, 'angle') || str_contains($context, 'acute') || str_contains($context, 'obtuse') || str_contains($context, 'reflex') || str_contains($context, 'complementary') || str_contains($context, 'supplementary') || str_contains($context, 'protractor')) {
-                return 'geometry_angles_measure';
-            }
-            if (str_contains($context, 'gradient') || str_contains($context, 'y = mx + c') || str_contains($context, 'slope') || str_contains($context, 'straight line') || str_contains($context, 'linear graph')) {
-                return 'algebra_gradients_linear';
-            }
-            if (str_contains($context, 'equation') || str_contains($context, 'inequalit') || str_contains($context, 'variable') || str_contains($context, 'change of subject')) {
-                return 'algebra_equations';
-            }
-            if (str_contains($context, 'factoris') || str_contains($context, 'factoriz') || str_contains($context, 'binomial') || str_contains($context, 'algebraic expression') || str_contains($context, 'expand')) {
-                return 'algebra_factorisation';
-            }
-            if (str_contains($context, 'pattern') || str_contains($context, 'sequence') || str_contains($context, 'nth term') || str_contains($context, 'progression')) {
-                return 'algebra_patterns';
-            }
-            if (str_contains($context, 'mean') || str_contains($context, 'median') || str_contains($context, 'mode') || str_contains($context, 'data') || str_contains($context, 'frequency') || str_contains($context, 'chart') || str_contains($context, 'histogram')) {
-                return 'data_statistics';
-            }
-            if (str_contains($context, 'probability') || str_contains($context, 'chance') || str_contains($context, 'sample space') || str_contains($context, 'likelihood') || str_contains($context, 'die') || str_contains($context, 'coin')) {
-                return 'data_probability';
-            }
-            if (str_contains($context, 'fraction') || str_contains($context, 'ratio') || str_contains($context, 'percent') || str_contains($context, 'proportion') || str_contains($context, 'bodmas') || str_contains($context, 'rate')) {
-                return 'number_fractions_ratios';
-            }
-            if (str_contains($context, 'set') || str_contains($context, 'venn') || str_contains($context, 'subset') || str_contains($context, 'intersection') || str_contains($context, 'universal set')) {
-                return 'number_sets';
-            }
-            if (str_contains($context, 'place value') || str_contains($context, 'compare') || str_contains($context, 'order') || str_contains($context, 'billion') || str_contains($context, 'million') || str_contains($context, 'round') || str_contains($context, 'numeral')) {
-                return 'number_place_value';
-            }
             return 'math_general';
         }
 
@@ -607,172 +1169,112 @@ class LocalLessonSynthesizer
     protected function generateChallenge1(string $domain, string $cleanTitle): array
     {
         switch ($domain) {
-            case 'geometry_parallel_angles':
+            case 'number_rounding_decimals':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "When a straight line (a transversal) crosses two parallel lines, which geometric relationship is always true?",
+                    'prompt' => "When rounding a decimal number such as 3.476 to the nearest hundredth, why do you check the thousandths digit (6)?",
                     'options' => [
-                        "Alternate interior angles and corresponding angles are equal in measure",
-                        "All angles formed must always equal 90°",
-                        "The angles change randomly depending on how long the parallel lines are drawn",
-                        "Alternate angles always add up to 360°",
+                        "Because the thousandths digit reveals whether the value is closer to 3.470 or 3.480 (since 6 ≥ 5, round up to 3.48)",
+                        "Because you always drop all decimal digits without looking at the next number",
+                        "Because the tenths digit is the only digit that can change when rounding",
+                        "Because decimals with three decimal places cannot be rounded",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Think of the 'Z' shape for alternate angles and 'F' shape for corresponding angles.",
-                    'explanation' => "Parallel lines intersected by a transversal create pairs of equal alternate angles ('Z' shape) and equal corresponding angles ('F' shape).",
+                    'hint' => "The immediate next digit to the right determines whether the target digit rounds up or stays unchanged.",
+                    'explanation' => "When rounding to a target place value, the digit immediately to the right determines proximity. If it is 5, 6, 7, 8, or 9, the number is closer to the upper value and rounds up.",
                 ];
 
-            case 'geometry_triangles':
+            case 'number_rounding_whole':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "In Euclidean geometry, why do the interior angles of any triangle always add up to exactly 180°?",
+                    'prompt' => "Why is rounding large numbers (like rounding 1,482,750 to 1,500,000) useful in practical real-world reports?",
                     'options' => [
-                        "Drawing a line through one vertex parallel to the base proves the three angles form a straight line (180°)",
-                        "Because every triangle must have sides of identical length",
-                        "Because each individual angle in every triangle is fixed at 60°",
-                        "Because triangles are formed by dividing a circle into two equal parts",
+                        "It provides a clear, manageable estimate of scale without getting distracted by insignificant low-order digits",
+                        "Because numbers with more than four digits cannot be read accurately",
+                        "To change whole numbers into decimal fractions",
+                        "To delete money from official records",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Notice that angles along any straight line always sum to 180°.",
-                    'explanation' => "Drawing a parallel line through the top vertex shows that alternate interior angles sit alongside the third angle on a straight line, totaling 180°.",
+                    'hint' => "Think of census counts, national budgets, or large distances.",
+                    'explanation' => "Rounding provides meaningful approximations that make large numbers easy to comprehend and compare.",
                 ];
 
-            case 'geometry_angles_measure':
+            case 'number_significant_figures':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "How do geometric angle classifications (acute, right, obtuse, reflex) help mathematicians and engineers?",
+                    'prompt' => "Why are significant figures essential in scientific measurements and calculations?",
                     'options' => [
-                        "They establish exact rotational benchmarks (< 90°, 90°, between 90° and 180°, > 180°) for measurement",
-                        "They measure lengths in meters rather than degrees of turn",
-                        "They only apply to 3D spheres, never to 2D plane geometry",
-                        "They eliminate the need to use protractors or angle measurement tools",
+                        "They communicate the precision and certainty of a measured quantity",
+                        "They remove all zeros from mathematical answers",
+                        "They only apply to whole numbers, never decimals",
+                        "They eliminate the need to write units of measurement",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Angles quantify rotational turn around a vertex from a baseline ray.",
-                    'explanation' => "Angle classifications provide precise standards: acute (< 90°), right (90°), obtuse (between 90° and 180°), and reflex (> 180°).",
+                    'hint' => "Notice how scientific instruments have limits to their measurement precision.",
+                    'explanation' => "Significant figures reflect the reliability and precision of experimental data.",
                 ];
 
-            case 'geometry_pythagoras_trig':
+            case 'number_powers_of_ten':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "In a right-angled triangle, why does Pythagoras' theorem state that a² + b² = c²?",
+                    'prompt' => "What happens to the place value of each digit when a number is multiplied by 10³ (1,000)?",
                     'options' => [
-                        "The combined geometric area of squares on the two shorter sides equals the area of the square on the hypotenuse",
-                        "The perimeter of the triangle always equals the hypotenuse squared",
-                        "The hypotenuse length is simply equal to the sum of a and b",
-                        "It only applies when all three sides are equal",
+                        "Every digit shifts 3 places to the left, increasing its place value a thousand-fold",
+                        "Every digit shifts 3 places to the right, decreasing its value",
+                        "Only the first digit changes; the rest stay unchanged",
+                        "The number turns into a decimal smaller than 1",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Imagine geometric squares constructed along each of the three sides.",
-                    'explanation' => "Pythagoras' theorem is an exact relationship of square areas: the squares constructed on the perpendicular legs combine to equal the area on the hypotenuse.",
+                    'hint' => "Multiplying by powers of 10 shifts decimal digits to higher place values.",
+                    'explanation' => "Multiplying by 10³ increases value by shifting each digit 3 positions higher to the left.",
                 ];
 
-            case 'geometry_vectors_bearings':
+            case 'number_large_quantities':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "What makes a vector quantity fundamentally different from a scalar quantity?",
+                    'prompt' => "In large base-ten numerals, why do we group digits into periods of three separated by commas (e.g. 2,450,000,000)?",
                     'options' => [
-                        "A vector has both magnitude (size) and direction, whereas a scalar has only magnitude",
-                        "Vectors can only represent monetary currency",
-                        "A scalar has direction, but a vector has no direction",
-                        "Vectors always equal zero when plotted on a grid",
+                        "To clearly distinguish place value periods (Units, Thousands, Millions, Billions) for accurate reading and computation",
+                        "Because whole numbers cannot have more than three digits without commas",
+                        "To turn whole numbers into decimal fractions",
+                        "To separate positive numbers from negative numbers",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Think about displacement (moving 5 km North) versus simple mass or temperature.",
-                    'explanation' => "Scalars have only magnitude (like temperature or mass), while vectors describe directed quantities (like displacement, velocity, or column vectors).",
+                    'hint' => "Commas group powers of 1,000 to assist reading large quantities.",
+                    'explanation' => "Periods group place values into thousands, millions, and billions, making large quantities readable and structured.",
                 ];
 
-            case 'algebra_gradients_linear':
+            case 'number_indices_surds':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "In the straight-line equation y = mx + c, what does the gradient m represent?",
+                    'prompt' => "Why does the multiplication law of indices state that aᵐ × aⁿ = aᵐ⁺ⁿ?",
                     'options' => [
-                        "The rate of change or steepness (vertical change divided by horizontal change: Δy / Δx)",
-                        "The point where the line crosses the horizontal x-axis",
-                        "The total area enclosed under the line",
-                        "The physical length of the line segment drawn on paper",
+                        "Because multiplying repeated factors of the same base combines their total count into a single exponent",
+                        "Because exponents must always be multiplied together",
+                        "Because the base disappears when multiplying powers",
+                        "It only works when the base is zero",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Gradient measures 'rise over run'.",
-                    'explanation' => "The gradient m = (y₂ - y₁) / (x₂ - x₁) measures how steeply y changes for each unit step in x.",
+                    'hint' => "Think of 2² × 2³ = (2 × 2) × (2 × 2 × 2) = 2⁵.",
+                    'explanation' => "When multiplying powers of the same base, you add exponents because you are combining counts of factors.",
                 ];
 
-            case 'algebra_equations':
+            case 'number_integers_operations':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "Why is applying inverse operations equally to both sides essential when solving algebraic equations?",
+                    'prompt' => "Why is the BODMAS / PEMDAS order of operations necessary when evaluating expressions?",
                     'options' => [
-                        "Because an equation represents equal balance; performing operations on only one side destroys equality",
-                        "Because variables always turn into negative numbers",
-                        "To convert an equation into an inequality",
-                        "Because equations cannot be solved without turning them into fractions",
+                        "It provides a universally agreed sequence so that everyone arrives at the single correct mathematical result",
+                        "It allows mathematicians to calculate from right to left whenever they choose",
+                        "To ensure addition is always performed before brackets",
+                        "It applies only to calculators, never to human calculations",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Think of an equation as a perfectly balanced scale.",
-                    'explanation' => "Equality is preserved only when the identical mathematical operation is performed on both the left and right sides.",
+                    'hint' => "Without order of operations, 2 + 3 × 4 could produce different answers.",
+                    'explanation' => "Standard order of operations guarantees consistency across mathematical communication.",
                 ];
 
-            case 'algebra_factorisation':
-                return [
-                    'type' => 'multiple-choice',
-                    'prompt' => "What is the mathematical relationship between expanding brackets and factorisation?",
-                    'options' => [
-                        "They are inverse operations: expanding multiplies out terms, while factorising extracts common factors into brackets",
-                        "They both increase the power of variables without limit",
-                        "Expanding works only on fractions, while factorising works only on integers",
-                        "There is no mathematical connection between them",
-                    ],
-                    'correct_answer' => 0,
-                    'hint' => "Expanding turns a(b + c) into ab + ac; factorising turns ab + ac back into a(b + c).",
-                    'explanation' => "Expanding removes brackets via the distributive law, whereas factorising reverses this by finding common factors.",
-                ];
-
-            case 'algebra_patterns':
-                return [
-                    'type' => 'multiple-choice',
-                    'prompt' => "Why is finding the nth term formula (Tn) advantageous when analyzing numerical sequences?",
-                    'options' => [
-                        "It allows you to calculate any term (such as the 100th term) directly without computing all intermediate terms",
-                        "It eliminates the need to know the first term of the sequence",
-                        "Because sequences cannot have more than 10 terms without a formula",
-                        "It turns arithmetic sequences into geometric shapes",
-                    ],
-                    'correct_answer' => 0,
-                    'hint' => "Imagine needing term 50 without having to add the step 49 times.",
-                    'explanation' => "The general nth term rule Tn = a + (n - 1)d provides direct calculation of any term position instantaneously.",
-                ];
-
-            case 'data_statistics':
-                return [
-                    'type' => 'multiple-choice',
-                    'prompt' => "Why is the median often preferred over the mean when analyzing datasets with extreme outliers?",
-                    'options' => [
-                        "The median identifies the middle value and is not distorted by unusually high or low outliers",
-                        "The median is always twice as large as the mean",
-                        "The mean cannot be calculated when values are positive",
-                        "The median works only for text data and not numbers",
-                    ],
-                    'correct_answer' => 0,
-                    'hint' => "Consider average salaries when one person earns millions.",
-                    'explanation' => "Extreme outliers pull the mean away from the center, whereas the median remains stable at the true middle position.",
-                ];
-
-            case 'data_probability':
-                return [
-                    'type' => 'multiple-choice',
-                    'prompt' => "What do probability values of P = 0 and P = 1 signify in mathematics?",
-                    'options' => [
-                        "P = 0 represents an impossible event, while P = 1 represents an absolute certainty",
-                        "P = 0 means it happens 50% of the time, and P = 1 means 100 times",
-                        "Probabilities can never equal 0 or 1",
-                        "P = 1 means impossible and P = 0 means certain",
-                    ],
-                    'correct_answer' => 0,
-                    'hint' => "All probabilities are bounded strictly between 0 and 1 inclusive.",
-                    'explanation' => "Theoretical probability ranges from 0 (impossible) to 1 (certain).",
-                ];
-
-            case 'number_fractions_ratios':
+            case 'number_fractions':
                 return [
                     'type' => 'multiple-choice',
                     'prompt' => "Why must fractions have a common denominator before they can be added or subtracted?",
@@ -784,7 +1286,37 @@ class LocalLessonSynthesizer
                     ],
                     'correct_answer' => 0,
                     'hint' => "Think of combining slices from a pizza cut into 4 slices with one cut into 8 slices.",
-                    'explanation' => "The denominator indicates the size of each slice; fractions can only be directly combined when the slices are identical in size.",
+                    'explanation' => "The denominator indicates part size; addition requires parts of identical unit size.",
+                ];
+
+            case 'number_percentages':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Why does expressing values as a percentage (out of 100) make comparisons easier?",
+                    'options' => [
+                        "It standardizes different quantities onto a common base of 100 for direct comparison",
+                        "Because all percentages are always greater than 100",
+                        "To eliminate the need for division in business",
+                        "It converts money into whole numbers without decimal points",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Percent literally means 'per hundred'.",
+                    'explanation' => "Standardizing onto a base of 100 allows clear comparison between groups of different sizes.",
+                ];
+
+            case 'number_ratios_proportions':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "What is the fundamental difference between a ratio (a : b) and a single fraction?",
+                    'options' => [
+                        "A ratio compares relative parts to each other, whereas a single fraction compares a part to the entire whole",
+                        "Ratios only work with negative numbers",
+                        "Fractions cannot be multiplied, but ratios can",
+                        "Ratios always equal zero when simplified",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "In a ratio of 2 : 3, total parts are 2 + 3 = 5.",
+                    'explanation' => "Ratios express part-to-part relationships, whereas fractions describe part-to-whole.",
                 ];
 
             case 'number_sets':
@@ -802,34 +1334,365 @@ class LocalLessonSynthesizer
                     'explanation' => "The intersection A ∩ B contains only the common elements shared by both sets.",
                 ];
 
-            case 'number_place_value':
+            case 'algebra_linear_relations_graphs':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "Why does our base-ten number system group digits into periods of three separated by commas?",
+                    'prompt' => "In the straight-line equation y = mx + c, what does the gradient m represent?",
                     'options' => [
-                        "To make large numbers easy to read and identify place values (Units, Thousands, Millions, Billions)",
-                        "Because numbers cannot exceed three digits without commas",
-                        "To convert whole numbers into decimal fractions",
-                        "To separate odd numbers from even numbers",
+                        "The rate of change or steepness (vertical change divided by horizontal change: Δy / Δx)",
+                        "The point where the line crosses the horizontal x-axis",
+                        "The total area enclosed under the line",
+                        "The physical length of the line segment drawn on paper",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Commas group powers of 1,000 to assist reading large quantities.",
-                    'explanation' => "Periods group place values into thousands, millions, and billions, making large quantities structured and readable.",
+                    'hint' => "Gradient measures 'rise over run'.",
+                    'explanation' => "The gradient m = (y₂ - y₁) / (x₂ - x₁) measures how steeply y changes for each unit step in x.",
                 ];
 
-            case 'computing_ict':
+            case 'algebra_expressions_factorisation':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "What is the primary role of \"{$cleanTitle}\" in modern computing systems?",
+                    'prompt' => "What is the mathematical relationship between expanding brackets and factorisation?",
                     'options' => [
-                        "To coordinate digital processes, ensure efficient information processing, and provide user reliability",
-                        "To bypass operating system safety checks",
-                        "To eliminate the need for digital storage media",
-                        "To convert electronic computers into analog mechanical calculators",
+                        "They are inverse operations: expanding multiplies out terms, while factorising extracts common factors into brackets",
+                        "They both increase the power of variables without limit",
+                        "Expanding works only on fractions, while factorising works only on integers",
+                        "There is no mathematical connection between them",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Consider how computer components work together to process and store data.",
-                    'explanation' => "Understanding computer architecture and software principles allows users to operate and troubleshoot systems safely.",
+                    'hint' => "Expanding turns a(b + c) into ab + ac; factorising turns ab + ac back into a(b + c).",
+                    'explanation' => "Expanding removes brackets via the distributive law, whereas factorising reverses this by finding common factors.",
+                ];
+
+            case 'algebra_substitution_formulae':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Why is changing the subject of a formula useful in science and engineering?",
+                    'options' => [
+                        "It isolates the desired variable so you can calculate its value directly without solving from scratch every time",
+                        "It eliminates the need for mathematical equality",
+                        "To change linear formulas into quadratic curves",
+                        "Because formulas cannot be evaluated with numbers",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "If you know speed and time, rearranging distance = speed × time gives time = distance / speed.",
+                    'explanation' => "Rearranging formulas allows direct calculation of unknown quantities from known data.",
+                ];
+
+            case 'algebra_inequalities':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "How does a linear inequality (such as x > 3) fundamentally differ from an equation (such as x = 3)?",
+                    'options' => [
+                        "An inequality defines a continuous set of possible solutions, while an equation typically defines specific discrete values",
+                        "Inequalities cannot be plotted on a number line",
+                        "Equations never contain variables",
+                        "Inequalities can only be solved using calculators",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Think of numbers like 4, 5, 6, 7.5—all satisfy x > 3.",
+                    'explanation' => "Inequalities represent ranges or solution sets bounded by a threshold.",
+                ];
+
+            case 'algebra_patterns_sequences':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Why is finding the nth term formula (Tn) advantageous when analyzing numerical sequences?",
+                    'options' => [
+                        "It allows you to calculate any term (such as the 100th term) directly without computing all intermediate terms",
+                        "It eliminates the need to know the first term of the sequence",
+                        "Because sequences cannot have more than 10 terms without a formula",
+                        "It turns arithmetic sequences into geometric shapes",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Imagine needing term 50 without having to add the step 49 times.",
+                    'explanation' => "The general nth term rule Tn = a + (n - 1)d provides direct calculation of any term position instantaneously.",
+                ];
+
+            case 'geometry_bearings':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Why are three-figure bearings (measured clockwise from true North) standard in marine navigation, aviation, and surveying?",
+                    'options' => [
+                        "They provide an unambiguous 360° directional reference relative to true North using 3 digits (000° to 360°)",
+                        "They only apply when walking in a straight line on flat ground",
+                        "Because angles can only be drawn with three pencils",
+                        "Bearings are measured counter-clockwise starting from the South",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Notice how 3-digit bearings ensure no confusion (e.g. 045° vs 45°).",
+                    'explanation' => "Three-figure bearings measure angles clockwise from true North, providing a standardized 360° directional coordinate.",
+                ];
+
+            case 'geometry_parallel_angles':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "When a straight line (a transversal) crosses two parallel lines, which geometric relationship is always true?",
+                    'options' => [
+                        "Alternate interior angles and corresponding angles are equal in measure",
+                        "All angles formed must always equal 90°",
+                        "The angles change randomly depending on how long the parallel lines are drawn",
+                        "Alternate angles always add up to 360°",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Think of the 'Z' shape for alternate angles and 'F' shape for corresponding angles.",
+                    'explanation' => "Parallel lines intersected by a transversal create pairs of equal alternate angles ('Z' shape) and equal corresponding angles ('F' shape).",
+                ];
+
+            case 'geometry_pythagoras_trigonometry':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "In a right-angled triangle, why does Pythagoras' theorem state that a² + b² = c²?",
+                    'options' => [
+                        "The combined geometric area of squares on the two shorter sides equals the area of the square on the hypotenuse",
+                        "The perimeter of the triangle always equals the hypotenuse squared",
+                        "The hypotenuse length is simply equal to the sum of a and b",
+                        "It only applies when all three sides are equal",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Imagine geometric squares constructed along each of the three sides.",
+                    'explanation' => "Pythagoras' theorem is an exact relationship of square areas: the squares constructed on the perpendicular legs combine to equal the area on the hypotenuse.",
+                ];
+
+            case 'geometry_angles_classification':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "How do geometric angle classifications (acute, right, obtuse, reflex) help mathematicians and engineers?",
+                    'options' => [
+                        "They establish exact rotational benchmarks (< 90°, 90°, between 90° and 180°, > 180°) for measurement",
+                        "They measure lengths in meters rather than degrees of turn",
+                        "They only apply to 3D spheres, never to 2D plane geometry",
+                        "They eliminate the need to use protractors or angle measurement tools",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Angles quantify rotational turn around a vertex from a baseline ray.",
+                    'explanation' => "Angle classifications provide precise standards: acute (< 90°), right (90°), obtuse (between 90° and 180°), and reflex (> 180°).",
+                ];
+
+            case 'geometry_triangles_polygons':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "In Euclidean geometry, why do the interior angles of any triangle always add up to exactly 180°?",
+                    'options' => [
+                        "Drawing a line through one vertex parallel to the base proves the three angles form a straight line (180°)",
+                        "Because every triangle must have sides of identical length",
+                        "Because each individual angle in every triangle is fixed at 60°",
+                        "Because triangles are formed by dividing a circle into two equal parts",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Notice that angles along any straight line always sum to 180°.",
+                    'explanation' => "Drawing a parallel line through the top vertex shows that alternate interior angles sit alongside the third angle on a straight line, totaling 180°.",
+                ];
+
+            case 'geometry_constructions':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Why do classical geometric constructions rely on a straightedge and compass rather than ruler measurements?",
+                    'options' => [
+                        "They create mathematically exact geometric relationships that do not depend on the measurement error of a physical ruler",
+                        "Because rulers were prohibited in ancient times",
+                        "To prevent students from drawing straight lines",
+                        "Because compasses can only draw angles of 90°",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Constructions prove properties through exact circles and intersecting arcs.",
+                    'explanation' => "Compass-and-straightedge constructions guarantee exact mathematical symmetry and angle bisection independent of scale markings.",
+                ];
+
+            case 'geometry_vectors':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "What makes a vector quantity fundamentally different from a scalar quantity?",
+                    'options' => [
+                        "A vector has both magnitude (size) and direction, whereas a scalar has only magnitude",
+                        "Vectors can only represent monetary currency",
+                        "A scalar has direction, but a vector has no direction",
+                        "Vectors always equal zero when plotted on a grid",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Think about displacement (moving 5 km North) versus simple mass or temperature.",
+                    'explanation' => "Scalars have only magnitude (like temperature or mass), while vectors describe directed quantities (like displacement, velocity, or column vectors).",
+                ];
+
+            case 'geometry_transformations':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Which property is preserved under rigid transformations (translation, reflection, and rotation)?",
+                    'options' => [
+                        "Length, angle size, and overall shape are perfectly preserved (congruent images)",
+                        "The shape increases in area by 50%",
+                        "The coordinates always sum to zero",
+                        "The image turns into a circle",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Rigid transformations move or turn an object without stretching or distorting it.",
+                    'explanation' => "Isometries preserve Euclidean distance and angle measures, producing congruent figures.",
+                ];
+
+            case 'data_central_tendency':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Why is the median often preferred over the mean when analyzing datasets with extreme outliers?",
+                    'options' => [
+                        "The median identifies the middle value and is not distorted by unusually high or low outliers",
+                        "The median is always twice as large as the mean",
+                        "The mean cannot be calculated when values are positive",
+                        "The median works only for text data and not numbers",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Consider average salaries when one person earns millions.",
+                    'explanation' => "Extreme outliers pull the mean away from the center, whereas the median remains stable at the true middle position.",
+                ];
+
+            case 'data_collection_charts':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Why do statisticians group raw data into frequency tables and graphical charts?",
+                    'options' => [
+                        "To reveal patterns, distributions, clusters, and central trends that are hidden in unsorted raw data",
+                        "To make the data impossible for other people to read",
+                        "Because raw data cannot contain numbers greater than 100",
+                        "To eliminate the need for calculations",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Visual representations make complex data interpretable at a glance.",
+                    'explanation' => "Frequency tables and charts summarize large sets of raw observations into clear distributions.",
+                ];
+
+            case 'data_probability':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "What do probability values of P = 0 and P = 1 signify in mathematics?",
+                    'options' => [
+                        "P = 0 represents an impossible event, while P = 1 represents an absolute certainty",
+                        "P = 0 means it happens 50% of the time, and P = 1 means 100 times",
+                        "Probabilities can never equal 0 or 1",
+                        "P = 1 means impossible and P = 0 means certain",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "All probabilities are bounded strictly between 0 and 1 inclusive.",
+                    'explanation' => "Theoretical probability ranges from 0 (impossible) to 1 (certain).",
+                ];
+
+            case 'computing_hardware':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "How do input devices, processing units, and output devices collaborate in computer architecture?",
+                    'options' => [
+                        "Input devices capture user data, the CPU processes instructions, and output devices present results to humans",
+                        "All devices perform the same processing tasks simultaneously",
+                        "Output devices convert digital data into raw mechanical electricity",
+                        "Input devices operate only when the computer is turned off",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Follow the standard IPOS model: Input → Processing → Output → Storage.",
+                    'explanation' => "Hardware coordinates data flow systematically from user input through computational processing to presentation.",
+                ];
+
+            case 'computing_safety':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Why is cyber etiquette and internet security essential in digital communication?",
+                    'options' => [
+                        "It safeguards personal privacy, prevents unauthorized access, and maintains respectful online collaboration",
+                        "To prevent computers from using internet cables",
+                        "Because operating systems cannot run without passwords",
+                        "To eliminate the need for web browsers",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Cyber safety protects identity, confidential data, and device health.",
+                    'explanation' => "Responsible digital practices protect users against identity theft, malware, and privacy breaches.",
+                ];
+
+            case 'science_energy':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "What is the core principle governing the Law of Conservation of Energy?",
+                    'options' => [
+                        "Energy cannot be created or destroyed, only transformed from one form into another",
+                        "Energy disappears completely when mechanical friction occurs",
+                        "Energy can be manufactured from nothing using chemical reactions",
+                        "Potential energy only exists on the Moon",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "The total amount of energy in a closed system remains constant.",
+                    'explanation' => "Energy continuously transforms (e.g. potential to kinetic, electrical to light) while the total quantity is preserved.",
+                ];
+
+            case 'science_cells':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Why are cells considered the fundamental building blocks of all living organisms?",
+                    'options' => [
+                        "Because every living organism is made of one or more cells that carry out essential life processes",
+                        "Because non-living rocks and minerals are also composed of biological cells",
+                        "Because cells only exist in multicellular animals, not in plants or bacteria",
+                        "Because cells operate without needing any nutrients or biological energy",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Cell theory states that the cell is the basic structural and functional unit of life.",
+                    'explanation' => "Cells are the smallest units that perform all the functions of life, including metabolism, growth, and replication.",
+                ];
+
+            case 'science_matter':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "According to the kinetic particle theory, what determines whether a substance exists as a solid, liquid, or gas?",
+                    'options' => [
+                        "The kinetic energy of its particles and the strength of the forces holding them together",
+                        "The color and physical brightness of the container it is stored in",
+                        "The total number of protons in the surrounding air",
+                        "Matter only changes state when mixed with chemical acids",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Think about how adding heat increases particle movement and overcomes intermolecular forces.",
+                    'explanation' => "Temperature increases particle kinetic energy, allowing particles to overcome attractive forces and transition between states.",
+                ];
+
+            case 'english_nouns':
+            case 'english_grammar':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Why are grammatical classifications (such as nouns, verbs, and collective nouns) essential in language?",
+                    'options' => [
+                        "They establish structural clarity and precision so that ideas are communicated without ambiguity",
+                        "To ensure all sentences have exactly five words",
+                        "Because adjectives cannot be used in formal writing",
+                        "To eliminate punctuation marks from paragraphs",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Grammar provides the systematic architecture for sentence construction.",
+                    'explanation' => "Accurate grammatical roles ensure that readers understand who is acting, what is occurring, and how entities relate.",
+                ];
+
+            case 'english_concord':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Why is subject-verb agreement (grammatical concord) critical in English sentences?",
+                    'options' => [
+                        "It ensures that the grammatical number (singular or plural) of the subject correctly matches its corresponding verb",
+                        "It makes all verbs past tense regardless of the subject",
+                        "It eliminates the need for nouns in complete sentences",
+                        "It forces sentences to only use auxiliary verbs",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "A singular subject takes a singular verb; a plural subject takes a plural verb.",
+                    'explanation' => "Subject-verb concord maintains grammatical consistency so listeners and readers immediately understand who is performing the action.",
+                ];
+
+            case 'english_reading':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Why is identifying the topic sentence essential when reading an informational paragraph or passage?",
+                    'options' => [
+                        "The topic sentence states the central main idea that all subsequent sentences explain, support, or illustrate",
+                        "The topic sentence is always the longest sentence in a paragraph",
+                        "The topic sentence contains all the spelling rules of the paragraph",
+                        "The topic sentence must be memorized word for word by the reader",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Look for the sentence that summarizes the main thought of the paragraph.",
+                    'explanation' => "The topic sentence presents the central thesis of the paragraph, anchoring all accompanying evidence and details.",
                 ];
 
             default:
@@ -855,82 +1718,172 @@ class LocalLessonSynthesizer
     protected function generateChallenge2(string $domain, string $cleanTitle): array
     {
         switch ($domain) {
-            case 'geometry_parallel_angles':
+            case 'number_rounding_decimals':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "Two parallel lines are crossed by a transversal. If one interior angle is 70°, what is the size of its alternate interior angle?",
+                    'prompt' => "What is 14.863 rounded to the nearest tenth?",
                     'options' => [
-                        "70°, because alternate interior angles between parallel lines are equal",
-                        "110°, because alternate angles are supplementary",
-                        "20°, because they must sum to 90°",
-                        "140°, because alternate angles double in value",
+                        "14.9 (the hundredths digit is 6, which is 5 or more, so the tenths digit 8 rounds up to 9)",
+                        "14.8 (keep the tenths digit and discard the rest)",
+                        "15.0 (round the whole number directly)",
+                        "14.86 (keep two decimal places)",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Locate the alternate interior position ('Z' rule).",
-                    'explanation' => "Alternate interior angles on parallel lines are equal, so the alternate angle is also 70°.",
+                    'hint' => "Identify the tenths position (8) and inspect the next digit to the right (6).",
+                    'explanation' => "The target digit is 8 in the tenths position. The following digit is 6. Since 6 ≥ 5, round up: 14.863 becomes 14.9.",
                 ];
 
-            case 'geometry_triangles':
+            case 'number_rounding_whole':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "A triangle has two angles measuring 65° and 50°. What is the measure of the third angle?",
+                    'prompt' => "What is 482,750 rounded to the nearest ten-thousand?",
                     'options' => [
-                        "65°, since 180° - (65° + 50°) = 65°",
-                        "115°, the sum of the two given angles",
-                        "50°, because all triangles require matching angle pairs",
-                        "80°, the remaining angle to reach 200°",
+                        "480,000 (the thousands digit is 2, which is less than 5, so the ten-thousands digit 8 stays unchanged)",
+                        "490,000 (round up regardless of digits)",
+                        "500,000 (round to the nearest hundred-thousand)",
+                        "482,000 (round to the nearest thousand)",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Subtract the sum of the two known angles from 180°.",
-                    'explanation' => "The interior angles of a triangle sum to 180°. Therefore: 180° - (65° + 50°) = 180° - 115° = 65°.",
+                    'hint' => "The ten-thousands digit is 8. Inspect the thousands digit (2).",
+                    'explanation' => "Since the thousands digit is 2 (< 5), round down: the 8 remains unchanged and lower digits become zeros, giving 480,000.",
                 ];
 
-            case 'geometry_angles_measure':
+            case 'number_significant_figures':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "Two angles are complementary, and one of them measures 38°. What is the size of the other angle?",
+                    'prompt' => "How many significant figures are in the numeral 0.004050?",
                     'options' => [
-                        "52°, because complementary angles sum to 90° (90° - 38° = 52°)",
-                        "142°, because complementary angles sum to 180°",
-                        "38°, because complementary angles are always identical",
-                        "322°, because complementary angles sum to 360°",
+                        "4 significant figures (4, 0, 5, and the trailing 0; leading zeros are place-holders only)",
+                        "6 significant figures (counting all digits)",
+                        "3 significant figures (4, 0, 5)",
+                        "2 significant figures (4 and 5)",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Complementary angles add up to 90°, while supplementary angles add up to 180°.",
-                    'explanation' => "Complementary angles sum to 90°. Therefore, 90° - 38° = 52°.",
+                    'hint' => "Leading zeros before the first non-zero digit are never significant; trailing zeros after a decimal point are significant.",
+                    'explanation' => "Leading zeros locate the decimal point. The significant digits are 4, 0, 5, and the final 0 (4 s.f.).",
                 ];
 
-            case 'geometry_pythagoras_trig':
+            case 'number_powers_of_ten':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "A right-angled triangle has perpendicular legs of length 6 cm and 8 cm. What is the length of the hypotenuse c?",
+                    'prompt' => "What is 0.045 multiplied by 10³ (1,000)?",
                     'options' => [
-                        "10 cm, because c = √(6² + 8²) = √(36 + 64) = √100 = 10",
-                        "14 cm, because c = 6 + 8 = 14",
-                        "48 cm, because c = 6 × 8 = 48",
-                        "7 cm, the average of the two legs",
+                        "45 (shifting the decimal point 3 positions to the right)",
+                        "4.5 (shifting 2 positions)",
+                        "450 (shifting 4 positions)",
+                        "0.000045 (dividing instead of multiplying)",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Calculate a² + b², then take the square root.",
-                    'explanation' => "6² + 8² = 36 + 64 = 100. √100 = 10 cm.",
+                    'hint' => "Multiplying by 10³ moves the decimal point 3 places to the right.",
+                    'explanation' => "0.045 × 1,000 = 45.",
                 ];
 
-            case 'geometry_vectors_bearings':
+            case 'number_large_quantities':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "If vector u = (3, 4)ᵀ and vector v = (2, -1)ᵀ, what is the resulting column vector of u + v?",
+                    'prompt' => "In the numeral 5,420,800,000, what is the place value of the digit 4?",
                     'options' => [
-                        "(5, 3)ᵀ, by adding top components (3 + 2) and bottom components (4 + (-1))",
-                        "(1, 5)ᵀ, by subtracting components",
-                        "(6, -4)ᵀ, by multiplying components",
-                        "8, by summing all numbers into a single scalar",
+                        "Four hundred million (400,000,000)",
+                        "Four billion (4,000,000,000)",
+                        "Forty million (40,000,000)",
+                        "Four million (4,000,000)",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Add corresponding horizontal components together, and vertical components together.",
-                    'explanation' => "Column vector addition is done component-wise: top is 3 + 2 = 5, bottom is 4 + (-1) = 3.",
+                    'hint' => "The numeral has Billions (5), then Hundred-Millions (4).",
+                    'explanation' => "In 5,420,800,000, the 5 is in Billions, and 4 is in the Hundred-Millions period (400,000,000).",
                 ];
 
-            case 'algebra_gradients_linear':
+            case 'number_indices_surds':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Simplify the index expression: 2³ × 2⁴.",
+                    'options' => [
+                        "2⁷ = 128 (add exponents: 3 + 4 = 7)",
+                        "2¹² (multiply exponents instead of adding)",
+                        "4⁷ (multiply the bases)",
+                        "2¹ = 2 (subtract exponents)",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Apply the product law of indices: aᵐ × aⁿ = aᵐ⁺ⁿ.",
+                    'explanation' => "2³ × 2⁴ = 2³⁺⁴ = 2⁷ = 128.",
+                ];
+
+            case 'number_integers_operations':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Evaluate the expression using order of operations (BODMAS): 5 + 3 × 4.",
+                    'options' => [
+                        "17 (multiply first: 3 × 4 = 12, then add 5: 5 + 12 = 17)",
+                        "32 (adding first: 5 + 3 = 8, then multiplying 8 × 4 = 32)",
+                        "20 (adding 5 + 3 + 4)",
+                        "60 (multiplying 5 × 3 × 4)",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Multiplication takes precedence over addition in BODMAS.",
+                    'explanation' => "Multiplication is performed before addition: 3 × 4 = 12; 5 + 12 = 17.",
+                ];
+
+            case 'number_fractions':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "What is 1/3 + 1/6 expressed as a simplified fraction?",
+                    'options' => [
+                        "1/2 (convert 1/3 to 2/6, then 2/6 + 1/6 = 3/6 = 1/2)",
+                        "2/9 (adding numerators and denominators directly)",
+                        "2/6 (forgetting to add the second numerator)",
+                        "5/6 (incorrect common denominator calculation)",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Find the common denominator (6) before adding.",
+                    'explanation' => "1/3 = 2/6. 2/6 + 1/6 = 3/6 = 1/2.",
+                ];
+
+            case 'number_percentages':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Calculate a 15% discount on an item originally priced at GH₵200.",
+                    'options' => [
+                        "GH₵30 (15/100 × 200 = 30)",
+                        "GH₵15 (multiplying only by 100)",
+                        "GH₵185 (the price after discount, not the discount amount)",
+                        "GH₵50 (guessing without computing)",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Find 10% (GH₵20) and 5% (GH₵10), then combine.",
+                    'explanation' => "15% of GH₵200 = 0.15 × 200 = GH₵30.",
+                ];
+
+            case 'number_ratios_proportions':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Share GH₵120 between Kofi and Ama in the ratio 2 : 3. How much does Ama receive?",
+                    'options' => [
+                        "GH₵72 (Total parts = 5; 1 part = 120/5 = 24; Ama's share = 3 × 24 = 72)",
+                        "GH₵48 (Kofi's share: 2 × 24 = 48)",
+                        "GH₵60 (an equal split)",
+                        "GH₵40 (dividing by 3 directly)",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Add the ratio parts (2 + 3 = 5), find 1 part, then multiply by 3.",
+                    'explanation' => "Total parts = 5. One part = 120 / 5 = 24. Ama's 3 parts = 3 × 24 = GH₵72.",
+                ];
+
+            case 'number_sets':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "If Set A = {1, 2, 3, 5} and Set B = {2, 3, 4, 6}, what is the intersection A ∩ B?",
+                    'options' => [
+                        "{2, 3} (the elements present in both Set A and Set B)",
+                        "{1, 2, 3, 4, 5, 6} (the union A ∪ B)",
+                        "{1, 5} (elements exclusive to Set A)",
+                        "{} (empty set)",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Identify the common numbers appearing in both lists.",
+                    'explanation' => "The common numbers in both sets are 2 and 3, so A ∩ B = {2, 3}.",
+                ];
+
+            case 'algebra_linear_relations_graphs':
                 return [
                     'type' => 'multiple-choice',
                     'prompt' => "A straight line passes through points (1, 3) and (4, 9). What is its gradient m?",
@@ -945,55 +1898,190 @@ class LocalLessonSynthesizer
                     'explanation' => "m = (9 - 3) / (4 - 1) = 6 / 3 = 2.",
                 ];
 
-            case 'algebra_equations':
+            case 'algebra_expressions_factorisation':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "Solve for x in the linear equation: 3x - 5 = 16.",
+                    'prompt' => "Expand the binomial expression: (x + 3)(x + 2).",
                     'options' => [
-                        "x = 7 (add 5 to both sides to get 3x = 21, then divide by 3)",
-                        "x = 3.6 (divide 16 by 3 and subtract 5)",
-                        "x = 11 (subtract 5 from 16)",
-                        "x = 63 (multiply 21 by 3)",
+                        "x² + 5x + 6 (using FOIL: x² + 2x + 3x + 6)",
+                        "x² + 6 (forgetting the middle terms)",
+                        "2x + 5 (adding terms instead of multiplying)",
+                        "x² + 6x + 5 (swapping coefficients)",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Isolate the term with x by adding 5 first, then divide by the coefficient 3.",
-                    'explanation' => "3x - 5 = 16 => 3x = 21 => x = 21 / 3 = 7.",
+                    'hint' => "Multiply First, Outside, Inside, and Last terms (FOIL).",
+                    'explanation' => "(x + 3)(x + 2) = x² + 2x + 3x + 6 = x² + 5x + 6.",
                 ];
 
-            case 'algebra_factorisation':
+            case 'algebra_substitution_formulae':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "What is the completely factorised form of 8x + 12?",
+                    'prompt' => "In the physics equation v = u + at, make acceleration a the subject of the formula.",
                     'options' => [
-                        "4(2x + 3), since 4 is the Highest Common Factor (HCF) of 8 and 12",
-                        "2(4x + 6), because 2 is the only common divisor",
-                        "20x, by adding the coefficients together",
-                        "8(x + 12), by factoring out the first number",
+                        "a = (v - u) / t (subtract u from both sides, then divide by t)",
+                        "a = v - u - t (subtracting all terms)",
+                        "a = (v + u) / t (adding u instead of subtracting)",
+                        "a = vt - u (multiplying incorrectly)",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Find the greatest factor that divides both 8 and 12.",
-                    'explanation' => "The HCF of 8 and 12 is 4. Factoring 4 out gives 4(2x + 3).",
+                    'hint' => "Isolate 'at' first by subtracting u, then divide by t.",
+                    'explanation' => "v - u = at, so dividing both sides by t gives a = (v - u) / t.",
                 ];
 
-            case 'algebra_patterns':
+            case 'algebra_inequalities':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "For the arithmetic sequence 4, 7, 10, 13, ..., what is the common difference d and the 10th term?",
+                    'prompt' => "Solve the linear inequality: 3x - 5 < 10.",
                     'options' => [
-                        "d = 3; 10th term = 31 (T₁₀ = 4 + 9 × 3 = 31)",
-                        "d = 4; 10th term = 40",
-                        "d = 3; 10th term = 34",
-                        "d = 2; 10th term = 26",
+                        "x < 5 (add 5 to get 3x < 15, then divide by 3)",
+                        "x > 5 (flipping the sign when dividing by positive 3)",
+                        "x < 15 (forgetting to divide by 3)",
+                        "x = 5 (treating it as an equation)",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Find the step size: 7 - 4 = 3. Then calculate 4 + (10 - 1) × 3.",
-                    'explanation' => "The common difference d = 3. The 10th term is a + 9d = 4 + 9(3) = 4 + 27 = 31.",
+                    'hint' => "Add 5 to both sides, then divide by 3 (a positive number, so sign stays unchanged).",
+                    'explanation' => "3x - 5 < 10 => 3x < 15 => x < 5.",
                 ];
 
-            case 'data_statistics':
+            case 'algebra_patterns_sequences':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "Find the median of the following set of numbers: 5, 8, 3, 9, 7.",
+                    'prompt' => "For the arithmetic sequence 5, 9, 13, 17, ..., what is the common difference d and the 10th term?",
+                    'options' => [
+                        "d = 4; 10th term = 41 (T₁₀ = 5 + 9 × 4 = 41)",
+                        "d = 5; 10th term = 50",
+                        "d = 4; 10th term = 45",
+                        "d = 3; 10th term = 32",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Find step d = 9 - 5 = 4. Then T₁₀ = a + 9d.",
+                    'explanation' => "Common difference d = 4. T₁₀ = 5 + 9(4) = 5 + 36 = 41.",
+                ];
+
+            case 'geometry_bearings':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "The bearing of Town B from Town A is 065°. What is the back bearing of Town A from Town B?",
+                    'options' => [
+                        "245° (Since the forward bearing is less than 180°, add 180°: 65° + 180° = 245°)",
+                        "065° (Back bearing is identical to forward bearing)",
+                        "115° (180° - 65°)",
+                        "295° (360° - 65°)",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Rule for back bearings: If bearing < 180°, add 180°. If bearing ≥ 180°, subtract 180°.",
+                    'explanation' => "When forward bearing < 180°, back bearing = forward bearing + 180° = 65° + 180° = 245°.",
+                ];
+
+            case 'geometry_parallel_angles':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Two parallel lines are crossed by a transversal. If one interior angle is 75°, what is the size of its alternate interior angle?",
+                    'options' => [
+                        "75°, because alternate interior angles between parallel lines are equal",
+                        "105°, because alternate angles are supplementary",
+                        "15°, because they must sum to 90°",
+                        "150°, because alternate angles double in value",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Locate the alternate interior position ('Z' rule).",
+                    'explanation' => "Alternate interior angles on parallel lines are equal, so the alternate angle is also 75°.",
+                ];
+
+            case 'geometry_pythagoras_trigonometry':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "A right-angled triangle has perpendicular legs of length 6 cm and 8 cm. What is the length of the hypotenuse c?",
+                    'options' => [
+                        "10 cm, because c = √(6² + 8²) = √(36 + 64) = √100 = 10",
+                        "14 cm, because c = 6 + 8 = 14",
+                        "48 cm, because c = 6 × 8 = 48",
+                        "7 cm, the average of the two legs",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Calculate a² + b², then take the square root.",
+                    'explanation' => "6² + 8² = 36 + 64 = 100. √100 = 10 cm.",
+                ];
+
+            case 'geometry_angles_classification':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Two angles are complementary, and one of them measures 38°. What is the size of the other angle?",
+                    'options' => [
+                        "52°, because complementary angles sum to 90° (90° - 38° = 52°)",
+                        "142°, because complementary angles sum to 180°",
+                        "38°, because complementary angles are always identical",
+                        "322°, because complementary angles sum to 360°",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Complementary angles add up to 90°, while supplementary angles add up to 180°.",
+                    'explanation' => "Complementary angles sum to 90°. Therefore, 90° - 38° = 52°.",
+                ];
+
+            case 'geometry_triangles_polygons':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "A triangle has two angles measuring 55° and 65°. What is the measure of the third angle?",
+                    'options' => [
+                        "60°, since 180° - (55° + 65°) = 180° - 120° = 60°",
+                        "120°, the sum of the two given angles",
+                        "55°, because all triangles require matching angle pairs",
+                        "80°, the remaining angle to reach 200°",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Subtract the sum of the two known angles from 180°.",
+                    'explanation' => "The interior angles of a triangle sum to 180°. 180° - (55° + 65°) = 180° - 120° = 60°.",
+                ];
+
+            case 'geometry_constructions':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "When bisecting an angle of 120° using a compass and straightedge, what is the measure of each resulting angle?",
+                    'options' => [
+                        "60°, because bisecting means dividing an angle into two exactly equal halves",
+                        "30°, because an angle is divided into four parts",
+                        "90°, because bisections always produce right angles",
+                        "120°, because the angle measure cannot change",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Bisection divides an angle exactly by 2.",
+                    'explanation' => "120° ÷ 2 = 60°.",
+                ];
+
+            case 'geometry_vectors':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "If vector u = (3, 4)ᵀ and vector v = (2, -1)ᵀ, what is the resulting column vector of u + v?",
+                    'options' => [
+                        "(5, 3)ᵀ, by adding top components (3 + 2) and bottom components (4 + (-1))",
+                        "(1, 5)ᵀ, by subtracting components",
+                        "(6, -4)ᵀ, by multiplying components",
+                        "8, by summing all numbers into a single scalar",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Add corresponding horizontal components together, and vertical components together.",
+                    'explanation' => "Column vector addition is done component-wise: top is 3 + 2 = 5, bottom is 4 + (-1) = 3.",
+                ];
+
+            case 'geometry_transformations':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "A point P(2, 5) is translated by vector (3, -2)ᵀ. What are the coordinates of the image P'?",
+                    'options' => [
+                        "(5, 3), because 2 + 3 = 5 and 5 + (-2) = 3",
+                        "(-1, 7), subtracting components instead",
+                        "(6, -10), multiplying coordinates",
+                        "(2, 5), points remain unchanged under translation",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Add the translation vector components to the original coordinates.",
+                    'explanation' => "P' = (2 + 3, 5 + (-2)) = (5, 3).",
+                ];
+
+            case 'data_central_tendency':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Find the median of the following test scores: 5, 8, 3, 9, 7.",
                     'options' => [
                         "7 (order the numbers: 3, 5, 7, 8, 9; the middle number is 7)",
                         "3 (the lowest number in the set)",
@@ -1003,6 +2091,21 @@ class LocalLessonSynthesizer
                     'correct_answer' => 0,
                     'hint' => "Always sort numbers from least to greatest before finding the middle value.",
                     'explanation' => "Arranging in ascending order gives 3, 5, 7, 8, 9. The middle (3rd) value is 7.",
+                ];
+
+            case 'data_collection_charts':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "In a grouped frequency table with class intervals 10–19, 20–29, 30–39, what is the class width of each interval?",
+                    'options' => [
+                        "10 (subtracting consecutive lower limits: 20 - 10 = 10, or counting 10 to 19 inclusive)",
+                        "9 (subtracting 19 - 10 without including both endpoints)",
+                        "19 (the upper limit of the first class)",
+                        "30 (the upper limit of the last interval)",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Use the formula: Next Lower Limit - Current Lower Limit = 20 - 10, or count the integers 10 through 19 inclusive.",
+                    'explanation' => "The class width is 10. You can calculate it as 20 - 10 = 10, or by using class boundaries (19.5 - 9.5 = 10). A common mistake is 19 - 10 = 9, which leaves out the starting value 10!",
                 ];
 
             case 'data_probability':
@@ -1020,64 +2123,125 @@ class LocalLessonSynthesizer
                     'explanation' => "There are 3 even numbers out of 6 possible faces: P = 3/6 = 1/2.",
                 ];
 
-            case 'number_fractions_ratios':
+            case 'computing_hardware':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "Share GH₵120 between Kofi and Ama in the ratio 2 : 3. How much does Ama receive?",
+                    'prompt' => "Which of the following consists strictly of input devices?",
                     'options' => [
-                        "GH₵72 (Total parts = 5; 1 part = 120/5 = 24; Ama's share = 3 × 24 = 72)",
-                        "GH₵48 (Kofi's share)",
-                        "GH₵60 (Equal split)",
-                        "GH₵40 (120 divided by 3)",
+                        "Keyboard, mouse, microphone, and barcode scanner",
+                        "Monitor, printer, and speakers",
+                        "Hard drive, RAM, and motherboard",
+                        "Projector, headphones, and CPU",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Add the ratio parts (2 + 3 = 5), find the value of 1 part, then multiply by 3.",
-                    'explanation' => "Total parts = 2 + 3 = 5. One part = 120 / 5 = 24. Ama's share = 3 × 24 = GH₵72.",
+                    'hint' => "Input devices send data into the computer.",
+                    'explanation' => "Keyboards, mice, microphones, and scanners all enter data into the computer system.",
                 ];
 
-            case 'number_sets':
+            case 'computing_safety':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "If Set A = {2, 3, 5, 7} and Set B = {1, 3, 5, 9}, what is A ∩ B?",
+                    'prompt' => "Which password practice provides the highest level of account protection?",
                     'options' => [
-                        "{3, 5} (the elements appearing in both Set A and Set B)",
-                        "{1, 2, 3, 5, 7, 9} (the union of the sets)",
-                        "{2, 7} (elements exclusive to Set A)",
-                        "{} (empty set)",
+                        "Using a long passphrase combining uppercase and lowercase letters, numbers, and symbols",
+                        "Using your birthday so you never forget it",
+                        "Sharing your login details with friends for convenience",
+                        "Using the same simple 4-digit PIN across all websites",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Identify which numbers appear in both lists.",
-                    'explanation' => "The numbers 3 and 5 are present in both sets, so A ∩ B = {3, 5}.",
+                    'hint' => "Complexity and length protect against brute-force attacks.",
+                    'explanation' => "Complex passphrases with varied character sets resist automated cracking and dictionary attacks.",
                 ];
 
-            case 'number_place_value':
+            case 'science_energy':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "Which number is greater: 4,582,100 or 4,579,990?",
+                    'prompt' => "A ball is released from rest from the top of a ramp. What energy transformation occurs as it rolls down?",
                     'options' => [
-                        "4,582,100, because comparing the ten-thousands digit shows 8 > 7",
-                        "4,579,990, because it has three 9s which are larger digits",
-                        "They are equal because both start with 4,5...",
-                        "4,579,990, because 990 is greater than 100",
+                        "Gravitational potential energy transforms into kinetic energy",
+                        "Kinetic energy transforms into nuclear energy",
+                        "Chemical energy transforms into electrical energy",
+                        "Energy is completely destroyed as speed increases",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Compare corresponding digits starting from the highest place value on the left.",
-                    'explanation' => "Comparing from left to right: millions (4) and hundred-thousands (5) are equal, but at ten-thousands 8 > 7, so 4,582,100 is greater.",
+                    'hint' => "Height gives potential energy; motion gives kinetic energy.",
+                    'explanation' => "At the top, the ball has maximum potential energy, which converts to kinetic energy as it accelerates downward.",
                 ];
 
-            case 'computing_ict':
+            case 'science_cells':
                 return [
                     'type' => 'multiple-choice',
-                    'prompt' => "When implementing or configuring procedures related to \"{$cleanTitle}\", what is best practice?",
+                    'prompt' => "Which of the following cellular structures is found in plant cells but NOT in animal cells?",
                     'options' => [
-                        "Follow verified operational workflows and verify system feedback before proceeding",
-                        "Force-quit background processes without saving changes",
-                        "Ignore system compatibility requirements and error dialogs",
-                        "Disable network security protocols during file transfers",
+                        "A rigid cellulose cell wall and large central chloroplasts",
+                        "A cell membrane and cytoplasm",
+                        "A nucleus containing DNA",
+                        "Mitochondria for cellular respiration",
                     ],
                     'correct_answer' => 0,
-                    'hint' => "Structured procedures protect system stability and data integrity.",
-                    'explanation' => "Structured execution and observing system prompts prevents data loss and software malfunction.",
+                    'hint' => "Plant cells have rigid structures for support and green pigments for photosynthesis.",
+                    'explanation' => "Plant cells possess a rigid cellulose cell wall and chloroplasts for photosynthesis, whereas animal cells have only a flexible cell membrane.",
+                ];
+
+            case 'science_matter':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "What phase change takes place when liquid water is heated to its boiling point and turns into steam?",
+                    'options' => [
+                        "Evaporation / Vaporization (particles gain sufficient kinetic energy to overcome intermolecular attraction)",
+                        "Condensation (particles lose energy and pack closer together)",
+                        "Freezing / Solidification into ice",
+                        "Sublimation directly from solid ice to gas",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Heating increases particle speed until liquid particles escape into the gas phase.",
+                    'explanation' => "Boiling is the rapid vaporization of a liquid when heated to its boiling point, turning liquid water into steam.",
+                ];
+
+            case 'english_nouns':
+            case 'english_grammar':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "In the sentence: \"A pride of lions rested under the baobab tree\", what type of noun is \"pride\"?",
+                    'options' => [
+                        "Collective noun (names a group of animals as a single unit)",
+                        "Proper noun (names a specific person)",
+                        "Abstract noun (names an intangible concept)",
+                        "Action verb (describes physical movement)",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "A collective noun refers to a collection or group of individuals.",
+                    'explanation' => "\"Pride\" refers to a group of lions treated as a single unit, making it a collective noun.",
+                ];
+
+            case 'english_concord':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Which sentence demonstrates correct subject-verb concord (agreement)?",
+                    'options' => [
+                        "\"The basket of ripe mangoes is on the dining table\" (singular subject 'basket' takes singular verb 'is')",
+                        "\"The basket of ripe mangoes are on the dining table\"",
+                        "\"The players on the soccer team was celebrating\"",
+                        "\"Neither the teacher nor the students was present\"",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Ignore prepositional phrases like 'of ripe mangoes' and focus on the main head noun 'basket'.",
+                    'explanation' => "The subject is the singular noun 'basket', so it takes the singular verb 'is' despite the plural noun 'mangoes' in the prepositional phrase.",
+                ];
+
+            case 'english_reading':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "In a standard informational paragraph, where is the topic sentence (main idea) most commonly placed?",
+                    'options' => [
+                        "At or near the beginning of the paragraph to introduce the central idea immediately",
+                        "Inside a footnote at the bottom of the page",
+                        "Only at the end of the entire book",
+                        "Topic sentences are never written directly in paragraphs",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Authors usually place the main idea first to orient the reader before giving evidence.",
+                    'explanation' => "Writers usually present the topic sentence at the start of a paragraph so readers grasp the central premise before reading supporting arguments.",
                 ];
 
             default:
@@ -1098,11 +2262,391 @@ class LocalLessonSynthesizer
     }
 
     /**
+     * Generate dynamic Challenge 3 (Concept Mastery & Synthesis) based on domain.
+     */
+    protected function generateChallenge3(string $domain, string $cleanTitle, array $takeaways = []): array
+    {
+        switch ($domain) {
+            case 'number_rounding_decimals':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "What happens when rounding 2.96 to the nearest tenth?",
+                    'options' => [
+                        "It becomes 3.0 (the hundredths digit 6 rounds the 9 tenths up to 10 tenths, carrying 1 into the units place)",
+                        "It becomes 2.9 (ignoring the 6)",
+                        "It becomes 2.10 (writing 10 in the tenths position)",
+                        "It cannot be rounded because decimals cannot end in zero",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "When 9 rounds up by 1, it regroups (carries) into the units position.",
+                    'explanation' => "Rounding 9 tenths up gives 10 tenths (1 unit), changing 2.9 to 3.0.",
+                ];
+
+            case 'number_rounding_whole':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "What is 99,600 rounded to the nearest thousand?",
+                    'options' => [
+                        "100,000 (the hundreds digit 6 rounds the 9 thousands up, carrying into ten-thousands)",
+                        "99,000 (rounding down)",
+                        "90,000 (rounding to the nearest ten-thousand)",
+                        "99,600 (leaving it unchanged)",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Inspect the hundreds digit (6 ≥ 5). 99 thousands + 1 thousand = 100 thousands.",
+                    'explanation' => "Since 6 ≥ 5, 99,600 rounds up to 100,000.",
+                ];
+
+            case 'number_significant_figures':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "What is the standard scientific form (A × 10ⁿ) of 3,450?",
+                    'options' => [
+                        "3.45 × 10³ (where 1 ≤ A < 10 and n is an integer)",
+                        "34.5 × 10² (A is not between 1 and 10)",
+                        "0.345 × 10⁴ (A is less than 1)",
+                        "3.45 × 10⁻³ (negative power represents small decimals)",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Place the decimal after the first non-zero digit: 3.45, then count 3 jumps to 3,450.",
+                    'explanation' => "3,450 = 3.45 × 1,000 = 3.45 × 10³.",
+                ];
+
+            case 'geometry_bearings':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "A plane flies on a bearing of 240° from Airport P to Airport Q. What bearing must the pilot fly on the return journey from Q to P?",
+                    'options' => [
+                        "060° (Since 240° ≥ 180°, subtract 180°: 240° - 180° = 060°)",
+                        "240° (Fly on the exact same bearing)",
+                        "120° (360° - 240°)",
+                        "420° (240° + 180°)",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "For bearings greater than 180°, subtract 180° to find the back bearing.",
+                    'explanation' => "The back bearing is 240° - 180° = 060°.",
+                ];
+
+            case 'geometry_parallel_angles':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Two parallel lines are crossed by a transversal. If one interior angle is 110°, what is the measure of the co-interior angle on the same side?",
+                    'options' => [
+                        "70°, because co-interior angles inside parallel lines are supplementary (180° - 110° = 70°)",
+                        "110°, because co-interior angles are always equal",
+                        "20°, because they must sum to 90°",
+                        "250°, because they sum to 360°",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Co-interior ('C' shape) angles sum to 180°.",
+                    'explanation' => "Co-interior angles are supplementary: 180° - 110° = 70°.",
+                ];
+
+            case 'algebra_linear_relations_graphs':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "What is the gradient m and y-intercept c for the straight line with equation y = -3x + 7?",
+                    'options' => [
+                        "Gradient m = -3, and y-intercept c = 7",
+                        "Gradient m = 3, and y-intercept c = -7",
+                        "Gradient m = 7, and y-intercept c = -3",
+                        "Gradient m = 1, and y-intercept c = 4",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Compare directly with y = mx + c.",
+                    'explanation' => "In y = -3x + 7, m = -3 and c = 7.",
+                ];
+
+            case 'number_fractions':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Evaluate: 2/3 + 1/4. What is the simplified result?",
+                    'options' => [
+                        "11/12 (Common denominator is 12: 8/12 + 3/12 = 11/12)",
+                        "3/7 (Adding numerators and denominators directly)",
+                        "2/12",
+                        "1",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Convert both fractions to twelfths (LCM of 3 and 4).",
+                    'explanation' => "2/3 = 8/12 and 1/4 = 3/12. Their sum is 8/12 + 3/12 = 11/12.",
+                ];
+
+            case 'number_percentages':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "An article priced at GH₵200 is offered at a 15% discount. What is the final sale price?",
+                    'options' => [
+                        "GH₵170 (Discount = 0.15 × 200 = GH₵30; Sale price = 200 - 30 = GH₵170)",
+                        "GH₵185",
+                        "GH₵150",
+                        "GH₵30",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Calculate 15% of 200, then subtract that discount from the original price.",
+                    'explanation' => "15% of GH₵200 is GH₵30. The sale price is GH₵200 - GH₵30 = GH₵170.",
+                ];
+
+            case 'number_ratios_proportions':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "If 5 exercise books cost GH₵35, how much will 8 books cost at the same unit rate?",
+                    'options' => [
+                        "GH₵56 (Unit rate = 35 / 5 = GH₵7 per book; 8 books = 8 × 7 = GH₵56)",
+                        "GH₵40",
+                        "GH₵48",
+                        "GH₵70",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Find the cost of 1 book first, then multiply by 8.",
+                    'explanation' => "1 book costs 35 / 5 = GH₵7. Therefore, 8 books cost 8 × 7 = GH₵56.",
+                ];
+
+            case 'science_cells':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "What is the primary function of the cell nucleus in plant and animal cells?",
+                    'options' => [
+                        "It acts as the control center of the cell, housing DNA and regulating genetic activity",
+                        "It provides green coloration for photosynthesis",
+                        "It acts as a tough outer wall preventing water entry",
+                        "It stores cellular digestive waste permanently",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "The nucleus contains chromosomes that govern cellular functions and replication.",
+                    'explanation' => "The nucleus is the command center of the cell containing hereditary genetic instructions.",
+                ];
+
+            case 'science_matter':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "Why does the temperature of a pure substance stay constant while it is melting or boiling?",
+                    'options' => [
+                        "The absorbed thermal energy is used to break intermolecular bonds (latent heat) rather than raising temperature",
+                        "Because heat stops flowing into the substance during phase changes",
+                        "Because thermometers do not function when substances change state",
+                        "Because atoms lose their mass during phase changes",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Consider latent heat of fusion or vaporization.",
+                    'explanation' => "During phase changes, energy breaks intermolecular bonds instead of increasing particle kinetic energy, keeping temperature steady.",
+                ];
+
+            case 'science_energy':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "When a hydroelectric dam produces electricity, what is the primary sequence of energy transformations?",
+                    'options' => [
+                        "Potential energy (stored water) → Kinetic energy (flowing water) → Mechanical energy (turbines) → Electrical energy (generators)",
+                        "Nuclear energy → Thermal energy → Light energy",
+                        "Chemical energy → Sound energy → Kinetic energy",
+                        "Electrical energy → Solar energy → Potential energy",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Follow the water from elevated reservoir through falling water to spinning turbine and generator.",
+                    'explanation' => "High reservoir water holds potential energy, turns to kinetic energy as it falls, turns turbines mechanically, and generates electricity.",
+                ];
+
+            case 'english_concord':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "When two singular subjects are joined by 'and' (such as 'Kwame and Akua'), which verb form must be used?",
+                    'options' => [
+                        "A plural verb (e.g., 'Kwame and Akua are studying in the library')",
+                        "A singular verb (e.g., 'Kwame and Akua is studying in the library')",
+                        "A past participle with no auxiliary verb",
+                        "No verb can connect two compound subjects",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Two subjects joined by 'and' form a compound plural subject.",
+                    'explanation' => "Compound subjects connected with 'and' refer to multiple entities and therefore require a plural verb.",
+                ];
+
+            case 'english_reading':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "How can a student effectively differentiate between the central idea and supporting details in a comprehension passage?",
+                    'options' => [
+                        "The central idea is the primary point being argued, while supporting details provide facts, quotes, examples, and proof",
+                        "Supporting details are always written in bold text",
+                        "The central idea always contains mathematical numbers",
+                        "There is no difference between a central idea and supporting examples",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Ask yourself: 'What is the main takeaway?' vs 'What evidence is used to prove it?'",
+                    'explanation' => "The central idea represents the overarching premise of the text, while details furnish evidence and clarification.",
+                ];
+
+            case 'computing_hardware':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "In computer system design, which component is considered the 'brain' that executes program instructions and performs arithmetic calculations?",
+                    'options' => [
+                        "The Central Processing Unit (CPU)",
+                        "The computer monitor",
+                        "The keyboard",
+                        "The optical mouse",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "The CPU (Central Processing Unit) carries out all instruction decoding and calculations.",
+                    'explanation' => "The Central Processing Unit (CPU) contains the ALU and control unit, executing system instructions.",
+                ];
+
+            case 'computing_safety':
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "What is the safest action when you receive an unexpected email with a link asking you to 'verify your account password immediately'?",
+                    'options' => [
+                        "Do NOT click the link; report the message as a phishing scam and verify through official channels",
+                        "Click the link immediately and submit your current password",
+                        "Forward the email and password to all your friends",
+                        "Reply to the sender with your credit card or mobile money PIN",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Urgent demands for login credentials are the hallmark of phishing scams.",
+                    'explanation' => "Phishing attempts trick victims into surrendering confidential credentials using fake urgency.",
+                ];
+
+            default:
+                return [
+                    'type' => 'multiple-choice',
+                    'prompt' => "To achieve full mastery in \"{$cleanTitle}\", which strategy ensures reliable accuracy?",
+                    'options' => [
+                        "Re-check calculations or reasoning, verify against the core rules, and confirm the result makes logical sense",
+                        "Submit answers immediately without re-reading the question",
+                        "Assume the first computed answer is always right without verification",
+                        "Memorize steps blindly without understanding their underlying reasons",
+                    ],
+                    'correct_answer' => 0,
+                    'hint' => "Think about how experts verify their solutions.",
+                    'explanation' => "Mastery comes from double-checking logic and confirming that your solution satisfies the original question.",
+                ];
+        }
+    }
+
+    /**
      * Generate dynamic Quiz Question 1 based on domain.
      */
     protected function generateQuizQuestion1(string $domain, string $cleanTitle): array
     {
         switch ($domain) {
+            case 'number_rounding_decimals':
+                return [
+                    'question' => "When rounding a decimal numeral, which digit tells you whether to round up or keep the target digit unchanged?",
+                    'options' => [
+                        "The digit immediately to the right of the target place value",
+                        "The whole number part",
+                        "The very last digit in the number regardless of place",
+                        "The first digit after the decimal point",
+                    ],
+                    'correct_answer' => 0,
+                    'explanation' => "The digit directly to the right of the target determines whether to round up (if ≥ 5) or round down (if < 5).",
+                ];
+
+            case 'number_rounding_whole':
+                return [
+                    'question' => "When rounding a whole number to the nearest thousand, which place value do you inspect?",
+                    'options' => [
+                        "The hundreds place",
+                        "The ten-thousands place",
+                        "The tens place",
+                        "The units place",
+                    ],
+                    'correct_answer' => 0,
+                    'explanation' => "To round to the nearest thousand, inspect the hundreds digit immediately to its right.",
+                ];
+
+            case 'number_significant_figures':
+                return [
+                    'question' => "In standard scientific form A × 10ⁿ, what mathematical condition must number A satisfy?",
+                    'options' => [
+                        "1 ≤ A < 10",
+                        "0 < A ≤ 1",
+                        "A can be any number",
+                        "10 ≤ A < 100",
+                    ],
+                    'correct_answer' => 0,
+                    'explanation' => "In scientific notation, A must be greater than or equal to 1 and strictly less than 10.",
+                ];
+
+            case 'number_powers_of_ten':
+                return [
+                    'question' => "What happens to the decimal point when dividing any number by 10² (100)?",
+                    'options' => [
+                        "It moves 2 places to the left",
+                        "It moves 2 places to the right",
+                        "It moves 10 places to the left",
+                        "It stays in the same place",
+                    ],
+                    'correct_answer' => 0,
+                    'explanation' => "Dividing by 10² decreases the magnitude by shifting the decimal 2 positions to the left.",
+                ];
+
+            case 'number_indices_surds':
+                return [
+                    'question' => "According to the laws of indices, what is the value of any non-zero number raised to the power of 0 (a⁰)?",
+                    'options' => [
+                        "1",
+                        "0",
+                        "a",
+                        "Infinity",
+                    ],
+                    'correct_answer' => 0,
+                    'explanation' => "Any non-zero base raised to the zero power equals 1 (a⁰ = 1).",
+                ];
+
+            case 'number_fractions':
+                return [
+                    'question' => "What is the reciprocal of 3/5 that is used when dividing by 3/5?",
+                    'options' => [
+                        "5/3",
+                        "-3/5",
+                        "3/10",
+                        "1",
+                    ],
+                    'correct_answer' => 0,
+                    'explanation' => "The reciprocal is obtained by swapping numerator and denominator: 3/5 becomes 5/3.",
+                ];
+
+            case 'number_percentages':
+                return [
+                    'question' => "What is 25% expressed as a simplified fraction?",
+                    'options' => [
+                        "1/4",
+                        "1/2",
+                        "2/5",
+                        "1/25",
+                    ],
+                    'correct_answer' => 0,
+                    'explanation' => "25% = 25/100 = 1/4.",
+                ];
+
+            case 'number_ratios_proportions':
+                return [
+                    'question' => "In a directly proportional relationship y = kx, what does k represent?",
+                    'options' => [
+                        "The constant of proportionality (unit rate)",
+                        "The y-intercept",
+                        "The sum of x and y",
+                        "The square root of x",
+                    ],
+                    'correct_answer' => 0,
+                    'explanation' => "In y = kx, k is the constant of proportionality representing the constant ratio y / x.",
+                ];
+
+            case 'geometry_bearings':
+                return [
+                    'question' => "The bearing of Town P from Town Q is 075°. What is the back bearing of Town Q from Town P?",
+                    'options' => [
+                        "255° (075° + 180° = 255°)",
+                        "075°",
+                        "105°",
+                        "285°",
+                    ],
+                    'correct_answer' => 0,
+                    'explanation' => "Because 075° is less than 180°, add 180° to obtain the back bearing: 075° + 180° = 255°.",
+                ];
+
             case 'geometry_parallel_angles':
                 return [
                     'question' => "What is the key geometric rule regarding alternate and corresponding angles on parallel lines?",
@@ -1116,7 +2660,7 @@ class LocalLessonSynthesizer
                     'explanation' => "When parallel lines are intersected by a transversal, alternate interior angles ('Z' angles) and corresponding angles ('F' angles) are equal.",
                 ];
 
-            case 'geometry_triangles':
+            case 'geometry_triangles_polygons':
                 return [
                     'question' => "What is the sum of the interior angles in any triangle?",
                     'options' => [
@@ -1129,7 +2673,7 @@ class LocalLessonSynthesizer
                     'explanation' => "The three interior angles of any planar triangle always sum to exactly 180°.",
                 ];
 
-            case 'geometry_angles_measure':
+            case 'geometry_angles_classification':
                 return [
                     'question' => "Which of the following correctly describes an obtuse angle?",
                     'options' => [
@@ -1142,7 +2686,7 @@ class LocalLessonSynthesizer
                     'explanation' => "An obtuse angle has a measure greater than 90° and less than 180°.",
                 ];
 
-            case 'geometry_pythagoras_trig':
+            case 'geometry_pythagoras_trigonometry':
                 return [
                     'question' => "In Pythagoras' theorem (a² + b² = c²), what does c represent?",
                     'options' => [
@@ -1155,7 +2699,7 @@ class LocalLessonSynthesizer
                     'explanation' => "c always represents the hypotenuse, which is the longest side directly opposite the 90° right angle.",
                 ];
 
-            case 'algebra_gradients_linear':
+            case 'algebra_linear_relations_graphs':
                 return [
                     'question' => "In the linear equation y = mx + c, what does c represent?",
                     'options' => [
@@ -1168,7 +2712,7 @@ class LocalLessonSynthesizer
                     'explanation' => "c is the y-intercept, where x = 0 and the line intersects the vertical y-axis.",
                 ];
 
-            case 'algebra_equations':
+            case 'algebra_inequalities':
                 return [
                     'question' => "When solving an inequality, what must you do if you divide or multiply both sides by a negative number?",
                     'options' => [
@@ -1181,7 +2725,7 @@ class LocalLessonSynthesizer
                     'explanation' => "Multiplying or dividing an inequality by a negative number reverses the order of the quantities, requiring the inequality sign to be flipped.",
                 ];
 
-            case 'data_statistics':
+            case 'data_central_tendency':
                 return [
                     'question' => "Which statistical measure represents the most frequently occurring value in a dataset?",
                     'options' => [
@@ -1207,17 +2751,108 @@ class LocalLessonSynthesizer
                     'explanation' => "A completely certain event has a probability of exactly 1.",
                 ];
 
-            case 'computing_ict':
+            case 'science_cells':
                 return [
-                    'question' => "In computer technology, what is the main purpose of studying \"{$cleanTitle}\"?",
+                    'question' => "Which cellular organelle is responsible for cellular respiration and energy (ATP) production?",
                     'options' => [
-                        "To understand how hardware, software, and computational processes work together reliably",
-                        "To bypass standard system security procedures",
-                        "To use electronic devices without adhering to digital safety rules",
-                        "To replace software applications with manual mechanical tools",
+                        "Mitochondrion (Mitochondria)",
+                        "Cell wall",
+                        "Chloroplast",
+                        "Vacuole",
                     ],
                     'correct_answer' => 0,
-                    'explanation' => "Understanding \"{$cleanTitle}\" builds foundational knowledge of digital architecture, processes, and safe technology utilization.",
+                    'explanation' => "Mitochondria are the powerhouses of eukaryotic cells, generating ATP via cellular respiration.",
+                ];
+
+            case 'science_matter':
+                return [
+                    'question' => "What happens to the average kinetic energy of particles in matter as temperature increases?",
+                    'options' => [
+                        "The average kinetic energy increases, causing particles to vibrate or move faster",
+                        "The kinetic energy decreases to zero",
+                        "The particles immediately stop moving",
+                        "The particles lose mass and turn into electrons",
+                    ],
+                    'correct_answer' => 0,
+                    'explanation' => "Temperature is directly proportional to the average kinetic energy of particles in a substance.",
+                ];
+
+            case 'science_energy':
+                return [
+                    'question' => "Which form of mechanical energy is stored in an object due to its elevated position in a gravitational field?",
+                    'options' => [
+                        "Gravitational potential energy",
+                        "Kinetic energy",
+                        "Sound energy",
+                        "Thermal radiation",
+                    ],
+                    'correct_answer' => 0,
+                    'explanation' => "Gravitational potential energy (PE = mgh) is energy stored by virtue of an object's position above ground.",
+                ];
+
+            case 'computing_hardware':
+                return [
+                    'question' => "Which of the following devices is strictly classified as an output peripheral in a computer system?",
+                    'options' => [
+                        "Monitor / Display screen",
+                        "Keyboard",
+                        "Flatbed optical scanner",
+                        "Microphone",
+                    ],
+                    'correct_answer' => 0,
+                    'explanation' => "Monitors display processed output data visually to users.",
+                ];
+
+            case 'computing_safety':
+                return [
+                    'question' => "What is malicious software designed to infiltrate, damage, or steal data from computers called?",
+                    'options' => [
+                        "Malware",
+                        "Hardware",
+                        "Freeware",
+                        "Firmware",
+                    ],
+                    'correct_answer' => 0,
+                    'explanation' => "Malware (malicious software) encompasses viruses, spyware, trojans, and ransomware.",
+                ];
+
+            case 'english_nouns':
+                return [
+                    'question' => "Which type of noun denotes non-physical concepts, feelings, qualities, or ideas (e.g. courage, wisdom, justice)?",
+                    'options' => [
+                        "Abstract noun",
+                        "Proper noun",
+                        "Concrete noun",
+                        "Compound noun",
+                    ],
+                    'correct_answer' => 0,
+                    'explanation' => "Abstract nouns refer to intangible ideas, emotions, or qualities that cannot be experienced with the five senses.",
+                ];
+
+            case 'english_concord':
+                return [
+                    'question' => "Which sentence exhibits correct grammatical subject-verb concord?",
+                    'options' => [
+                        "\"Every student in the classroom has submitted the term project\"",
+                        "\"Every student in the classroom have submitted the term project\"",
+                        "\"The herd of cattle are grazing peacefully\"",
+                        "\"Each of the five cars are blue\"",
+                    ],
+                    'correct_answer' => 0,
+                    'explanation' => "'Every' takes a singular verb ('has submitted'). Prepositional modifiers do not change this singular requirement.",
+                ];
+
+            case 'english_reading':
+                return [
+                    'question' => "What is the primary role of a topic sentence in an expository paragraph?",
+                    'options' => [
+                        "To clearly state the main idea that is developed and supported throughout the paragraph",
+                        "To introduce unrelated interesting facts",
+                        "To provide a complete bibliography of the author's sources",
+                        "To define every obscure word in the paragraph",
+                    ],
+                    'correct_answer' => 0,
+                    'explanation' => "A topic sentence synthesizes the central point of the paragraph, guiding subsequent supporting details.",
                 ];
 
             default:

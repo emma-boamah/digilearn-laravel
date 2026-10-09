@@ -307,7 +307,7 @@ class GuidedLearningService
         $gradeLabel = $indicator->subStrand?->strand?->grade_label;
 
         // 1. Score existing DB videos by keyword relevance (must match specific topic)
-        $dbResults = $this->scoreDbVideos($keywords, $primaryKeywords, $subject, $gradeLabel);
+        $dbResults = $this->scoreDbVideos($indicator, $keywords, $primaryKeywords, $subject, $gradeLabel);
 
         if ($dbResults->isNotEmpty()) {
             return $dbResults;
@@ -320,17 +320,33 @@ class GuidedLearningService
     /**
      * Score all DB videos against topic keywords, return only genuinely relevant ones.
      */
-    private function scoreDbVideos(array $keywords, array $primaryKeywords, Subject $subject, ?string $gradeLabel): \Illuminate\Support\Collection
+    private function scoreDbVideos(CurriculumIndicator $indicator, array $keywords, array $primaryKeywords, Subject $subject, ?string $gradeLabel): \Illuminate\Support\Collection
     {
         // STRICT: Only look for videos belonging to this exact subject!
         $candidates = Video::where('subject_id', $subject->id)->get();
+
+        $strandTitle = strtoupper($indicator->subStrand?->strand?->title ?? '');
+        $isAlgebra = str_contains($strandTitle, 'ALGEBRA');
+        $isGeometry = str_contains($strandTitle, 'GEOMETRY');
+        $isData = str_contains($strandTitle, 'DATA') || str_contains($strandTitle, 'STATISTICS');
+        $isNumber = str_contains($strandTitle, 'NUMBER') || str_contains($strandTitle, 'NUMERACY');
 
         $scored = [];
         foreach ($candidates as $video) {
             $videoText = $video->title . ' ' . ($video->description ?? '') . ' ' . ($video->unit_name ?? '') . ' ' . ($video->agent_topic ?? '');
 
+            // Cross-strand anti-domain filter: NEVER recommend videos from completely conflicting math branches!
+            if ($isAlgebra && preg_match('/\b(angle|angles|parallel lines|transversal|triangle|triangles|bearing|bearings|rounding decimals|significant figures|place value|surds|standard form|geometry)\b/i', $videoText)) {
+                continue;
+            }
+            if ($isGeometry && preg_match('/\b(algebra|factoris|factoriz|linear equation|inequalit|surd|surds|rounding decimals|place value|venn|probability|stem and leaf)\b/i', $videoText)) {
+                continue;
+            }
+            if ($isData && preg_match('/\b(geometry|angle|angles|bearing|bearings|pythagor|trigonometr)\b/i', $videoText)) {
+                continue;
+            }
+
             // STRICT: If we have primary topic keywords, the video MUST match at least one!
-            // A place value video must NEVER match an angles, algebra, or geometry topic.
             if (!empty($primaryKeywords)) {
                 $primaryScore = $this->scoreContentRelevance($videoText, $primaryKeywords);
                 if ($primaryScore < 1) {
@@ -384,9 +400,19 @@ class GuidedLearningService
                 return collect();
             }
 
-            // Build a precise educational search query
-            $cleanGrade = $gradeLabel ? preg_replace('/[()]/', '', $gradeLabel) : 'JHS';
-            $searchQuery = trim($indicator->student_title . ' ' . $subject->name . ' ' . $cleanGrade);
+            // Build a high-precision educational query: topic + substrand + subject + grade
+            $cleanGrade = $gradeLabel ? preg_replace('/[()]/', '', $gradeLabel) : 'Basic 7';
+            $subStrandName = trim(preg_replace('/^SUB-STRAND\s*\d*[:\-]?\s*/i', '', $indicator->subStrand?->title ?? ''));
+
+            $searchTerms = [];
+            $searchTerms[] = $indicator->student_title;
+            if (!empty($subStrandName) && stripos($indicator->student_title, $subStrandName) === false) {
+                $searchTerms[] = $subStrandName;
+            }
+            $searchTerms[] = $subject->name;
+            $searchTerms[] = $cleanGrade;
+
+            $searchQuery = implode(' ', array_filter($searchTerms));
 
             // Search YouTube with a short timeout (never hang)
             $response = \Illuminate\Support\Facades\Http::timeout(10)
@@ -550,6 +576,13 @@ class GuidedLearningService
             'constructing', 'find', 'finding', 'table', 'tables', 'part', 'parts',
             'knowledge', 'real', 'life', 'problems', 'problem', 'state', 'stating',
             'measure', 'measures',
+            'how', 'one', 'two', 'three', 'each', 'every', 'all', 'any', 'without', 'within',
+            'between', 'among', 'across', 'through', 'into', 'onto', 'upon', 'about', 'above',
+            'below', 'around', 'presented', 'presentation', 'material', 'materials', 'symbolic',
+            'concrete', 'abstract', 'preceding', 'succeeding', 'following', 'differ', 'differs',
+            'differing', 'different', 'element', 'elements', 'item', 'items', 'thing', 'things',
+            'way', 'ways', 'step', 'steps', 'type', 'types', 'kind', 'kinds', 'such', 'etc',
+            'also', 'just', 'well', 'like', 'same', 'both', 'another', 'many', 'much', 'some',
         ];
     }
 

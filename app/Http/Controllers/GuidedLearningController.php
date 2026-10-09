@@ -354,15 +354,45 @@ class GuidedLearningController extends Controller
 
         $segmentId = (int) $request->input('segment_id');
         $studentAnswer = $request->input('answer');
+        $isReadingCompleted = $request->boolean('reading_completed');
 
         $segments = app(\App\Services\StudentLessonService::class)->getOrGenerateSegments($indicatorModel);
         $targetSegment = collect($segments)->firstWhere('id', $segmentId);
 
-        if (!$targetSegment || empty($targetSegment['challenge'])) {
+        if (!$targetSegment) {
             return response()->json([
                 'success' => false,
-                'message' => 'Segment challenge not found.',
+                'message' => 'Segment not found.',
             ], 404);
+        }
+
+        $totalSegments = count($segments);
+        $completedSegments = (array) $request->input('completed_segments', []);
+
+        // If this segment has no challenge (reading/intuition only) or was acknowledged directly
+        if (empty($targetSegment['challenge']) || $isReadingCompleted) {
+            if (!in_array($segmentId, $completedSegments)) {
+                $completedSegments[] = $segmentId;
+            }
+            $allSegmentsCompleted = count($completedSegments) >= $totalSegments;
+            if ($allSegmentsCompleted && $user) {
+                $progress = GuidedLearningProgress::firstOrCreate(
+                    ['user_id' => $user->id, 'curriculum_indicator_id' => $indicatorModel->id],
+                    ['status' => 'in_progress']
+                );
+                $progress->status = 'completed';
+                $progress->completed_at = now();
+                $progress->quiz_passed_at = now();
+                $progress->quiz_score = 100;
+                $progress->save();
+            }
+
+            return response()->json([
+                'success' => true,
+                'is_correct' => true,
+                'explanation' => 'Section completed successfully.',
+                'all_completed' => $allSegmentsCompleted,
+            ]);
         }
 
         $challenge = $targetSegment['challenge'];
@@ -390,7 +420,7 @@ class GuidedLearningController extends Controller
 
         // If all segments solved, mark progress completed!
         $nextUrl = null;
-        if ($allSegmentsCompleted) {
+        if ($allSegmentsCompleted && $user) {
             $progress = GuidedLearningProgress::firstOrCreate(
                 ['user_id' => $user->id, 'curriculum_indicator_id' => $indicatorModel->id],
                 ['status' => 'in_progress']
