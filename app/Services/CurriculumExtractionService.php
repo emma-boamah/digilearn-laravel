@@ -35,9 +35,19 @@ class CurriculumExtractionService
      */
     public function extractCurriculum(Curriculum $curriculum, string $mode = 'auto'): array
     {
-        if ($mode === 'local') {
-            Log::info("Curriculum ID {$curriculum->id}: Directly running deterministic local parser as requested.");
-            return $this->localParser->parse($curriculum);
+        if ($mode === 'local' || $mode === 'auto') {
+            Log::info("Curriculum ID {$curriculum->id}: Running high-precision local coordinate parser.");
+            try {
+                $result = $this->localParser->parse($curriculum);
+                if (!empty($result['strands'])) {
+                    return $result;
+                }
+            } catch (\Throwable $e) {
+                Log::warning("Curriculum ID {$curriculum->id}: Local parser error: {$e->getMessage()}. Falling back to AI pipeline.");
+                if ($mode === 'local') {
+                    throw $e;
+                }
+            }
         }
 
         $curriculum->update([
