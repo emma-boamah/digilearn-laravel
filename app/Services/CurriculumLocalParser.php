@@ -27,6 +27,17 @@ class CurriculumLocalParser
     {
         Log::info("CurriculumLocalParser: Starting coordinate-based parse for Curriculum ID {$curriculum->id}");
 
+        if (!function_exists('exec')) {
+            throw new Exception("Local extraction requires the 'exec()' function in PHP, but it is currently disabled in your server's php.ini (disable_functions). Please remove exec from disable_functions in php.ini.");
+        }
+
+        $hasPdftohtml = (bool) self::getBinaryPath('pdftohtml');
+        $hasPdftotext = (bool) self::getBinaryPath('pdftotext');
+
+        if (!$hasPdftohtml && !$hasPdftotext) {
+            throw new Exception("Local extraction engine requires 'poppler-utils' to be installed on your production server. Please run: sudo apt-get update && sudo apt-get install -y poppler-utils");
+        }
+
         $fullPath = Storage::disk('public')->path($curriculum->file_path);
         if (!file_exists($fullPath)) {
             $fullPath = storage_path('app/public/' . $curriculum->file_path);
@@ -55,6 +66,9 @@ class CurriculumLocalParser
         }
 
         if (empty($parsedStructure['strands'])) {
+            if (!$hasPdftohtml) {
+                throw new Exception("High-precision parsing requires 'pdftohtml' (poppler-utils). Please install it on your server: sudo apt-get update && sudo apt-get install -y poppler-utils");
+            }
             throw new Exception("Could not identify standard curriculum strands or indicators in this document.");
         }
 
@@ -235,12 +249,55 @@ class CurriculumLocalParser
     }
 
     /**
+     * Locate full path of a system binary across common locations and PATH.
+     */
+    public static function getBinaryPath(string $binary): ?string
+    {
+        $commonPaths = [
+            "/usr/bin/{$binary}",
+            "/usr/local/bin/{$binary}",
+            "/bin/{$binary}",
+        ];
+
+        foreach ($commonPaths as $path) {
+            if (file_exists($path) && is_executable($path)) {
+                return $path;
+            }
+        }
+
+        if (function_exists('exec')) {
+            $output = [];
+            $ret = 0;
+            @exec("which {$binary} 2>/dev/null", $output, $ret);
+            if ($ret === 0 && !empty($output[0])) {
+                return trim($output[0]);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if the host server supports local extraction.
+     */
+    public static function isSupported(): bool
+    {
+        return function_exists('exec') && (bool) self::getBinaryPath('pdftohtml');
+    }
+
+    /**
      * High-Precision XML Coordinate Extractor using pdftohtml.
      */
     public function extractViaCoordinatesXml(string $filePath, Curriculum $curriculum): array
     {
+        $bin = self::getBinaryPath('pdftohtml');
+        if (!$bin) {
+            Log::warning("CurriculumLocalParser: pdftohtml binary not found on server.");
+            return ['strands' => []];
+        }
+
         $escaped = escapeshellarg($filePath);
-        $cmd = "pdftohtml -xml -stdout {$escaped} 2>/dev/null";
+        $cmd = "{$bin} -xml -stdout {$escaped} 2>/dev/null";
 
         $output = [];
         $returnVar = 0;

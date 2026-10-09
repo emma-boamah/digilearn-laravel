@@ -106,6 +106,24 @@
         </div>
     </div>
 
+    @php
+        $isLocalEngineAvailable = \App\Services\CurriculumLocalParser::isSupported();
+    @endphp
+
+    @if(!$isLocalEngineAvailable)
+        <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-3 shadow-sm">
+            <i class="fas fa-triangle-exclamation text-amber-600 text-base mt-0.5"></i>
+            <div>
+                <strong class="font-bold text-sm block mb-0.5">Production Server Notice: 'poppler-utils' not detected</strong>
+                <p class="text-amber-800 leading-relaxed">
+                    The zero-token Local Engine requires the <code>poppler-utils</code> Linux package (<code>pdftohtml</code>) to parse digital PDFs.
+                    To enable 100% precision local extraction without Gemini tokens, run this command on your server terminal:
+                </p>
+                <code class="block mt-1.5 p-2.5 bg-amber-100/70 border border-amber-300/60 rounded-xl font-mono text-[11px] select-all font-semibold">sudo apt-get update && sudo apt-get install -y poppler-utils</code>
+            </div>
+        </div>
+    @endif
+
     <!-- Processing Alert Banner (Shown during active background extraction) -->
     <div x-show="status === 'processing' || status === 'pending'" x-cloak class="p-5 rounded-2xl bg-blue-50/90 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100 shadow-sm">
         <div class="flex items-start sm:items-center justify-between gap-4">
