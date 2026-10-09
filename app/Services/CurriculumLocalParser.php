@@ -318,9 +318,10 @@ class CurriculumLocalParser
         // Negative lookbehind ensures we NEVER match "Sub-strand" as "Strand"
         $strandRegex = '/(?<!sub[-\s])\bstrand\s+(\d+)\s*[:.\-]?\s*(.*)/i';
         $substrandRegex = '/\bSub[-\s]?strand\s+(\d+)\s*[:.\-]?\s*(.*)/i';
-        $stdRegex = '/\b(B\d+\.\d+\.\d+\.\d+)\b(.*)/i';
-        // In Column 2: match 5-part B7.1.1.1.1, 4-part typo B7.1.1.2, or typo B71.2.2.2
-        $indRegex = '/^(B\d+(?:\.\d+){2,4}|B\d{2,}\.\d+(?:\.\d+)+)\b\s*(.*)/i';
+        // Support standard B7.1.1.1 as well as B7/JHS1.1.1.1
+        $stdRegex = '/\b(B\d+(?:\/JHS\d+)?(?:\.\d+){3})\b[:.\-]?\s*(.*)/i';
+        // Support standard B7.1.1.1.1, B7/JHS1.1.1.1.1, typo 4-part B7.1.1.2, typo B71.2.2.2, or B9/JHS3.5.1.14
+        $indRegex = '/^(B\d+(?:\/JHS\d+)?(?:\.\d+){2,4}|B\d{2,}\.\d+(?:\.\d+)+)\b[:.\-]?\s*(.*)/i';
 
         // Discovered titles
         $strandTitles = [
@@ -339,10 +340,27 @@ class CurriculumLocalParser
 
         $curStrandNum = 1;
 
+        // Determine the last page containing indicators or standards to prevent parsing panel members / bibliography
+        $lastTablePage = count($xml->page);
+        $foundAnyTablePage = 0;
+        foreach ($xml->page as $page) {
+            $pNum = (int) $page['number'];
+            foreach ($page->text as $t) {
+                $val = trim(strip_tags($t->asXML()));
+                if (preg_match($indRegex, $val) || preg_match($stdRegex, $val)) {
+                    $foundAnyTablePage = max($foundAnyTablePage, $pNum);
+                }
+            }
+        }
+        if ($foundAnyTablePage > 0) {
+            $lastTablePage = $foundAnyTablePage;
+        }
+
         // Pass 1: Build comprehensive Content Standards map from Column 1 across all pages
         $standardsMap = [];
         $activeStdCode = null;
         foreach ($xml->page as $page) {
+            if ((int) $page['number'] > $lastTablePage) continue;
             $c1Texts = [];
             foreach ($page->text as $t) {
                 $left = (int) $t['left'];
@@ -358,13 +376,15 @@ class CurriculumLocalParser
 
             foreach ($c1Texts as $item) {
                 $v = $item['val'];
-                if (preg_match('/^(B\d+\.\d+\.\d+\.\d+)\b\s*(.*)/i', $v, $m)) {
-                    $activeStdCode = $m[1];
+                if (preg_match($stdRegex, $v, $m)) {
+                    $rawStdCode = $m[1];
+                    $activeStdCode = preg_replace('/\/JHS\d+/i', '', $rawStdCode);
                     if (!isset($standardsMap[$activeStdCode])) {
-                        $standardsMap[$activeStdCode] = $m[1] . (trim($m[2]) !== '' ? ' ' . trim($m[2]) : '');
+                        $desc = trim(preg_replace($stdRegex, '', $v));
+                        $standardsMap[$activeStdCode] = $activeStdCode . ($desc !== '' ? ': ' . $desc : '');
                     }
                 } elseif ($activeStdCode && isset($standardsMap[$activeStdCode])) {
-                    if (!str_contains($standardsMap[$activeStdCode], $v)) {
+                    if (!str_contains($standardsMap[$activeStdCode], $v) && !str_contains($v, 'NaCCA') && !str_contains($v, 'Ministry of Education')) {
                         $standardsMap[$activeStdCode] .= ' ' . $v;
                     }
                 }
@@ -372,6 +392,8 @@ class CurriculumLocalParser
         }
 
         foreach ($xml->page as $page) {
+            if ((int) $page['number'] > $lastTablePage) continue;
+
             $texts = [];
             foreach ($page->text as $t) {
                 // Must use strip_tags to capture text inside <b> and <i> tags!
@@ -393,6 +415,17 @@ class CurriculumLocalParser
                 }
                 return $a['top'] <=> $b['top'];
             });
+
+            // Detect Core Competencies Column 3 boundary for this page
+            $coreCompThreshold = 800;
+            foreach ($texts as $item) {
+                if ($item['top'] < 160 && preg_match('/CORE COMPETENCIES/i', $item['val'])) {
+                    // For documents like English where header is at 858 but text starts at 804,
+                    // clamp threshold so it doesn't overshoot into Column 3 text
+                    $coreCompThreshold = min(800, max(750, $item['left'] - 60));
+                    break;
+                }
+            }
 
             // 1. Scan for Strand and Sub-strand headers (typically top < 160)
             foreach ($texts as $item) {
@@ -421,35 +454,48 @@ class CurriculumLocalParser
 
             // 2. Scan Columns:
             // Column 1: Content Standard (left < 280)
-            // Column 2: Indicators and Exemplars (280 <= left < 910)
-            // Column 3: Core Competencies (left >= 910)
+            // Column 2: Indicators and Exemplars (280 <= left < $coreCompThreshold)
+            // Column 3: Core Competencies (left >= $coreCompThreshold)
             foreach ($texts as $item) {
                 $val = $item['val'];
                 $left = $item['left'];
                 $top = $item['top'];
 
-                if ($val === 'CONTENT STANDARD' || $val === 'INDICATORS AND EXEMPLARS' || $val === 'CORE COMPETENCIES') {
+                if (preg_match('/^(CONTENT STANDARD|INDICATORS AND EXEMPLAR|CORE COMPETENCIES|===|\d+$)/i', $val)) {
                     continue;
                 }
 
                 // Column 1: Content Standards
                 if ($left < 280) {
                     if (preg_match($stdRegex, $val, $mStd)) {
-                        $curStdCode = $mStd[1];
+                        $curStdCode = preg_replace('/\/JHS\d+/i', '', $mStd[1]);
                         $curStdTitle = trim($mStd[2]);
                     } elseif ($curStdCode && strlen($val) > 1 && $top > 140) {
-                        $curStdTitle .= ' ' . $val;
+                        if (!str_contains($val, 'NaCCA') && !str_contains($val, 'Ministry of Education')) {
+                            $curStdTitle .= ' ' . $val;
+                        }
                     }
                 }
                 // Column 2: Indicators and Exemplars
-                elseif ($left >= 280 && $left < 910) {
+                elseif ($left >= 280 && $left < $coreCompThreshold) {
                     if (preg_match($indRegex, $val, $mInd)) {
                         $rawCode = $mInd[1];
                         $rest = trim($mInd[2]);
 
+                        // Normalize /JHS1 suffix: B7/JHS1.1.1.1.1 -> B7.1.1.1.1
+                        $code = preg_replace('/\/JHS\d+/i', '', $rawCode);
+
+                        // Normalize publisher typos:
+                        // B982.1.1.1 (Computing) -> B8.2.1.1.1
+                        if (preg_match('/^B98(\d)\.(\d+)\.(\d+)\.(\d+)(.*)/', $code, $tm)) {
+                            $code = "B8.{$tm[1]}.{$tm[2]}.{$tm[3]}.{$tm[4]}" . $tm[5];
+                        }
+                        // Normalize missing dot typo e.g. B9.5.1.14 -> B9.5.1.1.4
+                        elseif (preg_match('/^B(\d+)\.(\d+)\.(\d+)\.(\d)(\d+)$/', $code, $tm)) {
+                            $code = "B{$tm[1]}.{$tm[2]}.{$tm[3]}.{$tm[4]}.{$tm[5]}";
+                        }
                         // Normalize typo codes like B71.2.2.2 -> B7.1.2.2.2
-                        $code = $rawCode;
-                        if (preg_match('/^B(\d)(\d)\.(\d+)\.(\d+)(.*)/', $rawCode, $tm)) {
+                        elseif (preg_match('/^B(\d)(\d)\.(\d+)\.(\d+)(.*)/', $code, $tm)) {
                             $code = "B{$tm[1]}.{$tm[2]}.{$tm[3]}.{$tm[4]}" . $tm[5];
                         }
 
@@ -459,7 +505,7 @@ class CurriculumLocalParser
                         $subNum = (int) ($parts[2] ?? 1);
                         $stdCode = implode('.', array_slice($parts, 0, 4));
 
-                        $contentStandard = $standardsMap[$stdCode] ?? ($curStdCode && isset($standardsMap[$curStdCode]) ? $standardsMap[$curStdCode] : ($curStdCode ? trim("{$curStdCode} {$curStdTitle}") : null));
+                        $contentStandard = $standardsMap[$stdCode] ?? ($curStdCode && isset($standardsMap[$curStdCode]) ? $standardsMap[$curStdCode] : ($curStdCode ? trim("{$curStdCode}: {$curStdTitle}") : null));
 
                         $activeCode = $code;
                         $allIndicators[$code] = [
@@ -484,9 +530,11 @@ class CurriculumLocalParser
                     }
                 }
                 // Column 3: Core Competencies
-                elseif ($left >= 910) {
+                elseif ($left >= $coreCompThreshold) {
                     if ($activeCode && isset($allIndicators[$activeCode]) && $top > 140) {
-                        $allIndicators[$activeCode]['core_competencies'][] = $val;
+                        if (!preg_match('/^(CORE COMPETENCIES|SUBJECT SPECIFIC PRACTICES)/i', $val) && !str_contains($val, 'NaCCA')) {
+                            $allIndicators[$activeCode]['core_competencies'][] = $val;
+                        }
                     }
                 }
             }
@@ -577,32 +625,39 @@ class CurriculumLocalParser
      */
     public function extractStructureFromPages(array $pages, Curriculum $curriculum): array
     {
-        $indRegex = '/\b(B[1-9]\.(\d+)\.(\d+)\.\d+\.\d+)\s+([A-Za-z].*?)(?:\s{4,}|$)/';
-        $stdRegex = '/\b(B[1-9]\.(\d+)\.(\d+)\.\d+)\s+([A-Za-z].*?)(?:\s{4,}|$)/';
+        $indRegex = '/\b(B\d+(?:\/JHS\d+)?(?:\.\d+){2,4}|B\d{2,}\.\d+(?:\.\d+)+)\s+([A-Za-z].*?)(?:\s{4,}|$)/';
+        $stdRegex = '/\b(B\d+(?:\/JHS\d+)?(?:\.\d+){3})\s+([A-Za-z].*?)(?:\s{4,}|$)/';
 
         $tree = [];
         $currentCode = null;
         $currentIndicatorRef = null;
 
         foreach ($pages as $p) {
-            $lines = explode("
-", $p['normalized_text'] ?? $p['raw_text'] ?? '');
+            $lines = explode("\n", $p['normalized_text'] ?? $p['raw_text'] ?? '');
 
             foreach ($lines as $line) {
                 $trimmed = trim($line);
                 if (empty($trimmed)) continue;
 
                 if (preg_match($indRegex, $line, $m)) {
-                    $code = $m[1];
-                    $title = trim($m[4]);
+                    $rawCode = $m[1];
+                    $title = trim($m[2]);
 
-                    $gradeNum = (int) substr($code, 1, strpos($code, '.') - 1);
+                    $code = preg_replace('/\/JHS\d+/i', '', $rawCode);
+                    if (preg_match('/^B(\d+)\.(\d+)\.(\d+)\.(\d)(\d+)$/', $code, $tm)) {
+                        $code = "B{$tm[1]}.{$tm[2]}.{$tm[3]}.{$tm[4]}.{$tm[5]}";
+                    } elseif (preg_match('/^B(\d)(\d)\.(\d+)\.(\d+)(.*)/', $code, $tm)) {
+                        $code = "B{$tm[1]}.{$tm[2]}.{$tm[3]}.{$tm[4]}" . $tm[5];
+                    }
+
+                    $parts = explode('.', $code);
+                    $gradeNum = (int) substr($parts[0], 1);
                     $gradeLabel = $gradeNum <= 6 
                         ? "Basic {$gradeNum}"
                         : "Basic {$gradeNum} (JHS " . ($gradeNum - 6) . ")";
 
-                    $strandNum = (int) $m[2];
-                    $subNum = (int) $m[3];
+                    $strandNum = (int) ($parts[1] ?? 1);
+                    $subNum = (int) ($parts[2] ?? 1);
 
                     $strandKey = "{$gradeLabel}-{$strandNum}";
                     if (!isset($tree[$strandKey])) {
