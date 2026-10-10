@@ -340,11 +340,25 @@ class CurriculumLocalParser
 
         $curStrandNum = 1;
 
+        // Determine the first page containing actual table headers (skips Table of Contents and Intro structure tables)
+        $firstTablePage = 1;
+        foreach ($xml->page as $p) {
+            foreach ($p->text as $t) {
+                $val = trim(strip_tags($t->asXML()));
+                $top = (int) $t['top'];
+                if ($top < 180 && preg_match('/^INDICATORS?\s+AND\s+EXEMPLAR/i', $val)) {
+                    $firstTablePage = (int) $p['number'];
+                    break 2;
+                }
+            }
+        }
+
         // Determine the last page containing indicators or standards to prevent parsing panel members / bibliography
         $lastTablePage = count($xml->page);
         $foundAnyTablePage = 0;
         foreach ($xml->page as $page) {
             $pNum = (int) $page['number'];
+            if ($pNum < $firstTablePage) continue;
             foreach ($page->text as $t) {
                 $val = trim(strip_tags($t->asXML()));
                 if (preg_match($indRegex, $val) || preg_match($stdRegex, $val)) {
@@ -360,7 +374,8 @@ class CurriculumLocalParser
         $standardsMap = [];
         $activeStdCode = null;
         foreach ($xml->page as $page) {
-            if ((int) $page['number'] > $lastTablePage) continue;
+            $pNum = (int) $page['number'];
+            if ($pNum < $firstTablePage || $pNum > $lastTablePage) continue;
             $c1Texts = [];
             foreach ($page->text as $t) {
                 $left = (int) $t['left'];
@@ -392,7 +407,8 @@ class CurriculumLocalParser
         }
 
         foreach ($xml->page as $page) {
-            if ((int) $page['number'] > $lastTablePage) continue;
+            $pNum = (int) $page['number'];
+            if ($pNum < $firstTablePage || $pNum > $lastTablePage) continue;
 
             $texts = [];
             foreach ($page->text as $t) {
@@ -480,7 +496,7 @@ class CurriculumLocalParser
                 elseif ($left >= 280 && $left < $coreCompThreshold) {
                     if (preg_match($indRegex, $val, $mInd)) {
                         $rawCode = $mInd[1];
-                        $rest = trim($mInd[2]);
+                        $rest = ltrim(trim($mInd[2]), ":.- \t");
 
                         // Normalize /JHS1 suffix: B7/JHS1.1.1.1.1 -> B7.1.1.1.1
                         $code = preg_replace('/\/JHS\d+/i', '', $rawCode);
@@ -525,7 +541,10 @@ class CurriculumLocalParser
                             $cleanVal = preg_replace('/^E\.g\.[,\s]*(\d+)[\.:]?\s*/i', 'E.g. $1: ', $val);
                             $allIndicators[$activeCode]['exemplars'][] = $cleanVal;
                         } elseif (!preg_match($strandRegex, $val) && !preg_match($substrandRegex, $val) && !preg_match($stdRegex, $val)) {
-                            $allIndicators[$activeCode]['title_parts'][] = $val;
+                            $cleanVal = ltrim(trim($val), ":.- \t");
+                            if ($cleanVal !== '') {
+                                $allIndicators[$activeCode]['title_parts'][] = $cleanVal;
+                            }
                         }
                     }
                 }
