@@ -14,7 +14,7 @@ use Exception;
 
 class CurriculumLocalParser
 {
-    public const VERSION = 'v2.0-coordinate-engine';
+    public const VERSION = 'v2.1-coordinate-engine-shs';
 
     public function __construct(
         protected PdfTextExtractionService $pdfExtractor
@@ -307,8 +307,7 @@ class CurriculumLocalParser
             return ['strands' => []];
         }
 
-        $xmlString = implode("
-", $output);
+        $xmlString = implode("\n", $output);
         $xml = @simplexml_load_string($xmlString);
 
         if (!$xml || !isset($xml->page)) {
@@ -316,19 +315,21 @@ class CurriculumLocalParser
         }
 
         // Negative lookbehind ensures we NEVER match "Sub-strand" as "Strand"
-        $strandRegex = '/(?<!sub[-\s])\bstrand\s+(\d+)\s*[:.\-]?\s*(.*)/i';
-        $substrandRegex = '/\bSub[-\s]?strand\s+(\d+)\s*[:.\-]?\s*(.*)/i';
-        // Support standard B7.1.1.1 as well as B7/JHS1.1.1.1
-        $stdRegex = '/\b(B\d+(?:\/JHS\d+)?(?:\.\d+){3})\b[:.\-]?\s*(.*)/i';
-        // Support standard B7.1.1.1.1, B7/JHS1.1.1.1.1, typo 4-part B7.1.1.2, typo B71.2.2.2, or B9/JHS3.5.1.14
-        $indRegex = '/^(B\d+(?:\/JHS\d+)?(?:\.\d+){2,4}|B\d{2,}\.\d+(?:\.\d+)+)\b[:.\-]?\s*(.*)/i';
+        $strandRegex = '/(?<!sub[-\s])\bstrand\s*[:.\-]?\s*(\d+)\s*[:.\-]?\s*(.*)/i';
+        $substrandRegex = '/\bSub[-\s]?strand\s*[:.\-]?\s*(\d+)\s*[:.\-]?\s*(.*)/i';
+        // Support standard B7.1.1.1 as well as B7/JHS1.1.1.1, and SHS 1.1.1.CS.1
+        $stdRegex = '/\b(B\d+(?:\/JHS\d+)?(?:\.\d+){3}|\d+\.\d+\.\d+\.CS\.\d+)\b[:.\-]?\s*(.*)/i';
+        // Support standard B7.1.1.1.1, B7/JHS1.1.1.1.1, typo 4-part B7.1.1.2, typo B71.2.2.2, B9/JHS3.5.1.14, and SHS 1.1.1.LI.1 / 1.1.1.L1.1
+        $indRegex = '/^(B\d+(?:\/JHS\d+)?(?:\.\d+){2,4}|B\d{2,}\.\d+(?:\.\d+)+|\d+\.\d+\.\d+\.L[I1]\.\d+)\b[:.\-]?\s*(.*)/i';
 
-        // Discovered titles
+        // Discovered titles with sensible defaults for JHS & SHS
         $strandTitles = [
-            1 => 'NUMBER',
-            2 => 'ALGEBRA',
-            3 => 'GEOMETRY AND MEASUREMENT',
-            4 => 'HANDLING DATA',
+            1 => 'NUMBER / IDENTITY, SIGNIFICANCE AND PURPOSE',
+            2 => 'ALGEBRA / ENVIRONMENT AND SUSTAINABILITY',
+            3 => 'GEOMETRY AND MEASUREMENT / LAW AND ORDER IN THE SOCIETY',
+            4 => 'HANDLING DATA / NATIONALISM AND NATIONHOOD',
+            5 => 'ETHICS AND HUMAN DEVELOPMENT',
+            6 => 'PRODUCTION, EXCHANGE AND CREATIVITY',
         ];
         $substrandTitles = [];
 
@@ -346,7 +347,7 @@ class CurriculumLocalParser
             foreach ($p->text as $t) {
                 $val = trim(strip_tags($t->asXML()));
                 $top = (int) $t['top'];
-                if ($top < 180 && preg_match('/^INDICATORS?\s+AND\s+EXEMPLAR/i', $val)) {
+                if ($top < 180 && preg_match('/^(?:Learning\s+)?INDICATORS?\s+AND\s+(?:PEDAGOGICAL\s+)?EXEMPLAR/i', $val)) {
                     $firstTablePage = (int) $p['number'];
                     break 2;
                 }
@@ -359,7 +360,10 @@ class CurriculumLocalParser
         foreach ($xml->page as $page) {
             $pNum = (int) $page['number'];
             if ($pNum < $firstTablePage) continue;
+            $pageWidth = (int) ($page['width'] ?? 0);
             foreach ($page->text as $t) {
+                $left = (int) $t['left'];
+                if ($left < 0 || ($pageWidth > 0 && $left >= $pageWidth)) continue;
                 $val = trim(strip_tags($t->asXML()));
                 if (preg_match($indRegex, $val) || preg_match($stdRegex, $val)) {
                     $foundAnyTablePage = max($foundAnyTablePage, $pNum);
@@ -371,36 +375,90 @@ class CurriculumLocalParser
         }
 
         // Pass 1: Build comprehensive Content Standards map from Column 1 across all pages
+        // and discover Strand / Sub-strand titles
         $standardsMap = [];
         $activeStdCode = null;
         foreach ($xml->page as $page) {
             $pNum = (int) $page['number'];
-            if ($pNum < $firstTablePage || $pNum > $lastTablePage) continue;
+            $pageWidth = (int) ($page['width'] ?? 0);
+
+            // Group texts by horizontal line (within 4px) to extract multi-tag strand/sub-strand headers
+            $lines = [];
             $c1Texts = [];
             foreach ($page->text as $t) {
                 $left = (int) $t['left'];
+                if ($left < 0 || ($pageWidth > 0 && $left >= $pageWidth)) continue;
+                $top = (int) $t['top'];
                 $val = trim(strip_tags($t->asXML()));
-                if ($left < 280 && $val !== '' && !preg_match('/^(CONTENT STANDARD|===|\d+$)/i', $val)) {
-                    $c1Texts[] = [
-                        'top' => (int) $t['top'],
-                        'val' => $val,
-                    ];
+                if ($val === '') continue;
+
+                $foundTop = null;
+                foreach (array_keys($lines) as $lt) {
+                    if (abs($lt - $top) <= 4) {
+                        $foundTop = $lt;
+                        break;
+                    }
+                }
+                if ($foundTop === null) {
+                    $foundTop = $top;
+                    $lines[$foundTop] = [];
+                }
+                $lines[$foundTop][] = ['left' => $left, 'val' => $val];
+
+                if ($pNum >= $firstTablePage && $pNum <= $lastTablePage) {
+                    if ($left < 240 && !preg_match('/^(CONTENT STANDARD|===|\d+$|Content Standards)/i', $val)) {
+                        $c1Texts[] = [
+                            'top' => $top,
+                            'val' => $val,
+                        ];
+                    }
                 }
             }
-            usort($c1Texts, fn($a, $b) => $a['top'] <=> $b['top']);
 
-            foreach ($c1Texts as $item) {
-                $v = $item['val'];
-                if (preg_match($stdRegex, $v, $m)) {
-                    $rawStdCode = $m[1];
-                    $activeStdCode = preg_replace('/\/JHS\d+/i', '', $rawStdCode);
-                    if (!isset($standardsMap[$activeStdCode])) {
-                        $desc = trim(preg_replace($stdRegex, '', $v));
-                        $standardsMap[$activeStdCode] = $activeStdCode . ($desc !== '' ? ': ' . $desc : '');
+            // Discover Strand and Sub-strand titles from assembled lines (across all pages)
+            ksort($lines);
+            foreach ($lines as $lineTop => $lineItems) {
+                usort($lineItems, fn($a, $b) => $a['left'] <=> $b['left']);
+                $lineStr = implode(' ', array_column($lineItems, 'val'));
+
+                if (preg_match($strandRegex, $lineStr, $sm)) {
+                    $sNum = (int) $sm[1];
+                    $sName = trim(preg_replace('/\.{2,}.*$/', '', $sm[2]));
+                    $sName = trim(preg_replace('/\s*(?:STRAND|SUB-STRAND|YEAR).*$/i', '', $sName));
+                    $sName = trim(preg_replace('/\s*\d+\s*$/', '', $sName));
+                    if (strlen($sName) > 1) {
+                        $strandTitles[$sNum] = $sName;
+                        $curStrandNum = $sNum;
                     }
-                } elseif ($activeStdCode && isset($standardsMap[$activeStdCode])) {
-                    if (!str_contains($standardsMap[$activeStdCode], $v) && !str_contains($v, 'NaCCA') && !str_contains($v, 'Ministry of Education')) {
-                        $standardsMap[$activeStdCode] .= ' ' . $v;
+                }
+
+                if (preg_match($substrandRegex, $lineStr, $subm)) {
+                    $subNum = (int) $subm[1];
+                    $subName = trim(preg_replace('/\.{2,}.*$/', '', $subm[2]));
+                    $subName = trim(preg_replace('/\s*(?:STRAND|SUB-STRAND|YEAR|Learning Outcomes).*$/i', '', $subName));
+                    $subName = trim(preg_replace('/\s*\d+\s*$/', '', $subName));
+                    if (strlen($subName) > 1) {
+                        $substrandTitles[$curStrandNum][$subNum] = $subName;
+                    }
+                }
+            }
+
+            if (!empty($c1Texts)) {
+                usort($c1Texts, fn($a, $b) => $a['top'] <=> $b['top']);
+
+                foreach ($c1Texts as $item) {
+                    $v = $item['val'];
+                    if (preg_match($stdRegex, $v, $m)) {
+                        $rawStdCode = $m[1];
+                        $activeStdCode = preg_replace('/\/JHS\d+/i', '', $rawStdCode);
+                        if (!isset($standardsMap[$activeStdCode])) {
+                            $desc = trim(preg_replace($stdRegex, '', $v));
+                            $standardsMap[$activeStdCode] = $activeStdCode . ($desc !== '' ? ': ' . $desc : '');
+                        }
+                    } elseif ($activeStdCode && isset($standardsMap[$activeStdCode])) {
+                        if (!str_contains($standardsMap[$activeStdCode], $v) && !str_contains($v, 'NaCCA') && !str_contains($v, 'Ministry of Education') && !str_contains($v, 'SOCIAL STUDIES')) {
+                            $standardsMap[$activeStdCode] .= ' ' . $v;
+                        }
                     }
                 }
             }
@@ -409,14 +467,18 @@ class CurriculumLocalParser
         foreach ($xml->page as $page) {
             $pNum = (int) $page['number'];
             if ($pNum < $firstTablePage || $pNum > $lastTablePage) continue;
+            $pageWidth = (int) ($page['width'] ?? 0);
 
             $texts = [];
             foreach ($page->text as $t) {
+                $left = (int) $t['left'];
+                if ($left < 0 || ($pageWidth > 0 && $left >= $pageWidth)) continue;
+
                 // Must use strip_tags to capture text inside <b> and <i> tags!
                 $rawVal = trim(strip_tags($t->asXML()));
                 if ($rawVal === '') continue;
                 $texts[] = [
-                    'left' => (int) $t['left'],
+                    'left' => $left,
                     'top' => (int) $t['top'],
                     'val' => $rawVal,
                 ];
@@ -432,13 +494,11 @@ class CurriculumLocalParser
                 return $a['top'] <=> $b['top'];
             });
 
-            // Detect Core Competencies Column 3 boundary for this page
+            // Detect Core Competencies / Assessment Column 3 boundary for this page
             $coreCompThreshold = 800;
             foreach ($texts as $item) {
-                if ($item['top'] < 160 && preg_match('/CORE COMPETENCIES/i', $item['val'])) {
-                    // For documents like English where header is at 858 but text starts at 804,
-                    // clamp threshold so it doesn't overshoot into Column 3 text
-                    $coreCompThreshold = min(800, max(750, $item['left'] - 60));
+                if ($item['top'] < 160 && preg_match('/(CORE COMPETENCIES|Assessment)/i', $item['val'])) {
+                    $coreCompThreshold = min(950, max(750, $item['left'] - 40));
                     break;
                 }
             }
@@ -469,20 +529,23 @@ class CurriculumLocalParser
             }
 
             // 2. Scan Columns:
-            // Column 1: Content Standard (left < 280)
-            // Column 2: Indicators and Exemplars (280 <= left < $coreCompThreshold)
-            // Column 3: Core Competencies (left >= $coreCompThreshold)
+            // Column 1: Content Standard (left < 240)
+            // Column 2: Indicators and Exemplars (240 <= left < $coreCompThreshold)
+            // Column 3: Core Competencies / Assessment (left >= $coreCompThreshold)
             foreach ($texts as $item) {
                 $val = $item['val'];
                 $left = $item['left'];
                 $top = $item['top'];
 
-                if (preg_match('/^(CONTENT STANDARD|INDICATORS AND EXEMPLAR|CORE COMPETENCIES|===|\d+$)/i', $val)) {
+                if (preg_match('/^(CONTENT STANDARD|INDICATORS AND EXEMPLAR|Learning Indicators|CORE COMPETENCIES|Assessment|===|\d+$)/i', $val)) {
+                    continue;
+                }
+                if (str_contains($val, 'SOCIAL STUDIES')) {
                     continue;
                 }
 
                 // Column 1: Content Standards
-                if ($left < 280) {
+                if ($left < 240) {
                     if (preg_match($stdRegex, $val, $mStd)) {
                         $curStdCode = preg_replace('/\/JHS\d+/i', '', $mStd[1]);
                         $curStdTitle = trim($mStd[2]);
@@ -493,35 +556,65 @@ class CurriculumLocalParser
                     }
                 }
                 // Column 2: Indicators and Exemplars
-                elseif ($left >= 280 && $left < $coreCompThreshold) {
+                elseif ($left >= 240 && $left < $coreCompThreshold) {
                     if (preg_match($indRegex, $val, $mInd)) {
                         $rawCode = $mInd[1];
                         $rest = ltrim(trim($mInd[2]), ":.- \t");
 
-                        // Normalize /JHS1 suffix: B7/JHS1.1.1.1.1 -> B7.1.1.1.1
-                        $code = preg_replace('/\/JHS\d+/i', '', $rawCode);
+                        // Check if SHS format: e.g. 1.1.1.LI.1 or 3.4.2.L1.2
+                        if (preg_match('/^(\d+)\.(\d+)\.(\d+)\.L[I1]\.(\d+)$/i', $rawCode, $mShs)) {
+                            $yearNum = (int) $mShs[1];
+                            $sNum = (int) $mShs[2];
+                            $subNum = (int) $mShs[3];
+                            $indNum = (int) $mShs[4];
 
-                        // Normalize publisher typos:
-                        // B982.1.1.1 (Computing) -> B8.2.1.1.1
-                        if (preg_match('/^B98(\d)\.(\d+)\.(\d+)\.(\d+)(.*)/', $code, $tm)) {
-                            $code = "B8.{$tm[1]}.{$tm[2]}.{$tm[3]}.{$tm[4]}" . $tm[5];
-                        }
-                        // Normalize missing dot typo e.g. B9.5.1.14 -> B9.5.1.1.4
-                        elseif (preg_match('/^B(\d+)\.(\d+)\.(\d+)\.(\d)(\d+)$/', $code, $tm)) {
-                            $code = "B{$tm[1]}.{$tm[2]}.{$tm[3]}.{$tm[4]}.{$tm[5]}";
-                        }
-                        // Normalize typo codes like B71.2.2.2 -> B7.1.2.2.2
-                        elseif (preg_match('/^B(\d)(\d)\.(\d+)\.(\d+)(.*)/', $code, $tm)) {
-                            $code = "B{$tm[1]}.{$tm[2]}.{$tm[3]}.{$tm[4]}" . $tm[5];
-                        }
+                            // Normalize typo on P111 where 3.6.4.CS.1 had 3.6.6.LI.2
+                            if ($curStdCode && str_starts_with($curStdCode, '3.6.4.') && $sNum === 6 && $subNum === 6) {
+                                $subNum = 4;
+                            }
 
-                        $parts = explode('.', $code);
-                        $gradeNum = (int) substr($parts[0], 1);
-                        $sNum = (int) ($parts[1] ?? 1);
-                        $subNum = (int) ($parts[2] ?? 1);
-                        $stdCode = implode('.', array_slice($parts, 0, 4));
+                            $code = "{$yearNum}.{$sNum}.{$subNum}.LI.{$indNum}";
+                            $gradeLabel = "SHS {$yearNum}";
+                            $gradeNum = $yearNum;
 
-                        $contentStandard = $standardsMap[$stdCode] ?? ($curStdCode && isset($standardsMap[$curStdCode]) ? $standardsMap[$curStdCode] : ($curStdCode ? trim("{$curStdCode}: {$curStdTitle}") : null));
+                            // Disambiguate duplicate indicator codes under the same sub-strand
+                            $cnt = $indNum;
+                            while (isset($allIndicators[$code])) {
+                                $cnt++;
+                                $code = "{$yearNum}.{$sNum}.{$subNum}.LI.{$cnt}";
+                            }
+
+                            $csCode = $curStdCode ?: "{$yearNum}.{$sNum}.{$subNum}.CS.1";
+                            $contentStandard = $standardsMap[$csCode] ?? ($curStdCode ? trim("{$curStdCode}: {$curStdTitle}") : $csCode);
+                        } else {
+                            // Normalize /JHS1 suffix: B7/JHS1.1.1.1.1 -> B7.1.1.1.1
+                            $code = preg_replace('/\/JHS\d+/i', '', $rawCode);
+
+                            // Normalize publisher typos:
+                            // B982.1.1.1 (Computing) -> B8.2.1.1.1
+                            if (preg_match('/^B98(\d)\.(\d+)\.(\d+)\.(\d+)(.*)/', $code, $tm)) {
+                                $code = "B8.{$tm[1]}.{$tm[2]}.{$tm[3]}.{$tm[4]}" . $tm[5];
+                            }
+                            // Normalize missing dot typo e.g. B9.5.1.14 -> B9.5.1.1.4
+                            elseif (preg_match('/^B(\d+)\.(\d+)\.(\d+)\.(\d)(\d+)$/', $code, $tm)) {
+                                $code = "B{$tm[1]}.{$tm[2]}.{$tm[3]}.{$tm[4]}.{$tm[5]}";
+                            }
+                            // Normalize typo codes like B71.2.2.2 -> B7.1.2.2.2
+                            elseif (preg_match('/^B(\d)(\d)\.(\d+)\.(\d+)(.*)/', $code, $tm)) {
+                                $code = "B{$tm[1]}.{$tm[2]}.{$tm[3]}.{$tm[4]}" . $tm[5];
+                            }
+
+                            $parts = explode('.', $code);
+                            $gradeNum = (int) substr($parts[0], 1);
+                            $gradeLabel = $gradeNum <= 6
+                                ? "Basic {$gradeNum}"
+                                : "Basic {$gradeNum} (JHS " . ($gradeNum - 6) . ")";
+                            $sNum = (int) ($parts[1] ?? 1);
+                            $subNum = (int) ($parts[2] ?? 1);
+                            $stdCode = implode('.', array_slice($parts, 0, 4));
+
+                            $contentStandard = $standardsMap[$stdCode] ?? ($curStdCode && isset($standardsMap[$curStdCode]) ? $standardsMap[$curStdCode] : ($curStdCode ? trim("{$curStdCode}: {$curStdTitle}") : null));
+                        }
 
                         $activeCode = $code;
                         $allIndicators[$code] = [
@@ -529,21 +622,38 @@ class CurriculumLocalParser
                             'title_parts' => $rest !== '' ? [$rest] : [],
                             'exemplars' => [],
                             'core_competencies' => [],
+                            'grade_label' => $gradeLabel,
                             'grade_num' => $gradeNum,
                             'strand_num' => $sNum,
                             'substrand_num' => $subNum,
                             'content_standard' => $contentStandard,
+                            'seen_exemplar_start' => false,
                         ];
                     } elseif ($activeCode && isset($allIndicators[$activeCode])) {
-                        $isEg = preg_match('/^(E\.g|Example|\b\d+\.|\b[ivx]+\.|\b[a-d]\.|•|\-)/i', $val);
-                        if ($isEg || !empty($allIndicators[$activeCode]['exemplars'])) {
+                        $ind = &$allIndicators[$activeCode];
+                        $isBullet = in_array($val, ['●', '•', '-']) || str_starts_with($val, '●') || str_starts_with($val, '•');
+                        $isActivityHeader = (bool) preg_match('/(?:learning|exploration|activity|inquiry|discussion|investigation|reflection|brainstorming|demonstration):\s*$/i', $val);
+                        $isEg = (bool) preg_match('/^(E\.g|Example|\b\d+\.|\b[ivx]+\.|\b[a-d]\.|•|\-|NB:)/i', $val);
+
+                        if ($isBullet || $isActivityHeader || $isEg || $ind['seen_exemplar_start']) {
+                            $ind['seen_exemplar_start'] = true;
                             // Normalize "E.g., 1" or "E.g.,1." to "E.g. 1: "
                             $cleanVal = preg_replace('/^E\.g\.[,\s]*(\d+)[\.:]?\s*/i', 'E.g. $1: ', $val);
-                            $allIndicators[$activeCode]['exemplars'][] = $cleanVal;
+
+                            if ($isBullet && mb_strlen($val) === 1) {
+                                $ind['exemplars'][] = '● ';
+                            } else {
+                                $lastIdx = count($ind['exemplars']) - 1;
+                                if ($lastIdx >= 0 && $ind['exemplars'][$lastIdx] === '● ') {
+                                    $ind['exemplars'][$lastIdx] .= $cleanVal;
+                                } else {
+                                    $ind['exemplars'][] = $cleanVal;
+                                }
+                            }
                         } elseif (!preg_match($strandRegex, $val) && !preg_match($substrandRegex, $val) && !preg_match($stdRegex, $val)) {
                             $cleanVal = ltrim(trim($val), ":.- \t");
                             if ($cleanVal !== '') {
-                                $allIndicators[$activeCode]['title_parts'][] = $cleanVal;
+                                $ind['title_parts'][] = $cleanVal;
                             }
                         }
                     }
@@ -551,7 +661,7 @@ class CurriculumLocalParser
                 // Column 3: Core Competencies
                 elseif ($left >= $coreCompThreshold) {
                     if ($activeCode && isset($allIndicators[$activeCode]) && $top > 140) {
-                        if (!preg_match('/^(CORE COMPETENCIES|SUBJECT SPECIFIC PRACTICES)/i', $val) && !str_contains($val, 'NaCCA')) {
+                        if (!preg_match('/^(CORE COMPETENCIES|Assessment|SUBJECT SPECIFIC PRACTICES)/i', $val) && !str_contains($val, 'NaCCA')) {
                             $allIndicators[$activeCode]['core_competencies'][] = $val;
                         }
                     }
@@ -568,9 +678,11 @@ class CurriculumLocalParser
 
         foreach ($allIndicators as $code => $ind) {
             $gradeNum = $ind['grade_num'];
-            $gradeLabel = $gradeNum <= 6
-                ? "Basic {$gradeNum}"
-                : "Basic {$gradeNum} (JHS " . ($gradeNum - 6) . ")";
+            $gradeLabel = $ind['grade_label'] ?? (
+                $gradeNum <= 6
+                    ? "Basic {$gradeNum}"
+                    : "Basic {$gradeNum} (JHS " . ($gradeNum - 6) . ")"
+            );
 
             $sNum = $ind['strand_num'];
             $subNum = $ind['substrand_num'];
@@ -578,6 +690,11 @@ class CurriculumLocalParser
             $strandKey = "{$gradeLabel}-{$sNum}";
             if (!isset($tree[$strandKey])) {
                 $sName = $strandTitles[$sNum] ?? "STRAND {$sNum}";
+                // If default combined name has slash, choose appropriate title based on gradeLabel
+                if (str_contains($sName, ' / ')) {
+                    $parts = explode(' / ', $sName);
+                    $sName = str_starts_with($gradeLabel, 'SHS') ? ($parts[1] ?? $parts[0]) : $parts[0];
+                }
                 $tree[$strandKey] = [
                     'grade_label' => $gradeLabel,
                     'title' => "STRAND {$sNum}: " . mb_strtoupper($sName),
@@ -644,8 +761,8 @@ class CurriculumLocalParser
      */
     public function extractStructureFromPages(array $pages, Curriculum $curriculum): array
     {
-        $indRegex = '/\b(B\d+(?:\/JHS\d+)?(?:\.\d+){2,4}|B\d{2,}\.\d+(?:\.\d+)+)\s+([A-Za-z].*?)(?:\s{4,}|$)/';
-        $stdRegex = '/\b(B\d+(?:\/JHS\d+)?(?:\.\d+){3})\s+([A-Za-z].*?)(?:\s{4,}|$)/';
+        $indRegex = '/\b(B\d+(?:\/JHS\d+)?(?:\.\d+){2,4}|B\d{2,}\.\d+(?:\.\d+)+|\d+\.\d+\.\d+\.L[I1]\.\d+)\s+([A-Za-z].*?)(?:\s{4,}|$)/';
+        $stdRegex = '/\b(B\d+(?:\/JHS\d+)?(?:\.\d+){3}|\d+\.\d+\.\d+\.CS\.\d+)\s+([A-Za-z].*?)(?:\s{4,}|$)/';
 
         $tree = [];
         $currentCode = null;
@@ -662,21 +779,29 @@ class CurriculumLocalParser
                     $rawCode = $m[1];
                     $title = trim($m[2]);
 
-                    $code = preg_replace('/\/JHS\d+/i', '', $rawCode);
-                    if (preg_match('/^B(\d+)\.(\d+)\.(\d+)\.(\d)(\d+)$/', $code, $tm)) {
-                        $code = "B{$tm[1]}.{$tm[2]}.{$tm[3]}.{$tm[4]}.{$tm[5]}";
-                    } elseif (preg_match('/^B(\d)(\d)\.(\d+)\.(\d+)(.*)/', $code, $tm)) {
-                        $code = "B{$tm[1]}.{$tm[2]}.{$tm[3]}.{$tm[4]}" . $tm[5];
+                    if (preg_match('/^(\d+)\.(\d+)\.(\d+)\.L[I1]\.(\d+)$/i', $rawCode, $mShs)) {
+                        $gradeNum = (int) $mShs[1];
+                        $gradeLabel = "SHS {$gradeNum}";
+                        $strandNum = (int) $mShs[2];
+                        $subNum = (int) $mShs[3];
+                        $code = "{$gradeNum}.{$strandNum}.{$subNum}.LI.{$mShs[4]}";
+                    } else {
+                        $code = preg_replace('/\/JHS\d+/i', '', $rawCode);
+                        if (preg_match('/^B(\d+)\.(\d+)\.(\d+)\.(\d)(\d+)$/', $code, $tm)) {
+                            $code = "B{$tm[1]}.{$tm[2]}.{$tm[3]}.{$tm[4]}.{$tm[5]}";
+                        } elseif (preg_match('/^B(\d)(\d)\.(\d+)\.(\d+)(.*)/', $code, $tm)) {
+                            $code = "B{$tm[1]}.{$tm[2]}.{$tm[3]}.{$tm[4]}" . $tm[5];
+                        }
+
+                        $parts = explode('.', $code);
+                        $gradeNum = (int) substr($parts[0], 1);
+                        $gradeLabel = $gradeNum <= 6 
+                            ? "Basic {$gradeNum}"
+                            : "Basic {$gradeNum} (JHS " . ($gradeNum - 6) . ")";
+
+                        $strandNum = (int) ($parts[1] ?? 1);
+                        $subNum = (int) ($parts[2] ?? 1);
                     }
-
-                    $parts = explode('.', $code);
-                    $gradeNum = (int) substr($parts[0], 1);
-                    $gradeLabel = $gradeNum <= 6 
-                        ? "Basic {$gradeNum}"
-                        : "Basic {$gradeNum} (JHS " . ($gradeNum - 6) . ")";
-
-                    $strandNum = (int) ($parts[1] ?? 1);
-                    $subNum = (int) ($parts[2] ?? 1);
 
                     $strandKey = "{$gradeLabel}-{$strandNum}";
                     if (!isset($tree[$strandKey])) {
@@ -711,13 +836,22 @@ class CurriculumLocalParser
 
                 if (preg_match($stdRegex, $line, $m)) {
                     $stdCode = $m[1];
-                    $stdDesc = trim($m[4]);
-                    $gradeNum = (int) substr($stdCode, 1, strpos($stdCode, '.') - 1);
-                    $gradeLabel = $gradeNum <= 6 
-                        ? "Basic {$gradeNum}"
-                        : "Basic {$gradeNum} (JHS " . ($gradeNum - 6) . ")";
-                    $strandNum = (int) $m[2];
-                    $subNum = (int) $m[3];
+                    $stdDesc = trim($m[2]);
+
+                    if (preg_match('/^(\d+)\.(\d+)\.(\d+)\.CS\.\d+$/i', $stdCode, $mCs)) {
+                        $gradeNum = (int) $mCs[1];
+                        $gradeLabel = "SHS {$gradeNum}";
+                        $strandNum = (int) $mCs[2];
+                        $subNum = (int) $mCs[3];
+                    } else {
+                        $gradeNum = (int) substr($stdCode, 1, strpos($stdCode, '.') - 1);
+                        $gradeLabel = $gradeNum <= 6 
+                            ? "Basic {$gradeNum}"
+                            : "Basic {$gradeNum} (JHS " . ($gradeNum - 6) . ")";
+                        $parts = explode('.', $stdCode);
+                        $strandNum = (int) ($parts[1] ?? 1);
+                        $subNum = (int) ($parts[2] ?? 1);
+                    }
 
                     $strandKey = "{$gradeLabel}-{$strandNum}";
                     $subKey = "sub-{$subNum}";
@@ -728,13 +862,12 @@ class CurriculumLocalParser
                     continue;
                 }
 
-                if ($currentIndicatorRef && preg_match('/^\s*(E\.g\.[,\s]*\d*[\.:]?|•|\-|\d+[\.\)])\s*(.+)$/i', $trimmed, $m)) {
+                if ($currentIndicatorRef && preg_match('/^\s*(E\.g\.[,\s]*\d*[\.:]?|•|\-|\d+[\.\)]|●)\s*(.+)$/i', $trimmed, $m)) {
                     $exemplarText = trim($trimmed);
                     if (empty($currentIndicatorRef['exemplars'])) {
                         $currentIndicatorRef['exemplars'] = $exemplarText;
                     } else {
-                        $currentIndicatorRef['exemplars'] .= "
-" . $exemplarText;
+                        $currentIndicatorRef['exemplars'] .= "\n" . $exemplarText;
                     }
                 }
             }
