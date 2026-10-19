@@ -56,111 +56,8 @@ class GuidedLearningController extends Controller
             $levelsInGroup = $currentLevelGroup ? $currentLevelGroup->levels : collect();
             $selectedGradeSlug = $request->input('grade', 'all');
 
-            // 1. Fetch Complete and Published Textbook Courses (Strict Quality Gate)
-            $publishedCourses = $this->guidedLearningService->getPublishedTextbookCourses($user, $selectedGradeSlug);
-            $publishedSubjectIds = $publishedCourses->pluck('subject_id')->filter()->unique()->toArray();
-
-            // 2. Fallback to approved curriculum only for subjects without a complete published textbook course yet
-            $curriculaQuery = Curriculum::where('is_approved', true)
-                ->whereNotIn('subject_id', $publishedSubjectIds)
-                ->with(['subject', 'level', 'strands.subStrands.indicators']);
-
-            if ($currentLevelGroup) {
-                $hasGroupCurricula = (clone $curriculaQuery)->where('level_group_id', $currentLevelGroup->id)->exists();
-                if ($hasGroupCurricula) {
-                    $curriculaQuery->where('level_group_id', $currentLevelGroup->id);
-                }
-            }
-
-            // Grade filter within the chosen level group
-            if ($selectedGradeSlug !== 'all') {
-                $matchedLevel = $levelsInGroup->firstWhere('slug', $selectedGradeSlug);
-                if ($matchedLevel) {
-                    $hasGradeCurricula = (clone $curriculaQuery)->where('level_id', $matchedLevel->id)->exists();
-                    if ($hasGradeCurricula) {
-                        $curriculaQuery->where('level_id', $matchedLevel->id);
-                    }
-                }
-            }
-
-            $curricula = $curriculaQuery->get();
-
-            // Load student's progress for curriculum indicators
-            $userProgress = GuidedLearningProgress::where('user_id', $user->id)
-                ->whereNotNull('curriculum_indicator_id')
-                ->get()
-                ->keyBy('curriculum_indicator_id');
-
-            $curriculaCards = $curricula->map(function ($curr) use ($userProgress, $currentLevelGroup) {
-                $indicatorIds = $curr->strands->flatMap(function ($s) {
-                    return $s->subStrands->flatMap(function ($ss) {
-                        return $ss->indicators->pluck('id');
-                    });
-                })->toArray();
-
-                $total = count($indicatorIds);
-                $completed = 0;
-                $inProgress = 0;
-                foreach ($indicatorIds as $id) {
-                    $status = $userProgress->get($id)?->status ?? 'not_started';
-                    if ($status === 'completed') {
-                        $completed++;
-                    } elseif ($status === 'in_progress') {
-                        $inProgress++;
-                    }
-                }
-
-                $pct = $total > 0 ? round(($completed / $total) * 100) : 0;
-                $sName = strtolower($curr->subject?->name ?? '');
-                $isMath = str_contains($sName, 'math');
-
-                $image = null;
-                if ($isMath) {
-                    $lgSlug = strtolower(
-                        $curr->levelGroup?->slug 
-                        ?? ($curr->level?->levelGroup?->slug 
-                        ?? ($currentLevelGroup?->slug ?? ''))
-                    );
-
-                    if (str_contains($lgSlug, 'primary')) {
-                        $image = asset('images/guided-learning/math/math-primary.jpg');
-                    } elseif (str_contains($lgSlug, 'jhs')) {
-                        $image = asset('images/guided-learning/math/math-jhs.jpg');
-                    } else {
-                        $image = asset('images/guided-learning/math/math-default.png');
-                    }
-                }
-
-                $icon = match (true) {
-                    str_contains($sName, 'math') => 'fa-calculator',
-                    str_contains($sName, 'english') || str_contains($sName, 'literacy') || str_contains($sName, 'language') => 'fa-book-open',
-                    str_contains($sName, 'science') => 'fa-flask',
-                    str_contains($sName, 'comput') || str_contains($sName, 'ict') || str_contains($sName, 'tech') => 'fa-laptop-code',
-                    str_contains($sName, 'social') || str_contains($sName, 'history') || str_contains($sName, 'geography') => 'fa-globe-africa',
-                    default => 'fa-graduation-cap',
-                };
-
-                return [
-                    'textbook_id' => null,
-                    'encoded_textbook_id' => null,
-                    'subject_id' => $curr->subject_id,
-                    'encoded_subject_id' => UrlObfuscator::encode($curr->subject_id),
-                    'subject_name' => $curr->subject?->name ?? $curr->title,
-                    'curriculum_title' => $curr->title,
-                    'tagline' => $curr->description ?? 'Official national curriculum standards and practice checkpoints.',
-                    'strands_count' => $curr->strands->count(),
-                    'total_indicators' => $total,
-                    'completed_indicators' => $completed,
-                    'in_progress_indicators' => $inProgress,
-                    'percentage' => $pct,
-                    'icon' => $icon,
-                    'image' => $image,
-                    'is_textbook_course' => false,
-                ];
-            });
-
-            // Merge: Published Textbook courses take top priority!
-            $subjectCards = $publishedCourses->concat($curriculaCards);
+            // Fetch Complete and Published Textbook Courses
+            $subjectCards = $this->guidedLearningService->getPublishedTextbookCourses($user, $selectedGradeSlug);
 
             return view('guided-learning.index', [
                 'isSelectingSubject' => true,
@@ -185,15 +82,13 @@ class GuidedLearningController extends Controller
         if ($publishedTextbook) {
             $curriculumData = $this->guidedLearningService->getTextbookCourseTreeForStudent($user, $publishedTextbook);
         } else {
-            $curriculumData = $this->guidedLearningService->getCurriculumTreeForStudent($user, $currentSubject);
+            return redirect()->route('guided-learning.index')
+                ->with('info', 'No active textbook course has been published for this subject yet.');
         }
 
-        $availableSubjects = Subject::where(function ($q) {
-            $q->whereHas('curricula', function ($cq) {
-                $cq->where('is_approved', true);
-            })->orWhereHas('textbooks', function ($tq) {
-                $tq->where('is_content_approved', true);
-            });
+        $availableSubjects = Subject::whereHas('textbooks', function ($tq) {
+            $tq->where('is_course_active', true)
+               ->orWhere('is_content_approved', true);
         })->orderBy('name')->get();
 
         return view('guided-learning.index', [
