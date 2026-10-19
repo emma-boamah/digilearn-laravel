@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Services\UrlObfuscator;
+use App\Traits\HasLevelAssignments;
 
 class Quiz extends Model
 {
-    use HasFactory;
+    use HasFactory, HasLevelAssignments;
 
     protected $fillable = [
         'title',

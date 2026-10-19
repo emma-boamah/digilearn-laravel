@@ -899,8 +899,8 @@ class DashboardController extends Controller
                 })
                 ->where(function ($q) use ($dbLevel, $categorySlug) {
 
-                    // Base case: Videos specifically for this grade level
-                    $q->where('grade_level', $dbLevel);
+                    // Base case: Videos specifically or co-assigned to this grade level
+                    $q->forLevel($dbLevel);
 
                     // Dynamic cross-level category fetching logic
                     if ($categorySlug) {
@@ -3088,7 +3088,7 @@ class DashboardController extends Controller
      */
     private function getTotalLessonsInLevel($level)
     {
-        return Video::approved()->where('grade_level', $level)->count();
+        return Video::approved()->forLevel($level)->count();
     }
 
     /**

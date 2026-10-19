@@ -22,4 +22,28 @@ class Level extends Model
     {
         return $this->belongsTo(LevelGroup::class);
     }
+
+    /**
+     * Get all of the videos assigned to this level.
+     */
+    public function videos()
+    {
+        return $this->morphedByMany(Video::class, 'levelable');
+    }
+
+    /**
+     * Get all of the documents assigned to this level.
+     */
+    public function documents()
+    {
+        return $this->morphedByMany(Document::class, 'levelable');
+    }
+
+    /**
+     * Get all of the quizzes assigned to this level.
+     */
+    public function quizzes()
+    {
+        return $this->morphedByMany(Quiz::class, 'levelable');
+    }
 }

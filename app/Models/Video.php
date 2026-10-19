@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use App\Services\UrlObfuscator;
 use Illuminate\Support\Facades\Log;
+use App\Traits\HasLevelAssignments;
 
 class Video extends Model
 {
-    use HasFactory;
+    use HasFactory, HasLevelAssignments;
 
     protected $fillable = [
         'title',

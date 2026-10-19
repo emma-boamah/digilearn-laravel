@@ -475,6 +475,9 @@ class UploadEngine {
             if (finalData.video.category_ids && finalData.video.category_ids.length > 0) {
                 finalData.video.category_ids.forEach(id => formData.append('category_ids[]', id));
             }
+            if (finalData.video.level_ids && finalData.video.level_ids.length > 0) {
+                finalData.video.level_ids.forEach(id => formData.append('level_ids[]', id));
+            }
             if (videoSource === 'vimeo') {
                 formData.append('vimeo_url', finalData.video.external_video_url);
             } else if (finalData.video.external_video_url) {
@@ -619,6 +622,9 @@ class UploadEngine {
 
         if (finalData.video.category_ids && finalData.video.category_ids.length > 0) {
             finalData.video.category_ids.forEach(id => finalFormData.append('category_ids[]', id));
+        }
+        if (finalData.video.level_ids && finalData.video.level_ids.length > 0) {
+            finalData.video.level_ids.forEach(id => finalFormData.append('level_ids[]', id));
         }
         if (uploadState && uploadState.thumbnail) {
             finalFormData.append('thumbnail_file', uploadState.thumbnail);

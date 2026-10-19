@@ -13,9 +13,12 @@ use App\Models\Level;
 use App\Models\LevelGroup;
 use App\Jobs\ProcessTextbookTocJob;
 use App\Jobs\ProcessTextbookContentJob;
+use App\Services\TextbookExtractionService;
+use App\Services\PedagogicalCourseSchemeService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class TextbookController extends Controller
@@ -130,7 +133,9 @@ class TextbookController extends Controller
                         'page_end' => $s->page_end,
                         'sort_order' => $s->sort_order,
                         'curriculum_indicator_id' => $s->curriculum_indicator_id,
-                        'has_content' => !empty($s->content_markdown),
+                        'has_content' => !empty($s->content_markdown) || !empty($s->content_html),
+                        'pedagogical_scheme' => $s->pedagogical_scheme,
+                        'is_published' => (bool) $s->is_published,
                         'isEditing' => false,
                         'editTitle' => $s->title,
                         'editPageStart' => $s->page_start,
@@ -164,6 +169,48 @@ class TextbookController extends Controller
         }
 
         return back()->with('success', 'Table of Contents approved successfully.');
+    }
+
+    /**
+     * Set or toggle this textbook as the active course for students on Guided Learning.
+     */
+    public function toggleCourseActive(Textbook $textbook, Request $request)
+    {
+        $newStatus = $request->has('is_course_active')
+            ? $request->boolean('is_course_active')
+            : !$textbook->is_course_active;
+
+        if ($newStatus) {
+            // Deactivate any other textbook for the same subject and level/group
+            $query = Textbook::where('subject_id', $textbook->subject_id)
+                ->where('id', '!=', $textbook->id);
+
+            if ($textbook->level_id) {
+                $query->where(function ($q) use ($textbook) {
+                    $q->where('level_id', $textbook->level_id)
+                      ->orWhereNull('level_id');
+                });
+            }
+
+            $query->update(['is_course_active' => false]);
+            $textbook->update(['is_course_active' => true]);
+
+            $subjectName = $textbook->subject ? $textbook->subject->name : 'its subject';
+            $message = "\"{$textbook->title}\" is now set as the Active Student Course for {$subjectName}.";
+        } else {
+            $textbook->update(['is_course_active' => false]);
+            $message = "\"{$textbook->title}\" is no longer the active student course.";
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'is_course_active' => $textbook->is_course_active,
+                'message' => $message,
+            ]);
+        }
+
+        return back()->with('success', $message);
     }
 
     /**
@@ -348,26 +395,53 @@ class TextbookController extends Controller
             'chapters.*.title' => 'required|string|max:255',
             'chapters.*.page_start' => 'nullable|integer|min:1',
             'chapters.*.page_end' => 'nullable|integer|min:1',
+            'chapters.*.sections' => 'nullable|array',
+            'chapters.*.sections.*.title' => 'required|string|max:255',
+            'chapters.*.sections.*.page_start' => 'nullable|integer|min:1',
+            'chapters.*.sections.*.page_end' => 'nullable|integer|min:1',
         ]);
 
         $maxOrder = $textbook->chapters()->max('sort_order') ?? 0;
         $createdChapters = [];
+        $totalSectionsCreated = 0;
 
-        foreach ($validated['chapters'] as $item) {
-            $maxOrder++;
-            $created = $textbook->chapters()->create([
-                'title' => trim($item['title']),
-                'page_start' => $item['page_start'] ?? null,
-                'page_end' => $item['page_end'] ?? null,
-                'sort_order' => $maxOrder,
-            ]);
-            $created->setRelation('sections', collect());
-            $createdChapters[] = $created;
-        }
+        DB::transaction(function () use ($validated, $textbook, &$maxOrder, &$createdChapters, &$totalSectionsCreated) {
+            foreach ($validated['chapters'] as $item) {
+                $maxOrder++;
+                $chapter = $textbook->chapters()->create([
+                    'title' => trim($item['title']),
+                    'page_start' => $item['page_start'] ?? null,
+                    'page_end' => $item['page_end'] ?? null,
+                    'sort_order' => $maxOrder,
+                ]);
+
+                $sectionsList = collect();
+                if (!empty($item['sections']) && is_array($item['sections'])) {
+                    $secOrder = 0;
+                    foreach ($item['sections'] as $sItem) {
+                        $sTitle = trim($sItem['title'] ?? '');
+                        if (!$sTitle) continue;
+                        $secOrder++;
+                        $sec = $chapter->sections()->create([
+                            'title' => $sTitle,
+                            'page_start' => $sItem['page_start'] ?? null,
+                            'page_end' => $sItem['page_end'] ?? null,
+                            'sort_order' => $secOrder,
+                            'is_published' => true,
+                        ]);
+                        $sectionsList->push($sec);
+                        $totalSectionsCreated++;
+                    }
+                }
+                $chapter->setRelation('sections', $sectionsList);
+                $createdChapters[] = $chapter;
+            }
+        });
 
         return response()->json([
             'success' => true,
             'count' => count($createdChapters),
+            'sections_count' => $totalSectionsCreated,
             'chapters' => $createdChapters,
         ]);
     }
@@ -439,5 +513,178 @@ class TextbookController extends Controller
         }
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * AJAX: Get pedagogical content, scheme, takeaways, and quiz for a section.
+     */
+    public function getSectionContent(TextbookSection $section): JsonResponse
+    {
+        $section->load('chapter.textbook.subject');
+        $defaultScheme = PedagogicalCourseSchemeService::getDefaultSchemeForSubject(
+            $section->chapter?->textbook?->subject?->name ?? 'Mathematics'
+        );
+
+        return response()->json([
+            'success' => true,
+            'section' => [
+                'id' => $section->id,
+                'title' => $section->title,
+                'page_start' => $section->page_start,
+                'page_end' => $section->page_end,
+                'pedagogical_scheme' => $section->pedagogical_scheme ?: $defaultScheme,
+                'content_markdown' => $section->content_markdown,
+                'content_html' => $section->content_html,
+                'key_takeaways' => $section->key_takeaways ?? [],
+                'lesson_quiz' => $section->lesson_quiz ?? [],
+                'media_resources' => $section->media_resources ?? [],
+                'is_published' => (bool) $section->is_published,
+            ],
+            'available_schemes' => PedagogicalCourseSchemeService::AVAILABLE_SCHEMES,
+        ]);
+    }
+
+    /**
+     * AJAX: Generate reading text for a section using the Pedagogical Course Scheme.
+     */
+    public function generateSectionContent(Request $request, TextbookSection $section, TextbookExtractionService $extractionService): JsonResponse
+    {
+        $validated = $request->validate([
+            'scheme' => 'nullable|string|in:math_first_principles,science_inquiry,social_studies,language_arts,general_academic',
+        ]);
+
+        try {
+            $result = $extractionService->generateSectionContent($section, $validated['scheme'] ?? null);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Reading text synthesized using ' . ($result['scheme'] ?? 'pedagogical') . ' scheme.',
+                'section' => $section->fresh(),
+                'result' => $result,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to generate section content: " . $e->getMessage(), [
+                'section_id' => $section->id,
+                'exception' => $e,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Generation failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * AJAX: Save custom edits to a section's markdown, takeaways, quiz, and media resources.
+     */
+    public function saveSectionContent(Request $request, TextbookSection $section): JsonResponse
+    {
+        $validated = $request->validate([
+            'title' => 'sometimes|required|string|max:255',
+            'content_markdown' => 'nullable|string',
+            'content_html' => 'nullable|string',
+            'key_takeaways' => 'nullable|array',
+            'lesson_quiz' => 'nullable|array',
+            'media_resources' => 'nullable|array',
+            'pedagogical_scheme' => 'nullable|string',
+            'is_published' => 'nullable|boolean',
+        ]);
+
+        if (!empty($validated['content_markdown']) && empty($validated['content_html'])) {
+            $validated['content_html'] = app(\App\Services\PedagogicalCourseSchemeService::class)->renderMarkdownToHtml($validated['content_markdown']);
+        }
+
+        $section->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Section reading text, quiz, and media resources updated successfully.',
+            'section' => $section->fresh(),
+        ]);
+    }
+
+    /**
+     * AJAX: Suggest educational video resources for a section.
+     */
+    public function suggestSectionMedia(Request $request, TextbookSection $section, PedagogicalCourseSchemeService $schemeService): JsonResponse
+    {
+        $chapter = $section->chapter;
+        $textbook = $chapter->textbook;
+        $subjectName = $textbook->subject?->name ?? 'Mathematics';
+        $gradeLevel = $textbook->level?->name ?? 'JHS';
+
+        $suggestions = $schemeService->suggestEducationalVideos($section->title, $subjectName, $gradeLevel);
+
+        return response()->json([
+            'success' => true,
+            'suggestions' => $suggestions,
+        ]);
+    }
+
+    /**
+     * AJAX: Parse a YouTube URL and return video ID, title and thumbnail preview.
+     */
+    public function resolveYoutubeUrl(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'url' => 'required|string',
+        ]);
+
+        $url = trim($validated['url']);
+        $videoId = null;
+
+        if (preg_match('/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/', $url, $matches)) {
+            $videoId = $matches[1];
+        } elseif (preg_match('/^[\w-]{11}$/', $url)) {
+            $videoId = $url;
+        }
+
+        if (!$videoId) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Invalid YouTube URL or Video ID.',
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'media' => [
+                'id' => 'yt_' . $videoId,
+                'type' => 'youtube',
+                'title' => 'YouTube Video Tutorial',
+                'channel' => 'YouTube',
+                'video_id' => $videoId,
+                'url' => 'https://www.youtube.com/watch?v=' . $videoId,
+                'thumbnail_url' => 'https://img.youtube.com/vi/' . $videoId . '/hqdefault.jpg',
+            ]
+        ]);
+    }
+
+    /**
+     * AJAX: Batch generate reading texts for all sections in a chapter.
+     */
+    public function batchGenerateChapterContent(Request $request, TextbookChapter $chapter, TextbookExtractionService $extractionService): JsonResponse
+    {
+        $validated = $request->validate([
+            'scheme' => 'nullable|string|in:math_first_principles,science_inquiry,social_studies,language_arts,general_academic',
+        ]);
+
+        try {
+            $extractionService->extractChapterContent($chapter, $validated['scheme'] ?? null);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully generated reading texts for chapter: {$chapter->title}.",
+                'chapter' => $chapter->fresh(['sections']),
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Batch generation failed for chapter {$chapter->id}: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Batch generation failed: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

@@ -274,6 +274,11 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/topic/{indicator}/quiz', [GuidedLearningController::class, 'submitQuiz'])->name('quiz.submit');
         Route::post('/topic/{indicator}/verify-segment', [GuidedLearningController::class, 'verifySegment'])->name('segment.verify');
         Route::post('/topic/{indicator}/notes', [GuidedLearningController::class, 'saveNotes'])->name('notes');
+
+        // Textbook Section Routes (Curated TOC modules & lessons)
+        Route::get('/section/{section}', [GuidedLearningController::class, 'section'])->name('section');
+        Route::post('/section/{section}/toggle', [GuidedLearningController::class, 'toggleSection'])->name('section.toggle');
+        Route::post('/section/{section}/quiz', [GuidedLearningController::class, 'submitSectionQuiz'])->name('section.quiz.submit');
     });
 
     // Profile & Settings (Unrestricted - Auth only)
@@ -631,6 +636,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/contents/{contentId}/edit', [AdminController::class, 'editContent'])->name('contents.edit');
     Route::put('/contents/{contentId}', [AdminController::class, 'updateContent'])->name('contents.update');
     Route::delete('/contents/{contentId}', [AdminController::class, 'destroyContent'])->name('contents.destroy');
+    Route::post('/contents/update-levels', [AdminController::class, 'updateContentLevels'])->name('contents.update-levels');
     Route::delete('/contents/vimeo/delete', [AdminController::class, 'destroyVimeoVideo'])->name('contents.vimeo.delete');
     Route::post('/contents/upload/video', [AdminController::class, 'uploadVideoComponent'])->name('contents.upload.video');
     Route::post('/contents/upload/video-chunk', [AdminController::class, 'uploadVideoChunk'])->name('contents.upload.video-chunk');
@@ -780,6 +786,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::get('/{textbook}', [TextbookController::class, 'show'])->name('show');
         Route::delete('/{textbook}', [TextbookController::class, 'destroy'])->name('destroy');
         Route::post('/{textbook}/approve-toc', [TextbookController::class, 'approveToc'])->name('approve-toc');
+        Route::post('/{textbook}/toggle-course-active', [TextbookController::class, 'toggleCourseActive'])->name('toggle-course-active');
         Route::post('/{textbook}/retry-toc', [TextbookController::class, 'retryToc'])->name('retry-toc');
         Route::get('/{textbook}/status', [TextbookController::class, 'status'])->name('status');
         Route::post('/{textbook}/extract-content', [TextbookController::class, 'extractContent'])->name('extract-content');
@@ -794,6 +801,14 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/chapters/{chapter}/reorder-sections', [TextbookController::class, 'reorderSections'])->name('sections.reorder');
         Route::delete('/chapters/{chapter}', [TextbookController::class, 'destroyChapter'])->name('chapters.destroy');
         Route::delete('/sections/{section}', [TextbookController::class, 'destroySection'])->name('sections.destroy');
+
+        // Pedagogical Course Scheme & Lesson Studio Endpoints
+        Route::get('/sections/{section}/content', [TextbookController::class, 'getSectionContent'])->name('sections.get-content');
+        Route::post('/sections/{section}/generate-content', [TextbookController::class, 'generateSectionContent'])->name('sections.generate-content');
+        Route::put('/sections/{section}/save-content', [TextbookController::class, 'saveSectionContent'])->name('sections.save-content');
+        Route::post('/sections/{section}/suggest-media', [TextbookController::class, 'suggestSectionMedia'])->name('sections.suggest-media');
+        Route::post('/resolve-youtube', [TextbookController::class, 'resolveYoutubeUrl'])->name('resolve-youtube');
+        Route::post('/chapters/{chapter}/generate-all', [TextbookController::class, 'batchGenerateChapterContent'])->name('chapters.generate-all');
     });
 
     // Progress Management

@@ -62,6 +62,11 @@
 
     <!-- Custom styles -->
     <style nonce="{{ request()->attributes->get('csp_nonce') }}">
+        /* Alpine.js x-cloak to prevent FOUC / flashing modals before init */
+        [x-cloak] {
+            display: none !important;
+        }
+
         /* Reset and base styles */
         * {
             margin: 0;

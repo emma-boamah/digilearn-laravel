@@ -1557,10 +1557,29 @@
                                         @endif
                                     </td>
                                     <td>
-                                        @if($content->grade_level)
-                                            {{ $content->grade_level }}
+                                        @php
+                                            $itemLevels = ($content->levels && $content->levels->isNotEmpty()) ? $content->levels : collect();
+                                            $levelCount = $itemLevels->count();
+                                        @endphp
+                                        @if($levelCount > 0)
+                                            <div class="flex flex-wrap gap-1 items-center max-w-[200px]">
+                                                @foreach($itemLevels->take(2) as $lvl)
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                                        {{ $lvl->title }}
+                                                    </span>
+                                                @endforeach
+                                                @if($levelCount > 2)
+                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200" title="{{ $content->assigned_levels_list }}">
+                                                        +{{ $levelCount - 2 }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        @elseif($content->grade_level)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                                                {{ $content->grade_level }}
+                                            </span>
                                         @else
-                                            <span class="text-gray-500">—</span>
+                                            <span class="text-gray-400 text-xs italic">Unassigned</span>
                                         @endif
                                     </td>
                                     <td class="status-cell">
@@ -1948,13 +1967,19 @@
                                 <div class="grade-picker-grid">
                                     @foreach($levelGroups as $group)
                                         <div class="grade-picker-column">
-                                            <div class="grade-picker-header">
-                                                <span class="grade-picker-header-text">{{ strtoupper($group->name) }}</span>
+                                            <div class="grade-picker-header flex items-center justify-between cursor-pointer" 
+                                                 onclick="toggleGradeGroup(this, '{{ $group->id }}')" 
+                                                 title="Click to toggle all levels in {{ $group->title ?? $group->name }}">
+                                                <span class="grade-picker-header-text">{{ strtoupper($group->title ?? $group->name) }}</span>
+                                                <span class="text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold px-1 rounded hover:bg-indigo-50">Select Group</span>
                                             </div>
                                             <div class="grade-picker-items">
                                                 @foreach($group->levels as $level)
-                                                    <button type="button" class="grade-picker-item" data-grade="{{ $level->title }}"
-                                                        onclick="selectGrade(this, '{{ $level->title }}')">
+                                                    <button type="button" class="grade-picker-item" 
+                                                        data-grade="{{ $level->title }}"
+                                                        data-level-id="{{ $level->id }}"
+                                                        data-group-id="{{ $group->id }}"
+                                                        onclick="toggleGrade(this, '{{ $level->title }}', {{ $level->id }})">
                                                         <span class="grade-picker-label">{{ $level->title }}</span>
                                                         <svg class="grade-picker-check" xmlns="http://www.w3.org/2000/svg"
                                                             width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -1970,6 +1995,7 @@
                                 </div>
                             </div>
                         </div>
+                        <div id="gradePickerSelectedPills" class="flex flex-wrap gap-1.5 mt-2"></div>
                     </div>
 
                     <!-- Categories -->
@@ -2632,23 +2658,95 @@
             if (dropdown) dropdown.classList.toggle('open');
         }
 
-        // Grade picker selection handler
-        function selectGrade(el, gradeValue) {
-            // Deselect all
-            document.querySelectorAll('.grade-picker-item.selected').forEach(item => item.classList.remove('selected'));
-            // Select clicked
-            el.classList.add('selected');
-            // Update hidden input
-            const gradeInput = document.getElementById('grade_level');
-            if (gradeInput) gradeInput.value = gradeValue;
-            // Update trigger text
+        // Grade picker multi-level selection handlers
+        window._selectedLevels = [];
+        window._selectedLevelIds = [];
+
+        function updateGradePickerDisplay() {
             const trigger = document.getElementById('gradePickerTrigger');
             const triggerText = document.getElementById('gradePickerTriggerText');
-            if (triggerText) triggerText.textContent = gradeValue;
+            const pillsContainer = document.getElementById('gradePickerSelectedPills');
+            const gradeInput = document.getElementById('grade_level');
+
+            window._selectedLevelIds = window._selectedLevels.map(l => l.id);
+
+            if (window._selectedLevels.length === 0) {
+                if (triggerText) triggerText.textContent = 'Select Grade Level';
+                if (trigger) trigger.classList.remove('has-value');
+                if (gradeInput) gradeInput.value = '';
+                if (pillsContainer) pillsContainer.innerHTML = '';
+                return;
+            }
+
             if (trigger) trigger.classList.add('has-value');
-            // Close dropdown
-            const dropdown = document.getElementById('gradePickerDropdown');
-            if (dropdown) dropdown.classList.remove('open');
+            if (gradeInput) gradeInput.value = window._selectedLevels[0].title;
+
+            if (window._selectedLevels.length === 1) {
+                if (triggerText) triggerText.textContent = window._selectedLevels[0].title;
+            } else {
+                if (triggerText) triggerText.textContent = `${window._selectedLevels.length} Levels Selected`;
+            }
+
+            if (pillsContainer) {
+                pillsContainer.innerHTML = window._selectedLevels.map(lvl => `
+                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs">
+                        <span>${lvl.title}</span>
+                        <button type="button" onclick="removeSelectedGrade(${lvl.id})" class="text-indigo-400 hover:text-indigo-700 ml-0.5 cursor-pointer">
+                            <i class="fas fa-times text-[10px]"></i>
+                        </button>
+                    </span>
+                `).join('');
+            }
+        }
+
+        function toggleGrade(el, gradeValue, levelId) {
+            levelId = parseInt(levelId);
+            const existingIndex = window._selectedLevels.findIndex(l => l.id === levelId);
+            if (existingIndex > -1) {
+                window._selectedLevels.splice(existingIndex, 1);
+                el.classList.remove('selected');
+            } else {
+                window._selectedLevels.push({ id: levelId, title: gradeValue });
+                el.classList.add('selected');
+            }
+            updateGradePickerDisplay();
+        }
+
+        function removeSelectedGrade(levelId) {
+            levelId = parseInt(levelId);
+            window._selectedLevels = window._selectedLevels.filter(l => l.id !== levelId);
+            const item = document.querySelector(`.grade-picker-item[data-level-id="${levelId}"]`);
+            if (item) item.classList.remove('selected');
+            updateGradePickerDisplay();
+        }
+
+        function toggleGradeGroup(headerEl, groupId) {
+            const col = headerEl.closest('.grade-picker-column');
+            if (!col) return;
+            const items = col.querySelectorAll('.grade-picker-item');
+            const allSelected = Array.from(items).every(i => i.classList.contains('selected'));
+
+            items.forEach(item => {
+                const id = parseInt(item.dataset.levelId);
+                const title = item.dataset.grade;
+                const exists = window._selectedLevels.some(l => l.id === id);
+
+                if (allSelected) {
+                    item.classList.remove('selected');
+                    window._selectedLevels = window._selectedLevels.filter(l => l.id !== id);
+                } else {
+                    item.classList.add('selected');
+                    if (!exists) {
+                        window._selectedLevels.push({ id, title });
+                    }
+                }
+            });
+            updateGradePickerDisplay();
+        }
+
+        function selectGrade(el, gradeValue) {
+            const levelId = el.dataset.levelId || 0;
+            toggleGrade(el, gradeValue, levelId);
         }
 
         // Close grade picker when clicking outside
@@ -5387,6 +5485,7 @@
                     const selectedCategoryIds = Array.from(document.querySelectorAll('input[name="upload_category_ids[]"]:checked'))
                         .map(cb => cb.value);
                     uploadData.category_ids = selectedCategoryIds;
+                    uploadData.level_ids = window._selectedLevelIds || [];
 
                     // Log the data being sent for debugging
                     console.log('Upload data collected:', {
@@ -5397,6 +5496,7 @@
                         subject_id: subjectIdValue,
                         description: descriptionValue,
                         grade_level: gradeLevelValue,
+                        level_ids: uploadData.level_ids,
                         video_source: uploadData.video_source,
                         upload_destination: uploadData.upload_destination
                     });
@@ -5414,6 +5514,7 @@
                             subject_id: subjectIdValue,
                             description: descriptionValue,
                             grade_level: gradeLevelValue,
+                            level_ids: uploadData.level_ids,
                             video_source: uploadData.video_source,
                             external_video_url: uploadData.external_video_url,
                             upload_destination: uploadData.upload_destination,
@@ -5761,6 +5862,12 @@
                         });
                     }
 
+                    if (finalData.video.level_ids && finalData.video.level_ids.length > 0) {
+                        finalData.video.level_ids.forEach(id => {
+                            finalFormData.append('level_ids[]', id);
+                        });
+                    }
+
                     if (uploadData.thumbnail) {
                         finalFormData.append('thumbnail_file', uploadData.thumbnail);
                     }
@@ -5823,6 +5930,12 @@
                         if (finalData.video.category_ids && finalData.video.category_ids.length > 0) {
                             finalData.video.category_ids.forEach(id => {
                                 formData.append('category_ids[]', id);
+                            });
+                        }
+
+                        if (finalData.video.level_ids && finalData.video.level_ids.length > 0) {
+                            finalData.video.level_ids.forEach(id => {
+                                formData.append('level_ids[]', id);
                             });
                         }
 
@@ -5903,6 +6016,12 @@
                         if (finalData.video.category_ids && finalData.video.category_ids.length > 0) {
                             finalData.video.category_ids.forEach(id => {
                                 formData.append('category_ids[]', id);
+                            });
+                        }
+
+                        if (finalData.video.level_ids && finalData.video.level_ids.length > 0) {
+                            finalData.video.level_ids.forEach(id => {
+                                formData.append('level_ids[]', id);
                             });
                         }
 

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Textbook extends Model
 {
@@ -29,6 +30,7 @@ class Textbook extends Model
         'content_extraction_status',
         'is_toc_approved',
         'is_content_approved',
+        'is_course_active',
         'raw_toc_json',
         'uploaded_by',
         'extraction_method',
@@ -41,6 +43,7 @@ class Textbook extends Model
     protected $casts = [
         'is_toc_approved' => 'boolean',
         'is_content_approved' => 'boolean',
+        'is_course_active' => 'boolean',
         'requires_review' => 'boolean',
         'ocr_required' => 'boolean',
         'file_size_bytes' => 'integer',
@@ -76,5 +79,41 @@ class Textbook extends Model
     public function chapters(): HasMany
     {
         return $this->hasMany(TextbookChapter::class, 'textbook_id')->orderBy('sort_order');
+    }
+
+    public function sections(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            TextbookSection::class,
+            TextbookChapter::class,
+            'textbook_id',
+            'chapter_id',
+            'id',
+            'id'
+        );
+    }
+
+    /**
+     * Check whether this textbook course has content in all sections and is published.
+     */
+    public function isCourseComplete(): bool
+    {
+        $totalSections = $this->sections()->count();
+        if ($totalSections === 0) {
+            return false;
+        }
+
+        $readySections = $this->sections()
+            ->where('is_published', true)
+            ->where(function ($q) {
+                $q->where(function ($sub) {
+                    $sub->whereNotNull('content_markdown')->where('content_markdown', '!=', '');
+                })->orWhere(function ($sub) {
+                    $sub->whereNotNull('content_html')->where('content_html', '!=', '');
+                });
+            })
+            ->count();
+
+        return $readySections === $totalSections;
     }
 }

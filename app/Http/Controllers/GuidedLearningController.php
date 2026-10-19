@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Subject;
 use App\Models\Curriculum;
 use App\Models\CurriculumIndicator;
+use App\Models\Textbook;
+use App\Models\TextbookSection;
 use App\Models\GuidedLearningProgress;
 use App\Services\GuidedLearningService;
 use App\Services\UrlObfuscator;
@@ -25,10 +27,13 @@ class GuidedLearningController extends Controller
     {
         $user = Auth::user();
 
-        // Check if a specific subject is requested (support obfuscated or raw ID)
+        // Check if a specific textbook or subject is requested
+        $rawTextbookId = $request->input('textbook_id');
+        $textbookId = $rawTextbookId ? (UrlObfuscator::decode($rawTextbookId) ?? $rawTextbookId) : null;
+
         $rawSubjectId = $request->input('subject_id');
         $subjectId = $rawSubjectId ? (UrlObfuscator::decode($rawSubjectId) ?? $rawSubjectId) : null;
-        $isSelectingSubject = empty($subjectId);
+        $isSelectingSubject = empty($subjectId) && empty($textbookId);
 
         // Total completed objectives across all subjects for student header
         $totalCompleted = GuidedLearningProgress::where('user_id', $user->id)
@@ -36,7 +41,7 @@ class GuidedLearningController extends Controller
             ->count();
 
         if ($isSelectingSubject) {
-            // 1. SUBJECT SELECTION MODE
+            // 1. SUBJECT / COURSE SELECTION MODE
             $selectedLevelGroupSlug = session('selected_level_group') ?? $user->current_level_group ?? 'jhs';
             
             $currentLevelGroup = \App\Models\LevelGroup::where('slug', $selectedLevelGroupSlug)
@@ -51,7 +56,13 @@ class GuidedLearningController extends Controller
             $levelsInGroup = $currentLevelGroup ? $currentLevelGroup->levels : collect();
             $selectedGradeSlug = $request->input('grade', 'all');
 
+            // 1. Fetch Complete and Published Textbook Courses (Strict Quality Gate)
+            $publishedCourses = $this->guidedLearningService->getPublishedTextbookCourses($user, $selectedGradeSlug);
+            $publishedSubjectIds = $publishedCourses->pluck('subject_id')->filter()->unique()->toArray();
+
+            // 2. Fallback to approved curriculum only for subjects without a complete published textbook course yet
             $curriculaQuery = Curriculum::where('is_approved', true)
+                ->whereNotIn('subject_id', $publishedSubjectIds)
                 ->with(['subject', 'level', 'strands.subStrands.indicators']);
 
             if ($currentLevelGroup) {
@@ -74,12 +85,13 @@ class GuidedLearningController extends Controller
 
             $curricula = $curriculaQuery->get();
 
-            // Load student's progress
+            // Load student's progress for curriculum indicators
             $userProgress = GuidedLearningProgress::where('user_id', $user->id)
+                ->whereNotNull('curriculum_indicator_id')
                 ->get()
                 ->keyBy('curriculum_indicator_id');
 
-            $subjectCards = $curricula->map(function ($curr) use ($userProgress) {
+            $curriculaCards = $curricula->map(function ($curr) use ($userProgress, $currentLevelGroup) {
                 $indicatorIds = $curr->strands->flatMap(function ($s) {
                     return $s->subStrands->flatMap(function ($ss) {
                         return $ss->indicators->pluck('id');
@@ -99,7 +111,6 @@ class GuidedLearningController extends Controller
                 }
 
                 $pct = $total > 0 ? round(($completed / $total) * 100) : 0;
-
                 $sName = strtolower($curr->subject?->name ?? '');
                 $isMath = str_contains($sName, 'math');
 
@@ -129,20 +140,14 @@ class GuidedLearningController extends Controller
                     default => 'fa-graduation-cap',
                 };
 
-                $tagline = match (true) {
-                    str_contains($sName, 'math') => 'Number systems, algebra, geometry, and problem solving.',
-                    str_contains($sName, 'english') || str_contains($sName, 'literacy') || str_contains($sName, 'language') => 'Grammar, reading comprehension, writing, and vocabulary.',
-                    str_contains($sName, 'science') => 'Living systems, matter, energy, ecosystems, and earth.',
-                    str_contains($sName, 'comput') || str_contains($sName, 'ict') || str_contains($sName, 'tech') => 'Hardware, programming concepts, digital literacy, and online safety.',
-                    default => $curr->description ?? 'Official national curriculum standards and practice checkpoints.',
-                };
-
                 return [
+                    'textbook_id' => null,
+                    'encoded_textbook_id' => null,
                     'subject_id' => $curr->subject_id,
                     'encoded_subject_id' => UrlObfuscator::encode($curr->subject_id),
                     'subject_name' => $curr->subject?->name ?? $curr->title,
                     'curriculum_title' => $curr->title,
-                    'tagline' => $tagline,
+                    'tagline' => $curr->description ?? 'Official national curriculum standards and practice checkpoints.',
                     'strands_count' => $curr->strands->count(),
                     'total_indicators' => $total,
                     'completed_indicators' => $completed,
@@ -150,8 +155,12 @@ class GuidedLearningController extends Controller
                     'percentage' => $pct,
                     'icon' => $icon,
                     'image' => $image,
+                    'is_textbook_course' => false,
                 ];
             });
+
+            // Merge: Published Textbook courses take top priority!
+            $subjectCards = $publishedCourses->concat($curriculaCards);
 
             return view('guided-learning.index', [
                 'isSelectingSubject' => true,
@@ -163,17 +172,34 @@ class GuidedLearningController extends Controller
             ]);
         }
 
-        // 2. INDICATORS / ROADMAP MODE (Subject is selected)
-        $currentSubject = Subject::findOrFail($subjectId);
-        $curriculumData = $this->guidedLearningService->getCurriculumTreeForStudent($user, $currentSubject);
+        // 2. COURSE ROADMAP MODE (Textbook or Subject is selected)
+        $publishedTextbook = null;
+        if ($textbookId) {
+            $publishedTextbook = Textbook::with(['subject', 'level', 'levelGroup'])->find($textbookId);
+            $currentSubject = $publishedTextbook?->subject ?? Subject::first();
+        } else {
+            $currentSubject = Subject::findOrFail($subjectId);
+            $publishedTextbook = $this->guidedLearningService->getPublishedTextbookForSubject($user, $currentSubject);
+        }
 
-        $availableSubjects = Subject::whereHas('curricula', function ($q) {
-            $q->where('is_approved', true);
+        if ($publishedTextbook) {
+            $curriculumData = $this->guidedLearningService->getTextbookCourseTreeForStudent($user, $publishedTextbook);
+        } else {
+            $curriculumData = $this->guidedLearningService->getCurriculumTreeForStudent($user, $currentSubject);
+        }
+
+        $availableSubjects = Subject::where(function ($q) {
+            $q->whereHas('curricula', function ($cq) {
+                $cq->where('is_approved', true);
+            })->orWhereHas('textbooks', function ($tq) {
+                $tq->where('is_content_approved', true);
+            });
         })->orderBy('name')->get();
 
         return view('guided-learning.index', [
             'isSelectingSubject' => false,
             'currentSubject' => $currentSubject,
+            'publishedTextbook' => $publishedTextbook,
             'encodedSubjectId' => UrlObfuscator::encode($currentSubject->id),
             'curriculumData' => $curriculumData,
             'availableSubjects' => $availableSubjects,
@@ -482,5 +508,165 @@ class GuidedLearningController extends Controller
         $progress->update(['notes' => $notes]);
 
         return response()->json(['success' => true, 'notes' => $notes]);
+    }
+
+    /**
+     * Display the full topic reader for a specific textbook section.
+     */
+    public function section(string|int $section)
+    {
+        $user = Auth::user();
+        $sectionId = UrlObfuscator::decode($section) ?? $section;
+        $learningPackage = $this->guidedLearningService->getSectionLearningPackage((int)$sectionId, $user);
+
+        return view('guided-learning.topic', $learningPackage);
+    }
+
+    /**
+     * Toggle textbook section completion status (FreeCodeCamp checkbox click).
+     */
+    public function toggleSection(Request $request, string|int $section): JsonResponse
+    {
+        $user = Auth::user();
+        $sectionId = UrlObfuscator::decode($section) ?? $section;
+        $sectionModel = TextbookSection::findOrFail($sectionId);
+        $explicitStatus = $request->input('status');
+
+        if ($explicitStatus === 'completed' && !empty($sectionModel->lesson_quiz)) {
+            $existingProgress = GuidedLearningProgress::where('user_id', $user->id)
+                ->where('textbook_section_id', $sectionModel->id)
+                ->first();
+
+            $hasPassedQuiz = $existingProgress && ($existingProgress->quiz_passed_at !== null || $existingProgress->status === 'completed');
+
+            if (!$hasPassedQuiz) {
+                return response()->json([
+                    'success' => false,
+                    'requires_interactive' => true,
+                    'message' => 'Please complete all checkpoint challenges before marking this topic as completed.',
+                ], 422);
+            }
+        }
+
+        $progress = $this->guidedLearningService->toggleSectionStatus($user, $sectionModel->id, $explicitStatus);
+
+        $textbook = $sectionModel->chapter->textbook;
+        $tree = $this->guidedLearningService->getTextbookCourseTreeForStudent($user, $textbook);
+
+        return response()->json([
+            'success' => true,
+            'section_id' => $sectionModel->id,
+            'encoded_section_id' => UrlObfuscator::encode($sectionModel->id),
+            'status' => $progress->status,
+            'completed_at' => $progress->completed_at?->format('M d, Y'),
+            'stats' => $tree['stats'] ?? null,
+        ]);
+    }
+
+    /**
+     * Submit and evaluate the checkpoint quiz for a textbook section.
+     */
+    public function submitSectionQuiz(Request $request, string|int $section): JsonResponse
+    {
+        $user = Auth::user();
+        $sectionId = UrlObfuscator::decode($section) ?? $section;
+        $sectionModel = TextbookSection::findOrFail($sectionId);
+
+        $answers = $request->input('answers', []);
+        $serverQuiz = $sectionModel->lesson_quiz ?? [];
+        if (is_string($serverQuiz)) {
+            $serverQuiz = json_decode($serverQuiz, true) ?? [];
+        }
+
+        $totalQuestions = count($serverQuiz);
+        if ($totalQuestions === 0) {
+            $progress = $this->guidedLearningService->toggleSectionStatus($user, $sectionModel->id, 'completed');
+            return response()->json([
+                'success' => true,
+                'passed' => true,
+                'score' => 100,
+                'total' => 0,
+                'correct_count' => 0,
+            ]);
+        }
+
+        $correctCount = 0;
+        $questionResults = [];
+
+        foreach ($serverQuiz as $q) {
+            $qId = (string) ($q['id'] ?? 0);
+            $userAns = isset($answers[$qId]) ? (int) $answers[$qId] : null;
+            $correctAns = (int) ($q['correct_answer'] ?? 0);
+            $isCorrect = ($userAns !== null && $userAns === $correctAns);
+
+            if ($isCorrect) {
+                $correctCount++;
+            }
+
+            $questionResults[] = [
+                'id' => $q['id'],
+                'user_answer' => $userAns,
+                'is_correct' => $isCorrect,
+                'correct_answer' => $correctAns,
+                'explanation' => $q['explanation'] ?? '',
+            ];
+        }
+
+        $percentage = round(($correctCount / $totalQuestions) * 100);
+        $passed = ($correctCount === $totalQuestions);
+
+        $progress = GuidedLearningProgress::firstOrCreate(
+            ['user_id' => $user->id, 'textbook_section_id' => $sectionModel->id],
+            ['status' => 'in_progress']
+        );
+
+        $progress->quiz_attempts = ($progress->quiz_attempts ?? 0) + 1;
+        $progress->quiz_score = max($progress->quiz_score ?? 0, $percentage);
+
+        if ($passed) {
+            $progress->quiz_passed_at = now();
+            $progress->status = 'completed';
+            $progress->completed_at = now();
+        }
+        $progress->save();
+
+        $textbook = $sectionModel->chapter->textbook;
+        $tree = $this->guidedLearningService->getTextbookCourseTreeForStudent($user, $textbook);
+
+        // Next section URL
+        $allSections = TextbookSection::whereHas('chapter', function ($q) use ($textbook) {
+            $q->where('textbook_id', $textbook->id);
+        })->join('textbook_chapters', 'textbook_sections.chapter_id', '=', 'textbook_chapters.id')
+          ->orderBy('textbook_chapters.sort_order')
+          ->orderBy('textbook_sections.sort_order')
+          ->select('textbook_sections.id')
+          ->pluck('id')
+          ->toArray();
+
+        $currentIndex = array_search($sectionModel->id, $allSections);
+        $nextUrl = null;
+        if ($currentIndex !== false && $currentIndex < count($allSections) - 1) {
+            $nextUrl = route('guided-learning.section', UrlObfuscator::encode($allSections[$currentIndex + 1]));
+        } else {
+            $nextUrl = route('guided-learning.index', [
+                'textbook_id' => UrlObfuscator::encode($textbook->id),
+                'subject_id' => UrlObfuscator::encode($textbook->subject_id),
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'passed' => $passed,
+            'score' => $percentage,
+            'correct_count' => $correctCount,
+            'total' => $totalQuestions,
+            'results' => $questionResults,
+            'status' => $progress->status,
+            'stats' => $tree['stats'] ?? null,
+            'next_url' => $nextUrl,
+            'message' => $passed
+                ? 'Mastery Achieved! Checkpoint 100% completed.'
+                : "You got {$correctCount} of {$totalQuestions} correct. Score 100% to complete this topic.",
+        ]);
     }
 }

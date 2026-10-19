@@ -16,10 +16,22 @@ class TextbookSection extends Model
         'title',
         'content_html',
         'content_markdown',
+        'lesson_quiz',
+        'key_takeaways',
+        'media_resources',
+        'pedagogical_scheme',
+        'is_published',
         'sort_order',
         'page_start',
         'page_end',
         'curriculum_indicator_id',
+    ];
+
+    protected $casts = [
+        'lesson_quiz' => 'array',
+        'key_takeaways' => 'array',
+        'media_resources' => 'array',
+        'is_published' => 'boolean',
     ];
 
     public function chapter(): BelongsTo

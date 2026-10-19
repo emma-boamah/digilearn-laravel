@@ -32,6 +32,7 @@
                     <tr>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Book Details</th>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Subject & Curriculum</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Student Course</th>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">TOC Status</th>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Content Status</th>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Chapters</th>
@@ -57,6 +58,30 @@
                                     <span class="italic text-gray-400">No linked curriculum</span>
                                 @endif
                             </div>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            @if($book->is_course_active)
+                                <div class="inline-flex flex-col items-center gap-1">
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-2xs">
+                                        <i class="fas fa-star text-amber-500 mr-1.5"></i> Active Course
+                                    </span>
+                                    <form action="{{ route('admin.textbooks.toggle-course-active', $book) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="text-[10px] text-gray-400 hover:text-red-500 underline transition-colors">
+                                            Deactivate
+                                        </button>
+                                    </form>
+                                </div>
+                            @else
+                                <form action="{{ route('admin.textbooks.toggle-course-active', $book) }}" method="POST" class="inline">
+                                    @csrf
+                                    <button type="submit"
+                                            class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-semibold bg-gray-100 dark:bg-gray-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 text-gray-600 dark:text-gray-300 hover:text-indigo-600 border border-gray-200 dark:border-gray-600 hover:border-indigo-300 transition-all shadow-2xs"
+                                            title="Set this textbook as the active course for students on Guided Learning">
+                                        <i class="far fa-star text-gray-400 mr-1.5"></i> Set as Active
+                                    </button>
+                                </form>
+                            @endif
                         </td>
                         <td class="px-6 py-4">
                             @if($book->toc_extraction_status === 'extracted')
@@ -147,7 +172,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="px-6 py-14 text-center text-gray-500">
+                        <td colspan="7" class="px-6 py-14 text-center text-gray-500">
                             <div class="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center mx-auto mb-3 text-2xl">
                                 <i class="fas fa-book-open"></i>
                             </div>
@@ -168,7 +193,7 @@
     </div>
 
     <!-- Upload Modal with Transparent Backdrop (Textbook page clearly visible behind it) -->
-    <div x-show="uploadModalOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+    <div x-show="uploadModalOpen" x-cloak style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
         <div class="flex items-center justify-center min-h-screen p-4 text-center">
             
             <!-- Sleek Glassmorphism Backdrop: textbook page remains visible behind it -->
