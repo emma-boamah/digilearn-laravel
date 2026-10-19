@@ -6,6 +6,9 @@ use App\Models\Curriculum;
 use App\Models\CurriculumIndicator;
 use App\Models\GuidedLearningProgress;
 use App\Models\Subject;
+use App\Models\Textbook;
+use App\Models\TextbookChapter;
+use App\Models\TextbookSection;
 use App\Models\User;
 use App\Models\Video;
 use App\Models\Document;
@@ -13,9 +16,462 @@ use App\Models\Quiz;
 use App\Services\UrlObfuscator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class GuidedLearningService
 {
+    /**
+     * Get published and complete textbook courses available for the student.
+     */
+    public function getPublishedTextbookCourses(User $user, ?string $gradeSlug = null): \Illuminate\Support\Collection
+    {
+        $selectedLevelGroupSlug = session('selected_level_group') ?? $user->current_level_group ?? 'jhs';
+
+        $query = Textbook::with([
+            'subject',
+            'level.levelGroup',
+            'levelGroup',
+            'chapters.sections',
+        ]);
+
+        // Filter by level group
+        if ($selectedLevelGroupSlug) {
+            $query->where(function ($q) use ($selectedLevelGroupSlug) {
+                $q->whereHas('levelGroup', function ($lq) use ($selectedLevelGroupSlug) {
+                    $lq->where('slug', $selectedLevelGroupSlug)
+                       ->orWhere('title', 'like', "%{$selectedLevelGroupSlug}%");
+                })->orWhereHas('level.levelGroup', function ($lq) use ($selectedLevelGroupSlug) {
+                    $lq->where('slug', $selectedLevelGroupSlug)
+                       ->orWhere('title', 'like', "%{$selectedLevelGroupSlug}%");
+                });
+            });
+        }
+
+        // Filter by grade if specified and not 'all'
+        if ($gradeSlug && $gradeSlug !== 'all') {
+            $query->whereHas('level', function ($lq) use ($gradeSlug) {
+                $lq->where('slug', $gradeSlug)
+                   ->orWhere('title', 'like', "%{$gradeSlug}%");
+            });
+        }
+
+        $allTextbooks = $query->get();
+
+        // Filter eligible textbook courses:
+        // 1. Explicitly marked as active course by admin (with chapters), OR
+        // 2. Complete and published (all sections ready)
+        $eligibleTextbooks = $allTextbooks->filter(function (Textbook $tb) {
+            if ($tb->is_course_active && $tb->chapters->count() > 0) {
+                return true;
+            }
+            return $tb->isCourseComplete();
+        });
+
+        // Group by subject_id so each subject displays only ONE authoritative course!
+        // Priority: 1. is_course_active = true, 2. First complete
+        $selectedTextbooks = $eligibleTextbooks->groupBy('subject_id')->map(function ($group) {
+            $active = $group->firstWhere('is_course_active', true);
+            return $active ?: $group->first();
+        })->values();
+
+        // Load student's progress for textbook sections
+        $allSectionIds = $selectedTextbooks->flatMap(function ($tb) {
+            return $tb->chapters->flatMap(function ($c) {
+                return $c->sections->pluck('id');
+            });
+        })->toArray();
+
+        $userProgress = GuidedLearningProgress::where('user_id', $user->id)
+            ->whereIn('textbook_section_id', $allSectionIds)
+            ->get()
+            ->keyBy('textbook_section_id');
+
+        return $selectedTextbooks->map(function (Textbook $tb) use ($userProgress) {
+            $sectionIds = $tb->chapters->flatMap(function ($c) {
+                return $c->sections->pluck('id');
+            })->toArray();
+
+            $total = count($sectionIds);
+            $completed = 0;
+            $inProgress = 0;
+
+            foreach ($sectionIds as $sId) {
+                $status = $userProgress->get($sId)?->status ?? 'not_started';
+                if ($status === 'completed') {
+                    $completed++;
+                } elseif ($status === 'in_progress') {
+                    $inProgress++;
+                }
+            }
+
+            $percentage = $total > 0 ? round(($completed / $total) * 100) : 0;
+            $sName = strtolower($tb->subject?->name ?? $tb->title);
+            $isMath = str_contains($sName, 'math');
+
+            $image = null;
+            if ($isMath) {
+                $lgSlug = strtolower(
+                    $tb->levelGroup?->slug 
+                    ?? ($tb->level?->levelGroup?->slug ?? '')
+                );
+                if (str_contains($lgSlug, 'primary')) {
+                    $image = asset('images/guided-learning/math/math-primary.jpg');
+                } elseif (str_contains($lgSlug, 'jhs')) {
+                    $image = asset('images/guided-learning/math/math-jhs.jpg');
+                } else {
+                    $image = asset('images/guided-learning/math/math-default.png');
+                }
+            }
+
+            $icon = match (true) {
+                str_contains($sName, 'math') => 'fa-calculator',
+                str_contains($sName, 'english') || str_contains($sName, 'literacy') || str_contains($sName, 'language') => 'fa-book-open',
+                str_contains($sName, 'science') => 'fa-flask',
+                str_contains($sName, 'comput') || str_contains($sName, 'ict') || str_contains($sName, 'tech') => 'fa-laptop-code',
+                str_contains($sName, 'social') || str_contains($sName, 'history') || str_contains($sName, 'geography') => 'fa-globe-africa',
+                default => 'fa-graduation-cap',
+            };
+
+            return [
+                'textbook_id' => $tb->id,
+                'encoded_textbook_id' => UrlObfuscator::encode($tb->id),
+                'subject_id' => $tb->subject_id,
+                'encoded_subject_id' => UrlObfuscator::encode($tb->subject_id),
+                'subject_name' => $tb->subject?->name ?? $tb->title,
+                'course_title' => $tb->title,
+                'tagline' => $tb->author ? "By {$tb->author} • Complete Course Syllabus" : 'Complete course curriculum with interactive lessons and mastery quizzes.',
+                'strands_count' => $tb->chapters->count(),
+                'total_indicators' => $total,
+                'completed_indicators' => $completed,
+                'in_progress_indicators' => $inProgress,
+                'percentage' => $percentage,
+                'icon' => $icon,
+                'image' => $image,
+                'is_textbook_course' => true,
+            ];
+        });
+    }
+
+    /**
+     * Get a complete and published textbook course for a subject if available.
+     */
+    public function getPublishedTextbookForSubject(User $user, Subject $subject): ?Textbook
+    {
+        $selectedLevelGroupSlug = session('selected_level_group') ?? $user->current_level_group;
+
+        $query = Textbook::where('subject_id', $subject->id)
+            ->with(['chapters.sections', 'subject', 'level', 'levelGroup']);
+
+        if ($selectedLevelGroupSlug) {
+            $query->where(function ($q) use ($selectedLevelGroupSlug) {
+                $q->whereHas('levelGroup', function ($lq) use ($selectedLevelGroupSlug) {
+                    $lq->where('slug', $selectedLevelGroupSlug)
+                       ->orWhere('title', 'like', "%{$selectedLevelGroupSlug}%");
+                })->orWhereHas('level.levelGroup', function ($lq) use ($selectedLevelGroupSlug) {
+                    $lq->where('slug', $selectedLevelGroupSlug)
+                       ->orWhere('title', 'like', "%{$selectedLevelGroupSlug}%");
+                });
+            });
+        }
+
+        $candidates = $query->orderByDesc('is_course_active')->latest()->get();
+        foreach ($candidates as $candidate) {
+            if ($candidate->is_course_active && $candidate->chapters->count() > 0) {
+                return $candidate;
+            }
+            if ($candidate->isCourseComplete()) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Format a textbook Table of Contents tree into an interactive learning roadmap for a student.
+     */
+    public function getTextbookCourseTreeForStudent(User $user, Textbook $textbook): array
+    {
+        $textbook->load([
+            'chapters.sections' => function ($q) {
+                $q->orderBy('sort_order');
+            },
+            'subject',
+            'level',
+            'levelGroup',
+        ]);
+
+        $sectionIds = $textbook->chapters->flatMap(function ($c) {
+            return $c->sections->pluck('id');
+        })->toArray();
+
+        $userProgress = GuidedLearningProgress::where('user_id', $user->id)
+            ->whereIn('textbook_section_id', $sectionIds)
+            ->get()
+            ->keyBy('textbook_section_id');
+
+        $totalSections = count($sectionIds);
+        $completedSections = 0;
+        $inProgressSections = 0;
+
+        $strands = [];
+        $gradeLabel = $textbook->level?->title ?? $textbook->levelGroup?->title ?? 'Course Modules';
+
+        foreach ($textbook->chapters as $chapter) {
+            $chapterSections = [];
+            $chapterTotal = 0;
+            $chapterCompleted = 0;
+
+            foreach ($chapter->sections as $sec) {
+                $cleanSectionTitle = self::cleanTitle($sec->title);
+                $prog = $userProgress->get($sec->id);
+                $status = $prog?->status ?? 'not_started';
+
+                if ($status === 'completed') {
+                    $completedSections++;
+                    $chapterCompleted++;
+                } elseif ($status === 'in_progress') {
+                    $inProgressSections++;
+                }
+                $chapterTotal++;
+
+                $chapterSections[] = [
+                    'id' => $sec->id,
+                    'encoded_id' => UrlObfuscator::encode($sec->id),
+                    'code' => "Sec " . ($sec->sort_order ?: 1),
+                    'title' => $cleanSectionTitle,
+                    'status' => $status,
+                    'is_completed' => ($status === 'completed'),
+                    'completed_at' => $prog?->completed_at?->format('M d, Y'),
+                    'quiz_passed_at' => $prog?->quiz_passed_at?->format('M d, Y'),
+                    'time_spent' => $prog?->time_spent_seconds ?? 0,
+                    'sort_order' => $sec->sort_order,
+                    'page_start' => $sec->page_start,
+                    'page_end' => $sec->page_end,
+                    'is_section' => true,
+                    'has_quiz' => !empty($sec->lesson_quiz),
+                ];
+            }
+
+            $strands[] = [
+                'id' => $chapter->id,
+                'title' => $chapter->title,
+                'grade_label' => $gradeLabel,
+                'sort_order' => $chapter->sort_order,
+                'total_topics' => $chapterTotal,
+                'completed_topics' => $chapterCompleted,
+                'sub_strands' => [
+                    [
+                        'id' => $chapter->id,
+                        'title' => $chapter->title,
+                        'code' => 'Ch ' . ($chapter->sort_order ?: 1),
+                        'sort_order' => $chapter->sort_order,
+                        'total_topics' => $chapterTotal,
+                        'completed_topics' => $chapterCompleted,
+                        'indicators' => $chapterSections,
+                    ]
+                ],
+            ];
+        }
+
+        $overallPct = $totalSections > 0 ? round(($completedSections / $totalSections) * 100) : 0;
+
+        $gradeLevels = [
+            [
+                'label' => $gradeLabel,
+                'total_topics' => $totalSections,
+                'completed_topics' => $completedSections,
+                'progress_percentage' => $overallPct,
+                'strands' => $strands,
+            ]
+        ];
+
+        return [
+            'is_textbook_course' => true,
+            'textbook' => [
+                'id' => $textbook->id,
+                'encoded_id' => UrlObfuscator::encode($textbook->id),
+                'title' => $textbook->title,
+                'author' => $textbook->author,
+                'subject_name' => $textbook->subject?->name ?? $textbook->title,
+                'subject_id' => $textbook->subject_id,
+            ],
+            'curriculum' => [
+                'id' => $textbook->id,
+                'title' => $textbook->title,
+                'education_body' => $textbook->publisher ?? 'DigiLearn Academic Course',
+                'academic_year' => $textbook->edition ?? date('Y'),
+                'subject_name' => $textbook->subject?->name ?? $textbook->title,
+                'subject_id' => $textbook->subject_id,
+            ],
+            'stats' => [
+                'total_indicators' => $totalSections,
+                'completed_indicators' => $completedSections,
+                'in_progress_indicators' => $inProgressSections,
+                'overall_percentage' => $overallPct,
+            ],
+            'strands' => $strands,
+            'grade_levels' => $gradeLevels,
+        ];
+    }
+
+    /**
+     * Get learning package for a specific textbook section.
+     */
+    public function getSectionLearningPackage(int $sectionId, User $user): array
+    {
+        $section = TextbookSection::with([
+            'chapter.textbook.subject',
+            'media',
+            'curriculumIndicator',
+        ])->findOrFail($sectionId);
+
+        $chapter = $section->chapter;
+        $textbook = $chapter->textbook;
+        $subject = $textbook->subject;
+
+        $cleanTitle = self::cleanTitle($section->title);
+
+        $progress = GuidedLearningProgress::where('user_id', $user->id)
+            ->where('textbook_section_id', $section->id)
+            ->first();
+
+        // Find prev and next sections across the textbook
+        $allSections = TextbookSection::whereHas('chapter', function ($q) use ($textbook) {
+            $q->where('textbook_id', $textbook->id);
+        })->join('textbook_chapters', 'textbook_sections.chapter_id', '=', 'textbook_chapters.id')
+          ->orderBy('textbook_chapters.sort_order')
+          ->orderBy('textbook_sections.sort_order')
+          ->select('textbook_sections.id')
+          ->pluck('id')
+          ->toArray();
+
+        $currentIndex = array_search($section->id, $allSections);
+        $prevId = ($currentIndex !== false && $currentIndex > 0) ? $allSections[$currentIndex - 1] : null;
+        $nextId = ($currentIndex !== false && $currentIndex < count($allSections) - 1) ? $allSections[$currentIndex + 1] : null;
+
+        $html = $section->content_html;
+        $markdown = $section->content_markdown;
+        if (empty($html) && !empty($markdown)) {
+            $html = Str::markdown($markdown);
+        }
+
+        $quiz = $section->lesson_quiz ?? [];
+        if (is_string($quiz)) {
+            $quiz = json_decode($quiz, true) ?? [];
+        }
+        $takeaways = $section->key_takeaways ?? [];
+        if (is_string($takeaways)) {
+            $takeaways = json_decode($takeaways, true) ?? [];
+        }
+
+        $indicatorShim = (object) [
+            'id' => $section->id,
+            'title' => $cleanTitle,
+            'student_title' => $cleanTitle,
+            'code' => 'Sec ' . ($section->sort_order ?: 1),
+            'indicator_code' => 'Sec ' . ($section->sort_order ?: 1),
+            'description' => null,
+            'exemplars' => [],
+            'page_start' => $section->page_start,
+            'page_end' => $section->page_end,
+            'lesson_html' => $html,
+            'lesson_markdown' => $markdown,
+        ];
+
+        $mediaResources = $section->media_resources ?? [];
+        if (is_string($mediaResources)) {
+            $mediaResources = json_decode($mediaResources, true) ?? [];
+        }
+
+        $studentLesson = [
+            'html' => $html,
+            'markdown' => $markdown,
+            'source' => 'textbook',
+            'key_takeaways' => is_array($takeaways) ? $takeaways : [],
+            'quiz' => is_array($quiz) ? $quiz : [],
+            'media_resources' => is_array($mediaResources) ? $mediaResources : [],
+            'interactive_segments' => [],
+            'has_textbook' => true,
+        ];
+
+        $relatedQuizzes = collect();
+        if ($section->curriculumIndicator) {
+            $relatedQuizzes = $this->findRelevantQuizzes($section->curriculumIndicator, $subject);
+        }
+
+        return [
+            'isTextbookSection' => true,
+            'section' => $section,
+            'indicator' => $indicatorShim,
+            'encodedIndicatorId' => UrlObfuscator::encode($section->id),
+            'subStrand' => (object) [
+                'id' => $chapter->id,
+                'title' => $chapter->title,
+                'code' => 'Ch ' . ($chapter->sort_order ?: 1),
+            ],
+            'strand' => (object) [
+                'id' => $chapter->id,
+                'title' => $chapter->title,
+                'grade_label' => $textbook->level?->title ?? '',
+            ],
+            'curriculum' => (object) [
+                'id' => $textbook->id,
+                'title' => $textbook->title,
+            ],
+            'subject' => $subject,
+            'encodedSubjectId' => UrlObfuscator::encode($subject->id),
+            'status' => $progress ? $progress->status : 'not_started',
+            'progress' => $progress,
+            'textbookSections' => collect([$section]),
+            'studentLesson' => $studentLesson,
+            'media' => $section->media,
+            'curatedMedia' => is_array($mediaResources) ? $mediaResources : [],
+            'relatedVideos' => collect(),
+            'relatedQuizzes' => $relatedQuizzes,
+            'prevIndicatorId' => $prevId ? UrlObfuscator::encode($prevId) : null,
+            'nextIndicatorId' => $nextId ? UrlObfuscator::encode($nextId) : null,
+        ];
+    }
+
+    /**
+     * Toggle section completion status.
+     */
+    public function toggleSectionStatus(User $user, int $sectionId, ?string $explicitStatus = null): GuidedLearningProgress
+    {
+        $section = TextbookSection::findOrFail($sectionId);
+
+        $progress = GuidedLearningProgress::firstOrNew([
+            'user_id' => $user->id,
+            'textbook_section_id' => $section->id,
+        ]);
+
+        if ($section->curriculum_indicator_id && empty($progress->curriculum_indicator_id)) {
+            $progress->curriculum_indicator_id = $section->curriculum_indicator_id;
+        }
+
+        if ($explicitStatus) {
+            $progress->status = $explicitStatus;
+        } else {
+            $progress->status = match ($progress->status) {
+                'not_started' => 'in_progress',
+                'in_progress' => 'completed',
+                'completed' => 'not_started',
+                default => 'completed',
+            };
+        }
+
+        if ($progress->status === 'completed') {
+            $progress->completed_at = now();
+        } else {
+            $progress->completed_at = null;
+        }
+
+        $progress->save();
+
+        return $progress;
+    }
+
     /**
      * Get the active approved curriculum tree for a student and subject.
      */

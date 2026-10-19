@@ -24,6 +24,8 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mathlive/mathlive-static.css" />
 <script src="https://unpkg.com/mathlive" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
+<!-- Mermaid for Flowcharts & Diagrams -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js" nonce="{{ request()->attributes->get('csp_nonce') }}"></script>
 
 <style nonce="{{ request()->attributes->get('csp_nonce') }}">
     .lesson-reader {
@@ -189,6 +191,47 @@
         background-color: rgba(30, 41, 59, 0.4);
     }
 
+    /* Callouts & Quotes */
+    .lesson-reader blockquote {
+        border-left: 4px solid #3b82f6;
+        padding: 0.75rem 1rem;
+        background: #eff6ff;
+        border-radius: 0 0.5rem 0.5rem 0;
+        margin: 1.25rem 0;
+        font-style: italic;
+        color: #1e40af;
+    }
+    .dark .lesson-reader blockquote, [data-theme="dark"] .lesson-reader blockquote {
+        background: #1e293b;
+        border-color: #60a5fa;
+        color: #93c5fd;
+    }
+
+    /* Diagrams & SVGs */
+    .lesson-reader svg {
+        max-width: 100%;
+        height: auto;
+        margin: 1.5rem auto;
+        display: block;
+        border-radius: 0.75rem;
+    }
+
+    /* Mermaid Flowcharts & Charts */
+    .lesson-reader .mermaid {
+        display: flex;
+        justify-content: center;
+        margin: 1.5rem 0;
+        background: #f8fafc;
+        padding: 1.25rem;
+        border-radius: 0.75rem;
+        border: 1px solid #e2e8f0;
+        overflow-x: auto;
+    }
+    .dark .lesson-reader .mermaid, [data-theme="dark"] .lesson-reader .mermaid {
+        background: #1e293b;
+        border-color: #334155;
+    }
+
     /* MathLive & KaTeX Mathematical and Scientific Typography */
     math-field {
         font-size: 1.12em;
@@ -348,41 +391,153 @@
             <!-- Main Content Area: Textbook Lessons or Synthesized Student Lesson -->
             @if($textbookSections->isNotEmpty())
                 @foreach($textbookSections as $sec)
-                <div class="mb-10">
-                    <!-- Section Header: Bold blue-accented heading -->
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200 dark:border-gray-700 pb-3 mb-5">
-                        <h2 class="text-xl font-bold text-blue-600 dark:text-blue-400">
-                            {{ $sec->title }}
-                        </h2>
+                <div class="mb-10 rounded-2xl border border-gray-200/90 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 sm:p-10 shadow-sm space-y-6">
+                    <!-- Section Header -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 dark:border-gray-700 pb-4">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                                {{ $sec->chapter?->title ?? 'Module Reading' }}
+                            </span>
+                            <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                                {{ $sec->title }}
+                            </h2>
+                        </div>
                         @if($sec->chapter)
-                            <span class="text-xs font-semibold px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg">
+                            <span class="text-xs font-semibold px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg self-start sm:self-auto">
                                 {{ $sec->chapter->textbook->title ?? 'Textbook Resource' }}
                             </span>
                         @endif
                     </div>
 
-                    <!-- Content HTML/Markdown with math rendering -->
-                    <div class="lesson-reader max-w-none">
+                    <!-- Full Width Reading Text & Pedagogical Logic -->
+                    <div class="lesson-reader max-w-none prose dark:prose-invert">
                         {!! $sec->content_html !!}
                     </div>
-
-                    <!-- Media / Diagrams for this section -->
-                    @if($sec->media->isNotEmpty())
-                    <div class="mt-6 space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            @foreach($sec->media as $mediaItem)
-                            <div class="rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-900">
-                                <img src="{{ Storage::url($mediaItem->file_path) }}" alt="{{ $mediaItem->caption ?? 'Diagram' }}" class="w-full h-auto object-cover">
-                                @if($mediaItem->caption)
-                                    <p class="p-3 text-xs text-gray-600 dark:text-gray-400 italic text-center">{{ $mediaItem->caption }}</p>
-                                @endif
-                            </div>
-                            @endforeach
-                        </div>
-                    </div>
-                    @endif
                 </div>
                 @endforeach
+
+                <!-- Interactive Checkpoint Assessment Quiz for Textbook Lessons -->
+                @if(!empty($studentLesson['quiz']) && is_array($studentLesson['quiz']) && count($studentLesson['quiz']) > 0)
+                <div id="lesson-checkpoint-quiz" class="mb-10 rounded-2xl border-2 transition-all p-6 sm:p-8 space-y-6 shadow-sm"
+                     :class="{
+                         'border-green-500/50 bg-green-50/20 dark:bg-green-950/20': quizPassed || status === 'completed',
+                         'border-blue-600/30 bg-white dark:bg-gray-800': !(quizPassed || status === 'completed')
+                     }">
+                    
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-700/60 pb-4">
+                        <div class="flex items-center gap-3">
+                            <span class="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold shadow-2xs"
+                                  :class="quizPassed || status === 'completed' ? 'bg-green-600 text-white' : 'bg-blue-600 text-white'">
+                                <i class="fas" :class="quizPassed || status === 'completed' ? 'fa-check-double' : 'fa-clipboard-check'"></i>
+                            </span>
+                            <div>
+                                <h3 class="font-bold text-base text-gray-900 dark:text-white flex items-center gap-2">
+                                    <span>Lesson Checkpoint Challenge</span>
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">
+                                        {{ count($studentLesson['quiz']) }} Questions
+                                    </span>
+                                </h3>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                    Test your understanding of the key concepts and rules from this lesson.
+                                </p>
+                            </div>
+                        </div>
+
+                        <template x-if="quizPassed || status === 'completed'">
+                            <span class="inline-flex items-center gap-1.5 text-xs font-bold text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-950/60 px-3 py-1.5 rounded-xl border border-green-200 dark:border-green-800">
+                                <i class="fas fa-check-circle"></i> Checkpoint Passed &bull; Topic Mastered
+                            </span>
+                        </template>
+                    </div>
+
+                    <!-- Questions Loop -->
+                    <div class="space-y-6">
+                        @foreach($studentLesson['quiz'] as $qIdx => $q)
+                        @php
+                            $qId = (string) ($q['id'] ?? $qIdx);
+                            $qNum = $qIdx + 1;
+                        @endphp
+                        <div class="p-5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 space-y-4">
+                            <div class="flex items-start gap-3">
+                                <span class="w-6 h-6 rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                                    {{ $qNum }}
+                                </span>
+                                <p class="text-sm font-bold text-gray-900 dark:text-white leading-relaxed">
+                                    {{ $q['question'] }}
+                                </p>
+                            </div>
+
+                            <!-- Options -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                                @foreach($q['options'] as $optIdx => $opt)
+                                <div @click="if (!quizPassed) { quizAnswers['{{ $qId }}'] = {{ $optIdx }}; }"
+                                     class="flex items-center gap-3 p-3 rounded-xl border text-xs sm:text-sm font-medium transition-all"
+                                     :class="{
+                                         'border-blue-600 bg-blue-50/80 dark:bg-blue-950/60 text-blue-900 dark:text-blue-100 shadow-2xs cursor-pointer': quizAnswers['{{ $qId }}'] === {{ $optIdx }} && !quizFeedback,
+                                         'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-blue-300 cursor-pointer': quizAnswers['{{ $qId }}'] !== {{ $optIdx }} && !quizFeedback,
+                                         'border-green-500 bg-green-50 dark:bg-green-950/40 text-green-900 dark:text-green-200 font-bold': quizFeedback && getCorrectAnswer('{{ $qId }}', {{ $q['correct_answer'] ?? 0 }}) === {{ $optIdx }},
+                                         'border-red-400 bg-red-50 dark:bg-red-950/40 text-red-900 dark:text-red-200': quizFeedback && quizAnswers['{{ $qId }}'] === {{ $optIdx }} && getCorrectAnswer('{{ $qId }}', {{ $q['correct_answer'] ?? 0 }}) !== {{ $optIdx }},
+                                         'cursor-default opacity-75': quizFeedback && getCorrectAnswer('{{ $qId }}', {{ $q['correct_answer'] ?? 0 }}) !== {{ $optIdx }} && quizAnswers['{{ $qId }}'] !== {{ $optIdx }}
+                                     }">
+                                    <span class="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+                                          :class="quizAnswers['{{ $qId }}'] === {{ $optIdx }} ? 'border-blue-600 bg-blue-600' : 'border-gray-300 dark:border-gray-600'">
+                                        <span x-show="quizAnswers['{{ $qId }}'] === {{ $optIdx }}" class="w-1.5 h-1.5 rounded-full bg-white"></span>
+                                    </span>
+                                    <span class="flex-1">{{ $opt }}</span>
+                                </div>
+                                @endforeach
+                            </div>
+
+                            <!-- Explanation when submitted -->
+                            <template x-if="quizFeedback">
+                                <div class="p-3 rounded-lg text-xs leading-relaxed mt-2"
+                                     :class="isQuestionCorrect('{{ $qId }}', {{ $q['correct_answer'] ?? 0 }}) ? 'bg-green-50 dark:bg-green-950/40 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-900' : 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-900'">
+                                    <span class="font-bold flex items-center gap-1.5 mb-1">
+                                        <i class="fas" :class="isQuestionCorrect('{{ $qId }}', {{ $q['correct_answer'] ?? 0 }}) ? 'fa-check text-green-600' : 'fa-info-circle text-amber-600'"></i>
+                                        <span x-text="isQuestionCorrect('{{ $qId }}', {{ $q['correct_answer'] ?? 0 }}) ? 'Correct!' : 'Explanation:'"></span>
+                                    </span>
+                                    <span>{{ $q['explanation'] ?? 'Review the lesson concepts above to understand the solution.' }}</span>
+                                </div>
+                            </template>
+                        </div>
+                        @endforeach
+                    </div>
+
+                    <!-- Submit / Retry Button Bar -->
+                    <div class="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-100 dark:border-gray-700/60">
+                        <div class="text-xs text-gray-500">
+                            <template x-if="!quizFeedback">
+                                <span>Select an answer for all {{ count($studentLesson['quiz']) }} questions to verify.</span>
+                            </template>
+                            <template x-if="quizFeedback && quizFeedback.passed">
+                                <span class="font-bold text-green-600">Great job! You scored 100% on the checkpoint challenge.</span>
+                            </template>
+                            <template x-if="quizFeedback && !quizFeedback.passed">
+                                <span class="font-bold text-red-500">You answered <span x-text="quizFeedback.correct_count"></span> of {{ count($studentLesson['quiz']) }} correctly. Please review and try again!</span>
+                            </template>
+                        </div>
+
+                        <div>
+                            <template x-if="!quizPassed">
+                                <button type="button"
+                                        @click="submitSectionQuiz()"
+                                        :disabled="quizSubmitting"
+                                        class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-50 cursor-pointer">
+                                    <i class="fas" :class="quizSubmitting ? 'fa-spinner fa-spin' : 'fa-check-circle'"></i>
+                                    <span x-text="quizSubmitting ? 'Evaluating Answers...' : (quizFeedback && !quizFeedback.passed ? 'Try Again' : 'Submit Checkpoint Answers')"></span>
+                                </button>
+                            </template>
+                            <template x-if="quizPassed">
+                                <span class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-green-600 text-white text-xs font-bold shadow-sm">
+                                    <i class="fas fa-award"></i>
+                                    <span>All Challenges Solved</span>
+                                </span>
+                            </template>
+                        </div>
+                    </div>
+
+                </div>
+                @endif
 
                 <!-- Exemplars / Practice Section for Textbook Lessons -->
                 @if($indicator->exemplars)
@@ -705,61 +860,155 @@
         <div class="lg:w-72 xl:w-80 flex-shrink-0">
             <div class="lg:sticky lg:top-24 space-y-5">
 
-                <!-- Video Lessons -->
-                <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-2xs space-y-3">
-                    <h3 class="font-bold text-xs text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                        <i class="fas fa-play-circle text-red-600"></i>
-                        Video Lessons
-                    </h3>
+                @php
+                    $curatedList = $curatedMedia ?? ($studentLesson['media_resources'] ?? []);
+                    if (is_string($curatedList)) {
+                        $curatedList = json_decode($curatedList, true) ?? [];
+                    }
+                    $hasAnyVideos = !empty($curatedList) || (isset($relatedVideos) && $relatedVideos->isNotEmpty());
+                    $totalVideoCount = count($curatedList) + (isset($relatedVideos) ? $relatedVideos->count() : 0);
+                @endphp
+
+                <!-- Unified Video Lessons / Media Dock -->
+                <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-2xs space-y-3.5">
+                    <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700/60 pb-2.5">
+                        <h3 class="font-bold text-xs text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                            <i class="fab fa-youtube text-red-600 text-sm"></i>
+                            <span>Video Lessons</span>
+                        </h3>
+                        @if($hasAnyVideos)
+                        <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300">
+                            {{ $totalVideoCount }}
+                        </span>
+                        @endif
+                    </div>
 
                     <div class="space-y-3">
-                        @forelse($relatedVideos as $video)
-                        <a href="{{ route('dashboard.lesson.view', $video->id) }}" class="block group">
-                            <div class="relative aspect-video w-full rounded-xl overflow-hidden bg-gray-900 border border-gray-200/80 dark:border-gray-700/80">
-                                <img src="{{ $video->getThumbnailUrl() }}" 
-                                     alt="{{ $video->title }}" 
-                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                     onerror="this.onerror=null; this.src='{{ asset('images/video-placeholder.jpg') }}';">
-                                <div class="absolute inset-0 bg-black/25 group-hover:bg-black/15 transition-colors flex items-center justify-center">
-                                    <div class="w-8 h-8 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                                        <i class="fas fa-play text-[10px] ml-0.5"></i>
+                        {{-- 1. Curated Educational Videos (YouTube from Lesson Studio) --}}
+                        @if(!empty($curatedList))
+                            @foreach($curatedList as $cMedia)
+                                @if(($cMedia['type'] ?? '') === 'youtube' && !empty($cMedia['video_id']))
+                                <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-750/70 overflow-hidden shadow-2xs hover:shadow-md transition-all group cursor-pointer"
+                                     @click="openVideoModal(@js($cMedia))">
+                                    <div class="relative aspect-video bg-gray-900 overflow-hidden">
+                                        <img src="{{ $cMedia['thumbnail_url'] ?? ('https://img.youtube.com/vi/' . $cMedia['video_id'] . '/hqdefault.jpg') }}"
+                                             alt="{{ $cMedia['title'] ?? 'Video' }}"
+                                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                                        <div class="absolute inset-0 bg-black/25 flex items-center justify-center group-hover:bg-black/10 transition-colors">
+                                            <span class="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                                                <i class="fas fa-play text-[10px] ml-0.5"></i>
+                                            </span>
+                                        </div>
+                                        <span class="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/75 text-white text-[9px] font-mono font-bold tracking-wider">
+                                            YouTube
+                                        </span>
+                                    </div>
+                                    <div class="p-2.5">
+                                        <h5 class="text-xs font-bold text-gray-900 dark:text-white line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                            {{ $cMedia['title'] ?? 'Educational Tutorial' }}
+                                        </h5>
+                                        <div class="flex items-center gap-1.5 mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                                            <i class="fab fa-youtube text-red-500 text-xs"></i>
+                                            <span class="truncate">{{ $cMedia['channel'] ?? 'Educational Tutorial' }}</span>
+                                        </div>
                                     </div>
                                 </div>
-                                @if($video->duration_seconds)
-                                <span class="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-semibold text-white">
-                                    {{ gmdate($video->duration_seconds >= 3600 ? "H:i:s" : "i:s", $video->duration_seconds) }}
-                                </span>
                                 @endif
+                            @endforeach
+                        @endif
+
+                        {{-- 2. Platform Related Videos --}}
+                        @if(isset($relatedVideos) && $relatedVideos->isNotEmpty())
+                            @foreach($relatedVideos as $video)
+                            <a href="{{ route('dashboard.lesson.view', $video->id) }}" class="block group">
+                                <div class="relative aspect-video w-full rounded-xl overflow-hidden bg-gray-900 border border-gray-200/80 dark:border-gray-700/80">
+                                    <img src="{{ $video->getThumbnailUrl() }}" 
+                                         alt="{{ $video->title }}" 
+                                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                         onerror="this.onerror=null; this.src='{{ asset('images/video-placeholder.jpg') }}';">
+                                    <div class="absolute inset-0 bg-black/25 group-hover:bg-black/15 transition-colors flex items-center justify-center">
+                                        <div class="w-8 h-8 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                                            <i class="fas fa-play text-[10px] ml-0.5"></i>
+                                        </div>
+                                    </div>
+                                    @if($video->duration_seconds)
+                                    <span class="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/80 text-[10px] font-semibold text-white">
+                                        {{ gmdate($video->duration_seconds >= 3600 ? "H:i:s" : "i:s", $video->duration_seconds) }}
+                                    </span>
+                                    @endif
+                                </div>
+                                <h4 class="text-xs font-semibold text-gray-800 dark:text-gray-200 line-clamp-2 mt-1.5 leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                    {{ $video->title }}
+                                </h4>
+                            </a>
+                            @endforeach
+                        @endif
+
+                        {{-- Empty Fallback --}}
+                        @if(!$hasAnyVideos)
+                        <div class="text-center py-4 space-y-2.5">
+                            <div class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-750 flex items-center justify-center mx-auto text-gray-400">
+                                <i class="fab fa-youtube text-lg"></i>
                             </div>
-                            <h4 class="text-xs font-semibold text-gray-800 dark:text-gray-200 line-clamp-2 mt-1.5 leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                {{ $video->title }}
-                            </h4>
-                        </a>
-                        @empty
-                        <div class="text-center py-3 space-y-2">
-                            <p class="text-xs text-gray-400 italic">No matching video lessons found for this topic.</p>
+                            <p class="text-xs text-gray-400 italic">No direct video tutorials attached to this topic yet.</p>
                             <a href="https://www.youtube.com/results?search_query={{ urlencode($indicator->student_title . ' ' . $subject->name . ' explained') }}"
                                target="_blank" rel="noopener"
-                               class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-red-600 hover:text-red-700 transition-colors">
-                                <i class="fab fa-youtube"></i> Search YouTube
-                                <i class="fas fa-external-link-alt text-[8px]"></i>
+                               class="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:text-red-700 bg-red-50 dark:bg-red-950/40 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-900 transition-colors">
+                                <i class="fab fa-youtube"></i> Search on YouTube
+                                <i class="fas fa-external-link-alt text-[9px]"></i>
                             </a>
                         </div>
-                        @endforelse
+                        @endif
                     </div>
                 </div>
 
-                <!-- Practice Quizzes -->
-                <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-2xs space-y-3">
-                    <h3 class="font-bold text-xs text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                        <i class="fas fa-check-circle text-blue-600"></i>
-                        Practice Quiz
-                    </h3>
+                <!-- Practice Quizzes / Checkpoint Challenge -->
+                <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-2xs space-y-3.5">
+                    <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700/60 pb-2.5">
+                        <h3 class="font-bold text-xs text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                            <i class="fas fa-clipboard-check text-blue-600"></i>
+                            <span>Practice Quiz</span>
+                        </h3>
+                        @if(!empty($studentLesson['quiz']) && count($studentLesson['quiz']) > 0)
+                        <span class="text-[10px] px-2 py-0.5 rounded-full font-bold"
+                              :class="status === 'completed' || quizPassed ? 'bg-green-100 dark:bg-green-950/60 text-green-700 dark:text-green-300' : 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'">
+                            <span x-text="status === 'completed' || quizPassed ? 'Completed' : '{{ count($studentLesson['quiz']) }} Qs'"></span>
+                        </span>
+                        @endif
+                    </div>
 
-                    <div class="space-y-2">
-                        @forelse($relatedQuizzes as $quiz)
+                    {{-- Section Lesson Checkpoint Quiz Trigger --}}
+                    @if(!empty($studentLesson['quiz']) && count($studentLesson['quiz']) > 0)
+                    <div class="p-3.5 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 space-y-2">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-7 h-7 rounded-lg text-white flex items-center justify-center text-xs font-bold shadow-2xs"
+                                  :class="status === 'completed' || quizPassed ? 'bg-green-600' : 'bg-blue-600'">
+                                <i class="fas" :class="status === 'completed' || quizPassed ? 'fa-check' : 'fa-tasks'"></i>
+                            </span>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="text-xs font-bold text-gray-900 dark:text-white truncate">Lesson Checkpoint</h4>
+                                <p class="text-[10px] text-gray-500 dark:text-gray-400">
+                                    <span x-show="status === 'completed' || quizPassed">Mastered &bull; 100% Score</span>
+                                    <span x-show="!(status === 'completed' || quizPassed)">Required to complete lesson</span>
+                                </p>
+                            </div>
+                        </div>
+                        <button type="button"
+                                @click="scrollToQuiz()"
+                                class="w-full mt-2 py-2 px-3 rounded-lg text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                                :class="status === 'completed' || quizPassed ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'">
+                            <span x-text="status === 'completed' || quizPassed ? 'Review Checkpoint Results' : 'Take Checkpoint Quiz'"></span>
+                            <i class="fas fa-arrow-down text-[10px]"></i>
+                        </button>
+                    </div>
+                    @endif
+
+                    {{-- Platform Related Quizzes --}}
+                    @if(isset($relatedQuizzes) && $relatedQuizzes->isNotEmpty())
+                    <div class="space-y-2 pt-1">
+                        @foreach($relatedQuizzes as $quiz)
                         <a href="{{ route('quiz.take', $quiz) }}" class="flex items-center gap-3 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750 hover:bg-blue-50/40 dark:hover:bg-blue-950/20 transition-colors group border border-transparent hover:border-blue-200">
-                            <div class="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                            <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-600 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                                 <i class="fas fa-question text-xs"></i>
                             </div>
                             <div class="flex-1 min-w-0">
@@ -767,10 +1016,11 @@
                                 <p class="text-[10px] text-gray-400 truncate">Practice Assessment</p>
                             </div>
                         </a>
-                        @empty
-                        <p class="text-xs text-gray-400 italic py-2">No practice quizzes yet.</p>
-                        @endforelse
+                        @endforeach
                     </div>
+                    @elseif(empty($studentLesson['quiz']) || count($studentLesson['quiz']) === 0)
+                    <p class="text-xs text-gray-400 italic py-2 text-center">No practice quizzes yet.</p>
+                    @endif
                 </div>
 
             </div>
@@ -781,7 +1031,12 @@
     <!-- Sticky Bottom Navigation Bar (full width, below grid) -->
     <div class="sticky bottom-6 z-20 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md p-4 rounded-2xl border border-gray-200/80 dark:border-gray-700 shadow-xl flex items-center justify-between gap-4 mt-8">
         @if($prevIndicatorId)
-            <a href="{{ route('guided-learning.topic', $prevIndicatorId) }}"
+            @php
+                $prevRoute = !empty($isTextbookSection)
+                    ? route('guided-learning.section', $prevIndicatorId)
+                    : route('guided-learning.topic', $prevIndicatorId);
+            @endphp
+            <a href="{{ $prevRoute }}"
                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <i class="fas fa-chevron-left text-[10px]"></i>
                 <span class="hidden sm:inline">Previous Topic</span>
@@ -810,8 +1065,13 @@
             </template>
 
             @if($nextIndicatorId)
+            @php
+                $nextRoute = !empty($isTextbookSection)
+                    ? route('guided-learning.section', $nextIndicatorId)
+                    : route('guided-learning.topic', $nextIndicatorId);
+            @endphp
             <button type="button"
-                    @click="handleCompleteAndNext('{{ route('guided-learning.topic', $nextIndicatorId) }}')"
+                    @click="handleCompleteAndNext('{{ $nextRoute }}')"
                     class="inline-flex items-center gap-2 px-5 py-2 rounded-xl border-2 border-blue-600 bg-gray-50 hover:bg-blue-50/60 dark:bg-gray-750 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400 text-xs font-bold shadow-2xs transition-all">
                 <span>Next Topic</span>
                 <i class="fas fa-arrow-right text-[10px]"></i>
@@ -823,6 +1083,32 @@
                 <span>Finish Roadmap</span>
             </a>
             @endif
+        </div>
+    </div>
+
+    <!-- Video Player Modal -->
+    <div x-show="videoModalOpen" x-cloak style="display: none;"
+         class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-xs"
+         @keydown.escape.window="closeVideoModal()">
+        <div class="bg-gray-900 rounded-2xl max-w-4xl w-full border border-gray-700 overflow-hidden shadow-2xl"
+             @click.away="closeVideoModal()">
+            <div class="p-3 sm:p-4 border-b border-gray-800 flex items-center justify-between text-white">
+                <h4 class="text-xs sm:text-sm font-bold truncate flex items-center gap-2">
+                    <i class="fab fa-youtube text-red-500"></i>
+                    <span x-text="activeVideo?.title || 'Educational Video Tutorial'"></span>
+                </h4>
+                <button type="button" @click="closeVideoModal()" class="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer">
+                    <i class="fas fa-times text-base"></i>
+                </button>
+            </div>
+            <div class="aspect-video w-full bg-black">
+                <template x-if="activeVideo?.video_id">
+                    <iframe :src="'https://www.youtube-nocookie.com/embed/' + activeVideo.video_id + '?autoplay=1'"
+                            class="w-full h-full border-0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen></iframe>
+                </template>
+            </div>
         </div>
     </div>
 </div>
@@ -839,9 +1125,10 @@ window.renderAllMath = function(root) {
     const textNodes = [];
     while (walker.nextNode()) textNodes.push(walker.currentNode);
     textNodes.forEach(node => {
+        if (node.parentElement && (node.parentElement.closest('svg') || node.parentElement.closest('.mermaid') || node.parentElement.closest('pre'))) return;
         let t = node.textContent;
-        if (/\((?:\\?(?:frac|text|mathbf|sqrt|alpha|beta|theta|pi|ge|le|approx|times|div|pm|circ)[^)]+)\)/.test(t)) {
-            node.textContent = t.replace(/\(\s*(\\?(?:frac|text|mathbf|sqrt|alpha|beta|theta|pi|ge|le|approx|times|div|pm|circ)[^)]*)\)/g, '$$$1$$');
+        if (/\(\s*(\\\\(?:frac|text|mathbf|sqrt|alpha|beta|theta|pi|ge|le|approx|times|div|pm|circ)\b[^)]*)\)/.test(t)) {
+            node.textContent = t.replace(/\(\s*(\\\\(?:frac|text|mathbf|sqrt|alpha|beta|theta|pi|ge|le|approx|times|div|pm|circ)\b[^)]*)\)/g, '$$$1$$');
         }
     });
 
@@ -857,6 +1144,7 @@ window.renderAllMath = function(root) {
         try {
             renderMathInElement(target, {
                 delimiters: delimiters,
+                ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code", "annotation", "annotation-xml", "svg"],
                 throwOnError: false,
                 trust: true
             });
@@ -918,6 +1206,89 @@ function topicReaderApp() {
         notes: @json($progress->notes ?? ''),
         saveStatus: 'Saved',
 
+        // Video modal state
+        videoModalOpen: false,
+        activeVideo: null,
+
+        openVideoModal(video) {
+            this.activeVideo = video;
+            this.videoModalOpen = true;
+        },
+
+        closeVideoModal() {
+            this.videoModalOpen = false;
+            this.activeVideo = null;
+        },
+
+        // Textbook Checkpoint Quiz State
+        quizQuestions: @json($studentLesson['quiz'] ?? []),
+        quizAnswers: {},
+        quizFeedback: null,
+        quizSubmitting: false,
+        quizPassed: {{ ($progress && ($progress->quiz_passed_at !== null || $progress->status === 'completed')) ? 'true' : 'false' }},
+
+        scrollToQuiz() {
+            const quizEl = document.getElementById('lesson-checkpoint-quiz');
+            if (quizEl) {
+                quizEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                quizEl.classList.add('ring-4', 'ring-blue-500/30');
+                setTimeout(() => quizEl.classList.remove('ring-4', 'ring-blue-500/30'), 1500);
+            }
+        },
+
+        getCorrectAnswer(qId, fallback) {
+            if (!this.quizFeedback || !Array.isArray(this.quizFeedback.results)) return fallback;
+            const res = this.quizFeedback.results.find(r => String(r.id) === String(qId));
+            return res ? res.correct_answer : fallback;
+        },
+
+        isQuestionCorrect(qId, fallback) {
+            if (!this.quizFeedback || !Array.isArray(this.quizFeedback.results)) return false;
+            const res = this.quizFeedback.results.find(r => String(r.id) === String(qId));
+            return res ? !!res.is_correct : false;
+        },
+
+        async submitSectionQuiz() {
+            const qCount = this.quizQuestions.length;
+            if (Object.keys(this.quizAnswers).length < qCount) {
+                alert(`Please select an answer for all ${qCount} questions before submitting.`);
+                return;
+            }
+            this.quizSubmitting = true;
+            try {
+                const isSection = {{ !empty($isTextbookSection) ? 'true' : 'false' }};
+                const endpoint = isSection
+                    ? `/guided-learning/section/{{ $encodedIndicatorId ?? $indicator->id }}/quiz`
+                    : `/guided-learning/topic/{{ $encodedIndicatorId ?? $indicator->id }}/quiz`;
+
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ answers: this.quizAnswers })
+                });
+                const data = await res.json();
+                this.quizSubmitting = false;
+
+                if (data.success) {
+                    this.quizFeedback = data;
+                    if (data.passed) {
+                        this.quizPassed = true;
+                        this.status = 'completed';
+                    }
+                    this.$nextTick(() => {
+                        if (window.renderAllMath) window.renderAllMath();
+                    });
+                }
+            } catch (err) {
+                this.quizSubmitting = false;
+                console.error(err);
+            }
+        },
+
         // Brilliant-Style Interactive Segments State
         interactiveSegments: @json($studentLesson['interactive_segments'] ?? []),
         completedSegments: {{ ($progress && ($progress->quiz_passed_at !== null || $progress->status === 'completed')) ? json_encode(array_column($studentLesson['interactive_segments'] ?? [], 'id')) : '[]' }},
@@ -928,7 +1299,45 @@ function topicReaderApp() {
         segmentChecking: { @foreach($studentLesson['interactive_segments'] ?? [] as $seg){{ $seg['id'] }}: false,@endforeach },
         hintsRevealed: { @foreach($studentLesson['interactive_segments'] ?? [] as $seg){{ $seg['id'] }}: false,@endforeach },
 
+        renderMermaidDiagrams() {
+            const codeBlocks = document.querySelectorAll('.lesson-reader pre code.language-mermaid, .lesson-reader code.language-mermaid');
+            if (!codeBlocks || codeBlocks.length === 0) return;
+
+            codeBlocks.forEach((block, idx) => {
+                const pre = block.closest('pre') || block;
+                const container = document.createElement('div');
+                container.className = 'mermaid';
+                container.id = 'topic-mermaid-' + idx + '-' + Date.now();
+
+                // Clean up any HTML entities that might cause Mermaid syntax errors
+                let rawText = block.textContent.trim();
+                rawText = rawText
+                    .replace(/&rarr;/g, '-->')
+                    .replace(/&larr;/g, '<--')
+                    .replace(/&gt;/g, '>')
+                    .replace(/&lt;/g, '<')
+                    .replace(/&amp;/g, '&');
+
+                container.textContent = rawText;
+                pre.parentNode.replaceChild(container, pre);
+            });
+
+            if (window.mermaid) {
+                try {
+                    window.mermaid.initialize({
+                        startOnLoad: false,
+                        theme: (document.documentElement.classList.contains('dark') || document.documentElement.getAttribute('data-theme') === 'dark') ? 'dark' : 'default',
+                        securityLevel: 'loose'
+                    });
+                    window.mermaid.run({ nodes: document.querySelectorAll('.lesson-reader .mermaid') });
+                } catch (mErr) {
+                    console.warn("Mermaid execution error:", mErr);
+                }
+            }
+        },
+
         init() {
+            this.renderMermaidDiagrams();
             this.$nextTick(() => {
                 if (window.renderAllMath) window.renderAllMath();
             });
@@ -953,7 +1362,7 @@ function topicReaderApp() {
         },
 
         scrollToInteractiveFlow() {
-            const flow = document.getElementById('interactive-learning-flow');
+            const flow = document.getElementById('interactive-learning-flow') || document.getElementById('lesson-checkpoint-quiz');
             if (flow) {
                 flow.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 flow.classList.add('ring-4', 'ring-blue-500/30');
@@ -1079,7 +1488,11 @@ function topicReaderApp() {
 
         async toggleComplete() {
             try {
-                const response = await fetch(`/guided-learning/topic/{{ $encodedIndicatorId ?? $indicator->id }}/toggle`, {
+                const isSection = {{ !empty($isTextbookSection) ? 'true' : 'false' }};
+                const endpoint = isSection
+                    ? `/guided-learning/section/{{ $encodedIndicatorId ?? $indicator->id }}/toggle`
+                    : `/guided-learning/topic/{{ $encodedIndicatorId ?? $indicator->id }}/toggle`;
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

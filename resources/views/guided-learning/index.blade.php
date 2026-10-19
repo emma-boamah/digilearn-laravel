@@ -89,11 +89,21 @@
         <!-- Hugging Face Style Grid: Gray/off-white in light mode, Dark/black in dark mode -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             @foreach($subjectCards as $card)
-            <a href="{{ route('guided-learning.index', ['subject_id' => $card['encoded_subject_id'] ?? $card['subject_id']]) }}"
+            @php
+                $targetUrl = !empty($card['encoded_textbook_id'])
+                    ? route('guided-learning.index', ['textbook_id' => $card['encoded_textbook_id'], 'subject_id' => $card['encoded_subject_id']])
+                    : route('guided-learning.index', ['subject_id' => $card['encoded_subject_id'] ?? $card['subject_id']]);
+            @endphp
+            <a href="{{ $targetUrl }}"
                class="group relative flex flex-col justify-between p-6 rounded-2xl bg-gray-100/90 dark:bg-gray-900 border border-gray-200/90 dark:border-gray-800 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-white dark:hover:bg-gray-850 shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer block">
                 
                 <!-- Upper Right: Completed Check Badge / In-Progress / Arrow Up-Right -->
-                <div class="absolute top-4 right-4">
+                <div class="absolute top-4 right-4 flex items-center gap-1.5">
+                    @if(!empty($card['is_textbook_course']))
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                            Course
+                        </span>
+                    @endif
                     @if($card['percentage'] == 100)
                         <div class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs shadow-md shadow-blue-500/30" title="Completed">
                             <i class="fas fa-check text-[10px]"></i>
@@ -245,7 +255,7 @@
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5" x-text="nextTopic.strandTitle"></p>
                 </div>
 
-                <a :href="'/guided-learning/topic/' + (nextTopic.encoded_id || nextTopic.id)"
+                <a :href="nextTopic.isSection ? ('/guided-learning/section/' + (nextTopic.encoded_id || nextTopic.id)) : ('/guided-learning/topic/' + (nextTopic.encoded_id || nextTopic.id))"
                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition-all flex-shrink-0">
                     <span>Resume Learning</span>
                     <i class="fas fa-arrow-right text-[10px]"></i>
@@ -447,7 +457,12 @@
                                 <!-- Indicators (Checklist Rows - Entire row clickable, clean unnumbered titles) -->
                                 <div class="space-y-2.5 pl-2 sm:pl-7">
                                     @foreach($subStrand['indicators'] as $ind)
-                                    <a href="{{ route('guided-learning.topic', $ind['encoded_id'] ?? $ind['id']) }}"
+                                    @php
+                                        $indRoute = !empty($ind['is_section'])
+                                            ? route('guided-learning.section', $ind['encoded_id'] ?? $ind['id'])
+                                            : route('guided-learning.topic', $ind['encoded_id'] ?? $ind['id']);
+                                    @endphp
+                                    <a href="{{ $indRoute }}"
                                        class="flex items-center justify-between p-3.5 rounded-2xl transition-all border group cursor-pointer block text-left"
                                        x-show="isIndicatorVisible({{ $ind['id'] }}, '{{ addslashes($ind['title']) }}')"
                                        :class="{
@@ -460,7 +475,7 @@
                                         <div class="flex items-center gap-3.5 flex-1 min-w-0">
                                             <!-- FreeCodeCamp Completion Circle (Clickable Toggle) -->
                                             <button type="button" 
-                                                    @click.stop.prevent="toggleIndicator({{ $ind['id'] }}, {{ $strand['id'] }})"
+                                                    @click.stop.prevent="toggleIndicator({{ $ind['id'] }}, {{ $strand['id'] }}, {{ !empty($ind['is_section']) ? 'true' : 'false' }})"
                                                     title="Click to toggle status"
                                                     class="w-7 h-7 rounded-full flex items-center justify-center transition-all transform active:scale-90 flex-shrink-0 shadow-2xs"
                                                     :class="{
@@ -575,6 +590,7 @@
                                     strandTitle: '{{ addslashes($strand['title']) }}',
                                     gradeLabel: '{{ addslashes($strand['grade_label'] ?? '') }}',
                                     subStrandId: {{ $subStrand['id'] }},
+                                    isSection: {{ !empty($ind['is_section']) ? 'true' : 'false' }},
                                 },
                             @endforeach
                         @endforeach
@@ -652,9 +668,12 @@
                 return items.some(i => this.isIndicatorVisible(i.id, i.title));
             },
 
-            async toggleIndicator(id, strandId) {
+            async toggleIndicator(id, strandId, isSection = false) {
                 try {
-                    const response = await fetch(`/guided-learning/topic/${id}/toggle`, {
+                    const endpoint = isSection
+                        ? `/guided-learning/section/${id}/toggle`
+                        : `/guided-learning/topic/${id}/toggle`;
+                    const response = await fetch(endpoint, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

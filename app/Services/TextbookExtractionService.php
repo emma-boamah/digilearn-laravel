@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use App\Services\TextbookLocalParser;
+use App\Services\PedagogicalCourseSchemeService;
 use Exception;
 
 class TextbookExtractionService
@@ -21,8 +22,10 @@ class TextbookExtractionService
     protected string $model;
     protected TextbookLocalParser $localParser;
 
-    public function __construct(TextbookLocalParser $localParser)
-    {
+    public function __construct(
+        TextbookLocalParser $localParser,
+        protected PedagogicalCourseSchemeService $schemeService
+    ) {
         $this->apiKey = config('services.gemini.key', env('GEMINI_API_KEY', ''));
         $this->model = config('services.gemini.model', 'gemini-flash-latest');
         $this->localParser = $localParser;
@@ -175,9 +178,29 @@ PROMPT;
     /**
      * Extract full teaching content for a specific chapter or section.
      */
-    public function extractChapterContent(TextbookChapter $chapter): void
+    public function extractChapterContent(TextbookChapter $chapter, ?string $scheme = null): void
     {
         $textbook = $chapter->textbook;
+        $subjectName = $textbook->subject?->name ?? 'Mathematics';
+
+        if (empty($scheme)) {
+            $scheme = PedagogicalCourseSchemeService::getDefaultSchemeForSubject($subjectName);
+        }
+
+        // If chapter already has sections (standard flow from approved TOC), generate each section with pedagogical scheme
+        if ($chapter->sections()->exists()) {
+            foreach ($chapter->sections as $section) {
+                $this->generateSectionContent($section, $scheme);
+            }
+
+            $chapter->textbook->update([
+                'content_extraction_status' => 'extracted',
+                'extraction_method' => 'pedagogical_engine',
+                'requires_review' => true,
+            ]);
+            return;
+        }
+
         $fullPath = Storage::disk('public')->path($textbook->file_path);
         if (!file_exists($fullPath)) {
             $fullPath = storage_path('app/public/' . $textbook->file_path);
@@ -272,11 +295,30 @@ PROMPT;
     }
 
     /**
-     * Helper to render markdown string to HTML.
+     * Helper to render markdown string to HTML while preserving SVG graphics.
      */
     protected function renderMarkdownToHtml(string $markdown): string
     {
-        return \Illuminate\Support\Str::markdown($markdown);
+        $svgMap = [];
+        $counter = 0;
+        $safeMarkdown = preg_replace_callback('/<svg\b[^>]*>[\s\S]*?<\/svg>/i', function ($m) use (&$svgMap, &$counter) {
+            $token = "<!--SVG_BLOCK_PLACEHOLDER_{$counter}-->";
+            $counter++;
+            $svgMap[$token] = $m[0];
+            return "\n\n{$token}\n\n";
+        }, $markdown);
+
+        $html = \Illuminate\Support\Str::markdown($safeMarkdown, [
+            'html_input' => 'allow',
+            'allow_unsafe_links' => false,
+        ]);
+
+        foreach ($svgMap as $token => $svg) {
+            $html = str_replace("<p>{$token}</p>", $svg, $html);
+            $html = str_replace($token, $svg, $html);
+        }
+
+        return $html;
     }
 
     /**
@@ -427,5 +469,74 @@ PROMPT;
         }
 
         return $error;
+    }
+
+    /**
+     * Extract page text context from textbook PDF for a given page range.
+     */
+    public function extractPageContext(Textbook $textbook, ?int $start, ?int $end): string
+    {
+        if (!$start || !function_exists('exec')) {
+            return '';
+        }
+
+        $fullPath = Storage::disk('public')->path($textbook->file_path);
+        if (!file_exists($fullPath)) {
+            $fullPath = storage_path('app/public/' . $textbook->file_path);
+        }
+
+        if (!file_exists($fullPath)) {
+            return '';
+        }
+
+        $output = [];
+        $returnVar = 0;
+        $startPage = (int) $start;
+        $endPage = $end ? (int) $end : ($startPage + 10);
+        $escaped = escapeshellarg($fullPath);
+        @exec("pdftotext -f {$startPage} -l {$endPage} -layout {$escaped} - 2>/dev/null", $output, $returnVar);
+
+        return ($returnVar === 0 && !empty($output)) ? implode("\n", $output) : '';
+    }
+
+    /**
+     * Generate course reading text for a specific section using the Pedagogical Scheme Engine.
+     */
+    public function generateSectionContent(TextbookSection $section, ?string $scheme = null): array
+    {
+        $chapter = $section->chapter;
+        $textbook = $chapter->textbook;
+        $subjectName = $textbook->subject?->name ?? 'Mathematics';
+        $gradeLevel = $textbook->level?->name ?? 'JHS';
+
+        if (empty($scheme)) {
+            $scheme = $section->pedagogical_scheme ?: PedagogicalCourseSchemeService::getDefaultSchemeForSubject($subjectName);
+        }
+
+        $context = $this->extractPageContext(
+            $textbook,
+            $section->page_start ?: $chapter->page_start,
+            $section->page_end ?: $chapter->page_end
+        );
+
+        $result = $this->schemeService->generateContent(
+            topicTitle: $section->title,
+            subjectName: $subjectName,
+            gradeLevel: $gradeLevel,
+            contextText: $context,
+            scheme: $scheme
+        );
+
+        $section->update([
+            'content_markdown' => $result['markdown'],
+            'content_html' => $result['html'],
+            'key_takeaways' => $result['key_takeaways'],
+            'lesson_quiz' => $result['quiz'],
+            'media_resources' => $result['media_resources'] ?? [],
+            'pedagogical_scheme' => $scheme,
+            'is_published' => true,
+        ]);
+
+        return $result;
     }
 }

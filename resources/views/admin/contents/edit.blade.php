@@ -200,24 +200,15 @@
                                 </select>
                             </div>
 
-                            <!-- Grade Level Selection -->
-                            <div>
-                                <label for="grade_level" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Grade Level <span class="text-red-500">*</span>
-                                </label>
-                                <select id="grade_level" name="grade_level" required
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                                    <option value="">Select Grade Level</option>
-                                    @foreach($levelGroups as $group)
-                                        <optgroup label="{{ $group->title }}">
-                                            @foreach($group->levels as $level)
-                                                <option value="{{ $level->title }}" {{ $content->grade_level == $level->title ? 'selected' : '' }}>
-                                                    {{ $level->title }}
-                                                </option>
-                                            @endforeach
-                                        </optgroup>
-                                    @endforeach
-                                </select>
+                            <!-- Level / Grade Group Assignments -->
+                            <div class="md:col-span-2">
+                                <x-level-selector 
+                                    :level-groups="$levelGroups"
+                                    :selected-level-ids="$content->assigned_level_ids ?? []"
+                                    :legacy-grade-level="$content->grade_level"
+                                    id-prefix="edit_content_"
+                                    label="Assigned Levels & Grade Groups"
+                                    help-text="Choose which grades can access this content. You can select entire groups (e.g. All JHS) or mix individual levels (e.g. JHS 1 and SHS 1)." />
                             </div>
                         </div>
 

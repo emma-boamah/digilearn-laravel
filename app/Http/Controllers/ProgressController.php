@@ -128,8 +128,8 @@ class ProgressController extends Controller
                 ->selectRaw('COUNT(DISTINCT quiz_id) as attempted_quizzes, COUNT(DISTINCT CASE WHEN passed = 1 THEN quiz_id END) as passed_quizzes')
                 ->first();
 
-            $totalLessons = \App\Models\Video::where('grade_level', $grade)->where('status', 'approved')->count();
-            $totalQuizzes = \App\Models\Quiz::published()->where('grade_level', $grade)->count();
+            $totalLessons = \App\Models\Video::forLevel($grade)->where('status', 'approved')->count();
+            $totalQuizzes = \App\Models\Quiz::published()->forLevel($grade)->count();
 
             $attemptedLessons = (int)($lessonStat->attempted_lessons ?? 0);
             $completedLessons = (int)($lessonStat->completed_lessons ?? 0);
@@ -353,10 +353,10 @@ class ProgressController extends Controller
 
         // 7. Lesson Library Data
         $librarySubjects = \App\Models\Subject::whereHas('primaryVideos', function ($query) use ($foundCanonical) {
-            $query->where('grade_level', $foundCanonical)->where('status', 'approved');
+            $query->forLevel($foundCanonical)->where('status', 'approved');
         })->get();
 
-        $libraryLessons = \App\Models\Video::where('grade_level', $foundCanonical)
+        $libraryLessons = \App\Models\Video::forLevel($foundCanonical)
             ->where('status', 'approved')
             ->with(['subject', 'completions' => function ($query) use ($userId) {
             $query->where('user_id', $userId);

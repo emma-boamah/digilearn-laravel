@@ -2381,6 +2381,16 @@ class AdminController extends Controller
             'document_path' => $documentPath,
         ]);
 
+        // Sync levels
+        if ($request->has('level_ids')) {
+            $video->syncLevels((array) $request->input('level_ids'));
+        } elseif ($request->filled('grade_level')) {
+            $matchedLvl = Level::where('title', $request->grade_level)->orWhere('slug', $request->grade_level)->first();
+            if ($matchedLvl) {
+                $video->syncLevels([$matchedLvl->id]);
+            }
+        }
+
         // Handle quiz association
         if ($request->filled('quiz_id')) {
             $video->quiz_id = $request->quiz_id;
@@ -2393,7 +2403,7 @@ class AdminController extends Controller
             $video->save();
 
             $fileExtension = strtolower(pathinfo($documentPath, PATHINFO_EXTENSION));
-            Document::updateOrCreate(
+            $docRecord = Document::updateOrCreate(
                 ['video_id' => $video->id],
                 [
                     'title' => $video->title . ' Slides',
@@ -2405,6 +2415,10 @@ class AdminController extends Controller
                     'file_size_bytes' => Storage::disk('public')->size($documentPath),
                 ]
             );
+
+            if ($video->levels()->exists()) {
+                $docRecord->syncLevels($video->levels()->pluck('levels.id')->toArray());
+            }
         }
 
         return redirect()->route('admin.contents.index')->with('success', 'Video uploaded successfully and is pending review!');
@@ -2470,6 +2484,16 @@ class AdminController extends Controller
         $video->description = $request->description;
         $video->is_featured = $request->has('is_featured');
         $video->save();
+
+        // Sync levels
+        if ($request->has('level_ids')) {
+            $video->syncLevels((array) $request->input('level_ids'));
+        } elseif ($request->filled('grade_level')) {
+            $matchedLvl = Level::where('title', $request->grade_level)->orWhere('slug', $request->grade_level)->first();
+            if ($matchedLvl) {
+                $video->syncLevels([$matchedLvl->id]);
+            }
+        }
 
         // Sync corresponding Document model record
         if ($video->document_path) {
@@ -3020,7 +3044,7 @@ class AdminController extends Controller
             'shuffle_questions' => 'boolean',
         ]);
 
-        Quiz::create([
+        $quiz = Quiz::create([
             'title' => $request->title,
             'subject_id' => $request->subject_id,
             'video_id' => $request->video_id,
@@ -3030,6 +3054,15 @@ class AdminController extends Controller
             'is_featured' => $request->has('is_featured'),
             'shuffle_questions' => $request->boolean('shuffle_questions'),
         ]);
+
+        if ($request->has('level_ids')) {
+            $quiz->syncLevels((array) $request->input('level_ids'));
+        } elseif ($request->filled('grade_level')) {
+            $matchedLvl = Level::where('title', $request->grade_level)->orWhere('slug', $request->grade_level)->first();
+            if ($matchedLvl) {
+                $quiz->syncLevels([$matchedLvl->id]);
+            }
+        }
 
         return redirect()->route('admin.contents.index')->with('success', 'Quiz uploaded successfully!');
     }
@@ -3071,6 +3104,15 @@ class AdminController extends Controller
             'is_featured' => $request->has('is_featured'),
             'shuffle_questions' => $request->boolean('shuffle_questions'),
         ]);
+
+        if ($request->has('level_ids')) {
+            $quiz->syncLevels((array) $request->input('level_ids'));
+        } elseif ($request->filled('grade_level')) {
+            $matchedLvl = Level::where('title', $request->grade_level)->orWhere('slug', $request->grade_level)->first();
+            if ($matchedLvl) {
+                $quiz->syncLevels([$matchedLvl->id]);
+            }
+        }
 
         return redirect()->route('admin.contents.index')->with('success', 'Quiz updated successfully!');
     }
@@ -3208,6 +3250,15 @@ class AdminController extends Controller
             'is_featured' => $request->has('is_featured'),
         ]);
 
+        if ($request->has('level_ids')) {
+            $document->syncLevels((array) $request->input('level_ids'));
+        } elseif ($request->filled('grade_level')) {
+            $matchedLvl = Level::where('title', $request->grade_level)->orWhere('slug', $request->grade_level)->first();
+            if ($matchedLvl) {
+                $document->syncLevels([$matchedLvl->id]);
+            }
+        }
+
         \App\Jobs\ProcessDocumentSq3rJob::dispatch($document->id);
 
         $this->notificationService->notifyNewDocument($document);
@@ -3251,6 +3302,15 @@ class AdminController extends Controller
             'description' => $request->description,
             'is_featured' => $request->has('is_featured'),
         ]);
+
+        if ($request->has('level_ids')) {
+            $document->syncLevels((array) $request->input('level_ids'));
+        } elseif ($request->filled('grade_level')) {
+            $matchedLvl = Level::where('title', $request->grade_level)->orWhere('slug', $request->grade_level)->first();
+            if ($matchedLvl) {
+                $document->syncLevels([$matchedLvl->id]);
+            }
+        }
 
         return redirect()->route('admin.contents.index')->with('success', 'Document updated successfully!');
     }
@@ -4108,7 +4168,7 @@ class AdminController extends Controller
 
         // Get videos and content packages
         if (in_array($type, ['all', 'videos', 'quizzes', 'documents', 'pending', 'drafts', 'draft', 'agent'])) {
-            $videoQuery = Video::with(['uploader:id,name,email,avatar,google_avatar', 'subject:id,name', 'documents', 'quizzes', 'categories'])
+            $videoQuery = Video::with(['uploader:id,name,email,avatar,google_avatar', 'subject:id,name', 'documents', 'quizzes', 'categories', 'levels'])
                 ->when($query, function ($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
                         ->orWhere('description', 'like', "%{$query}%");
@@ -4143,7 +4203,12 @@ class AdminController extends Controller
                 $levelGroup = LevelGroup::where('slug', $levelGroupSlug)->with('levels')->first();
                 if ($levelGroup) {
                     $levelTitles = $levelGroup->levels->pluck('title')->toArray();
-                    $videoQuery->whereIn('grade_level', $levelTitles);
+                    $levelIds = $levelGroup->levels->pluck('id')->toArray();
+                    $videoQuery->where(function ($q) use ($levelTitles, $levelIds) {
+                        $q->whereHas('levels', function ($lq) use ($levelIds) {
+                            $lq->whereIn('levels.id', $levelIds);
+                        })->orWhereIn('grade_level', $levelTitles);
+                    });
                 }
             }
 
@@ -4224,7 +4289,7 @@ class AdminController extends Controller
 
         // Get standalone documents (when specifically filtering for documents OR when 'all' is selected)
         if ($type === 'all' || $type === 'documents') {
-            $documentsQuery = Document::with(['uploader:id,name,email,avatar,google_avatar'])
+            $documentsQuery = Document::with(['uploader:id,name,email,avatar,google_avatar', 'levels'])
                 ->whereNull('video_id') // Only standalone in view to avoid duplicates
                 ->when($query, function ($q) use ($query) {
                     $q->where('title', 'like', "%{$query}%")
@@ -4234,7 +4299,12 @@ class AdminController extends Controller
                     $levelGroup = LevelGroup::where('slug', $levelGroupSlug)->with('levels')->first();
                     if ($levelGroup) {
                         $levelTitles = $levelGroup->levels->pluck('title')->toArray();
-                        $q->whereIn('grade_level', $levelTitles);
+                        $levelIds = $levelGroup->levels->pluck('id')->toArray();
+                        $q->where(function ($sub) use ($levelTitles, $levelIds) {
+                            $sub->whereHas('levels', function ($lq) use ($levelIds) {
+                                $lq->whereIn('levels.id', $levelIds);
+                            })->orWhereIn('grade_level', $levelTitles);
+                        });
                     }
                 })
                 ->when($contextSlug, function ($q) use ($contextSlug) {
@@ -4274,7 +4344,7 @@ class AdminController extends Controller
 
         // Get quizzes (when specifically filtering for quizzes OR when 'all' / 'drafts' is selected)
         if ($type === 'all' || $type === 'quizzes' || $type === 'drafts' || $type === 'draft') {
-            $quizzesQuery = Quiz::with(['uploader:id,name,email,avatar,google_avatar', 'ratings', 'subject:id,name'])
+            $quizzesQuery = Quiz::with(['uploader:id,name,email,avatar,google_avatar', 'ratings', 'subject:id,name', 'levels'])
                 ->whereNull('video_id') // Only standalone in view to avoid duplicates across all tabs
                 ->when($type === 'drafts' || $type === 'draft', function ($q) {
                     $q->where('status', 'draft');
@@ -4294,7 +4364,12 @@ class AdminController extends Controller
                     $levelGroup = LevelGroup::where('slug', $levelGroupSlug)->with('levels')->first();
                     if ($levelGroup) {
                         $levelTitles = $levelGroup->levels->pluck('title')->toArray();
-                        $q->whereIn('grade_level', $levelTitles);
+                        $levelIds = $levelGroup->levels->pluck('id')->toArray();
+                        $q->where(function ($sub) use ($levelTitles, $levelIds) {
+                            $sub->whereHas('levels', function ($lq) use ($levelIds) {
+                                $lq->whereIn('levels.id', $levelIds);
+                            })->orWhereIn('grade_level', $levelTitles);
+                        });
                     }
                 })
                 ->when($contextSlug, function ($q) use ($contextSlug) {
@@ -4445,6 +4520,16 @@ class AdminController extends Controller
                 $video = Video::create($videoData);
                 $responseData['video_id'] = $video->id;
 
+                // Sync levels if provided
+                if ($request->has('level_ids')) {
+                    $video->syncLevels((array) $request->input('level_ids'));
+                } elseif ($request->filled('grade_level')) {
+                    $matchedLvl = Level::where('title', $request->grade_level)->orWhere('slug', $request->grade_level)->first();
+                    if ($matchedLvl) {
+                        $video->syncLevels([$matchedLvl->id]);
+                    }
+                }
+
                 // Sync categories if provided
                 if ($request->has('category_ids')) {
                     $video->categories()->sync($request->category_ids);
@@ -4533,9 +4618,14 @@ class AdminController extends Controller
 
                     $document = Document::create($docData);
 
-                    // Inherit categories from parent video
+                    // Inherit categories and levels from parent video
                     if ($video && $video->categories()->count() > 0) {
                         $document->categories()->sync($video->categories()->pluck('content_categories.id')->toArray());
+                    }
+                    if ($video && $video->levels()->exists()) {
+                        $document->syncLevels($video->levels()->pluck('levels.id')->toArray());
+                    } elseif ($request->has('level_ids')) {
+                        $document->syncLevels((array) $request->input('level_ids'));
                     }
 
                     $documents[] = $document;
@@ -4568,9 +4658,14 @@ class AdminController extends Controller
 
                     $quiz = Quiz::create($quizDataToCreate);
 
-                    // Inherit categories from parent video
+                    // Inherit categories and levels from parent video
                     if ($video && $video->categories()->count() > 0) {
                         $quiz->categories()->sync($video->categories()->pluck('content_categories.id')->toArray());
+                    }
+                    if ($video && $video->levels()->exists()) {
+                        $quiz->syncLevels($video->levels()->pluck('levels.id')->toArray());
+                    } elseif ($request->has('level_ids')) {
+                        $quiz->syncLevels((array) $request->input('level_ids'));
                     }
 
                     // Update video's quiz_id for consistency
@@ -4982,7 +5077,9 @@ class AdminController extends Controller
             'quiz_title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'subject_id' => 'required|exists:subjects,id',
-            'grade_level' => 'required|string',
+            'grade_level' => 'nullable|string',
+            'level_ids' => 'nullable|array',
+            'level_ids.*' => 'exists:levels,id',
             'quiz_id' => 'nullable|exists:quizzes,id', // For video associations
             'document_ids' => 'nullable|array',
             'document_ids.*' => 'exists:documents,id',
@@ -5253,6 +5350,25 @@ class AdminController extends Controller
                 ]);
             }
 
+            // Sync levels (common for all content types)
+            if ($request->has('level_ids')) {
+                $levelIds = (array) $request->input('level_ids');
+                $content->syncLevels($levelIds);
+                if ($contentType === 'video') {
+                    foreach ($content->documents as $doc) {
+                        $doc->syncLevels($levelIds);
+                    }
+                    foreach ($content->quizzes as $q) {
+                        $q->syncLevels($levelIds);
+                    }
+                }
+            } elseif ($request->filled('grade_level')) {
+                $matchedLvl = Level::where('title', $request->grade_level)->orWhere('slug', $request->grade_level)->first();
+                if ($matchedLvl) {
+                    $content->syncLevels([$matchedLvl->id]);
+                }
+            }
+
             // Sync categories (common for all content types)
             if ($request->has('category_ids')) {
                 $content->categories()->sync($request->category_ids);
@@ -5281,6 +5397,48 @@ class AdminController extends Controller
             ]);
             return back()->withErrors(['error' => 'Update failed: ' . $e->getMessage()])->withInput();
         }
+    }
+
+    /**
+     * AJAX endpoint to quickly assign/reassign levels to any content (Video, Document, Quiz)
+     */
+    public function updateContentLevels(Request $request)
+    {
+        $request->validate([
+            'content_type' => 'required|string|in:video,document,quiz',
+            'content_id' => 'required|integer',
+            'level_ids' => 'nullable|array',
+            'level_ids.*' => 'exists:levels,id',
+        ]);
+
+        $type = $request->content_type;
+        $id = $request->content_id;
+        $levelIds = array_values(array_filter(array_map('intval', (array) $request->input('level_ids', []))));
+
+        $model = match($type) {
+            'video' => Video::with(['documents', 'quizzes'])->findOrFail($id),
+            'document' => Document::findOrFail($id),
+            'quiz' => Quiz::findOrFail($id),
+        };
+
+        $model->syncLevels($levelIds);
+
+        // If video, propagate to child documents and quizzes
+        if ($type === 'video') {
+            foreach ($model->documents as $doc) {
+                $doc->syncLevels($levelIds);
+            }
+            foreach ($model->quizzes as $q) {
+                $q->syncLevels($levelIds);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Level assignments updated successfully!',
+            'assigned_levels' => $model->fresh()->assigned_levels_list,
+            'level_ids' => $model->fresh()->assigned_level_ids,
+        ]);
     }
 
 
@@ -5604,7 +5762,9 @@ class AdminController extends Controller
                 'title' => 'required|string',
                 'subject_id' => 'required|exists:subjects,id',
                 'description' => 'nullable|string',
-                'grade_level' => 'required|string',
+                'grade_level' => 'nullable|string',
+                'level_ids' => 'nullable|array',
+                'level_ids.*' => 'exists:levels,id',
                 'video_source' => 'required|string',
                 'thumbnail_file' => 'nullable|image|mimes:' . implode(',', $uploadConfig['thumbnail']['mimes']) . '|max:' . $thumbnailMaxSize,
                 'external_video_url' => 'nullable|url',
@@ -5675,6 +5835,16 @@ class AdminController extends Controller
             }
 
             $video = Video::create($videoData);
+
+            // Sync levels if provided
+            if ($request->has('level_ids')) {
+                $video->syncLevels((array) $request->input('level_ids'));
+            } elseif ($request->filled('grade_level')) {
+                $matchedLvl = Level::where('title', $request->grade_level)->orWhere('slug', $request->grade_level)->first();
+                if ($matchedLvl) {
+                    $video->syncLevels([$matchedLvl->id]);
+                }
+            }
 
             // Sync categories if provided
             if ($request->has('category_ids')) {
@@ -5953,10 +6123,15 @@ class AdminController extends Controller
 
                 $document = Document::create($docData);
 
-                // Inherit categories from parent video
+                // Inherit categories and levels from parent video
                 $categoryIds = $video->categories()->pluck('content_categories.id')->toArray();
                 if (!empty($categoryIds)) {
                     $document->categories()->sync($categoryIds);
+                }
+                if ($video->levels()->exists()) {
+                    $document->syncLevels($video->levels()->pluck('levels.id')->toArray());
+                } elseif ($request->has('level_ids')) {
+                    $document->syncLevels((array) $request->input('level_ids'));
                 }
 
                 $documents[] = $document;
@@ -6068,10 +6243,15 @@ class AdminController extends Controller
 
             $quiz = Quiz::create($quizDataToCreate);
 
-            // Inherit categories from parent video
+            // Inherit categories and levels from parent video
             $categoryIds = $video->categories()->pluck('content_categories.id')->toArray();
             if (!empty($categoryIds)) {
                 $quiz->categories()->sync($categoryIds);
+            }
+            if ($video->levels()->exists()) {
+                $quiz->syncLevels($video->levels()->pluck('levels.id')->toArray());
+            } elseif ($request->has('level_ids')) {
+                $quiz->syncLevels((array) $request->input('level_ids'));
             }
 
             // Update video's quiz_id for consistency
