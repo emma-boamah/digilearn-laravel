@@ -121,17 +121,30 @@
     <!-- Top Action Bar -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
         <div>
+            @php
+                $targetGrade = $textbook->level ? $textbook->level->title : ($textbook->levelGroup ? $textbook->levelGroup->title : null);
+            @endphp
             <div class="flex items-center gap-2 mb-2">
                 <a href="{{ route('admin.textbooks.index') }}" class="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1">
                     <i class="fas fa-arrow-left"></i> Back to Textbooks
                 </a>
                 <span class="text-gray-300">/</span>
                 <span class="text-xs text-gray-500">{{ $textbook->subject->name }}</span>
+                @if($targetGrade)
+                    <span class="text-gray-300">/</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                        <i class="fas fa-graduation-cap text-[9px] mr-1 opacity-70"></i> {{ $targetGrade }}
+                    </span>
+                @endif
             </div>
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 {{ $textbook->title }}
             </h1>
             <div class="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-600 dark:text-gray-400">
+                @if($targetGrade)
+                    <span class="font-semibold text-indigo-600 dark:text-indigo-400"><i class="fas fa-layer-group mr-1 opacity-70"></i> Grade: {{ $targetGrade }}</span>
+                    <span>•</span>
+                @endif
                 @if($textbook->author)
                     <span>Author: {{ $textbook->author }}</span>
                     <span>•</span>
@@ -152,15 +165,15 @@
                 @csrf
                 @if($textbook->is_course_active)
                     <button type="submit"
-                            title="Click to deactivate as student course"
+                            title="Click to deactivate as student course for {{ $targetGrade ?? 'this grade' }}"
                             class="inline-flex items-center px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 text-xs font-bold rounded-xl shadow-2xs transition-all">
-                        <i class="fas fa-star text-amber-500 mr-1.5"></i> Active Student Course
+                        <i class="fas fa-star text-amber-500 mr-1.5"></i> Active Course ({{ $targetGrade ?? 'Active' }})
                     </button>
                 @else
                     <button type="submit"
-                            title="Designate this textbook as the active course for students on Guided Learning"
+                            title="Designate this textbook as the active course for students in {{ $targetGrade ?? 'this grade' }} on Guided Learning"
                             class="inline-flex items-center px-3.5 py-2 bg-gray-50 hover:bg-indigo-50 text-gray-700 hover:text-indigo-700 dark:bg-gray-800 dark:hover:bg-indigo-950/40 dark:text-gray-300 dark:hover:text-indigo-300 border border-gray-300 dark:border-gray-600 hover:border-indigo-400 text-xs font-semibold rounded-xl transition-all shadow-2xs">
-                        <i class="far fa-star text-gray-400 mr-1.5"></i> Set as Student Course
+                        <i class="far fa-star text-gray-400 mr-1.5"></i> Set Active{{ $targetGrade ? " ({$targetGrade})" : '' }}
                     </button>
                 @endif
             </form>

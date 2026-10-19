@@ -27,16 +27,18 @@ class GuidedLearningService
     {
         $selectedLevelGroupSlug = session('selected_level_group') ?? $user->current_level_group ?? 'jhs';
 
-        $query = Textbook::with([
+        $baseQuery = Textbook::with([
             'subject',
             'level.levelGroup',
             'levelGroup',
             'chapters.sections',
         ]);
 
-        // Filter by level group
+        $query = clone $baseQuery;
+
+        // Filter by level group if textbooks exist in that group
         if ($selectedLevelGroupSlug) {
-            $query->where(function ($q) use ($selectedLevelGroupSlug) {
+            $hasGroupTextbooks = (clone $query)->where(function ($q) use ($selectedLevelGroupSlug) {
                 $q->whereHas('levelGroup', function ($lq) use ($selectedLevelGroupSlug) {
                     $lq->where('slug', $selectedLevelGroupSlug)
                        ->orWhere('title', 'like', "%{$selectedLevelGroupSlug}%");
@@ -44,15 +46,34 @@ class GuidedLearningService
                     $lq->where('slug', $selectedLevelGroupSlug)
                        ->orWhere('title', 'like', "%{$selectedLevelGroupSlug}%");
                 });
-            });
+            })->exists();
+
+            if ($hasGroupTextbooks) {
+                $query->where(function ($q) use ($selectedLevelGroupSlug) {
+                    $q->whereHas('levelGroup', function ($lq) use ($selectedLevelGroupSlug) {
+                        $lq->where('slug', $selectedLevelGroupSlug)
+                           ->orWhere('title', 'like', "%{$selectedLevelGroupSlug}%");
+                    })->orWhereHas('level.levelGroup', function ($lq) use ($selectedLevelGroupSlug) {
+                        $lq->where('slug', $selectedLevelGroupSlug)
+                           ->orWhere('title', 'like', "%{$selectedLevelGroupSlug}%");
+                    });
+                });
+            }
         }
 
         // Filter by grade if specified and not 'all'
         if ($gradeSlug && $gradeSlug !== 'all') {
-            $query->whereHas('level', function ($lq) use ($gradeSlug) {
+            $hasGradeTextbooks = (clone $query)->whereHas('level', function ($lq) use ($gradeSlug) {
                 $lq->where('slug', $gradeSlug)
                    ->orWhere('title', 'like', "%{$gradeSlug}%");
-            });
+            })->exists();
+
+            if ($hasGradeTextbooks) {
+                $query->whereHas('level', function ($lq) use ($gradeSlug) {
+                    $lq->where('slug', $gradeSlug)
+                       ->orWhere('title', 'like', "%{$gradeSlug}%");
+                });
+            }
         }
 
         $allTextbooks = $query->get();
@@ -67,12 +88,31 @@ class GuidedLearningService
             return $tb->isCourseComplete();
         });
 
+        // If no eligible textbooks found in current filtered query, fallback to any active textbook courses!
+        if ($eligibleTextbooks->isEmpty()) {
+            $eligibleTextbooks = (clone $baseQuery)->where('is_course_active', true)->whereHas('chapters')->get();
+        }
+
         // Group by subject_id so each subject displays only ONE authoritative course!
         // Priority: 1. is_course_active = true, 2. First complete
         $selectedTextbooks = $eligibleTextbooks->groupBy('subject_id')->map(function ($group) {
             $active = $group->firstWhere('is_course_active', true);
             return $active ?: $group->first();
         })->values();
+
+        // Also check if any other subjects have an active textbook course that should be available
+        $foundSubjectIds = $selectedTextbooks->pluck('subject_id')->filter()->unique()->toArray();
+        $fallbackActiveTextbooks = (clone $baseQuery)
+            ->where('is_course_active', true)
+            ->whereHas('chapters')
+            ->whereNotIn('subject_id', $foundSubjectIds)
+            ->get();
+
+        if ($fallbackActiveTextbooks->isNotEmpty()) {
+            $selectedTextbooks = $selectedTextbooks->concat(
+                $fallbackActiveTextbooks->groupBy('subject_id')->map(fn($g) => $g->first())->values()
+            );
+        }
 
         // Load student's progress for textbook sections
         $allSectionIds = $selectedTextbooks->flatMap(function ($tb) {
@@ -154,6 +194,8 @@ class GuidedLearningService
 
     /**
      * Get a complete and published textbook course for a subject if available.
+     * Always prioritizes the admin-activated course (is_course_active = true)
+     * and gracefully falls back so textbook courses take precedence over raw curriculum.
      */
     public function getPublishedTextbookForSubject(User $user, Subject $subject): ?Textbook
     {
@@ -162,8 +204,9 @@ class GuidedLearningService
         $query = Textbook::where('subject_id', $subject->id)
             ->with(['chapters.sections', 'subject', 'level', 'levelGroup']);
 
+        // 1. First priority: Check matching student's current level group or grade
         if ($selectedLevelGroupSlug) {
-            $query->where(function ($q) use ($selectedLevelGroupSlug) {
+            $groupQuery = (clone $query)->where(function ($q) use ($selectedLevelGroupSlug) {
                 $q->whereHas('levelGroup', function ($lq) use ($selectedLevelGroupSlug) {
                     $lq->where('slug', $selectedLevelGroupSlug)
                        ->orWhere('title', 'like', "%{$selectedLevelGroupSlug}%");
@@ -172,13 +215,26 @@ class GuidedLearningService
                        ->orWhere('title', 'like', "%{$selectedLevelGroupSlug}%");
                 });
             });
+
+            $candidates = $groupQuery->orderByDesc('is_course_active')->latest()->get();
+            foreach ($candidates as $candidate) {
+                if ($candidate->is_course_active && $candidate->chapters->count() > 0) {
+                    return $candidate;
+                }
+                if ($candidate->isCourseComplete()) {
+                    return $candidate;
+                }
+            }
         }
 
-        $candidates = $query->orderByDesc('is_course_active')->latest()->get();
-        foreach ($candidates as $candidate) {
-            if ($candidate->is_course_active && $candidate->chapters->count() > 0) {
-                return $candidate;
-            }
+        // 2. Second priority: Fallback to ANY textbook marked active (is_course_active = true) for this subject
+        $activeCourse = (clone $query)->where('is_course_active', true)->whereHas('chapters')->latest()->first();
+        if ($activeCourse) {
+            return $activeCourse;
+        }
+
+        // 3. Third priority: Fallback to any complete and published textbook course for this subject
+        foreach ($query->latest()->get() as $candidate) {
             if ($candidate->isCourseComplete()) {
                 return $candidate;
             }
@@ -310,6 +366,7 @@ class GuidedLearningService
                 'in_progress_indicators' => $inProgressSections,
                 'overall_percentage' => $overallPct,
             ],
+            'grade_label' => $gradeLabel,
             'strands' => $strands,
             'grade_levels' => $gradeLevels,
         ];
