@@ -50,10 +50,22 @@
                             </div>
                         </td>
                         <td class="px-6 py-4">
-                            <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ $book->subject->name }}</div>
-                            <div class="text-xs text-gray-500 mt-0.5">
+                            @php
+                                $gradeTitle = $book->level ? $book->level->title : ($book->levelGroup ? $book->levelGroup->title : null);
+                            @endphp
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ $book->subject->name }}</span>
+                                @if($gradeTitle)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                                        <i class="fas fa-graduation-cap text-[9px] mr-1 opacity-70"></i> {{ $gradeTitle }}
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="text-xs text-gray-500 mt-1 flex items-center gap-1.5 flex-wrap">
                                 @if($book->curriculum)
-                                    <span class="text-blue-600 font-semibold">{{ $book->curriculum->title }}</span>
+                                    <span class="text-blue-600 dark:text-blue-400 font-medium truncate max-w-[220px]" title="{{ $book->curriculum->title }}">
+                                        {{ $book->curriculum->title }}
+                                    </span>
                                 @else
                                     <span class="italic text-gray-400">No linked curriculum</span>
                                 @endif
@@ -62,8 +74,9 @@
                         <td class="px-6 py-4 text-center">
                             @if($book->is_course_active)
                                 <div class="inline-flex flex-col items-center gap-1">
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-2xs">
-                                        <i class="fas fa-star text-amber-500 mr-1.5"></i> Active Course
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-2xs"
+                                          title="Currently active for {{ $gradeTitle ?? 'students' }}">
+                                        <i class="fas fa-star text-amber-500 mr-1.5"></i> Active for {{ $gradeTitle ?? 'All' }}
                                     </span>
                                     <form action="{{ route('admin.textbooks.toggle-course-active', $book) }}" method="POST" class="inline">
                                         @csrf
@@ -77,8 +90,8 @@
                                     @csrf
                                     <button type="submit"
                                             class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-semibold bg-gray-100 dark:bg-gray-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 text-gray-600 dark:text-gray-300 hover:text-indigo-600 border border-gray-200 dark:border-gray-600 hover:border-indigo-300 transition-all shadow-2xs"
-                                            title="Set this textbook as the active course for students on Guided Learning">
-                                        <i class="far fa-star text-gray-400 mr-1.5"></i> Set as Active
+                                            title="Set as the active course for {{ $gradeTitle ?? 'students' }} on Guided Learning">
+                                        <i class="far fa-star text-gray-400 mr-1.5"></i> Set Active{{ $gradeTitle ? " ({$gradeTitle})" : '' }}
                                     </button>
                                 </form>
                             @endif

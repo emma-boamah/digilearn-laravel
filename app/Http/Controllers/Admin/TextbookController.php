@@ -28,7 +28,7 @@ class TextbookController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Textbook::with(['subject', 'level', 'curriculum', 'uploader'])
+        $query = Textbook::with(['subject', 'level', 'levelGroup', 'curriculum', 'uploader'])
             ->withCount('chapters');
 
         if ($request->filled('subject_id')) {
@@ -96,6 +96,7 @@ class TextbookController extends Controller
         $textbook->load([
             'subject',
             'level',
+            'levelGroup',
             'curriculum.strands.subStrands.indicators',
             'chapters.sections.curriculumIndicator',
             'chapters.sections.media',
@@ -196,10 +197,12 @@ class TextbookController extends Controller
             $textbook->update(['is_course_active' => true]);
 
             $subjectName = $textbook->subject ? $textbook->subject->name : 'its subject';
-            $message = "\"{$textbook->title}\" is now set as the Active Student Course for {$subjectName}.";
+            $gradeName = $textbook->level ? $textbook->level->title : ($textbook->levelGroup ? $textbook->levelGroup->title : 'All Grades');
+            $message = "\"{$textbook->title}\" is now set as the Active Student Course for {$subjectName} ({$gradeName}).";
         } else {
+            $gradeName = $textbook->level ? $textbook->level->title : ($textbook->levelGroup ? $textbook->levelGroup->title : 'All Grades');
             $textbook->update(['is_course_active' => false]);
-            $message = "\"{$textbook->title}\" is no longer the active student course.";
+            $message = "\"{$textbook->title}\" is no longer the active student course for ({$gradeName}).";
         }
 
         if ($request->wantsJson()) {
