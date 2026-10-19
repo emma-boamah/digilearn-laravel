@@ -13,6 +13,19 @@
 <!-- Outer Container with pt-20 sm:pt-24 to clear the 60px fixed top-header -->
 <div class="max-w-6xl mx-auto pt-20 sm:pt-24 pb-12 px-4 sm:px-6 space-y-8">
 
+    @if(session('info'))
+    <div class="p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-300 flex items-center gap-3">
+        <i class="fas fa-info-circle text-blue-600 dark:text-blue-400"></i>
+        <span>{{ session('info') }}</span>
+    </div>
+    @endif
+    @if(session('error'))
+    <div class="p-4 rounded-2xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300 flex items-center gap-3">
+        <i class="fas fa-exclamation-circle text-red-600 dark:text-red-400"></i>
+        <span>{{ session('error') }}</span>
+    </div>
+    @endif
+
     @if($isSelectingSubject)
     <!-- ========================================================= -->
     <!-- 1. SUBJECT SELECTION SCREEN                               -->
@@ -176,9 +189,9 @@
             <div class="w-16 h-16 rounded-full bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-4 text-2xl border border-gray-200 dark:border-gray-700">
                 <i class="fas fa-book-open"></i>
             </div>
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white">No Curricula Found</h3>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">No Courses Available</h3>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">
-                There are no approved curriculum roadmaps available for this grade yet.
+                There are no active textbook courses published for this level yet.
             </p>
         </div>
         @endif
