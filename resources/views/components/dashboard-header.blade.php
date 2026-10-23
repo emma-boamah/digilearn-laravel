@@ -1228,7 +1228,7 @@
                         <span class="notification-instructor">${data.instructor || 'DigiLearn Team'}</span>
                         <span class="notification-duration">${data.duration || ''}</span>
                     </div>
-                    <span class="notification-time">${timeAgo}</span>
+                    <span class="notification-time" title="${timeAgo.full || ''}">${timeAgo.label || timeAgo}</span>
                 </div>
             `;
             }
@@ -1247,7 +1247,7 @@
                         <span class="notification-lesson">${data.lesson_title || 'Related Lesson'}</span>
                         ${data.file_size ? `<span class="notification-size">${data.file_size}</span>` : ''}
                     </div>
-                    <span class="notification-time">${timeAgo}</span>
+                    <span class="notification-time" title="${timeAgo.full || ''}">${timeAgo.label || timeAgo}</span>
                 </div>
             `;
             }
@@ -1267,7 +1267,7 @@
                         <span class="notification-difficulty">${data.difficulty || 'Mixed'}</span>
                         <span class="notification-duration">${data.duration || 'No limit'}</span>
                     </div>
-                    <span class="notification-time">${timeAgo}</span>
+                    <span class="notification-time" title="${timeAgo.full || ''}">${timeAgo.label || timeAgo}</span>
                 </div>
             `;
             }
@@ -1278,7 +1278,7 @@
                 <div class="notification-content">
                     <p class="notification-title">${data.title}</p>
                     <p class="notification-message">${data.message}</p>
-                    <span class="notification-time">${timeAgo}</span>
+                    <span class="notification-time" title="${timeAgo.full || ''}">${timeAgo.label || timeAgo}</span>
                 </div>
             `;
             }
@@ -1408,14 +1408,62 @@
             `;
             }
 
-            function formatTimeAgo(date) {
+            function formatTimeAgo(dateInput) {
+                if (!dateInput) return { label: '', full: '', toString() { return ''; } };
+                const date = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
+                if (isNaN(date.getTime())) return { label: '', full: '', toString() { return ''; } };
+
                 const now = new Date();
                 const diffInSeconds = Math.floor((now - date) / 1000);
+                const fullTimeStr = date.toLocaleString([], {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
 
-                if (diffInSeconds < 60) return 'Just now';
-                if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-                if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-                return `${Math.floor(diffInSeconds / 86400)}d ago`;
+                if (diffInSeconds < 0 || diffInSeconds < 60) {
+                    return { label: 'Just now', full: fullTimeStr, toString() { return this.label; } };
+                }
+                if (diffInSeconds < 3600) {
+                    const mins = Math.floor(diffInSeconds / 60);
+                    return { label: `${mins}m ago`, full: fullTimeStr, toString() { return this.label; } };
+                }
+
+                // Check if Today
+                if (date.toDateString() === now.toDateString()) {
+                    const hours = Math.floor(diffInSeconds / 3600);
+                    return { label: `${hours}h ago`, full: fullTimeStr, toString() { return this.label; } };
+                }
+
+                // Check if Yesterday
+                const yesterday = new Date(now);
+                yesterday.setDate(now.getDate() - 1);
+                if (date.toDateString() === yesterday.toDateString()) {
+                    return { label: 'Yesterday', full: fullTimeStr, toString() { return this.label; } };
+                }
+
+                // 2 to 6 days
+                const diffInDays = Math.floor(diffInSeconds / 86400);
+                if (diffInDays < 7) {
+                    return { label: `${diffInDays} days ago`, full: fullTimeStr, toString() { return this.label; } };
+                }
+
+                // 1 to 4 weeks
+                const weeks = Math.floor(diffInDays / 7);
+                if (weeks <= 4) {
+                    return { label: weeks === 1 ? '1 week ago' : `${weeks} weeks ago`, full: fullTimeStr, toString() { return this.label; } };
+                }
+
+                // Older: Month + Day, e.g. Oct 14
+                if (date.getFullYear() === now.getFullYear()) {
+                    const monthDay = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                    return { label: monthDay, full: fullTimeStr, toString() { return this.label; } };
+                }
+
+                const fullDate = date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+                return { label: fullDate, full: fullTimeStr, toString() { return this.label; } };
             }
 
             function getNotificationIcon(type, contentType) {

@@ -1409,7 +1409,7 @@
                                 const hasActionUrl = !!(n.data?.url || n.url);
                                 const showUrl = `/admin/notifications/${n.id}`;
                                 const isUnread = !n.read_at;
-                                const timeAgo = n.created_at ? new Date(n.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                                const timeInfo = formatNotificationTime(n.created_at);
 
                                 return `
                                     <a href="${showUrl}" class="block p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition ${isUnread ? 'bg-blue-50/50 dark:bg-blue-900/10 font-semibold' : ''}">
@@ -1420,7 +1420,7 @@
                                             </div>
                                             <div class="flex items-center gap-1 flex-shrink-0">
                                                 ${hasActionUrl ? '<i class="fas fa-external-link-alt text-[10px] text-blue-500" title="Has action link"></i>' : ''}
-                                                <span class="text-[10px] text-gray-400">${timeAgo}</span>
+                                                <span class="text-[10px] text-gray-400 font-medium whitespace-nowrap" title="${timeInfo.full}">${timeInfo.label}</span>
                                             </div>
                                         </div>
                                         <div class="text-xs text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">${message}</div>
@@ -1479,6 +1479,65 @@
                     toast.classList.add('opacity-0', 'translate-y-5');
                     setTimeout(() => toast.remove(), 300);
                 }, 8000);
+            }
+
+            function formatNotificationTime(dateInput) {
+                if (!dateInput) return { label: '', full: '' };
+                const date = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
+                if (isNaN(date.getTime())) return { label: '', full: '' };
+
+                const now = new Date();
+                const diffInSeconds = Math.floor((now - date) / 1000);
+                const fullTimeStr = date.toLocaleString([], {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                const timeOnlyStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                if (diffInSeconds < 0 || diffInSeconds < 60) {
+                    return { label: 'Just now', full: fullTimeStr };
+                }
+                if (diffInSeconds < 3600) {
+                    const mins = Math.floor(diffInSeconds / 60);
+                    return { label: `${mins}m ago`, full: fullTimeStr };
+                }
+
+                // Check if Today
+                if (date.toDateString() === now.toDateString()) {
+                    const hours = Math.floor(diffInSeconds / 3600);
+                    return { label: `${hours}h ago`, full: fullTimeStr };
+                }
+
+                // Check if Yesterday
+                const yesterday = new Date(now);
+                yesterday.setDate(now.getDate() - 1);
+                if (date.toDateString() === yesterday.toDateString()) {
+                    return { label: 'Yesterday', full: fullTimeStr };
+                }
+
+                // 2 to 6 days
+                const diffInDays = Math.floor(diffInSeconds / 86400);
+                if (diffInDays < 7) {
+                    return { label: `${diffInDays} days ago`, full: fullTimeStr };
+                }
+
+                // 1 to 4 weeks
+                const weeks = Math.floor(diffInDays / 7);
+                if (weeks <= 4) {
+                    return { label: weeks === 1 ? '1 week ago' : `${weeks} weeks ago`, full: fullTimeStr };
+                }
+
+                // Older: Month + Day, e.g. Oct 14
+                if (date.getFullYear() === now.getFullYear()) {
+                    const monthDay = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                    return { label: monthDay, full: fullTimeStr };
+                }
+
+                const fullDate = date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+                return { label: fullDate, full: fullTimeStr };
             }
 
             if (markAllBtn) {
