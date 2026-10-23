@@ -5093,6 +5093,9 @@ class AdminController extends Controller
             'quiz_time_limit' => 'nullable|integer',
             'shuffle_questions' => 'boolean',
             'status' => 'nullable|string|in:draft,published',
+            'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'thumbnail_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'remove_thumbnail' => 'nullable|boolean',
         ]);
 
         // Resolve the target status from the form (empty = keep current)
@@ -5160,6 +5163,24 @@ class AdminController extends Controller
                     $videoUpdateData['status'] = $newStatus === 'published' ? 'approved' : 'draft';
                 }
                 $content->update($videoUpdateData);
+
+                // Handle custom thumbnail upload or reset
+                if ($request->boolean('remove_thumbnail')) {
+                    if ($content->thumbnail_path && Storage::disk('public')->exists($content->thumbnail_path)) {
+                        Storage::disk('public')->delete($content->thumbnail_path);
+                    }
+                    $content->update(['thumbnail_path' => null]);
+                } elseif ($request->hasFile('thumbnail') || $request->hasFile('thumbnail_file')) {
+                    $thumbFile = $request->file('thumbnail') ?: $request->file('thumbnail_file');
+                    if ($thumbFile->isValid()) {
+                        if ($content->thumbnail_path && Storage::disk('public')->exists($content->thumbnail_path)) {
+                            Storage::disk('public')->delete($content->thumbnail_path);
+                        }
+                        $thumbFilename = time() . '_thumb_' . $content->id . '.' . $thumbFile->getClientOriginalExtension();
+                        $newThumbPath = $thumbFile->storeAs('thumbnails', $thumbFilename, 'public');
+                        $content->update(['thumbnail_path' => $newThumbPath]);
+                    }
+                }
 
                 if ($request->filled('quiz_id')) {
                     Quiz::where('id', $request->quiz_id)->update(['video_id' => $content->id]);

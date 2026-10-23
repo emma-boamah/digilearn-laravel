@@ -305,12 +305,43 @@
                         </div>
                     </div>
 
-                    <!-- Thumbnail Destination -->
-                    @if(!empty($content->thumbnail_path) || !empty($content->thumbnail_url))
+                    <!-- Thumbnail Details & Preview (for Video packages or contents with thumbnail) -->
+                    @if($contentType === 'video' || !empty($content->thumbnail_path) || !empty($content->thumbnail_url))
                         <div class="p-4 bg-slate-50 dark:bg-gray-900/40 rounded-xl border border-slate-100 dark:border-gray-700 sm:col-span-2">
-                            <span class="text-xs font-semibold text-slate-400 block mb-1">Cover Thumbnail Storage Destination</span>
-                            <div class="font-mono text-slate-700 dark:text-gray-300 break-all bg-white dark:bg-gray-800 p-2.5 rounded-lg border border-slate-200 dark:border-gray-700 text-xs">
-                                {{ $content->thumbnail_path ? 'storage/app/public/' . $content->thumbnail_path : ($content->thumbnail_url ?? 'N/A') }}
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-semibold text-slate-400">Cover Thumbnail / Poster</span>
+                                @if($contentType === 'video')
+                                    <a href="{{ route('admin.contents.edit', ['contentId' => $content->id, 'type' => 'video']) }}" 
+                                       class="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 font-semibold inline-flex items-center gap-1">
+                                        <i class="fas fa-edit text-[10px]"></i> Change Thumbnail
+                                    </a>
+                                @endif
+                            </div>
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-white dark:bg-gray-800 p-3 rounded-lg border border-slate-200 dark:border-gray-700">
+                                @php
+                                    $thumbUrl = method_exists($content, 'getThumbnailUrl') ? $content->getThumbnailUrl() : ($content->thumbnail_url ?? null);
+                                    if (!$thumbUrl && !empty($content->thumbnail_path)) {
+                                        $thumbUrl = asset('storage/' . $content->thumbnail_path);
+                                    }
+                                @endphp
+                                @if($thumbUrl)
+                                    <div class="w-28 h-18 sm:w-36 sm:h-22 rounded-md overflow-hidden bg-slate-900 flex-shrink-0 border border-slate-200 dark:border-gray-700 shadow-xs flex items-center justify-center">
+                                        <img src="{{ $thumbUrl }}" alt="Cover Thumbnail" class="w-full h-full object-cover">
+                                    </div>
+                                @endif
+                                <div class="font-mono text-slate-700 dark:text-gray-300 break-all text-xs flex-1">
+                                    <div class="text-[11px] text-slate-500 font-sans mb-1 font-semibold flex items-center gap-2">
+                                        <span>Status:</span>
+                                        @if(!empty($content->thumbnail_path))
+                                            <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 text-[10px] font-bold">Custom Uploaded</span>
+                                        @else
+                                            <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 dark:bg-gray-700 dark:text-gray-300 text-[10px] font-bold">{{ ucfirst($content->video_source ?? 'Source') }} Default</span>
+                                        @endif
+                                    </div>
+                                    <div class="bg-slate-50 dark:bg-gray-900 p-2 rounded border border-slate-100 dark:border-gray-700/60">
+                                        {{ $content->thumbnail_path ? 'storage/app/public/' . $content->thumbnail_path : ($thumbUrl ?? 'N/A') }}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     @endif
