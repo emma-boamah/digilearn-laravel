@@ -913,7 +913,7 @@
                                     <span id="adminNotificationBadge" class="hidden absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-sm">0</span>
                                 </button>
 
-                                <div class="dropdown-menu dropdown-menu-wide shadow-xl rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800" style="width: 350px; max-height: 450px; overflow-y: auto;">
+                                <div class="dropdown-menu dropdown-menu-wide shadow-xl rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800" style="width: 350px; max-height: 450px; overflow-y: auto; overflow-x: hidden;">
                                     <div class="p-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                                         <strong class="text-sm font-bold text-gray-900 dark:text-white">Notifications</strong>
                                         <button id="markAllReadBtn" class="text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold hidden">Mark all read</button>
@@ -1423,7 +1423,7 @@
                                                 <span class="text-[10px] text-gray-400 font-medium whitespace-nowrap" title="${timeInfo.full}">${timeInfo.label}</span>
                                             </div>
                                         </div>
-                                        <div class="text-xs text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">${message}</div>
+                                        <div class="text-xs text-gray-600 dark:text-gray-300 mt-1 line-clamp-2 break-words overflow-hidden">${message}</div>
                                     </a>
                                 `;
                             }).join('');
