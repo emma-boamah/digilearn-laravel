@@ -270,6 +270,7 @@
     .notification-list {
         max-height: 400px;
         overflow-y: auto;
+        overflow-x: hidden;
     }
 
     .notification-item {
@@ -278,6 +279,9 @@
         padding: 1rem 1.5rem;
         border-bottom: 1px solid var(--gray-100);
         transition: background-color 0.2s ease;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
     .notification-item:hover {
@@ -294,6 +298,8 @@
 
     .notification-content {
         flex: 1;
+        min-width: 0;
+        overflow: hidden;
     }
 
     .notification-content p {
@@ -301,6 +307,8 @@
         font-size: 0.875rem;
         color: var(--gray-800);
         line-height: 1.4;
+        word-break: break-word;
+        overflow-wrap: anywhere;
     }
 
     .notification-time {
@@ -352,6 +360,8 @@
         color: var(--gray-900);
         margin: 0 0 0.25rem 0;
         line-height: 1.3;
+        word-break: break-word;
+        overflow-wrap: anywhere;
     }
 
     .notification-message {
@@ -359,6 +369,8 @@
         color: var(--gray-700);
         margin: 0 0 0.5rem 0;
         line-height: 1.4;
+        word-break: break-word;
+        overflow-wrap: anywhere;
     }
 
     .notification-meta {
