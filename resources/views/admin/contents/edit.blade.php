@@ -236,6 +236,78 @@
                         </div>
 
                         @if($contentType === 'video')
+                            <!-- Video Thumbnail / Cover Poster Management -->
+                            <div class="mt-6 pt-6 border-t border-gray-100">
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="block text-sm font-bold text-gray-800">
+                                        <i class="fas fa-image text-blue-600 mr-1.5"></i> Video Cover Thumbnail
+                                    </label>
+                                    @if(!empty($content->thumbnail_path))
+                                        <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-700">
+                                            Custom Uploaded
+                                        </span>
+                                    @else
+                                        <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-600">
+                                            {{ ucfirst($content->video_source ?? 'Default') }} Auto
+                                        </span>
+                                    @endif
+                                </div>
+                                <p class="text-xs text-gray-500 mb-4">
+                                    Customize the preview poster shown to students for this video. You can upload a custom graphic (JPG, PNG, WebP) or keep the source-provided thumbnail (YouTube, Vimeo, or auto-generated frame).
+                                </p>
+
+                                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 sm:p-5">
+                                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+                                        <!-- Thumbnail Image Preview -->
+                                        <div class="relative w-44 h-28 bg-slate-900 rounded-lg overflow-hidden border border-slate-300 shadow-sm flex-shrink-0 flex items-center justify-center">
+                                            <img id="thumbnailPreviewImg" 
+                                                 src="{{ $content->getThumbnailUrl() ?? asset('images/default-thumbnail.jpg') }}" 
+                                                 alt="{{ $content->title }} thumbnail" 
+                                                 class="w-full h-full object-cover">
+                                            <span id="thumbnailBadge" class="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded text-[10px] font-bold {{ !empty($content->thumbnail_path) ? 'bg-emerald-600 text-white' : 'bg-slate-800/80 text-slate-200 backdrop-blur-xs' }}">
+                                                {{ !empty($content->thumbnail_path) ? 'Custom' : ucfirst($content->video_source ?? 'Default') . ' Auto' }}
+                                            </span>
+                                        </div>
+
+                                        <!-- Upload & Controls -->
+                                        <div class="flex-1 space-y-3 w-full">
+                                            <div>
+                                                <label for="thumbnail_file_input" class="inline-flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-300 hover:border-blue-500 hover:text-blue-600 text-slate-700 text-xs font-bold rounded-lg cursor-pointer shadow-xs transition-colors">
+                                                    <i class="fas fa-cloud-upload-alt text-sm"></i>
+                                                    <span id="thumbnailSelectBtnText">Choose New Thumbnail</span>
+                                                </label>
+                                                <input type="file" 
+                                                       id="thumbnail_file_input" 
+                                                       name="thumbnail" 
+                                                       accept="image/png, image/jpeg, image/jpg, image/webp" 
+                                                       class="hidden" 
+                                                       onchange="handleThumbnailPreview(this)">
+                                                <span id="thumbnailFileName" class="text-xs text-slate-500 ml-2 font-medium"></span>
+                                            </div>
+
+                                            <p class="text-[11px] text-slate-500">
+                                                Recommended ratio: <strong>16:9</strong> (e.g. 1280x720 or 1920x1080). Supported: JPG, PNG, WEBP (Max 5MB).
+                                            </p>
+
+                                            <!-- Reset to default source thumbnail if custom thumbnail currently exists -->
+                                            @if(!empty($content->thumbnail_path))
+                                                <div class="pt-2 border-t border-slate-200">
+                                                    <label class="inline-flex items-center text-xs text-slate-700 cursor-pointer select-none">
+                                                        <input type="checkbox" 
+                                                               name="remove_thumbnail" 
+                                                               id="remove_thumbnail_check" 
+                                                               value="1" 
+                                                               onchange="handleThumbnailResetToggle(this)"
+                                                               class="rounded border-gray-300 text-red-600 focus:ring-red-500 mr-2 h-4 w-4">
+                                                        <span>Reset to source video default (remove custom uploaded thumbnail)</span>
+                                                    </label>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Quick Switcher Banners on Tab 1 -->
                             <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <!-- Documents Switcher Banner -->
@@ -1097,6 +1169,59 @@
                 handleNewDocumentSelection({ target: input });
             }
         }, false);
+    }
+
+    // Video Thumbnail Preview and Reset Handlers
+    const defaultThumbnailSrc = @json($contentType === 'video' ? ($content->getThumbnailUrl() ?? asset('images/default-thumbnail.jpg')) : '');
+    function handleThumbnailPreview(input) {
+        const file = input.files && input.files[0];
+        const previewImg = document.getElementById('thumbnailPreviewImg');
+        const badge = document.getElementById('thumbnailBadge');
+        const fileNameSpan = document.getElementById('thumbnailFileName');
+        const resetCheck = document.getElementById('remove_thumbnail_check');
+
+        if (file) {
+            if (file.size > 5242880) {
+                alert('Thumbnail image exceeds the 5MB size limit.');
+                input.value = '';
+                return;
+            }
+            if (resetCheck) {
+                resetCheck.checked = false;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                if (previewImg) previewImg.src = e.target.result;
+                if (badge) {
+                    badge.textContent = 'New (Unsaved)';
+                    badge.className = 'absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white';
+                }
+                if (fileNameSpan) fileNameSpan.textContent = file.name;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function handleThumbnailResetToggle(checkbox) {
+        const previewImg = document.getElementById('thumbnailPreviewImg');
+        const badge = document.getElementById('thumbnailBadge');
+        const fileInput = document.getElementById('thumbnail_file_input');
+        const fileNameSpan = document.getElementById('thumbnailFileName');
+
+        if (checkbox.checked) {
+            if (fileInput) fileInput.value = '';
+            if (fileNameSpan) fileNameSpan.textContent = '';
+            if (badge) {
+                badge.textContent = 'Resetting to Default';
+                badge.className = 'absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-600 text-white';
+            }
+        } else {
+            if (previewImg) previewImg.src = defaultThumbnailSrc;
+            if (badge) {
+                badge.textContent = 'Custom';
+                badge.className = 'absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white';
+            }
+        }
     }
 </script>
 @endpush
