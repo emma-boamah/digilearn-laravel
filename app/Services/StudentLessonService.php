@@ -221,6 +221,12 @@ class StudentLessonService
         // 3. Isolated plain numbers wrapped in dollars (e.g. $1$, $100$, $1,000,000,000$)
         $html = preg_replace('/\$([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)\$/', '$1', $html);
 
+        // 4. Transform any escaped or code-wrapped figure span/captions into clean styled elements
+        $html = preg_replace_callback('/(?:<pre\b[^>]*><code\b[^>]*>|<p>)\s*(?:&lt;|<)span\s+class=(?:&quot;|["\'])text-xs text-slate-500[^>"\'&]*?(?:&quot;|["\'])(?:&gt;|>)([\s\S]*?)(?:&lt;|<)\/span(?:&gt;|>)\s*(?:<\/code><\/pre>|<\/p>)/i', function ($m) {
+            $caption = strip_tags(html_entity_decode($m[1]));
+            return '<span class="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium text-center block">' . $caption . '</span>';
+        }, $html);
+
         return $html;
     }
 

@@ -216,6 +216,29 @@
         border-radius: 0.75rem;
     }
 
+    /* Figure Captions & Diagram Labels */
+    .lesson-reader .figure-caption,
+    .lesson-reader span.text-slate-500,
+    .lesson-reader span.figure-caption-styled {
+        display: block;
+        text-align: center;
+        font-size: 0.78rem;
+        line-height: 1.35;
+        font-weight: 600;
+        letter-spacing: 0.015em;
+        margin-top: 0.65rem;
+        margin-bottom: 1.25rem;
+        color: #64748b;
+    }
+    .dark .lesson-reader .figure-caption,
+    [data-theme="dark"] .lesson-reader .figure-caption,
+    .dark .lesson-reader span.text-slate-500,
+    [data-theme="dark"] .lesson-reader span.text-slate-500,
+    .dark .lesson-reader span.figure-caption-styled,
+    [data-theme="dark"] .lesson-reader span.figure-caption-styled {
+        color: #94a3b8;
+    }
+
     /* Mermaid Flowcharts & Charts */
     .lesson-reader .mermaid {
         display: flex;
@@ -411,7 +434,7 @@
 
                     <!-- Full Width Reading Text & Pedagogical Logic -->
                     <div class="lesson-reader max-w-none prose dark:prose-invert">
-                        {!! $sec->content_html !!}
+                        {!! \App\Services\StudentLessonService::cleanMathTypography($sec->content_html) !!}
                     </div>
                 </div>
                 @endforeach
@@ -640,7 +663,7 @@
                             @if($segment['id'] === 1)
                                 {{-- Part 1: Always fully visible — this is the main teaching content --}}
                                 <div class="lesson-reader max-w-none">
-                                    {!! $segment['content_html'] !!}
+                                    {!! \App\Services\StudentLessonService::cleanMathTypography($segment['content_html']) !!}
                                 </div>
                             @else
                                 {{-- Parts 2 & 3: Hidden behind a collapsible study-guide tip icon --}}
@@ -666,7 +689,7 @@
                                         </span>
                                     </summary>
                                     <div class="px-5 pb-5 pt-2 lesson-reader max-w-none border-t border-indigo-200/50 dark:border-indigo-800/30 mt-1">
-                                        {!! $segment['content_html'] !!}
+                                        {!! \App\Services\StudentLessonService::cleanMathTypography($segment['content_html']) !!}
                                     </div>
                                 </details>
                             @endif
@@ -1336,9 +1359,28 @@ function topicReaderApp() {
             }
         },
 
+        renderFigureCaptions() {
+            document.querySelectorAll('.lesson-reader').forEach(reader => {
+                reader.querySelectorAll('pre, code, p').forEach(el => {
+                    const html = el.innerHTML.trim();
+                    const match = html.match(/(?:&lt;|<)span\s+class=(?:&quot;|["'])text-xs text-slate-500[^>"'&]*?(?:&quot;|["'])(?:&gt;|>)([\s\S]*?)(?:&lt;|<)\/span(?:&gt;|>)/i);
+                    if (match) {
+                        const target = el.closest('pre') || el;
+                        const captionText = match[1].replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+                        const span = document.createElement('span');
+                        span.className = 'figure-caption-styled text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium text-center block tracking-wide';
+                        span.textContent = captionText;
+                        target.parentNode.replaceChild(span, target);
+                    }
+                });
+            });
+        },
+
         init() {
+            this.renderFigureCaptions();
             this.renderMermaidDiagrams();
             this.$nextTick(() => {
+                this.renderFigureCaptions();
                 if (window.renderAllMath) window.renderAllMath();
             });
         },

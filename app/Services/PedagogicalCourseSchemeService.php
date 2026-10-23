@@ -661,7 +661,7 @@ RULES;
         <text x="425" y="85" font-family="sans-serif" font-size="22" font-weight="bold" fill="#d97706">1</text>
         <text x="390" y="115" font-family="sans-serif" font-size="11" fill="#64748b">Single units (0-9)</text>
     </svg>
-    <span class="text-xs text-slate-500 mt-2 font-medium">Figure: Base-10 Positional Place Value System (Hundreds, Tens, and Ones)</span>
+<span class="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium text-center block">Figure: Base-10 Positional Place Value System (Hundreds, Tens, and Ones)</span>
 </div>
 SVG;
         }
@@ -689,7 +689,7 @@ SVG;
         <text x="235" y="135" font-family="sans-serif" font-size="13" font-weight="bold" fill="#047857">A &cap; B</text>
         <text x="220" y="155" font-family="sans-serif" font-size="11" fill="#059669">Both Sets</text>
     </svg>
-    <span class="text-xs text-slate-500 mt-2 font-medium">Figure: Overlapping Venn Diagram showing Set A, Set B, and Intersection (A &cap; B)</span>
+<span class="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium text-center block">Figure: Overlapping Venn Diagram showing Set A, Set B, and Intersection (A &cap; B)</span>
 </div>
 SVG;
         }
@@ -718,7 +718,7 @@ SVG;
         <text x="185" y="115" font-family="sans-serif" font-size="15" font-weight="bold" fill="#312e81">Area = L &times; W = 15 units&sup2;</text>
         <text x="160" y="210" font-family="sans-serif" font-size="12" fill="#475569">Perimeter = 2 &times; (5 + 3) = 16 units (Boundary line)</text>
     </svg>
-    <span class="text-xs text-slate-500 mt-2 font-medium">Figure: Geometric Model showing 2D surface tiling (Area = L &times; W) versus 1D boundary (Perimeter)</span>
+<span class="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium text-center block">Figure: Geometric Model showing 2D surface tiling (Area = L &times; W) versus 1D boundary (Perimeter)</span>
 </div>
 SVG;
         }
@@ -750,7 +750,7 @@ SVG;
 
         <text x="210" y="70" font-family="sans-serif" font-size="13" font-weight="bold" fill="#1d4ed8">Line: y = mx + c</text>
     </svg>
-    <span class="text-xs text-slate-500 mt-2 font-medium">Figure: Cartesian Coordinate Plane with Plotted Linear Relationship</span>
+<span class="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium text-center block">Figure: Cartesian Coordinate Plane with Plotted Linear Relationship</span>
 </div>
 SVG;
         }
@@ -780,7 +780,7 @@ SVG;
         <text x="385" y="70" font-family="sans-serif" font-size="12" font-weight="bold" fill="#92400e">3. Daily Usage</text>
         <text x="390" y="90" font-family="sans-serif" font-size="10" fill="#f59e0b">Practical Solution</text>
     </svg>
-    <span class="text-xs text-slate-500 mt-2 font-medium">Figure: First-Principles Flow from Real Need to Mathematical &amp; Scientific Resolution</span>
+<span class="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium text-center block">Figure: First-Principles Flow from Real Need to Mathematical &amp; Scientific Resolution</span>
 </div>
 SVG;
     }
@@ -846,24 +846,40 @@ SVG;
      */
     public function renderMarkdownToHtml(string $markdown): string
     {
-        $svgMap = [];
+        $containerMap = [];
         $counter = 0;
-        $safeMarkdown = preg_replace_callback('/<svg\b[^>]*>[\s\S]*?<\/svg>/i', function ($m) use (&$svgMap, &$counter) {
-            $token = "<!--SVG_BLOCK_PLACEHOLDER_{$counter}-->";
+
+        // 1. Protect complete visual container blocks
+        $safeMarkdown = preg_replace_callback('/<div\b[^>]*class=["\'][^"\']*flex-col items-center[^"\']*["\'][^>]*>[\s\S]*?<\/div>/i', function ($m) use (&$containerMap, &$counter) {
+            $token = "<!--FIGURE_BLOCK_PLACEHOLDER_{$counter}-->";
             $counter++;
-            $svgMap[$token] = $m[0];
+            $containerMap[$token] = $m[0];
             return "\n\n{$token}\n\n";
         }, $markdown);
+
+        // 2. Protect standalone SVG blocks
+        $safeMarkdown = preg_replace_callback('/<svg\b[^>]*>[\s\S]*?<\/svg>/i', function ($m) use (&$containerMap, &$counter) {
+            $token = "<!--SVG_BLOCK_PLACEHOLDER_{$counter}-->";
+            $counter++;
+            $containerMap[$token] = $m[0];
+            return "\n\n{$token}\n\n";
+        }, $safeMarkdown);
 
         $html = Str::markdown($safeMarkdown, [
             'html_input' => 'allow',
             'allow_unsafe_links' => false,
         ]);
 
-        foreach ($svgMap as $token => $svg) {
-            $html = str_replace("<p>{$token}</p>", $svg, $html);
-            $html = str_replace($token, $svg, $html);
+        foreach ($containerMap as $token => $block) {
+            $html = str_replace("<p>{$token}</p>", $block, $html);
+            $html = str_replace($token, $block, $html);
         }
+
+        // 3. Clean any code-wrapped figure captions into clean styled elements
+        $html = preg_replace_callback('/(?:<pre\b[^>]*><code\b[^>]*>|<p>)\s*(?:&lt;|<)span\s+class=(?:&quot;|["\'])text-xs text-slate-500[^>"\'&]*?(?:&quot;|["\'])(?:&gt;|>)([\s\S]*?)(?:&lt;|<)\/span(?:&gt;|>)\s*(?:<\/code><\/pre>|<\/p>)/i', function ($m) {
+            $caption = strip_tags(html_entity_decode($m[1]));
+            return '<span class="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium text-center block">' . $caption . '</span>';
+        }, $html);
 
         return $html;
     }

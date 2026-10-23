@@ -407,10 +407,10 @@ class GuidedLearningService
         $prevId = ($currentIndex !== false && $currentIndex > 0) ? $allSections[$currentIndex - 1] : null;
         $nextId = ($currentIndex !== false && $currentIndex < count($allSections) - 1) ? $allSections[$currentIndex + 1] : null;
 
-        $html = $section->content_html;
+        $html = \App\Services\StudentLessonService::cleanMathTypography($section->content_html);
         $markdown = $section->content_markdown;
         if (empty($html) && !empty($markdown)) {
-            $html = Str::markdown($markdown);
+            $html = \App\Services\StudentLessonService::cleanMathTypography(Str::markdown($markdown));
         }
 
         $quiz = $section->lesson_quiz ?? [];
