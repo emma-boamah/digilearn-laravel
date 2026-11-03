@@ -4945,17 +4945,21 @@
         const videoContainer = document.querySelector('.video-container');
         if (!toggle || !videoContainer) return;
 
-        const isFullscreenActive = () => {
-            const hasNativeFs = !!(
+        let isPseudoFullscreen = false;
+
+        const isNativeFullscreen = () => {
+            return !!(
                 document.fullscreenElement ||
                 document.webkitFullscreenElement ||
                 document.mozFullScreenElement ||
                 document.msFullscreenElement
             );
+        };
+
+        const isFullscreenActive = () => {
             const videoEl = videoContainer.querySelector('video');
             const hasVideoFs = !!(videoEl && videoEl.webkitDisplayingFullscreen);
-            const hasPseudoFs = videoContainer.classList.contains('is-fullscreen') && !hasNativeFs;
-            return hasNativeFs || hasVideoFs || hasPseudoFs;
+            return isNativeFullscreen() || hasVideoFs || isPseudoFullscreen;
         };
 
         const updateFullscreenUI = () => {
@@ -4964,14 +4968,11 @@
             const exitIcon = toggle.querySelector('.exit-fullscreen-icon');
 
             if (isFs) {
-                videoContainer.classList.add('is-fullscreen');
                 if (enterIcon) enterIcon.style.display = 'none';
                 if (exitIcon) exitIcon.style.display = 'block';
                 toggle.title = 'Exit full screen (f)';
                 toggle.setAttribute('aria-label', 'Exit full screen');
             } else {
-                videoContainer.classList.remove('is-fullscreen');
-                document.body.classList.remove('video-pseudo-fullscreen');
                 if (enterIcon) enterIcon.style.display = 'block';
                 if (exitIcon) exitIcon.style.display = 'none';
                 toggle.title = 'Full screen (f)';
@@ -4996,6 +4997,7 @@
         };
 
         const enablePseudoFullscreen = () => {
+            isPseudoFullscreen = true;
             videoContainer.classList.add('is-fullscreen');
             document.body.classList.add('video-pseudo-fullscreen');
             updateFullscreenUI();
@@ -5003,6 +5005,7 @@
         };
 
         const disablePseudoFullscreen = () => {
+            isPseudoFullscreen = false;
             videoContainer.classList.remove('is-fullscreen');
             document.body.classList.remove('video-pseudo-fullscreen');
             updateFullscreenUI();
@@ -5031,12 +5034,7 @@
                     }
                 } else {
                     // Exiting fullscreen
-                    if (
-                        document.fullscreenElement ||
-                        document.webkitFullscreenElement ||
-                        document.mozFullScreenElement ||
-                        document.msFullscreenElement
-                    ) {
+                    if (isNativeFullscreen()) {
                         if (document.exitFullscreen) {
                             await document.exitFullscreen();
                         } else if (document.webkitExitFullscreen) {
@@ -5054,7 +5052,7 @@
                 }
             } catch (err) {
                 console.warn('Standard fullscreen rejected, activating viewport fullscreen:', err);
-                if (!videoContainer.classList.contains('is-fullscreen')) {
+                if (!isPseudoFullscreen) {
                     enablePseudoFullscreen();
                 } else {
                     disablePseudoFullscreen();
@@ -5087,14 +5085,23 @@
 
         // Handle Escape key for CSS pseudo-fullscreen
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && videoContainer.classList.contains('is-fullscreen') && !document.fullscreenElement) {
+            if (e.key === 'Escape' && isPseudoFullscreen) {
                 disablePseudoFullscreen();
             }
         });
 
         // Cross-browser fullscreen change events
+        const handleNativeFullscreenChange = () => {
+            if (!isNativeFullscreen()) {
+                isPseudoFullscreen = false;
+                videoContainer.classList.remove('is-fullscreen');
+                document.body.classList.remove('video-pseudo-fullscreen');
+            }
+            updateFullscreenUI();
+        };
+
         ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
-            document.addEventListener(evt, updateFullscreenUI);
+            document.addEventListener(evt, handleNativeFullscreenChange);
         });
 
         // Hook iOS video element fullscreen events
