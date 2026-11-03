@@ -481,18 +481,18 @@
             width: calc(100% - var(--sidebar-width-expanded)) !important;
             max-width: calc(100% - var(--sidebar-width-expanded)) !important;
             margin-left: var(--sidebar-width-expanded) !important;
-            margin-top: calc({{ $mainContentTopOffset }} + var(--safe-area-inset-top)) !important;
-            /* Adjusted for dual-pill filter bar */
-            /* padding-top: 1rem !important; Internal padding */
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 0 !important;
+            padding-top: calc({{ $mainContentTopOffset }} + var(--safe-area-inset-top)) !important;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-sizing: border-box;
             overflow-x: clip !important;
             overflow-x: hidden !important;
             overflow-y: auto;
-            height: calc(100vh - ({{ $mainContentTopOffset }} + var(--safe-area-inset-top))) !important;
+            height: 100vh !important;
+            height: 100dvh !important;
             touch-action: pan-y;
             overscroll-behavior-x: none;
-            /* Full height minus headers */
+            /* Full viewport height with top padding for headers */
         }
 
         .youtube-sidebar.collapsed~.main-content {
@@ -525,7 +525,8 @@
             -webkit-backdrop-filter: blur(12px) saturate(180%);
             border-bottom: 1px solid var(--border-color);
             z-index: 1001 !important;
-            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
             height: calc(60px + var(--safe-area-inset-top)) !important;
             padding-top: calc(0.75rem + var(--safe-area-inset-top)) !important;
         }
@@ -609,7 +610,8 @@
             overflow-y: hidden;
             box-sizing: border-box;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
             pointer-events: none;
         }
 
@@ -811,10 +813,35 @@
             /* Ensure padding is included in width */
             z-index: 997 !important;
             /* box-shadow: 0 2px 4px var(--white); */
-            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
             display: flex;
             flex-direction: column;
             gap: 0.25rem;
+        }
+
+        /* YouTube-style Auto Scroll-Away Rules */
+        body.headers-scrolled-hidden .top-header {
+            transform: translateY(-100%) !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        body.headers-scrolled-hidden .filter-bar {
+            transform: translateY(calc(-100% - 60px - var(--safe-area-inset-top, 0px))) !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        body.headers-scrolled-hidden .subjects-filter-container {
+            transform: translateY(calc(-100% - 116px - var(--safe-area-inset-top, 0px))) !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        body.headers-scrolled-hidden .filter-bar *,
+        body.headers-scrolled-hidden .subjects-filter-container * {
+            pointer-events: none !important;
         }
 
         .youtube-sidebar.collapsed~.subjects-filter-container {
@@ -1892,6 +1919,157 @@
             }
         }
 
+        /* Mobile Landscape & Short Screen Header Optimization */
+        @media (max-height: 550px), (orientation: landscape) and (max-height: 550px) {
+            .youtube-sidebar {
+                width: 260px !important;
+                transform: translateX(-100%) !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
+                transition: transform 0.3s ease, visibility 0.3s ease !important;
+            }
+
+            .youtube-sidebar.mobile-open {
+                transform: translateX(0) !important;
+                visibility: visible !important;
+                pointer-events: auto !important;
+            }
+
+            .top-header {
+                height: calc(44px + var(--safe-area-inset-top, 0px)) !important;
+                padding-top: calc(0.25rem + var(--safe-area-inset-top, 0px)) !important;
+                padding-bottom: 0.25rem !important;
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .sidebar-logo img {
+                max-height: 26px !important;
+            }
+
+            .user-avatar {
+                width: 30px !important;
+                height: 30px !important;
+                font-size: 0.75rem !important;
+            }
+
+            .notification-btn {
+                padding: 0.35rem !important;
+            }
+
+            .filter-bar {
+                top: calc(44px + var(--safe-area-inset-top, 0px)) !important;
+                height: 38px !important;
+                padding: 0 0.75rem !important;
+                gap: 0.35rem !important;
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .grade-tab {
+                padding: 0.2rem 0.5rem !important;
+                font-size: 0.75rem !important;
+                min-height: 28px !important;
+                line-height: 1.2 !important;
+            }
+
+            .level-indicator-badge {
+                font-size: 0.75rem !important;
+                padding: 0.2rem 0.5rem !important;
+            }
+
+            .quiz-btn,
+            .mobile-search-toggle {
+                min-height: 30px !important;
+                min-width: 30px !important;
+                padding: 0.25rem !important;
+            }
+
+            .subjects-filter-container {
+                top: calc(82px + var(--safe-area-inset-top, 0px)) !important;
+                padding: 0.2rem 0 !important;
+                gap: 0.15rem !important;
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .subjects-filter {
+                padding: 0.15rem 0.75rem !important;
+                gap: 0.35rem !important;
+            }
+
+            .subject-chip {
+                padding: 0.2rem 0.55rem !important;
+                font-size: 0.75rem !important;
+                min-height: 26px !important;
+                border-radius: 9999px !important;
+            }
+
+            .filter-label {
+                font-size: 0.75rem !important;
+                margin-right: 0.25rem !important;
+            }
+
+            .main-content {
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin-top: 0 !important;
+                padding-top: calc({{ $isPrimaryLevel ? '120px' : '155px' }} + var(--safe-area-inset-top, 0px)) !important;
+                height: 100vh !important;
+                height: 100dvh !important;
+            }
+
+            .hero-container-outer {
+                padding: 0.25rem 0.75rem 0.15rem !important;
+            }
+
+            .hero-carousel-card {
+                min-height: 120px !important;
+            }
+
+            .hero-slide-content {
+                padding: 0.6rem 1rem !important;
+            }
+
+            .hero-slide-title {
+                font-size: 1.1rem !important;
+                margin-bottom: 0.2rem !important;
+            }
+
+            .hero-slide-subtitle {
+                font-size: 0.75rem !important;
+                margin-bottom: 0.35rem !important;
+            }
+
+            .content-section {
+                padding: 0.5rem 0.75rem 1.5rem !important;
+            }
+
+            .content-grid {
+                grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important;
+                gap: 1rem 0.75rem !important;
+            }
+
+            /* Scroll-away transform adjustments for landscape */
+            body.headers-scrolled-hidden .top-header {
+                transform: translateY(-100%) !important;
+            }
+
+            body.headers-scrolled-hidden .filter-bar {
+                transform: translateY(calc(-100% - 44px - var(--safe-area-inset-top, 0px))) !important;
+            }
+
+            body.headers-scrolled-hidden .subjects-filter-container {
+                transform: translateY(calc(-100% - 82px - var(--safe-area-inset-top, 0px))) !important;
+            }
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
 
@@ -2646,7 +2824,7 @@
         </div>
 
         <!-- Main Content -->
-        <main class="main-content">
+        <main class="main-content" id="mainContent">
            <x-hero-video title="Explore & Learn" subtitle="at your own pace." />
 
             <!-- Content Section with Lessons/Courses Grid -->
@@ -2701,6 +2879,7 @@
             initializeSubjectFilter();
             initializeSearch();
             initializeInfiniteScroll();
+            initializeAutoScrollAway();
 
             // Initialize video facade manager with auto-play enabled for YouTube-like behavior
             if (typeof window.videoFacadeManager !== 'undefined') {
@@ -2784,9 +2963,95 @@
             }
         }
 
-        // Call the new function
-        preventBodyScroll();
+        // YouTube-Style Smart Auto Scroll-Away for Fixed Headers
+        function initializeAutoScrollAway() {
+            const mainContent = document.getElementById('mainContent') || document.querySelector('.main-content');
+            const mainContainer = document.querySelector('.main-container');
 
+            let lastScrollTop = 0;
+            const scrollThreshold = 10;
+            let ticking = false;
+
+            function shouldKeepVisible() {
+                const isSearchActive = document.getElementById('filterBar')?.classList.contains('search-active');
+                const isUserDropdownActive = document.getElementById('userDropdownMenu')?.classList.contains('active');
+                const isNotificationActive = document.getElementById('notificationDropdown')?.classList.contains('active');
+                const isSidebarOpen = document.getElementById('youtubeSidebar')?.classList.contains('mobile-open');
+
+                return !!(isSearchActive || isUserDropdownActive || isNotificationActive || isSidebarOpen);
+            }
+
+            function getScrollTop(e) {
+                if (e && e.target && typeof e.target.scrollTop === 'number' && e.target !== document && e.target !== window) {
+                    return e.target.scrollTop;
+                }
+                if (mainContent && mainContent.scrollTop > 0) {
+                    return mainContent.scrollTop;
+                }
+                if (mainContainer && mainContainer.scrollTop > 0) {
+                    return mainContainer.scrollTop;
+                }
+                return window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+            }
+
+            function handleScrollAction(e) {
+                if (shouldKeepVisible()) {
+                    document.body.classList.remove('headers-scrolled-hidden');
+                    return;
+                }
+
+                const currentScroll = getScrollTop(e);
+
+                // Near the top of the container: always reveal headers
+                if (currentScroll <= 25) {
+                    document.body.classList.remove('headers-scrolled-hidden');
+                    lastScrollTop = Math.max(0, currentScroll);
+                    return;
+                }
+
+                const delta = currentScroll - lastScrollTop;
+
+                if (Math.abs(delta) >= scrollThreshold) {
+                    if (delta > 0 && currentScroll > 50) {
+                        // Scrolling down -> hide headers smoothly
+                        document.body.classList.add('headers-scrolled-hidden');
+                    } else if (delta < 0) {
+                        // Scrolling up -> reveal headers smoothly
+                        document.body.classList.remove('headers-scrolled-hidden');
+                    }
+                    lastScrollTop = currentScroll;
+                }
+            }
+
+            function onScroll(e) {
+                if (!ticking) {
+                    window.requestAnimationFrame(() => {
+                        handleScrollAction(e);
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            }
+
+            if (mainContent) {
+                mainContent.addEventListener('scroll', onScroll, { passive: true });
+            }
+            if (mainContainer) {
+                mainContainer.addEventListener('scroll', onScroll, { passive: true });
+            }
+            window.addEventListener('scroll', onScroll, { passive: true });
+
+            window.addEventListener('orientationchange', function () {
+                document.body.classList.remove('headers-scrolled-hidden');
+                lastScrollTop = 0;
+            }, { passive: true });
+
+            window.addEventListener('resize', function () {
+                if (shouldKeepVisible()) {
+                    document.body.classList.remove('headers-scrolled-hidden');
+                }
+            }, { passive: true });
+        }
 
         // Infinite Scroll Implementation
         let currentPage = 1;
@@ -2948,6 +3213,7 @@
 
             function openSearchMode() {
                 if (!filterBar) return;
+                document.body.classList.remove('headers-scrolled-hidden');
                 filterBar.classList.add('search-active');
                 if (searchBackdropOverlay) {
                     searchBackdropOverlay.classList.add('active');
