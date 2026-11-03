@@ -524,7 +524,7 @@
             backdrop-filter: blur(12px) saturate(180%);
             -webkit-backdrop-filter: blur(12px) saturate(180%);
             border-bottom: 1px solid var(--border-color);
-            z-index: 999 !important;
+            z-index: 1001 !important;
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             height: calc(60px + var(--safe-area-inset-top)) !important;
             padding-top: calc(0.75rem + var(--safe-area-inset-top)) !important;

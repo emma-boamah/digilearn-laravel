@@ -45,7 +45,7 @@
         /* Changed to 0 for full width */
         width: 100%;
         /* Full width */
-        z-index: 999;
+        z-index: 1001 !important;
         transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         /* padding-left handled in including files */
     }
@@ -197,6 +197,7 @@
 
     .notification-btn {
         position: relative;
+        z-index: 10003;
         background: none;
         border: none;
         cursor: pointer;
@@ -215,6 +216,7 @@
         position: relative;
         display: inline-flex;
         align-items: center;
+        z-index: 10001;
     }
 
     .notification-btn-icon {
@@ -245,16 +247,29 @@
     }
 
     .notification-backdrop {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.35);
-        backdrop-filter: blur(2px);
-        -webkit-backdrop-filter: blur(2px);
-        z-index: 10000;
+        display: block !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        height: 100dvh !important;
+        background: rgba(0, 0, 0, 0.3) !important;
+        backdrop-filter: blur(2px) !important;
+        -webkit-backdrop-filter: blur(2px) !important;
+        z-index: 1000 !important;
         opacity: 0;
+        visibility: hidden;
         pointer-events: none;
-        transition: opacity 0.25s ease;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    .notification-backdrop.active {
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
     }
 
     .notification-dropdown-menu {
@@ -493,9 +508,12 @@
     /* User Avatar Dropdown */
     .user-dropdown {
         position: relative;
+        z-index: 10001;
     }
 
     .user-avatar-btn {
+        position: relative;
+        z-index: 10003;
         background: none;
         border: none;
         cursor: pointer;
@@ -519,16 +537,19 @@
         box-shadow: var(--shadow-xl);
         border: 1px solid var(--gray-200);
         width: 260px;
-        max-width: calc(100% - 1rem);
-        z-index: 1000;
+        min-width: 240px;
+        max-width: calc(100vw - 24px);
+        z-index: 10002;
         opacity: 0;
         visibility: hidden;
         transform: translateY(-10px);
         transition: all 0.3s ease;
         display: flex;
         flex-direction: column;
-        flex-wrap: wrap;
-        margin: 0.5rem;
+        flex-wrap: nowrap;
+        margin: 0;
+        box-sizing: border-box;
+        overflow: hidden;
     }
 
     .user-dropdown-menu.active {
@@ -538,20 +559,27 @@
     }
 
     .user-dropdown-header {
-        padding: 1rem 1.5rem;
+        padding: 1rem 1.25rem;
         border-bottom: 1px solid var(--gray-200);
+        box-sizing: border-box;
     }
 
     .user-info .user-name {
-        font-size: 1rem;
+        font-size: 0.95rem;
         font-weight: 600;
         color: var(--gray-900);
         margin-bottom: 0.25rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .user-info .user-email {
-        font-size: 0.875rem;
+        font-size: 0.8125rem;
         color: var(--gray-500);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .user-dropdown-body {
@@ -562,12 +590,13 @@
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        padding: 0.75rem 1.5rem;
+        padding: 0.75rem 1.25rem;
         color: var(--gray-700);
         text-decoration: none;
         transition: all 0.2s ease;
         font-size: 0.875rem;
         font-weight: 500;
+        white-space: nowrap;
     }
 
     .dropdown-item:hover {
@@ -978,6 +1007,34 @@
         border-color: #16181c;
     }
 
+    [data-theme="dark"] .user-dropdown-menu {
+        background: #16181c;
+        border-color: #2f3336;
+        box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.7), 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    [data-theme="dark"] .user-dropdown-header {
+        border-bottom-color: #2f3336;
+    }
+
+    [data-theme="dark"] .user-info .user-name {
+        color: #ffffff;
+    }
+
+    [data-theme="dark"] .user-info .user-email {
+        color: #71767b;
+    }
+
+    [data-theme="dark"] .dropdown-item {
+        color: #e7e9ea;
+    }
+
+    [data-theme="dark"] .dropdown-item:hover,
+    [data-theme="dark"] .dropdown-item:active {
+        background-color: #202327;
+        color: #ffffff;
+    }
+
     /* Mobile adjustments */
     @media (max-width: 768px) {
         .top-header {
@@ -1035,6 +1092,7 @@
 
         .notification-backdrop.active {
             opacity: 1;
+            visibility: visible;
             pointer-events: auto;
         }
 
@@ -1243,6 +1301,32 @@
                     if (userDropdownToggle) {
                         userDropdownToggle.setAttribute('aria-expanded', 'false');
                     }
+                    if (notificationBackdrop && (!notificationDropdown || !notificationDropdown.classList.contains('active'))) {
+                        notificationBackdrop.classList.remove('active');
+                    }
+                }
+            }
+
+            function openUserDropdown() {
+                // Close notifications if open
+                closeNotificationDropdown();
+
+                if (userDropdownMenu) {
+                    userDropdownMenu.classList.add('active');
+                }
+                if (userDropdownToggle) {
+                    userDropdownToggle.setAttribute('aria-expanded', 'true');
+                }
+                if (notificationBackdrop) {
+                    notificationBackdrop.classList.add('active');
+                }
+            }
+
+            function toggleUserDropdown() {
+                if (userDropdownMenu && userDropdownMenu.classList.contains('active')) {
+                    closeUserDropdown();
+                } else {
+                    openUserDropdown();
                 }
             }
 
@@ -1250,7 +1334,7 @@
                 if (notificationDropdown && notificationDropdown.classList.contains('active')) {
                     notificationDropdown.classList.remove('active');
                 }
-                if (notificationBackdrop && notificationBackdrop.classList.contains('active')) {
+                if (notificationBackdrop && (!userDropdownMenu || !userDropdownMenu.classList.contains('active'))) {
                     notificationBackdrop.classList.remove('active');
                 }
                 if (notificationButton) {
@@ -1277,16 +1361,12 @@
                 }
             }
 
-            // User dropdown functionality
+            // User dropdown functionality - toggle on click/tap, reliable reopen
             if (userDropdownToggle && userDropdownMenu) {
                 userDropdownToggle.addEventListener('click', function (event) {
+                    event.preventDefault();
                     event.stopPropagation();
-                    // Close notifications if open
-                    closeNotificationDropdown();
-
-                    const isExpanded = userDropdownToggle.getAttribute('aria-expanded') === 'true';
-                    userDropdownToggle.setAttribute('aria-expanded', !isExpanded);
-                    userDropdownMenu.classList.toggle('active');
+                    toggleUserDropdown();
                 });
 
                 // Close dropdowns on escape key
@@ -1306,6 +1386,7 @@
 
             if (notificationButton && notificationDropdown) {
                 notificationButton.addEventListener('click', function (event) {
+                    event.preventDefault();
                     event.stopPropagation();
                     const isActive = notificationDropdown.classList.contains('active');
                     if (isActive) {
@@ -1314,29 +1395,29 @@
                         openNotificationDropdown();
                     }
                 });
-
-                // Backdrop tap / click to dismiss on mobile
-                if (notificationBackdrop) {
-                    notificationBackdrop.addEventListener('click', function (event) {
-                        event.stopPropagation();
-                        closeNotificationDropdown();
-                    });
-                    notificationBackdrop.addEventListener('touchstart', function (event) {
-                        event.stopPropagation();
-                        closeNotificationDropdown();
-                    }, { passive: true });
-                }
-
-                // Close dropdown when clicking outside
-                document.addEventListener('click', function (event) {
-                    if (userDropdownToggle && userDropdownMenu && !userDropdownToggle.contains(event.target) && !userDropdownMenu.contains(event.target)) {
-                        closeUserDropdown();
-                    }
-                    if (!notificationButton.contains(event.target) && !notificationDropdown.contains(event.target)) {
-                        closeNotificationDropdown();
-                    }
-                });
             }
+
+            // Touch-absorbing backdrop shield: intercepts any outside tap, protects underlying lesson cards
+            if (notificationBackdrop) {
+                const dismissBothDropdowns = function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    closeNotificationDropdown();
+                    closeUserDropdown();
+                };
+                notificationBackdrop.addEventListener('click', dismissBothDropdowns);
+                notificationBackdrop.addEventListener('touchstart', dismissBothDropdowns, { passive: false });
+            }
+
+            // Desktop outside click fallback
+            document.addEventListener('click', function (event) {
+                if (userDropdownToggle && userDropdownMenu && !userDropdownToggle.contains(event.target) && !userDropdownMenu.contains(event.target)) {
+                    closeUserDropdown();
+                }
+                if (notificationButton && notificationDropdown && !notificationButton.contains(event.target) && !notificationDropdown.contains(event.target)) {
+                    closeNotificationDropdown();
+                }
+            });
 
             // Mark all as read functionality
             if (markAllReadButton) {
@@ -1901,9 +1982,6 @@
             </div>
         </div>
 
-        <!-- Notification Backdrop for Mobile -->
-        <div class="notification-backdrop" id="notificationBackdrop"></div>
-
         <!-- User Avatar Dropdown -->
         <div class="user-dropdown">
             <button class="user-avatar-btn" id="userDropdownToggle" aria-haspopup="true" aria-expanded="false">
@@ -1955,3 +2033,6 @@
         </div>
     </div>
 </div>
+
+<!-- Touch-Absorbing Full-Screen Shield Backdrop (Placed outside top-header so backdrop-filter does NOT trap it) -->
+<div class="notification-backdrop" id="notificationBackdrop"></div>
