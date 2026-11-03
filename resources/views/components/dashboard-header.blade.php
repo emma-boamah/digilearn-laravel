@@ -519,16 +519,19 @@
         box-shadow: var(--shadow-xl);
         border: 1px solid var(--gray-200);
         width: 260px;
-        max-width: calc(100% - 1rem);
-        z-index: 1000;
+        min-width: 240px;
+        max-width: calc(100vw - 24px);
+        z-index: 10002;
         opacity: 0;
         visibility: hidden;
         transform: translateY(-10px);
         transition: all 0.3s ease;
         display: flex;
         flex-direction: column;
-        flex-wrap: wrap;
-        margin: 0.5rem;
+        flex-wrap: nowrap;
+        margin: 0;
+        box-sizing: border-box;
+        overflow: hidden;
     }
 
     .user-dropdown-menu.active {
@@ -538,20 +541,27 @@
     }
 
     .user-dropdown-header {
-        padding: 1rem 1.5rem;
+        padding: 1rem 1.25rem;
         border-bottom: 1px solid var(--gray-200);
+        box-sizing: border-box;
     }
 
     .user-info .user-name {
-        font-size: 1rem;
+        font-size: 0.95rem;
         font-weight: 600;
         color: var(--gray-900);
         margin-bottom: 0.25rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .user-info .user-email {
-        font-size: 0.875rem;
+        font-size: 0.8125rem;
         color: var(--gray-500);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .user-dropdown-body {
@@ -562,12 +572,13 @@
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        padding: 0.75rem 1.5rem;
+        padding: 0.75rem 1.25rem;
         color: var(--gray-700);
         text-decoration: none;
         transition: all 0.2s ease;
         font-size: 0.875rem;
         font-weight: 500;
+        white-space: nowrap;
     }
 
     .dropdown-item:hover {
@@ -978,6 +989,34 @@
         border-color: #16181c;
     }
 
+    [data-theme="dark"] .user-dropdown-menu {
+        background: #16181c;
+        border-color: #2f3336;
+        box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.7), 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    [data-theme="dark"] .user-dropdown-header {
+        border-bottom-color: #2f3336;
+    }
+
+    [data-theme="dark"] .user-info .user-name {
+        color: #ffffff;
+    }
+
+    [data-theme="dark"] .user-info .user-email {
+        color: #71767b;
+    }
+
+    [data-theme="dark"] .dropdown-item {
+        color: #e7e9ea;
+    }
+
+    [data-theme="dark"] .dropdown-item:hover,
+    [data-theme="dark"] .dropdown-item:active {
+        background-color: #202327;
+        color: #ffffff;
+    }
+
     /* Mobile adjustments */
     @media (max-width: 768px) {
         .top-header {
@@ -1243,6 +1282,9 @@
                     if (userDropdownToggle) {
                         userDropdownToggle.setAttribute('aria-expanded', 'false');
                     }
+                    if (notificationBackdrop && (!notificationDropdown || !notificationDropdown.classList.contains('active'))) {
+                        notificationBackdrop.classList.remove('active');
+                    }
                 }
             }
 
@@ -1250,7 +1292,7 @@
                 if (notificationDropdown && notificationDropdown.classList.contains('active')) {
                     notificationDropdown.classList.remove('active');
                 }
-                if (notificationBackdrop && notificationBackdrop.classList.contains('active')) {
+                if (notificationBackdrop && (!userDropdownMenu || !userDropdownMenu.classList.contains('active'))) {
                     notificationBackdrop.classList.remove('active');
                 }
                 if (notificationButton) {
@@ -1284,9 +1326,12 @@
                     // Close notifications if open
                     closeNotificationDropdown();
 
-                    const isExpanded = userDropdownToggle.getAttribute('aria-expanded') === 'true';
-                    userDropdownToggle.setAttribute('aria-expanded', !isExpanded);
-                    userDropdownMenu.classList.toggle('active');
+                    const isOpening = !userDropdownMenu.classList.contains('active');
+                    userDropdownToggle.setAttribute('aria-expanded', isOpening ? 'true' : 'false');
+                    userDropdownMenu.classList.toggle('active', isOpening);
+                    if (notificationBackdrop) {
+                        notificationBackdrop.classList.toggle('active', isOpening);
+                    }
                 });
 
                 // Close dropdowns on escape key
@@ -1320,10 +1365,12 @@
                     notificationBackdrop.addEventListener('click', function (event) {
                         event.stopPropagation();
                         closeNotificationDropdown();
+                        closeUserDropdown();
                     });
                     notificationBackdrop.addEventListener('touchstart', function (event) {
                         event.stopPropagation();
                         closeNotificationDropdown();
+                        closeUserDropdown();
                     }, { passive: true });
                 }
 
@@ -1332,10 +1379,18 @@
                     if (userDropdownToggle && userDropdownMenu && !userDropdownToggle.contains(event.target) && !userDropdownMenu.contains(event.target)) {
                         closeUserDropdown();
                     }
-                    if (!notificationButton.contains(event.target) && !notificationDropdown.contains(event.target)) {
+                    if (notificationButton && notificationDropdown && !notificationButton.contains(event.target) && !notificationDropdown.contains(event.target)) {
                         closeNotificationDropdown();
                     }
                 });
+                document.addEventListener('touchstart', function (event) {
+                    if (userDropdownToggle && userDropdownMenu && !userDropdownToggle.contains(event.target) && !userDropdownMenu.contains(event.target)) {
+                        closeUserDropdown();
+                    }
+                    if (notificationButton && notificationDropdown && !notificationButton.contains(event.target) && !notificationDropdown.contains(event.target)) {
+                        closeNotificationDropdown();
+                    }
+                }, { passive: true });
             }
 
             // Mark all as read functionality
