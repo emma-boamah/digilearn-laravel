@@ -1038,14 +1038,20 @@
             pointer-events: auto;
         }
 
+        .notification-dropdown {
+            position: static !important;
+        }
+
         .notification-dropdown-menu {
             position: fixed !important;
             top: calc(60px + var(--safe-area-inset-top, 0px) + 6px) !important;
             left: 10px !important;
             right: 10px !important;
-            width: auto !important;
+            width: calc(100% - 20px) !important;
+            width: calc(100vw - 20px) !important;
             max-width: calc(100vw - 20px) !important;
             margin: 0 auto !important;
+            box-sizing: border-box !important;
             border-radius: 1rem !important;
             box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.25), 0 4px 12px rgba(0, 0, 0, 0.1) !important;
             z-index: 10001 !important;

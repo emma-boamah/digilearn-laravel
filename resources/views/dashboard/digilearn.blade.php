@@ -1846,31 +1846,109 @@
             }
 
             #filterBar.search-active .search-container {
-                display: flex;
-                position: absolute;
-                inset: 0;
-                z-index: 10;
-                background: var(--white);
-                padding: 0.5rem 0.75rem;
-                align-items: center;
+                display: flex !important;
+                position: absolute !important;
+                inset: 0 !important;
+                z-index: 20 !important;
+                background: var(--white) !important;
+                padding: 0.375rem 0.625rem !important;
+                align-items: center !important;
+                gap: 0.5rem !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
             }
 
             #filterBar.search-active .search-box {
-                background: var(--gray-100);
-                border-radius: 0.5rem;
-                width: 100%;
-                display: flex;
+                background: var(--gray-100) !important;
+                border-radius: 0.5rem !important;
+                flex: 1 !important;
+                display: flex !important;
+                align-items: center !important;
+                position: relative !important;
+                min-width: 0 !important;
             }
 
             #filterBar.search-active .level-container,
             #filterBar.search-active .current-level-display,
             #filterBar.search-active .mobile-search-toggle,
             #filterBar.search-active .quiz-container {
-                display: none;
+                display: none !important;
             }
 
-            .search-close {
+            .search-back-btn {
                 display: none;
+                align-items: center;
+                justify-content: center;
+                background: none;
+                border: none;
+                width: 38px;
+                height: 38px;
+                min-width: 38px;
+                min-height: 38px;
+                border-radius: 50%;
+                color: var(--gray-700);
+                cursor: pointer;
+                flex-shrink: 0;
+                transition: background-color 0.2s ease, color 0.2s ease;
+                padding: 0;
+            }
+
+            .search-back-btn:hover,
+            .search-back-btn:active {
+                background-color: var(--gray-100);
+                color: var(--primary-red);
+            }
+
+            #filterBar.search-active .search-back-btn {
+                display: flex !important;
+            }
+
+            .search-clear-btn {
+                display: none;
+                align-items: center;
+                justify-content: center;
+                position: absolute;
+                right: 44px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: none;
+                border: none;
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                cursor: pointer;
+                color: var(--gray-400);
+                transition: all 0.2s ease;
+                z-index: 2;
+                padding: 0;
+            }
+
+            .search-clear-btn:hover,
+            .search-clear-btn:active {
+                background-color: var(--gray-200);
+                color: var(--gray-800);
+            }
+
+            .search-clear-btn.visible {
+                display: flex !important;
+            }
+
+            .search-backdrop-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                top: 110px;
+                background: rgba(0, 0, 0, 0.4);
+                backdrop-filter: blur(2px);
+                -webkit-backdrop-filter: blur(2px);
+                z-index: 15;
+                opacity: 0;
+                transition: opacity 0.2s ease;
+            }
+
+            .search-backdrop-overlay.active {
+                display: block;
+                opacity: 1;
             }
 
             .main-container {
@@ -2402,25 +2480,34 @@
             </button>
 
             <div class="search-container" data-search-domain="lesson" data-level-group="{{ $currentLevelGroup ?? '' }}">
+                <!-- Back / Close Button to exit mobile search mode -->
+                <button type="button" class="search-back-btn" id="searchBackBtn" aria-label="Close search" title="Back to filters">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 12H5M12 19l-7-7 7-7" />
+                    </svg>
+                </button>
+
                 <div class="search-box" id="mobileSearchBox">
-                    <input type="text" class="search-input" placeholder="Search">
-                    <button type="button" class="search-button">
+                    <input type="text" class="search-input" placeholder="Search lessons, subjects..." autocomplete="off">
+                    <!-- Clear text button (visible when query is entered) -->
+                    <button type="button" class="search-clear-btn" id="searchClearBtn" aria-label="Clear text" title="Clear search">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                    <button type="button" class="search-button" aria-label="Search">
                         <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                     </button>
-                    <!-- Close button for mobile search -->
-                    <button class="search-close" id="searchClose">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
                 </div>
             </div>
         </div>
+
+        <!-- Search backdrop overlay for mobile -->
+        <div class="search-backdrop-overlay" id="searchBackdropOverlay"></div>
 
         <!-- Separate Horizontal Filters (Context & Subjects) -->
         <div class="subjects-filter-container">
@@ -2762,59 +2849,100 @@
             const mobileSearchToggle = document.getElementById('mobileSearchToggle');
             const mobileSearchBox = document.getElementById('mobileSearchBox');
             const searchInput = mobileSearchBox ? mobileSearchBox.querySelector('.search-input') : null;
-            const searchClose = document.getElementById('searchClose');
+            const searchBackBtn = document.getElementById('searchBackBtn');
+            const searchClearBtn = document.getElementById('searchClearBtn');
+            const searchBackdropOverlay = document.getElementById('searchBackdropOverlay');
             const filterBar = document.getElementById('filterBar');
 
-            if (mobileSearchToggle && filterBar && searchInput) {
-                mobileSearchToggle.addEventListener('click', function () {
-                    filterBar.classList.add('search-active');
-                    setTimeout(() => {
+            function openSearchMode() {
+                if (!filterBar) return;
+                filterBar.classList.add('search-active');
+                if (searchBackdropOverlay) {
+                    searchBackdropOverlay.classList.add('active');
+                }
+                setTimeout(() => {
+                    if (searchInput) {
                         searchInput.focus();
-                    }, 100);
+                        if (searchClearBtn) {
+                            searchClearBtn.classList.toggle('visible', searchInput.value.trim().length > 0);
+                        }
+                    }
+                }, 100);
+            }
+
+            function closeSearchMode(restoreLessons = false) {
+                if (!filterBar) return;
+                filterBar.classList.remove('search-active');
+                if (searchBackdropOverlay) {
+                    searchBackdropOverlay.classList.remove('active');
+                }
+                document.querySelectorAll('.search-autocomplete-dropdown').forEach(d => d.classList.remove('active'));
+
+                if (searchInput) {
+                    if (restoreLessons || searchInput.value.trim() === '') {
+                        searchInput.value = '';
+                        if (typeof restoreOriginalLessons === 'function') {
+                            restoreOriginalLessons();
+                        }
+                    }
+                    if (searchClearBtn) {
+                        searchClearBtn.classList.remove('visible');
+                    }
+                    searchInput.blur();
+                }
+            }
+
+            window.closeMobileSearchMode = closeSearchMode;
+            window.openMobileSearchMode = openSearchMode;
+
+            if (mobileSearchToggle) {
+                mobileSearchToggle.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openSearchMode();
                 });
             }
 
-            if (searchClose && searchInput && filterBar) {
-                // Initial state check
-                searchClose.style.display = searchInput.value ? 'flex' : 'none';
+            if (searchBackBtn) {
+                searchBackBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeSearchMode(true);
+                });
+            }
 
-                // Listen for typing
+            if (searchClearBtn && searchInput) {
+                searchClearBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    searchInput.value = '';
+                    searchClearBtn.classList.remove('visible');
+                    searchInput.focus();
+                    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    if (typeof restoreOriginalLessons === 'function') {
+                        restoreOriginalLessons();
+                    }
+                });
+
                 searchInput.addEventListener('input', function () {
-                    searchClose.style.display = searchInput.value ? 'flex' : 'none';
-                });
-
-                searchClose.addEventListener('click', function () {
-                    if (searchInput.value) {
-                        // Clear input if it has content
-                        searchInput.value = '';
-                        searchClose.style.display = 'none'; // Hide button after clearing
-                        searchInput.focus();
-                    } else {
-                        // Close search if input is empty
-                        filterBar.classList.remove('search-active');
-                    }
+                    searchClearBtn.classList.toggle('visible', this.value.trim().length > 0);
                 });
             }
 
-            // Optional: Enter key to close search
-            if (searchInput && filterBar) {
-                searchInput.addEventListener('keydown', function (e) {
-                    if (e.key === 'Enter') {
-                        // Close search on Enter
-                        filterBar.classList.remove('search-active');
-                    }
+            if (searchBackdropOverlay) {
+                searchBackdropOverlay.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    closeSearchMode(false);
                 });
+                searchBackdropOverlay.addEventListener('touchstart', function (e) {
+                    e.stopPropagation();
+                    closeSearchMode(false);
+                }, { passive: true });
             }
 
-            // Close search when pressing Escape
             document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape' && filterBar.classList.contains('search-active')) {
-                    if (searchInput && searchInput.value) {
-                        searchInput.value = '';
-                        searchInput.focus();
-                    } else {
-                        filterBar.classList.remove('search-active');
-                    }
+                if (e.key === 'Escape' && filterBar && filterBar.classList.contains('search-active')) {
+                    closeSearchMode(false);
                 }
             });
         }
@@ -3402,6 +3530,15 @@
                 const activeSearchBox = document.querySelector('.search-container .search-box') || document.querySelector('#mobileSearchBox');
                 if (activeSearchBox) {
                     activeSearchBox.classList.remove('searching');
+                }
+                const overlay = document.getElementById('searchBackdropOverlay');
+                if (overlay) {
+                    overlay.classList.remove('active');
+                }
+                document.querySelectorAll('.search-autocomplete-dropdown').forEach(d => d.classList.remove('active'));
+                const searchClearBtn = document.getElementById('searchClearBtn');
+                if (searchClearBtn) {
+                    searchClearBtn.classList.toggle('visible', !!(query && query.length > 0));
                 }
                 console.log('Search completed');
             }
