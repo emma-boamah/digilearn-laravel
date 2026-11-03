@@ -51,6 +51,7 @@ use App\Models\LessonCompletion;
 use App\Models\Comment;
 use Illuminate\Support\Facades\Storage; // For file uploads
 use App\Services\NotificationService;
+use App\Services\ImageOptimizerService;
 use App\Services\UserActivityService;
 use App\Services\VimeoService;
 use App\Services\VideoSourceService;
@@ -66,10 +67,14 @@ use App\Jobs\ProcessDocumentBatchJob;
 class AdminController extends Controller
 {
     protected NotificationService $notificationService;
+    protected ImageOptimizerService $imageOptimizer;
 
-    public function __construct(NotificationService $notificationService)
-    {
+    public function __construct(
+        NotificationService $notificationService,
+        ImageOptimizerService $imageOptimizer
+    ) {
         $this->notificationService = $notificationService;
+        $this->imageOptimizer = $imageOptimizer;
     }
     public function toggleLock(Request $request)
     {
@@ -2338,7 +2343,7 @@ class AdminController extends Controller
         $tempVideoPath = $request->file('video_file')->store('temp_videos', 'public');
         $thumbnailPath = null;
         if ($request->hasFile('thumbnail_file')) {
-            $thumbnailPath = $request->file('thumbnail_file')->store('thumbnails', 'public');
+            $thumbnailPath = $this->imageOptimizer->storeThumbnail($request->file('thumbnail_file'));
         }
 
         // Get file size
@@ -2454,7 +2459,7 @@ class AdminController extends Controller
             if ($video->thumbnail_path) {
                 Storage::disk('public')->delete($video->thumbnail_path);
             }
-            $video->thumbnail_path = $request->file('thumbnail_file')->store('thumbnails', 'public');
+            $video->thumbnail_path = $this->imageOptimizer->storeThumbnail($request->file('thumbnail_file'));
         }
 
         // Handle document/slides upload
@@ -3355,7 +3360,7 @@ class AdminController extends Controller
             }
 
             // Store the new avatar
-            $path = $request->file('avatar')->store('avatars', 'public');
+            $path = $this->imageOptimizer->storeAvatar($request->file('avatar'));
             $user->avatar = $path;
             $user->save();
 
@@ -4587,9 +4592,11 @@ class AdminController extends Controller
 
                 // Handle thumbnail upload
                 if ($request->hasFile('thumbnail_file')) {
-                    $thumbnailFile = $request->file('thumbnail_file');
-                    $thumbnailFilename = time() . '_thumb_' . $video->id . '.' . $thumbnailFile->getClientOriginalExtension();
-                    $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailFilename, 'public');
+                    $thumbnailPath = $this->imageOptimizer->storeThumbnail(
+                        $request->file('thumbnail_file'),
+                        'thumbnails',
+                        time() . '_thumb_' . $video->id
+                    );
                     $video->update(['thumbnail_path' => $thumbnailPath]);
                 }
 
@@ -5176,8 +5183,11 @@ class AdminController extends Controller
                         if ($content->thumbnail_path && Storage::disk('public')->exists($content->thumbnail_path)) {
                             Storage::disk('public')->delete($content->thumbnail_path);
                         }
-                        $thumbFilename = time() . '_thumb_' . $content->id . '.' . $thumbFile->getClientOriginalExtension();
-                        $newThumbPath = $thumbFile->storeAs('thumbnails', $thumbFilename, 'public');
+                        $newThumbPath = $this->imageOptimizer->storeThumbnail(
+                            $thumbFile,
+                            'thumbnails',
+                            time() . '_thumb_' . $content->id
+                        );
                         $content->update(['thumbnail_path' => $newThumbPath]);
                     }
                 }
@@ -5953,9 +5963,11 @@ class AdminController extends Controller
 
             // Handle thumbnail
             if ($request->hasFile('thumbnail_file')) {
-                $thumbnailFile = $request->file('thumbnail_file');
-                $thumbnailFilename = time() . '_thumb_' . $video->id . '.' . $thumbnailFile->getClientOriginalExtension();
-                $thumbnailPath = $thumbnailFile->storeAs('thumbnails', $thumbnailFilename, 'public');
+                $thumbnailPath = $this->imageOptimizer->storeThumbnail(
+                    $request->file('thumbnail_file'),
+                    'thumbnails',
+                    time() . '_thumb_' . $video->id
+                );
                 $video->update(['thumbnail_path' => $thumbnailPath]);
             }
 

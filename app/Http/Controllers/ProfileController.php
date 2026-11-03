@@ -21,6 +21,7 @@ use App\Models\UserPreference;
 use App\Services\UserActivityService;
 use App\Services\SubscriptionAccessService;
 use App\Services\ResubscriptionService;
+use App\Services\ImageOptimizerService;
 use App\Helpers\PhoneNormalizerHelper;
 
 class ProfileController extends Controller
@@ -325,9 +326,8 @@ class ProfileController extends Controller
                     ]);
                 }
 
-                // Generate unique filename and store the file
-                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs('avatars', $filename, 'public');
+                // Generate unique filename and store the file as optimized WebP
+                $path = app(ImageOptimizerService::class)->storeAvatar($file, 'avatars', time() . '_' . uniqid());
 
                 // Confirm file is stored
                 if (!Storage::disk('public')->exists($path)) {

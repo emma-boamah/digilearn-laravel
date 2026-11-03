@@ -90,6 +90,7 @@
         align-items: center;
         gap: 0.5rem;
         opacity: 0;
+        pointer-events: none;
         transition: opacity 0.25s ease, transform 0.2s ease;
     }
 
@@ -97,6 +98,7 @@
     .video-container:focus-within .video-overlay-controls,
     .video-overlay-controls.visible {
         opacity: 1;
+        pointer-events: auto;
     }
 
     .video-control-btn {
@@ -111,6 +113,8 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
     }
 
     .video-control-btn:hover {
@@ -124,12 +128,30 @@
         height: 20px;
     }
 
+    @media (max-width: 768px) {
+        /* Hide theater mode toggle on mobile - YouTube standard UX */
+        #theaterModeToggle {
+            display: none !important;
+        }
+
+        .video-overlay-controls {
+            top: 0.75rem;
+            right: 0.75rem;
+        }
+
+        /* 44x44px minimum touch target on mobile */
+        .video-control-btn {
+            min-width: 44px;
+            min-height: 44px;
+            padding: 0.625rem;
+        }
+    }
+
     /* True Fullscreen styles for Video Container */
     .video-container:fullscreen,
     .video-container:-webkit-full-screen,
     .video-container:-moz-full-screen,
-    .video-container:-ms-fullscreen,
-    .video-container.is-fullscreen {
+    .video-container:-ms-fullscreen {
         width: 100vw !important;
         height: 100vh !important;
         max-width: 100vw !important;
@@ -142,6 +164,33 @@
         align-items: center !important;
         justify-content: center !important;
         z-index: 2147483647 !important;
+    }
+
+    /* CSS Viewport Fallback Fullscreen (for iOS Safari, iPhones, & unsupported browsers) */
+    .video-container.is-fullscreen {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        max-width: 100vw !important;
+        max-height: 100dvh !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        aspect-ratio: auto !important;
+        background-color: #000 !important;
+        box-shadow: none !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        z-index: 2147483647 !important;
+    }
+
+    body.video-pseudo-fullscreen {
+        overflow: hidden !important;
     }
 
     .video-container:fullscreen #lesson-video-player,
@@ -4042,7 +4091,7 @@
                 <div class="video-container">
                     <!-- Video Controls: Theater Mode and Full Screen -->
                     <div class="video-overlay-controls">
-                        <button id="theaterModeToggle" class="video-control-btn" title="Theater mode (t)" aria-label="Toggle Theater Mode">
+                        <button id="theaterModeToggle" type="button" class="video-control-btn" title="Theater mode (t)" aria-label="Toggle Theater Mode">
                             <svg class="theater-default-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <rect x="3" y="5" width="18" height="14" rx="2" stroke-width="2" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 9h4v6h-4z" />
@@ -4052,7 +4101,7 @@
                                 <rect x="7" y="8" width="10" height="8" rx="1" fill="currentColor" stroke-width="0" />
                             </svg>
                         </button>
-                        <button id="fullscreenToggle" class="video-control-btn" title="Full screen (f)" aria-label="Toggle Full Screen">
+                        <button id="fullscreenToggle" type="button" class="video-control-btn" title="Full screen (f)" aria-label="Toggle Full Screen">
                             <svg class="enter-fullscreen-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                             </svg>
@@ -4897,7 +4946,16 @@
         if (!toggle || !videoContainer) return;
 
         const isFullscreenActive = () => {
-            return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+            const hasNativeFs = !!(
+                document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.mozFullScreenElement ||
+                document.msFullscreenElement
+            );
+            const videoEl = videoContainer.querySelector('video');
+            const hasVideoFs = !!(videoEl && videoEl.webkitDisplayingFullscreen);
+            const hasPseudoFs = videoContainer.classList.contains('is-fullscreen') && !hasNativeFs;
+            return hasNativeFs || hasVideoFs || hasPseudoFs;
         };
 
         const updateFullscreenUI = () => {
@@ -4913,6 +4971,7 @@
                 toggle.setAttribute('aria-label', 'Exit full screen');
             } else {
                 videoContainer.classList.remove('is-fullscreen');
+                document.body.classList.remove('video-pseudo-fullscreen');
                 if (enterIcon) enterIcon.style.display = 'block';
                 if (exitIcon) exitIcon.style.display = 'none';
                 toggle.title = 'Full screen (f)';
@@ -4922,9 +4981,39 @@
             window.dispatchEvent(new Event('resize'));
         };
 
+        let controlsHideTimeout = null;
+        const overlayControls = videoContainer.querySelector('.video-overlay-controls');
+
+        const showControlsBriefly = () => {
+            if (!overlayControls) return;
+            overlayControls.classList.add('visible');
+            clearTimeout(controlsHideTimeout);
+            controlsHideTimeout = setTimeout(() => {
+                if (!overlayControls.matches(':hover') && !overlayControls.contains(document.activeElement)) {
+                    overlayControls.classList.remove('visible');
+                }
+            }, 3000);
+        };
+
+        const enablePseudoFullscreen = () => {
+            videoContainer.classList.add('is-fullscreen');
+            document.body.classList.add('video-pseudo-fullscreen');
+            updateFullscreenUI();
+            showControlsBriefly();
+        };
+
+        const disablePseudoFullscreen = () => {
+            videoContainer.classList.remove('is-fullscreen');
+            document.body.classList.remove('video-pseudo-fullscreen');
+            updateFullscreenUI();
+        };
+
         const toggleFullscreen = async () => {
             try {
+                const videoEl = videoContainer.querySelector('video');
+
                 if (!isFullscreenActive()) {
+                    // 1. Try standard Fullscreen API on container (Desktop & Android Chrome)
                     if (videoContainer.requestFullscreen) {
                         await videoContainer.requestFullscreen();
                     } else if (videoContainer.webkitRequestFullscreen) {
@@ -4933,20 +5022,43 @@
                         await videoContainer.mozRequestFullScreen();
                     } else if (videoContainer.msRequestFullscreen) {
                         await videoContainer.msRequestFullscreen();
+                    } else if (videoEl && typeof videoEl.webkitEnterFullscreen === 'function') {
+                        // 2. iOS Safari iPhone native video fullscreen
+                        videoEl.webkitEnterFullscreen();
+                    } else {
+                        // 3. CSS Viewport Fallback (iOS Safari iPhone with iframes or when Fullscreen API is blocked)
+                        enablePseudoFullscreen();
                     }
                 } else {
-                    if (document.exitFullscreen) {
-                        await document.exitFullscreen();
-                    } else if (document.webkitExitFullscreen) {
-                        await document.webkitExitFullscreen();
-                    } else if (document.mozCancelFullScreen) {
-                        await document.mozCancelFullScreen();
-                    } else if (document.msExitFullscreen) {
-                        await document.msExitFullscreen();
+                    // Exiting fullscreen
+                    if (
+                        document.fullscreenElement ||
+                        document.webkitFullscreenElement ||
+                        document.mozFullScreenElement ||
+                        document.msFullscreenElement
+                    ) {
+                        if (document.exitFullscreen) {
+                            await document.exitFullscreen();
+                        } else if (document.webkitExitFullscreen) {
+                            await document.webkitExitFullscreen();
+                        } else if (document.mozCancelFullScreen) {
+                            await document.mozCancelFullScreen();
+                        } else if (document.msExitFullscreen) {
+                            await document.msExitFullscreen();
+                        }
+                    } else if (videoEl && videoEl.webkitDisplayingFullscreen && typeof videoEl.webkitExitFullscreen === 'function') {
+                        videoEl.webkitExitFullscreen();
+                    } else {
+                        disablePseudoFullscreen();
                     }
                 }
             } catch (err) {
-                console.warn('Fullscreen toggle failed:', err);
+                console.warn('Standard fullscreen rejected, activating viewport fullscreen:', err);
+                if (!videoContainer.classList.contains('is-fullscreen')) {
+                    enablePseudoFullscreen();
+                } else {
+                    disablePseudoFullscreen();
+                }
             }
         };
 
@@ -4955,27 +5067,50 @@
             toggleFullscreen();
         });
 
-        // Double click on video container to toggle fullscreen (like YouTube)
+        // Double click/tap on video container to toggle fullscreen (like YouTube)
         videoContainer.addEventListener('dblclick', (e) => {
             if (e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) return;
             toggleFullscreen();
         });
 
-        // Auto-hide overlay controls after idle in fullscreen
-        let controlsHideTimeout = null;
-        const overlayControls = videoContainer.querySelector('.video-overlay-controls');
         videoContainer.addEventListener('mousemove', () => {
-            if (!isFullscreenActive() || !overlayControls) return;
-            overlayControls.classList.add('visible');
-            clearTimeout(controlsHideTimeout);
-            controlsHideTimeout = setTimeout(() => {
-                overlayControls.classList.remove('visible');
-            }, 2500);
+            if (isFullscreenActive()) {
+                showControlsBriefly();
+            }
+        });
+
+        // Touch support on mobile / iPhone
+        videoContainer.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.video-overlay-controls')) return;
+            showControlsBriefly();
+        }, { passive: true });
+
+        // Handle Escape key for CSS pseudo-fullscreen
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && videoContainer.classList.contains('is-fullscreen') && !document.fullscreenElement) {
+                disablePseudoFullscreen();
+            }
         });
 
         // Cross-browser fullscreen change events
         ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
             document.addEventListener(evt, updateFullscreenUI);
+        });
+
+        // Hook iOS video element fullscreen events
+        const hookVideoFsEvents = (vEl) => {
+            if (!vEl) return;
+            vEl.addEventListener('webkitbeginfullscreen', updateFullscreenUI);
+            vEl.addEventListener('webkitendfullscreen', updateFullscreenUI);
+        };
+
+        const existingVideo = videoContainer.querySelector('video');
+        if (existingVideo) hookVideoFsEvents(existingVideo);
+
+        window.addEventListener('mainVideoStarted', (e) => {
+            if (e.detail && e.detail.element && e.detail.element.tagName === 'VIDEO') {
+                hookVideoFsEvents(e.detail.element);
+            }
         });
     }
 

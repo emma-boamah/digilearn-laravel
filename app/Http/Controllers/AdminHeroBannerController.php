@@ -3,11 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\HeroBanner;
+use App\Services\ImageOptimizerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class AdminHeroBannerController extends Controller
 {
+    protected ImageOptimizerService $imageOptimizer;
+
+    public function __construct(ImageOptimizerService $imageOptimizer)
+    {
+        $this->imageOptimizer = $imageOptimizer;
+    }
+
     /**
      * Display a listing of hero banners.
      */
@@ -42,7 +50,11 @@ class AdminHeroBannerController extends Controller
             'is_active' => 'nullable|boolean',
         ]);
 
-        $path = $request->file('media_file')->store('hero_banners', 'public');
+        if ($request->media_type === 'image') {
+            $path = $this->imageOptimizer->storeHeroBanner($request->file('media_file'));
+        } else {
+            $path = $request->file('media_file')->store('hero_banners', 'public');
+        }
 
         HeroBanner::create([
             'title' => $request->title,
@@ -105,7 +117,11 @@ class AdminHeroBannerController extends Controller
                 Storage::disk('public')->delete($banner->media_path);
             }
 
-            $data['media_path'] = $request->file('media_file')->store('hero_banners', 'public');
+            if ($request->media_type === 'image') {
+                $data['media_path'] = $this->imageOptimizer->storeHeroBanner($request->file('media_file'));
+            } else {
+                $data['media_path'] = $request->file('media_file')->store('hero_banners', 'public');
+            }
         }
 
         $banner->update($data);

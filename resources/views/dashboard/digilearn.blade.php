@@ -3564,6 +3564,7 @@
                                 alt="${escapedTitle}"
                                 class="video-thumb"
                                 loading="lazy"
+                                decoding="async"
                             />
 
                             <div class="video-preview"></div>
