@@ -483,7 +483,7 @@
             margin-left: var(--sidebar-width-expanded) !important;
             margin-top: 0 !important;
             padding-top: calc({{ $mainContentTopOffset }} + var(--safe-area-inset-top)) !important;
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
             box-sizing: border-box;
             overflow-x: clip !important;
             overflow-x: hidden !important;
@@ -803,7 +803,7 @@
             max-width: 100% !important;
             background-color: var(--white);
             border-bottom: 1px solid var(--gray-200);
-            padding-left: var(--sidebar-width-expanded);
+            padding-left: calc(var(--sidebar-width-expanded) + 0.75rem);
             padding-right: 1rem;
             padding-top: 0.5rem;
             padding-bottom: 0.5rem;
@@ -1925,8 +1925,9 @@
             }
         }
 
-        /* Mobile Landscape & Short Screen Header Optimization */
-        @media (max-height: 550px), (orientation: landscape) and (max-height: 550px) {
+        /* Mobile Landscape Phone Optimization (scoped strictly to mobile phones <= 932px wide) */
+        @media (max-width: 932px) and (orientation: landscape) and (max-height: 550px),
+               (max-width: 768px) and (max-height: 550px) {
             .youtube-sidebar {
                 width: 260px !important;
                 transform: translateX(-100%) !important;
@@ -3332,15 +3333,19 @@
             const body = document.body;
             const sidebarContent = document.querySelector('.sidebar-content');
 
+            function isMobileScreen() {
+                // True for mobile viewports (<= 768px in portrait, or phones in landscape <= 932px with touch)
+                return window.innerWidth <= 768 || (window.innerWidth <= 932 && window.innerHeight <= 550 && window.matchMedia('(pointer: coarse)').matches);
+            }
+
             function toggleSidebar(e) {
                 if (e) {
                     e.preventDefault();
                 }
                 if (!youtubeSidebar) return;
 
-                const isMobileOrShort = window.innerWidth <= 768 || window.innerHeight <= 550;
-                if (isMobileOrShort) {
-                    // Mobile behavior - overlay only, no layout changes
+                if (isMobileScreen()) {
+                    // Mobile behavior - overlay drawer with dimming backdrop
                     youtubeSidebar.classList.toggle('mobile-open');
                     if (sidebarOverlay) sidebarOverlay.classList.toggle('active');
                     body.classList.toggle('sidebar-open');
@@ -3350,13 +3355,8 @@
                         sidebarContent.scrollTop = 0;
                     }
                 } else {
-                    // Desktop behavior - layout changes
+                    // Desktop behavior - smoothly collapse/expand sidebar and shift layout
                     youtubeSidebar.classList.toggle('collapsed');
-
-                    // Update header position
-                    if (typeof updateHeaderPosition === 'function') {
-                        updateHeaderPosition();
-                    }
 
                     // Reset scroll position when collapsing/expanding
                     if (sidebarContent) {
@@ -3382,31 +3382,29 @@
                 });
             }
 
-
             // Handle window resize - ensure proper state transitions
             function handleResize() {
-                if (window.innerWidth > 768 && window.innerHeight > 550) {
-                    // Switching to desktop
+                if (!isMobileScreen()) {
+                    // Desktop mode: remove mobile overlay classes
                     youtubeSidebar.classList.remove('mobile-open');
-                    sidebarOverlay.classList.remove('active');
+                    if (sidebarOverlay) sidebarOverlay.classList.remove('active');
                     body.classList.remove('sidebar-open');
 
-                    // Reset scroll position
                     if (sidebarContent) {
-                        sidebarContent.scrollTop = 0;
+                        sidebarContent.style.maxHeight = '';
                     }
                 } else {
-                    // Switching to Mobile
+                    // Mobile mode: remove desktop collapsed state
                     youtubeSidebar.classList.remove('collapsed');
                     youtubeSidebar.classList.remove('mobile-open');
-                    sidebarOverlay.classList.remove('active');
+                    if (sidebarOverlay) sidebarOverlay.classList.remove('active');
                     body.classList.remove('sidebar-open');
-                }
 
-                // Adjust sidebar content height
-                if (sidebarContent && window.innerWidth <= 768) {
-                    const viewportHeight = window.innerHeight;
-                    sidebarContent.style.maxHeight = `${viewportHeight - 64}px`; // Subtract header if exists
+                    // Adjust sidebar content height for mobile touch
+                    if (sidebarContent) {
+                        const viewportHeight = window.innerHeight;
+                        sidebarContent.style.maxHeight = `${viewportHeight - 64}px`;
+                    }
                 }
             }
 
