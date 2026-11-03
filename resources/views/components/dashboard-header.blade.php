@@ -900,9 +900,18 @@
             padding: 0.5rem;
         }
 
-        .main-content {
-            margin-left: 0;
-            max-width: 100%;
+        .main-content,
+        .youtube-sidebar.collapsed~.main-content {
+            margin-left: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .top-header,
+        .youtube-sidebar.collapsed~.top-header {
+            padding-left: 0.75rem !important;
+            width: 100% !important;
+            max-width: 100% !important;
         }
     }
 
