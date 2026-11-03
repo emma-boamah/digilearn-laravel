@@ -45,7 +45,7 @@
         /* Changed to 0 for full width */
         width: 100%;
         /* Full width */
-        z-index: 999;
+        z-index: 1001 !important;
         transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         /* padding-left handled in including files */
     }
@@ -247,13 +247,19 @@
     }
 
     .notification-backdrop {
-        display: block;
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.25);
-        backdrop-filter: blur(2px);
-        -webkit-backdrop-filter: blur(2px);
-        z-index: 10000;
+        display: block !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        height: 100dvh !important;
+        background: rgba(0, 0, 0, 0.3) !important;
+        backdrop-filter: blur(2px) !important;
+        -webkit-backdrop-filter: blur(2px) !important;
+        z-index: 1000 !important;
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
@@ -261,9 +267,9 @@
     }
 
     .notification-backdrop.active {
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
     }
 
     .notification-dropdown-menu {
@@ -1976,9 +1982,6 @@
             </div>
         </div>
 
-        <!-- Notification Backdrop for Mobile -->
-        <div class="notification-backdrop" id="notificationBackdrop"></div>
-
         <!-- User Avatar Dropdown -->
         <div class="user-dropdown">
             <button class="user-avatar-btn" id="userDropdownToggle" aria-haspopup="true" aria-expanded="false">
@@ -2030,3 +2033,6 @@
         </div>
     </div>
 </div>
+
+<!-- Touch-Absorbing Full-Screen Shield Backdrop (Placed outside top-header so backdrop-filter does NOT trap it) -->
+<div class="notification-backdrop" id="notificationBackdrop"></div>
