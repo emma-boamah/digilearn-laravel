@@ -107,8 +107,11 @@
         body {
             width: 100%;
             max-width: 100%;
-            overflow-x: hidden;
+            overflow-x: clip !important;
+            overflow-x: hidden !important;
             position: relative;
+            touch-action: pan-y;
+            overscroll-behavior-x: none;
         }
 
         body {
@@ -117,14 +120,23 @@
             color: var(--text-main);
             line-height: 1.6;
             overflow: hidden;
+            overflow-x: clip !important;
+            overflow-x: hidden !important;
             transition: background-color var(--transition-duration) ease, color var(--transition-duration) ease;
         }
 
         /* Main Layout Container */
         .main-container {
             height: 100vh;
+            height: 100dvh;
             display: flex;
             flex-direction: column;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: clip !important;
+            overflow-x: hidden !important;
+            touch-action: pan-y;
+            overscroll-behavior-x: none;
         }
 
         /* YouTube-style Sidebar */
@@ -466,23 +478,26 @@
         /* Main Content Area */
         .main-content {
             flex: 1;
-            width: calc(100vw - var(--sidebar-width-expanded)) !important;
-            max-width: calc(100vw - var(--sidebar-width-expanded)) !important;
+            width: calc(100% - var(--sidebar-width-expanded)) !important;
+            max-width: calc(100% - var(--sidebar-width-expanded)) !important;
             margin-left: var(--sidebar-width-expanded) !important;
             margin-top: calc({{ $mainContentTopOffset }} + var(--safe-area-inset-top)) !important;
             /* Adjusted for dual-pill filter bar */
             /* padding-top: 1rem !important; Internal padding */
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-sizing: border-box;
-            overflow-x: hidden;
+            overflow-x: clip !important;
+            overflow-x: hidden !important;
             overflow-y: auto;
             height: calc(100vh - ({{ $mainContentTopOffset }} + var(--safe-area-inset-top))) !important;
+            touch-action: pan-y;
+            overscroll-behavior-x: none;
             /* Full height minus headers */
         }
 
         .youtube-sidebar.collapsed~.main-content {
-            width: calc(100vw - var(--sidebar-width-collapsed)) !important;
-            max-width: calc(100vw - var(--sidebar-width-collapsed)) !important;
+            width: calc(100% - var(--sidebar-width-collapsed)) !important;
+            max-width: calc(100% - var(--sidebar-width-collapsed)) !important;
             margin-left: var(--sidebar-width-collapsed) !important;
         }
 
@@ -497,7 +512,8 @@
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
-            width: 100vw !important;
+            width: 100% !important;
+            max-width: 100% !important;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -573,7 +589,8 @@
             position: fixed !important;
             top: calc(60px + var(--safe-area-inset-top)) !important;
             left: 0;
-            width: 100vw;
+            width: 100% !important;
+            max-width: 100% !important;
             padding-left: calc(var(--sidebar-width-expanded) + 0.75rem);
             padding-right: 0.75rem;
             padding-top: 0.75rem;
@@ -587,9 +604,9 @@
             -webkit-backdrop-filter: blur(10px) saturate(160%);
             border-bottom: 1px solid var(--border-color);
             flex-wrap: nowrap;
+            overflow-x: clip !important;
             overflow-x: hidden;
             overflow-y: hidden;
-            max-width: 100%;
             box-sizing: border-box;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -780,7 +797,8 @@
             position: fixed !important;
             left: 0 !important;
             top: calc(116px + var(--safe-area-inset-top)) !important;
-            width: 100vw !important;
+            width: 100% !important;
+            max-width: 100% !important;
             background-color: var(--white);
             border-bottom: 1px solid var(--gray-200);
             padding-left: var(--sidebar-width-expanded);
@@ -788,7 +806,7 @@
             padding-top: 0.5rem;
             padding-bottom: 0.5rem;
             overflow: hidden;
-            /* Hide overflow on container */
+            overflow-x: clip !important;
             box-sizing: border-box;
             /* Ensure padding is included in width */
             z-index: 997 !important;
@@ -1588,8 +1606,11 @@
             body {
                 width: 100% !important;
                 max-width: 100% !important;
+                overflow-x: clip !important;
                 overflow-x: hidden !important;
                 position: relative !important;
+                touch-action: pan-y;
+                overscroll-behavior-x: none;
             }
 
             body {
@@ -1617,7 +1638,10 @@
             .main-container {
                 width: 100% !important;
                 max-width: 100% !important;
+                overflow-x: clip !important;
                 overflow-x: hidden !important;
+                touch-action: pan-y !important;
+                overscroll-behavior-x: none !important;
             }
 
             .top-header {
@@ -1635,7 +1659,10 @@
                 max-width: 100% !important;
                 margin-left: 0 !important;
                 box-sizing: border-box !important;
+                overflow-x: clip !important;
                 overflow-x: hidden !important;
+                touch-action: pan-y !important;
+                overscroll-behavior-x: none !important;
             }
 
             .filter-bar {
@@ -1649,6 +1676,7 @@
                 padding: 0 0.75rem !important;
                 gap: 0.5rem !important;
                 overflow: hidden !important;
+                overflow-x: clip !important;
                 background-color: var(--white) !important;
                 backdrop-filter: none !important;
                 -webkit-backdrop-filter: none !important;
@@ -1695,6 +1723,8 @@
                 padding: 0 !important;
                 height: 100% !important;
                 -webkit-overflow-scrolling: touch;
+                touch-action: pan-x !important;
+                overscroll-behavior-x: contain !important;
             }
 
             .current-level-display::-webkit-scrollbar {
@@ -1731,6 +1761,7 @@
                 background-color: var(--white);
                 box-sizing: border-box !important;
                 overflow: hidden !important;
+                overflow-x: clip !important;
             }
 
             .subjects-filter {
@@ -1747,6 +1778,8 @@
                 scrollbar-width: none;
                 -ms-overflow-style: none;
                 box-sizing: border-box !important;
+                touch-action: pan-x !important;
+                overscroll-behavior-x: contain !important;
             }
 
             .subjects-filter::-webkit-scrollbar {
@@ -1761,14 +1794,17 @@
             }
 
             .youtube-sidebar {
-                width: 280px;
-                /* Full width on mobile */
-                transform: translateX(-100%);
-                transition: transform 0.3s ease, width 0.3s ease;
+                width: 280px !important;
+                transform: translateX(-100%) !important;
+                transition: transform 0.3s ease, visibility 0.3s ease !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
             }
 
             .youtube-sidebar.mobile-open {
-                transform: translateX(0);
+                transform: translateX(0) !important;
+                visibility: visible !important;
+                pointer-events: auto !important;
             }
 
             /* Larger scrollbar on mobile for better touch */
@@ -1995,7 +2031,10 @@
             .main-container {
                 flex-direction: column;
                 overflow-y: auto;
-                overflow-x: hidden;
+                overflow-x: clip !important;
+                overflow-x: hidden !important;
+                touch-action: pan-y !important;
+                overscroll-behavior-x: none !important;
                 width: 100% !important;
                 max-width: 100% !important;
             }
@@ -2004,14 +2043,17 @@
                 height: 100vh;
                 height: 100dvh;
                 /* Dynamic viewport height for mobile browsers */
-                transform: translateX(-100%);
-                transition: transform 0.3s ease, width 0.3s ease;
-                width: 280px;
-                /* Adjusted width for mobile */
+                transform: translateX(-100%) !important;
+                transition: transform 0.3s ease, visibility 0.3s ease !important;
+                width: 280px !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
             }
 
             .youtube-sidebar.mobile-open {
-                transform: translateX(0);
+                transform: translateX(0) !important;
+                visibility: visible !important;
+                pointer-events: auto !important;
             }
 
             .main-content {
@@ -2020,7 +2062,10 @@
                 max-width: 100% !important;
                 background-color: var(--white) !important;
                 box-sizing: border-box !important;
+                overflow-x: clip !important;
                 overflow-x: hidden !important;
+                touch-action: pan-y !important;
+                overscroll-behavior-x: none !important;
             }
 
             .youtube-sidebar.collapsed~.main-content {
@@ -2044,7 +2089,10 @@
                 width: 100% !important;
                 max-width: 100% !important;
                 box-sizing: border-box !important;
+                overflow-x: clip !important;
                 overflow-x: hidden !important;
+                touch-action: pan-y !important;
+                overscroll-behavior-x: none !important;
             }
 
             /* Hide sidebar toggle in sidebar on mobile */
@@ -2063,15 +2111,17 @@
                 gap: 20px;
                 padding-bottom: 1.5rem;
                 box-sizing: border-box !important;
+                overflow-x: clip !important;
             }
 
             /* Mobile overlay - Now outside main-container */
             .sidebar-overlay {
                 position: fixed;
                 top: 0;
-                left: 0;
-                right: 0;
+                left: 0 !important;
+                right: 0 !important;
                 bottom: 0;
+                width: 100% !important;
                 background-color: rgba(0, 0, 0, 0.6);
                 z-index: 1999;
                 /* BELOW sidebar (2000) but ABOVE content */
@@ -2143,11 +2193,12 @@
             }
         }
 
-        /* CRITICAL FIX: On mobile, overlay should NOT cover sidebar area */
+        /* Mobile overlay covers full viewport behind sidebar */
         @media (max-width: 768px) {
             .sidebar-overlay {
-                left: var(--sidebar-width-expanded);
-                /* 280px - don't block sidebar */
+                left: 0 !important;
+                right: 0 !important;
+                width: 100% !important;
             }
         }
 
