@@ -213,6 +213,48 @@
 
     .notification-dropdown {
         position: relative;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .notification-btn-icon {
+        width: 22px;
+        height: 22px;
+        display: block;
+    }
+
+    .notification-btn .notification-count-badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: #E11E2D;
+        color: #ffffff;
+        border-radius: 9999px;
+        min-width: 16px;
+        height: 16px;
+        padding: 0 4px;
+        font-size: 0.625rem;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1.5px solid var(--white);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        line-height: 1;
+        z-index: 2;
+    }
+
+    .notification-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.35);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+        z-index: 10000;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease;
     }
 
     .notification-dropdown-menu {
@@ -229,13 +271,17 @@
         opacity: 0;
         visibility: hidden;
         transform: translateY(-10px);
-        transition: all 0.3s ease;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
     }
 
     .notification-dropdown-menu.active {
         opacity: 1;
         visibility: visible;
         transform: translateY(0);
+        pointer-events: auto;
     }
 
     .dropdown-header {
@@ -247,8 +293,9 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 1rem 1.5rem;
+        padding: 0.875rem 1.25rem;
         border-bottom: 1px solid var(--gray-200);
+        flex-shrink: 0;
     }
 
     .notification-dropdown-menu .dropdown-header h3 {
@@ -262,26 +309,37 @@
         background: none;
         border: none;
         color: var(--primary-red);
-        font-size: 0.875rem;
+        font-size: 0.8125rem;
         cursor: pointer;
-        font-weight: 500;
+        font-weight: 600;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.375rem;
+        transition: background-color 0.2s ease;
+    }
+
+    .mark-all-read:hover {
+        background-color: rgba(225, 30, 45, 0.08);
     }
 
     .notification-list {
-        max-height: 400px;
+        max-height: 380px;
         overflow-y: auto;
         overflow-x: hidden;
+        flex: 1 1 auto;
+        overscroll-behavior: contain;
     }
 
     .notification-item {
         display: flex;
-        gap: 1rem;
-        padding: 1rem 1.5rem;
+        align-items: flex-start;
+        gap: 0.875rem;
+        padding: 0.875rem 1.25rem;
         border-bottom: 1px solid var(--gray-100);
         transition: background-color 0.2s ease;
         min-width: 0;
         max-width: 100%;
         box-sizing: border-box;
+        cursor: pointer;
     }
 
     .notification-item:hover {
@@ -289,11 +347,11 @@
     }
 
     .notification-item.unread {
-        background: rgba(59, 130, 246, 0.05);
+        background: rgba(225, 30, 45, 0.04);
     }
 
     .notification-item.unread:hover {
-        background: rgba(59, 130, 246, 0.08);
+        background: rgba(225, 30, 45, 0.08);
     }
 
     .notification-content {
@@ -394,10 +452,10 @@
         color: var(--primary-red);
     }
 
-    .notification-icon {
-        width: 20px;
-        height: 20px;
-        stroke-width: 2;
+    .notification-item .notification-icon {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
         border-radius: 50%;
         background: var(--gray-100);
         display: flex;
@@ -405,31 +463,20 @@
         justify-content: center;
         flex-shrink: 0;
         color: var(--gray-600);
+        font-size: 0.95rem;
+        margin-top: 2px;
     }
 
-    .notification-badge {
-        position: absolute;
-        top: 2px;
-        right: 2px;
-        background: #E11E2D;
-        /* Primary red */
-        color: var(--white);
-        border-radius: 50%;
-        width: 14px;
-        height: 14px;
-        font-size: 0.6rem;
-        font-weight: 800;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 1.5px solid var(--white);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    .notification-item.unread .notification-icon {
+        background: rgba(225, 30, 45, 0.1);
+        color: var(--primary-red);
     }
 
     .dropdown-footer {
-        padding: 1rem 1.5rem;
+        padding: 0.875rem 1.25rem;
         border-top: 1px solid var(--gray-200);
         text-align: center;
+        flex-shrink: 0;
     }
 
     .view-all {
@@ -864,6 +911,73 @@
         border: none;
     }
 
+    [data-theme="dark"] .notification-dropdown-menu {
+        background: #16181c;
+        border-color: #2f3336;
+        box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.7), 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    [data-theme="dark"] .notification-dropdown-menu .dropdown-header {
+        border-bottom-color: #2f3336;
+    }
+
+    [data-theme="dark"] .notification-dropdown-menu .dropdown-header h3 {
+        color: #ffffff;
+    }
+
+    [data-theme="dark"] .notification-dropdown-menu .notification-item {
+        border-bottom-color: #202327;
+    }
+
+    [data-theme="dark"] .notification-dropdown-menu .notification-item:hover,
+    [data-theme="dark"] .notification-dropdown-menu .notification-item:active {
+        background-color: #202327;
+    }
+
+    [data-theme="dark"] .notification-dropdown-menu .notification-item.unread {
+        background: rgba(225, 30, 45, 0.1);
+    }
+
+    [data-theme="dark"] .notification-dropdown-menu .notification-item.unread:hover,
+    [data-theme="dark"] .notification-dropdown-menu .notification-item.unread:active {
+        background: rgba(225, 30, 45, 0.16);
+    }
+
+    [data-theme="dark"] .notification-dropdown-menu .notification-title {
+        color: #ffffff;
+    }
+
+    [data-theme="dark"] .notification-dropdown-menu .notification-item.unread .notification-title {
+        color: #ff6b77;
+    }
+
+    [data-theme="dark"] .notification-dropdown-menu .notification-message {
+        color: #a4b1cd;
+    }
+
+    [data-theme="dark"] .notification-dropdown-menu .notification-time {
+        color: #71767b;
+    }
+
+    [data-theme="dark"] .notification-dropdown-menu .notification-item .notification-icon {
+        background: #202327;
+        color: #a4b1cd;
+    }
+
+    [data-theme="dark"] .notification-dropdown-menu .notification-item.unread .notification-icon {
+        background: rgba(225, 30, 45, 0.2);
+        color: #ff6b77;
+    }
+
+    [data-theme="dark"] .notification-dropdown-menu .dropdown-footer {
+        border-top-color: #2f3336;
+        background: #16181c;
+    }
+
+    [data-theme="dark"] .notification-btn .notification-count-badge {
+        border-color: #16181c;
+    }
+
     /* Mobile adjustments */
     @media (max-width: 768px) {
         .top-header {
@@ -900,9 +1014,109 @@
             padding: 0.5rem;
         }
 
-        .main-content {
-            margin-left: 0;
-            max-width: 100%;
+        .main-content,
+        .youtube-sidebar.collapsed~.main-content {
+            margin-left: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .top-header,
+        .youtube-sidebar.collapsed~.top-header {
+            padding-left: 0.75rem !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        /* Mobile Notification Dropdown & Backdrop */
+        .notification-backdrop {
+            display: block;
+        }
+
+        .notification-backdrop.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .notification-dropdown {
+            position: static !important;
+        }
+
+        .notification-dropdown-menu {
+            position: fixed !important;
+            top: calc(60px + var(--safe-area-inset-top, 0px) + 6px) !important;
+            left: 10px !important;
+            right: 10px !important;
+            width: calc(100% - 20px) !important;
+            width: calc(100vw - 20px) !important;
+            max-width: calc(100vw - 20px) !important;
+            margin: 0 auto !important;
+            box-sizing: border-box !important;
+            border-radius: 1rem !important;
+            box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.25), 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+            z-index: 10001 !important;
+            max-height: calc(100dvh - 75px - var(--safe-area-inset-top, 0px)) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+        }
+
+        .notification-dropdown-menu:not(.active) {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            transform: translateY(-8px) !important;
+        }
+
+        .notification-dropdown-menu.active {
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+            transform: translateY(0) !important;
+        }
+
+        .notification-dropdown-menu .dropdown-header {
+            padding: 0.875rem 1rem !important;
+            border-bottom: 1px solid var(--gray-200) !important;
+        }
+
+        .notification-dropdown-menu .dropdown-header h3 {
+            font-size: 1.05rem !important;
+            font-weight: 700 !important;
+        }
+
+        .notification-dropdown-menu .mark-all-read {
+            font-size: 0.8125rem !important;
+            background-color: rgba(225, 30, 45, 0.08) !important;
+            padding: 0.25rem 0.625rem !important;
+            border-radius: 0.375rem !important;
+        }
+
+        .notification-dropdown-menu .mark-all-read:active {
+            background-color: rgba(225, 30, 45, 0.18) !important;
+        }
+
+        .notification-dropdown-menu .notification-list {
+            max-height: calc(100dvh - 190px - var(--safe-area-inset-top, 0px)) !important;
+            -webkit-overflow-scrolling: touch !important;
+            overscroll-behavior: contain !important;
+        }
+
+        .notification-dropdown-menu .notification-item {
+            padding: 0.875rem 1rem !important;
+            gap: 0.75rem !important;
+        }
+
+        .notification-dropdown-menu .notification-item .notification-icon {
+            width: 32px !important;
+            height: 32px !important;
+            min-width: 32px !important;
+            font-size: 0.875rem !important;
+        }
+
+        .notification-dropdown-menu .dropdown-footer {
+            padding: 0.75rem 1rem !important;
+            border-top: 1px solid var(--gray-200) !important;
         }
     }
 
@@ -918,6 +1132,20 @@
 
         .notification-btn {
             padding: 0.5rem;
+        }
+
+        .notification-dropdown-menu {
+            left: 6px !important;
+            right: 6px !important;
+            max-width: calc(100vw - 12px) !important;
+        }
+
+        .notification-dropdown-menu .dropdown-header {
+            padding: 0.75rem 0.875rem !important;
+        }
+
+        .notification-dropdown-menu .notification-item {
+            padding: 0.75rem 0.875rem !important;
         }
     }
 </style>
@@ -999,42 +1227,78 @@
                 }
             }
 
-            // User dropdown functionality
+            // Dropdown elements
             const userDropdownToggle = document.getElementById('userDropdownToggle');
             const userDropdownMenu = document.getElementById('userDropdownMenu');
+            const notificationButton = document.getElementById('notificationButton');
+            const notificationDropdown = document.getElementById('notificationDropdown');
+            const notificationBackdrop = document.getElementById('notificationBackdrop');
+            const notificationList = document.getElementById('notificationList');
+            const markAllReadButton = document.querySelector('.mark-all-read');
+            const notificationBadge = document.getElementById('notificationCountBadge') || document.querySelector('.notification-count-badge') || document.querySelector('.notification-badge');
 
+            function closeUserDropdown() {
+                if (userDropdownMenu && userDropdownMenu.classList.contains('active')) {
+                    userDropdownMenu.classList.remove('active');
+                    if (userDropdownToggle) {
+                        userDropdownToggle.setAttribute('aria-expanded', 'false');
+                    }
+                }
+            }
+
+            function closeNotificationDropdown() {
+                if (notificationDropdown && notificationDropdown.classList.contains('active')) {
+                    notificationDropdown.classList.remove('active');
+                }
+                if (notificationBackdrop && notificationBackdrop.classList.contains('active')) {
+                    notificationBackdrop.classList.remove('active');
+                }
+                if (notificationButton) {
+                    notificationButton.setAttribute('aria-expanded', 'false');
+                }
+            }
+
+            function openNotificationDropdown() {
+                // Close user dropdown if open
+                closeUserDropdown();
+
+                if (notificationDropdown) {
+                    notificationDropdown.classList.add('active');
+                }
+                if (notificationBackdrop) {
+                    notificationBackdrop.classList.add('active');
+                }
+                if (notificationButton) {
+                    notificationButton.setAttribute('aria-expanded', 'true');
+                }
+
+                if (!notificationsLoaded) {
+                    loadNotifications(1);
+                }
+            }
+
+            // User dropdown functionality
             if (userDropdownToggle && userDropdownMenu) {
                 userDropdownToggle.addEventListener('click', function (event) {
                     event.stopPropagation();
+                    // Close notifications if open
+                    closeNotificationDropdown();
+
                     const isExpanded = userDropdownToggle.getAttribute('aria-expanded') === 'true';
                     userDropdownToggle.setAttribute('aria-expanded', !isExpanded);
                     userDropdownMenu.classList.toggle('active');
                 });
 
-                // Close dropdown when clicking outside
-                document.addEventListener('click', function (event) {
-                    if (!userDropdownToggle.contains(event.target) && !userDropdownMenu.contains(event.target)) {
-                        userDropdownToggle.setAttribute('aria-expanded', 'false');
-                        userDropdownMenu.classList.remove('active');
-                    }
-                });
-
-                // Close dropdown on escape key
+                // Close dropdowns on escape key
                 document.addEventListener('keydown', function (event) {
-                    if (event.key === 'Escape' && userDropdownMenu.classList.contains('active')) {
-                        userDropdownToggle.setAttribute('aria-expanded', 'false');
-                        userDropdownMenu.classList.remove('active');
+                    if (event.key === 'Escape') {
+                        closeUserDropdown();
+                        closeNotificationDropdown();
                     }
                 });
             }
 
             // Notification dropdown functionality
-            const notificationButton = document.getElementById('notificationButton');
-            const notificationDropdown = document.getElementById('notificationDropdown');
-            const notificationList = document.getElementById('notificationList');
-            const markAllReadButton = document.querySelector('.mark-all-read');
-            const notificationBadge = document.querySelector('.notification-badge');
-
             let notificationsLoaded = false;
             let currentNotificationPage = 1;
             let isLoadingMoreNotifications = false;
@@ -1044,24 +1308,32 @@
                 notificationButton.addEventListener('click', function (event) {
                     event.stopPropagation();
                     const isActive = notificationDropdown.classList.contains('active');
-                    notificationDropdown.classList.toggle('active');
-
-                    if (!isActive && !notificationsLoaded) {
-                        loadNotifications(1);
+                    if (isActive) {
+                        closeNotificationDropdown();
+                    } else {
+                        openNotificationDropdown();
                     }
                 });
+
+                // Backdrop tap / click to dismiss on mobile
+                if (notificationBackdrop) {
+                    notificationBackdrop.addEventListener('click', function (event) {
+                        event.stopPropagation();
+                        closeNotificationDropdown();
+                    });
+                    notificationBackdrop.addEventListener('touchstart', function (event) {
+                        event.stopPropagation();
+                        closeNotificationDropdown();
+                    }, { passive: true });
+                }
 
                 // Close dropdown when clicking outside
                 document.addEventListener('click', function (event) {
-                    if (!notificationButton.contains(event.target) && !notificationDropdown.contains(event.target)) {
-                        notificationDropdown.classList.remove('active');
+                    if (userDropdownToggle && userDropdownMenu && !userDropdownToggle.contains(event.target) && !userDropdownMenu.contains(event.target)) {
+                        closeUserDropdown();
                     }
-                });
-
-                // Close dropdown on escape key
-                document.addEventListener('keydown', function (event) {
-                    if (event.key === 'Escape' && notificationDropdown.classList.contains('active')) {
-                        notificationDropdown.classList.remove('active');
+                    if (!notificationButton.contains(event.target) && !notificationDropdown.contains(event.target)) {
+                        closeNotificationDropdown();
                     }
                 });
             }
@@ -1600,20 +1872,20 @@
             </svg>
         </button>
 
-        <button class="notification-btn" id="notificationButton">
-            <svg class="notification-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
-            <span class="notification-badge">{{ auth()->user()->unreadNotifications->count() }}</span>
-        </button>
-
         <!-- Notification dropdown in the header -->
         <div class="notification-dropdown">
-            <div class="notification-dropdown-menu" id="notificationDropdown">
+            <button class="notification-btn" id="notificationButton" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">
+                <svg class="notification-btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                <span class="notification-badge notification-count-badge" id="notificationCountBadge">{{ auth()->user()->unreadNotifications->count() }}</span>
+            </button>
+
+            <div class="notification-dropdown-menu" id="notificationDropdown" role="region" aria-label="Notifications list">
                 <div class="dropdown-header">
                     <h3>Notifications</h3>
-                    <button class="mark-all-read">Mark all as read</button>
+                    <button class="mark-all-read" type="button">Mark all as read</button>
                 </div>
                 <div class="notification-list" id="notificationList">
                     <!-- Notifications will be populated here via AJAX -->
@@ -1628,6 +1900,9 @@
                 </div>
             </div>
         </div>
+
+        <!-- Notification Backdrop for Mobile -->
+        <div class="notification-backdrop" id="notificationBackdrop"></div>
 
         <!-- User Avatar Dropdown -->
         <div class="user-dropdown">

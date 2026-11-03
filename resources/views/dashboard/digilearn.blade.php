@@ -103,6 +103,14 @@
             box-sizing: border-box;
         }
 
+        html,
+        body {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
+            position: relative;
+        }
+
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background-color: var(--bg-main);
@@ -536,149 +544,7 @@
             background-color: var(--gray-100);
         }
 
-        .notification-dropdown {
-            position: relative;
-        }
-
-        .notification-dropdown-menu {
-            position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
-            background: var(--bg-surface);
-            border-radius: 0.75rem;
-            box-shadow: var(--shadow-xl);
-            border: 1px solid var(--border-color);
-            width: 380px;
-            max-width: 90vw;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: all 0.3s ease;
-        }
-
-        .notification-dropdown-menu.active {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-
-        .dropdown-header {
-            padding: 1rem;
-            border-bottom: 1px solid var(--gray-200);
-        }
-
-        .notification-dropdown-menu .dropdown-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--gray-200);
-        }
-
-        .notification-dropdown-menu .dropdown-header h3 {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--gray-900);
-            margin: 0;
-        }
-
-        .mark-all-read {
-            background: none;
-            border: none;
-            color: var(--primary-red);
-            font-size: 0.875rem;
-            cursor: pointer;
-            font-weight: 500;
-        }
-
-        .notification-list {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .notification-item {
-            display: flex;
-            gap: 1rem;
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--gray-100);
-            transition: background-color 0.2s ease;
-        }
-
-        .notification-item:hover {
-            background: var(--gray-50);
-        }
-
-        .notification-item.unread {
-            background: rgba(59, 130, 246, 0.05);
-        }
-
-        .notification-item.unread:hover {
-            background: rgba(59, 130, 246, 0.08);
-        }
-
-        .notification-content {
-            flex: 1;
-        }
-
-        .notification-content p {
-            margin: 0 0 0.25rem 0;
-            font-size: 0.875rem;
-            color: var(--gray-800);
-            line-height: 1.4;
-        }
-
-        .notification-time {
-            font-size: 0.75rem;
-            color: var(--gray-500);
-        }
-
-        .notification-icon {
-            width: 20px;
-            height: 20px;
-            stroke-width: 2;
-            border-radius: 50%;
-            background: var(--gray-100);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            color: var(--gray-600);
-        }
-
-        .notification-badge {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            background: var(--primary-red);
-            color: var(--white);
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid var(--white);
-        }
-
-        .dropdown-footer {
-            padding: 1rem 1.5rem;
-            border-top: 1px solid var(--gray-200);
-            text-align: center;
-        }
-
-        .view-all {
-            color: var(--primary-red);
-            text-decoration: none;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .view-all:hover {
-            text-decoration: underline;
-        }
+        /* Notification styles are centrally defined in components.dashboard-header */
 
         .user-avatar {
             width: 36px;
@@ -1681,10 +1547,15 @@
                 -webkit-tap-highlight-color: transparent;
             }
 
+            html,
             body {
-                width: 100%;
-                max-width: 100vw;
-                overflow-x: hidden;
+                width: 100% !important;
+                max-width: 100% !important;
+                overflow-x: hidden !important;
+                position: relative !important;
+            }
+
+            body {
                 margin: 0;
                 padding: 0;
                 font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -1696,7 +1567,6 @@
                 -moz-osx-font-smoothing: grayscale;
                 /* Enable smooth scrolling */
                 scroll-behavior: smooth;
-
             }
 
             button,
@@ -1707,21 +1577,35 @@
                 min-width: 44px;
             }
 
+            .main-container {
+                width: 100% !important;
+                max-width: 100% !important;
+                overflow-x: hidden !important;
+            }
+
             .top-header {
+                left: 0 !important;
+                right: 0 !important;
                 padding-left: 0.75rem !important;
                 padding-right: 0.75rem !important;
-                width: 100vw !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
             }
 
             .main-content {
-                width: 100vw !important;
-                max-width: 100vw !important;
+                width: 100% !important;
+                max-width: 100% !important;
                 margin-left: 0 !important;
+                box-sizing: border-box !important;
+                overflow-x: hidden !important;
             }
 
             .filter-bar {
                 left: 0 !important;
-                width: 100vw !important;
+                right: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
                 justify-content: flex-start !important;
                 flex-wrap: nowrap !important;
                 height: 56px !important;
@@ -1732,6 +1616,35 @@
                 backdrop-filter: none !important;
                 -webkit-backdrop-filter: none !important;
                 top: calc(60px + var(--safe-area-inset-top)) !important;
+                box-sizing: border-box !important;
+            }
+
+            /* Prevent desktop collapsed sidebar sibling offsets from shifting mobile content */
+            .youtube-sidebar.collapsed~.top-header {
+                padding-left: 0.75rem !important;
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .youtube-sidebar.collapsed~.filter-bar {
+                padding-left: 0.75rem !important;
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .youtube-sidebar.collapsed~.subjects-filter-container {
+                padding-left: 0 !important;
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .youtube-sidebar.collapsed~.main-content {
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
             }
 
             .current-level-display {
@@ -1765,10 +1678,11 @@
                 font-weight: 600;
             }
 
-
             .subjects-filter-container {
                 left: 0 !important;
-                width: 100vw !important;
+                right: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
                 padding: 0.5rem 0 !important;
                 height: auto !important;
                 display: flex !important;
@@ -1778,6 +1692,8 @@
                 z-index: 997 !important;
                 gap: 0 !important;
                 background-color: var(--white);
+                box-sizing: border-box !important;
+                overflow: hidden !important;
             }
 
             .subjects-filter {
@@ -1788,10 +1704,12 @@
                 overflow-x: auto !important;
                 padding: 0.5rem 1rem !important;
                 width: 100% !important;
+                max-width: 100% !important;
                 height: auto !important;
                 -webkit-overflow-scrolling: touch;
                 scrollbar-width: none;
                 -ms-overflow-style: none;
+                box-sizing: border-box !important;
             }
 
             .subjects-filter::-webkit-scrollbar {
@@ -1928,38 +1846,117 @@
             }
 
             #filterBar.search-active .search-container {
-                display: flex;
-                position: absolute;
-                inset: 0;
-                z-index: 10;
-                background: var(--white);
-                padding: 0.5rem 0.75rem;
-                align-items: center;
+                display: flex !important;
+                position: absolute !important;
+                inset: 0 !important;
+                z-index: 20 !important;
+                background: var(--white) !important;
+                padding: 0.375rem 0.625rem !important;
+                align-items: center !important;
+                gap: 0.5rem !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
             }
 
             #filterBar.search-active .search-box {
-                background: var(--gray-100);
-                border-radius: 0.5rem;
-                width: 100%;
-                display: flex;
+                background: var(--gray-100) !important;
+                border-radius: 0.5rem !important;
+                flex: 1 !important;
+                display: flex !important;
+                align-items: center !important;
+                position: relative !important;
+                min-width: 0 !important;
             }
 
             #filterBar.search-active .level-container,
             #filterBar.search-active .current-level-display,
             #filterBar.search-active .mobile-search-toggle,
             #filterBar.search-active .quiz-container {
-                display: none;
+                display: none !important;
             }
 
-            .search-close {
+            .search-back-btn {
                 display: none;
+                align-items: center;
+                justify-content: center;
+                background: none;
+                border: none;
+                width: 38px;
+                height: 38px;
+                min-width: 38px;
+                min-height: 38px;
+                border-radius: 50%;
+                color: var(--gray-700);
+                cursor: pointer;
+                flex-shrink: 0;
+                transition: background-color 0.2s ease, color 0.2s ease;
+                padding: 0;
+            }
+
+            .search-back-btn:hover,
+            .search-back-btn:active {
+                background-color: var(--gray-100);
+                color: var(--primary-red);
+            }
+
+            #filterBar.search-active .search-back-btn {
+                display: flex !important;
+            }
+
+            .search-clear-btn {
+                display: none;
+                align-items: center;
+                justify-content: center;
+                position: absolute;
+                right: 44px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: none;
+                border: none;
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                cursor: pointer;
+                color: var(--gray-400);
+                transition: all 0.2s ease;
+                z-index: 2;
+                padding: 0;
+            }
+
+            .search-clear-btn:hover,
+            .search-clear-btn:active {
+                background-color: var(--gray-200);
+                color: var(--gray-800);
+            }
+
+            .search-clear-btn.visible {
+                display: flex !important;
+            }
+
+            .search-backdrop-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                top: 110px;
+                background: rgba(0, 0, 0, 0.4);
+                backdrop-filter: blur(2px);
+                -webkit-backdrop-filter: blur(2px);
+                z-index: 15;
+                opacity: 0;
+                transition: opacity 0.2s ease;
+            }
+
+            .search-backdrop-overlay.active {
+                display: block;
+                opacity: 1;
             }
 
             .main-container {
                 flex-direction: column;
                 overflow-y: auto;
                 overflow-x: hidden;
-                width: 100vw;
+                width: 100% !important;
+                max-width: 100% !important;
             }
 
             .youtube-sidebar {
@@ -1978,15 +1975,17 @@
 
             .main-content {
                 margin-left: 0 !important;
-                width: 100vw !important;
-                max-width: 100vw !important;
+                width: 100% !important;
+                max-width: 100% !important;
                 background-color: var(--white) !important;
+                box-sizing: border-box !important;
+                overflow-x: hidden !important;
             }
 
             .youtube-sidebar.collapsed~.main-content {
-                margin-left: 0;
-                width: 100vw;
-                max-width: 100vw;
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
             }
 
             /* Show mobile header */
@@ -2001,6 +2000,10 @@
                         {{ $isPrimaryLevel ? '124px' : '172px' }}
                     );
                 padding: 1rem 0.75rem 2rem;
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+                overflow-x: hidden !important;
             }
 
             /* Hide sidebar toggle in sidebar on mobile */
@@ -2012,26 +2015,13 @@
                 justify-content: center;
             }
 
-            /* Search box initially hidden on mobile */
-
-            .content-section {
-                min-height: calc(100vh - 60px - 120px -
-                        {{ $isPrimaryLevel ? '152px' : '200px' }}
-                    );
-                padding: 1rem 0.75rem 2rem;
-            }
-
-
-
-            .content-section {
-                min-height: calc(100vh - 172px - 200px);
-                padding: 1rem 0.75rem 2rem;
-            }
-
             .content-grid {
+                width: 100% !important;
+                max-width: 100% !important;
                 grid-template-columns: 1fr;
                 gap: 20px;
                 padding-bottom: 1.5rem;
+                box-sizing: border-box !important;
             }
 
             /* Mobile overlay - Now outside main-container */
@@ -2047,7 +2037,7 @@
                 opacity: 0;
                 visibility: hidden;
                 transition: all 0.3s ease;
-                pointer-events: auto;
+                pointer-events: none;
                 touch-action: none;
             }
 
@@ -2063,6 +2053,7 @@
             .sidebar-overlay.active {
                 opacity: 1;
                 visibility: visible;
+                pointer-events: auto;
             }
 
             /* Prevent body scrolling when sidebar is open */
@@ -2180,10 +2171,6 @@
                 grid-template-columns: repeat(2, 1fr);
             }
 
-            .notification-dropdown-menu {
-                right: 0;
-                width: 380px;
-            }
         }
 
         @media (min-width: 1024px) {
@@ -2493,25 +2480,34 @@
             </button>
 
             <div class="search-container" data-search-domain="lesson" data-level-group="{{ $currentLevelGroup ?? '' }}">
+                <!-- Back / Close Button to exit mobile search mode -->
+                <button type="button" class="search-back-btn" id="searchBackBtn" aria-label="Close search" title="Back to filters">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 12H5M12 19l-7-7 7-7" />
+                    </svg>
+                </button>
+
                 <div class="search-box" id="mobileSearchBox">
-                    <input type="text" class="search-input" placeholder="Search">
-                    <button type="button" class="search-button">
+                    <input type="text" class="search-input" placeholder="Search lessons, subjects..." autocomplete="off">
+                    <!-- Clear text button (visible when query is entered) -->
+                    <button type="button" class="search-clear-btn" id="searchClearBtn" aria-label="Clear text" title="Clear search">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                    <button type="button" class="search-button" aria-label="Search">
                         <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                     </button>
-                    <!-- Close button for mobile search -->
-                    <button class="search-close" id="searchClose">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
                 </div>
             </div>
         </div>
+
+        <!-- Search backdrop overlay for mobile -->
+        <div class="search-backdrop-overlay" id="searchBackdropOverlay"></div>
 
         <!-- Separate Horizontal Filters (Context & Subjects) -->
         <div class="subjects-filter-container">
@@ -2853,59 +2849,100 @@
             const mobileSearchToggle = document.getElementById('mobileSearchToggle');
             const mobileSearchBox = document.getElementById('mobileSearchBox');
             const searchInput = mobileSearchBox ? mobileSearchBox.querySelector('.search-input') : null;
-            const searchClose = document.getElementById('searchClose');
+            const searchBackBtn = document.getElementById('searchBackBtn');
+            const searchClearBtn = document.getElementById('searchClearBtn');
+            const searchBackdropOverlay = document.getElementById('searchBackdropOverlay');
             const filterBar = document.getElementById('filterBar');
 
-            if (mobileSearchToggle && filterBar && searchInput) {
-                mobileSearchToggle.addEventListener('click', function () {
-                    filterBar.classList.add('search-active');
-                    setTimeout(() => {
+            function openSearchMode() {
+                if (!filterBar) return;
+                filterBar.classList.add('search-active');
+                if (searchBackdropOverlay) {
+                    searchBackdropOverlay.classList.add('active');
+                }
+                setTimeout(() => {
+                    if (searchInput) {
                         searchInput.focus();
-                    }, 100);
+                        if (searchClearBtn) {
+                            searchClearBtn.classList.toggle('visible', searchInput.value.trim().length > 0);
+                        }
+                    }
+                }, 100);
+            }
+
+            function closeSearchMode(restoreLessons = false) {
+                if (!filterBar) return;
+                filterBar.classList.remove('search-active');
+                if (searchBackdropOverlay) {
+                    searchBackdropOverlay.classList.remove('active');
+                }
+                document.querySelectorAll('.search-autocomplete-dropdown').forEach(d => d.classList.remove('active'));
+
+                if (searchInput) {
+                    if (restoreLessons || searchInput.value.trim() === '') {
+                        searchInput.value = '';
+                        if (typeof restoreOriginalLessons === 'function') {
+                            restoreOriginalLessons();
+                        }
+                    }
+                    if (searchClearBtn) {
+                        searchClearBtn.classList.remove('visible');
+                    }
+                    searchInput.blur();
+                }
+            }
+
+            window.closeMobileSearchMode = closeSearchMode;
+            window.openMobileSearchMode = openSearchMode;
+
+            if (mobileSearchToggle) {
+                mobileSearchToggle.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openSearchMode();
                 });
             }
 
-            if (searchClose && searchInput && filterBar) {
-                // Initial state check
-                searchClose.style.display = searchInput.value ? 'flex' : 'none';
+            if (searchBackBtn) {
+                searchBackBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeSearchMode(true);
+                });
+            }
 
-                // Listen for typing
+            if (searchClearBtn && searchInput) {
+                searchClearBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    searchInput.value = '';
+                    searchClearBtn.classList.remove('visible');
+                    searchInput.focus();
+                    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    if (typeof restoreOriginalLessons === 'function') {
+                        restoreOriginalLessons();
+                    }
+                });
+
                 searchInput.addEventListener('input', function () {
-                    searchClose.style.display = searchInput.value ? 'flex' : 'none';
-                });
-
-                searchClose.addEventListener('click', function () {
-                    if (searchInput.value) {
-                        // Clear input if it has content
-                        searchInput.value = '';
-                        searchClose.style.display = 'none'; // Hide button after clearing
-                        searchInput.focus();
-                    } else {
-                        // Close search if input is empty
-                        filterBar.classList.remove('search-active');
-                    }
+                    searchClearBtn.classList.toggle('visible', this.value.trim().length > 0);
                 });
             }
 
-            // Optional: Enter key to close search
-            if (searchInput && filterBar) {
-                searchInput.addEventListener('keydown', function (e) {
-                    if (e.key === 'Enter') {
-                        // Close search on Enter
-                        filterBar.classList.remove('search-active');
-                    }
+            if (searchBackdropOverlay) {
+                searchBackdropOverlay.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    closeSearchMode(false);
                 });
+                searchBackdropOverlay.addEventListener('touchstart', function (e) {
+                    e.stopPropagation();
+                    closeSearchMode(false);
+                }, { passive: true });
             }
 
-            // Close search when pressing Escape
             document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape' && filterBar.classList.contains('search-active')) {
-                    if (searchInput && searchInput.value) {
-                        searchInput.value = '';
-                        searchInput.focus();
-                    } else {
-                        filterBar.classList.remove('search-active');
-                    }
+                if (e.key === 'Escape' && filterBar && filterBar.classList.contains('search-active')) {
+                    closeSearchMode(false);
                 }
             });
         }
@@ -3493,6 +3530,15 @@
                 const activeSearchBox = document.querySelector('.search-container .search-box') || document.querySelector('#mobileSearchBox');
                 if (activeSearchBox) {
                     activeSearchBox.classList.remove('searching');
+                }
+                const overlay = document.getElementById('searchBackdropOverlay');
+                if (overlay) {
+                    overlay.classList.remove('active');
+                }
+                document.querySelectorAll('.search-autocomplete-dropdown').forEach(d => d.classList.remove('active'));
+                const searchClearBtn = document.getElementById('searchClearBtn');
+                if (searchClearBtn) {
+                    searchClearBtn.classList.toggle('visible', !!(query && query.length > 0));
                 }
                 console.log('Search completed');
             }
