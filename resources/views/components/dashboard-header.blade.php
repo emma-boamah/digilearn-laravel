@@ -46,8 +46,15 @@
         width: 100%;
         /* Full width */
         z-index: 1001 !important;
-        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        will-change: transform;
         /* padding-left handled in including files */
+    }
+
+    body.headers-scrolled-hidden .top-header {
+        transform: translateY(-100%) !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
     }
 
     .youtube-sidebar.collapsed~.top-header {
@@ -664,7 +671,7 @@
         height: 100vh;
         background-color: var(--white);
         border-right: 1px solid var(--gray-200);
-        z-index: 1000;
+        z-index: 2001 !important;
         transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         overflow-y: auto;
         overflow-x: hidden;
@@ -1035,8 +1042,8 @@
         color: #ffffff;
     }
 
-    /* Mobile adjustments */
-    @media (max-width: 768px) {
+    /* Mobile adjustments (portrait phones only; landscape uses full desktop shifting) */
+    @media (max-width: 768px) and (orientation: portrait) {
         .top-header {
             position: fixed;
             top: 0;
@@ -1308,6 +1315,9 @@
             }
 
             function openUserDropdown() {
+                // Ensure headers are revealed if scrolled-hidden
+                document.body.classList.remove('headers-scrolled-hidden');
+
                 // Close notifications if open
                 closeNotificationDropdown();
 
@@ -1343,6 +1353,9 @@
             }
 
             function openNotificationDropdown() {
+                // Ensure headers are revealed if scrolled-hidden
+                document.body.classList.remove('headers-scrolled-hidden');
+
                 // Close user dropdown if open
                 closeUserDropdown();
 
