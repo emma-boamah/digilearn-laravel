@@ -964,6 +964,43 @@
             min-width: 200px;
         }
 
+        /* Desktop: Close / Back buttons and overlays are strictly hidden */
+        .search-close-btn,
+        .search-back-btn,
+        .search-backdrop-overlay {
+            display: none !important;
+        }
+
+        .search-clear-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            right: 44px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            color: var(--gray-400);
+            transition: all 0.2s ease;
+            z-index: 2;
+            padding: 0;
+        }
+
+        .search-clear-btn:hover,
+        .search-clear-btn:active {
+            background-color: var(--gray-200);
+            color: var(--gray-800);
+        }
+
+        .search-clear-btn.visible {
+            display: flex !important;
+        }
+
         .current-level-display {
             display: inline-flex;
             align-items: center;
@@ -1875,6 +1912,7 @@
                 display: none !important;
             }
 
+            .search-close-btn,
             .search-back-btn {
                 display: none;
                 align-items: center;
@@ -1893,12 +1931,15 @@
                 padding: 0;
             }
 
+            .search-close-btn:hover,
+            .search-close-btn:active,
             .search-back-btn:hover,
             .search-back-btn:active {
                 background-color: var(--gray-100);
                 color: var(--primary-red);
             }
 
+            #filterBar.search-active .search-close-btn,
             #filterBar.search-active .search-back-btn {
                 display: flex !important;
             }
@@ -2480,10 +2521,10 @@
             </button>
 
             <div class="search-container" data-search-domain="lesson" data-level-group="{{ $currentLevelGroup ?? '' }}">
-                <!-- Back / Close Button to exit mobile search mode -->
-                <button type="button" class="search-back-btn" id="searchBackBtn" aria-label="Close search" title="Back to filters">
+                <!-- Close Button to exit mobile search mode (strictly hidden on desktop) -->
+                <button type="button" class="search-close-btn" id="searchCloseBtn" aria-label="Close search" title="Close search">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 12H5M12 19l-7-7 7-7" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
 
@@ -2849,7 +2890,7 @@
             const mobileSearchToggle = document.getElementById('mobileSearchToggle');
             const mobileSearchBox = document.getElementById('mobileSearchBox');
             const searchInput = mobileSearchBox ? mobileSearchBox.querySelector('.search-input') : null;
-            const searchBackBtn = document.getElementById('searchBackBtn');
+            const searchCloseBtn = document.getElementById('searchCloseBtn') || document.getElementById('searchBackBtn');
             const searchClearBtn = document.getElementById('searchClearBtn');
             const searchBackdropOverlay = document.getElementById('searchBackdropOverlay');
             const filterBar = document.getElementById('filterBar');
@@ -2903,8 +2944,8 @@
                 });
             }
 
-            if (searchBackBtn) {
-                searchBackBtn.addEventListener('click', function (e) {
+            if (searchCloseBtn) {
+                searchCloseBtn.addEventListener('click', function (e) {
                     e.preventDefault();
                     e.stopPropagation();
                     closeSearchMode(true);
