@@ -149,7 +149,7 @@
             max-height: 100vh !important;
             background-color: var(--bg-surface);
             border-right: 1px solid var(--border-color);
-            z-index: 2000;
+            z-index: 2001 !important;
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
             overflow-y: scroll;
             display: flex;
@@ -1826,11 +1826,17 @@
                 transition: transform 0.3s ease, visibility 0.3s ease !important;
                 visibility: hidden !important;
                 pointer-events: none !important;
+                z-index: 2001 !important;
             }
 
             .youtube-sidebar.mobile-open {
                 transform: translateX(0) !important;
                 visibility: visible !important;
+                pointer-events: auto !important;
+                z-index: 2001 !important;
+            }
+
+            .youtube-sidebar.mobile-open * {
                 pointer-events: auto !important;
             }
 
@@ -1927,11 +1933,17 @@
                 visibility: hidden !important;
                 pointer-events: none !important;
                 transition: transform 0.3s ease, visibility 0.3s ease !important;
+                z-index: 2001 !important;
             }
 
             .youtube-sidebar.mobile-open {
                 transform: translateX(0) !important;
                 visibility: visible !important;
+                pointer-events: auto !important;
+                z-index: 2001 !important;
+            }
+
+            .youtube-sidebar.mobile-open * {
                 pointer-events: auto !important;
             }
 
@@ -2226,11 +2238,17 @@
                 width: 280px !important;
                 visibility: hidden !important;
                 pointer-events: none !important;
+                z-index: 2001 !important;
             }
 
             .youtube-sidebar.mobile-open {
                 transform: translateX(0) !important;
                 visibility: visible !important;
+                pointer-events: auto !important;
+                z-index: 2001 !important;
+            }
+
+            .youtube-sidebar.mobile-open * {
                 pointer-events: auto !important;
             }
 
@@ -2301,8 +2319,8 @@
                 bottom: 0;
                 width: 100% !important;
                 background-color: rgba(0, 0, 0, 0.6);
-                z-index: 1999;
-                /* BELOW sidebar (2000) but ABOVE content */
+                z-index: 2000 !important;
+                /* BELOW sidebar (2001) but ABOVE top-header (1001) and content */
                 opacity: 0;
                 visibility: hidden;
                 transition: all 0.3s ease;
@@ -2323,11 +2341,12 @@
                 opacity: 1;
                 visibility: visible;
                 pointer-events: auto;
+                z-index: 2000 !important;
             }
 
             /* Prevent body scrolling when sidebar is open */
-            .body.sidebar-open {
-                overflow: hidden;
+            body.sidebar-open {
+                overflow: hidden !important;
             }
 
             .sidebar-logo img {
@@ -3319,7 +3338,8 @@
                 }
                 if (!youtubeSidebar) return;
 
-                if (window.innerWidth <= 768) {
+                const isMobileOrShort = window.innerWidth <= 768 || window.innerHeight <= 550;
+                if (isMobileOrShort) {
                     // Mobile behavior - overlay only, no layout changes
                     youtubeSidebar.classList.toggle('mobile-open');
                     if (sidebarOverlay) sidebarOverlay.classList.toggle('active');
@@ -3362,19 +3382,10 @@
                 });
             }
 
-            // Prevent scrolling when sidebar is open on mobile
-            if (youtubeSidebar) {
-                youtubeSidebar.addEventListener('pointermove', function (e) {
-                    if (window.innerWidth <= 768 && this.classList.contains('mobile-open') && e.pointerType === 'touch') {
-                        e.preventDefault();
-                    }
-                });
-            }
-
 
             // Handle window resize - ensure proper state transitions
             function handleResize() {
-                if (window.innerWidth > 768) {
+                if (window.innerWidth > 768 && window.innerHeight > 550) {
                     // Switching to desktop
                     youtubeSidebar.classList.remove('mobile-open');
                     sidebarOverlay.classList.remove('active');

@@ -671,7 +671,7 @@
         height: 100vh;
         background-color: var(--white);
         border-right: 1px solid var(--gray-200);
-        z-index: 1000;
+        z-index: 2001 !important;
         transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         overflow-y: auto;
         overflow-x: hidden;
