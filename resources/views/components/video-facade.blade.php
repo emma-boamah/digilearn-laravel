@@ -41,7 +41,7 @@ use Illuminate\Support\Str;
     <div class="lesson-thumbnail">
         <!-- Static Thumbnail Image -->
         <img src="{{ $thumbnail ?: asset('images/placeholder.png') }}" alt="{{ $title }}" class="video-facade-thumbnail"
-            loading="{{ $lazyLoad ? 'lazy' : 'eager' }}"
+            loading="{{ $lazyLoad ? 'lazy' : 'eager' }}" decoding="async"
             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
 
         <!-- Fallback when image fails to load -->

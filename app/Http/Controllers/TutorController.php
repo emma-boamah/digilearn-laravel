@@ -10,7 +10,9 @@ use App\Models\Subject;
 use App\Models\Booking;
 use App\Models\Course;
 use App\Models\TutorAvailability;
+use App\Services\ImageOptimizerService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class TutorController extends Controller
 {
@@ -218,7 +220,7 @@ class TutorController extends Controller
         }
 
         // Handle file uploads
-        $headshotPath = $request->file('headshot_file')->store('tutors/headshots', 'public');
+        $headshotPath = app(ImageOptimizerService::class)->storeHeadshot($request->file('headshot_file'));
         $idDocumentPath = $request->file('id_document_file')->store('tutors/id_documents', 'local');
         
         $idDocumentBackPath = null;
@@ -366,7 +368,10 @@ class TutorController extends Controller
         ];
 
         if ($request->hasFile('headshot_file')) {
-            $updateData['headshot_path'] = $request->file('headshot_file')->store('tutors/headshots', 'public');
+            if ($tutorProfile->headshot_path && Storage::disk('public')->exists($tutorProfile->headshot_path)) {
+                Storage::disk('public')->delete($tutorProfile->headshot_path);
+            }
+            $updateData['headshot_path'] = app(ImageOptimizerService::class)->storeHeadshot($request->file('headshot_file'));
         }
 
         $tutorProfile->update($updateData);

@@ -9,6 +9,7 @@ use App\Models\Course;
 use App\Models\Video;
 use App\Models\Document;
 use App\Models\Quiz;
+use App\Services\ImageOptimizerService;
 
 class CourseController extends Controller
 {
@@ -107,7 +108,7 @@ class CourseController extends Controller
         // Handle thumbnail upload
         $thumbnailPath = null;
         if ($request->hasFile('thumbnail')) {
-            $thumbnailPath = $request->file('thumbnail')->store('course-thumbnails', 'public');
+            $thumbnailPath = app(ImageOptimizerService::class)->storeThumbnail($request->file('thumbnail'), 'course-thumbnails');
         }
 
         $course = Course::create([
@@ -210,7 +211,7 @@ class CourseController extends Controller
             if ($course->thumbnail_path) {
                 Storage::disk('public')->delete($course->thumbnail_path);
             }
-            $thumbnailPath = $request->file('thumbnail')->store('course-thumbnails', 'public');
+            $thumbnailPath = app(ImageOptimizerService::class)->storeThumbnail($request->file('thumbnail'), 'course-thumbnails');
             $course->thumbnail_path = $thumbnailPath;
         }
 

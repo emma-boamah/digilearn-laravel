@@ -24,7 +24,7 @@
                                 <source src="{{ $banner->media_url }}" type="video/mp4">
                             </video>
                         @else
-                            <img src="{{ $banner->media_url }}" alt="{{ $banner->title }}" class="hero-media-element">
+                            <img src="{{ $banner->media_url }}" alt="{{ $banner->title }}" class="hero-media-element" loading="{{ $index === 0 ? 'eager' : 'lazy' }}" decoding="async" @if($index === 0) fetchpriority="high" @endif>
                         @endif
                         <div class="hero-media-overlay"></div>
                     </div>
