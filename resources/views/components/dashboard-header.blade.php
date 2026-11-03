@@ -197,6 +197,7 @@
 
     .notification-btn {
         position: relative;
+        z-index: 10003;
         background: none;
         border: none;
         cursor: pointer;
@@ -215,6 +216,7 @@
         position: relative;
         display: inline-flex;
         align-items: center;
+        z-index: 10001;
     }
 
     .notification-btn-icon {
@@ -245,16 +247,23 @@
     }
 
     .notification-backdrop {
-        display: none;
+        display: block;
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.35);
+        background: rgba(0, 0, 0, 0.25);
         backdrop-filter: blur(2px);
         -webkit-backdrop-filter: blur(2px);
         z-index: 10000;
         opacity: 0;
+        visibility: hidden;
         pointer-events: none;
-        transition: opacity 0.25s ease;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    .notification-backdrop.active {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
     }
 
     .notification-dropdown-menu {
@@ -493,9 +502,12 @@
     /* User Avatar Dropdown */
     .user-dropdown {
         position: relative;
+        z-index: 10001;
     }
 
     .user-avatar-btn {
+        position: relative;
+        z-index: 10003;
         background: none;
         border: none;
         cursor: pointer;
@@ -1074,6 +1086,7 @@
 
         .notification-backdrop.active {
             opacity: 1;
+            visibility: visible;
             pointer-events: auto;
         }
 
@@ -1288,6 +1301,29 @@
                 }
             }
 
+            function openUserDropdown() {
+                // Close notifications if open
+                closeNotificationDropdown();
+
+                if (userDropdownMenu) {
+                    userDropdownMenu.classList.add('active');
+                }
+                if (userDropdownToggle) {
+                    userDropdownToggle.setAttribute('aria-expanded', 'true');
+                }
+                if (notificationBackdrop) {
+                    notificationBackdrop.classList.add('active');
+                }
+            }
+
+            function toggleUserDropdown() {
+                if (userDropdownMenu && userDropdownMenu.classList.contains('active')) {
+                    closeUserDropdown();
+                } else {
+                    openUserDropdown();
+                }
+            }
+
             function closeNotificationDropdown() {
                 if (notificationDropdown && notificationDropdown.classList.contains('active')) {
                     notificationDropdown.classList.remove('active');
@@ -1319,19 +1355,12 @@
                 }
             }
 
-            // User dropdown functionality
+            // User dropdown functionality - toggle on click/tap, reliable reopen
             if (userDropdownToggle && userDropdownMenu) {
                 userDropdownToggle.addEventListener('click', function (event) {
+                    event.preventDefault();
                     event.stopPropagation();
-                    // Close notifications if open
-                    closeNotificationDropdown();
-
-                    const isOpening = !userDropdownMenu.classList.contains('active');
-                    userDropdownToggle.setAttribute('aria-expanded', isOpening ? 'true' : 'false');
-                    userDropdownMenu.classList.toggle('active', isOpening);
-                    if (notificationBackdrop) {
-                        notificationBackdrop.classList.toggle('active', isOpening);
-                    }
+                    toggleUserDropdown();
                 });
 
                 // Close dropdowns on escape key
@@ -1351,6 +1380,7 @@
 
             if (notificationButton && notificationDropdown) {
                 notificationButton.addEventListener('click', function (event) {
+                    event.preventDefault();
                     event.stopPropagation();
                     const isActive = notificationDropdown.classList.contains('active');
                     if (isActive) {
@@ -1359,39 +1389,29 @@
                         openNotificationDropdown();
                     }
                 });
-
-                // Backdrop tap / click to dismiss on mobile
-                if (notificationBackdrop) {
-                    notificationBackdrop.addEventListener('click', function (event) {
-                        event.stopPropagation();
-                        closeNotificationDropdown();
-                        closeUserDropdown();
-                    });
-                    notificationBackdrop.addEventListener('touchstart', function (event) {
-                        event.stopPropagation();
-                        closeNotificationDropdown();
-                        closeUserDropdown();
-                    }, { passive: true });
-                }
-
-                // Close dropdown when clicking outside
-                document.addEventListener('click', function (event) {
-                    if (userDropdownToggle && userDropdownMenu && !userDropdownToggle.contains(event.target) && !userDropdownMenu.contains(event.target)) {
-                        closeUserDropdown();
-                    }
-                    if (notificationButton && notificationDropdown && !notificationButton.contains(event.target) && !notificationDropdown.contains(event.target)) {
-                        closeNotificationDropdown();
-                    }
-                });
-                document.addEventListener('touchstart', function (event) {
-                    if (userDropdownToggle && userDropdownMenu && !userDropdownToggle.contains(event.target) && !userDropdownMenu.contains(event.target)) {
-                        closeUserDropdown();
-                    }
-                    if (notificationButton && notificationDropdown && !notificationButton.contains(event.target) && !notificationDropdown.contains(event.target)) {
-                        closeNotificationDropdown();
-                    }
-                }, { passive: true });
             }
+
+            // Touch-absorbing backdrop shield: intercepts any outside tap, protects underlying lesson cards
+            if (notificationBackdrop) {
+                const dismissBothDropdowns = function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    closeNotificationDropdown();
+                    closeUserDropdown();
+                };
+                notificationBackdrop.addEventListener('click', dismissBothDropdowns);
+                notificationBackdrop.addEventListener('touchstart', dismissBothDropdowns, { passive: false });
+            }
+
+            // Desktop outside click fallback
+            document.addEventListener('click', function (event) {
+                if (userDropdownToggle && userDropdownMenu && !userDropdownToggle.contains(event.target) && !userDropdownMenu.contains(event.target)) {
+                    closeUserDropdown();
+                }
+                if (notificationButton && notificationDropdown && !notificationButton.contains(event.target) && !notificationDropdown.contains(event.target)) {
+                    closeNotificationDropdown();
+                }
+            });
 
             // Mark all as read functionality
             if (markAllReadButton) {
