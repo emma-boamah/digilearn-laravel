@@ -1042,8 +1042,8 @@
         color: #ffffff;
     }
 
-    /* Mobile adjustments */
-    @media (max-width: 768px) {
+    /* Mobile adjustments (portrait phones only; landscape uses full desktop shifting) */
+    @media (max-width: 768px) and (orientation: portrait) {
         .top-header {
             position: fixed;
             top: 0;

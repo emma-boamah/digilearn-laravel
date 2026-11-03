@@ -1622,8 +1622,8 @@
             background-color: var(--secondary-blue-hover);
         }
 
-        /* Mobile Layout Reset - Fix left gap issue */
-        @media (max-width: 768px) {
+        /* Mobile Layout Reset - Fix left gap issue (portrait only) */
+        @media (max-width: 768px) and (orientation: portrait) {
 
             * {
                 -webkit-tap-highlight-color: transparent;
@@ -1925,38 +1925,114 @@
             }
         }
 
-        /* Mobile Landscape Phone Optimization (scoped strictly to mobile phones <= 932px wide) */
-        @media (max-width: 932px) and (orientation: landscape) and (max-height: 550px),
-               (max-width: 768px) and (max-height: 550px) {
+        /* Landscape Orientation Optimization (phones, tablets, and desktops in landscape: sidebar behaves like full desktop screen) */
+        @media (orientation: landscape) {
             .youtube-sidebar {
-                width: 260px !important;
-                transform: translateX(-100%) !important;
-                visibility: hidden !important;
-                pointer-events: none !important;
-                transition: transform 0.3s ease, visibility 0.3s ease !important;
-                z-index: 2001 !important;
-            }
-
-            .youtube-sidebar.mobile-open {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                bottom: 0 !important;
+                height: 100vh !important;
+                height: 100dvh !important;
                 transform: translateX(0) !important;
                 visibility: visible !important;
                 pointer-events: auto !important;
-                z-index: 2001 !important;
+                z-index: 1000 !important;
+                width: var(--sidebar-width-expanded) !important;
+                transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                display: flex !important;
             }
 
-            .youtube-sidebar.mobile-open * {
-                pointer-events: auto !important;
+            .youtube-sidebar.collapsed {
+                width: var(--sidebar-width-collapsed, 80px) !important;
             }
 
+            .youtube-sidebar.collapsed .sidebar-scrollable {
+                width: var(--sidebar-width-collapsed, 80px) !important;
+            }
+
+            /* Disable mobile modal backdrop in landscape */
+            .sidebar-overlay {
+                display: none !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+            }
+
+            /* Content shifting - Expanded */
+            .main-content,
+            .youtube-sidebar:not(.collapsed) ~ .main-content {
+                margin-left: var(--sidebar-width-expanded) !important;
+                width: calc(100% - var(--sidebar-width-expanded)) !important;
+                max-width: calc(100% - var(--sidebar-width-expanded)) !important;
+                transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            }
+
+            /* Content shifting - Collapsed */
+            .youtube-sidebar.collapsed ~ .main-content {
+                margin-left: var(--sidebar-width-collapsed, 80px) !important;
+                width: calc(100% - var(--sidebar-width-collapsed, 80px)) !important;
+                max-width: calc(100% - var(--sidebar-width-collapsed, 80px)) !important;
+                transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            }
+
+            /* Headers shifting - Expanded */
+            .top-header,
+            .youtube-sidebar:not(.collapsed) ~ .top-header {
+                padding-left: var(--sidebar-width-expanded) !important;
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            }
+
+            .filter-bar,
+            .youtube-sidebar:not(.collapsed) ~ .filter-bar {
+                padding-left: calc(var(--sidebar-width-expanded) + 0.75rem) !important;
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            }
+
+            .subjects-filter-container,
+            .youtube-sidebar:not(.collapsed) ~ .subjects-filter-container {
+                padding-left: calc(var(--sidebar-width-expanded) + 0.75rem) !important;
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            }
+
+            /* Headers shifting - Collapsed */
+            .youtube-sidebar.collapsed ~ .top-header {
+                padding-left: var(--sidebar-width-collapsed, 80px) !important;
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .youtube-sidebar.collapsed ~ .filter-bar {
+                padding-left: calc(var(--sidebar-width-collapsed, 80px) + 0.75rem) !important;
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .youtube-sidebar.collapsed ~ .subjects-filter-container {
+                padding-left: calc(var(--sidebar-width-collapsed, 80px) + 0.75rem) !important;
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+        }
+
+        /* Short-height landscape optimization (compact vertical sizing to preserve card viewing area) */
+        @media (orientation: landscape) and (max-height: 550px) {
             .top-header {
                 height: calc(44px + var(--safe-area-inset-top, 0px)) !important;
                 padding-top: calc(0.25rem + var(--safe-area-inset-top, 0px)) !important;
                 padding-bottom: 0.25rem !important;
-                padding-left: 0.75rem !important;
                 padding-right: 0.75rem !important;
-                margin-left: 0 !important;
-                width: 100% !important;
-                max-width: 100% !important;
             }
 
             .sidebar-logo img {
@@ -1976,11 +2052,10 @@
             .filter-bar {
                 top: calc(44px + var(--safe-area-inset-top, 0px)) !important;
                 height: 38px !important;
-                padding: 0 0.75rem !important;
+                padding-top: 0 !important;
+                padding-bottom: 0 !important;
+                padding-right: 0.75rem !important;
                 gap: 0.35rem !important;
-                margin-left: 0 !important;
-                width: 100% !important;
-                max-width: 100% !important;
             }
 
             .grade-tab {
@@ -2004,11 +2079,10 @@
 
             .subjects-filter-container {
                 top: calc(82px + var(--safe-area-inset-top, 0px)) !important;
-                padding: 0.2rem 0 !important;
+                padding-top: 0.2rem !important;
+                padding-bottom: 0.2rem !important;
+                padding-right: 1rem !important;
                 gap: 0.15rem !important;
-                margin-left: 0 !important;
-                width: 100% !important;
-                max-width: 100% !important;
             }
 
             .subjects-filter {
@@ -2029,9 +2103,6 @@
             }
 
             .main-content {
-                margin-left: 0 !important;
-                width: 100% !important;
-                max-width: 100% !important;
                 margin-top: 0 !important;
                 padding-top: calc({{ $isPrimaryLevel ? '120px' : '155px' }} + var(--safe-area-inset-top, 0px)) !important;
                 height: 100vh !important;
@@ -2083,8 +2154,8 @@
             }
         }
 
-        /* Responsive Design */
-        @media (max-width: 768px) {
+        /* Responsive Design (portrait phones only; landscape uses full desktop shifting) */
+        @media (max-width: 768px) and (orientation: portrait) {
 
             /* Mobile design logic consolidated from previous redundant blocks */
             .level-container {
@@ -2391,8 +2462,8 @@
             }
         }
 
-        /* Mobile overlay covers full viewport behind sidebar */
-        @media (max-width: 768px) {
+        /* Mobile overlay covers full viewport behind sidebar (portrait only) */
+        @media (max-width: 768px) and (orientation: portrait) {
             .sidebar-overlay {
                 left: 0 !important;
                 right: 0 !important;
@@ -3333,9 +3404,9 @@
             const body = document.body;
             const sidebarContent = document.querySelector('.sidebar-content');
 
-            function isMobileScreen() {
-                // True for mobile viewports (<= 768px in portrait, or phones in landscape <= 932px with touch)
-                return window.innerWidth <= 768 || (window.innerWidth <= 932 && window.innerHeight <= 550 && window.matchMedia('(pointer: coarse)').matches);
+            function isMobilePortrait() {
+                // True ONLY for portrait mobile screens (narrow screens where height > width)
+                return window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
             }
 
             function toggleSidebar(e) {
@@ -3344,21 +3415,24 @@
                 }
                 if (!youtubeSidebar) return;
 
-                if (isMobileScreen()) {
-                    // Mobile behavior - overlay drawer with dimming backdrop
+                if (isMobilePortrait()) {
+                    // Mobile Portrait ONLY: slide-out drawer overlay with dark backdrop
                     youtubeSidebar.classList.toggle('mobile-open');
                     if (sidebarOverlay) sidebarOverlay.classList.toggle('active');
                     body.classList.toggle('sidebar-open');
 
-                    // Reset scroll position when opening sidebar
                     if (youtubeSidebar.classList.contains('mobile-open') && sidebarContent) {
                         sidebarContent.scrollTop = 0;
                     }
                 } else {
-                    // Desktop behavior - smoothly collapse/expand sidebar and shift layout
+                    // Widescreen & Landscape: behave like full desktop screen
+                    youtubeSidebar.classList.remove('mobile-open');
+                    if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+                    body.classList.remove('sidebar-open');
+
+                    youtubeSidebar.dataset.userToggled = 'true';
                     youtubeSidebar.classList.toggle('collapsed');
 
-                    // Reset scroll position when collapsing/expanding
                     if (sidebarContent) {
                         sidebarContent.scrollTop = 0;
                     }
@@ -3384,23 +3458,28 @@
 
             // Handle window resize - ensure proper state transitions
             function handleResize() {
-                if (!isMobileScreen()) {
-                    // Desktop mode: remove mobile overlay classes
+                if (!isMobilePortrait()) {
+                    // Widescreen / Landscape: clear mobile overlay classes
                     youtubeSidebar.classList.remove('mobile-open');
                     if (sidebarOverlay) sidebarOverlay.classList.remove('active');
                     body.classList.remove('sidebar-open');
+
+                    // If rotated to landscape on mobile / short screen, default to collapsed (Screenshot 2)
+                    // unless already toggled by user
+                    if (window.innerHeight <= 550 && !youtubeSidebar.dataset.userToggled) {
+                        youtubeSidebar.classList.add('collapsed');
+                    }
 
                     if (sidebarContent) {
                         sidebarContent.style.maxHeight = '';
                     }
                 } else {
-                    // Mobile mode: remove desktop collapsed state
+                    // Mobile portrait: reset collapsed state
                     youtubeSidebar.classList.remove('collapsed');
                     youtubeSidebar.classList.remove('mobile-open');
                     if (sidebarOverlay) sidebarOverlay.classList.remove('active');
                     body.classList.remove('sidebar-open');
 
-                    // Adjust sidebar content height for mobile touch
                     if (sidebarContent) {
                         const viewportHeight = window.innerHeight;
                         sidebarContent.style.maxHeight = `${viewportHeight - 64}px`;
