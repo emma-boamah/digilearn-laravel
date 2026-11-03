@@ -519,7 +519,7 @@
         box-shadow: var(--shadow-xl);
         border: 1px solid var(--gray-200);
         width: 260px;
-        max-width: 100vw;
+        max-width: calc(100% - 1rem);
         z-index: 1000;
         opacity: 0;
         visibility: hidden;
@@ -901,8 +901,8 @@
     }
 
     .youtube-sidebar.collapsed~.main-content {
-        width: calc(100vw - var(--sidebar-width-collapsed));
-        max-width: calc(100vw - var(--sidebar-width-collapsed));
+        width: calc(100% - var(--sidebar-width-collapsed));
+        max-width: calc(100% - var(--sidebar-width-collapsed));
         margin-left: var(--sidebar-width-collapsed);
     }
 
@@ -1047,9 +1047,8 @@
             top: calc(60px + var(--safe-area-inset-top, 0px) + 6px) !important;
             left: 10px !important;
             right: 10px !important;
-            width: calc(100% - 20px) !important;
-            width: calc(100vw - 20px) !important;
-            max-width: calc(100vw - 20px) !important;
+            width: auto !important;
+            max-width: calc(100% - 20px) !important;
             margin: 0 auto !important;
             box-sizing: border-box !important;
             border-radius: 1rem !important;
@@ -1137,7 +1136,8 @@
         .notification-dropdown-menu {
             left: 6px !important;
             right: 6px !important;
-            max-width: calc(100vw - 12px) !important;
+            width: auto !important;
+            max-width: calc(100% - 12px) !important;
         }
 
         .notification-dropdown-menu .dropdown-header {
