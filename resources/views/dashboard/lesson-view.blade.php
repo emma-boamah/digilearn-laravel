@@ -3254,14 +3254,14 @@
         .comments-mobile-teaser {
             display: flex !important;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.625rem;
             background-color: var(--white);
-            border: 1px solid var(--gray-200);
-            border-radius: 0.875rem;
-            padding: 0.75rem 1rem;
-            margin-bottom: 0.75rem;
+            border: 1px solid var(--gray-200, #e2e8f0);
+            border-radius: 1rem;
+            padding: 0.875rem 1.125rem;
+            margin-bottom: 0.875rem;
             cursor: pointer;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
             transition: all 0.2s ease;
             -webkit-tap-highlight-color: transparent;
         }
@@ -3280,49 +3280,54 @@
         .teaser-title-row {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.625rem;
         }
 
         .teaser-heading {
             font-weight: 700;
-            font-size: 0.9375rem;
-            color: var(--gray-900);
+            font-size: 1.0625rem; /* 17px - Clear, prominent heading */
+            letter-spacing: -0.01em;
+            color: var(--gray-900, #0f172a);
         }
 
         .teaser-badge {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--gray-500);
-            background: var(--gray-100);
-            padding: 0.125rem 0.5rem;
+            font-size: 0.8125rem; /* 13px */
+            font-weight: 700;
+            color: var(--gray-700, #334155);
+            background: var(--gray-100, #f1f5f9);
+            border: 1px solid var(--gray-200, #e2e8f0);
+            padding: 0.15rem 0.625rem;
             border-radius: 9999px;
+            line-height: 1.25;
         }
 
         .teaser-chevron {
-            color: var(--gray-400);
+            color: var(--gray-500, #64748b);
+            width: 18px;
+            height: 18px;
             transition: transform 0.2s ease;
         }
 
         .teaser-snippet {
             display: flex;
             align-items: center;
-            gap: 0.625rem;
-            background: var(--gray-50);
+            gap: 0.75rem;
+            background: #f8fafc;
             border-radius: 9999px;
-            padding: 0.25rem 0.75rem 0.25rem 0.375rem;
-            border: 1px solid var(--gray-100);
+            padding: 0.375rem 0.875rem 0.375rem 0.5rem;
+            border: 1px solid var(--gray-200, #e2e8f0);
         }
 
         .teaser-avatar {
-            width: 24px;
-            height: 24px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             background: var(--primary-100, #e0e7ff);
             color: var(--primary-700, #4338ca);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.6875rem;
+            font-size: 0.75rem;
             font-weight: 700;
             overflow: hidden;
             flex-shrink: 0;
@@ -3335,16 +3340,18 @@
         }
 
         .teaser-mock-input {
-            font-size: 0.8125rem;
-            color: var(--gray-400);
+            font-size: 0.875rem; /* 14px - Enhanced readability */
+            font-weight: 500;
+            color: #475569; /* High-contrast accessible slate gray */
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
         .teaser-comment-text {
-            font-size: 0.8125rem;
-            color: var(--gray-700);
+            font-size: 0.875rem; /* 14px */
+            font-weight: 500;
+            color: var(--gray-800, #1e293b);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -3367,6 +3374,55 @@
         .comments-drawer-backdrop.open {
             opacity: 1;
             pointer-events: auto;
+        }
+
+        /* Action Buttons Typography Enhancement on Mobile */
+        .action-btn {
+            font-size: 0.875rem !important; /* 14px */
+            font-weight: 600 !important;
+        }
+
+        .add-notes-btn,
+        #addNotesBtn {
+            font-size: 0.9375rem !important; /* 15px */
+            font-weight: 600 !important;
+        }
+
+        /* Drawer Stream Typography Enhancement */
+        .comments-card .comment-author {
+            font-size: 0.9375rem !important; /* 15px */
+            font-weight: 700 !important;
+            color: var(--gray-900, #0f172a);
+        }
+
+        .comments-card .comment-text {
+            font-size: 0.9375rem !important; /* 15px */
+            line-height: 1.55 !important;
+            color: var(--gray-800, #1e293b);
+        }
+
+        .comments-card .comment-time {
+            font-size: 0.8125rem !important; /* 13px */
+            font-weight: 500;
+            color: var(--gray-500, #64748b);
+        }
+
+        .comments-card .comment-action {
+            font-size: 0.8125rem !important; /* 13px */
+            font-weight: 600;
+            color: var(--gray-600, #475569);
+        }
+
+        .comments-card .comment-input {
+            font-size: 0.9375rem !important; /* 15px/16px */
+            font-weight: 500;
+            color: var(--gray-900, #0f172a);
+        }
+
+        .comments-card .comment-input::placeholder {
+            font-size: 0.9375rem !important;
+            font-weight: 500;
+            color: var(--gray-500, #64748b);
         }
 
         /* Bottom Sheet Drawer Container */
@@ -4013,11 +4069,17 @@
         }
 
         [data-theme="dark"] .teaser-mock-input {
-            color: #64748b !important;
+            color: #94a3b8 !important;
+            font-weight: 500 !important;
+        }
+
+        [data-theme="dark"] .teaser-chevron {
+            color: #94a3b8 !important;
         }
 
         [data-theme="dark"] .teaser-comment-text {
-            color: #e2e8f0 !important;
+            color: #f1f5f9 !important;
+            font-weight: 500 !important;
         }
 
         [data-theme="dark"] .drawer-drag-handle {
