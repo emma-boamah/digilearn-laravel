@@ -3100,14 +3100,20 @@
             flex-direction: column;
             padding: 0.75rem;
             margin: 0;
-            margin-top: 80px;
-            gap: 1.5rem;
-            overflow: hidden;
+            margin-top: 70px;
+            gap: 1rem;
+            overflow-x: hidden;
+            overflow-y: visible !important;
             width: 100%;
             max-width: 100%;
             box-sizing: border-box;
-            padding-top: 80px;
-            /* Account for header height + some spacing */
+            padding-top: 0;
+        }
+
+        /* Never hide sidebar on mobile even if focus-mode was saved on desktop */
+        .lesson-page.focus-mode .lesson-sidebar {
+            display: flex !important;
+            visibility: visible !important;
         }
 
         .search-box {
@@ -3580,13 +3586,39 @@
             margin-top: 1rem;
         }
 
-        /* Hide the right sidebar container */
+        /* On mobile, render sidebar naturally below main content */
         .lesson-sidebar {
-            display: contents;
-            /* Children become direct grid children */
-            width: 100%;
-            min-width: unset;
-            max-width: 100%;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 1.25rem !important;
+            width: 100% !important;
+            min-width: unset !important;
+            max-width: 100% !important;
+            position: static !important;
+            margin-top: 0.5rem !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        .action-buttons-grid {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 0.5rem !important;
+            width: 100% !important;
+            visibility: visible !important;
+        }
+
+        .notes-section {
+            display: block !important;
+            width: 100% !important;
+            visibility: visible !important;
+        }
+
+        .related-videos-card {
+            display: block !important;
+            width: 100% !important;
+            visibility: visible !important;
+            margin-top: 1rem !important;
         }
 
         .collapsible-sidebar {
@@ -4931,7 +4963,7 @@
         <div class="related-videos-card">
             <h3 class="related-videos-title">Related Lessons</h3>
 
-            @if(isset($relatedLessons))
+            @if(isset($relatedLessons) && count($relatedLessons) > 0)
             @foreach($relatedLessons as $relatedLesson)
             @include('dashboard.partials.related-lesson-card', ['lesson' => $relatedLesson])
             @endforeach
@@ -4953,8 +4985,7 @@
                 @endfor
                 @endif
         </div>
-</div>
-</div>
+    </aside>
 </div>
 
 <!-- Notes Update Mode Education Modal -->
