@@ -1006,37 +1006,366 @@
                     </div>
                 </div>
 
-                <!-- TAB 1: Reading Text & Formula Split Editor / Preview -->
-                <div x-show="!lessonStudio.loading && lessonStudio.activeTab === 'text'" class="h-full flex flex-col md:flex-row gap-4">
-                    <!-- Left: Markdown Editor -->
-                    <div class="flex-1 flex flex-col bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-xs">
-                        <div class="p-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/60 dark:bg-gray-750/30">
-                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
-                                <i class="fas fa-edit text-indigo-500"></i> Markdown Editor
-                            </span>
-                            <span class="text-[11px] text-gray-400">Supports LaTeX math: <code>$L \times W$</code></span>
+                <!-- TAB 1: Hybrid Content Studio (Toolbar + Split/Solo Editor & KaTeX Preview) -->
+                <div x-show="!lessonStudio.loading && lessonStudio.activeTab === 'text'" class="h-full flex flex-col gap-2.5">
+                    <!-- Studio Control Toolbar -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-1.5 shadow-xs flex items-center justify-between gap-2 flex-wrap text-gray-700 dark:text-gray-200 text-xs">
+                        <!-- Left Group: Formatting Actions -->
+                        <div class="flex items-center gap-1 flex-wrap">
+                            <!-- Undo / Redo -->
+                            <button type="button" @click="studioUndo()" :disabled="lessonStudio.historyIndex <= 0"
+                                    class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                    title="Undo (Ctrl+Z)">
+                                <i class="fas fa-undo text-xs"></i>
+                            </button>
+                            <button type="button" @click="studioRedo()" :disabled="lessonStudio.historyIndex >= lessonStudio.history.length - 1"
+                                    class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                    title="Redo (Ctrl+Y)">
+                                <i class="fas fa-redo text-xs"></i>
+                            </button>
+
+                            <div class="h-4 w-px bg-gray-200 dark:bg-gray-700 mx-1"></div>
+
+                            <!-- Typography -->
+                            <button type="button" @click="studioWrap('**', '**', 'bold text')"
+                                    class="p-1.5 font-bold rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors w-7 text-center"
+                                    title="Bold (Ctrl+B)">
+                                <span class="font-extrabold text-xs">B</span>
+                            </button>
+                            <button type="button" @click="studioWrap('*', '*', 'italic text')"
+                                    class="p-1.5 italic rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors w-7 text-center"
+                                    title="Italic (Ctrl+I)">
+                                <span class="font-serif italic text-xs">I</span>
+                            </button>
+                            <button type="button" @click="studioWrap('~~', '~~', 'strikethrough')"
+                                    class="p-1.5 line-through rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors w-7 text-center text-xs"
+                                    title="Strikethrough">
+                                <s>S</s>
+                            </button>
+                            <button type="button" @click="studioWrap('`', '`', 'code')"
+                                    class="p-1.5 font-mono rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-xs"
+                                    title="Inline Code (Ctrl+E)">
+                                <i class="fas fa-code text-[11px]"></i>
+                            </button>
+
+                            <div class="h-4 w-px bg-gray-200 dark:bg-gray-700 mx-1"></div>
+
+                            <!-- Headings Quick Buttons -->
+                            <button type="button" @click="studioInsertPrefix('## ', 'Section Heading')"
+                                    class="px-1.5 py-1 font-bold rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-[11px]"
+                                    title="Heading 2 (##)">
+                                H2
+                            </button>
+                            <button type="button" @click="studioInsertPrefix('### ', 'Subtopic Heading')"
+                                    class="px-1.5 py-1 font-bold rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-[11px]"
+                                    title="Heading 3 (###)">
+                                H3
+                            </button>
+                            <button type="button" @click="studioInsertPrefix('#### ', 'Minor Heading')"
+                                    class="px-1.5 py-1 font-semibold rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-[11px]"
+                                    title="Heading 4 (####)">
+                                H4
+                            </button>
+
+                            <div class="h-4 w-px bg-gray-200 dark:bg-gray-700 mx-1"></div>
+
+                            <!-- Lists & Structure -->
+                            <button type="button" @click="studioInsertPrefix('- ', 'List item')"
+                                    class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    title="Bullet List">
+                                <i class="fas fa-list-ul text-xs"></i>
+                            </button>
+                            <button type="button" @click="studioInsertPrefix('1. ', 'Ordered item')"
+                                    class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    title="Numbered List">
+                                <i class="fas fa-list-ol text-xs"></i>
+                            </button>
+                            <button type="button" @click="studioInsertPrefix('- [ ] ', 'Task')"
+                                    class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    title="Checklist / Task">
+                                <i class="fas fa-tasks text-xs"></i>
+                            </button>
+                            <button type="button" @click="studioInsertPrefix('> ', 'Quote')"
+                                    class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    title="Blockquote">
+                                <i class="fas fa-quote-left text-xs"></i>
+                            </button>
+                            <button type="button" @click="studioInsertBlock('\n---\n')"
+                                    class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    title="Horizontal Divider">
+                                <i class="fas fa-minus text-xs"></i>
+                            </button>
+
+                            <div class="h-4 w-px bg-gray-200 dark:bg-gray-700 mx-1"></div>
+
+                            <!-- LaTeX Math Palette Dropdown -->
+                            <div class="relative" @click.away="lessonStudio.mathDropdownOpen = false">
+                                <button type="button" @click="lessonStudio.mathDropdownOpen = !lessonStudio.mathDropdownOpen"
+                                        class="px-2 py-1 rounded-md bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-semibold flex items-center gap-1 transition-colors text-xs"
+                                        title="LaTeX Math Formulas">
+                                    <i class="fas fa-square-root-alt text-indigo-500"></i>
+                                    <span>LaTeX Math</span>
+                                    <i class="fas fa-chevron-down text-[10px] ml-0.5"></i>
+                                </button>
+                                <!-- Dropdown Content -->
+                                <div x-show="lessonStudio.mathDropdownOpen"
+                                     x-transition:enter="transition ease-out duration-100"
+                                     x-transition:enter-start="transform opacity-0 scale-95"
+                                     x-transition:enter-end="transform opacity-100 scale-100"
+                                     x-cloak
+                                     class="absolute left-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-2 z-50 text-xs">
+                                    <div class="text-[10px] uppercase font-bold text-gray-400 px-2 py-1">Quick Math Inserts</div>
+                                    <div class="grid grid-cols-2 gap-1 mb-2">
+                                        <button type="button" @click="studioWrap('$', '$', 'x'); lessonStudio.mathDropdownOpen = false;"
+                                                class="px-2 py-1.5 text-left rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/50 flex items-center justify-between text-gray-700 dark:text-gray-200 font-mono text-[11px]">
+                                            <span>Inline Math</span>
+                                            <span class="text-indigo-600 font-bold">$x$</span>
+                                        </button>
+                                        <button type="button" @click="studioInsertBlock('$$\nE = mc^2\n$$'); lessonStudio.mathDropdownOpen = false;"
+                                                class="px-2 py-1.5 text-left rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/50 flex items-center justify-between text-gray-700 dark:text-gray-200 font-mono text-[11px]">
+                                            <span>Block Eq</span>
+                                            <span class="text-indigo-600 font-bold">$$..$$</span>
+                                        </button>
+                                    </div>
+                                    <div class="text-[10px] uppercase font-bold text-gray-400 px-2 py-1 border-t border-gray-100 dark:border-gray-700 pt-1.5">STEM Templates</div>
+                                    <div class="space-y-0.5">
+                                        <button type="button" @click="studioInsertMath('\\frac{a}{b}')"
+                                                class="w-full px-2 py-1 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between">
+                                            <span>Fraction</span>
+                                            <span class="font-mono text-gray-400 text-[10px]">\frac{a}{b}</span>
+                                        </button>
+                                        <button type="button" @click="studioInsertMath('\\sqrt{x}')"
+                                                class="w-full px-2 py-1 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between">
+                                            <span>Square Root</span>
+                                            <span class="font-mono text-gray-400 text-[10px]">\sqrt{x}</span>
+                                        </button>
+                                        <button type="button" @click="studioInsertMath('x^{n}')"
+                                                class="w-full px-2 py-1 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between">
+                                            <span>Exponent / Power</span>
+                                            <span class="font-mono text-gray-400 text-[10px]">x^{n}</span>
+                                        </button>
+                                        <button type="button" @click="studioInsertMath('x_{i}')"
+                                                class="w-full px-2 py-1 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between">
+                                            <span>Subscript</span>
+                                            <span class="font-mono text-gray-400 text-[10px]">x_{i}</span>
+                                        </button>
+                                        <button type="button" @click="studioInsertMath('\\times, \\div, \\pm')"
+                                                class="w-full px-2 py-1 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between">
+                                            <span>Operators</span>
+                                            <span class="font-mono text-gray-400 text-[10px]">&times;, &divide;, &plusmn;</span>
+                                        </button>
+                                        <button type="button" @click="studioInsertMath('\\theta, \\pi, \\alpha, \\beta, \\Delta')"
+                                                class="w-full px-2 py-1 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between">
+                                            <span>Greek Symbols</span>
+                                            <span class="font-mono text-gray-400 text-[10px]">&theta;, &pi;, &alpha;</span>
+                                        </button>
+                                        <button type="button" @click="studioInsertMath('\\sum_{i=1}^{n} x_i')"
+                                                class="w-full px-2 py-1 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between">
+                                            <span>Summation</span>
+                                            <span class="font-mono text-gray-400 text-[10px]">\sum</span>
+                                        </button>
+                                        <button type="button" @click="studioInsertMath('\\int_{a}^{b} f(x) dx')"
+                                                class="w-full px-2 py-1 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between">
+                                            <span>Definite Integral</span>
+                                            <span class="font-mono text-gray-400 text-[10px]">\int</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Pedagogical Callout Dropdown -->
+                            <div class="relative" @click.away="lessonStudio.pedagogicalDropdownOpen = false">
+                                <button type="button" @click="lessonStudio.pedagogicalDropdownOpen = !lessonStudio.pedagogicalDropdownOpen"
+                                        class="px-2 py-1 rounded-md bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 font-semibold flex items-center gap-1 transition-colors text-xs"
+                                        title="Insert Pedagogical Callout Block">
+                                    <i class="fas fa-lightbulb text-amber-500"></i>
+                                    <span>Pedagogical Box</span>
+                                    <i class="fas fa-chevron-down text-[10px] ml-0.5"></i>
+                                </button>
+                                <!-- Dropdown Content -->
+                                <div x-show="lessonStudio.pedagogicalDropdownOpen"
+                                     x-transition:enter="transition ease-out duration-100"
+                                     x-transition:enter-start="transform opacity-0 scale-95"
+                                     x-transition:enter-end="transform opacity-100 scale-100"
+                                     x-cloak
+                                     class="absolute left-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-2 z-50 text-xs space-y-1">
+                                    <div class="text-[10px] uppercase font-bold text-gray-400 px-2 py-1">First-Principles Boxes</div>
+                                    <button type="button" @click="studioInsertPedagogicalBlock('concept')"
+                                            class="w-full px-2 py-1.5 text-left rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/50 flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                                        <i class="fas fa-bookmark text-blue-500"></i>
+                                        <div>
+                                            <div class="font-bold">Key Concept Box</div>
+                                            <div class="text-[10px] text-gray-400 font-normal">Core anchor definition</div>
+                                        </div>
+                                    </button>
+                                    <button type="button" @click="studioInsertPedagogicalBlock('example')"
+                                            class="w-full px-2 py-1.5 text-left rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/50 flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+                                        <i class="fas fa-check-circle text-emerald-500"></i>
+                                        <div>
+                                            <div class="font-bold">Worked Example</div>
+                                            <div class="text-[10px] text-gray-400 font-normal">Step-by-step resolution</div>
+                                        </div>
+                                    </button>
+                                    <button type="button" @click="studioInsertPedagogicalBlock('mistake')"
+                                            class="w-full px-2 py-1.5 text-left rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/50 flex items-center gap-2 text-amber-800 dark:text-amber-300">
+                                        <i class="fas fa-exclamation-triangle text-amber-500"></i>
+                                        <div>
+                                            <div class="font-bold">Common Pitfall</div>
+                                            <div class="text-[10px] text-gray-400 font-normal">Frequent misconception</div>
+                                        </div>
+                                    </button>
+                                    <button type="button" @click="studioInsertPedagogicalBlock('application')"
+                                            class="w-full px-2 py-1.5 text-left rounded-lg hover:bg-purple-50 dark:hover:bg-purple-950/50 flex items-center gap-2 text-purple-700 dark:text-purple-300">
+                                        <i class="fas fa-rocket text-purple-500"></i>
+                                        <div>
+                                            <div class="font-bold">Real-World Application</div>
+                                            <div class="text-[10px] text-gray-400 font-normal">Authentic industry context</div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="h-4 w-px bg-gray-200 dark:bg-gray-700 mx-1"></div>
+
+                            <!-- Table & Media -->
+                            <button type="button" @click="studioInsertTable()"
+                                    class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    title="Insert Markdown Table">
+                                <i class="fas fa-table text-xs"></i>
+                            </button>
+                            <button type="button" @click="studioInsertLink()"
+                                    class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    title="Insert Link (Ctrl+K)">
+                                <i class="fas fa-link text-xs"></i>
+                            </button>
+                            <button type="button" @click="studioInsertImage()"
+                                    class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    title="Insert Image">
+                                <i class="fas fa-image text-xs"></i>
+                            </button>
+                            <button type="button" @click="studioInsertBlock('\n```mermaid\ngraph TD\n    A[Core Concept] --> B(Step 1: Formula)\n    B --> C{Verify Units}\n    C -->|Valid| D[Final Solution]\n    C -->|Invalid| B\n```\n')"
+                                    class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    title="Insert Mermaid Diagram Flowchart">
+                                <i class="fas fa-project-diagram text-xs"></i>
+                            </button>
                         </div>
-                        <div class="flex-1 p-2">
-                            <textarea x-model="lessonStudio.markdown"
-                                      @input="renderStudioPreview()"
-                                      placeholder="Write or generate reading text using the Pedagogical Course Scheme..."
-                                      class="w-full h-full text-xs font-mono rounded-lg border-0 bg-transparent text-gray-900 dark:text-gray-100 p-3 resize-none focus:outline-none focus:ring-0 leading-relaxed"></textarea>
+
+                        <!-- Right Group: View Layout & Utilities -->
+                        <div class="flex items-center gap-1.5">
+                            <!-- Scroll Synchronization Toggle -->
+                            <button type="button" @click="lessonStudio.scrollSync = !lessonStudio.scrollSync"
+                                    class="px-2 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition-colors"
+                                    :class="lessonStudio.scrollSync ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-400'"
+                                    :title="lessonStudio.scrollSync ? 'Scroll Sync Enabled (Click to disable)' : 'Scroll Sync Disabled (Click to enable)'">
+                                <i class="fas fa-link text-[10px]"></i>
+                                <span class="hidden sm:inline">Sync Scroll</span>
+                            </button>
+
+                            <div class="h-4 w-px bg-gray-200 dark:bg-gray-700"></div>
+
+                            <!-- Layout Switcher: Split / Editor / Preview -->
+                            <div class="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-0.5 bg-gray-100/70 dark:bg-gray-800">
+                                <button type="button" @click="lessonStudio.viewMode = 'split'"
+                                        class="px-2 py-0.5 rounded text-[11px] font-semibold transition-all flex items-center gap-1"
+                                        :class="lessonStudio.viewMode === 'split' ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-white shadow-xs' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'"
+                                        title="Split View (50 / 50)">
+                                    <i class="fas fa-columns text-[10px]"></i>
+                                    <span class="hidden md:inline">Split</span>
+                                </button>
+                                <button type="button" @click="lessonStudio.viewMode = 'editor'"
+                                        class="px-2 py-0.5 rounded text-[11px] font-semibold transition-all flex items-center gap-1"
+                                        :class="lessonStudio.viewMode === 'editor' ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-white shadow-xs' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'"
+                                        title="Editor Only (Full Width)">
+                                    <i class="fas fa-edit text-[10px]"></i>
+                                    <span class="hidden md:inline">Editor</span>
+                                </button>
+                                <button type="button" @click="lessonStudio.viewMode = 'preview'"
+                                        class="px-2 py-0.5 rounded text-[11px] font-semibold transition-all flex items-center gap-1"
+                                        :class="lessonStudio.viewMode === 'preview' ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-white shadow-xs' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'"
+                                        title="Student Preview Only (Full Width)">
+                                    <i class="fas fa-eye text-[10px]"></i>
+                                    <span class="hidden md:inline">Preview</span>
+                                </button>
+                            </div>
+
+                            <!-- Hotkey Guide Button -->
+                            <button type="button" @click="lessonStudio.showHotkeyModal = true"
+                                    class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-indigo-50 dark:hover:bg-indigo-900 text-gray-500 hover:text-indigo-600 text-xs flex items-center justify-center font-bold transition-colors ml-1"
+                                    title="Keyboard Shortcuts & Hotkeys Guide">
+                                ?
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Right: Live Rendered Preview with KaTeX Math -->
-                    <div class="flex-1 flex flex-col bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-xs">
-                        <div class="p-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/60 dark:bg-gray-750/30">
-                            <span class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
-                                <i class="fas fa-eye text-emerald-500"></i> Student View Preview
-                            </span>
-                            <span class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-                                <i class="fas fa-square-root-alt"></i> KaTeX Math Live
-                            </span>
+                    <!-- Split / Full-Width Panels -->
+                    <div class="flex-1 flex flex-col md:flex-row gap-3 min-h-0 overflow-hidden">
+                        <!-- Left / Full: Markdown Editor Card -->
+                        <div x-show="lessonStudio.viewMode !== 'preview'"
+                             :class="lessonStudio.viewMode === 'editor' ? 'w-full' : 'flex-1'"
+                             class="flex flex-col bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-xs min-h-0">
+                            <!-- Header -->
+                            <div class="px-3.5 py-2 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/70 dark:bg-gray-750/30">
+                                <span class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                                    <i class="fas fa-terminal text-indigo-500"></i> Markdown & Math Source
+                                </span>
+                                <span class="text-[11px] text-gray-400">
+                                    Format with toolbar or hotkeys (<code>Ctrl+B</code>, <code>Ctrl+I</code>, <code>Ctrl+M</code>)
+                                </span>
+                            </div>
+                            <!-- Textarea -->
+                            <div class="flex-1 p-2 min-h-0">
+                                <textarea id="studio-markdown-editor"
+                                          x-model="lessonStudio.markdown"
+                                          @input="onStudioInput()"
+                                          @keydown="handleStudioKeydown($event)"
+                                          @scroll="handleScrollSync('editor')"
+                                          placeholder="Write or generate reading text using the Pedagogical Course Scheme..."
+                                          class="w-full h-full text-xs font-mono rounded-lg border-0 bg-transparent text-gray-900 dark:text-gray-100 p-3 resize-none focus:outline-none focus:ring-0 leading-relaxed"></textarea>
+                            </div>
+                            <!-- Status Bar -->
+                            <div class="px-3.5 py-1.5 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/50 dark:bg-gray-750/20 text-[11px] text-gray-500 dark:text-gray-400">
+                                <div class="flex items-center gap-3">
+                                    <span><strong class="text-gray-700 dark:text-gray-200" x-text="getStudioStats().words"></strong> words</span>
+                                    <span>&bull;</span>
+                                    <span><strong class="text-gray-700 dark:text-gray-200" x-text="getStudioStats().chars"></strong> chars</span>
+                                    <span>&bull;</span>
+                                    <span class="flex items-center gap-1">
+                                        <i class="fas fa-square-root-alt text-indigo-500 text-[10px]"></i>
+                                        <strong class="text-gray-700 dark:text-gray-200" x-text="getStudioStats().formulas"></strong> formulas
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <i class="fas fa-clock text-gray-400 text-[10px]"></i>
+                                    <span>~<span x-text="getStudioStats().readingTime"></span> min read</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="flex-1 p-5 overflow-y-auto">
-                            <div id="studio-rendered-preview" class="lesson-reader text-sm leading-relaxed prose dark:prose-invert max-w-none">
-                                <p class="text-gray-400 italic text-xs">Generating reading text will populate the formatted lesson preview here...</p>
+
+                        <!-- Right / Full: Student Preview Card -->
+                        <div x-show="lessonStudio.viewMode !== 'editor'"
+                             :class="lessonStudio.viewMode === 'preview' ? 'w-full' : 'flex-1'"
+                             class="flex flex-col bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-xs min-h-0">
+                            <!-- Header -->
+                            <div class="px-3.5 py-2 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/70 dark:bg-gray-750/30">
+                                <span class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                                    <i class="fas fa-eye text-emerald-500"></i> Live Student Preview
+                                </span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                                        <i class="fas fa-check-circle"></i> KaTeX Active
+                                    </span>
+                                    <span class="text-[11px] text-indigo-600 font-semibold flex items-center gap-1">
+                                        <i class="fas fa-project-diagram"></i> Mermaid
+                                    </span>
+                                </div>
+                            </div>
+                            <!-- Rendered Preview Area -->
+                            <div id="studio-rendered-preview-container"
+                                 @scroll="handleScrollSync('preview')"
+                                 class="flex-1 p-5 overflow-y-auto min-h-0 bg-white dark:bg-gray-850">
+                                <div id="studio-rendered-preview" class="lesson-reader text-sm leading-relaxed prose dark:prose-invert max-w-none">
+                                    <p class="text-gray-400 italic text-xs">Generating reading text will populate the formatted lesson preview here...</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1289,6 +1618,89 @@
         </div>
     </div>
 
+    <!-- Hotkey Guide Modal -->
+    <div x-show="lessonStudio.showHotkeyModal"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         x-cloak
+         style="display: none;"
+         class="fixed inset-0 z-60 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div @click.away="lessonStudio.showHotkeyModal = false"
+             class="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-gray-200 dark:border-gray-700 space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
+                        <i class="fas fa-keyboard"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-900 dark:text-white">Content Studio Shortcuts</h3>
+                        <p class="text-xs text-gray-500">Fast authoring with keyboard hotkeys</p>
+                    </div>
+                </div>
+                <button type="button" @click="lessonStudio.showHotkeyModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750 flex items-center justify-between">
+                        <span class="text-gray-700 dark:text-gray-300">Bold text</span>
+                        <kbd class="px-2 py-0.5 rounded bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 font-mono text-[11px] font-bold">Ctrl + B</kbd>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750 flex items-center justify-between">
+                        <span class="text-gray-700 dark:text-gray-300">Italic text</span>
+                        <kbd class="px-2 py-0.5 rounded bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 font-mono text-[11px] font-bold">Ctrl + I</kbd>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750 flex items-center justify-between">
+                        <span class="text-gray-700 dark:text-gray-300">Inline code</span>
+                        <kbd class="px-2 py-0.5 rounded bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 font-mono text-[11px] font-bold">Ctrl + E</kbd>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750 flex items-center justify-between">
+                        <span class="text-gray-700 dark:text-gray-300">Insert link</span>
+                        <kbd class="px-2 py-0.5 rounded bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 font-mono text-[11px] font-bold">Ctrl + K</kbd>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750 flex items-center justify-between">
+                        <span class="text-gray-700 dark:text-gray-300">LaTeX math</span>
+                        <kbd class="px-2 py-0.5 rounded bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 font-mono text-[11px] font-bold">Ctrl + M</kbd>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750 flex items-center justify-between">
+                        <span class="text-gray-700 dark:text-gray-300">Indent selection</span>
+                        <kbd class="px-2 py-0.5 rounded bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 font-mono text-[11px] font-bold">Tab</kbd>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750 flex items-center justify-between">
+                        <span class="text-gray-700 dark:text-gray-300">Outdent selection</span>
+                        <kbd class="px-2 py-0.5 rounded bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 font-mono text-[11px] font-bold">Shift + Tab</kbd>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-750 flex items-center justify-between">
+                        <span class="text-gray-700 dark:text-gray-300">Undo / Redo</span>
+                        <kbd class="px-2 py-0.5 rounded bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 font-mono text-[11px] font-bold">Ctrl+Z / Y</kbd>
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 space-y-1">
+                    <div class="font-bold text-indigo-900 dark:text-indigo-200 text-xs flex items-center gap-1.5">
+                        <i class="fas fa-magic text-indigo-600"></i> Smart Auto-Wrapping
+                    </div>
+                    <p class="text-[11px] text-indigo-700 dark:text-indigo-300">
+                        Highlight any text and type <code class="bg-white/80 dark:bg-gray-800 px-1 rounded">(</code>, <code class="bg-white/80 dark:bg-gray-800 px-1 rounded">[</code>, <code class="bg-white/80 dark:bg-gray-800 px-1 rounded">{</code>, <code class="bg-white/80 dark:bg-gray-800 px-1 rounded">"</code>, <code class="bg-white/80 dark:bg-gray-800 px-1 rounded">'</code>, <code class="bg-white/80 dark:bg-gray-800 px-1 rounded">$</code>, or <code class="bg-white/80 dark:bg-gray-800 px-1 rounded">`</code> to automatically wrap your selection!
+                    </p>
+                </div>
+            </div>
+
+            <div class="pt-2 flex justify-end">
+                <button type="button" @click="lessonStudio.showHotkeyModal = false"
+                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors">
+                    Got it!
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Floating Live Toast Notification -->
 
     <!-- ========================================== -->
@@ -1415,7 +1827,16 @@ function textbookViewerApp() {
             previewModalOpen: false,
             previewingVideo: null,
             is_published: true,
-            availableSchemes: {}
+            availableSchemes: {},
+            // Hybrid Content Studio State
+            viewMode: 'split', // 'split', 'editor', 'preview'
+            scrollSync: true,
+            isSyncingScroll: false,
+            showHotkeyModal: false,
+            mathDropdownOpen: false,
+            pedagogicalDropdownOpen: false,
+            history: [],
+            historyIndex: -1
         },
 
         get bulkSectionsCount() {
@@ -2118,6 +2539,11 @@ function textbookViewerApp() {
                     this.lessonStudio.newVideoUrl = '';
                     this.lessonStudio.is_published = !!data.section.is_published;
                     this.lessonStudio.availableSchemes = data.available_schemes || {};
+                    this.lessonStudio.history = [this.lessonStudio.markdown || ''];
+                    this.lessonStudio.historyIndex = 0;
+                    this.lessonStudio.viewMode = 'split';
+                    this.lessonStudio.scrollSync = true;
+                    this.lessonStudio.isSyncingScroll = false;
                     
                     this.$nextTick(() => {
                         this.renderStudioPreview();
@@ -2199,6 +2625,359 @@ function textbookViewerApp() {
             }
         },
 
+        // ==========================================
+        // HYBRID CONTENT STUDIO & KEYBOARD WORKFLOW
+        // ==========================================
+        _historyTimer: null,
+        _syncScrollTimeout: null,
+
+        onStudioInput() {
+            this.renderStudioPreview();
+            this.studioRecordHistoryDebounced();
+        },
+
+        studioRecordHistoryDebounced() {
+            if (this._historyTimer) clearTimeout(this._historyTimer);
+            this._historyTimer = setTimeout(() => {
+                this.studioRecordHistory();
+            }, 400);
+        },
+
+        studioRecordHistory() {
+            const current = this.lessonStudio.markdown || '';
+            if (this.lessonStudio.historyIndex >= 0 && this.lessonStudio.history[this.lessonStudio.historyIndex] === current) {
+                return;
+            }
+            // Truncate future if user made changes after an undo
+            const newHistory = this.lessonStudio.history.slice(0, this.lessonStudio.historyIndex + 1);
+            newHistory.push(current);
+            if (newHistory.length > 50) newHistory.shift();
+            this.lessonStudio.history = newHistory;
+            this.lessonStudio.historyIndex = newHistory.length - 1;
+        },
+
+        studioUndo() {
+            if (this.lessonStudio.historyIndex > 0) {
+                this.lessonStudio.historyIndex--;
+                this.lessonStudio.markdown = this.lessonStudio.history[this.lessonStudio.historyIndex];
+                this.$nextTick(() => this.renderStudioPreview());
+            }
+        },
+
+        studioRedo() {
+            if (this.lessonStudio.historyIndex < this.lessonStudio.history.length - 1) {
+                this.lessonStudio.historyIndex++;
+                this.lessonStudio.markdown = this.lessonStudio.history[this.lessonStudio.historyIndex];
+                this.$nextTick(() => this.renderStudioPreview());
+            }
+        },
+
+        studioWrap(prefix, suffix, placeholder = '') {
+            const el = document.getElementById('studio-markdown-editor');
+            if (!el) {
+                this.lessonStudio.markdown = (this.lessonStudio.markdown || '') + prefix + placeholder + suffix;
+                this.renderStudioPreview();
+                this.studioRecordHistory();
+                return;
+            }
+
+            const start = el.selectionStart;
+            const end = el.selectionEnd;
+            const text = el.value;
+            const selected = text.substring(start, end);
+            const insertContent = selected.length > 0 ? selected : placeholder;
+            const replacement = prefix + insertContent + suffix;
+
+            el.setRangeText(replacement, start, end, 'select');
+            this.lessonStudio.markdown = el.value;
+
+            // Position selection inside the wrap if placeholder was used, or around/after
+            if (selected.length === 0 && placeholder.length > 0) {
+                el.setSelectionRange(start + prefix.length, start + prefix.length + placeholder.length);
+            } else {
+                el.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
+            }
+
+            el.focus();
+            this.renderStudioPreview();
+            this.studioRecordHistory();
+        },
+
+        studioInsertPrefix(prefix, placeholder = '') {
+            const el = document.getElementById('studio-markdown-editor');
+            if (!el) {
+                this.lessonStudio.markdown = (this.lessonStudio.markdown || '') + '\n' + prefix + placeholder;
+                this.renderStudioPreview();
+                this.studioRecordHistory();
+                return;
+            }
+
+            const start = el.selectionStart;
+            const end = el.selectionEnd;
+            const text = el.value;
+
+            // Find line start and line end
+            const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+            const lineEnd = text.indexOf('\n', end);
+            const actualLineEnd = lineEnd === -1 ? text.length : lineEnd;
+
+            const selectedBlock = text.substring(lineStart, actualLineEnd);
+            const lines = selectedBlock.split('\n');
+
+            const modifiedLines = lines.map((line) => {
+                if (line.trim().length === 0) return line;
+                if (line.startsWith(prefix)) return line;
+                return prefix + line;
+            });
+
+            const newBlock = modifiedLines.join('\n');
+            el.setRangeText(newBlock, lineStart, actualLineEnd, 'end');
+            this.lessonStudio.markdown = el.value;
+            el.focus();
+            this.renderStudioPreview();
+            this.studioRecordHistory();
+        },
+
+        studioInsertBlock(block) {
+            const el = document.getElementById('studio-markdown-editor');
+            if (!el) {
+                this.lessonStudio.markdown = (this.lessonStudio.markdown || '') + '\n\n' + block + '\n\n';
+                this.renderStudioPreview();
+                this.studioRecordHistory();
+                return;
+            }
+
+            const start = el.selectionStart;
+            const end = el.selectionEnd;
+            const text = el.value;
+
+            // Ensure proper line spacing before and after block
+            let prefix = '';
+            let suffix = '';
+            if (start > 0 && text[start - 1] !== '\n') {
+                prefix = '\n\n';
+            } else if (start > 1 && text[start - 2] !== '\n') {
+                prefix = '\n';
+            }
+
+            if (end < text.length && text[end] !== '\n') {
+                suffix = '\n\n';
+            } else if (end < text.length - 1 && text[end + 1] !== '\n') {
+                suffix = '\n';
+            }
+
+            const insertion = prefix + block.trim() + suffix;
+            el.setRangeText(insertion, start, end, 'end');
+            this.lessonStudio.markdown = el.value;
+            el.focus();
+            this.renderStudioPreview();
+            this.studioRecordHistory();
+        },
+
+        studioInsertTable() {
+            const table = `| Column 1 | Column 2 | Column 3 |
+| :--- | :--- | :--- |
+| Item A | Value 1 | First Observation |
+| Item B | Value 2 | Second Observation |
+| Item C | Value 3 | Third Observation |`;
+            this.studioInsertBlock(table);
+        },
+
+        studioInsertMath(latex) {
+            this.lessonStudio.mathDropdownOpen = false;
+            this.studioWrap('$', '$', latex);
+        },
+
+        studioInsertPedagogicalBlock(type) {
+            this.lessonStudio.pedagogicalDropdownOpen = false;
+            let block = '';
+            switch (type) {
+                case 'concept':
+                    block = `> [!NOTE]\n> **Key Concept:** Define the core idea in simple, precise terms here. Ground it in physical intuition before abstract notation.`;
+                    break;
+                case 'example':
+                    block = `> [!TIP]\n> **Worked Example:**\n> - **Problem:** State the problem statement and given variables.\n> - **Step 1 (Formula):** Identify $y = mx + c$ or relevant law.\n> - **Step 2 (Substitution):** Substitute the known quantities.\n> - **Step 3 (Calculation):** Perform the step-by-step arithmetic.\n> - **Conclusion:** State the final numerical answer with units.`;
+                    break;
+                case 'mistake':
+                    block = `> [!WARNING]\n> **Common Pitfall:** Students frequently confuse $A$ with $B$. Remember to check the units and direction before applying this formula!`;
+                    break;
+                case 'application':
+                    block = `> [!IMPORTANT]\n> **Real-World Application:** How this concept is directly applied in engineering, architecture, financial analytics, or everyday life.`;
+                    break;
+                default:
+                    block = `> [!NOTE]\n> **Pedagogical Note:** Educational anchor insight.`;
+            }
+            this.studioInsertBlock(block);
+        },
+
+        studioInsertLink() {
+            const el = document.getElementById('studio-markdown-editor');
+            const selected = el ? el.value.substring(el.selectionStart, el.selectionEnd) : '';
+            const title = selected || 'link text';
+            const url = prompt('Enter URL for link:', 'https://');
+            if (url) {
+                this.studioWrap('[', `](${url})`, title);
+            }
+        },
+
+        studioInsertImage() {
+            const url = prompt('Enter Image URL (e.g., https://...):', 'https://');
+            if (!url) return;
+            const alt = prompt('Enter image description / alt text:', 'Figure diagram') || 'Figure diagram';
+            this.studioInsertBlock(`\n![${alt}](${url})\n`);
+        },
+
+        handleStudioKeydown(e) {
+            const isModifier = e.ctrlKey || e.metaKey;
+
+            if (isModifier && !e.shiftKey && e.key.toLowerCase() === 'b') {
+                e.preventDefault();
+                this.studioWrap('**', '**', 'bold text');
+                return;
+            }
+
+            if (isModifier && !e.shiftKey && e.key.toLowerCase() === 'i') {
+                e.preventDefault();
+                this.studioWrap('*', '*', 'italic text');
+                return;
+            }
+
+            if (isModifier && !e.shiftKey && e.key.toLowerCase() === 'e') {
+                e.preventDefault();
+                this.studioWrap('`', '`', 'code');
+                return;
+            }
+
+            if (isModifier && !e.shiftKey && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                this.studioInsertLink();
+                return;
+            }
+
+            if (isModifier && !e.shiftKey && e.key.toLowerCase() === 'm') {
+                e.preventDefault();
+                this.studioWrap('$', '$', 'x');
+                return;
+            }
+
+            if (isModifier && !e.shiftKey && e.key.toLowerCase() === 'z') {
+                e.preventDefault();
+                this.studioUndo();
+                return;
+            }
+
+            if ((isModifier && e.key.toLowerCase() === 'y') || (isModifier && e.shiftKey && e.key.toLowerCase() === 'z')) {
+                e.preventDefault();
+                this.studioRedo();
+                return;
+            }
+
+            // Tab / Shift+Tab indent/outdent
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const el = e.target;
+                const start = el.selectionStart;
+                const end = el.selectionEnd;
+                const text = el.value;
+
+                if (start === end) {
+                    el.setRangeText('  ', start, end, 'end');
+                    this.lessonStudio.markdown = el.value;
+                } else {
+                    const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+                    const lineEnd = text.indexOf('\n', end);
+                    const actualLineEnd = lineEnd === -1 ? text.length : lineEnd;
+                    const lines = text.substring(lineStart, actualLineEnd).split('\n');
+
+                    let modified;
+                    if (e.shiftKey) {
+                        modified = lines.map(l => l.startsWith('  ') ? l.substring(2) : (l.startsWith(' ') ? l.substring(1) : l)).join('\n');
+                    } else {
+                        modified = lines.map(l => '  ' + l).join('\n');
+                    }
+                    el.setRangeText(modified, lineStart, actualLineEnd, 'select');
+                    this.lessonStudio.markdown = el.value;
+                }
+                this.renderStudioPreview();
+                this.studioRecordHistoryDebounced();
+                return;
+            }
+
+            // Auto-closing brackets/quotes wrapping selection
+            const pairs = {
+                '(': ')',
+                '[': ']',
+                '{': '}',
+                '"': '"',
+                "'": "'",
+                '`': '`',
+                '$': '$'
+            };
+
+            if (pairs[e.key]) {
+                const el = e.target;
+                const start = el.selectionStart;
+                const end = el.selectionEnd;
+                if (start !== end) {
+                    e.preventDefault();
+                    const open = e.key;
+                    const close = pairs[e.key];
+                    this.studioWrap(open, close);
+                }
+            }
+        },
+
+        handleScrollSync(source) {
+            if (!this.lessonStudio.scrollSync || this.lessonStudio.viewMode !== 'split') return;
+            if (this.lessonStudio.isSyncingScroll) return;
+
+            const editor = document.getElementById('studio-markdown-editor');
+            const preview = document.getElementById('studio-rendered-preview-container');
+            if (!editor || !preview) return;
+
+            this.lessonStudio.isSyncingScroll = true;
+
+            if (source === 'editor') {
+                const maxEditorScroll = editor.scrollHeight - editor.clientHeight;
+                if (maxEditorScroll > 0) {
+                    const ratio = editor.scrollTop / maxEditorScroll;
+                    const maxPreviewScroll = preview.scrollHeight - preview.clientHeight;
+                    preview.scrollTop = ratio * maxPreviewScroll;
+                }
+            } else if (source === 'preview') {
+                const maxPreviewScroll = preview.scrollHeight - preview.clientHeight;
+                if (maxPreviewScroll > 0) {
+                    const ratio = preview.scrollTop / maxPreviewScroll;
+                    const maxEditorScroll = editor.scrollHeight - editor.clientHeight;
+                    editor.scrollTop = ratio * maxEditorScroll;
+                }
+            }
+
+            clearTimeout(this._syncScrollTimeout);
+            this._syncScrollTimeout = setTimeout(() => {
+                this.lessonStudio.isSyncingScroll = false;
+            }, 60);
+        },
+
+        getStudioStats() {
+            const text = this.lessonStudio.markdown || '';
+            const chars = text.length;
+            const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+            const readingTime = Math.max(1, Math.ceil(words / 200));
+
+            // Count LaTeX formulas
+            const blockMatches = text.match(/\$\$[\s\S]*?\$\$/g) || [];
+            const inlineMatches = text.match(/\$(?!\$)[\s\S]+?\$(?!\$)/g) || [];
+            const formulas = blockMatches.length + inlineMatches.length;
+
+            return {
+                chars,
+                words,
+                readingTime: words === 0 ? 0 : readingTime,
+                formulas
+            };
+        },
+
         async generateLessonStudioContent() {
             if (!this.lessonStudio.section) return;
             this.lessonStudio.generating = true;
@@ -2228,6 +3007,7 @@ function textbookViewerApp() {
 
                     this.$nextTick(() => {
                         this.renderStudioPreview();
+                        this.studioRecordHistory();
                     });
 
                     this.notify(data.message || 'Course text generated successfully!');
