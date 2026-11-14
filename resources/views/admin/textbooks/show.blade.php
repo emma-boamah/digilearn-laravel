@@ -1243,6 +1243,73 @@
                                     title="Insert Image">
                                 <i class="fas fa-image text-xs"></i>
                             </button>
+
+                            <!-- Emoji Picker Dropdown -->
+                            <div class="relative" @click.away="lessonStudio.emojiDropdownOpen = false">
+                                <button type="button" @click="lessonStudio.emojiDropdownOpen = !lessonStudio.emojiDropdownOpen"
+                                        class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-amber-500 hover:text-amber-600 transition-colors"
+                                        title="Insert Emoji (Ctrl+.)">
+                                    <i class="far fa-smile text-xs"></i>
+                                </button>
+                                <!-- Dropdown Content -->
+                                <div x-show="lessonStudio.emojiDropdownOpen"
+                                     x-transition:enter="transition ease-out duration-100"
+                                     x-transition:enter-start="transform opacity-0 scale-95"
+                                     x-transition:enter-end="transform opacity-100 scale-100"
+                                     x-cloak
+                                     class="absolute left-0 mt-1 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-2.5 z-50 text-xs space-y-2">
+                                    <!-- Search bar -->
+                                    <div class="relative">
+                                        <input type="text" x-model="lessonStudio.emojiSearch" placeholder="Search emojis (e.g. star, math)..."
+                                               class="w-full text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750 px-2.5 py-1.5 pl-7 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                        <i class="fas fa-search text-[10px] text-gray-400 absolute left-2.5 top-2.5"></i>
+                                        <button type="button" x-show="lessonStudio.emojiSearch" @click="lessonStudio.emojiSearch = ''" class="absolute right-2 top-2 text-gray-400 hover:text-gray-600">
+                                            <i class="fas fa-times text-[10px]"></i>
+                                        </button>
+                                    </div>
+
+                                    <!-- Category tabs (hidden when searching) -->
+                                    <div x-show="!lessonStudio.emojiSearch" class="flex items-center gap-1 border-b border-gray-100 dark:border-gray-700 pb-1 text-[11px] overflow-x-auto">
+                                        <button type="button" @click="lessonStudio.emojiCategory = 'stem'"
+                                                class="px-2 py-0.5 rounded-md font-semibold transition-colors whitespace-nowrap"
+                                                :class="lessonStudio.emojiCategory === 'stem' ? 'bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300' : 'text-gray-500 hover:text-gray-700'">
+                                            STEM
+                                        </button>
+                                        <button type="button" @click="lessonStudio.emojiCategory = 'symbols'"
+                                                class="px-2 py-0.5 rounded-md font-semibold transition-colors whitespace-nowrap"
+                                                :class="lessonStudio.emojiCategory === 'symbols' ? 'bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300' : 'text-gray-500 hover:text-gray-700'">
+                                            Ratings
+                                        </button>
+                                        <button type="button" @click="lessonStudio.emojiCategory = 'counters'"
+                                                class="px-2 py-0.5 rounded-md font-semibold transition-colors whitespace-nowrap"
+                                                :class="lessonStudio.emojiCategory === 'counters' ? 'bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300' : 'text-gray-500 hover:text-gray-700'">
+                                            Counters
+                                        </button>
+                                        <button type="button" @click="lessonStudio.emojiCategory = 'people'"
+                                                class="px-2 py-0.5 rounded-md font-semibold transition-colors whitespace-nowrap"
+                                                :class="lessonStudio.emojiCategory === 'people' ? 'bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300' : 'text-gray-500 hover:text-gray-700'">
+                                            Hands
+                                        </button>
+                                    </div>
+
+                                    <!-- Emoji Grid -->
+                                    <div class="max-h-48 overflow-y-auto grid grid-cols-7 gap-1 p-1">
+                                        <template x-for="item in getFilteredEmojis()" :key="item.emoji">
+                                            <button type="button" @click="studioInsertEmoji(item.emoji)"
+                                                    :title="item.name"
+                                                    class="h-8 w-8 text-base rounded hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-transform hover:scale-125">
+                                                <span x-text="item.emoji"></span>
+                                            </button>
+                                        </template>
+                                    </div>
+
+                                    <div class="text-[10px] text-gray-400 flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-700 px-1">
+                                        <span>Click to insert at cursor</span>
+                                        <span class="font-mono">Ctrl + .</span>
+                                    </div>
+                                </div>
+                            </div>
+
                             <button type="button" @click="studioInsertBlock('\n```mermaid\ngraph TD\n    A[Core Concept] --> B(Step 1: Formula)\n    B --> C{Verify Units}\n    C -->|Valid| D[Final Solution]\n    C -->|Invalid| B\n```\n')"
                                     class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                     title="Insert Mermaid Diagram Flowchart">
@@ -1680,6 +1747,12 @@
                         <span class="text-gray-700 dark:text-gray-300">Undo / Redo</span>
                         <kbd class="px-2 py-0.5 rounded bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 font-mono text-[11px] font-bold">Ctrl+Z / Y</kbd>
                     </div>
+                    <div class="p-2.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/40 flex items-center justify-between col-span-2 sm:col-span-1">
+                        <span class="text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                            <span class="text-amber-500">😀</span> Emoji picker
+                        </span>
+                        <kbd class="px-2 py-0.5 rounded bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 font-mono text-[11px] font-bold">Ctrl + .</kbd>
+                    </div>
                 </div>
 
                 <div class="p-3 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 space-y-1">
@@ -1835,6 +1908,9 @@ function textbookViewerApp() {
             showHotkeyModal: false,
             mathDropdownOpen: false,
             pedagogicalDropdownOpen: false,
+            emojiDropdownOpen: false,
+            emojiSearch: '',
+            emojiCategory: 'stem',
             history: [],
             historyIndex: -1
         },
@@ -2827,8 +2903,138 @@ function textbookViewerApp() {
             this.studioInsertBlock(`\n![${alt}](${url})\n`);
         },
 
+        emojiDataset: [
+            // STEM & Learning
+            { emoji: '💡', name: 'light bulb idea thought inspiration', cat: 'stem' },
+            { emoji: '🔬', name: 'microscope science biology cell lab', cat: 'stem' },
+            { emoji: '🔭', name: 'telescope astronomy space planet galaxy', cat: 'stem' },
+            { emoji: '📐', name: 'triangular ruler geometry math angle slope', cat: 'stem' },
+            { emoji: '📏', name: 'straight ruler measure length distance', cat: 'stem' },
+            { emoji: '🧪', name: 'test tube chemistry science reaction chemical', cat: 'stem' },
+            { emoji: '⚛️', name: 'atom physics quantum nuclear nucleus science', cat: 'stem' },
+            { emoji: '🧮', name: 'abacus math calculate calculation arithmetic counting', cat: 'stem' },
+            { emoji: '📊', name: 'bar chart graph statistics data analytics', cat: 'stem' },
+            { emoji: '📈', name: 'chart increasing growth upward trend progress', cat: 'stem' },
+            { emoji: '📉', name: 'chart decreasing loss decline downward trend', cat: 'stem' },
+            { emoji: '🧠', name: 'brain intelligence memory neurology logic thinking', cat: 'stem' },
+            { emoji: '📖', name: 'open book textbook reading study literature', cat: 'stem' },
+            { emoji: '📚', name: 'books library curriculum syllabus education school', cat: 'stem' },
+            { emoji: '✏️', name: 'pencil write notes draw draft exam', cat: 'stem' },
+            { emoji: '📝', name: 'memo notepad note writing exercise assignment', cat: 'stem' },
+            { emoji: '🎯', name: 'bullseye target goal objective accuracy', cat: 'stem' },
+            { emoji: '📌', name: 'pushpin pin note anchor key concept', cat: 'stem' },
+            { emoji: '⚡', name: 'lightning bolt electricity power energy fast charge', cat: 'stem' },
+            { emoji: '⏱️', name: 'stopwatch timer clock speed time interval', cat: 'stem' },
+            { emoji: '🔍', name: 'magnifying glass search examine detail explore', cat: 'stem' },
+            { emoji: '🏷️', name: 'label tag taxonomy category classification', cat: 'stem' },
+            { emoji: '💻', name: 'laptop computer technology code algorithm digital', cat: 'stem' },
+            { emoji: '🤖', name: 'robot ai artificial intelligence automation bot', cat: 'stem' },
+            { emoji: '🌍', name: 'earth globe geography world sphere planet', cat: 'stem' },
+            { emoji: '🧭', name: 'compass navigation direction bearings angles', cat: 'stem' },
+            { emoji: '🌡️', name: 'thermometer temperature heat thermal celsius fahrenheit', cat: 'stem' },
+            { emoji: '⚖️', name: 'balance scale equilibrium weight mass equation balance', cat: 'stem' },
+
+            // Ratings & Symbols
+            { emoji: '⭐', name: 'star rating favorite gold star point one mark', cat: 'symbols' },
+            { emoji: '🌟', name: 'glowing star shine excellence sparkle glitter', cat: 'symbols' },
+            { emoji: '✨', name: 'sparkles sparkle magic highlight clean new feature', cat: 'symbols' },
+            { emoji: '💯', name: 'hundred points score perfect 100 grade exam', cat: 'symbols' },
+            { emoji: '🏆', name: 'trophy champion win victory first prize award', cat: 'symbols' },
+            { emoji: '🥇', name: 'first place gold medal 1st winner champion', cat: 'symbols' },
+            { emoji: '🥈', name: 'second place silver medal 2nd runner up', cat: 'symbols' },
+            { emoji: '🥉', name: 'third place bronze medal 3rd podium', cat: 'symbols' },
+            { emoji: '✅', name: 'check mark green verified correct true pass done', cat: 'symbols' },
+            { emoji: '❌', name: 'cross mark red wrong false cancel incorrect fail', cat: 'symbols' },
+            { emoji: '⚠️', name: 'warning alert caution pitfall mistake danger', cat: 'symbols' },
+            { emoji: '❓', name: 'question mark help unknown inquiry query problem', cat: 'symbols' },
+            { emoji: '❗', name: 'exclamation mark important attention notice alert', cat: 'symbols' },
+            { emoji: '➕', name: 'plus sign addition sum math positive add', cat: 'symbols' },
+            { emoji: '➖', name: 'minus sign subtraction difference math minus subtract', cat: 'symbols' },
+            { emoji: '✖️', name: 'multiplication sign multiply times product factor', cat: 'symbols' },
+            { emoji: '➗', name: 'division sign divide quotient math share', cat: 'symbols' },
+            { emoji: '🟰', name: 'heavy equals sign equal equation math equals result', cat: 'symbols' },
+            { emoji: '➡️', name: 'right arrow next lead implication direction then', cat: 'symbols' },
+            { emoji: '⬅️', name: 'left arrow back previous previous step return', cat: 'symbols' },
+            { emoji: '⬆️', name: 'up arrow increase rise high growth', cat: 'symbols' },
+            { emoji: '⬇️', name: 'down arrow decrease fall low decline', cat: 'symbols' },
+            { emoji: '🔄', name: 'counterclockwise arrows repeat cycle iteration refresh loop', cat: 'symbols' },
+            { emoji: '🔴', name: 'red circle dot item indicator stop point', cat: 'symbols' },
+            { emoji: '🟢', name: 'green circle dot indicator go pass point', cat: 'symbols' },
+            { emoji: '🔵', name: 'blue circle dot item bullet point', cat: 'symbols' },
+            { emoji: '🟡', name: 'yellow circle dot warning pending point', cat: 'symbols' },
+            { emoji: '⬛', name: 'black square shape area polygon geometric', cat: 'symbols' },
+
+            // Counters & Objects (Word Problems & Real-World Math)
+            { emoji: '🍎', name: 'red apple fruit food counter item word problem addition', cat: 'counters' },
+            { emoji: '🍊', name: 'tangerine orange fruit counter food problem', cat: 'counters' },
+            { emoji: '🍌', name: 'banana fruit counter food share division', cat: 'counters' },
+            { emoji: '🍕', name: 'pizza slice fraction fractions food counter portion', cat: 'counters' },
+            { emoji: '🎂', name: 'cake birthday fractions parts counter share', cat: 'counters' },
+            { emoji: '🍪', name: 'cookie division sharing fractions counter snack', cat: 'counters' },
+            { emoji: '🍬', name: 'candy sweets sharing counter treats', cat: 'counters' },
+            { emoji: '🚗', name: 'car automobile speed distance vehicle travel physics', cat: 'counters' },
+            { emoji: '🚌', name: 'bus school bus capacity passenger word problem travel', cat: 'counters' },
+            { emoji: '🚲', name: 'bicycle bike speed motion wheels cyclist', cat: 'counters' },
+            { emoji: '✈️', name: 'airplane flight velocity distance travel air', cat: 'counters' },
+            { emoji: '🚀', name: 'rocket acceleration space speed launch physics propulsion', cat: 'counters' },
+            { emoji: '📦', name: 'box package cube volume volume units geometry container', cat: 'counters' },
+            { emoji: '🪙', name: 'coin money probability flip currency heads tails probability', cat: 'counters' },
+            { emoji: '💵', name: 'dollar banknote money finance cost budget price value', cat: 'counters' },
+            { emoji: '🕒', name: 'three o clock clock time schedule hours minutes', cat: 'counters' },
+            { emoji: '📅', name: 'calendar date days months schedule year time', cat: 'counters' },
+            { emoji: '🧱', name: 'brick block area perimeter volume building masonry', cat: 'counters' },
+            { emoji: '🎲', name: 'die dice probability chance random math game outcomes', cat: 'counters' },
+            { emoji: '⚽', name: 'soccer ball sphere radius diameter sport count', cat: 'counters' },
+            { emoji: '🏀', name: 'basketball ball sphere arc trajectory physics sport', cat: 'counters' },
+            { emoji: '🎾', name: 'tennis ball sphere bounce velocity count', cat: 'counters' },
+            { emoji: '🔔', name: 'bell ring alert frequency sound pitch', cat: 'counters' },
+            { emoji: '🎁', name: 'gift present reward prize item bonus', cat: 'counters' },
+            { emoji: '💧', name: 'droplet water volume liters milliliters fluid liquid capacity', cat: 'counters' },
+            { emoji: '🔋', name: 'battery charge electricity power percent capacity stored', cat: 'counters' },
+            { emoji: '🌱', name: 'seedling plant growth biology progress time stages', cat: 'counters' },
+            { emoji: '🌳', name: 'tree height nature biology counter height shadow', cat: 'counters' },
+
+            // Hands & Faces
+            { emoji: '😀', name: 'grinning face happy smile emotion positive friendly', cat: 'people' },
+            { emoji: '🤔', name: 'thinking face problem solving wonder ponder evaluate consider', cat: 'people' },
+            { emoji: '🧐', name: 'face with monocle analyze scrutinize examine inspect verify', cat: 'people' },
+            { emoji: '👏', name: 'clapping hands applause well done praise cheer congratulations', cat: 'people' },
+            { emoji: '👍', name: 'thumbs up approve yes good correct agree like success', cat: 'people' },
+            { emoji: '👎', name: 'thumbs down disapprove disagree incorrect no dislike', cat: 'people' },
+            { emoji: '👉', name: 'backhand index pointing right point look here direction next', cat: 'people' },
+            { emoji: '👈', name: 'backhand index pointing left previous point note', cat: 'people' },
+            { emoji: '👆', name: 'backhand index pointing up above look top formula', cat: 'people' },
+            { emoji: '👇', name: 'backhand index pointing down below read below note', cat: 'people' },
+            { emoji: '✍️', name: 'writing hand note solving pencil test exam derivation', cat: 'people' },
+            { emoji: '🙋', name: 'person raising hand question ask participate student', cat: 'people' },
+            { emoji: '🎓', name: 'graduation cap degree student academic school university education', cat: 'people' },
+            { emoji: '👨‍🏫', name: 'man teacher instructor professor educator tutor mentor', cat: 'people' },
+            { emoji: '👩‍🏫', name: 'woman teacher instructor professor educator tutor mentor', cat: 'people' },
+            { emoji: '🤝', name: 'handshake deal agreement partnership compromise solution', cat: 'people' }
+        ],
+
+        studioInsertEmoji(emoji) {
+            this.studioWrap('', '', emoji);
+        },
+
+        getFilteredEmojis() {
+            const search = (this.lessonStudio.emojiSearch || '').trim().toLowerCase();
+            if (search) {
+                return this.emojiDataset.filter(item => 
+                    item.name.toLowerCase().includes(search) || item.emoji.includes(search)
+                );
+            }
+            return this.emojiDataset.filter(item => item.cat === this.lessonStudio.emojiCategory);
+        },
+
         handleStudioKeydown(e) {
             const isModifier = e.ctrlKey || e.metaKey;
+
+            if (isModifier && e.key === '.') {
+                e.preventDefault();
+                this.lessonStudio.emojiDropdownOpen = !this.lessonStudio.emojiDropdownOpen;
+                return;
+            }
 
             if (isModifier && !e.shiftKey && e.key.toLowerCase() === 'b') {
                 e.preventDefault();
