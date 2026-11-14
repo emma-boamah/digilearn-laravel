@@ -3069,10 +3069,14 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        html, body {
+            width: 100% !important;
+            max-width: 100vw !important;
+            overflow-x: hidden !important;
+            position: relative;
+        }
+
         body {
-            width: 100%;
-            max-width: 100vw;
-            overflow-x: hidden;
             margin: 0;
             padding: 0;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -3084,7 +3088,6 @@
             -moz-osx-font-smoothing: grayscale;
             /* Enable smooth scrolling */
             scroll-behavior: smooth;
-
         }
 
         button,
@@ -3102,11 +3105,11 @@
             margin: 0;
             margin-top: 70px;
             gap: 1rem;
-            overflow-x: hidden;
+            overflow-x: hidden !important;
             overflow-y: visible !important;
-            width: 100%;
-            max-width: 100%;
-            box-sizing: border-box;
+            width: 100% !important;
+            max-width: 100vw !important;
+            box-sizing: border-box !important;
             padding-top: 0;
         }
 
@@ -3139,28 +3142,27 @@
         /* FIXED: Simple compact state - video only at bottom-right */
         .sticky-video-section.compact {
             position: fixed;
-            bottom: 1.5rem;
-            right: 1.5rem;
-            width: 300px;
+            bottom: 1rem;
+            right: 1rem;
+            width: min(250px, calc(100vw - 2rem));
+            max-width: calc(100vw - 2rem);
             height: auto;
             z-index: 9999;
             /* High z-index to stay on top */
             box-shadow: var(--shadow-xl);
             border-radius: 0.75rem;
             overflow: visible;
-            /* Changed to visible for close button */
             background: #000;
-            /* Ensure black background */
             animation: slideIn 0.3s ease-out;
         }
 
         .close-sticky-video-btn {
             display: none;
             position: absolute;
-            top: -10px;
-            right: -10px;
-            width: 30px;
-            height: 30px;
+            top: 4px;
+            right: 4px;
+            width: 26px;
+            height: 26px;
             background-color: var(--primary-red);
             color: var(--white);
             border: none;
@@ -3617,8 +3619,12 @@
         .related-videos-card {
             display: block !important;
             width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            overflow-x: hidden !important;
             visibility: visible !important;
             margin-top: 1rem !important;
+            padding: 1rem 0.75rem !important;
         }
 
         .collapsible-sidebar {
@@ -3871,9 +3877,10 @@
 
         /* FIXED: Smaller compact video for very small screens */
         .sticky-video-section.compact {
-            width: 250px;
-            bottom: 1rem;
-            right: 1rem;
+            width: min(220px, calc(100vw - 2rem));
+            max-width: calc(100vw - 2rem);
+            bottom: 0.75rem;
+            right: 0.75rem;
         }
 
         .sticky-video-section.compact .video-container {
