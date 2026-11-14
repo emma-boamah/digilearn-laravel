@@ -141,6 +141,41 @@
     .play-overlay {
         pointer-events: none !important;
     }
+
+    @media (max-width: 768px) {
+        .related-video-item {
+            flex-direction: column !important;
+            padding: 0.75rem 0.5rem !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        .related-video-item .video-thumbnail {
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: 100% !important;
+            height: auto !important;
+            aspect-ratio: 16 / 9 !important;
+        }
+
+        .related-video-details {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            min-height: auto !important;
+            box-sizing: border-box !important;
+            padding-top: 0.5rem;
+        }
+
+        .related-video-details h4,
+        .related-video-details .item-title,
+        .related-video-details .video-info-title {
+            word-break: break-word !important;
+            overflow-wrap: break-word !important;
+            white-space: normal !important;
+        }
+    }
 </style>
 @endpushonce
 
