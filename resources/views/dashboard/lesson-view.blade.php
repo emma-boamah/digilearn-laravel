@@ -487,6 +487,22 @@
     }
 
     /* Enhanced Comments Section */
+    .comments-mobile-teaser {
+        display: none !important;
+    }
+
+    .comments-drawer-backdrop {
+        display: none !important;
+    }
+
+    .drawer-handle-bar {
+        display: none !important;
+    }
+
+    .drawer-close-btn {
+        display: none !important;
+    }
+
     .comments-card {
         background-color: var(--white);
         border-radius: 1rem;
@@ -3234,30 +3250,269 @@
             height: 20px;
         }
 
-        /* FIXED: Comments section follows naturally - no overlap! */
-        .comments-card {
-            display: block;
-            padding: 1.25rem;
-        }
-
-        .comments-header {
+        /* MOBILE SOCIAL COMMENTS: Teaser & Bottom Sheet Drawer (YouTube/IG/TikTok UX) */
+        .comments-mobile-teaser {
+            display: flex !important;
             flex-direction: column;
-            align-items: flex-start;
+            gap: 0.5rem;
+            background-color: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: 0.875rem;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .header-actions {
+        .comments-mobile-teaser:active {
+            transform: scale(0.99);
+            background-color: var(--gray-50);
+        }
+
+        .teaser-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .teaser-title-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .teaser-heading {
+            font-weight: 700;
+            font-size: 0.9375rem;
+            color: var(--gray-900);
+        }
+
+        .teaser-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--gray-500);
+            background: var(--gray-100);
+            padding: 0.125rem 0.5rem;
+            border-radius: 9999px;
+        }
+
+        .teaser-chevron {
+            color: var(--gray-400);
+            transition: transform 0.2s ease;
+        }
+
+        .teaser-snippet {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            background: var(--gray-50);
+            border-radius: 9999px;
+            padding: 0.25rem 0.75rem 0.25rem 0.375rem;
+            border: 1px solid var(--gray-100);
+        }
+
+        .teaser-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary-100, #e0e7ff);
+            color: var(--primary-700, #4338ca);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .teaser-avatar img {
             width: 100%;
-            justify-content: flex-start;
+            height: 100%;
+            object-fit: cover;
         }
 
+        .teaser-mock-input {
+            font-size: 0.8125rem;
+            color: var(--gray-400);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .teaser-comment-text {
+            font-size: 0.8125rem;
+            color: var(--gray-700);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Fullscreen Backdrop Overlay */
+        .comments-drawer-backdrop {
+            display: block !important;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            z-index: 9990;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .comments-drawer-backdrop.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Bottom Sheet Drawer Container */
+        .comments-card {
+            position: fixed !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            top: auto !important;
+            z-index: 9995 !important;
+            height: 75vh !important;
+            max-height: calc(100vh - 160px) !important;
+            background: var(--white) !important;
+            border-radius: 1.5rem 1.5rem 0 0 !important;
+            border: 1px solid var(--gray-200) !important;
+            border-bottom: none !important;
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            transform: translateY(105%) !important;
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            margin: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .comments-card.drawer-open {
+            transform: translateY(0) !important;
+        }
+
+        /* Drag Handle Bar */
+        .drawer-handle-bar {
+            display: flex !important;
+            justify-content: center;
+            align-items: center;
+            padding: 0.625rem 0 0.25rem 0;
+            width: 100%;
+            cursor: grab;
+            touch-action: none;
+            background: transparent;
+            order: 1 !important;
+            flex-shrink: 0;
+        }
+
+        .drawer-drag-handle {
+            width: 40px;
+            height: 4.5px;
+            border-radius: 9999px;
+            background-color: var(--gray-300);
+            transition: background-color 0.2s ease;
+        }
+
+        /* Drawer Header */
+        .comments-header {
+            order: 2 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            padding: 0.375rem 1.25rem 0.75rem 1.25rem !important;
+            border-bottom: 1px solid var(--gray-100) !important;
+            margin-bottom: 0 !important;
+            flex-direction: row !important;
+            width: 100% !important;
+            flex-shrink: 0;
+        }
+
+        .comments-header-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .comments-count {
+            font-size: 1rem !important;
+            font-weight: 700;
+        }
+
+        #commentsToggleBtn {
+            display: none !important;
+        }
+
+        /* Show the Close Button in Drawer Header */
+        .drawer-close-btn {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--gray-100);
+            color: var(--gray-600);
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            transition: all 0.2s ease;
+        }
+
+        .drawer-close-btn:active {
+            transform: scale(0.92);
+            background-color: var(--gray-200);
+        }
+
+        /* Scrollable Comments Stream */
+        .comments-scroll-body {
+            order: 3 !important;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            padding: 0.75rem 1.25rem 1.5rem 1.25rem !important;
+            overscroll-behavior: contain;
+        }
+
+        .comments-list {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 1rem !important;
+        }
+
+        /* Sticky Comment Input Bar Pinned at Bottom */
         .comment-input-container {
+            order: 4 !important;
+            position: sticky !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            background: var(--white) !important;
+            border-top: 1px solid var(--gray-200) !important;
+            padding: 0.75rem 1rem !important;
+            padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px)) !important;
+            margin: 0 !important;
+            box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06) !important;
+            z-index: 20 !important;
             gap: 0.75rem;
+            flex-shrink: 0;
         }
 
         .comment-avatar {
             width: 36px;
             height: 36px;
             font-size: 0.8125rem;
+        }
+
+        body.drawer-lock-scroll {
+            overflow: hidden !important;
         }
 
         .related-videos-card {
@@ -3729,6 +3984,59 @@
         background-color: #16181c !important;
         border-color: #2f3336 !important;
         color: #ffffff !important;
+    }
+
+    @media (max-width: 768px) {
+        [data-theme="dark"] .comments-card {
+            background-color: #0f141c !important;
+            border-top: 1px solid #1e293b !important;
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.7) !important;
+        }
+
+        [data-theme="dark"] .comments-mobile-teaser {
+            background-color: #0f141c !important;
+            border: 1px solid #1e293b !important;
+        }
+
+        [data-theme="dark"] .teaser-heading {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .teaser-badge {
+            background: #1e293b !important;
+            color: #94a3b8 !important;
+        }
+
+        [data-theme="dark"] .teaser-snippet {
+            background: #16181c !important;
+            border-color: #1e293b !important;
+        }
+
+        [data-theme="dark"] .teaser-mock-input {
+            color: #64748b !important;
+        }
+
+        [data-theme="dark"] .teaser-comment-text {
+            color: #e2e8f0 !important;
+        }
+
+        [data-theme="dark"] .drawer-drag-handle {
+            background-color: #475569 !important;
+        }
+
+        [data-theme="dark"] .drawer-close-btn {
+            background-color: #1e293b !important;
+            color: #cbd5e1 !important;
+        }
+
+        [data-theme="dark"] .comments-header {
+            border-bottom: 1px solid #1e293b !important;
+        }
+
+        [data-theme="dark"] .comment-input-container {
+            background-color: #0f141c !important;
+            border-top: 1px solid #1e293b !important;
+        }
     }
 
     [data-theme="dark"] .action-icon-btn,
@@ -4320,13 +4628,44 @@
             </div>
             @endif
 
-            <!-- Enhanced Comments Section -->
-            <div class="comments-card">
+            <!-- Mobile Social Comments Teaser Banner (Only on mobile <= 768px) -->
+            <div class="comments-mobile-teaser" id="commentsMobileTeaser">
+                <div class="teaser-header">
+                    <div class="teaser-title-row">
+                        <span class="teaser-heading">Comments</span>
+                        <span class="teaser-badge" id="teaserCommentsCount">0</span>
+                    </div>
+                    <svg class="teaser-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </div>
+                <div class="teaser-snippet" id="teaserSnippet">
+                    <div class="teaser-avatar">
+                        @if(auth()->user()->avatar_url && !str_contains(auth()->user()->avatar_url, 'ui-avatars.com'))
+                        <img src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }}">
+                        @else
+                        {{ auth()->user()->initials }}
+                        @endif
+                    </div>
+                    <div class="teaser-mock-input">Add a comment...</div>
+                </div>
+            </div>
+
+            <!-- Backdrop Overlay for Mobile Drawer -->
+            <div class="comments-drawer-backdrop" id="commentsDrawerBackdrop"></div>
+
+            <!-- Enhanced Comments Section (Desktop in-flow, Mobile Bottom Sheet Drawer) -->
+            <div class="comments-card" id="commentsCard">
+                <!-- Mobile Drawer Drag Handle Bar -->
+                <div class="drawer-handle-bar" id="commentsDrawerHandleBar">
+                    <div class="drawer-drag-handle" id="commentsDrawerHandle"></div>
+                </div>
+
                 <div class="comments-header">
                     <div class="comments-header-left">
                         <span class="comments-count">
                             <span id="commentsCount">0</span> <span id="commentsLabel">Comments</span>
-                            <button class="comments-dropdown" id="commentsToggleBtn">
+                            <button class="comments-dropdown" id="commentsToggleBtn" aria-label="Toggle comments">
                                 <svg class="dropdown-icon" width="16" height="16" fill="currentColor"
                                     viewBox="0 0 24 24">
                                     <path d="M19 9l-7 7-7-7" />
@@ -4334,6 +4673,13 @@
                             </button>
                         </span>
                     </div>
+                    <!-- Mobile Drawer Close Button -->
+                    <button type="button" class="drawer-close-btn" id="commentsDrawerCloseBtn" aria-label="Close comments">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
                 </div>
 
                 <div class="comment-input-container">
@@ -4364,10 +4710,12 @@
                     </button>
                 </div>
 
-                <div class="comments-list" id="commentsList">
-                    <div class="loading-comments" id="loadingComments">
-                        <div class="loading-spinner"></div>
-                        <span>Loading comments...</span>
+                <div class="comments-scroll-body" id="commentsScrollBody">
+                    <div class="comments-list" id="commentsList">
+                        <div class="loading-comments" id="loadingComments">
+                            <div class="loading-spinner"></div>
+                            <span>Loading comments...</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -5539,6 +5887,9 @@
                     renderComments(data.comments);
                     document.getElementById('commentsCount').textContent = data.total_count;
                     document.getElementById('commentsLabel').textContent = data.total_count == 1 ? 'Comment' : 'Comments';
+                    const teaserCount = document.getElementById('teaserCommentsCount');
+                    if (teaserCount) teaserCount.textContent = data.total_count;
+                    updateTeaserSnippet(data.comments);
                     console.log('Comments loaded successfully, count:', data.total_count);
                 } else {
                     console.error('Comments API returned error:', data);
@@ -6195,32 +6546,164 @@
         attachCommentEventListeners();
     }
 
+    function openCommentsDrawer(focusInput = false) {
+        const commentsCard = document.getElementById('commentsCard');
+        const backdrop = document.getElementById('commentsDrawerBackdrop');
+        if (!commentsCard) return;
+
+        commentsCard.classList.add('drawer-open');
+        if (backdrop) backdrop.classList.add('open');
+        document.body.classList.add('drawer-lock-scroll');
+
+        if (typeof loadComments === 'function') {
+            loadComments();
+        }
+
+        if (focusInput) {
+            setTimeout(() => {
+                const input = document.getElementById('commentInput');
+                if (input) input.focus();
+            }, 300);
+        }
+    }
+
+    function closeCommentsDrawer() {
+        const commentsCard = document.getElementById('commentsCard');
+        const backdrop = document.getElementById('commentsDrawerBackdrop');
+        if (!commentsCard) return;
+
+        commentsCard.classList.remove('drawer-open');
+        commentsCard.style.transform = '';
+        if (backdrop) backdrop.classList.remove('open');
+        document.body.classList.remove('drawer-lock-scroll');
+
+        const emojiWrapper = document.getElementById('mainEmojiPickerWrapper');
+        if (emojiWrapper) emojiWrapper.classList.remove('open');
+    }
+
+    function updateTeaserSnippet(comments) {
+        const snippetEl = document.getElementById('teaserSnippet');
+        if (!snippetEl) return;
+
+        if (Array.isArray(comments) && comments.length > 0) {
+            const first = comments[0];
+            const user = first.user || {};
+            const userName = user.name || 'Student';
+            const userAvatar = user.avatar_url;
+            const initials = userName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'S';
+            const rawContent = first.content || first.comment || '';
+            const cleanContent = rawContent.replace(/<[^>]*>/g, '').trim();
+
+            const avatarHtml = (userAvatar && !userAvatar.includes('ui-avatars.com'))
+                ? `<img src="${userAvatar}" alt="${escapeHtml(userName)}">`
+                : `<span>${escapeHtml(initials)}</span>`;
+
+            snippetEl.innerHTML = `
+                <div class="teaser-avatar">${avatarHtml}</div>
+                <div class="teaser-comment-text">${escapeHtml(cleanContent || 'View comments...')}</div>
+            `;
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        const d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
+
     function initializeCommentsToggle() {
         const commentsToggleBtn = document.getElementById('commentsToggleBtn');
         const commentsList = document.getElementById('commentsList');
+        const teaser = document.getElementById('commentsMobileTeaser');
+        const closeBtn = document.getElementById('commentsDrawerCloseBtn');
+        const backdrop = document.getElementById('commentsDrawerBackdrop');
+        const commentsCard = document.getElementById('commentsCard');
+        const handleBar = document.getElementById('commentsDrawerHandleBar');
 
-        function updateCommentsVisibility() {
-            if (window.innerWidth <= 768) {
-                commentsList.classList.add('hidden');
-                commentsToggleBtn.classList.add('open');
-            } else {
-                commentsList.classList.remove('hidden');
-                commentsToggleBtn.classList.remove('open');
-            }
+        // Mobile Teaser Click to Open Drawer
+        if (teaser) {
+            teaser.addEventListener('click', function () {
+                openCommentsDrawer();
+            });
         }
 
+        // Mobile Close Button
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                closeCommentsDrawer();
+            });
+        }
+
+        // Mobile Backdrop Click to Close
+        if (backdrop) {
+            backdrop.addEventListener('click', function () {
+                closeCommentsDrawer();
+            });
+        }
+
+        // Swipe Down on Handle to Dismiss
+        if (handleBar && commentsCard) {
+            let startY = 0;
+            let currentY = 0;
+            let isDragging = false;
+
+            handleBar.addEventListener('touchstart', function (e) {
+                if (window.innerWidth > 768) return;
+                startY = e.touches[0].clientY;
+                currentY = startY;
+                isDragging = true;
+                commentsCard.style.transition = 'none';
+            }, { passive: true });
+
+            handleBar.addEventListener('touchmove', function (e) {
+                if (!isDragging || window.innerWidth > 768) return;
+                currentY = e.touches[0].clientY;
+                const deltaY = currentY - startY;
+                if (deltaY > 0) {
+                    commentsCard.style.transform = `translateY(${deltaY}px)`;
+                }
+            }, { passive: true });
+
+            handleBar.addEventListener('touchend', function () {
+                if (!isDragging || window.innerWidth > 768) return;
+                isDragging = false;
+                commentsCard.style.transition = '';
+                const deltaY = currentY - startY;
+                if (deltaY > 70) {
+                    closeCommentsDrawer();
+                } else {
+                    commentsCard.style.transform = '';
+                }
+                startY = 0;
+                currentY = 0;
+            });
+        }
+
+        // Desktop Dropdown Chevron Toggle
         if (commentsToggleBtn && commentsList) {
-            // Set initial state
-            updateCommentsVisibility();
-
-            // Update on resize
-            window.addEventListener('resize', updateCommentsVisibility);
-
             commentsToggleBtn.addEventListener('click', function () {
                 this.classList.toggle('open');
                 commentsList.classList.toggle('hidden');
             });
         }
+
+        // Close on Escape Key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                closeCommentsDrawer();
+            }
+        });
+
+        // Close on Desktop Resize
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 768) {
+                closeCommentsDrawer();
+                if (commentsList) commentsList.classList.remove('hidden');
+                if (commentsToggleBtn) commentsToggleBtn.classList.remove('open');
+            }
+        });
     }
 
     // Check document availability and show indicators
