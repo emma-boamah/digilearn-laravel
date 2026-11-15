@@ -1,26 +1,78 @@
 <style nonce="{{ request()->attributes->get('csp_nonce') }}">
+    /* Ensure the sidebar container has proper fixed bounds */
+    .youtube-sidebar {
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        overflow: hidden !important;
+    }
+
+    /* Scrollable content container */
+    .youtube-sidebar .sidebar-content {
+        flex: 1 1 auto !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        min-height: 0 !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-y !important;
+        overscroll-behavior-y: contain !important;
+        box-sizing: border-box !important;
+        padding-top: calc(env(safe-area-inset-top, 0px) + 0.5rem) !important;
+        padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 4rem) !important;
+    }
+
+    /* Flex wrapper must expand to fit all items (not clip at 100%) */
     .sidebar-scrollable {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        min-height: 0;
-        /* Important for flex children to scroll */
-        gap: 0.5rem;
-        /* Ensuring consistent gap between sections */
-        width: 100%;
-        overflow: hidden;
+        display: flex !important;
+        flex-direction: column !important;
+        height: auto !important;
+        min-height: min-content !important;
+        flex: 1 0 auto !important;
+        gap: 0.5rem !important;
+        width: 100% !important;
+        overflow: visible !important;
+        box-sizing: border-box !important;
         transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* Collapse the inner content width with the sidebar */
+    /* Collapse the inner content width with the sidebar on desktop */
     .youtube-sidebar.collapsed .sidebar-scrollable {
         width: var(--sidebar-width-collapsed, 80px);
-        overflow: hidden;
+        overflow-x: hidden !important;
     }
 
-    /* Ensure the last section does not get cut off */
+    /* Ensure the last section does not get cut off by bottom bars */
     .sidebar-section:last-child {
-        padding-bottom: 1rem;
+        padding-bottom: 2rem !important;
+        margin-bottom: 1.5rem !important;
+    }
+
+    /* Mobile drawer scrolling and touch fixes */
+    @media (max-width: 768px) {
+        .youtube-sidebar {
+            height: 100dvh !important;
+            max-height: 100dvh !important;
+            top: 0 !important;
+            bottom: 0 !important;
+            overflow: hidden !important;
+        }
+
+        .youtube-sidebar .sidebar-content {
+            height: 100% !important;
+            max-height: 100% !important;
+            overflow-y: scroll !important;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-y !important;
+            padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 5rem) !important;
+        }
+
+        .youtube-sidebar.mobile-open {
+            touch-action: pan-y !important;
+        }
     }
 </style>
 

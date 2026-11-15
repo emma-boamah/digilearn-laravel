@@ -1845,10 +1845,14 @@
                 width: 6px;
             }
 
-            /* Ensure mobile sidebar does not overflow viewport */
-            .sidebar-content {
-                padding-bottom: env(safe-area-inset-bottom, 1rem);
-                /* Account for mobile notches */
+            /* Ensure mobile sidebar does not overflow viewport and scrolls freely */
+            .youtube-sidebar .sidebar-content {
+                height: 100% !important;
+                max-height: 100% !important;
+                overflow-y: scroll !important;
+                -webkit-overflow-scrolling: touch !important;
+                touch-action: pan-y !important;
+                padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 5rem) !important;
             }
         }
 
@@ -2318,10 +2322,20 @@
                 visibility: visible !important;
                 pointer-events: auto !important;
                 z-index: 2001 !important;
+                touch-action: pan-y !important;
             }
 
             .youtube-sidebar.mobile-open * {
                 pointer-events: auto !important;
+            }
+
+            .youtube-sidebar .sidebar-content {
+                height: 100% !important;
+                max-height: 100% !important;
+                overflow-y: scroll !important;
+                -webkit-overflow-scrolling: touch !important;
+                touch-action: pan-y !important;
+                padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 5rem) !important;
             }
 
             .main-content {

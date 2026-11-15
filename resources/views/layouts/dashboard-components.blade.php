@@ -504,11 +504,24 @@
             .youtube-sidebar {
                 transform: translateX(-100%);
                 width: 280px;
+                height: 100dvh !important;
+                max-height: 100dvh !important;
                 transition: transform 0.3s ease;
+                overflow: hidden !important;
             }
 
             .youtube-sidebar.mobile-open {
                 transform: translateX(0);
+                touch-action: pan-y !important;
+            }
+
+            .sidebar-content {
+                height: 100% !important;
+                max-height: 100% !important;
+                overflow-y: scroll !important;
+                -webkit-overflow-scrolling: touch !important;
+                touch-action: pan-y !important;
+                padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 5rem) !important;
             }
 
             /* Main content takes full width on mobile */
