@@ -1674,8 +1674,8 @@
             .top-header {
                 left: 0 !important;
                 right: 0 !important;
-                padding-left: 0.75rem !important;
-                padding-right: 0.75rem !important;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
                 width: 100% !important;
                 max-width: 100% !important;
                 box-sizing: border-box !important;
@@ -1821,7 +1821,7 @@
             }
 
             .youtube-sidebar {
-                width: 280px !important;
+                width: min(260px, 78vw) !important;
                 transform: translateX(-100%) !important;
                 transition: transform 0.3s ease, visibility 0.3s ease !important;
                 visibility: hidden !important;
@@ -2311,7 +2311,7 @@
                 /* Dynamic viewport height for mobile browsers */
                 transform: translateX(-100%) !important;
                 transition: transform 0.3s ease, visibility 0.3s ease !important;
-                width: 280px !important;
+                width: min(260px, 78vw) !important;
                 visibility: hidden !important;
                 pointer-events: none !important;
                 z-index: 2001 !important;

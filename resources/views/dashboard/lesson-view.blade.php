@@ -951,6 +951,8 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
+        position: relative;
+        z-index: 1002;
     }
 
     .inline-reply-cancel {
@@ -963,6 +965,10 @@
         padding: 4px 10px;
         border-radius: 16px;
         transition: all 0.15s ease;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        position: relative;
+        z-index: 1003;
     }
 
     .inline-reply-cancel:hover {
@@ -987,6 +993,10 @@
         transition: all 0.15s ease;
         opacity: 0.5;
         pointer-events: none;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        position: relative;
+        z-index: 1003;
     }
 
     .inline-reply-submit.active {
@@ -1068,6 +1078,8 @@
         align-items: center;
         gap: 0.5rem;
         margin-top: 0.5rem;
+        position: relative;
+        z-index: 1002;
     }
 
     .inline-edit-cancel {
@@ -1080,6 +1092,10 @@
         padding: 4px 10px;
         border-radius: 16px;
         transition: all 0.15s ease;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        position: relative;
+        z-index: 1003;
     }
 
     .inline-edit-cancel:hover {
@@ -1102,6 +1118,10 @@
         border-radius: 16px;
         cursor: pointer;
         transition: all 0.15s ease;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        position: relative;
+        z-index: 1003;
     }
 
     .inline-edit-save:hover {
@@ -3320,10 +3340,23 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            transition: all 0.2s ease;
+        }
+
+        .teaser-snippet.is-empty {
             background: #f8fafc;
             border-radius: 9999px;
             padding: 0.375rem 0.875rem 0.375rem 0.5rem;
             border: 1px solid var(--gray-200, #e2e8f0);
+        }
+
+        .teaser-snippet.has-comment {
+            background: transparent;
+            border: none;
+            padding: 0.25rem 0.25rem;
+            border-radius: 0;
+            align-items: center;
+            gap: 0.625rem;
         }
 
         .teaser-avatar {
@@ -3356,13 +3389,34 @@
             white-space: nowrap;
         }
 
-        .teaser-comment-text {
-            font-size: 0.875rem; /* 14px */
-            font-weight: 500;
+        .teaser-comment-body {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            flex: 1;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .teaser-author {
+            font-size: 0.75rem;
+            font-weight: 600;
             color: var(--gray-800, #1e293b);
+            line-height: 1.2;
+            margin-bottom: 2px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+
+        .teaser-comment-text {
+            font-size: 0.8125rem; /* 13px */
+            font-weight: 400;
+            color: var(--gray-600, #475569);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            line-height: 1.3;
         }
 
         /* Fullscreen Backdrop Overlay */
@@ -4102,9 +4156,22 @@
             color: #94a3b8 !important;
         }
 
-        [data-theme="dark"] .teaser-snippet {
+        [data-theme="dark"] .teaser-snippet.is-empty {
             background: #16181c !important;
             border-color: #1e293b !important;
+        }
+
+        [data-theme="dark"] .teaser-snippet.has-comment {
+            background: transparent !important;
+            border: none !important;
+        }
+
+        [data-theme="dark"] .teaser-author {
+            color: #f1f5f9 !important;
+        }
+
+        [data-theme="dark"] .teaser-comment-text {
+            color: #94a3b8 !important;
         }
 
         [data-theme="dark"] .teaser-mock-input {
@@ -4740,7 +4807,7 @@
                         <polyline points="9 18 15 12 9 6"></polyline>
                     </svg>
                 </div>
-                <div class="teaser-snippet" id="teaserSnippet">
+                <div class="teaser-snippet is-empty" id="teaserSnippet">
                     <div class="teaser-avatar">
                         @if(auth()->user()->avatar_url && !str_contains(auth()->user()->avatar_url, 'ui-avatars.com'))
                         <img src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }}">
@@ -5866,19 +5933,24 @@
             applyEmojiPickerHoverEffect(mainEmojiPicker);
 
             mainEmojiPicker.addEventListener('emoji-click', event => {
-                const cursorPosition = commentInput.selectionStart;
+                const unicode = event.detail?.unicode || event.detail?.emoji?.unicode || (typeof event.detail?.emoji === 'string' ? event.detail.emoji : '');
+                if (!unicode) return;
+                const cursorPosition = (typeof commentInput.selectionStart === 'number' && commentInput.selectionStart >= 0) ? commentInput.selectionStart : commentInput.value.length;
                 const textBeforeCursor = commentInput.value.substring(0, cursorPosition);
                 const textAfterCursor = commentInput.value.substring(cursorPosition, commentInput.value.length);
                 
-                commentInput.value = textBeforeCursor + event.detail.unicode + textAfterCursor;
+                commentInput.value = textBeforeCursor + unicode + textAfterCursor;
                 commentInput.focus();
                 
                 // Trigger input event to show submit button
-                commentInput.dispatchEvent(new Event('input'));
+                commentInput.dispatchEvent(new Event('input', { bubbles: true }));
                 
                 // Move cursor after inserted emoji
-                const newCursorPos = cursorPosition + event.detail.unicode.length;
+                const newCursorPos = cursorPosition + unicode.length;
                 commentInput.setSelectionRange(newCursorPos, newCursorPos);
+
+                // Auto-close picker on selection
+                if (mainEmojiWrapper) mainEmojiWrapper.classList.remove('active');
             });
         }
 
@@ -6247,7 +6319,7 @@
                     </div>
                     <div class="inline-edit-actions">
                         <button class="inline-edit-cancel" type="button">Cancel</button>
-                        <button class="inline-edit-save" type="button">Save</button>
+                        <button class="inline-edit-save" type="button" disabled>Save</button>
                     </div>
                 `;
 
@@ -6266,16 +6338,20 @@
                 }
 
                 editEmojiPicker?.addEventListener('emoji-click', event => {
-                    const cursorPosition = editInput.selectionStart;
+                    const unicode = event.detail?.unicode || event.detail?.emoji?.unicode || (typeof event.detail?.emoji === 'string' ? event.detail.emoji : '');
+                    if (!unicode) return;
+                    const cursorPosition = (typeof editInput.selectionStart === 'number' && editInput.selectionStart >= 0) ? editInput.selectionStart : editInput.value.length;
                     const textBeforeCursor = editInput.value.substring(0, cursorPosition);
                     const textAfterCursor = editInput.value.substring(cursorPosition, editInput.value.length);
                     
-                    editInput.value = textBeforeCursor + event.detail.unicode + textAfterCursor;
+                    editInput.value = textBeforeCursor + unicode + textAfterCursor;
                     editInput.focus();
-                    editInput.dispatchEvent(new Event('input'));
-                    
-                    const newCursorPos = cursorPosition + event.detail.unicode.length;
+                    const newCursorPos = cursorPosition + unicode.length;
                     editInput.setSelectionRange(newCursorPos, newCursorPos);
+                    editInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+                    const pWrapper = editContainer.querySelector('.emoji-picker-wrapper');
+                    if (pWrapper) pWrapper.classList.remove('active');
                 });
 
                 editInput.focus();
@@ -6289,14 +6365,23 @@
                 });
 
                 // Cancel edit
-                cancelBtn.addEventListener('click', function () {
+                cancelBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const pWrapper = editContainer.querySelector('.emoji-picker-wrapper');
+                    if (pWrapper) pWrapper.classList.remove('active');
                     editContainer.remove();
                     commentTextEl.style.display = '';
                     commentActionsEl.style.display = '';
                 });
 
                 // Save edit
-                saveBtn.addEventListener('click', function () {
+                saveBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (saveBtn.disabled) return;
+                    const pWrapper = editContainer.querySelector('.emoji-picker-wrapper');
+                    if (pWrapper) pWrapper.classList.remove('active');
                     submitCommentEdit(commentId, editInput, editContainer, commentTextEl, commentActionsEl);
                 });
 
@@ -6439,18 +6524,23 @@
                     applyEmojiPickerHoverEffect(replyEmojiPicker);
                     
                     replyEmojiPicker.addEventListener('emoji-click', event => {
-                        const cursorPosition = replyInput.selectionStart;
+                        const unicode = event.detail?.unicode || event.detail?.emoji?.unicode || (typeof event.detail?.emoji === 'string' ? event.detail.emoji : '');
+                        if (!unicode) return;
+                        const cursorPosition = (typeof replyInput.selectionStart === 'number' && replyInput.selectionStart >= 0) ? replyInput.selectionStart : replyInput.value.length;
                         const textBeforeCursor = replyInput.value.substring(0, cursorPosition);
                         const textAfterCursor = replyInput.value.substring(cursorPosition, replyInput.value.length);
                         
-                        replyInput.value = textBeforeCursor + event.detail.unicode + textAfterCursor;
+                        replyInput.value = textBeforeCursor + unicode + textAfterCursor;
                         replyInput.focus();
                         
                         // Trigger input event to update button state
-                        replyInput.dispatchEvent(new Event('input'));
+                        replyInput.dispatchEvent(new Event('input', { bubbles: true }));
                         
-                        const newCursorPos = cursorPosition + event.detail.unicode.length;
+                        const newCursorPos = cursorPosition + unicode.length;
                         replyInput.setSelectionRange(newCursorPos, newCursorPos);
+
+                        const pWrapper = replyContainer.querySelector('.emoji-picker-wrapper');
+                        if (pWrapper) pWrapper.classList.remove('active');
                     });
                 }
             });
@@ -6471,11 +6561,18 @@
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
             body: JSON.stringify({ content: newContent })
         })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     containerEl.remove();
@@ -6485,11 +6582,19 @@
 
                     // Add (edited) badge if not already present
                     const header = textEl.closest('.comment-content').querySelector('.comment-header');
-                    if (!header.querySelector('.comment-edited-badge')) {
+                    if (header && !header.querySelector('.comment-edited-badge')) {
                         const badge = document.createElement('span');
                         badge.className = 'comment-edited-badge';
                         badge.textContent = '(edited)';
                         header.appendChild(badge);
+                    }
+
+                    // Update teaser snippet if this was the first comment
+                    const commentsCard = document.getElementById('commentsCard');
+                    const firstCommentEl = commentsCard ? commentsCard.querySelector('.comment') : null;
+                    if (firstCommentEl && firstCommentEl.querySelector(`[data-comment-id="${commentId}"]`)) {
+                        const teaserText = document.querySelector('.teaser-comment-text');
+                        if (teaserText) teaserText.textContent = newContent;
                     }
 
                     showSuccessMessage('Comment updated successfully!');
@@ -6525,6 +6630,8 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
             body: JSON.stringify({
@@ -6532,7 +6639,12 @@
                 parent_id: parentId
             })
         })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     containerEl.remove();
@@ -6698,9 +6810,26 @@
                 ? `<img src="${userAvatar}" alt="${escapeHtml(userName)}">`
                 : `<span>${escapeHtml(initials)}</span>`;
 
+            snippetEl.className = 'teaser-snippet has-comment';
             snippetEl.innerHTML = `
                 <div class="teaser-avatar">${avatarHtml}</div>
-                <div class="teaser-comment-text">${escapeHtml(cleanContent || 'View comments...')}</div>
+                <div class="teaser-comment-body">
+                    <span class="teaser-author">${escapeHtml(userName)}</span>
+                    <span class="teaser-comment-text">${escapeHtml(cleanContent || 'View comments...')}</span>
+                </div>
+            `;
+        } else {
+            snippetEl.className = 'teaser-snippet is-empty';
+            const userAvatar = @json(auth()->user()->avatar_url ?? '');
+            const userName = @json(auth()->user()->name ?? 'User');
+            const initials = @json(auth()->user()->initials ?? 'U');
+            const avatarHtml = (userAvatar && !userAvatar.includes('ui-avatars.com'))
+                ? `<img src="${userAvatar}" alt="${escapeHtml(userName)}">`
+                : `<span>${escapeHtml(initials)}</span>`;
+
+            snippetEl.innerHTML = `
+                <div class="teaser-avatar">${avatarHtml}</div>
+                <div class="teaser-mock-input">Add a comment...</div>
             `;
         }
     }

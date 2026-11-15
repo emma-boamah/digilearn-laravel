@@ -54,11 +54,17 @@
     /* Mobile drawer scrolling and touch fixes */
     @media (max-width: 768px) {
         .youtube-sidebar {
+            width: min(260px, 78vw) !important;
             height: 100dvh !important;
             max-height: 100dvh !important;
             top: 0 !important;
             bottom: 0 !important;
             overflow: hidden !important;
+        }
+
+        .youtube-sidebar.collapsed,
+        .youtube-sidebar.mobile-open.collapsed {
+            width: min(260px, 78vw) !important;
         }
 
         .youtube-sidebar .sidebar-content {

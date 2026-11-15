@@ -473,7 +473,7 @@
         .youtube-sidebar {
             transform: translateX(-100%);
             transition: transform 0.3s ease, width 0.3s ease;
-            width: 280px;
+            width: min(260px, 78vw) !important;
         }
 
         .youtube-sidebar.mobile-open {

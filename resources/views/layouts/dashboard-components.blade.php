@@ -503,7 +503,7 @@
         @media (max-width: 768px) {
             .youtube-sidebar {
                 transform: translateX(-100%);
-                width: 280px;
+                width: min(260px, 78vw) !important;
                 height: 100dvh !important;
                 max-height: 100dvh !important;
                 transition: transform 0.3s ease;
@@ -533,7 +533,8 @@
             }
 
             .top-header {
-                padding-left: 0 !important;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
                 width: 100% !important;
                 max-width: 100vw !important;
                 box-sizing: border-box !important;
@@ -556,14 +557,14 @@
 
             /* Ensure sidebar is never collapsed on mobile when open */
             .youtube-sidebar.mobile-open.collapsed {
-                width: 280px;
+                width: min(260px, 78vw) !important;
             }
         }
 
         /* Extra small mobile devices */
         @media (max-width: 480px) {
             .youtube-sidebar {
-                width: 260px;
+                width: min(260px, 78vw) !important;
             }
 
             .sidebar-header {

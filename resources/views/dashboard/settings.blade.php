@@ -77,13 +77,14 @@
             .page-title { font-size: 1.5rem; }
             .youtube-sidebar {
                 transform: translateX(-100%);
-                width: 280px;
+                width: min(260px, 78vw) !important;
             }
             .youtube-sidebar.mobile-open {
                 transform: translateX(0);
             }
             .top-header {
-                padding-left: 0 !important;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
             }
             .sidebar-overlay {
                 position: fixed;

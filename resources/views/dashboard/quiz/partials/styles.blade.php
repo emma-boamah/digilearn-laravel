@@ -1565,7 +1565,7 @@
         .youtube-sidebar {
             transform: translateX(-100%);
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            width: 280px;
+            width: min(260px, 78vw) !important;
             z-index: 2000;
             /* Keep consistent high z-index */
         }
