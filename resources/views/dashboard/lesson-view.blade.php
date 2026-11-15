@@ -3410,13 +3410,15 @@
         }
 
         .teaser-comment-text {
-            font-size: 0.8125rem; /* 13px */
+            font-size: 0.875rem; /* 14px */
             font-weight: 400;
-            color: var(--gray-600, #475569);
+            color: var(--gray-700, #334155);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            line-height: 1.3;
+            line-height: 1.4;
+            flex: 1;
+            min-width: 0;
         }
 
         /* Fullscreen Backdrop Overlay */
@@ -6813,10 +6815,7 @@
             snippetEl.className = 'teaser-snippet has-comment';
             snippetEl.innerHTML = `
                 <div class="teaser-avatar">${avatarHtml}</div>
-                <div class="teaser-comment-body">
-                    <span class="teaser-author">${escapeHtml(userName)}</span>
-                    <span class="teaser-comment-text">${escapeHtml(cleanContent || 'View comments...')}</span>
-                </div>
+                <div class="teaser-comment-text">${escapeHtml(cleanContent || 'View comments...')}</div>
             `;
         } else {
             snippetEl.className = 'teaser-snippet is-empty';
