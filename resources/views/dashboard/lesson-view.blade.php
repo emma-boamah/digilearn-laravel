@@ -956,14 +956,14 @@
     }
 
     .inline-reply-cancel {
-        background: none;
-        border: none;
-        color: var(--gray-500);
-        font-size: 0.75rem;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        font-size: 0.8125rem;
         font-weight: 600;
         cursor: pointer;
-        padding: 4px 10px;
-        border-radius: 16px;
+        padding: 5px 14px;
+        border-radius: 9999px;
         transition: all 0.15s ease;
         touch-action: manipulation;
         -webkit-tap-highlight-color: transparent;
@@ -971,32 +971,41 @@
         z-index: 1003;
     }
 
-    .inline-reply-cancel:hover {
-        background: var(--gray-100);
-        color: var(--gray-700);
+    .inline-reply-cancel:hover,
+    .inline-reply-cancel:active {
+        background: #e2e8f0;
+        color: #0f172a;
     }
 
-    [data-theme="dark"] .inline-reply-cancel:hover {
-        background: #374151;
-        color: #e5e7eb;
+    [data-theme="dark"] .inline-reply-cancel {
+        background: #1e293b;
+        border-color: #334155;
+        color: #94a3b8;
+    }
+
+    [data-theme="dark"] .inline-reply-cancel:hover,
+    [data-theme="dark"] .inline-reply-cancel:active {
+        background: #334155;
+        color: #f1f5f9;
     }
 
     .inline-reply-submit {
-        background: var(--secondary-blue);
+        background: var(--secondary-blue, #2563eb);
         color: white;
         border: none;
-        font-size: 0.75rem;
+        font-size: 0.8125rem;
         font-weight: 600;
-        padding: 4px 14px;
-        border-radius: 16px;
+        padding: 5px 16px;
+        border-radius: 9999px;
         cursor: pointer;
         transition: all 0.15s ease;
-        opacity: 0.5;
+        opacity: 0.45;
         pointer-events: none;
         touch-action: manipulation;
         -webkit-tap-highlight-color: transparent;
         position: relative;
         z-index: 1003;
+        box-shadow: 0 1px 3px rgba(37, 99, 235, 0.25);
     }
 
     .inline-reply-submit.active {
@@ -1005,7 +1014,8 @@
     }
 
     .inline-reply-submit:hover {
-        background: var(--secondary-blue-hover);
+        background: var(--secondary-blue-hover, #1d4ed8);
+        box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
     }
 
     /* Comment edit button */
@@ -1083,14 +1093,14 @@
     }
 
     .inline-edit-cancel {
-        background: none;
-        border: none;
-        color: var(--gray-500);
-        font-size: 0.75rem;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        font-size: 0.8125rem;
         font-weight: 600;
         cursor: pointer;
-        padding: 4px 10px;
-        border-radius: 16px;
+        padding: 5px 14px;
+        border-radius: 9999px;
         transition: all 0.15s ease;
         touch-action: manipulation;
         -webkit-tap-highlight-color: transparent;
@@ -1098,39 +1108,52 @@
         z-index: 1003;
     }
 
-    .inline-edit-cancel:hover {
-        background: var(--gray-100);
-        color: var(--gray-700);
+    .inline-edit-cancel:hover,
+    .inline-edit-cancel:active {
+        background: #e2e8f0;
+        color: #0f172a;
     }
 
-    [data-theme="dark"] .inline-edit-cancel:hover {
-        background: #374151;
-        color: #e5e7eb;
+    [data-theme="dark"] .inline-edit-cancel {
+        background: #1e293b;
+        border-color: #334155;
+        color: #94a3b8;
+    }
+
+    [data-theme="dark"] .inline-edit-cancel:hover,
+    [data-theme="dark"] .inline-edit-cancel:active {
+        background: #334155;
+        color: #f1f5f9;
     }
 
     .inline-edit-save {
-        background: var(--secondary-blue);
+        background: var(--secondary-blue, #2563eb);
         color: white;
         border: none;
-        font-size: 0.75rem;
+        font-size: 0.8125rem;
         font-weight: 600;
-        padding: 4px 14px;
-        border-radius: 16px;
+        padding: 5px 16px;
+        border-radius: 9999px;
         cursor: pointer;
         transition: all 0.15s ease;
         touch-action: manipulation;
         -webkit-tap-highlight-color: transparent;
         position: relative;
         z-index: 1003;
+        box-shadow: 0 1px 3px rgba(37, 99, 235, 0.25);
     }
 
-    .inline-edit-save:hover {
-        background: var(--secondary-blue-hover);
+    .inline-edit-save:hover,
+    .inline-edit-save:active {
+        background: var(--secondary-blue-hover, #1d4ed8);
+        box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
     }
 
     .inline-edit-save:disabled {
-        opacity: 0.5;
+        opacity: 0.45;
+        cursor: not-allowed;
         pointer-events: none;
+        box-shadow: none;
     }
 
     /* Enhanced Right Sidebar */
@@ -3631,6 +3654,27 @@
             font-size: 0.8125rem;
         }
 
+        /* Mobile-optimized Floating Centered Emoji Picker */
+        .emoji-picker-wrapper {
+            position: fixed !important;
+            left: 50% !important;
+            top: auto !important;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 70px) !important;
+            right: auto !important;
+            transform: translateX(-50%) !important;
+            width: min(340px, calc(100vw - 24px)) !important;
+            max-height: 320px !important;
+            z-index: 10050 !important;
+            border-radius: 16px !important;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .emoji-picker-wrapper emoji-picker {
+            width: 100% !important;
+            height: 320px !important;
+            max-width: 100% !important;
+        }
+
         body.drawer-lock-scroll {
             overflow: hidden !important;
         }
@@ -5934,6 +5978,20 @@
         if (mainEmojiBtn && mainEmojiWrapper && mainEmojiPicker) {
             applyEmojiPickerHoverEffect(mainEmojiPicker);
 
+            mainEmojiBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const isOpening = !mainEmojiWrapper.classList.contains('active');
+                document.querySelectorAll('.emoji-picker-wrapper.active').forEach(p => p.classList.remove('active'));
+                if (isOpening) {
+                    mainEmojiWrapper.classList.add('active');
+                }
+            });
+
+            mainEmojiWrapper.addEventListener('click', function (e) {
+                e.stopPropagation();
+            });
+
             mainEmojiPicker.addEventListener('emoji-click', event => {
                 const unicode = event.detail?.unicode || event.detail?.emoji?.unicode || (typeof event.detail?.emoji === 'string' ? event.detail.emoji : '');
                 if (!unicode) return;
@@ -5983,7 +6041,7 @@
                 if (isOpening) {
                     targetPicker.classList.add('active');
                 }
-            } else if (!e.target.closest('.emoji-picker-wrapper')) {
+            } else if (!e.target.closest('.emoji-picker-wrapper') && !e.target.closest('emoji-picker')) {
                 // User clicked outside any picker and any trigger — close all
                 document.querySelectorAll('.emoji-picker-wrapper.active').forEach(picker => {
                     picker.classList.remove('active');
@@ -6321,7 +6379,7 @@
                     </div>
                     <div class="inline-edit-actions">
                         <button class="inline-edit-cancel" type="button">Cancel</button>
-                        <button class="inline-edit-save" type="button" disabled>Save</button>
+                        <button class="inline-edit-save" type="button">Save</button>
                     </div>
                 `;
 
@@ -6331,10 +6389,26 @@
                 const editInput = editContainer.querySelector('.inline-edit-input');
                 const saveBtn = editContainer.querySelector('.inline-edit-save');
                 const cancelBtn = editContainer.querySelector('.inline-edit-cancel');
-
-                // Emoji Picker - hover effect and emoji insertion
+                const editEmojiBtn = editContainer.querySelector('.emoji-trigger-btn');
+                const editEmojiWrapper = editContainer.querySelector('.emoji-picker-wrapper');
                 const editEmojiPicker = editContainer.querySelector('.emoji-picker-wrapper emoji-picker');
 
+                // Direct emoji button toggle for reliability
+                editEmojiBtn?.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const isOpening = !editEmojiWrapper.classList.contains('active');
+                    document.querySelectorAll('.emoji-picker-wrapper.active').forEach(p => p.classList.remove('active'));
+                    if (isOpening) {
+                        editEmojiWrapper.classList.add('active');
+                    }
+                });
+
+                editEmojiWrapper?.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                });
+
+                // Emoji Picker - hover effect and emoji insertion
                 if (editEmojiPicker) {
                     applyEmojiPickerHoverEffect(editEmojiPicker);
                 }
@@ -6352,26 +6426,23 @@
                     editInput.setSelectionRange(newCursorPos, newCursorPos);
                     editInput.dispatchEvent(new Event('input', { bubbles: true }));
 
-                    const pWrapper = editContainer.querySelector('.emoji-picker-wrapper');
-                    if (pWrapper) pWrapper.classList.remove('active');
+                    if (editEmojiWrapper) editEmojiWrapper.classList.remove('active');
                 });
 
                 editInput.focus();
                 // Move cursor to end
                 editInput.setSelectionRange(editInput.value.length, editInput.value.length);
 
-                // Enable/disable save based on changes
+                // Enable/disable save based on whether input has text
                 editInput.addEventListener('input', function () {
-                    const hasChanged = this.value.trim() !== currentText.trim() && this.value.trim().length > 0;
-                    saveBtn.disabled = !hasChanged;
+                    saveBtn.disabled = this.value.trim().length === 0;
                 });
 
                 // Cancel edit
                 cancelBtn.addEventListener('click', function (e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    const pWrapper = editContainer.querySelector('.emoji-picker-wrapper');
-                    if (pWrapper) pWrapper.classList.remove('active');
+                    if (editEmojiWrapper) editEmojiWrapper.classList.remove('active');
                     editContainer.remove();
                     commentTextEl.style.display = '';
                     commentActionsEl.style.display = '';
@@ -6382,8 +6453,7 @@
                     e.preventDefault();
                     e.stopPropagation();
                     if (saveBtn.disabled) return;
-                    const pWrapper = editContainer.querySelector('.emoji-picker-wrapper');
-                    if (pWrapper) pWrapper.classList.remove('active');
+                    if (editEmojiWrapper) editEmojiWrapper.classList.remove('active');
                     submitCommentEdit(commentId, editInput, editContainer, commentTextEl, commentActionsEl);
                 });
 
@@ -6391,7 +6461,8 @@
                 editInput.addEventListener('keypress', function (e) {
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
-                        if (this.value.trim() !== currentText.trim() && this.value.trim().length > 0) {
+                        if (this.value.trim().length > 0) {
+                            if (editEmojiWrapper) editEmojiWrapper.classList.remove('active');
                             submitCommentEdit(commentId, editInput, editContainer, commentTextEl, commentActionsEl);
                         }
                     }
@@ -6520,8 +6591,25 @@
                     }
                 });
 
-                // Emoji Picker - hover effect and emoji insertion
+                // Emoji Picker
+                const replyEmojiBtn = replyContainer.querySelector('.emoji-trigger-btn');
+                const replyEmojiWrapper = replyContainer.querySelector('.emoji-picker-wrapper');
                 const replyEmojiPicker = replyContainer.querySelector('.emoji-picker-wrapper emoji-picker');
+
+                replyEmojiBtn?.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const isOpening = !replyEmojiWrapper.classList.contains('active');
+                    document.querySelectorAll('.emoji-picker-wrapper.active').forEach(p => p.classList.remove('active'));
+                    if (isOpening) {
+                        replyEmojiWrapper.classList.add('active');
+                    }
+                });
+
+                replyEmojiWrapper?.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                });
+
                 if (replyEmojiPicker) {
                     applyEmojiPickerHoverEffect(replyEmojiPicker);
                     
@@ -6541,8 +6629,7 @@
                         const newCursorPos = cursorPosition + unicode.length;
                         replyInput.setSelectionRange(newCursorPos, newCursorPos);
 
-                        const pWrapper = replyContainer.querySelector('.emoji-picker-wrapper');
-                        if (pWrapper) pWrapper.classList.remove('active');
+                        if (replyEmojiWrapper) replyEmojiWrapper.classList.remove('active');
                     });
                 }
             });
